@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
@@ -944,6 +945,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 devChat.active = !ClientDisplayConfig.isKidMode();
                 yield Setting.of(devChat, key + ".tip");
             }
+
+            // The consent card's Public posts switch: the server's Discord gates and the relay both
+            // follow it, so a flip re-syncs both.
+            case PUBLIC_POSTS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isPublicPosts(), on -> {
+                    ClientDisplayConfig.setPublicPosts(on);
+                    ContentModeSyncClient.syncNow();
+                    PublicPostsRelay.syncNow();
+                }), key + ".tip");
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.

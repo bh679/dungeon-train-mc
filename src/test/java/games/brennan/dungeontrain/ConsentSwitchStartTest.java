@@ -31,4 +31,10 @@ class ConsentSwitchStartTest {
         assertTrue(DungeonTrain.switchStart(false, ContentMode.ADULT, ContentMode.ADULT, false, true));
         assertFalse(DungeonTrain.switchStart(false, ContentMode.KID, ContentMode.KID, true, false));
     }
+
+    @Test
+    void publicPostsOnForAdultOffForKid() {
+        assertTrue(DungeonTrain.publicPostsDefault(ContentMode.ADULT));
+        assertFalse(DungeonTrain.publicPostsDefault(ContentMode.KID));
+    }
 }
