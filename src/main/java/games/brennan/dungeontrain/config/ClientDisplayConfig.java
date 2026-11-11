@@ -839,13 +839,14 @@ public final class ClientDisplayConfig {
         ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference = b
                 .comment("What to do when a world starts with custom Train Editor content active",
                          "(your own edits, or an imported dtpack).",
-                         "ASK (default) — show the prompt each time a world is entered for the first time.",
+                         "DISABLE (default) — turn custom content off, so the world runs the bundled game",
+                         "  and your stats count. Free Play is off until you turn it on.",
                          "CONTINUE — always play with the custom content. Those runs are Free Play: they",
                          "  earn advancements live but don't count towards your cross-world profile or stats.",
-                         "DISABLE — always turn custom content off, so the world runs the bundled game and",
-                         "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
-                         "Custom Train Content row in Options -> Dungeon Train...")
-                .defineEnum("preference", CustomContentPreference.ASK);
+                         "ASK — show the prompt each time a world is entered for the first time.",
+                         "Set from the title screen's Free Play button, the prompt's \"Remember decision\"",
+                         "checkbox, or the Custom Train Content row in Options -> Dungeon Train...")
+                .defineEnum("preference", CustomContentPreference.DISABLE);
         ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
                 .comment("The last answer you gave the custom-content prompt, recorded whether or not",
                          "you ticked \"Remember decision\". Reused when a run reboards automatically",
@@ -2168,11 +2169,11 @@ public final class ClientDisplayConfig {
 
     /**
      * This client's remembered answer to the custom-content prompt. Defaults to
-     * {@link CustomContentPreference#ASK}, including before the config loads — a pre-load read must
-     * never silently answer a prompt on the player's behalf.
+     * {@link CustomContentPreference#DISABLE}, including before the config loads: Free Play is off
+     * until the player turns it on, and a pre-load read must never turn it on for them.
      */
     public static CustomContentPreference getCustomContentPreference() {
-        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.ASK;
+        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.DISABLE;
     }
 
     /**

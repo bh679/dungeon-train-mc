@@ -9,9 +9,10 @@ package games.brennan.dungeontrain.world;
  *
  * <ul>
  *   <li>{@link #UNSET} — nobody has answered yet (also every world saved
- *       before this feature landed). Custom content loads normally, and the
- *       run is Free Play while it does, exactly as {@link #ALLOW}; the only
- *       difference is that the prompt still appears.</li>
+ *       before this feature landed). Custom content is suppressed, exactly as
+ *       {@link #DISABLE}, so the run stays Live: Free Play is something a
+ *       player opts into, never the default. The only difference is that the
+ *       prompt still appears.</li>
  *   <li>{@link #ALLOW} — play with the custom content. The run is Free Play
  *       for as long as custom content is actually present
  *       ({@code EditorContentIntegrity}), so removing the packages restores
@@ -47,9 +48,9 @@ public enum CustomContentChoice {
         return this != UNSET;
     }
 
-    /** Is custom content suppressed for this world? */
+    /** Is custom content suppressed for this world? Until someone says otherwise, it is. */
     public boolean suppressesContent() {
-        return this == DISABLE;
+        return this == DISABLE || this == UNSET;
     }
 
     /**

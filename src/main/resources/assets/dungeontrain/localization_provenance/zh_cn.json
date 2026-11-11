@@ -505,6 +505,8 @@
       "chat.dungeontrain.shared_carriage.noun.room",
       "effect.dungeontrain.drifting",
       "effect.dungeontrain.drifting.description",
+      "effect.dungeontrain.live",
+      "effect.dungeontrain.live.description",
       "gui.dungeontrain.version.compare.installed",
       "gui.dungeontrain.version.compare.count.other",
       "gui.dungeontrain.version.compare.behind",
@@ -4265,7 +4267,10 @@
       "gui.dungeontrain.options.mic_support.hint",
       "gui.dungeontrain.options.live_chat.tip",
       "gui.dungeontrain.options.content_mode.tip",
-      "gui.dungeontrain.options.editor_settings.tip"
+      "gui.dungeontrain.options.editor_settings.tip",
+      "gui.dungeontrain.unsupported_mods.live_hint",
+      "gui.dungeontrain.custom_content.card.default.tag",
+      "gui.dungeontrain.custom_content.dev_ignore.tip"
     ],
     "adventureitemnames": [],
     "playermob": [],
