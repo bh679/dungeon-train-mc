@@ -8,7 +8,6 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageSpace;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.BandSky;
-import games.brennan.dungeontrain.worldgen.TransitionLandmarks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -27,9 +26,9 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
 /**
- * Phantoms for the deep part of a run: once a player is past the first Far Lands exit they come without
- * insomnia, at a rate that climbs with the distance past it ({@link LatePhantomRate}). Vanilla's own
- * insomnia phantoms are untouched and still arrive on top.
+ * Phantoms for the deep part of a run: once a player reaches the second world-gen cycle (the whole first
+ * cycle, Far Lands included, behind them) they come without insomnia, at a rate that climbs with the distance
+ * into it ({@link LatePhantomRate}). Vanilla's own insomnia phantoms are untouched and still arrive on top.
  *
  * <p>Otherwise vanilla's {@code PhantomSpawner} rules: a survival player at or above sea level who can see
  * the sky, the group appearing 20–34 blocks overhead. Night (vanilla's {@code skyDarken >= 5}) runs at the
@@ -65,9 +64,9 @@ public final class LatePhantomSpawner {
     /** Tags every phantom this class spawns, for the cap. */
     public static final String LATE_PHANTOM_TAG = "dungeontrain_late_phantom";
 
-    /** Cycle the cached exit was read from; a config reload builds a new one, which drops the cache. */
+    /** Cycle the cached start was read from; a config reload builds a new one, which drops the cache. */
     private static WorldGenCycle cachedCycle;
-    private static long cachedExitX = Long.MAX_VALUE;
+    private static long cachedStartX = Long.MAX_VALUE;
 
     private LatePhantomSpawner() {}
 
@@ -80,14 +79,14 @@ public final class LatePhantomSpawner {
         if (!data.startsWithTrain()) return;
 
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        long exitX = farLandsExitX(cycle);
-        if (exitX == Long.MAX_VALUE) return;
+        long startX = secondCycleStartX(cycle);
+        if (startX == Long.MAX_VALUE) return;
 
         boolean night = level.getSkyDarken() >= NIGHT_SKY_DARKEN;
         RandomSource rng = level.getRandom();
         CarriageDims dims = data.dims();
         for (ServerPlayer player : level.players()) {
-            long steps = LatePhantomRate.steps(player.getX(), exitX);
+            long steps = LatePhantomRate.steps(player.getX(), startX);
             if (steps < 0L) continue;
             String refused = refusal(level, player, cycle, dims);
             if (refused != null) {
@@ -159,25 +158,16 @@ public final class LatePhantomSpawner {
     }
 
     /**
-     * World-X of the first lap's Far Lands exit, or {@link Long#MAX_VALUE} when the order has no Far Lands.
-     * Later laps' Far Lands sit further out still, so everything beyond this is "past the Far Lands".
+     * World-X where the second cycle starts (doubling run 1, base 0), or {@link Long#MAX_VALUE} when the
+     * world has no band layout. Every later cycle sits further out still, so everything beyond this counts.
      */
-    static long farLandsExitX(WorldGenCycle cycle) {
+    static long secondCycleStartX(WorldGenCycle cycle) {
         if (cycle != cachedCycle) {
-            long exit = Long.MAX_VALUE;
-            if (cycle.hasLayout()) {
-                for (TransitionLandmarks.Landmark lm : TransitionLandmarks.forRun(cycle, 0)) {
-                    if (lm.name().equals("far_lands_exit")) {
-                        exit = lm.worldX();
-                        break;
-                    }
-                }
-            }
-            cachedExitX = exit;
+            cachedStartX = cycle.hasLayout() && cycle.period() > 0L ? cycle.worldXOfBase(1, 0L) : Long.MAX_VALUE;
             cachedCycle = cycle;
-            LOGGER.info("[DungeonTrain] late phantoms start past the Far Lands exit at x={}",
-                exit == Long.MAX_VALUE ? "none" : exit);
+            LOGGER.info("[DungeonTrain] late phantoms start with the second cycle at x={}",
+                cachedStartX == Long.MAX_VALUE ? "none" : cachedStartX);
         }
-        return cachedExitX;
+        return cachedStartX;
     }
 }

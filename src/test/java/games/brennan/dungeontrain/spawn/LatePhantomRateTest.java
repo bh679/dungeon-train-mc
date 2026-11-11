@@ -10,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Pure-logic unit tests for {@link LatePhantomRate}: the distance curve, the day factor and the sky rule. */
 final class LatePhantomRateTest {
 
-    private static final long EXIT = 62_028L;
+    private static final long EXIT = 101_762L;
     private static final double EPS = 1e-9;
 
     @Test
-    @DisplayName("nothing at or before the Far Lands exit")
+    @DisplayName("nothing at or before the second cycle starts")
     void noneBeforeExit() {
         assertEquals(-1L, LatePhantomRate.steps(EXIT, EXIT));
-        assertEquals(-1L, LatePhantomRate.steps(10_000, EXIT));
+        assertEquals(-1L, LatePhantomRate.steps(90_000, EXIT));
         assertEquals(0.0, LatePhantomRate.chance(-1L, true), EPS);
         assertEquals(0, LatePhantomRate.groupSize(-1L));
     }
