@@ -1058,6 +1058,8 @@ public final class CarriagePlacer {
      * no train pair to repair; see the two-placeAt note on this class.</p>
      */
     private static void repairSeveredPair(ServerLevel level, int pairKey) {
+        // A rebuild is a copy; the real pair's severed state is none of its business.
+        if (games.brennan.dungeontrain.train.id.RebuildScope.active()) return;
         if (!PortalRegistry.get(level).repairPair(pairKey)) return;
         LOGGER.info("[DungeonTrain] Portal pair {} repaired: its corridors are being re-stamped from "
             + "their template, so the shell that was broken open is whole again.", pairKey);

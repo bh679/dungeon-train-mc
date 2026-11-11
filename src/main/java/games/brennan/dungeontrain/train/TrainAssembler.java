@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.train.id.CarriageIds;
+import games.brennan.dungeontrain.train.id.GroupRecord;
+import games.brennan.dungeontrain.train.id.RebuildScope;
+
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
@@ -199,7 +203,8 @@ public final class TrainAssembler {
      * captured entities, which are NOT spawned here — they wait for the group to settle, exactly like a
      * local carriage's contents entities ({@link PendingRelayEntitySpawn}).
      */
-    private record RelayPlacement(Set<BlockPos> blocks, net.minecraft.nbt.ListTag ents) {}
+    /** A stamped lease: its blocks, its entities, and the coal its engine holds after this world's burn. */
+    private record RelayPlacement(Set<BlockPos> blocks, net.minecraft.nbt.ListTag ents, int fuel) {}
 
     /** {@code group=<id>} or {@code rooms=[a,-,b]} for the spawn log — what a re-spawn must reproduce. */
     private static String summariseWhole(WholeGroupSelection.GroupPick groupPick,
@@ -236,13 +241,17 @@ public final class TrainAssembler {
                 LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
                 return null;
             }
+            // Joining this world costs the build one coal, burnt in the snapshot so the engine lands holding it.
+            games.brennan.dungeontrain.train.engine.EngineLease.Fuelled fuelled =
+                    games.brennan.dungeontrain.train.engine.EngineLease.burnOnArrival(lease, snap);
+            snap = fuelled.snap();
             int cellCount = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND).size();
             Set<BlockPos> placed = CarriageBlockSnapshot.place(level, carriageOrigin, snap);
             net.minecraft.nbt.ListTag ents = snap.getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
             LOGGER.debug("[DungeonTrain] relay carriage id={} at {}: {} cells → {} blocks in world ({} entities, baseSeq={} deltas={})",
                     lease.id(), carriageOrigin, cellCount, placed == null ? "FAILED" : placed.size(),
                     ents.size(), lease.baseSeq(), lease.deltas() == null ? 0 : lease.deltas().size());
-            return placed == null ? null : new RelayPlacement(placed, ents);
+            return placed == null ? null : new RelayPlacement(placed, ents, fuelled.coal());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
             return null;
@@ -252,13 +261,24 @@ public final class TrainAssembler {
     /** Register a leased Group carriage so later edits save back to the relay — one instance over the box. */
     private static void registerLeasedGroup(ServerLevel level, UUID subLevelId, UUID trainId, int anchorPIdx,
                                             BlockPos shipyardOrigin, CarriageDims box, CarriageVariant shell,
-                                            String stageId, SharedGroupDrift.Pick pick) {
+                                            String stageId, SharedGroupDrift.Pick pick, int fuel) {
         SharedCarriageClient.PoolLease lease = pick.lease();
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
             level, subLevelId, trainId, anchorPIdx, shipyardOrigin, box, shell.id(), true,
             pick.authoredHere(), lease.owner(), lease.id(), lease.token(), LeaseSnapshots.seqSeed(lease),
             stageId, lease.credits(), lease.deaths(), SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
-        inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+        reportArrival(inst, fuel);
+    }
+
+    /**
+     * A leased build has joined this world and burnt a coal. The relay hears the new count straight
+     * away rather than at the next idle heartbeat, so a world that closes in the next minute still
+     * paid for its visit.
+     */
+    private static void reportArrival(SharedCarriageRegistry.Instance inst, int fuel) {
+        inst.setFuel(fuel);
+        inst.stampContact(System.currentTimeMillis());
+        games.brennan.dungeontrain.event.SharedUploadFlow.heartbeat(inst);
     }
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
@@ -430,6 +450,40 @@ public final class TrainAssembler {
         }
     }
 
+    /** The blocks the last {@link #rebuildGroup} stood up; server-thread only, like the placement. */
+    private static Set<BlockPos> rebuiltBlocks = Set.of();
+    /** The running rebuild's stand-in for the lift's shape pass; see {@link #rebuildGroup}. */
+    private static Runnable rebuildSettle = () -> {};
+
+    /**
+     * Stand group {@code anchorPIdx} up again as ordinary world blocks at {@code origin}, through the
+     * same code the train builds it with. The caller opens the {@link RebuildScope} and the
+     * {@link games.brennan.dungeontrain.template.TestGate} carrying the recorded context; this does the
+     * placing, and returns every block it wrote.
+     *
+     * @param origin  where the back pad's lowest corner goes (the enclosed run starts a half pad after it
+     *                when the group has more than one carriage)
+     * @param settle  run where the train lifts the group: after the shells and pads, before the locked
+     *                fence / wall / pane arms are put back and before the contents go in, which the
+     *                train lays after the lift and so never re-shapes
+     */
+    public static Set<BlockPos> rebuildGroup(ServerLevel level, BlockPos origin, int anchorPIdx, int groupSize,
+                                             CarriageDims dims, Runnable settle) {
+        if (!RebuildScope.active()) throw new IllegalStateException("rebuildGroup needs a RebuildScope");
+        rebuiltBlocks = Set.of();
+        ConnectPass.beginLiftCapture();
+        try {
+            rebuildSettle = settle;
+            CarriageStampGuard.call(() -> spawnGroupGuarded(level, origin, null, anchorPIdx, groupSize, dims, UUID.randomUUID()));
+        } finally {
+            rebuildSettle = () -> {};
+            ConnectPass.endLiftCapture();
+        }
+        Set<BlockPos> out = rebuiltBlocks;
+        rebuiltBlocks = Set.of();
+        return out;
+    }
+
     /**
      * The group's {@link CarriageLayout}: the session's forced Group cadence when one is set (a
      * testing aid — {@link FullCarriageSettings#force}), else the seeded draw on the layout weights.
@@ -468,7 +522,10 @@ public final class TrainAssembler {
         // (the "one carriage at render distance loads from a different stage" report). Placement below
         // still uses the live `origin`; only the gate input is stable. See Trains.gateWorldXOrRecord.
         int placedAnchorWorldX = origin.getX() + enclosedStartOffset;
-        int groupAnchorWorldX = Trains.gateWorldXOrRecord(trainId, anchorPIdx, placedAnchorWorldX);
+        // A rebuild gates on the recorded context (TestGate scope), not a world-X, and must not pin
+        // one into the real train's map.
+        int groupAnchorWorldX = RebuildScope.active()
+            ? placedAnchorWorldX : Trains.gateWorldXOrRecord(trainId, anchorPIdx, placedAnchorWorldX);
 
         int cleared = clearSubLevelVolume(level, origin, subLevelLength, dims);
         long tAfterClear = System.nanoTime();
@@ -483,7 +540,7 @@ public final class TrainAssembler {
         // also caches this, but the world-load spawn runs before that tick has fired — leases taken here
         // would otherwise reach the relay with an empty holder, so the admin view can't say who has a
         // carriage locked.
-        if (!level.players().isEmpty()) {
+        if (!level.players().isEmpty() && !RebuildScope.active()) {
             net.minecraft.server.level.ServerPlayer host = level.players().get(0);
             // The display name is extra personal data, so it needs the contribution consent gate; the uuid
             // keeps its existing looser terms. No consent → uuid only, and our edits stay uncredited.
@@ -502,9 +559,13 @@ public final class TrainAssembler {
         // Transition flatbeds: slots claimed for a dimension/band transition stand as the full built-in
         // flatbed (open deck) whatever the rolls say. Claims ahead of the lead rider are made here, timed
         // to the train speed and their pace; respawns read the recorded claim. See TransitionFlatbeds.
-        final boolean[] transitionFlatbed = TransitionFlatbeds.forcedSlots(level, trainId, anchorPIdx, groupSize,
-            velocity == null ? 0.0 : velocity.x(),
-            subLevelLength + TrainCarriageAppender.TARGET_GAP_BLOCKS);
+        // A rebuild replays the claims its id recorded: live claims follow the riders.
+        final RebuildScope rebuild = RebuildScope.current();
+        final boolean[] transitionFlatbed = rebuild != null
+            ? rebuild.transitionSlots(groupSize)
+            : TransitionFlatbeds.forcedSlots(level, trainId, anchorPIdx, groupSize,
+                velocity == null ? 0.0 : velocity.x(),
+                subLevelLength + TrainCarriageAppender.TARGET_GAP_BLOCKS);
         final boolean anyTransitionFlatbed = transitionFlatbed != null;
         // The whole group stands as the group-sized flatbed; only a world that can't build it falls back
         // to single flatbed carriages in a run of rooms.
@@ -520,6 +581,7 @@ public final class TrainAssembler {
         SharedPick[] pickBySlot = new SharedPick[groupSize];
         // Each leased slot's captured entities, carried from placement to the deferred spawn below.
         net.minecraft.nbt.ListTag[] relayEntsBySlot = new net.minecraft.nbt.ListTag[groupSize];
+        int[] relayFuelBySlot = new int[groupSize];
         // Whose builds count as "own" for this group — resolved once, since it can't change mid-spawn.
         List<String> onlineUuids = onlinePlayerUuids(level);
         // Whole-room slots and the whole-group verdict — see WholeCarriageSelection / WholeGroupSelection.
@@ -558,10 +620,12 @@ public final class TrainAssembler {
             ? games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate) : null;
         final CarriageDims groupBox = fullGroup
             ? ContentsSize.FULL.shellDims(dims, groupSize).orElse(null) : null;
-        final boolean groupDrifts = groupBox != null && transitionGroup == null
+        // A rebuild never leases: the relay pool has moved on, so it stands the carriage generated here.
+        final boolean groupDrifts = groupBox != null && transitionGroup == null && rebuild == null
             && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage);
         SharedGroupDrift.Pick groupLease = null;
         net.minecraft.nbt.ListTag groupLeaseEnts = null;
+        int groupLeaseFuelValue = -1;
         if (fullGroup) {
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
             if (groupDrifts) {
@@ -578,6 +642,7 @@ public final class TrainAssembler {
                         blocks.addAll(placement.blocks());
                         groupLease = pick;
                         groupLeaseEnts = placement.ents();
+                        groupLeaseFuelValue = placement.fuel();
                     }
                 }
                 if (groupLease == null) SharedGroupDrift.logFresh(anchorPIdx);
@@ -588,6 +653,7 @@ public final class TrainAssembler {
             }
         }
         final SharedGroupDrift.Pick groupLeasePick = groupLease;
+        final int groupLeaseFuel = groupLeaseFuelValue;
         // A Half pair: two Half shells end to end, each its own pick — see HalfCarriageSelection.
         HalfCarriageSelection.HalfPick halfPick = layout == CarriageLayout.HALVES && !wholeGroup
             ? HalfCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
@@ -660,7 +726,8 @@ public final class TrainAssembler {
             // in scope for the stamp exactly as CarriagePlacer.placeAt does — a placeholder must
             // never reach a live train. Otherwise fall through to normal placement (the FRESH path).
             Set<BlockPos> carriageBlocks = null;
-            SharedPick pick = forcedFlatbed ? null : tryLeaseShared(level, variant, carriagePIdx, dims, genCfg, stageId, onlineUuids);
+            SharedPick pick = forcedFlatbed || rebuild != null
+                ? null : tryLeaseShared(level, variant, carriagePIdx, dims, genCfg, stageId, onlineUuids);
             if (pick != null) {
                 SharedCarriageClient.PoolLease lease = pick.lease();
                 RelayPlacement placement = StagePlacementScope.with(stageId,
@@ -670,6 +737,7 @@ public final class TrainAssembler {
                 } else {
                     carriageBlocks = placement.blocks();
                     relayEntsBySlot[slot] = placement.ents();
+                    relayFuelBySlot[slot] = placement.fuel();
                     pickBySlot[slot] = pick;
                     // This slot now holds somebody else's build, and this path never reaches
                     // CarriagePlacer.placeAt — so the record has to be cleared here or nowhere. The
@@ -730,6 +798,28 @@ public final class TrainAssembler {
         }
         long tAfterPlace = System.nanoTime();
 
+        // What this group was built with, for its carriages' ids. Recorded here, where the gate and
+        // every verdict are known, because nothing later can work them out again (see GroupRecord).
+        CarriageIds.record(level, anchorPIdx, CarriageIds.recordOf(anchorGate, groupSize,
+            PortalCarriageSelection.isPortalGroup(level, anchorPIdx), transitionFlatbed,
+            FullCarriageSettings.forced() > 0 || WholeGroupSettings.forced() > 0,
+            sharedBuildsBySlot(pickBySlot, groupLeasePick, groupSize)));
+
+        if (rebuild != null) {
+            // A rebuild stands as world blocks: no Sable ship. In the lift's place, its shape pass and the
+            // re-lock of locked cells; then the contents and entities the train defers until a group
+            // settles go straight in.
+            rebuildSettle.run();
+            ConnectPass.commitLiftCapture(level, origin, origin);
+            furnishRebuild(level, origin, dims, genCfg, anchorPIdx, groupSize, enclosedStartOffset,
+                groupAnchorWorldX, enclosedBySlot, roomBySlot, groupPick, fullPick, halfPick);
+            LOGGER.info("[DungeonTrain] Rebuilt group anchorPIdx={} groupSize={} enclosed=[{}] stages=[{}] whole={} at {}",
+                anchorPIdx, groupSize, summariseVariants(enclosedBySlot), summariseStages(stageBySlot),
+                summariseWhole(groupPick, roomBySlot), origin);
+            rebuiltBlocks = blocks;
+            return null;
+        }
+
         ManagedShip ship = Shipyards.of(level).assemble(blocks, 1.0);
         long tAfterAssemble = System.nanoTime();
 
@@ -786,7 +876,7 @@ public final class TrainAssembler {
                     lease.id(), lease.token(),
                     LeaseSnapshots.seqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits(), lease.deaths());
-                inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+                reportArrival(inst, relayFuelBySlot[slot]);
                 continue;
             }
             if (fullGroup) {
@@ -798,7 +888,7 @@ public final class TrainAssembler {
                     // A leased Group carriage: its blocks and entities are the build as its world left it,
                     // so nothing is generated. Registered once, at the first carriage, over the whole box.
                     registerLeasedGroup(level, ship.subLevelId(), trainId, carriagePIdx, carriageShipyardOrigin,
-                        groupBox, fullPick.shell(), fullStage, groupLeasePick);
+                        groupBox, fullPick.shell(), fullStage, groupLeasePick, groupLeaseFuel);
                     if (groupLeaseEnts != null && !groupLeaseEnts.isEmpty()) {
                         pendingRelayEntities[slot] = new PendingRelayEntitySpawn(
                             carriageShipyardOrigin, groupLeaseEnts, carriagePIdx, length, groupSize);
@@ -816,10 +906,12 @@ public final class TrainAssembler {
                         // A fresh drifting Group carriage: uploads whole the first time someone changes it.
                         // Registered AFTER the contents pass, as a fresh shared slot is — registered before
                         // it, every contents block would count as an edit and upload an untouched build.
+                        int coal = games.brennan.dungeontrain.train.engine.EngineStamp.ensure(level,
+                            carriageShipyardOrigin, groupBox, games.brennan.dungeontrain.train.engine.DriftEngine.FRESH_COAL);
                         SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                             carriageShipyardOrigin, groupBox, fullPick.shell().id(), false, false, "", null, null, 0,
                             fullStage, SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY,
-                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP).setFuel(coal);
                     }
                 }
                 continue;
@@ -879,16 +971,30 @@ public final class TrainAssembler {
             // The portal exclusion mirrors tryLeaseShared's: what stands in a portal slot is a corridor
             // (or the sealed cart between two of them), not this slot's rolled variant, so registering
             // it would upload a corridor to the community pool the first time anyone edited one.
+            // An ordinary carriage whose template carries a Drifting Engine Block drifts too: the engine is what
+            // makes a carriage drift. Every fresh drifting carriage gets one, holding three coal, set down
+            // before registering so it is not mistaken for somebody's edit.
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
-                    && SharedCarriageFlags.isSharedVariant(variant.id())
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
-                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()) {
+                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
+                    && (SharedCarriageFlags.isSharedVariant(variant.id())
+                        || games.brennan.dungeontrain.train.engine.EngineStamp.find(level, carriageShipyardOrigin,
+                            games.brennan.dungeontrain.train.engine.EngineStamp.size(dims)) != null)) {
+                int coal = games.brennan.dungeontrain.train.engine.EngineStamp.ensure(level, carriageShipyardOrigin,
+                        dims, games.brennan.dungeontrain.train.engine.DriftEngine.FRESH_COAL);
                 // No credits and no deaths: nobody has contributed to — or died in — a brand-new local
                 // build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                         carriageShipyardOrigin, dims, variant.id(), false, false, "", null, null, 0,
                         stageBySlot[slot], SharedCarriageClient.Credits.EMPTY,
-                        SharedCarriageClient.Deaths.EMPTY);
+                        SharedCarriageClient.Deaths.EMPTY).setFuel(coal);
+            } else if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
+                    && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
+                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
+                    && !(variant instanceof CarriageVariant.Builtin b && b.type() == CarriagePlacer.CarriageType.FLATBED)) {
+                // Not drifting, but could be: setting a Drifting Engine Block down in it later makes it drift.
+                games.brennan.dungeontrain.train.engine.EngineConversion.remember(
+                        carriagePIdx, stageBySlot[slot], variant.id());
             }
         }
         long tAfterContents = System.nanoTime();
@@ -941,6 +1047,66 @@ public final class TrainAssembler {
             (tEnd - tStart) / 1_000_000);
 
         return ship;
+    }
+
+    /** The relay build each slot was leased from, {@link GroupRecord#NOT_SHARED} where none was. */
+    private static int[] sharedBuildsBySlot(SharedPick[] pickBySlot, SharedGroupDrift.Pick groupLease, int groupSize) {
+        int[] shared = new int[groupSize];
+        for (int slot = 0; slot < groupSize; slot++) {
+            shared[slot] = groupLease != null ? groupLease.lease().id()
+                : pickBySlot[slot] != null ? pickBySlot[slot].lease().id() : GroupRecord.NOT_SHARED;
+        }
+        return shared;
+    }
+
+    /**
+     * The rebuild's version of the post-assembly contents pass: the same calls, at world coordinates,
+     * with the entities and template decor the train defers to the settle tracker spawned at once —
+     * nothing lifts a rebuilt group, so there is nothing to wait for.
+     */
+    private static void furnishRebuild(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                       CarriageGenerationConfig genCfg, int anchorPIdx, int groupSize,
+                                       int enclosedStartOffset, int groupAnchorWorldX,
+                                       CarriageVariant[] enclosedBySlot,
+                                       WholeCarriageSelection.RoomPick[] roomBySlot,
+                                       WholeGroupSelection.GroupPick groupPick,
+                                       FullCarriageSelection.FullPick fullPick,
+                                       HalfCarriageSelection.HalfPick halfPick) {
+        int length = dims.length();
+        BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
+        if (groupPick != null) {
+            CarriagePlacer.spawnWholeDecorAt(level, runOrigin, groupPick.template(), anchorPIdx, groupSize, dims);
+            return;
+        }
+        if (fullPick != null) {
+            furnish(level, runOrigin, fullPick.shell(), dims, genCfg, anchorPIdx, groupAnchorWorldX);
+            CarriagePlacer.spawnWholeDecorAt(level, runOrigin, fullPick.template(), anchorPIdx, groupSize, dims);
+            return;
+        }
+        if (halfPick != null) {
+            furnish(level, runOrigin, halfPick.first().shell(), dims, genCfg, anchorPIdx, groupAnchorWorldX);
+            CarriagePlacer.spawnWholeDecorAt(level, runOrigin, halfPick.first().template(), anchorPIdx, 1, dims);
+            int last = anchorPIdx + groupSize - 1;
+            BlockPos secondOrigin = runOrigin.offset(halfPick.secondOffset(), 0, 0);
+            furnish(level, secondOrigin, halfPick.second().shell(), dims, genCfg, last, groupAnchorWorldX);
+            CarriagePlacer.spawnWholeDecorAt(level, secondOrigin, halfPick.second().template(), last, 1, dims);
+            return;
+        }
+        for (int slot = 0; slot < groupSize; slot++) {
+            int carriagePIdx = anchorPIdx + slot;
+            BlockPos carriageOrigin = runOrigin.offset(slot * length, 0, 0);
+            if (roomBySlot[slot] != null) {
+                CarriagePlacer.spawnWholeDecorAt(level, carriageOrigin, roomBySlot[slot].template(), carriagePIdx, 1, dims);
+            } else {
+                furnish(level, carriageOrigin, enclosedBySlot[slot], dims, genCfg, carriagePIdx, groupAnchorWorldX);
+            }
+        }
+    }
+
+    private static void furnish(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims,
+                                CarriageGenerationConfig genCfg, int carriagePIdx, int groupAnchorWorldX) {
+        CarriagePlacer.applyContentsBlocksAt(level, origin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
+        CarriagePlacer.applyContentsEntitiesAt(level, origin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
     }
 
     /**

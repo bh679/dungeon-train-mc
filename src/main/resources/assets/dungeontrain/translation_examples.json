@@ -18100,5 +18100,22 @@
         "12"
       ]
     }
+  },
+  "gui.dungeontrain.engine_block.worlds.one": {
+    "1": {
+      "label": "worlds the coal lasts (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.other": {
+    "1": {
+      "label": "how many more worlds the coal lasts",
+      "examples": [
+        "3",
+        "40"
+      ]
+    }
   }
 }

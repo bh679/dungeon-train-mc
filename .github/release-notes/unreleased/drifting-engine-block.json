@@ -1,0 +1,22 @@
+{
+  "id": "drifting-engine-block",
+  "version": "0.1768.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "train"
+  ],
+  "title": "Drifting Engine Block",
+  "summary": "Every drifting carriage now has a Drifting Engine Block built into it. It burns one coal each time the carriage drifts into a new world, and a carriage that runs out of fuel stops drifting for good. Feed it coal or charcoal to keep a carriage you love on the line.",
+  "highlights": [
+    "Coal you add counts straight away, and you can take it back out before you leave the world",
+    "The gauge shows how many more worlds the carriage can reach",
+    "Anyone can mine an engine, but it takes as long as obsidian"
+  ],
+  "pr": 2604,
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
