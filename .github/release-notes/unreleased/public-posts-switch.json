@@ -1,0 +1,22 @@
+{
+  "id": "public-posts-switch",
+  "version": "0.1770.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "Public posts",
+  "summary": "When one of your photos or deaths is shared on our Instagram or Facebook story, you now get a chat message and an inbox note with a link to see it. A new Public posts switch keeps your photos and deaths off our Discord and socials if you would rather they stay private. It starts off in Kid mode.",
+  "highlights": [
+    "Chat and inbox message with a View it link when you are featured",
+    "Public posts switch on the welcome card and in Options",
+    "The welcome card is now two columns so it fits small screens, and asks once more"
+  ],
+  "pr": 2605,
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
