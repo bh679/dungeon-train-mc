@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.spawn.LatePhantomRate;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -33,6 +34,10 @@ import org.slf4j.Logger;
  * <p>Otherwise vanilla's {@code PhantomSpawner} rules: a survival player at or above sea level who can see
  * the sky, the group appearing 20–34 blocks overhead. Night (vanilla's {@code skyDarken >= 5}) runs at the
  * full chance; by day the chance is a quarter and the group wears Fire Resistance so it doesn't burn.</p>
+ *
+ * <p>Once the spawn rate tops out ({@link LatePhantomRate#STEPS_TO_MAX}) each phantom also rolls potion
+ * effects off the same curve as every other mob, its level counting from that point
+ * ({@link LatePhantomRate#effectLevel}, {@link DifficultyApplier#applyEffectsAtLevel}).</p>
  *
  * <p><b>Only under the overworld sky.</b> Vanilla never spawns phantoms in the End or the Nether, so a
  * player under the End/void sky box or the Nether sky box ({@link BandSky}, the same intensities the client
@@ -102,7 +107,7 @@ public final class LatePhantomSpawner {
             int nearby = level.getEntitiesOfClass(Phantom.class, around,
                     p -> p.getTags().contains(LATE_PHANTOM_TAG)).size();
             int group = Math.min(LatePhantomRate.groupSize(steps), NEARBY_CAP - nearby);
-            if (group > 0) spawnGroup(level, player, rng, dims, group, night);
+            if (group > 0) spawnGroup(level, player, rng, dims, group, night, LatePhantomRate.effectLevel(steps));
         }
     }
 
@@ -127,7 +132,7 @@ public final class LatePhantomSpawner {
     }
 
     private static void spawnGroup(ServerLevel level, ServerPlayer player, RandomSource rng, CarriageDims dims,
-                                   int group, boolean night) {
+                                   int group, boolean night, int effectLevel) {
         BlockPos pos = player.blockPosition()
                 .above(SPAWN_HEIGHT_MIN + rng.nextInt(SPAWN_HEIGHT_SPREAD))
                 .east(-SPAWN_JITTER + rng.nextInt(2 * SPAWN_JITTER + 1))
@@ -152,6 +157,8 @@ public final class LatePhantomSpawner {
                 phantom.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION,
                         0, false, false));
             }
+            // Past the top of the spawn curve the swarm stops growing, so the phantoms themselves do.
+            DifficultyApplier.applyEffectsAtLevel(phantom, effectLevel, rng);
             phantom.addTag(LATE_PHANTOM_TAG);
             level.addFreshEntity(phantom);
         }

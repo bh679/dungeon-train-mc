@@ -208,8 +208,26 @@ public final class DifficultyApplier {
         return true;
     }
 
+    /**
+     * The potion-effect pass at an effect level the caller has already worked out, off the same curve and
+     * chance rolls as every other mob ({@link ProceduralTiers#effectsFor}), with no {@link MobEffectOffsets}
+     * shift. For a spawner whose mobs keep their own clock (late phantoms count from the point their spawn
+     * rate tops out). Tags the mob with {@link #APPLIED_TAG}.
+     *
+     * @return false at or below level 0 — nothing applied
+     */
+    public static boolean applyEffectsAtLevel(Mob mob, int effectLevel, RandomSource rng) {
+        if (effectLevel <= 0) return false;
+        rollEffectsAt(mob, effectLevel, "effect level " + effectLevel, rng);
+        mob.addTag(APPLIED_TAG);
+        return true;
+    }
+
     private static void rollEffects(Mob mob, int tierIndex, String tierName, RandomSource rng) {
-        int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
+        rollEffectsAt(mob, tierIndex - MobEffectOffsets.offsetFor(mob), tierName, rng);
+    }
+
+    private static void rollEffectsAt(Mob mob, int effectLevel, String tierName, RandomSource rng) {
         for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
             if (rng.nextDouble() >= spec.chance()) continue;
             Holder<MobEffect> holder = lookupEffect(spec.id());

@@ -50,6 +50,17 @@ final class LatePhantomRateTest {
         assertFalse(LatePhantomRate.overworldSky(0.0, 1.0));
     }
 
+    @Test
+    @DisplayName("potion effects start where the spawn rate tops out, one level per step")
+    void effectLevel() {
+        assertEquals(150L, LatePhantomRate.STEPS_TO_MAX);
+        assertEquals(0, LatePhantomRate.effectLevel(0L));
+        assertEquals(0, LatePhantomRate.effectLevel(150L));
+        assertEquals(1, LatePhantomRate.effectLevel(151L));
+        assertEquals(40, LatePhantomRate.effectLevel(LatePhantomRate.steps(EXIT + 38_000, EXIT)));
+        assertEquals(0.90, LatePhantomRate.chance(LatePhantomRate.STEPS_TO_MAX, true), EPS);
+    }
+
     private static void assertRow(int blocksPast, double nightChance, int group) {
         long steps = LatePhantomRate.steps(EXIT + blocksPast, EXIT);
         assertEquals(nightChance, LatePhantomRate.chance(steps, true), EPS, "chance at " + blocksPast);

@@ -52,6 +52,17 @@ public final class LatePhantomRate {
         return (int) Math.min(MAX_GROUP, 1L + steps / STEPS_PER_EXTRA_PHANTOM);
     }
 
+    /** Steps at which the night chance reaches {@link #MAX_CHANCE} (150 with the defaults). */
+    public static final long STEPS_TO_MAX = Math.round((MAX_CHANCE - BASE_CHANCE) / CHANCE_PER_STEP);
+
+    /**
+     * Mob-effect level for a phantom at {@code steps}: 0 until the spawn rate tops out, then one level per
+     * step (a step is ~one difficulty level), fed to the same effect curve every other mob uses.
+     */
+    public static int effectLevel(long steps) {
+        return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, steps - STEPS_TO_MAX));
+    }
+
     /** True when the column's sky is the overworld's: neither the End/void nor the Nether sky box. */
     public static boolean overworldSky(double endSky, double netherSky) {
         return endSky < FOREIGN_SKY_THRESHOLD && netherSky < FOREIGN_SKY_THRESHOLD;
