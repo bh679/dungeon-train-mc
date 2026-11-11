@@ -71,19 +71,10 @@ public final class LogoRingGeometry {
     }
 
     /**
-     * The same tube laid out straight along +x (the loading bar's carriages): one segment from
-     * {@code start} to {@code start + length}, twisting at the ring's rate (a half turn per ring
-     * circumference) from {@code faceOn} at x = 0. Its cracks come from atlas segment {@code piece}.
-     */
-    public static void buildStraight(double start, double length, double faceOn, int piece, Sink sink) {
-        segment(new Straight(faceOn), start, start + length, piece, sink);
-    }
-
-    /**
-     * A straight segment part-way to being curled into a circle (the loading bar's finish): the
-     * line is bent upward round its midpoint {@code mid} at curvature {@code kappa} (0 = straight;
-     * 1 / (2R) closes eight carriages into a circle of radius 2R). Lengths along the tube are kept,
-     * and it twists at the ring's rate, {@code twistOffset} turning it as a whole.
+     * A segment of the line y = 0 from {@code start} for {@code length} (0 curvature: the loading
+     * bar's carriages), or that line bent upward round its midpoint {@code mid} at curvature
+     * {@code kappa}. Lengths along the tube are kept, and it twists at the ring's rate,
+     * {@code twistOffset} turning it as a whole.
      */
     public static void buildBent(double kappa, double mid, double start, double length, double twistOffset, int piece, Sink sink) {
         segment(new Bent(kappa, mid, twistOffset), start, start + length, piece, sink);
@@ -100,12 +91,20 @@ public final class LogoRingGeometry {
         segment(new Arc(cx, cy, radius, twistRate, phiRef, twist0, alongScale), a0, a1, piece, sink);
     }
 
-    /**
-     * A carriage riding a {@link LogoTrack}: from track position {@code start} for {@code length},
-     * having travelled {@code travel} from where it stood on the bar. Its twist rides with it.
-     */
-    static void buildTrack(LogoTrack track, double start, double length, double travel, double twistOffset, int piece, Sink sink) {
-        segment(new OnTrack(track, travel, twistOffset), start, start + length, piece, sink);
+    /** A curve given point by point: {x, y, heading} at path length s (the tube twists at the ring's rate along it). */
+    public interface Curve { double[] at(double s); }
+
+    /** A segment along {@code curve}, from {@code start} for {@code length}; its twist is fixed in space. */
+    public static void buildCurve(Curve curve, double start, double length, double twistOffset, int piece, Sink sink) {
+        segment(new OnCurve(curve, twistOffset), start, start + length, piece, sink);
+    }
+
+    private record OnCurve(Curve curve, double twistOffset) implements Path {
+        public double[] centre(double s) { double[] p = curve.at(s); return new double[] { p[0], p[1], 0 }; }
+        public double[] radial(double s) { double h = curve.at(s)[2]; return new double[] { Math.sin(h), -Math.cos(h), 0 }; }
+        public double[] tangent(double s) { double h = curve.at(s)[2]; return new double[] { Math.cos(h), Math.sin(h), 0 }; }
+        public double twist(double s) { return s * TWIST / (2 * Math.PI * R) - twistOffset; }
+        public double scale() { return 1; }
     }
 
     /** The gap between neighbouring segments, as a length along the tube. */
@@ -135,15 +134,7 @@ public final class LogoRingGeometry {
         public double scale() { return R; }
     }
 
-    private record Straight(double faceOn) implements Path {
-        public double[] centre(double x) { return new double[] { x, 0, 0 }; }
-        public double[] radial(double x) { return new double[] { 0, -1, 0 }; }
-        public double[] tangent(double x) { return new double[] { 1, 0, 0 }; }
-        public double twist(double x) { return x * TWIST / (2 * Math.PI * R) - faceOn; }
-        public double scale() { return 1; }
-    }
-
-    /** A line bent round its midpoint: radial = (sin a, -cos a), so straight it is the {@link Straight} frame. */
+    /** A line bent round its midpoint: radial = (sin a, -cos a), so straight (kappa 0) it runs along +x with radial -y. */
     private record Bent(double kappa, double mid, double twistOffset) implements Path {
         private double angle(double s) { return kappa * (s - mid); }
         public double[] centre(double s) {
@@ -154,15 +145,6 @@ public final class LogoRingGeometry {
         public double[] radial(double s) { double a = angle(s); return new double[] { Math.sin(a), -Math.cos(a), 0 }; }
         public double[] tangent(double s) { double a = angle(s); return new double[] { Math.cos(a), Math.sin(a), 0 }; }
         public double twist(double s) { return s * TWIST / (2 * Math.PI * R) - twistOffset; }
-        public double scale() { return 1; }
-    }
-
-    /** Along a track: radial = (sin h, -cos h) for heading h, so a straight run is the {@link Straight} frame. */
-    private record OnTrack(LogoTrack track, double travel, double twistOffset) implements Path {
-        public double[] centre(double s) { double[] p = track.point(s); return new double[] { p[0], p[1], 0 }; }
-        public double[] radial(double s) { double h = track.point(s)[2]; return new double[] { Math.sin(h), -Math.cos(h), 0 }; }
-        public double[] tangent(double s) { double h = track.point(s)[2]; return new double[] { Math.cos(h), Math.sin(h), 0 }; }
-        public double twist(double s) { return (s - travel) * TWIST / (2 * Math.PI * R) - twistOffset; }
         public double scale() { return 1; }
     }
 

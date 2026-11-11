@@ -56,6 +56,7 @@ public final class LogoRingRenderer {
     private LogoCrackTexture cracks;
     private final LogoCanvas ringCanvas = new LogoCanvas();
     private final LogoCanvas barCanvas = new LogoCanvas();
+    private final LogoCanvas fadeCanvas = new LogoCanvas(); // a finish's fading carriages, on their own layer
     private final FaceVisibility visibility = new FaceVisibility(CAMERA_AT);
     private double offset;        // the ring's cuts
     private double ringDrift;     // the ring's face drift
@@ -121,10 +122,13 @@ public final class LogoRingRenderer {
         if (barFront < 0 || target < barFront - 0.05) { barFront = target; morphTime = -1; } // a new load starts over
         barFront += (target - barFront) * Math.min(1f, dt * BAR_CATCH_UP);
         barDrift += FACE_SPEED * dt;
-        if (morphTime < 0 && target >= FINISHED && barFront >= FINISHED - 0.01) morphTime = 0;
+        if (morphTime < 0 && target >= FINISHED && barFront >= FINISHED - 0.01) {
+            morphTime = 0;
+            barSpin = 0; // each finish turns from where it closes, not where the last load's logo stopped
+        }
         else if (morphTime >= 0) {
             morphTime += dt;
-            barSpin += CUT_SPEED * dt * BarMorph.merge(morphTime);
+            barSpin += CUT_SPEED * dt * BarMorph.finish().spinRamp(morphTime);
         }
 
         // The whole screen is the view, so the train can leave the loading area: the bar's world
@@ -145,8 +149,39 @@ public final class LogoRingRenderer {
         g.flush();
         barCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx),
                 sink -> BarMorph.emit(t, front, drift, spin, sink));
+        BarMorph.Finish finish = BarMorph.finish();
+        if (t >= 0 && finish.fadeAlpha(t) > 0) {
+            fadeCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx),
+                    sink -> finish.emitFading(t, drift, sink));
+            fadeCanvas.blit(g, 0, 0, screenW, screenH, alpha * shown * finish.fadeAlpha(t));
+        }
         barCanvas.blit(g, 0, 0, screenW, screenH, alpha * shown);
+        if (t >= 0) drawPortals(g, finish.portals(t), x0, centreY, k * cos, alpha * shown);
         return true;
+    }
+
+    /** The finish's portals, as glowing vertical lines, world (x, y) mapped to the GUI (heights foreshortened by the camera's tilt). */
+    private static void drawPortals(GuiGraphics g, java.util.List<BarMorph.PortalLine> lines, double x0, double centreY,
+                                    double ky, float alpha) {
+        double kx = ky / Math.cos(Math.atan2(1.6, 4.6));
+        for (BarMorph.PortalLine p : lines) {
+            float gx = (float) (x0 + p.x() * kx);
+            float bottom = (float) (centreY - (p.y() - p.height() / 2) * ky);
+            float top = (float) (bottom - p.height() * ky * p.grown());
+            int a = Math.round(255 * alpha);
+            fill(g, gx - 3f, top - 1f, gx + 3f, bottom + 1f, (Math.round(a * 0.25f) << 24) | 0x9A6CFF);  // glow
+            fill(g, gx - 1.5f, top, gx + 1.5f, bottom, (Math.round(a * 0.55f) << 24) | 0xB794FF);
+            fill(g, gx - 0.5f, top, gx + 0.5f, bottom, (a << 24) | 0xF1E8FF);                          // core
+        }
+    }
+
+    /** A filled rectangle at fractional GUI coordinates. */
+    private static void fill(GuiGraphics g, float x1, float y1, float x2, float y2, int argb) {
+        g.pose().pushPose();
+        g.pose().translate(x1, y1, 0);
+        g.pose().scale((x2 - x1) / 1000f, (y2 - y1) / 1000f, 1);
+        g.fill(0, 0, 1000, 1000, argb);
+        g.pose().popPose();
     }
 
     /**
@@ -160,6 +195,7 @@ public final class LogoRingRenderer {
         if (lastNanos == 0 || System.nanoTime() - lastNanos < IDLE_RELEASE_NANOS) return;
         ringCanvas.release();
         barCanvas.release();
+        fadeCanvas.release();
         if (cracks != null) { cracks.close(); cracks = null; }
         lastNanos = 0;
         shown = 0f;
