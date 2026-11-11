@@ -1,0 +1,18 @@
+{
+  "id": "goat-ram-depth-scaling",
+  "version": "0.1779.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "balance"
+  ],
+  "title": "Feistier goats further down the line",
+  "summary": "Goats riding the train get feistier the further you travel. Far enough out they headbutt much more often and hit a lot harder, so keep your footing near them.",
+  "highlights": [],
+  "pr": 2616,
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
