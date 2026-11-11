@@ -2464,6 +2464,8 @@
   "gui.dungeontrain.engine_block.worlds.one": "Combustível para mais %s mundo",
   "gui.dungeontrain.engine_block.worlds.other": "Combustível para mais %s mundos",
   "gui.dungeontrain.engine_block.empty": "Sem combustível, fim da linha",
+  "gui.dungeontrain.engine_block.carriage": "%s com todos os motores",
+  "gui.dungeontrain.engine_block.spent": "Este motor se esgotou",
   "block.dungeontrain.skybox_block": "Bloco de Céu",
   "block.dungeontrain.skybox_surface": "Bloco de Céu da Superfície",
   "block.dungeontrain.skybox_end": "Bloco de Céu do End",

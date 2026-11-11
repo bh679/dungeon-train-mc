@@ -16,7 +16,8 @@ import java.util.List;
 
 /**
  * The Drifting Engine Block screen: the coal slot and this engine's gauge side by side, and under them how
- * many more worlds the coal in all the carriage's engines carries it through.
+ * many more worlds this engine's coal lasts, plus, when other engines in the carriage hold coal too, how
+ * far all of them carry it.
  */
 public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
 
@@ -79,15 +80,24 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        List<FormattedCharSequence> lines = font.split(status(menu.carriageCoal()), TEXT_WIDTH);
+        int own = menu.coal();
+        int carriage = menu.carriageCoal();
+        List<FormattedCharSequence> lines = new java.util.ArrayList<>(font.split(status(own, carriage), TEXT_WIDTH));
+        // Other engines in the carriage hold coal too: say how far all of them carry it.
+        if (carriage > own) {
+            lines.addAll(font.split(Component.translatable("gui.dungeontrain.engine_block.carriage", carriage), TEXT_WIDTH));
+        }
         for (int i = 0; i < lines.size(); i++) {
             graphics.drawString(font, lines.get(i), TEXT_X, STATUS_Y + i * (font.lineHeight + 1), TEXT_COLOUR, false);
         }
     }
 
-    private static Component status(int coal) {
-        if (coal <= 0) return Component.translatable("gui.dungeontrain.engine_block.empty");
+    /** This engine's line: the worlds its own coal lasts, or spent while others still burn, or the end of the line. */
+    private static Component status(int own, int carriage) {
+        if (own <= 0) {
+            return Component.translatable(carriage > 0 ? "gui.dungeontrain.engine_block.spent" : "gui.dungeontrain.engine_block.empty");
+        }
         String locale = Minecraft.getInstance().getLanguageManager().getSelected();
-        return PluralRules.clause(locale, "gui.dungeontrain.engine_block.worlds", coal);
+        return PluralRules.clause(locale, "gui.dungeontrain.engine_block.worlds", own);
     }
 }

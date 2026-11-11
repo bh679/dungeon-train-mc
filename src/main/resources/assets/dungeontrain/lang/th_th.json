@@ -2415,6 +2415,8 @@
   "block.dungeontrain.drifting_engine_block": "บล็อกเครื่องยนต์ล่องลอย",
   "gui.dungeontrain.engine_block.worlds.other": "เชื้อเพลิงพอสำหรับอีก %s โลก",
   "gui.dungeontrain.engine_block.empty": "ไม่มีเชื้อเพลิง สุดทางแล้ว",
+  "gui.dungeontrain.engine_block.carriage": "%s จากทุกเครื่องยนต์",
+  "gui.dungeontrain.engine_block.spent": "เครื่องยนต์นี้หมดแล้ว",
   "block.dungeontrain.skybox_block": "บล็อกท้องฟ้า",
   "block.dungeontrain.skybox_surface": "บล็อกท้องฟ้าพื้นผิว",
   "block.dungeontrain.skybox_end": "บล็อกท้องฟ้าดิเอนด์",

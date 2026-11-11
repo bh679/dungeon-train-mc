@@ -9,7 +9,9 @@
   ],
   "title": "Engines glow low on their last coal",
   "summary": "New drifting carriages now start with 2 coal. An engine down to its last coal burns as dim embers, so you can see which carriage is about to stop drifting.",
-  "highlights": [],
+  "highlights": [
+    "With several engines, each engine's screen shows its own coal and how far all of them carry the carriage"
+  ],
   "date": "2026-11-11",
   "released": false,
   "released_in": null,

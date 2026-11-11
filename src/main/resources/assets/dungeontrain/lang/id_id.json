@@ -2415,6 +2415,8 @@
   "block.dungeontrain.drifting_engine_block": "Blok Mesin Hanyut",
   "gui.dungeontrain.engine_block.worlds.other": "Bahan bakar untuk %s dunia lagi",
   "gui.dungeontrain.engine_block.empty": "Tanpa bahan bakar, akhir perjalanan",
+  "gui.dungeontrain.engine_block.carriage": "%s dari semua mesin",
+  "gui.dungeontrain.engine_block.spent": "Mesin ini sudah habis",
   "block.dungeontrain.skybox_block": "Blok Skybox",
   "block.dungeontrain.skybox_surface": "Blok Skybox Permukaan",
   "block.dungeontrain.skybox_end": "Blok Skybox End",

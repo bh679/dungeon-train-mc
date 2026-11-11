@@ -3059,6 +3059,8 @@
   "gui.dungeontrain.engine_block.worlds.few": "Combustibil pentru încă %s lumi",
   "gui.dungeontrain.engine_block.worlds.other": "Combustibil pentru încă %s de lumi",
   "gui.dungeontrain.engine_block.empty": "Fără combustibil, capăt de linie",
+  "gui.dungeontrain.engine_block.carriage": "%s cu toate motoarele",
+  "gui.dungeontrain.engine_block.spent": "Acest motor s-a stins",
   "block.dungeontrain.skybox_block": "Bloc de cer",
   "block.dungeontrain.skybox_surface": "Bloc de cer de suprafață",
   "block.dungeontrain.skybox_end": "Bloc de cer din End",

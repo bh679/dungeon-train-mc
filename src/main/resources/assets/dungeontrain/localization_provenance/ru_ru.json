@@ -2026,6 +2026,8 @@
       "gui.dungeontrain.engine_block.worlds.few",
       "gui.dungeontrain.engine_block.worlds.many",
       "gui.dungeontrain.engine_block.empty",
+      "gui.dungeontrain.engine_block.carriage",
+      "gui.dungeontrain.engine_block.spent",
       "block.dungeontrain.stage_block_1",
       "block.dungeontrain.stage_block_2",
       "block.dungeontrain.stage_block_3",

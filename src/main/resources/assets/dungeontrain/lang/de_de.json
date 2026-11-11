@@ -2464,6 +2464,8 @@
   "gui.dungeontrain.engine_block.worlds.one": "Brennstoff für %s weitere Welt",
   "gui.dungeontrain.engine_block.worlds.other": "Brennstoff für %s weitere Welten",
   "gui.dungeontrain.engine_block.empty": "Kein Brennstoff, Endstation",
+  "gui.dungeontrain.engine_block.carriage": "%s mit allen Motoren",
+  "gui.dungeontrain.engine_block.spent": "Dieser Motor ist ausgebrannt",
   "block.dungeontrain.skybox_block": "Skybox-Block",
   "block.dungeontrain.skybox_surface": "Oberflächen-Skybox-Block",
   "block.dungeontrain.skybox_end": "End-Skybox-Block",

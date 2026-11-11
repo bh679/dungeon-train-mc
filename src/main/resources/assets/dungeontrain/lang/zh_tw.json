@@ -2415,6 +2415,8 @@
   "block.dungeontrain.drifting_engine_block": "漂流引擎方塊",
   "gui.dungeontrain.engine_block.worlds.other": "還有能去 %s 個世界的燃料",
   "gui.dungeontrain.engine_block.empty": "沒有燃料，終點站",
+  "gui.dungeontrain.engine_block.carriage": "所有引擎合計 %s",
+  "gui.dungeontrain.engine_block.spent": "這台引擎已燃盡",
   "block.dungeontrain.skybox_block": "天空盒方塊",
   "block.dungeontrain.skybox_surface": "地表天空盒方塊",
   "block.dungeontrain.skybox_end": "終界天空盒方塊",

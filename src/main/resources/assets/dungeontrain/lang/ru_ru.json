@@ -2518,6 +2518,8 @@
   "gui.dungeontrain.engine_block.worlds.few": "Топлива ещё на %s мира",
   "gui.dungeontrain.engine_block.worlds.many": "Топлива ещё на %s миров",
   "gui.dungeontrain.engine_block.empty": "Нет топлива, конечная",
+  "gui.dungeontrain.engine_block.carriage": "%s на всех двигателях",
+  "gui.dungeontrain.engine_block.spent": "Этот двигатель выгорел",
   "block.dungeontrain.skybox_block": "Блок скайбокса",
   "block.dungeontrain.skybox_surface": "Наземный блок скайбокса",
   "block.dungeontrain.skybox_end": "Блок скайбокса Края",
