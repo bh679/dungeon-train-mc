@@ -357,6 +357,7 @@ public class DungeonTrain {
         games.brennan.dungeontrain.registry.ModIngredientTypes.register(modBus);
         // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
         games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
+        games.brennan.dungeontrain.provenance.FreshLootModifier.register(modBus);
 
         // Global achievements (advancements) — custom criterion triggers
         // + per-player run-state attachment.

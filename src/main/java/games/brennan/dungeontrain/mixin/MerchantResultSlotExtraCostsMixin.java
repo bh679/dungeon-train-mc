@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.provenance.ProvenanceSweep;
 import games.brennan.dungeontrain.trader.ExtraCostContainer;
 import games.brennan.dungeontrain.trader.ExtraTradeCosts;
 import net.minecraft.world.SimpleContainer;
@@ -21,11 +22,18 @@ import java.util.List;
 /**
  * Takes a trade's extra costs out of the extra-cost slots when the trade goes through: at the
  * point vanilla has just taken costs A and B ({@code notifyTrade} runs only after that succeeded).
+ * Also writes the buyer into a bought piece of gear's provenance.
  */
 @Mixin(MerchantResultSlot.class)
 public abstract class MerchantResultSlotExtraCostsMixin {
 
     @Shadow @Final private MerchantContainer slots;
+
+    /** A bought item is the buyer's: written in before it reaches their inventory (ItemProvenance). */
+    @Inject(method = "onTake", at = @At("HEAD"))
+    private void dungeontrain$markBought(Player player, ItemStack stack, CallbackInfo ci) {
+        ProvenanceSweep.onBought(player, stack);
+    }
 
     @Inject(method = "onTake",
             at = @At(value = "INVOKE",
