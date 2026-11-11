@@ -93,18 +93,40 @@ It renders with dp-relay's own code at its `origin/main` and reads each picture 
 `node_modules`. The hashtags rotate by the update's place in the live list, so the five shown can
 differ from the ones that post. Stop it when you are done.
 
+#### The song
+
+An animated picture's video goes out with a song (Minecraft music, credited in the caption). The
+preview's **Song** card shows which one, from where it starts, and the other tracks in that vibe.
+Play the Instagram video with sound and agree the song with Brennan:
+
+- another track: rerun with `--music <entry-id>=<track-id>` (ids are in the card's track list)
+- another vibe: rerun with `--vibe <entry-id>=<hype|adventure|cozy|dreamy|dark>`
+
+Then pin it, so the relay posts that exact song rather than drawing one from the vibe:
+
+```bash
+python3 scripts/release-notes/set-social-music.py --entry <entry-id> --track <track-id>
+python3 scripts/release-notes/set-social-music.py --entry <entry-id> --show
+```
+
+`--show` also says whether music is on for Facebook/Instagram and TikTok. If it is off, the videos
+post silent; ask Brennan before switching it on (Socials page, Music card). After the posts go
+out, the Socials page shows each post's song; check they match.
+
 ## 5. Ask for confirmation
 
 Ask Brennan, with both previews in front of him:
 
 > Release v`<version>`? These are the notes (all changes since the last release): ... Publishes to
 > GitHub Releases, Modrinth, CurseForge and Discord.
+> Song: `<title>` by `<composer>` (for each update that posts a video).
 
-Don't dispatch until he says yes. A changed word means going back to step 3.
+Don't dispatch until he says yes. A changed word means going back to step 3; a changed song means
+pinning it again.
 
 ## 6. Dispatch
 
-Check `mod_version` again, then:
+Check `mod_version` again, and that each update's song is pinned (`set-social-music.py --show`), then:
 
 ```bash
 gh workflow run release.yml -f tag=v<version> -f changelog="$(cat "$TMPDIR/notes.md")"
