@@ -51,6 +51,7 @@ final class ClientOptionsIcons {
             case DIFFICULTY -> Icon.item(Items.IRON_SWORD);
             case CONTENT_MODE -> Icon.item(Items.CAKE);
             case DEV_CHAT -> Icon.item(Items.WRITABLE_BOOK);
+            case PUBLIC_POSTS -> Icon.item(Items.PAINTING);
             case POLITICAL_FILTER -> Icon.item(Items.BARRIER);
             case BOOK_AUTHOR_CHAT -> Icon.item(Items.BOOK);
             case PROTECT_OWN_PETS -> Icon.item(Items.BONE);

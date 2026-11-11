@@ -1,4 +1,54 @@
 {
+  "chat.dungeontrain.public_posts.death": {
+    "1": {
+      "label": "the carriage number the player died at",
+      "examples": [
+        "412",
+        "87"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death.plain": {
+    "1": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo": {
+    "1": {
+      "label": "the photo's title",
+      "examples": [
+        "Sunset Bridge",
+        "Ride photo"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.plain": {
+    "1": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.delete_confirm": {
     "1": {
       "label": "the display name of the stage about to be deleted",
