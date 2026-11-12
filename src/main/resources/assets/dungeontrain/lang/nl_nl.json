@@ -3416,7 +3416,6 @@
   "gui.dungeontrain.socials.no_consent": "Zet eerst de internetverbinding aan in de opties van Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Je Minecraft-account kon niet worden bevestigd. Speel ingelogd met een Microsoft-account, of voeg je socials toe op de website.",
   "gui.dungeontrain.socials.unavailable": "Die inlogmethode staat nog niet aan.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Taggen: Aan",
   "gui.dungeontrain.socials.tag_off": "Taggen: Uit",
   "gui.dungeontrain.socials.remove": "Verwijder",

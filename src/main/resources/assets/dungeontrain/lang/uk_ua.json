@@ -4033,7 +4033,6 @@
   "gui.dungeontrain.socials.no_consent": "Спочатку увімкніть підключення до інтернету в параметрах Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Не вдалося підтвердити ваш акаунт Minecraft. Грайте, увійшовши в акаунт Microsoft, або додайте соцмережі на сайті.",
   "gui.dungeontrain.socials.unavailable": "Цей спосіб входу ще не ввімкнено.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Позначка: Увімк",
   "gui.dungeontrain.socials.tag_off": "Позначка: Вимк",
   "gui.dungeontrain.socials.remove": "Видалити",

@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "請先在 Dungeon Train 的選項中開啟網路連線。",
   "gui.dungeontrain.socials.not_proven": "無法確認你的 Minecraft 帳號。請登入 Microsoft 帳號進行遊戲，或在網站上新增你的社群帳號。",
   "gui.dungeontrain.socials.unavailable": "該登入方式尚未開啟。",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "標註：開",
   "gui.dungeontrain.socials.tag_off": "標註：關",
   "gui.dungeontrain.socials.remove": "移除",

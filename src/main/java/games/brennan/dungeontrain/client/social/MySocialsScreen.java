@@ -22,13 +22,14 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Options → Account → <b>My socials</b>: the Instagram and Threads accounts on the player's profile, which the
  * official posts tag when they feature the player's photo, run or book ({@link PlayerSocialsRelay}).
  *
- * <p>One row per account (its handle, which opens the profile, then an @ for Tag me and a bin for Remove, each named
+ * <p>One row per account (the platform's logo and name, its handle, which opens the profile, then an @ for Tag me and a bin for Remove, each named
  * in its tooltip), then a <b>Sign in with …</b> button per sign-in
  * the relay offers. Signing in happens in the browser, on the platform itself, so the handle is proven to be theirs;
  * the screen says so and offers <b>Refresh</b> for when they come back. Kid mode and Public posts off are both said
@@ -42,6 +43,9 @@ public final class MySocialsScreen extends Screen {
     private static final int GAP = 6;
     private static final ResourceLocation TRASH_ICON = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/trash");
     private static final int ICON_PX = 16;
+    private static final int LOGO_PX = 16;
+    /** Logo plus the platform's name, left of the handle. */
+    private static final int LABEL_W = 84;
     private static final int TAG_ON = 0x55FF55;
     private static final int TAG_OFF = 0x808080;
 
@@ -52,6 +56,10 @@ public final class MySocialsScreen extends Screen {
     private boolean busy;
     private Component message = Component.empty();
     private List<FormattedCharSequence> introLines = List.of();
+    /** Where each row's logo and platform name are drawn (they are not widgets). */
+    private final List<RowLabel> labels = new ArrayList<>();
+
+    private record RowLabel(String platform, int x, int y) {}
 
     public MySocialsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.socials.title"));
@@ -66,6 +74,7 @@ public final class MySocialsScreen extends Screen {
 
     private void build() {
         clearWidgets();
+        labels.clear();
         int formW = Math.min(FORM_W, this.width - 40);
         int left = (this.width - formW) / 2;
         introLines = font.split(FormattedText.of(intro().getString()), formW);
@@ -73,18 +82,20 @@ public final class MySocialsScreen extends Screen {
 
         if (!ClientDisplayConfig.isKidMode() && status != null) {
             for (PlayerSocialsRelay.Social s : status.socials()) {
-                // The handle opens the profile; then an @ (Tag me, green when on) and a bin (Remove), names in tooltips.
-                int handleW = formW - 2 * ROW_H - 2 * GAP;
+                // The platform's logo and name, then the handle (opens the profile), an @ (Tag me, green when on)
+                // and a bin (Remove), names in tooltips.
+                labels.add(new RowLabel(s.platform(), left, y));
+                int handleX = left + LABEL_W;
+                int handleW = formW - LABEL_W - 2 * ROW_H - 2 * GAP;
                 String profile = PlayerSocialsRelay.profileUrl(s.platform(), s.handle());
-                Button handle = addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.socials.row",
-                        platformName(s.platform()), s.handle()), b -> {
+                Button handle = addRenderableWidget(Button.builder(Component.literal("@" + s.handle()), b -> {
                         if (profile != null) ConfirmLinkScreen.confirmLinkNow(this, profile);
                     })
-                    .bounds(left, y, handleW, ROW_H).build());
+                    .bounds(handleX, y, handleW, ROW_H).build());
                 handle.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.open_profile")));
                 handle.active = profile != null;
                 Component tagName = Component.translatable(s.tag() ? "gui.dungeontrain.socials.tag_on" : "gui.dungeontrain.socials.tag_off");
-                Button tag = addRenderableWidget(new DarkTintedButton(left + handleW + GAP, y, ROW_H, ROW_H,
+                Button tag = addRenderableWidget(new DarkTintedButton(handleX + handleW + GAP, y, ROW_H, ROW_H,
                     Component.literal("@").withStyle(st -> st.withColor(s.tag() ? TAG_ON : TAG_OFF).withBold(true)),
                     b -> run(PlayerSocialsRelay.setTag(s.platform(), !s.tag()))));
                 tag.setTooltip(Tooltip.create(tagName));
@@ -122,6 +133,10 @@ public final class MySocialsScreen extends Screen {
         Component base = Component.translatable(status.socials().isEmpty() ? "gui.dungeontrain.socials.intro.empty" : "gui.dungeontrain.socials.intro");
         return ClientDisplayConfig.isPublicPosts() ? base
             : Component.empty().append(base).append(" ").append(Component.translatable("gui.dungeontrain.socials.public_posts_off"));
+    }
+
+    private static ResourceLocation logo(String platform) {
+        return ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/" + platform);
     }
 
     private static Component platformName(String platform) {
@@ -183,6 +198,10 @@ public final class MySocialsScreen extends Screen {
         for (FormattedCharSequence line : introLines) {
             g.drawCenteredString(this.font, line, this.width / 2, y, 0xAAAAAA);
             y += 10;
+        }
+        for (RowLabel l : labels) {
+            g.blitSprite(logo(l.platform()), l.x(), l.y() + (ROW_H - LOGO_PX) / 2, LOGO_PX, LOGO_PX);
+            g.drawString(this.font, platformName(l.platform()), l.x() + LOGO_PX + 5, l.y() + (ROW_H - 8) / 2, 0xFFFFFF);
         }
         if (!message.getString().isEmpty()) {
             g.drawCenteredString(this.font, message, this.width / 2, this.height - 46, 0xFFFFFF);

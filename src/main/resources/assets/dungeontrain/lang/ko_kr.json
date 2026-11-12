@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "먼저 Dungeon Train 옵션에서 인터넷 연결을 켜세요.",
   "gui.dungeontrain.socials.not_proven": "Minecraft 계정을 확인할 수 없습니다. Microsoft 계정으로 로그인해 플레이하거나 웹사이트에서 소셜을 추가하세요.",
   "gui.dungeontrain.socials.unavailable": "해당 로그인은 아직 활성화되지 않았습니다.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "태그: 켬",
   "gui.dungeontrain.socials.tag_off": "태그: 끔",
   "gui.dungeontrain.socials.remove": "제거",

@@ -4036,7 +4036,6 @@
   "gui.dungeontrain.socials.no_consent": "Activează mai întâi conexiunea la internet din opțiunile Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Contul tău Minecraft nu a putut fi confirmat. Joacă conectat cu un cont Microsoft sau adaugă-ți rețelele pe site.",
   "gui.dungeontrain.socials.unavailable": "Această conectare nu este încă activată.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Etichetă: Da",
   "gui.dungeontrain.socials.tag_off": "Etichetă: Nu",
   "gui.dungeontrain.socials.remove": "Elimină",

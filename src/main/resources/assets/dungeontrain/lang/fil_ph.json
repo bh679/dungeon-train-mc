@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "I-on muna ang koneksyon sa internet sa mga opsyon ng Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Hindi makumpirma ang iyong Minecraft account. Maglaro nang naka-sign in gamit ang Microsoft account, o idagdag ang iyong socials sa website.",
   "gui.dungeontrain.socials.unavailable": "Hindi pa naka-on ang sign-in na iyan.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "I-tag: On",
   "gui.dungeontrain.socials.tag_off": "I-tag: Off",
   "gui.dungeontrain.socials.remove": "Alisin",

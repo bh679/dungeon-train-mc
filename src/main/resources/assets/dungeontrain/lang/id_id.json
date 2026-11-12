@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "Nyalakan dulu koneksi internet di opsi Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Akun Minecraft kamu tidak bisa dikonfirmasi. Main dengan akun Microsoft yang sudah masuk, atau tambahkan sosmedmu di situs web.",
   "gui.dungeontrain.socials.unavailable": "Metode masuk itu belum diaktifkan.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Tandai: Aktif",
   "gui.dungeontrain.socials.tag_off": "Tandai: Mati",
   "gui.dungeontrain.socials.remove": "Hapus",

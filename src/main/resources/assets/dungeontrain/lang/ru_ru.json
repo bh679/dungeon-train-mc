@@ -3477,7 +3477,6 @@
   "gui.dungeontrain.socials.no_consent": "Сначала включите подключение к интернету в настройках Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Не удалось подтвердить ваш аккаунт Minecraft. Играйте, войдя в аккаунт Microsoft, или добавьте соцсети на сайте.",
   "gui.dungeontrain.socials.unavailable": "Этот способ входа пока не включён.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Отметка: Вкл",
   "gui.dungeontrain.socials.tag_off": "Отметка: Выкл",
   "gui.dungeontrain.socials.remove": "Удалить",

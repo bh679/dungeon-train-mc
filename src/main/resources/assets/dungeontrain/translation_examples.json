@@ -16509,21 +16509,6 @@
       ]
     }
   },
-  "gui.dungeontrain.socials.row": {
-    "1": {
-      "label": "the social platform's name, already translated",
-      "examples": [
-        "Instagram",
-        "Threads"
-      ]
-    },
-    "2": {
-      "label": "the player's username on that platform, never translated",
-      "examples": [
-        "alex.builds"
-      ]
-    }
-  },
   "gui.dungeontrain.options.account.twitch": {
     "1": {
       "label": "the name of the linked Twitch channel",

@@ -3472,7 +3472,6 @@
   "gui.dungeontrain.socials.no_consent": "Najpierw włącz połączenie z internetem w opcjach Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Nie udało się potwierdzić twojego konta Minecraft. Graj zalogowany kontem Microsoft albo dodaj swoje sociale na stronie.",
   "gui.dungeontrain.socials.unavailable": "To logowanie nie jest jeszcze włączone.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Oznacz: Wł.",
   "gui.dungeontrain.socials.tag_off": "Oznacz: Wył.",
   "gui.dungeontrain.socials.remove": "Usuń",

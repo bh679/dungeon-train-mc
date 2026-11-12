@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "まず Dungeon Train のオプションでインターネット接続をオンにしてください。",
   "gui.dungeontrain.socials.not_proven": "Minecraft アカウントを確認できませんでした。Microsoft アカウントでサインインしてプレイするか、ウェブサイトで SNS を追加してください。",
   "gui.dungeontrain.socials.unavailable": "そのサインイン方法はまだ有効になっていません。",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "タグ: オン",
   "gui.dungeontrain.socials.tag_off": "タグ: オフ",
   "gui.dungeontrain.socials.remove": "削除",

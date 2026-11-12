@@ -3975,7 +3975,6 @@
   "gui.dungeontrain.socials.no_consent": "Turn on the internet connection in Dungeon Train's options first.",
   "gui.dungeontrain.socials.not_proven": "Couldn't confirm your Minecraft account. Play signed in with a Microsoft account, or add your socials on the website.",
   "gui.dungeontrain.socials.unavailable": "That sign-in isn't switched on yet.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Tag me: On",
   "gui.dungeontrain.socials.tag_off": "Tag me: Off",
   "gui.dungeontrain.socials.remove": "Remove",

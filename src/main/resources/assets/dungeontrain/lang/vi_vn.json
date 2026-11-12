@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "Hãy bật kết nối internet trong tùy chọn của Dungeon Train trước.",
   "gui.dungeontrain.socials.not_proven": "Không xác nhận được tài khoản Minecraft của bạn. Hãy chơi khi đã đăng nhập tài khoản Microsoft, hoặc thêm MXH của bạn trên trang web.",
   "gui.dungeontrain.socials.unavailable": "Cách đăng nhập đó chưa được bật.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Gắn thẻ: Bật",
   "gui.dungeontrain.socials.tag_off": "Gắn thẻ: Tắt",
   "gui.dungeontrain.socials.remove": "Xóa",

@@ -3416,7 +3416,6 @@
   "gui.dungeontrain.socials.no_consent": "Prima attiva la connessione a internet nelle opzioni di Dungeon Train.",
   "gui.dungeontrain.socials.not_proven": "Impossibile confermare il tuo account Minecraft. Gioca con un account Microsoft connesso, o aggiungi i tuoi social sul sito.",
   "gui.dungeontrain.socials.unavailable": "Quell'accesso non è ancora attivo.",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "Tag: Sì",
   "gui.dungeontrain.socials.tag_off": "Tag: No",
   "gui.dungeontrain.socials.remove": "Rimuovi",

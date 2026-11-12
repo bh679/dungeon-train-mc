@@ -3360,7 +3360,6 @@
   "gui.dungeontrain.socials.no_consent": "เปิดการเชื่อมต่ออินเทอร์เน็ตในตัวเลือกของ Dungeon Train ก่อน",
   "gui.dungeontrain.socials.not_proven": "ยืนยันบัญชี Minecraft ของคุณไม่ได้ เล่นโดยลงชื่อเข้าใช้ด้วยบัญชี Microsoft หรือเพิ่มโซเชียลของคุณบนเว็บไซต์",
   "gui.dungeontrain.socials.unavailable": "ยังไม่ได้เปิดใช้การลงชื่อเข้าใช้นั้น",
-  "gui.dungeontrain.socials.row": "%s: @%s",
   "gui.dungeontrain.socials.tag_on": "แท็ก: เปิด",
   "gui.dungeontrain.socials.tag_off": "แท็ก: ปิด",
   "gui.dungeontrain.socials.remove": "ลบ",
