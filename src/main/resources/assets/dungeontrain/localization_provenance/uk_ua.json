@@ -5801,5 +5801,7 @@
     "stories/weakness_then_gold",
     "stories/wren_halloway_rebuttals"
   ],
-  "books_source_changed": []
+  "books_source_changed": [
+    "death_lore/default"
+  ]
 }

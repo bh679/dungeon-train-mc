@@ -374,7 +374,7 @@ public final class RunStatsEvents {
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
                                        boolean cheated) {
         String cause = DiscordMarkdown.escape(deathMessage(player));
-        String title = "💀 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " — Run Ended";
+        String title = "💀 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " - Run Ended";
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
         DiscordService.get().postDeathReport(player, title, cause, fields, icons);
