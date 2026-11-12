@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -19,13 +20,15 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * One platform's line in the Account tab's My Socials block: the platform's logo and name, then the handle as a text
  * link to the profile (or a <b>Sign in</b> button when it is not added yet), then an @ for Tag me (green when on) and
  * a bin for Remove, each named in its tooltip. Without an account the @ and bin stay in place, faint and inactive, so
- * every line reads the same. A settings-list row holds one widget, so this one lays out and forwards to its parts.
+ * every line reads the same. While an Instagram DM code waits, the middle is the code with Copy and Open (a DM to
+ * @dungeontrain). A settings-list row holds one widget, so this one lays out and forwards to its parts.
  */
 @OnlyIn(Dist.CLIENT)
 public final class SocialRowWidget extends AbstractWidget {
@@ -43,16 +46,19 @@ public final class SocialRowWidget extends AbstractWidget {
     private final Font font;
     private final String platform;
     private final AbstractWidget middle;
+    /** Copy and Open beside a waiting DM code; empty otherwise. */
+    private final List<AbstractWidget> codeButtons = new ArrayList<>();
     private final Button tag;
     private final Button remove;
 
     /**
      * @param social the account on this platform, or null when there is none
      * @param via    the sign-in this line's button uses, or null when none is offered
+     * @param pending the DM code waiting to be sent from this line's account, or null
      * @param onChange redraws the tab once a change has an answer
      */
     public SocialRowWidget(Font font, int width, int height, String platform, @Nullable PlayerSocialsRelay.Social social,
-                           @Nullable String via, boolean busy, Runnable onChange) {
+                           @Nullable String via, @Nullable PlayerSocialsRelay.DmCode pending, boolean busy, Runnable onChange) {
         super(0, 0, width, height, Component.translatable("gui.dungeontrain.socials.platform." + platform));
         this.font = font;
         this.platform = platform;
@@ -65,6 +71,20 @@ public final class SocialRowWidget extends AbstractWidget {
             }, font);
             link.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.open_profile")));
             this.middle = link;
+        } else if (pending != null) {
+            this.middle = new StringWidget(Component.literal(pending.code()).withStyle(ChatFormatting.BOLD), font);
+            Button copy = new DarkTintedButton(0, 0, font.width(Component.translatable("gui.dungeontrain.socials.dm.copy")) + 12, height,
+                Component.translatable("gui.dungeontrain.socials.dm.copy"),
+                b -> Minecraft.getInstance().keyboardHandler.setClipboard(pending.code()));
+            copy.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.dm.copy.tip")));
+            Button open = new DarkTintedButton(0, 0, font.width(Component.translatable("gui.dungeontrain.socials.dm.open")) + 12, height,
+                Component.translatable("gui.dungeontrain.socials.dm.open"), b -> {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.screen != null) ConfirmLinkScreen.confirmLinkNow(mc.screen, pending.dmUrl());
+                });
+            open.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.dm.open.tip")));
+            this.codeButtons.add(copy);
+            this.codeButtons.add(open);
         } else {
             Button signIn = new DarkTintedButton(0, 0, 10, height, Component.translatable("gui.dungeontrain.socials.sign_in"),
                 b -> { if (via != null) MySocialsState.signIn(via, onChange); });
@@ -89,7 +109,12 @@ public final class SocialRowWidget extends AbstractWidget {
     }
 
     private List<AbstractWidget> parts() {
-        return List.of(middle, tag, remove);
+        List<AbstractWidget> out = new ArrayList<>();
+        out.add(middle);
+        out.addAll(codeButtons);
+        out.add(tag);
+        out.add(remove);
+        return out;
     }
 
     /** Puts the parts where they belong for this frame's position and width. */
@@ -103,6 +128,17 @@ public final class SocialRowWidget extends AbstractWidget {
         if (middle instanceof PlainTextButton) {
             middle.setPosition(midX, y + (h - font.lineHeight) / 2);
             middle.setWidth(Math.min(middle.getWidth(), tag.getX() - GAP - midX));
+        } else if (!codeButtons.isEmpty()) {
+            // The code, then Copy and Open, right-aligned against the @.
+            int right = tag.getX() - GAP;
+            for (int i = codeButtons.size() - 1; i >= 0; i--) {
+                AbstractWidget b = codeButtons.get(i);
+                right -= b.getWidth();
+                b.setPosition(right, y);
+                right -= GAP;
+            }
+            middle.setPosition(midX, y + (h - font.lineHeight) / 2 + 1);
+            middle.setWidth(Math.max(0, right - midX));
         } else {
             middle.setPosition(midX, y);
             middle.setWidth(tag.getX() - GAP - midX);

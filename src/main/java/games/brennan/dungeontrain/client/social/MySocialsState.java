@@ -34,6 +34,9 @@ public final class MySocialsState {
     private static Component message = Component.empty();
     /** Whether {@link #message} is the browser hint, which carries a Refresh button. */
     private static boolean awaitingBrowser;
+    /** The DM code this client just got, until the relay's list carries it. */
+    @Nullable
+    private static PlayerSocialsRelay.DmCode minted;
 
     private MySocialsState() {}
 
@@ -58,6 +61,14 @@ public final class MySocialsState {
         return awaitingBrowser;
     }
 
+    /** The Instagram DM code still waiting to be sent, or null. */
+    @Nullable
+    public static PlayerSocialsRelay.DmCode pendingCode() {
+        if (minted != null && minted.live()) return minted;
+        PlayerSocialsRelay.DmCode listed = status == null ? null : status.pendingCode();
+        return listed != null && listed.live() ? listed : null;
+    }
+
     /** Ask the relay again, then run {@code onChange} on the render thread. One request at a time. */
     public static void refresh(Runnable onChange) {
         if (inFlight) return;
@@ -67,6 +78,7 @@ public final class MySocialsState {
             inFlight = false;
             if (err == null && s != null) {
                 status = s;
+                minted = null; // the relay's list now says whether a code still waits
                 phase = Phase.READY;
                 awaitingBrowser = false;
                 message = Component.empty();
@@ -77,9 +89,9 @@ public final class MySocialsState {
         }));
     }
 
-    /** Open {@code via}'s sign-in in the browser. */
+    /** Open {@code via}'s sign-in in the browser, or for the Instagram DM code, get a code to send. */
     public static void signIn(String via, Runnable onChange) {
-        begin(PlayerSocialsRelay.start(via), onChange);
+        begin(PlayerSocialsRelay.INSTAGRAM_DM.equals(via) ? PlayerSocialsRelay.dmCode() : PlayerSocialsRelay.start(via), onChange);
     }
 
     public static void setTag(String platform, boolean on, Runnable onChange) {
@@ -101,6 +113,8 @@ public final class MySocialsState {
                 Util.getPlatform().openUri(URI.create(r.url()));
                 message = Component.translatable("gui.dungeontrain.socials.opened");
                 awaitingBrowser = true;
+            } else if (r.code() != null) {
+                minted = r.code(); // the Instagram row shows it, with the hint and Refresh under the block
             } else if (r.status() != null) {
                 status = r.status();
             } else {

@@ -34,6 +34,9 @@ import java.util.concurrent.CompletableFuture;
  *   <li>{@code POST /player-socials {uuid}} lists them, with the sign-ins the relay offers.</li>
  *   <li>{@code POST /player-socials/start {uuid, name, serverId, via}} hands back a sign-in URL for the browser. The
  *       handle comes only from that sign-in, so it is proven to be the player's.</li>
+ *   <li>{@code POST /player-socials/dm-code {uuid, name, serverId}} hands back a code ({@code DT-7K2QH}) the player DMs
+ *       to @dungeontrain from their Instagram; the relay reads who sent it (relay {@code player-socials-dm.js}). Any
+ *       Instagram account, no Threads needed.</li>
  *   <li>{@code POST /player-socials/remove|tag} change one platform.</li>
  * </ul>
  *
@@ -56,7 +59,12 @@ public final class PlayerSocialsRelay {
     static final String START_PATH = "/player-socials/start";
     static final String REMOVE_PATH = "/player-socials/remove";
     static final String TAG_PATH = "/player-socials/tag";
+    static final String DM_CODE_PATH = "/player-socials/dm-code";
     static final Set<String> PLATFORMS = Set.of("instagram", "threads");
+    /** The ways to add an account the relay may offer: two browser sign-ins and the Instagram DM code. */
+    static final Set<String> SIGN_INS = Set.of("threads", "instagram", "instagram_dm");
+    /** The sign-in that is a DM code rather than a browser hop. */
+    public static final String INSTAGRAM_DM = "instagram_dm";
     /** The rows My Socials shows, in order. */
     public static final List<String> PLATFORM_ORDER = List.of("instagram", "threads");
     /** A proven serverId keeps proving on the relay for 10 minutes; reuse it a little less than that. */
@@ -65,8 +73,18 @@ public final class PlayerSocialsRelay {
     /** One account on the profile. {@code via} is the sign-in that proved it. */
     public record Social(String platform, String handle, boolean tag, String via) {}
 
-    /** The profile: its accounts, the sign-ins on offer ({@code threads}, {@code instagram}), and the site page. */
-    public record Status(List<Social> socials, List<String> signIns, @Nullable String page) {
+    /** A code waiting to be DMed to @dungeontrain: what to send, until when (epoch ms), and the DM link to open. */
+    public record DmCode(String code, long expiresAt, String dmUrl) {
+        public boolean live() {
+            return expiresAt > System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * The profile: its accounts, the sign-ins on offer ({@code threads}, {@code instagram}, {@code instagram_dm}), the
+     * site page, and a DM code still waiting, if any.
+     */
+    public record Status(List<Social> socials, List<String> signIns, @Nullable String page, @Nullable DmCode pendingCode) {
         public Status {
             socials = List.copyOf(socials);
             signIns = List.copyOf(signIns);
@@ -76,10 +94,10 @@ public final class PlayerSocialsRelay {
     /** Why a change did not happen. */
     public enum Failure { NO_CONSENT, NOT_PROVEN, UNAVAILABLE, FAILED }
 
-    /** A change's outcome: the profile afterwards (or the sign-in URL), or why not. */
-    public record Result(@Nullable Status status, @Nullable String url, @Nullable Failure failure) {
+    /** A change's outcome: the profile afterwards (or the sign-in URL, or a DM code), or why not. */
+    public record Result(@Nullable Status status, @Nullable String url, @Nullable DmCode code, @Nullable Failure failure) {
         static Result failed(Failure f) {
-            return new Result(null, null, f);
+            return new Result(null, null, null, f);
         }
     }
 
@@ -100,6 +118,11 @@ public final class PlayerSocialsRelay {
     /** A sign-in URL for {@code via} ({@code threads} or {@code instagram}) to open in the browser. */
     public static CompletableFuture<Result> start(String via) {
         return proven(body -> body.addProperty("via", via), START_PATH);
+    }
+
+    /** A code to DM to @dungeontrain from the player's Instagram, which adds that Instagram. */
+    public static CompletableFuture<Result> dmCode() {
+        return proven(body -> {}, DM_CODE_PATH);
     }
 
     /** Take one platform off the profile. */
@@ -139,7 +162,10 @@ public final class PlayerSocialsRelay {
                     if (r.statusCode() == 503 || r.statusCode() == 404) return Result.failed(Failure.UNAVAILABLE);
                     if (r.statusCode() != 200) return Result.failed(Failure.FAILED);
                     String url = parseUrl(r.body());
-                    return url != null ? new Result(null, url, null) : new Result(parseStatus(r.body()), null, null);
+                    if (url != null) return new Result(null, url, null, null);
+                    DmCode code = parseDmCode(r.body());
+                    if (code != null) return new Result(null, null, code, null);
+                    return new Result(parseStatus(r.body()), null, null, null);
                 });
             }).exceptionally(t -> {
                 LOGGER.debug("[DungeonTrain] player-socials {} failed: {}", path, t.toString());
@@ -189,11 +215,12 @@ public final class PlayerSocialsRelay {
             List<String> signIns = new ArrayList<>();
             if (o.has("signIns") && o.get("signIns").isJsonArray()) {
                 for (JsonElement e : o.getAsJsonArray("signIns")) {
-                    if (e.isJsonPrimitive() && PLATFORMS.contains(e.getAsString())) signIns.add(e.getAsString());
+                    if (e.isJsonPrimitive() && SIGN_INS.contains(e.getAsString())) signIns.add(e.getAsString());
                 }
             }
             String page = str(o, "page");
-            return new Status(socials, signIns, page != null && page.startsWith("https://") ? page : null);
+            DmCode pending = o.has("pendingCode") && o.get("pendingCode").isJsonObject() ? dmCode(o.getAsJsonObject("pendingCode")) : null;
+            return new Status(socials, signIns, page != null && page.startsWith("https://") ? page : null, pending);
         } catch (RuntimeException ex) {
             LOGGER.debug("[DungeonTrain] player-socials body unreadable: {}", ex.toString());
             return null;
@@ -201,14 +228,41 @@ public final class PlayerSocialsRelay {
     }
 
     /**
-     * The sign-in a platform's row uses, from those the relay offers, or null. Threads signs in Threads and, sharing
-     * the username, Instagram too, and works for any account; Instagram Login (business accounts only) is the fallback
-     * for the Instagram row. Pure.
+     * The sign-in a platform's row uses, from those the relay offers, or null. Instagram: the DM code (any account, no
+     * Threads needed), else Instagram Login (business accounts), else Threads (same username). Threads: its own
+     * sign-in. Pure.
      */
     @Nullable
     public static String signInFor(String platform, List<String> signIns) {
-        if (signIns.contains("threads")) return "threads";
-        return "instagram".equals(platform) && signIns.contains("instagram") ? "instagram" : null;
+        if ("instagram".equals(platform)) {
+            if (signIns.contains(INSTAGRAM_DM)) return INSTAGRAM_DM;
+            if (signIns.contains("instagram")) return "instagram";
+        }
+        return signIns.contains("threads") ? "threads" : null;
+    }
+
+    /** A {@code /dm-code} answer as a DmCode, or null. Pure. */
+    @Nullable
+    static DmCode parseDmCode(String body) {
+        try {
+            JsonElement root = JsonParser.parseString(body);
+            return root.isJsonObject() ? dmCode(root.getAsJsonObject()) : null;
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    /** {@code {code, expiresAt, dmUrl}} as a DmCode, or null when any part is off. */
+    @Nullable
+    private static DmCode dmCode(JsonObject o) {
+        String code = str(o, "code");
+        String url = str(o, "dmUrl");
+        JsonElement exp = o.get("expiresAt");
+        if (code == null || !code.matches("DT-[A-Z2-9]{5}") || url == null || !url.startsWith("https://ig.me/")
+                || exp == null || !exp.isJsonPrimitive() || !exp.getAsJsonPrimitive().isNumber()) {
+            return null;
+        }
+        return new DmCode(code, exp.getAsLong(), url);
     }
 
     /** The public profile page of {@code handle} on {@code platform}, or null for an unknown platform. Pure. */

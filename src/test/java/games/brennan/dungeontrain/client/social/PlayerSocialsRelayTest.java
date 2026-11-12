@@ -56,11 +56,33 @@ class PlayerSocialsRelayTest {
     }
 
     @Test
-    void eachRowSignsInThroughThreadsWhenItCan() {
-        assertEquals("threads", PlayerSocialsRelay.signInFor("instagram", List.of("threads", "instagram")));
-        assertEquals("threads", PlayerSocialsRelay.signInFor("threads", List.of("threads")));
-        assertEquals("instagram", PlayerSocialsRelay.signInFor("instagram", List.of("instagram")));
-        assertNull(PlayerSocialsRelay.signInFor("threads", List.of("instagram")));
+    void instagramSignsInByDmCodeFirstAndNeverNeedsThreads() {
+        assertEquals("instagram_dm", PlayerSocialsRelay.signInFor("instagram", List.of("threads", "instagram_dm")));
+        assertEquals("instagram", PlayerSocialsRelay.signInFor("instagram", List.of("threads", "instagram")));
+        assertEquals("threads", PlayerSocialsRelay.signInFor("instagram", List.of("threads")));
+        assertEquals("threads", PlayerSocialsRelay.signInFor("threads", List.of("instagram_dm", "threads")));
+        assertNull(PlayerSocialsRelay.signInFor("threads", List.of("instagram_dm")));
         assertNull(PlayerSocialsRelay.signInFor("instagram", List.of()));
+    }
+
+    @Test
+    void aDmCodeIsReadFromItsAnswerAndFromTheList() {
+        PlayerSocialsRelay.DmCode c = PlayerSocialsRelay.parseDmCode(
+            "{\"ok\":true,\"code\":\"DT-7K2QH\",\"expiresAt\":1900000000000,\"dmUrl\":\"https://ig.me/m/dungeontrain\"}");
+        assertNotNull(c);
+        assertEquals("DT-7K2QH", c.code());
+        assertEquals(1900000000000L, c.expiresAt());
+        assertEquals("https://ig.me/m/dungeontrain", c.dmUrl());
+        assertNull(PlayerSocialsRelay.parseDmCode("{\"code\":\"DT-7K2QH\",\"expiresAt\":1,\"dmUrl\":\"https://evil.example/\"}"));
+        assertNull(PlayerSocialsRelay.parseDmCode("{\"code\":\"<b>hi</b>\",\"expiresAt\":1,\"dmUrl\":\"https://ig.me/m/dungeontrain\"}"));
+        assertNull(PlayerSocialsRelay.parseDmCode("{\"ok\":true,\"socials\":[]}"));
+
+        PlayerSocialsRelay.Status s = PlayerSocialsRelay.parseStatus(
+            "{\"socials\":[],\"signIns\":[\"threads\",\"instagram_dm\"],\"pendingCode\":{\"code\":\"DT-7K2QH\",\"expiresAt\":1900000000000,\"dmUrl\":\"https://ig.me/m/dungeontrain\"}}");
+        assertNotNull(s);
+        assertEquals(List.of("threads", "instagram_dm"), s.signIns());
+        assertNotNull(s.pendingCode());
+        assertEquals("DT-7K2QH", s.pendingCode().code());
+        assertNull(PlayerSocialsRelay.parseStatus("{\"socials\":[],\"pendingCode\":null}").pendingCode());
     }
 }
