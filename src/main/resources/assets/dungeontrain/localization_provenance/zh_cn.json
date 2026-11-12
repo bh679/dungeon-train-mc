@@ -4337,6 +4337,7 @@
     "starting_books/cursed/no_one_came_back"
   ],
   "books_source_changed": [
+    "death_lore/default",
     "random_books/quiet_rules",
     "starting_books/a_paper_algorithm",
     "starting_books/blank_pages",
