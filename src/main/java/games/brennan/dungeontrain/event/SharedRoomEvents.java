@@ -243,7 +243,7 @@ public final class SharedRoomEvents {
         // A stageless pair can never be shared — the relay refuses a build with no stage — so
         // registering it would only queue edits nobody can be served.
         if (stageId == null || stageId.isEmpty()) return;
-        // Every fresh drifting room gets a Drifting Engine Block with three coal, set down before registering
+        // Every fresh drifting room gets an empty Drifting Engine Block (FRESH_COAL), set down before registering
         // so it is not mistaken for somebody's edit.
         int coal = EngineStamp.ensure(level, roomOrigin, structure.roomSize(), DriftEngine.FRESH_COAL);
         SharedRoomRegistry.register(level, pairKey, structure.roomName(), roomOrigin, structure.roomSize(),

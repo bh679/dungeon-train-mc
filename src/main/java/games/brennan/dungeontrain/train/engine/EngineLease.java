@@ -39,7 +39,7 @@ public final class EngineLease {
             return CarriageBlockSnapshot.decode(lease.originBlocks());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] drifting build id={} origin blob unreadable ({}); retrofitting with {} coal.",
-                    lease.id(), e.toString(), DriftEngine.FRESH_COAL);
+                    lease.id(), e.toString(), DriftEngine.RETROFIT_COAL);
             return null;
         }
     }

@@ -17,7 +17,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 /**
  * Setting a Drifting Engine Block down. In a drifting build it joins the engines already there (any
  * number; the build's fuel is their total, burnt one engine at a time). In an ordinary carriage it makes
- * the carriage drift, with the three coal any fresh drifting carriage starts with — see
+ * the carriage drift, with the coal any fresh drifting carriage starts with (none) — see
  * {@link EngineConversion}. Anyone may break one; it mines as slowly as obsidian.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
