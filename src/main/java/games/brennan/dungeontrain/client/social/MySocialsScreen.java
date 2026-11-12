@@ -8,7 +8,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -29,9 +29,9 @@ import java.util.List;
  * Options → Account → <b>My socials</b>: the Instagram and Threads accounts on the player's profile, which the
  * official posts tag when they feature the player's photo, run or book ({@link PlayerSocialsRelay}).
  *
- * <p>One row per account (the platform's logo and name, its handle, which opens the profile, then an @ for Tag me and a bin for Remove, each named
- * in its tooltip), then a <b>Sign in with …</b> button per sign-in
- * the relay offers. Signing in happens in the browser, on the platform itself, so the handle is proven to be theirs;
+ * <p>One row per platform: its logo and name, the handle as a link to the profile (or a <b>Sign in</b> button when it
+ * is not added yet), then an @ for Tag me and a bin for Remove, each named in its tooltip and greyed out until there
+ * is an account. Signing in happens in the browser, on the platform itself, so the handle is proven to be theirs;
  * the screen says so and offers <b>Refresh</b> for when they come back. Kid mode and Public posts off are both said
  * plainly rather than hidden: the first offers nothing, the second still lets the player set things up.</p>
  */
@@ -48,6 +48,8 @@ public final class MySocialsScreen extends Screen {
     private static final int LABEL_W = 84;
     private static final int TAG_ON = 0x55FF55;
     private static final int TAG_OFF = 0x808080;
+    /** The @ and bin of a platform not added yet: there, but faint. */
+    private static final float DISABLED_ALPHA = 0.35F;
 
     private final Screen parent;
     @Nullable
@@ -81,38 +83,46 @@ public final class MySocialsScreen extends Screen {
         int y = 40 + introLines.size() * 10 + GAP;
 
         if (!ClientDisplayConfig.isKidMode() && status != null) {
-            for (PlayerSocialsRelay.Social s : status.socials()) {
-                // The platform's logo and name, then the handle (opens the profile), an @ (Tag me, green when on)
-                // and a bin (Remove), names in tooltips.
-                labels.add(new RowLabel(s.platform(), left, y));
-                int handleX = left + LABEL_W;
-                int handleW = formW - LABEL_W - 2 * ROW_H - 2 * GAP;
-                String profile = PlayerSocialsRelay.profileUrl(s.platform(), s.handle());
-                Button handle = addRenderableWidget(Button.builder(Component.literal("@" + s.handle()), b -> {
-                        if (profile != null) ConfirmLinkScreen.confirmLinkNow(this, profile);
-                    })
-                    .bounds(handleX, y, handleW, ROW_H).build());
-                handle.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.open_profile")));
-                handle.active = profile != null;
-                Component tagName = Component.translatable(s.tag() ? "gui.dungeontrain.socials.tag_on" : "gui.dungeontrain.socials.tag_off");
-                Button tag = addRenderableWidget(new DarkTintedButton(handleX + handleW + GAP, y, ROW_H, ROW_H,
-                    Component.literal("@").withStyle(st -> st.withColor(s.tag() ? TAG_ON : TAG_OFF).withBold(true)),
-                    b -> run(PlayerSocialsRelay.setTag(s.platform(), !s.tag()))));
+            // One row per platform, added or not: logo and name, then the handle as a link to the profile (or a
+            // Sign in button), an @ (Tag me, green when on) and a bin (Remove). Without an account the @ and bin
+            // stay in place, greyed out, so the row reads the same either way.
+            for (String platform : PlayerSocialsRelay.PLATFORM_ORDER) {
+                PlayerSocialsRelay.Social s = status.socials().stream()
+                    .filter(x -> x.platform().equals(platform)).findFirst().orElse(null);
+                labels.add(new RowLabel(platform, left, y));
+                int midX = left + LABEL_W;
+                int midW = formW - LABEL_W - 2 * ROW_H - 2 * GAP;
+                if (s != null) {
+                    String profile = PlayerSocialsRelay.profileUrl(platform, s.handle());
+                    Component text = Component.literal("@" + s.handle()).withStyle(ChatFormatting.UNDERLINE);
+                    PlainTextButton link = new PlainTextButton(midX, y + (ROW_H - 9) / 2, Math.min(midW, font.width(text)), 9, text,
+                        b -> { if (profile != null) ConfirmLinkScreen.confirmLinkNow(this, profile); }, font);
+                    link.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.open_profile")));
+                    addRenderableWidget(link);
+                } else {
+                    String via = PlayerSocialsRelay.signInFor(platform, status.signIns());
+                    Button signIn = addRenderableWidget(new DarkTintedButton(midX, y, midW, ROW_H,
+                        Component.translatable("gui.dungeontrain.socials.sign_in"), b -> { if (via != null) signIn(via); }));
+                    signIn.setTooltip(Tooltip.create(Component.translatable(via == null ? "gui.dungeontrain.socials.unavailable"
+                        : "gui.dungeontrain.socials.sign_in." + via + ".tip")));
+                    signIn.active = !busy && via != null;
+                }
+                boolean on = s != null && s.tag();
+                Component tagName = Component.translatable(on ? "gui.dungeontrain.socials.tag_on" : "gui.dungeontrain.socials.tag_off");
+                Button tag = addRenderableWidget(new DarkTintedButton(midX + midW + GAP, y, ROW_H, ROW_H,
+                    Component.literal("@").withStyle(st -> st.withColor(on ? TAG_ON : TAG_OFF).withBold(true)),
+                    b -> run(PlayerSocialsRelay.setTag(platform, !on))));
                 tag.setTooltip(Tooltip.create(tagName));
-                tag.active = !busy;
                 Component removeName = Component.translatable("gui.dungeontrain.socials.remove");
-                SpriteIconButton remove = SpriteIconButton.builder(removeName, b -> run(PlayerSocialsRelay.remove(s.platform())), true)
-                    .width(ROW_H).sprite(TRASH_ICON, ICON_PX, ICON_PX).build();
-                remove.setPosition(left + formW - ROW_H, y);
+                Button remove = new FadingIconButton(left + formW - ROW_H, y, ROW_H, TRASH_ICON, removeName,
+                    b -> run(PlayerSocialsRelay.remove(platform)));
                 remove.setTooltip(Tooltip.create(removeName));
-                addRenderableWidget(remove).active = !busy;
-                y += ROW_H + GAP;
-            }
-            y += GAP;
-            for (String via : status.signIns()) {
-                Button signIn = addRenderableWidget(new DarkTintedButton(left, y, formW, ROW_H,
-                    Component.translatable("gui.dungeontrain.socials.sign_in." + via), b -> signIn(via)));
-                signIn.active = !busy;
+                addRenderableWidget(remove);
+                tag.active = remove.active = !busy && s != null;
+                if (s == null) {
+                    tag.setAlpha(DISABLED_ALPHA);
+                    remove.setAlpha(DISABLED_ALPHA);
+                }
                 y += ROW_H + GAP;
             }
         }
@@ -205,6 +215,29 @@ public final class MySocialsScreen extends Screen {
         }
         if (!message.getString().isEmpty()) {
             g.drawCenteredString(this.font, message, this.width / 2, this.height - 46, 0xFFFFFF);
+        }
+    }
+
+    /** A square button with a centred sprite that, unlike vanilla's SpriteIconButton, fades its icon with its alpha. */
+    private static final class FadingIconButton extends Button {
+        private final ResourceLocation icon;
+
+        FadingIconButton(int x, int y, int size, ResourceLocation icon, Component name, OnPress onPress) {
+            super(x, y, size, size, name, onPress, DEFAULT_NARRATION);
+            this.icon = icon;
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+            super.renderWidget(g, mouseX, mouseY, partialTick);
+            g.setColor(1.0F, 1.0F, 1.0F, this.alpha);
+            g.blitSprite(icon, getX() + (getWidth() - ICON_PX) / 2, getY() + (getHeight() - ICON_PX) / 2, ICON_PX, ICON_PX);
+            g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        }
+
+        @Override
+        public void renderString(GuiGraphics g, net.minecraft.client.gui.Font font, int color) {
+            // Icon only: the name is the tooltip and the narration.
         }
     }
 

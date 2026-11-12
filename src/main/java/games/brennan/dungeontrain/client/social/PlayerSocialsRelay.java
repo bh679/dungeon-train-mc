@@ -57,6 +57,8 @@ public final class PlayerSocialsRelay {
     static final String REMOVE_PATH = "/player-socials/remove";
     static final String TAG_PATH = "/player-socials/tag";
     static final Set<String> PLATFORMS = Set.of("instagram", "threads");
+    /** The rows My Socials shows, in order. */
+    public static final List<String> PLATFORM_ORDER = List.of("instagram", "threads");
     /** A proven serverId keeps proving on the relay for 10 minutes; reuse it a little less than that. */
     private static final long PROOF_REUSE_MS = 9 * 60 * 1000L;
 
@@ -196,6 +198,17 @@ public final class PlayerSocialsRelay {
             LOGGER.debug("[DungeonTrain] player-socials body unreadable: {}", ex.toString());
             return null;
         }
+    }
+
+    /**
+     * The sign-in a platform's row uses, from those the relay offers, or null. Threads signs in Threads and, sharing
+     * the username, Instagram too, and works for any account; Instagram Login (business accounts only) is the fallback
+     * for the Instagram row. Pure.
+     */
+    @Nullable
+    public static String signInFor(String platform, List<String> signIns) {
+        if (signIns.contains("threads")) return "threads";
+        return "instagram".equals(platform) && signIns.contains("instagram") ? "instagram" : null;
     }
 
     /** The public profile page of {@code handle} on {@code platform}, or null for an unknown platform. Pure. */

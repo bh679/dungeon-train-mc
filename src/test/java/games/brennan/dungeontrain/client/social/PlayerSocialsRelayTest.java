@@ -54,4 +54,13 @@ class PlayerSocialsRelayTest {
         assertNull(PlayerSocialsRelay.profileUrl("myspace", "alex"));
         assertNull(PlayerSocialsRelay.profileUrl("instagram", "../evil"));
     }
+
+    @Test
+    void eachRowSignsInThroughThreadsWhenItCan() {
+        assertEquals("threads", PlayerSocialsRelay.signInFor("instagram", List.of("threads", "instagram")));
+        assertEquals("threads", PlayerSocialsRelay.signInFor("threads", List.of("threads")));
+        assertEquals("instagram", PlayerSocialsRelay.signInFor("instagram", List.of("instagram")));
+        assertNull(PlayerSocialsRelay.signInFor("threads", List.of("instagram")));
+        assertNull(PlayerSocialsRelay.signInFor("instagram", List.of()));
+    }
 }
