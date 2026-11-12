@@ -51,6 +51,7 @@ import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalRoomOccupancy;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
@@ -1307,7 +1308,14 @@ public final class PortalCarriageEvents {
      * here also keeps {@link #STRUCTURES} private.</p>
      */
     private static boolean isInRoom(CarriageDims dims, ServerPlayer player) {
-        return isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ());
+        if (isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ())) return true;
+        // Over a room's roof or under its floor is still in it, for the freeze as for the drain —
+        // see PortalRoomOccupancy. Otherwise a player on the roof thawed the train while the room
+        // under them was being held for them.
+        for (PortalStructure structure : STRUCTURES.values()) {
+            if (occupies(player, dims, structure)) return true;
+        }
+        return false;
     }
 
     /**
@@ -1797,10 +1805,9 @@ public final class PortalCarriageEvents {
     /** Each player inside {@code structure}'s box gets its chunk-hold radius, the widest if two rooms claim them. */
     private static void recordRoomRadii(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                         List<ServerPlayer> players, Map<UUID, Integer> radii) {
-        AABB box = structureBox(dims, structure);
         int radius = -1;
         for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (!occupies(player, dims, structure)) continue;
             if (radius < 0) {
                 radius = games.brennan.dungeontrain.portal.PortalTwinChunkHold.roomRadius(level, dims, structure);
             }
@@ -1841,10 +1848,9 @@ public final class PortalCarriageEvents {
                                                             CarriageDims dims,
                                                             PortalCarriageLayout layout,
                                                             PortalStructure structure) {
-        AABB box = structureBox(dims, structure);
         Set<PortalRoomTiling.Tile> occupied = new LinkedHashSet<>();
         for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (!occupies(player, dims, structure)) continue;
             occupied.add(structure.tileAt(dims, layout, player.getX(), player.getZ()));
         }
         return occupied;
@@ -2971,14 +2977,43 @@ public final class PortalCarriageEvents {
             : PortalCarriageSelection.corridorKindFor(level, pairKey);
     }
 
-    /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
+    /**
+     * True if any player is anywhere inside a pair structure — either corridor, or the room between,
+     * or just over its roof or under its floor ({@link #occupies}).
+     */
     private static boolean anyPlayerInStructure(List<ServerPlayer> players, CarriageDims dims,
                                                 PortalStructure structure) {
-        AABB box = structureBox(dims, structure);
         for (ServerPlayer player : players) {
-            if (box.contains(player.getX(), player.getY(), player.getZ())) return true;
+            if (occupies(player, dims, structure)) return true;
         }
         return false;
+    }
+
+    /**
+     * Whether {@code player} counts as inside {@code structure} for the questions that would take the
+     * room away from them — drain it, release its chunks, move it, evict it, thaw its train. The
+     * structure's own box, plus a few rows over its roof and under its floor in twin space that no
+     * other room claims; see {@link PortalRoomOccupancy} for why each part is there.
+     *
+     * <p>Only those questions. Fog, sky, spawning and the despawn spare keep the plain box.</p>
+     */
+    private static boolean occupies(ServerPlayer player, CarriageDims dims, PortalStructure structure) {
+        AABB own = structureBox(dims, structure);
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+        if (own.contains(x, y, z)) return true;
+        // Most players are nowhere near the room; only build the other boxes for those who are.
+        if (!PortalRoomOccupancy.grown(own).contains(x, y, z)) return false;
+        List<AABB> others = new ArrayList<>();
+        for (PortalStructure other : STRUCTURES.values()) {
+            // By origin as well as identity: the tiler swaps a pair's record for a new one mid-tick,
+            // and a caller holding the old one must not have its own room count as "another".
+            if (other == structure || other.origin().equals(structure.origin())) continue;
+            others.add(structureBox(dims, other));
+        }
+        boolean inTwinSpace = PortalTwinSpace.isInside(player.serverLevel(), player.getBlockX(), y);
+        return PortalRoomOccupancy.counts(x, y, z, own, inTwinSpace, others);
     }
 
     /**
