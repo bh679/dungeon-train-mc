@@ -66,6 +66,16 @@
           "pattern": "^https://\\S+$",
           "description": "Major release only: https:// URL of the release photo."
         },
+        "video": {
+          "type": "string",
+          "pattern": "^https://\\S+\\.[mM][pP]4$",
+          "description": "Major release only: https:// URL of an MP4 clip with sound (at most 30 s). The relay builds the update's Facebook, Instagram (feed and story) and TikTok videos from it, keeping its sound, instead of looping the picture."
+        },
+        "video_cover": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Major release only, with video: the second of the clip whose frame is the posts' cover. Without it the relay takes 0.5 s in."
+        },
         "milestone": {
           "type": "boolean",
           "description": "Major release only: a moment rather than an update (a store launch, an approval). The web update page labels its card 'Milestone' instead of 'Major release'."

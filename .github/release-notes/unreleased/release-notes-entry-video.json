@@ -1,0 +1,15 @@
+{
+  "id": "release-notes-entry-video",
+  "version": "0.1788.0",
+  "type": "chore",
+  "tags": [
+    "internal"
+  ],
+  "title": "Update posts can carry their own clip",
+  "summary": "Behind the scenes: an update's social posts can now be built from its own video clip, sound included.",
+  "highlights": [],
+  "date": "2026-11-12",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

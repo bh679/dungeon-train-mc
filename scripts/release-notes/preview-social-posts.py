@@ -8,6 +8,10 @@ frame, and the Socials page's Copy post text. The picture is read from this chec
 .github/release-notes/images/, so it works before the merge puts it on main. Nothing is posted and no file in either
 repo changes.
 
+An entry with its own clip (`video`, an .mp4 with sound) is shown as the relay posts it: the Instagram and Facebook
+feed video, the story video and the TikTok video, all built from the clip with its own sound and the song under it,
+and the clip's cover frame. The clip is read from the same images folder by its file name.
+
 An animated picture's feed video carries its song, as the relay posts it (socials-music.js): the update's vibe (from
 its tags, or --vibe) and a track from that vibe, picked the way the relay picks (seeded, so a rerun shows the same
 one), or the one named with --music. The card shows the song, where it starts, the vibe's other tracks and their
@@ -17,7 +21,7 @@ release ships, so the relay posts that exact song. Tracks come from Mojang's ass
 
 Usage:
   python3 scripts/release-notes/preview-social-posts.py [--version 0.1746.0] [--port 8766]
-                                                        [--relay ~/Projects/dp-relay]
+                                                        [--relay ~/Projects/dp-relay] [--relay-ref origin/main]
                                                         [--music <entry-id>=<track-id>] [--vibe <entry-id>=<vibe>]
 
 Needs node and a dp-relay clone with its node_modules installed. Keeps serving until stopped. Exits 1 when no
@@ -70,6 +74,26 @@ function song(e) {
   };
 }
 
+/** An entry's own clip as the relay posts it: every video built from the clip, its frame the cover. */
+async function clipPosts(e, save, log) {
+  if (!card.buildClipVideo) throw new Error(`${e.id}: this dp-relay ref can't build clip videos (no buildClipVideo); pass --relay-ref`);
+  const clip = fs.readFileSync(e.clipPath);
+  const tune = song(e);
+  const got = await music.trackFile(tune.t, { log });
+  if (!got) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
+  const track = { id: tune.t.id, title: tune.t.title, composer: tune.t.composer };
+  log(`clip, song ${track.title} by ${track.composer} (${tune.vibe}) under it, from ${got.start}s`);
+  for (const [format, name] of [['feed', 'feed-video'], ['story', 'story-video'], ['tiktok', 'tiktok-video']]) {
+    const v = await card.buildClipVideo(e, clip, { format, isNew: format === 'story', music: { ...got, track }, cover: e.clipCover, log });
+    if (!v) throw new Error(`${e.id}: the ${format} clip video did not render`);
+    save(`${name}.mp4`, v.mp4);
+    if (format === 'feed') { save('facebook.jpg', v.still); save('instagram.jpg', v.still); }
+    if (format === 'story') save('story.jpg', v.still);
+  }
+  tune.start = got.start;
+  return { tune, track };
+}
+
 (async () => {
   const done = [];
   for (const e of JSON.parse(fs.readFileSync(list, 'utf8'))) {
@@ -81,7 +105,9 @@ function song(e) {
     const save = (name, buf) => { if (buf) { fs.writeFileSync(path.join(dir, name), buf); files[name.split('.')[0]] = e.id + '/' + name; } };
     let tune = null;
     let track = null;
-    if (card.isAnimated(bytes)) {
+    if (e.clipPath) {
+      ({ tune, track } = await clipPosts(e, save, log));
+    } else if (card.isAnimated(bytes)) {
       tune = song(e);
       const got = await music.trackFile(tune.t, { log });
       if (!got) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
@@ -91,11 +117,13 @@ function song(e) {
       if (v) save('feed-video.mp4', v.mp4);
       tune.start = got.start;
     }
-    save('facebook.jpg', await card.pictureJpeg(bytes, { log }));
-    save('instagram.jpg', await card.buildUpdateCard(e, bytes, { format: 'feed', log }));
-    save('story.jpg', await card.buildUpdateCard(e, bytes, { format: 'story', isNew: true, log }));
+    if (!e.clipPath) {
+      save('facebook.jpg', await card.pictureJpeg(bytes, { log }));
+      save('instagram.jpg', await card.buildUpdateCard(e, bytes, { format: 'feed', log }));
+      save('story.jpg', await card.buildUpdateCard(e, bytes, { format: 'story', isNew: true, log }));
+    }
     done.push({ id: e.id, title: e.title, files,
-      music: tune && { id: tune.t.id, title: tune.t.title, composer: tune.t.composer, start: tune.start, vibe: tune.vibe,
+      music: tune && { clip: !!e.clipPath, id: tune.t.id, title: tune.t.title, composer: tune.t.composer, start: tune.start, vibe: tune.vibe,
         vibeFrom: tune.vibeFrom, chosen: tune.chosen, others: tune.others, credit: music.credit(track) },
       captions: Object.fromEntries(['facebook', 'instagram'].map((p) => [p, updates.caption(e, p, track)])) });
   }
@@ -124,12 +152,31 @@ def parse_picks(values: list[str], flag: str) -> dict[str, str]:
     return out
 
 
+def local_file(url: str) -> str:
+    """The file of that name in this checkout's release-notes images folder, or '' for no url."""
+    return os.path.join(IMAGES_DIR, url.rsplit("/", 1)[-1]) if url else ""
+
+
+def clip_fields(e: dict) -> dict:
+    """`clipPath` (and `clipCover`) for an entry with its own clip. A clip named but not in the images folder is an
+    error: previewing the picture instead would show posts the relay won't make."""
+    video = e.get("video") or ""
+    if not video:
+        return {}
+    local = local_file(video)
+    if not os.path.exists(local):
+        raise ValueError(f"{e['id']}: its video {video} is not in {IMAGES_DIR}/")
+    out = {"clipPath": os.path.abspath(local)}
+    if e.get("video_cover") is not None:
+        out["clipCover"] = e["video_cover"]
+    return out
+
+
 def postable(entries: list[dict], version: str) -> list[dict]:
     """The unreleased major/notable entries with a local picture, shaped as the relay's update entries."""
     out = []
     for e in changelog_io.unreleased_entries(entries):
-        image = e.get("image") or ""
-        local = os.path.join(IMAGES_DIR, image.rsplit("/", 1)[-1]) if image else ""
+        local = local_file(e.get("image") or "")
         if not e.get("major") or not local or not os.path.exists(local):
             continue
         out.append({
@@ -137,32 +184,41 @@ def postable(entries: list[dict], version: str) -> list[dict]:
             "version": f"v{version}", "released_at": e.get("date", "") + "T00:00:00Z",
             "notable": bool(e.get("notable")), "milestone": bool(e.get("milestone")),
             "picturePath": os.path.abspath(local),
+            **clip_fields(e),
         })
     return out
 
 
-def extract_relay(relay: str, target: str) -> None:
+def extract_relay(relay: str, target: str, ref: str = "origin/main") -> None:
     if not os.path.isdir(os.path.join(relay, "node_modules")):
         raise ValueError(f"{relay} has no node_modules; run npm ci there first")
     if subprocess.run(["git", "-C", relay, "fetch", "--quiet", "origin", "main"], check=False).returncode != 0:
         print("Warning: couldn't fetch dp-relay; using its last known origin/main", file=sys.stderr)
     archive_path = os.path.join(target, "relay.tar")
-    subprocess.run(["git", "-C", relay, "archive", "--format=tar", "-o", archive_path, "origin/main"], check=True)
+    subprocess.run(["git", "-C", relay, "archive", "--format=tar", "-o", archive_path, ref], check=True)
     with tarfile.open(archive_path) as archive:
         archive.extractall(target, filter="data")
     os.remove(archive_path)
     os.symlink(os.path.join(relay, "node_modules"), os.path.join(target, "node_modules"))
 
 
-def media_block(post: dict, platform: str) -> str:
+def media_block(post: dict, platform: str, video_key: str = "feed-video") -> str:
     files = post["files"]
     cover = files.get(platform)
     still = f'<img src="{cover}" alt="">' if cover else '<p class="k">No picture rendered</p>'
-    if "feed-video" not in files:
+    if video_key not in files:
         return still
     # Not muted: the song is part of what is being checked. Browsers won't autoplay sound, so press play.
-    video = f'<video src="{files["feed-video"]}" poster="{cover or ""}" controls loop playsinline></video>'
+    video = f'<video src="{files[video_key]}" poster="{cover or ""}" controls loop playsinline></video>'
     return video + '<p class="k">Cover:</p>' + still
+
+
+def tiktok_block(post: dict) -> str:
+    """The TikTok video card, for an entry with its own clip."""
+    tiktok = post["files"].get("tiktok-video")
+    if not tiktok:
+        return ""
+    return f'<div class=card><h3>TikTok</h3><video src="{tiktok}" controls loop playsinline></video></div>'
 
 
 def music_block(post: dict) -> str:
@@ -183,7 +239,9 @@ def music_block(post: dict) -> str:
         f"<p class=big>{html.escape(m['title'])} <span class=k>by {html.escape(m['composer'])}, "
         f"from {start // 60}:{start % 60:02d}</span></p>"
         f"<p class=k>{html.escape(how)}. Vibe: <b>{html.escape(m['vibe'])}</b>, {vibe_from}. "
-        "Play the Instagram video above with sound to hear it.</p>"
+        + ("Play the videos above with sound: the clip's own sound, the song 10 dB under it.</p>"
+           if m.get("clip") else "Play the Instagram video above with sound to hear it.</p>")
+        +
         f"<p class=k>Caption credit: {html.escape(m['credit'])}</p>"
         f"<p class=k>Pin it before the release ships:</p><pre>{html.escape(pin)}</pre>"
         f"<details><summary>Other tracks in {html.escape(m['vibe'])}</summary><table>"
@@ -193,7 +251,7 @@ def music_block(post: dict) -> str:
     )
 
 
-def page(version: str, posts: list[dict], entries: list[dict]) -> str:
+def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = "origin/main") -> str:
     by_id = {e["id"]: e for e in entries}
     cards = []
     for post in posts:
@@ -205,7 +263,8 @@ def page(version: str, posts: list[dict], entries: list[dict]) -> str:
             f"<pre>{html.escape(post['captions']['facebook'])}</pre></div>"
             f"<div class=card><h3>Instagram feed</h3>{media_block(post, 'instagram')}"
             f"<pre>{html.escape(post['captions']['instagram'])}</pre></div>"
-            f"<div class=card><h3>Story (Instagram and Facebook)</h3><img src=\"{post['files'].get('story', '')}\" alt=\"\"></div>"
+            f"<div class=card><h3>Story (Instagram and Facebook)</h3>{media_block(post, 'story', 'story-video')}</div>"
+            f"{tiktok_block(post)}"
             f"<div class=card><h3>Copy post (other platforms)</h3><pre>{html.escape(copy)}</pre></div>"
             f"{music_block(post)}</div>"
         )
@@ -225,7 +284,7 @@ def page(version: str, posts: list[dict], entries: list[dict]) -> str:
         "tr.on td{font-weight:600}"
         "pre{white-space:pre-wrap;font:13px/1.45 system-ui;background:var(--bg);border-radius:8px;padding:10px}</style>"
         f"<h1>v{html.escape(version)}: social posts</h1>"
-        "<p class=k>Rendered by dp-relay's own code at origin/main. Hashtags rotate by the update's place in the "
+        f"<p class=k>Rendered by dp-relay's own code at {html.escape(relay_ref)}. Hashtags rotate by the update's place in the "
         "live list, so the five shown here can differ from the ones that post.</p>" + "".join(cards)
     )
 
@@ -235,14 +294,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--version", help="version to show; defaults to mod_version")
     parser.add_argument("--port", type=int, default=8766)
     parser.add_argument("--relay", default=os.path.expanduser("~/Projects/dp-relay"))
+    parser.add_argument("--relay-ref", default="origin/main",
+                        help="dp-relay commit to render with (default origin/main; a branch to preview its changes)")
     parser.add_argument("--music", action="append", default=[], metavar="ENTRY=TRACK",
                         help="preview this track on that entry's video (repeatable)")
     parser.add_argument("--vibe", action="append", default=[], metavar="ENTRY=VIBE",
                         help="pick the song from this vibe instead of the one the tags give (repeatable)")
     args = parser.parse_args(argv)
     version = args.version or read_version()
-    entries = postable(changelog_io.load_changelog()["entries"], version)
     try:
+        entries = postable(changelog_io.load_changelog()["entries"], version)
         tracks, vibes = parse_picks(args.music, "--music"), parse_picks(args.vibe, "--vibe")
     except ValueError as e:
         print(e, file=sys.stderr)
@@ -261,7 +322,7 @@ def main(argv: list[str] | None = None) -> int:
             site = os.path.join(target, "site")
             os.makedirs(relay_copy)
             os.makedirs(site)
-            extract_relay(args.relay, relay_copy)
+            extract_relay(args.relay, relay_copy, args.relay_ref)
             with open(os.path.join(relay_copy, "preview-driver.js"), "w", encoding="utf-8") as f:
                 f.write(DRIVER)
             listing = os.path.join(target, "entries.json")
@@ -277,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
             with open(os.path.join(site, "posts.json"), encoding="utf-8") as f:
                 posts = json.load(f)
             with open(os.path.join(site, "index.html"), "w", encoding="utf-8") as f:
-                f.write(page(version, posts, entries))
+                f.write(page(version, posts, entries, args.relay_ref))
             handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=site)
             with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler) as server:
                 print(f"v{version}, {len(posts)} post(s)")

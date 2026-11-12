@@ -463,13 +463,26 @@ def _render_major(entry: dict) -> str:
     return "\n\n".join(block)
 
 
-def validate_major_fields(description: str | None, image: str | None) -> None:
-    """Raise ValueError for a blank description or an image that is not a plain https URL."""
+def _plain_https(url: str) -> bool:
+    return url.startswith("https://") and not any(c.isspace() for c in url) and len(url) > len("https://")
+
+
+def validate_major_fields(
+    description: str | None,
+    image: str | None,
+    video: str | None = None,
+    video_cover: float | None = None,
+) -> None:
+    """Raise ValueError for a blank description, an image or video that is not a plain https URL (the video an
+    .mp4), or a negative video cover time."""
     if description is not None and not description.strip():
         raise ValueError("major description must not be blank")
-    if image is not None:
-        if not image.startswith("https://") or any(c.isspace() for c in image) or len(image) <= len("https://"):
-            raise ValueError(f"major image must be an https:// URL with no spaces, got {image!r}")
+    if image is not None and not _plain_https(image):
+        raise ValueError(f"major image must be an https:// URL with no spaces, got {image!r}")
+    if video is not None and not (_plain_https(video) and video.lower().endswith(".mp4")):
+        raise ValueError(f"major video must be an https:// URL of an .mp4 with no spaces, got {video!r}")
+    if video_cover is not None and not (isinstance(video_cover, (int, float)) and video_cover >= 0):
+        raise ValueError(f"video cover must be a time in seconds, 0 or more, got {video_cover!r}")
 
 
 def with_major(
@@ -479,6 +492,9 @@ def with_major(
     clear_image: bool = False,
     milestone: bool | None = None,
     notable: bool | None = None,
+    video: str | None = None,
+    clear_video: bool = False,
+    video_cover: float | None = None,
 ) -> dict:
     """Return a copy of `entry` marked as a major release.
 
@@ -487,12 +503,16 @@ def with_major(
     moment, not an update — the update page labels it "Milestone"); `notable`
     True/False sets or drops the notable flag (the middle tier: a smaller
     "Notable update" card on the update page). An entry is never both a
-    milestone and notable. Raises ValueError (see validate_major_fields).
+    milestone and notable. `video` (an .mp4 with sound) replaces the clip the
+    social posts are built from and `video_cover` the second of its cover frame;
+    `clear_video` drops both. Raises ValueError (see validate_major_fields), and
+    for a cover time with no video.
     """
-    validate_major_fields(description, image)
+    validate_major_fields(description, image, video, video_cover)
     out = {
         k: v for k, v in entry.items()
         if not (clear_image and k == "image")
+        and not (clear_video and k in ("video", "video_cover"))
         and not (milestone is False and k == "milestone")
         and not (notable is False and k == "notable")
     }
@@ -507,6 +527,12 @@ def with_major(
         out["description"] = description.strip()
     if image is not None:
         out["image"] = image
+    if video is not None:
+        out["video"] = video
+    if video_cover is not None:
+        out["video_cover"] = video_cover
+    if "video_cover" in out and "video" not in out:
+        raise ValueError("a video cover time needs a video")
     return out
 
 
