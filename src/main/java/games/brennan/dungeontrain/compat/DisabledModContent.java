@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * BetterNether. DT keeps their biomes and blocks but not their parallel gear progression, which would
  * bypass DT's own loot and difficulty balance. Also Exposure's original camera, film and lightroom
  * ({@link #HIDDEN_ITEMS}), replaced by the Polaroid add-on's instant camera, and Vista's Viewfinder, Wave Gate and
- * cassettes — DT's Television shows only the Live Feed — plus Vista's Picture Tape recipe ({@link #DISABLED_RECIPES}),
+ * cassettes — DT's Television shows only the Live Feed — and its Mirror, plus Vista's Picture Tape recipe ({@link #DISABLED_RECIPES}),
  * though the tape itself is kept. And every non-vanilla enchantment
  * ({@link #isDisabledEnchantment}) — today BetterNether's Obsidian Breaker and Ruby Fire and BetterEnd's
  * Resonance and End Veil — kept out of the enchanting table and villager books by the {@code remove} lists in
@@ -105,8 +105,9 @@ public final class DisabledModContent {
      *
      * <p>And Vista's Viewfinder, Wave Gate, pre-recorded Cassette and Hollow Cassette: a Television's only job in
      * DT is the Live Feed, which it tunes to by itself. Hiding the two cassettes also strips Vista's own chest and
-     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors and the
-     * music disc are left as Vista ships them; Picture Tape is too, except that it can't be crafted
+     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Vista's Mirror is
+     * out of the game too: no bundled template or DT loot pool places one, and a mirror a player already holds is
+     * kept. The music disc is left as Vista ships it; Picture Tape is too, except that it can't be crafted
      * ({@link #DISABLED_RECIPES}).</p>
      *
      * <p>And Deeper Darker's Sonorous Staff and Sculk Transmitters (plain and all sixteen dyed): disabled for now.
@@ -130,6 +131,7 @@ public final class DisabledModContent {
         "vista:wave_gate",
         "vista:cassette",
         "vista:hollow_cassette",
+        "vista:mirror",
         "deeperdarker:sonorous_staff");
 
     /**
