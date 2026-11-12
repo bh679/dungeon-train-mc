@@ -108,6 +108,8 @@ public enum ClientOptionsTab {
         DEV_CHAT("gui.dungeontrain.options.dev_chat"),
         /** Your photos and deaths on Discord and the socials — the consent card's Public posts switch. */
         PUBLIC_POSTS("gui.dungeontrain.options.public_posts"),
+        /** Your name on the dungeon.training reviews page — see {@code WebsiteNameRelay}. */
+        SHOW_NAME_ON_WEBSITE("gui.dungeontrain.options.show_name_on_website"),
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER("gui.dungeontrain.political_filter.option"),
         BOOK_AUTHOR_CHAT("gui.dungeontrain.options.book_author_chat"),
@@ -356,6 +358,7 @@ public enum ClientOptionsTab {
                 // from. Its Livestreaming switch lives on the Stream tab.
                 rows.add(Row.DEV_CHAT);
                 rows.add(Row.PUBLIC_POSTS);
+                rows.add(Row.SHOW_NAME_ON_WEBSITE);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);

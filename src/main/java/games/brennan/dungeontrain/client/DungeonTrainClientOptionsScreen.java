@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
+import games.brennan.dungeontrain.client.social.WebsiteNameRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
@@ -960,6 +961,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     ContentModeSyncClient.syncNow();
                     PublicPostsRelay.syncNow();
                 }), key + ".tip");
+
+            // Your name on the dungeon.training reviews page. Inert (greyed) in Kid mode, where the
+            // name is always hidden whatever this says; a flip re-syncs the relay.
+            case SHOW_NAME_ON_WEBSITE -> {
+                CycleButton<Boolean> showName = onOff(Component.translatable(key), ClientDisplayConfig.isShowNameOnWebsite(), on -> {
+                    ClientDisplayConfig.setShowNameOnWebsite(on);
+                    WebsiteNameRelay.syncNow();
+                });
+                showName.active = !ClientDisplayConfig.isKidMode();
+                yield Setting.of(showName, key + ".tip");
+            }
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.

@@ -1,0 +1,17 @@
+{
+  "id": "website-reviews-name-option",
+  "version": "0.1785.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "Show my name on the website",
+  "summary": "A new option in Dungeon Train settings chooses whether your name appears next to your survey score and comment on the reviews page at dungeon.training. Turn it off and you show as an anonymous rider; your score still counts.",
+  "highlights": [],
+  "date": "2026-11-12",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

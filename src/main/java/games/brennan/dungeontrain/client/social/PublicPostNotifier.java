@@ -49,6 +49,7 @@ public final class PublicPostNotifier {
     @SubscribeEvent
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
         PublicPostsRelay.syncNow();
+        WebsiteNameRelay.syncNow();
         ticksToCheck = FIRST_CHECK_TICKS;
     }
 

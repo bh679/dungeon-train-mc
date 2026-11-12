@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.compat.FreePlayBridge;
 import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
 import games.brennan.dungeontrain.client.ContentModeSyncClient;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
+import games.brennan.dungeontrain.client.social.WebsiteNameRelay;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ConsentDraft;
@@ -612,6 +613,9 @@ public class DungeonTrain {
                             LIVESTREAM_DRAFT.commit(picked, livestream);
                             DEV_CHAT_DRAFT.commit(picked, devChat);
                             PUBLIC_POSTS_DRAFT.commit(picked, publicPosts);
+                            // Kid mode hides the website name whatever the switch says, so a mode
+                            // change is a change in what the relay should hold.
+                            WebsiteNameRelay.syncNow();
                             // Which tier players actually choose, and how that moves when the card is
                             // shown again. Fires on every exit path, because the card records the answer
                             // on every exit path — including Esc, where consent lands DENIED and the

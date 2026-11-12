@@ -316,6 +316,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
     public static final ModConfigSpec.BooleanValue DEV_CHAT_ENABLED;
     public static final ModConfigSpec.BooleanValue PUBLIC_POSTS;
+    public static final ModConfigSpec.BooleanValue SHOW_NAME_ON_WEBSITE;
     /**
      * The config deviation the player last chose to keep, as a stable signature (see
      * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
@@ -490,6 +491,7 @@ public final class ClientDisplayConfig {
         CONTENT_MODE = pair.getLeft().contentMode;
         DEV_CHAT_ENABLED = pair.getLeft().devChatEnabled;
         PUBLIC_POSTS = pair.getLeft().publicPosts;
+        SHOW_NAME_ON_WEBSITE = pair.getLeft().showNameOnWebsite;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         NEW_RUN_DIFFICULTY = pair.getLeft().newRunDifficulty;
@@ -841,6 +843,11 @@ public final class ClientDisplayConfig {
                          "them off Discord and the socials. A switch on the first-launch consent card (on for Adult,",
                          "off for Kid) and an Options row; synced to the server and the relay.")
                 .define("publicPosts", true);
+        ModConfigSpec.BooleanValue showNameOnWebsite = b
+                .comment("Show my name on the website: your name next to your survey score and comment on the",
+                         "dungeon.training reviews page. Off shows you as an anonymous rider; your score still counts.",
+                         "An Options row; synced to the relay. Kid mode always hides the name, whatever this says.")
+                .define("showNameOnWebsite", true);
         b.pop();
 
         b.push("customContent");
@@ -1039,7 +1046,7 @@ public final class ClientDisplayConfig {
                 sharedBooksRead, sharedBooksLanguages, sharedBooksGameLanguageWeight,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 npsRecommendedHigh, motyNominated, motyVoted, motyModNominated, motyModVoted,
-                politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
+                politicalFilter, contentMode, devChatEnabled, publicPosts, showNameOnWebsite, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
@@ -2189,6 +2196,27 @@ public final class ClientDisplayConfig {
         PUBLIC_POSTS.save();
     }
 
+    /**
+     * The Show my name on the website switch (Options row): whether the reviews page on dungeon.training
+     * shows this player's name next to their survey answer. Defaults on, including pre-load. Kid mode
+     * always hides the name, whatever the stored value: see {@link #isNameShownOnWebsite()}.
+     */
+    public static boolean isShowNameOnWebsite() {
+        return !isLoaded() || SHOW_NAME_ON_WEBSITE.get();
+    }
+
+    /** What the relay is told: the switch, and never in Kid mode. */
+    public static boolean isNameShownOnWebsite() {
+        return isShowNameOnWebsite() && !isKidMode();
+    }
+
+    /** Persist the Show my name on the website switch. Idempotent; no-op pre-load. */
+    public static void setShowNameOnWebsite(boolean value) {
+        if (!isLoaded() || SHOW_NAME_ON_WEBSITE.get() == value) return;
+        SHOW_NAME_ON_WEBSITE.set(value);
+        SHOW_NAME_ON_WEBSITE.save();
+    }
+
     // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
 
     /**
@@ -2474,6 +2502,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.BooleanValue devChatEnabled,
             ModConfigSpec.BooleanValue publicPosts,
+            ModConfigSpec.BooleanValue showNameOnWebsite,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
