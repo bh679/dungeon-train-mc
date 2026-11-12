@@ -1,0 +1,21 @@
+{
+  "id": "totems-with-a-catch",
+  "version": "0.1786.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "loot",
+    "balance"
+  ],
+  "title": "Totems with a catch",
+  "summary": "Totems of Undying found on the train still save your life, but most of them leave something behind.",
+  "highlights": [
+    "Evokers are in on it too."
+  ],
+  "pr": 2622,
+  "date": "2026-11-12",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
