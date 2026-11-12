@@ -35249,6 +35249,44 @@
       "released": true,
       "released_in": "v0.1781.0",
       "released_at": "2026-11-11T11:23:27Z"
+    },
+    {
+      "id": "ffmpeg-setup-buttons",
+      "version": "0.1783.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Easier stream setup",
+      "summary": "If the Live Eye can't broadcast because FFmpeg is missing, the message now has a button that sets it up. The Stream settings also have a Download FFmpeg button, shown at the top while you need it.",
+      "highlights": [
+        "The Live Eye's no-broadcast message has a Set up FFmpeg button",
+        "Stream settings: Download FFmpeg button at the top until it's installed"
+      ],
+      "pr": 2621,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1783.0",
+      "released_at": "2026-11-12T09:50:30Z"
+    },
+    {
+      "id": "remove-mirrors",
+      "version": "0.1782.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "loot"
+      ],
+      "title": "Mirrors removed",
+      "summary": "Mirrors no longer turn up in loot or the creative menu, and the room that had them now has ordinary walls. Any mirror you already have is yours to keep.",
+      "highlights": [],
+      "pr": 2618,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1783.0",
+      "released_at": "2026-11-12T09:50:30Z"
     }
   ]
 }
