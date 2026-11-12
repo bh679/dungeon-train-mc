@@ -592,6 +592,7 @@ public final class CarriageContentsPlacer {
     private static void markBakedStorageFresh(ServerLevel level, BlockPos origin, Vec3i size) {
         OptionalInt pIdx = ProvenanceScope.current();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int marked = 0;
         for (int dx = 0; dx < size.getX(); dx++) {
             for (int dy = 0; dy < size.getY(); dy++) {
                 for (int dz = 0; dz < size.getZ(); dz++) {
@@ -600,9 +601,14 @@ public final class CarriageContentsPlacer {
                             && container instanceof BlockEntity be
                             && ItemProvenance.markFreshContents(container, pIdx)) {
                         be.setChanged();
+                        marked++;
                     }
                 }
             }
+        }
+        if (marked > 0) {
+            LOGGER.debug("[DungeonTrain] Provenance: marked baked gear new in {} container(s) at {} pIdx={}",
+                marked, origin, pIdx);
         }
     }
 
