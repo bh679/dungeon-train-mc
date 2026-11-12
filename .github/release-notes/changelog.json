@@ -35287,6 +35287,24 @@
       "released": true,
       "released_in": "v0.1783.0",
       "released_at": "2026-11-12T09:50:30Z"
+    },
+    {
+      "id": "drifting-carriages-start-empty",
+      "version": "0.1783.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "New drifting carriages start without coal",
+      "summary": "A newly drifting carriage now starts with a cold, empty engine. It only drifts on to another world if someone feeds it coal.",
+      "highlights": [],
+      "pr": 2620,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1784.0",
+      "released_at": "2026-11-12T10:15:55Z"
     }
   ]
 }
