@@ -198,6 +198,17 @@ public final class PlayerSocialsRelay {
         }
     }
 
+    /** The public profile page of {@code handle} on {@code platform}, or null for an unknown platform. Pure. */
+    @Nullable
+    public static String profileUrl(String platform, String handle) {
+        if (handle == null || !handle.matches("[A-Za-z0-9._]{1,30}")) return null;
+        return switch (platform) {
+            case "instagram" -> "https://www.instagram.com/" + handle + "/";
+            case "threads" -> "https://www.threads.com/@" + handle;
+            default -> null;
+        };
+    }
+
     /** A start's https sign-in URL, or null. Pure. */
     @Nullable
     static String parseUrl(String body) {

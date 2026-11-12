@@ -46,4 +46,12 @@ class PlayerSocialsRelayTest {
         assertNull(PlayerSocialsRelay.parseUrl("{\"url\":\"file:///etc/passwd\"}"));
         assertNull(PlayerSocialsRelay.parseUrl("{\"ok\":true,\"socials\":[]}"));
     }
+
+    @Test
+    void profileLinksPointAtThePlatform() {
+        assertEquals("https://www.instagram.com/alex.builds/", PlayerSocialsRelay.profileUrl("instagram", "alex.builds"));
+        assertEquals("https://www.threads.com/@alex.builds", PlayerSocialsRelay.profileUrl("threads", "alex.builds"));
+        assertNull(PlayerSocialsRelay.profileUrl("myspace", "alex"));
+        assertNull(PlayerSocialsRelay.profileUrl("instagram", "../evil"));
+    }
 }

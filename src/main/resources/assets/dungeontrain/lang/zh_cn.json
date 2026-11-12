@@ -3364,6 +3364,7 @@
   "gui.dungeontrain.socials.tag_on": "标记：开",
   "gui.dungeontrain.socials.tag_off": "标记：关",
   "gui.dungeontrain.socials.remove": "移除",
+  "gui.dungeontrain.socials.open_profile": "打开你的主页",
   "gui.dungeontrain.socials.sign_in.threads": "用 Threads 登录（同时添加 Instagram）",
   "gui.dungeontrain.socials.sign_in.instagram": "用 Instagram 登录（商业账号）",
   "gui.dungeontrain.socials.refresh": "刷新",

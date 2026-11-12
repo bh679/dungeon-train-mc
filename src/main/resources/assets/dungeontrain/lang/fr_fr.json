@@ -3420,6 +3420,7 @@
   "gui.dungeontrain.socials.tag_on": "Identifier : Oui",
   "gui.dungeontrain.socials.tag_off": "Identifier : Non",
   "gui.dungeontrain.socials.remove": "Retirer",
+  "gui.dungeontrain.socials.open_profile": "Ouvrir ton profil",
   "gui.dungeontrain.socials.sign_in.threads": "Se connecter avec Threads (ajoute aussi Instagram)",
   "gui.dungeontrain.socials.sign_in.instagram": "Se connecter avec Instagram (comptes professionnels)",
   "gui.dungeontrain.socials.refresh": "Actualiser",

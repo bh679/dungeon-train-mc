@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.social;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.ChatFormatting;
@@ -7,10 +8,14 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -23,7 +28,8 @@ import java.util.List;
  * Options → Account → <b>My socials</b>: the Instagram and Threads accounts on the player's profile, which the
  * official posts tag when they feature the player's photo, run or book ({@link PlayerSocialsRelay}).
  *
- * <p>One row per account (its handle, a Tag me switch and Remove), then a <b>Sign in with …</b> button per sign-in
+ * <p>One row per account (its handle, which opens the profile, then an @ for Tag me and a bin for Remove, each named
+ * in its tooltip), then a <b>Sign in with …</b> button per sign-in
  * the relay offers. Signing in happens in the browser, on the platform itself, so the handle is proven to be theirs;
  * the screen says so and offers <b>Refresh</b> for when they come back. Kid mode and Public posts off are both said
  * plainly rather than hidden: the first offers nothing, the second still lets the player set things up.</p>
@@ -34,8 +40,10 @@ public final class MySocialsScreen extends Screen {
     private static final int FORM_W = 320;
     private static final int ROW_H = 20;
     private static final int GAP = 6;
-    private static final int TAG_W = 96;
-    private static final int REMOVE_W = 72;
+    private static final ResourceLocation TRASH_ICON = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/trash");
+    private static final int ICON_PX = 16;
+    private static final int TAG_ON = 0x55FF55;
+    private static final int TAG_OFF = 0x808080;
 
     private final Screen parent;
     @Nullable
@@ -65,17 +73,28 @@ public final class MySocialsScreen extends Screen {
 
         if (!ClientDisplayConfig.isKidMode() && status != null) {
             for (PlayerSocialsRelay.Social s : status.socials()) {
-                int handleW = formW - TAG_W - REMOVE_W - 2 * GAP;
-                addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.socials.row",
-                        platformName(s.platform()), s.handle()), b -> { })
-                    .bounds(left, y, handleW, ROW_H).build()).active = false;
-                Button tag = addRenderableWidget(new DarkTintedButton(left + handleW + GAP, y, TAG_W, ROW_H,
-                    Component.translatable(s.tag() ? "gui.dungeontrain.socials.tag_on" : "gui.dungeontrain.socials.tag_off"),
+                // The handle opens the profile; then an @ (Tag me, green when on) and a bin (Remove), names in tooltips.
+                int handleW = formW - 2 * ROW_H - 2 * GAP;
+                String profile = PlayerSocialsRelay.profileUrl(s.platform(), s.handle());
+                Button handle = addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.socials.row",
+                        platformName(s.platform()), s.handle()), b -> {
+                        if (profile != null) ConfirmLinkScreen.confirmLinkNow(this, profile);
+                    })
+                    .bounds(left, y, handleW, ROW_H).build());
+                handle.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.socials.open_profile")));
+                handle.active = profile != null;
+                Component tagName = Component.translatable(s.tag() ? "gui.dungeontrain.socials.tag_on" : "gui.dungeontrain.socials.tag_off");
+                Button tag = addRenderableWidget(new DarkTintedButton(left + handleW + GAP, y, ROW_H, ROW_H,
+                    Component.literal("@").withStyle(st -> st.withColor(s.tag() ? TAG_ON : TAG_OFF).withBold(true)),
                     b -> run(PlayerSocialsRelay.setTag(s.platform(), !s.tag()))));
+                tag.setTooltip(Tooltip.create(tagName));
                 tag.active = !busy;
-                Button remove = addRenderableWidget(new DarkTintedButton(left + formW - REMOVE_W, y, REMOVE_W, ROW_H,
-                    Component.translatable("gui.dungeontrain.socials.remove"), b -> run(PlayerSocialsRelay.remove(s.platform()))));
-                remove.active = !busy;
+                Component removeName = Component.translatable("gui.dungeontrain.socials.remove");
+                SpriteIconButton remove = SpriteIconButton.builder(removeName, b -> run(PlayerSocialsRelay.remove(s.platform())), true)
+                    .width(ROW_H).sprite(TRASH_ICON, ICON_PX, ICON_PX).build();
+                remove.setPosition(left + formW - ROW_H, y);
+                remove.setTooltip(Tooltip.create(removeName));
+                addRenderableWidget(remove).active = !busy;
                 y += ROW_H + GAP;
             }
             y += GAP;
