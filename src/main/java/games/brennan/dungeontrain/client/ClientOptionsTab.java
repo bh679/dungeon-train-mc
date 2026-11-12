@@ -155,8 +155,12 @@ public enum ClientOptionsTab {
          * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
          */
         TWITCH_ACCOUNT(null),
-        /** Opens My socials: the Instagram/Threads accounts our posts tag the player with ({@code MySocialsScreen}). */
-        MY_SOCIALS("gui.dungeontrain.options.my_socials"),
+        /**
+         * Stands for the whole My Socials block: a heading, then one line per platform (Instagram, Threads) with
+         * the handle or a Sign in, Tag me and Remove ({@code MySocialsState}, {@code SocialRowWidget}). Hidden in
+         * Kid mode at draw time.
+         */
+        MY_SOCIALS(null),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */

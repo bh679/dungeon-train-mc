@@ -137,7 +137,7 @@ final class ClientOptionsTabTest {
         assertTrue(rows.contains(ClientOptionsTab.Row.DISCORD_ACCOUNT));
         // So is the Twitch block (the screen hides it in Kid mode at draw time, not here).
         assertTrue(rows.contains(ClientOptionsTab.Row.TWITCH_ACCOUNT));
-        // And My socials (its screen says Kid mode has none).
+        // And My Socials (hidden in Kid mode at draw time, like Twitch).
         assertTrue(rows.contains(ClientOptionsTab.Row.MY_SOCIALS));
     }
 
@@ -442,7 +442,8 @@ final class ClientOptionsTabTest {
         JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
                 .getAsJsonObject();
         for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
-            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.TWITCH_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
+            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.TWITCH_ACCOUNT
+                    || row == ClientOptionsTab.Row.MY_SOCIALS || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
                 assertNull(row.captionKey(), row + " stands for several rows and has no caption of its own");
                 continue;
             }

@@ -7,7 +7,10 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.social.MySocialsState;
+import games.brennan.dungeontrain.client.social.PlayerSocialsRelay;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
+import games.brennan.dungeontrain.client.social.SocialRowWidget;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
@@ -140,6 +143,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private boolean accountRequested = false;
     /** Same for the Twitch block of the Account tab ({@link TwitchAccountState}). */
     private boolean twitchRequested = false;
+    private boolean socialsRequested = false;
     /**
      * Set when this screen opens a child that can change what it shows (the consent card, the Discord
      * link screen): run when this screen is shown again, then rebuild. Showing a screen again does NOT
@@ -379,6 +383,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
             case TWITCH_ACCOUNT -> addTwitchAccount(list);
+            case MY_SOCIALS -> addMySocials(list);
             default -> {
                 Setting setting = build(row);
                 return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
@@ -528,6 +533,52 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * an Unlink button, and the two opt-ins; "Set my title" greys out while restream is off, since it
      * only applies to the stream on their channel. Nothing in Kid mode: there is no Twitch there.
      */
+    /**
+     * The My Socials block: its own heading, what the accounts are for, then one line per platform
+     * ({@link SocialRowWidget}). Sign-ins happen in the browser, so after one the block offers Refresh. Hidden in
+     * Kid mode, like the Twitch block.
+     */
+    private void addMySocials(SettingsRowList list) {
+        if (ClientDisplayConfig.isKidMode()) return;
+        if (!this.socialsRequested) {
+            this.socialsRequested = true;
+            MySocialsState.refresh(this::rebuildIfShown);
+        }
+        list.addWidget(caption(Component.translatable("gui.dungeontrain.socials.title").withStyle(ChatFormatting.BOLD)));
+        PlayerSocialsRelay.Status status = MySocialsState.status();
+        if (status == null) {
+            boolean failed = MySocialsState.phase() == MySocialsState.Phase.FAILED;
+            if (failed) {
+                list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.socials.failed"),
+                        Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
+                            this.socialsRequested = false;
+                            rebuildIfShown();
+                        }));
+            } else {
+                list.addWidget(caption(Component.translatable("gui.dungeontrain.socials.loading")));
+            }
+            return;
+        }
+        Component intro = Component.translatable(status.socials().isEmpty()
+                ? "gui.dungeontrain.socials.intro.empty" : "gui.dungeontrain.socials.intro");
+        list.addWidget(caption(ClientDisplayConfig.isPublicPosts() ? intro
+                : Component.empty().append(intro).append(" ").append(Component.translatable("gui.dungeontrain.socials.public_posts_off"))));
+        for (String platform : PlayerSocialsRelay.PLATFORM_ORDER) {
+            PlayerSocialsRelay.Social social = status.socials().stream()
+                    .filter(s -> s.platform().equals(platform)).findFirst().orElse(null);
+            list.addWidget(new SocialRowWidget(this.font, ROW_W, ROW_H, platform, social,
+                    PlayerSocialsRelay.signInFor(platform, status.signIns()), MySocialsState.busy(), this::rebuildIfShown));
+        }
+        Component message = MySocialsState.message();
+        if (MySocialsState.awaitingBrowser()) {
+            list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H, message,
+                    Component.translatable("gui.dungeontrain.socials.refresh"), () -> MySocialsState.refresh(this::rebuildIfShown)));
+        } else if (!message.getString().isEmpty()) {
+            list.addWidget(caption(message));
+        }
+    }
+
     private void addTwitchAccount(SettingsRowList list) {
         if (ClientDisplayConfig.isKidMode()) return;
         if (!this.twitchRequested) {
@@ -1046,11 +1097,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_LANGUAGES -> Setting.of(open(() -> openChild(new ReadingLanguagesScreen(this),
                     ReadingLanguagesSyncClient::syncNow)), key + ".tip");
 
-            // The player's own Instagram/Threads, so the official posts can tag them. A page: sign-ins happen in
-            // the browser and the list comes from the relay.
-            case MY_SOCIALS -> Setting.of(open(() -> this.minecraft.setScreen(
-                    new games.brennan.dungeontrain.client.social.MySocialsScreen(this))), key + ".tip");
-
             // Literally the same control vanilla's Music & Sounds screen carries (put there by
             // SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over one config
             // accessor, so a player who came looking here rather than there finds the same control at
@@ -1198,6 +1244,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_SECTION_BROADCAST, STREAM_SECTION_SOUND, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
                  STREAM_SECTION_WATCHING -> throw new IllegalStateException(row + " is a heading, not built");
             case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
+            case MY_SOCIALS -> throw new IllegalStateException("MY_SOCIALS is expanded, not built");
         };
     }
 
