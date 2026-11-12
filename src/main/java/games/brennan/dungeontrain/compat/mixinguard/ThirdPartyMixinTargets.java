@@ -14,7 +14,7 @@ import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequiremen
 
 /**
  * What each DT mixin into a third-party library's <b>internals</b> needs to find there. These libraries
- * (WorldWeaver, BCLib, BetterEnd, TerraBlender, Deeper Darker) are declared with open-ended {@code [floor,)} ranges, so a
+ * (WorldWeaver, BCLib, BetterEnd, BetterNether, TerraBlender, Deeper Darker) are declared with open-ended {@code [floor,)} ranges, so a
  * player can load a newer build that renamed one of those internals. {@code ThirdPartyMixinPlugin} checks
  * every entry here before the mixin applies, and skips a mixin whose targets moved instead of crashing the
  * game. The feature then falls back as {@link Spec#degradesTo} says.
@@ -203,6 +203,13 @@ public final class ThirdPartyMixinTargets {
                 readsStaticIn(PLACE, "FUNCTION"))),
             Map.of(), END_VANILLA, true)),
 
+        // ── BetterNether ─────────────────────────────────────────────────────────────────────────
+        Map.entry(MIXIN_PACKAGE + "betternether.BetterNetherNagaClientEffectMixin", new Spec(
+            Map.of("org.betterx.betternether.entity.EntityNagaProjectile", List.of(
+                invokes("onCollision", "net/minecraft/world/entity/LivingEntity", "addEffect",
+                        "(Lnet/minecraft/world/effect/MobEffectInstance;)Z"))),
+            Map.of(), "a Naga shot the client sees hit can leave a harmless Wither II stuck at 00:00", false)),
+
         // ── TerraBlender ─────────────────────────────────────────────────────────────────────────
         Map.entry(MIXIN_PACKAGE + "terrablender.RegionsMixin", new Spec(
             Map.of("terrablender.api.Regions", List.of(
@@ -250,6 +257,7 @@ public final class ThirdPartyMixinTargets {
             "org.betterx.wover.", "wover",
             "org.betterx.bclib.", "bclib",
             "org.betterx.betterend.", "betterend",
+            "org.betterx.betternether.", "betternether",
             "terrablender.", "terrablender",
             "com.kyanite.deeperdarker.", "deeperdarker");
 
