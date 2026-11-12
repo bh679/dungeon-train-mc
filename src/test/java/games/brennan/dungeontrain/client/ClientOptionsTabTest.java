@@ -259,7 +259,6 @@ final class ClientOptionsTabTest {
     @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows in titled sections; General no longer does")
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.STREAM_SECTION_BROADCAST, ClientOptionsTab.Row.LIVESTREAM,
-                        ClientOptionsTab.Row.FFMPEG,
                         ClientOptionsTab.Row.STREAM_GUI, ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_NAME_TAG,
                         ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.STREAM_AUDIO,
                         ClientOptionsTab.Row.STREAM_SECTION_SOUND, ClientOptionsTab.Row.STREAM_VOLUME, ClientOptionsTab.Row.MIC_MIX,
@@ -274,7 +273,8 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAMER_BOX_STREAMS,
                         ClientOptionsTab.Row.TV_STREAM_SOUND, ClientOptionsTab.Row.TV_SOUND_ON_TRAIN,
                         ClientOptionsTab.Row.MUTED_STREAMERS,
-                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_NAMES, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING),
+                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_NAMES, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING,
+                        ClientOptionsTab.Row.FFMPEG),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         // Every section title is a heading, and every heading opens a section that has rows under it.
         List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
@@ -286,6 +286,21 @@ final class ClientOptionsTabTest {
         }
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
                 .contains(ClientOptionsTab.Row.LIVESTREAM));
+    }
+
+    @Test
+    @DisplayName("A missing FFmpeg leads the Stream tab, above its first heading; the rest keep their order")
+    void ffmpegFirstLiftsOnlyThatRow() {
+        List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
+        List<ClientOptionsTab.Row> lifted = ClientOptionsTab.ffmpegFirst(stream);
+        assertEquals(ClientOptionsTab.Row.FFMPEG, lifted.get(0));
+        assertEquals(stream.size(), lifted.size());
+        List<ClientOptionsTab.Row> rest = new java.util.ArrayList<>(stream);
+        rest.remove(ClientOptionsTab.Row.FFMPEG);
+        assertEquals(rest, lifted.subList(1, lifted.size()));
+        // A tab without the row is returned as it was.
+        List<ClientOptionsTab.Row> general = ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true);
+        assertEquals(general, ClientOptionsTab.ffmpegFirst(general));
     }
 
     @Test

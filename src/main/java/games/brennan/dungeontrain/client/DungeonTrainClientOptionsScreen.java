@@ -183,9 +183,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
         this.tabs.clear();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
-            this.tabs.add(new OptionsTab(tab,
-                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable,
-                            DungeonTrain.isDevBuild())));
+            List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(),
+                    trainSettingsWritable, DungeonTrain.isDevBuild());
+            // No FFmpeg, no stream: its button leads the Stream tab until it is installed.
+            if (tab == ClientOptionsTab.STREAM && FfmpegSetupButton.needed()) rows = ClientOptionsTab.ffmpegFirst(rows);
+            this.tabs.add(new OptionsTab(tab, rows));
         }
 
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
