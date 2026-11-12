@@ -5693,6 +5693,7 @@
   "item.dungeontrain.random_potion": "무작위 물약",
   "item.dungeontrain.random_good_potion": "무작위 좋은 물약",
   "item.dungeontrain.random_bad_potion": "무작위 나쁜 물약",
+  "item.dungeontrain.random_totem": "무작위 토템",
   "item.dungeontrain.disposable_camera": "일회용 카메라",
   "gui.dungeontrain.options.book_author_chat": "책 지은이 채팅 표시",
   "gui.dungeontrain.options.book_author_chat.hint": "타는 책의 작가 표시",

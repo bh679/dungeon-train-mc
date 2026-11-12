@@ -5707,6 +5707,7 @@
   "item.dungeontrain.random_potion": "隨機藥水",
   "item.dungeontrain.random_good_potion": "隨機有益藥水",
   "item.dungeontrain.random_bad_potion": "隨機有害藥水",
+  "item.dungeontrain.random_totem": "隨機圖騰",
   "item.dungeontrain.disposable_camera": "即可拍相機",
   "gui.dungeontrain.options.book_author_chat": "聊天欄顯示書的作者",
   "gui.dungeontrain.options.book_author_chat.hint": "標註燃燒書籍的作者",

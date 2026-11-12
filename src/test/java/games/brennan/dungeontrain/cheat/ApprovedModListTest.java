@@ -352,7 +352,8 @@ class ApprovedModListTest {
     void bakedResourceCoversSiblings() {
         Set<String> baked = ApprovedModList.approved();
         for (String id : List.of("keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix",
-            "sable_pathfinder", "sablemobpaths", "pigmanvillagers", "streamdetect", "dpibypassdetect", "dtmodverify")) {
+            "sable_pathfinder", "sablemobpaths", "balancedtotems", "pigmanvillagers", "streamdetect", "dpibypassdetect",
+            "dtmodverify")) {
             assertTrue(baked.contains(id), id + " ships with Dungeon Train, so it must be approved");
         }
     }

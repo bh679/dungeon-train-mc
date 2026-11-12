@@ -5760,6 +5760,7 @@
   "item.dungeontrain.random_potion": "Willekeurig drankje",
   "item.dungeontrain.random_good_potion": "Willekeurig goed drankje",
   "item.dungeontrain.random_bad_potion": "Willekeurig slecht drankje",
+  "item.dungeontrain.random_totem": "Willekeurig totem",
   "item.dungeontrain.disposable_camera": "Wegwerpcamera",
   "gui.dungeontrain.options.book_author_chat": "Boekauteur in de chat",
   "gui.dungeontrain.options.book_author_chat.hint": "Auteurs van brandende boeken noemen",

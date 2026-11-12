@@ -5760,6 +5760,7 @@
   "item.dungeontrain.random_potion": "Poção Aleatória",
   "item.dungeontrain.random_good_potion": "Poção Boa Aleatória",
   "item.dungeontrain.random_bad_potion": "Poção Ruim Aleatória",
+  "item.dungeontrain.random_totem": "Totem Aleatório",
   "item.dungeontrain.disposable_camera": "Câmera descartável",
   "gui.dungeontrain.options.book_author_chat": "Autor do livro no chat",
   "gui.dungeontrain.options.book_author_chat.hint": "Creditar autores de livros queimando",
