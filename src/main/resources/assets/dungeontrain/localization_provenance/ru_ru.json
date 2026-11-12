@@ -5068,6 +5068,7 @@
     "stories/the_querys_and_life_of_fourteen"
   ],
   "books_source_changed": [
+    "death_lore/default",
     "starting_books/a_paper_algorithm",
     "starting_books/blank_pages",
     "starting_books/brennan_intro",
