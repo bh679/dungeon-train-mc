@@ -347,7 +347,7 @@ public final class LiveStreamController {
         headpiece.reset();
         switch (FfmpegSupport.state()) {
             case OFF, FAILED -> {
-                say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
+                sayNoFfmpeg();
                 state = State.IDLE;
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             }
@@ -360,6 +360,13 @@ public final class LiveStreamController {
             // Not on yet (login: the inventory may land after START) → the tick claims once it is.
             case READY -> { if (headpieceWorn()) claimChannel(false, null); }
         }
+    }
+
+    /** No ffmpeg on this client: the line, with the button that sets it up ({@link FfmpegHint}). */
+    private static void sayNoFfmpeg() {
+        say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED)
+            .append(" ")
+            .append(FfmpegHint.installButton()));
     }
 
     /** The Live Eye is on this client's own head, as far as this client can see. */
@@ -419,7 +426,7 @@ public final class LiveStreamController {
             if (++waitTicks % 20 != 0) return;
             switch (FfmpegSupport.state()) {
                 case OFF, FAILED -> {
-                    say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
+                    sayNoFfmpeg();
                     state = State.IDLE;
                     tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 }

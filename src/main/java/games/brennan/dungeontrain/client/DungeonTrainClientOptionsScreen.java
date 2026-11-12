@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
+import games.brennan.dungeontrain.client.live.FfmpegSetupButton;
 import games.brennan.dungeontrain.client.live.LiveMicHotkeys;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
 import games.brennan.dungeontrain.client.live.StreamerBoxPanes;
@@ -748,6 +749,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 LiveFeedClientConfig.setStreamingEnabled(on);
                 ContentModeSyncClient.syncNow();
             }), key + ".tip");
+
+            // What the Live Eye streams with and TVs play with; pressable only while it is missing.
+            case FFMPEG -> Setting.of(new FfmpegSetupButton(CONTROL_W, ROW_H), key + ".tip");
 
             // What viewers see; the preview under the rows follows both switches live.
             case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),

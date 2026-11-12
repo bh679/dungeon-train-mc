@@ -85,6 +85,7 @@ final class ClientOptionsIcons {
             case CATCH_UP_BURST -> Icon.item(Items.MINECART);
 
             case LIVESTREAM -> Icon.item(ModItems.LIVE_HEADPIECE.get());
+            case FFMPEG -> Icon.item(Items.HOPPER);
             case STREAM_GUI -> Icon.item(Items.ITEM_FRAME);
             case STREAM_CHAT -> Icon.item(Items.OAK_SIGN);
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);

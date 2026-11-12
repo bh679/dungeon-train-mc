@@ -186,6 +186,8 @@ public enum ClientOptionsTab {
         // --- Stream (the screen adds the viewer preview under these rows) ---
         /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
         LIVESTREAM("gui.dungeontrain.options.livestream"),
+        /** Download FFmpeg, which the Live Eye streams with and TVs play with; inactive once it is there. */
+        FFMPEG("gui.dungeontrain.options.ffmpeg"),
         /** Whether viewers see the HUD and open menus. Everyone. */
         STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
@@ -403,6 +405,8 @@ public enum ClientOptionsTab {
                 // Titled sections: what goes out, the mic, the picture, the chat around it, then watching others.
                 rows.add(Row.STREAM_SECTION_BROADCAST);
                 rows.add(Row.LIVESTREAM);
+                // Beside the switch it unlocks: no FFmpeg, no broadcast.
+                rows.add(Row.FFMPEG);
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
                 rows.add(Row.STREAM_NAME_TAG);

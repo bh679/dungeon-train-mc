@@ -123,11 +123,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: eighty rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: eighty-one rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(80, rows.size());
+        assertEquals(81, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -248,9 +248,9 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 80 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // 81 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(84, rows.size());
+        assertEquals(85, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -259,6 +259,7 @@ final class ClientOptionsTabTest {
     @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows in titled sections; General no longer does")
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.STREAM_SECTION_BROADCAST, ClientOptionsTab.Row.LIVESTREAM,
+                        ClientOptionsTab.Row.FFMPEG,
                         ClientOptionsTab.Row.STREAM_GUI, ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_NAME_TAG,
                         ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.STREAM_AUDIO,
                         ClientOptionsTab.Row.STREAM_SECTION_SOUND, ClientOptionsTab.Row.STREAM_VOLUME, ClientOptionsTab.Row.MIC_MIX,
