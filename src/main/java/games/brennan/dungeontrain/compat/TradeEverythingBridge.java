@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.compat;
 
+import games.brennan.dungeontrain.editor.RandomTotemTable;
 import games.brennan.tradeeverything.api.TradeEverythingApi;
 import io.github.mortuusars.exposure.world.item.StackedPhotographsItem;
 import net.minecraft.core.component.DataComponents;
@@ -172,6 +173,9 @@ public final class TradeEverythingBridge {
         // floor every potion at 1 sixteenth — Strength II priced like a stick.
         TradeEverythingApi.registerValueProvider(TradeEverythingBridge::potionValue);
 
+        // Balanced Totems: the rarer the totem in DT's loot, the more it's worth (balancedTotemValue).
+        TradeEverythingApi.registerValueProvider(TradeEverythingBridge::balancedTotemValue);
+
         TradeEverythingApi.setItemOverride256ths(
             ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_256THS);
         TradeEverythingApi.setItemOverride(
@@ -205,10 +209,39 @@ public final class TradeEverythingBridge {
             && VILLAGER_STOCK_VALUES_256THS.containsKey(id.getPath())) {
             return true;
         }
+        if (RandomTotemTable.contains(id)) return true;
         String s = id.toString();
         return s.equals("minecraft:bookshelf") || s.equals("minecraft:honey_block")
             || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack")
             || s.equals(DisabledModContent.INSTANT_CAMERA) || PHOTOGRAPH_IDS.contains(s);
+    }
+
+    /** The vanilla Totem of Undying's value, read once from TE (432 sixteenths at TE 0.17.0). */
+    private static volatile int vanillaTotemValue = -1;
+
+    /**
+     * A Balanced Totem's value, from its weight in DT's {@code random_totem} table: the rarest (lowest
+     * weight) is worth a quarter of a vanilla Totem of Undying, heavier ones proportionally less.
+     */
+    private static OptionalInt balancedTotemValue(ItemStack stack) {
+        if (stack.isEmpty()) return OptionalInt.empty();
+        int weight = RandomTotemTable.weightOf(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+        if (weight <= 0) return OptionalInt.empty();
+        int vanilla = vanillaTotemValue;
+        if (vanilla < 0) {
+            vanilla = TradeEverythingApi.getValueSixteenths(new ItemStack(Items.TOTEM_OF_UNDYING));
+            vanillaTotemValue = vanilla;
+        }
+        return OptionalInt.of(totemValue(weight, RandomTotemTable.minWeight(), vanilla));
+    }
+
+    /**
+     * {@code ¼ × vanillaValue × minWeight / weight}, rounded, at least 1: never above a quarter of a
+     * vanilla totem, and a heavier (commoner) totem never worth more than a lighter one.
+     */
+    static int totemValue(int weight, int minWeight, int vanillaValue) {
+        if (weight <= 0 || minWeight <= 0 || vanillaValue <= 0) return 1;
+        return Math.max(1, (int) Math.round(vanillaValue / 4.0 * minWeight / weight));
     }
 
     /**

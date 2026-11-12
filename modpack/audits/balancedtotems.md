@@ -21,7 +21,7 @@ Audited 2026-11-12 from the GitHub release jar (`balancedtotems-neoforge-0.6.0.j
 | Items with an unfair advantage | 0 | The Void Totem is steered onto the train (`compat/BalancedTotemsBridge`) |
 | Mobs | 0 | None |
 | Structures / world gen | 0 | None |
-| Loot | 1 global loot modifier | Kept: replaces the vanilla totem in `minecraft:entities/evoker` |
+| Loot | 1 global loot modifier | Kept: replaces the vanilla totem in `minecraft:entities/evoker`. DT re-picks that totem by its `random_totem` weights (`EvokerTotemLootModifier`), with no Void Totem before the first End band |
 | Mob effects | 8 | Kept: they are the curses. Not reachable from DT's random potions (vanilla-only tiers) |
 | Damage types | 6 | Kept: deaths from a broken curse. They end a run like any other death |
 | Attachments | 4 | Per-player curse state (form, rampage kills, lonely friends) |
@@ -39,7 +39,7 @@ Audited 2026-11-12 from the GitHub release jar (`balancedtotems-neoforge-0.6.0.j
 | World gen | None |
 | Loot tables | Evoker GLM only. DT has no evoker loot override. `StripDisabledItemsLootModifier` does not touch `balancedtotems` |
 | Vanilla data | `replace:false` tags only: six `minecraft:tags/damage_type/bypasses_*` + `no_knockback` additions for its own damage types |
-| Economy | No recipes, no trades. No Trade Everything values yet |
+| Economy | No recipes, no trades. Trade Everything values set by DT from the loot weights, at most a quarter of a vanilla totem |
 
 ## DT systems it reaches
 

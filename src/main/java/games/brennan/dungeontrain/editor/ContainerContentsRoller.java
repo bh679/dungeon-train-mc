@@ -1215,11 +1215,13 @@ public final class ContainerContentsRoller {
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
-        // dungeontrain:random_totem — one Balanced Totem by RandomTotemTable's weights. A vault's
-        // several totems each roll on their own (rollsEachBook). None registered: the vanilla totem.
+        // dungeontrain:random_totem — one Balanced Totem by RandomTotemTable's weights, with no Void
+        // Totem before the void (VoidTotemGate). A vault's several totems each roll on their own
+        // (rollsEachBook). None registered: the vanilla totem.
         if (item == ModItems.RANDOM_TOTEM.get()) {
             long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_TOTEM);
-            return RandomTotemTable.pick(seed, net.minecraft.core.registries.BuiltInRegistries.ITEM::containsKey)
+            return RandomTotemTable.pick(seed, net.minecraft.core.registries.BuiltInRegistries.ITEM::containsKey,
+                    VoidTotemGate.reachedAtCarriage(diffIndex))
                 .map(id -> new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)))
                 .orElseGet(() -> new ItemStack(net.minecraft.world.item.Items.TOTEM_OF_UNDYING));
         }

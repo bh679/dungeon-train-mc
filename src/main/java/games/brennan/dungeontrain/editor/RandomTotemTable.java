@@ -30,13 +30,39 @@ public final class RandomTotemTable {
 
     static final String RESOURCE = "/data/dungeontrain/loot/random_totem.json";
 
+    /** Left out of every roll until the train reaches the void ({@link VoidTotemGate}). */
+    public static final ResourceLocation VOID_TOTEM = ResourceLocation.fromNamespaceAndPath("balancedtotems", "void_totem");
+
     private static volatile Map<ResourceLocation, Integer> weights = null;
 
     private RandomTotemTable() {}
 
-    /** One totem id for {@code seed}, among the ids {@code registered} accepts; empty when none. */
-    public static Optional<ResourceLocation> pick(long seed, Predicate<ResourceLocation> registered) {
-        return pick(table(), seed, registered);
+    /**
+     * One totem id for {@code seed}, among the ids {@code registered} accepts, leaving out the Void
+     * Totem unless {@code voidReached}; empty when none qualifies.
+     */
+    public static Optional<ResourceLocation> pick(long seed, Predicate<ResourceLocation> registered, boolean voidReached) {
+        return pick(table(), seed, eligible(registered, voidReached));
+    }
+
+    /** {@code registered}, minus the Void Totem before the void. */
+    static Predicate<ResourceLocation> eligible(Predicate<ResourceLocation> registered, boolean voidReached) {
+        return voidReached ? registered : id -> !VOID_TOTEM.equals(id) && registered.test(id);
+    }
+
+    /** Whether {@code id} is one of the totems this table rolls. */
+    public static boolean contains(ResourceLocation id) {
+        return table().containsKey(id);
+    }
+
+    /** {@code id}'s weight, or 0 when the table does not roll it. */
+    public static int weightOf(ResourceLocation id) {
+        return table().getOrDefault(id, 0);
+    }
+
+    /** The lightest weight in the table (the rarest totem), or 0 when the table is empty. */
+    public static int minWeight() {
+        return table().values().stream().mapToInt(Integer::intValue).min().orElse(0);
     }
 
     /** Weighted pick over the entries {@code registered} accepts. Same seed, same answer. */

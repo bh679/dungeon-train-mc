@@ -56,6 +56,35 @@ final class RandomTotemTableTest {
     }
 
     @Test
+    @DisplayName("before the void the Void Totem never rolls, and the rest keep their ratios")
+    void voidTotemWaitsForTheVoid() {
+        Map<ResourceLocation, Integer> t = new LinkedHashMap<>();
+        t.put(RandomTotemTable.VOID_TOTEM, 10);
+        t.put(rl("balancedtotems:common"), 3);
+        t.put(rl("balancedtotems:rare"), 1);
+        Map<ResourceLocation, Integer> before = new HashMap<>();
+        Map<ResourceLocation, Integer> after = new HashMap<>();
+        for (long seed = 0; seed < 1400; seed++) {
+            before.merge(RandomTotemTable.pick(t, seed, RandomTotemTable.eligible(id -> true, false)).orElseThrow(), 1, Integer::sum);
+            after.merge(RandomTotemTable.pick(t, seed, RandomTotemTable.eligible(id -> true, true)).orElseThrow(), 1, Integer::sum);
+        }
+        assertEquals(null, before.get(RandomTotemTable.VOID_TOTEM));
+        assertEquals(3 * before.get(rl("balancedtotems:rare")), before.get(rl("balancedtotems:common")));
+        assertEquals(1000, after.get(RandomTotemTable.VOID_TOTEM));
+    }
+
+    @Test
+    @DisplayName("the bundled weights: Weakness and Fatigue rarest at 5, Void rolls at 10")
+    void bundledWeights() {
+        assertEquals(5, RandomTotemTable.minWeight());
+        assertEquals(5, RandomTotemTable.weightOf(rl("balancedtotems:weakness_totem")));
+        assertEquals(8, RandomTotemTable.weightOf(rl("balancedtotems:rampage_totem")));
+        assertEquals(15, RandomTotemTable.weightOf(rl("balancedtotems:pacifism_totem")));
+        assertEquals(10, RandomTotemTable.weightOf(RandomTotemTable.VOID_TOTEM));
+        assertEquals(143, RandomTotemTable.all().values().stream().mapToInt(Integer::intValue).sum());
+    }
+
+    @Test
     @DisplayName("unregistered ids are skipped; none registered answers empty (vanilla fallback)")
     void skipsUnregistered() {
         Map<ResourceLocation, Integer> t = new LinkedHashMap<>();
