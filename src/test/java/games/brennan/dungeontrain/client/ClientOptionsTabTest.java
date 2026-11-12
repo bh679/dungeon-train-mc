@@ -123,11 +123,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: eighty rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: eighty-one rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(80, rows.size());
+        assertEquals(81, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -248,9 +248,9 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 80 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // 81 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(84, rows.size());
+        assertEquals(85, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -273,7 +273,8 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAMER_BOX_STREAMS,
                         ClientOptionsTab.Row.TV_STREAM_SOUND, ClientOptionsTab.Row.TV_SOUND_ON_TRAIN,
                         ClientOptionsTab.Row.MUTED_STREAMERS,
-                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_NAMES, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING),
+                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_NAMES, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING,
+                        ClientOptionsTab.Row.FFMPEG),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         // Every section title is a heading, and every heading opens a section that has rows under it.
         List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
@@ -285,6 +286,21 @@ final class ClientOptionsTabTest {
         }
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
                 .contains(ClientOptionsTab.Row.LIVESTREAM));
+    }
+
+    @Test
+    @DisplayName("A missing FFmpeg leads the Stream tab, above its first heading; the rest keep their order")
+    void ffmpegFirstLiftsOnlyThatRow() {
+        List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
+        List<ClientOptionsTab.Row> lifted = ClientOptionsTab.ffmpegFirst(stream);
+        assertEquals(ClientOptionsTab.Row.FFMPEG, lifted.get(0));
+        assertEquals(stream.size(), lifted.size());
+        List<ClientOptionsTab.Row> rest = new java.util.ArrayList<>(stream);
+        rest.remove(ClientOptionsTab.Row.FFMPEG);
+        assertEquals(rest, lifted.subList(1, lifted.size()));
+        // A tab without the row is returned as it was.
+        List<ClientOptionsTab.Row> general = ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true);
+        assertEquals(general, ClientOptionsTab.ffmpegFirst(general));
     }
 
     @Test

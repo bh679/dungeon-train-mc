@@ -1261,6 +1261,15 @@
       ]
     }
   },
+  "gui.dungeontrain.options.ffmpeg.downloading_percent": {
+    "1": {
+      "label": "how much of the download is done, a whole number from 0 to 100",
+      "examples": [
+        "42",
+        "100"
+      ]
+    }
+  },
   "chat.dungeontrain.live.censored": {
     "1": {
       "label": "which warning this is",

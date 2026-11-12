@@ -186,6 +186,8 @@ public enum ClientOptionsTab {
         // --- Stream (the screen adds the viewer preview under these rows) ---
         /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
         LIVESTREAM("gui.dungeontrain.options.livestream"),
+        /** Download FFmpeg, which the Live Eye streams with and TVs play with; inactive once it is there. */
+        FFMPEG("gui.dungeontrain.options.ffmpeg"),
         /** Whether viewers see the HUD and open menus. Everyone. */
         STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
@@ -319,6 +321,20 @@ public enum ClientOptionsTab {
         return GROUP_LEADERS.contains(row);
     }
 
+    /**
+     * {@code rows} with {@link Row#FFMPEG} moved to the very top, above the first heading: the Stream
+     * tab while this client has no FFmpeg, so the button that fixes it is the first thing seen.
+     */
+    public static List<Row> ffmpegFirst(List<Row> rows) {
+        if (!rows.contains(Row.FFMPEG)) return rows;
+        List<Row> out = new ArrayList<>(rows.size());
+        out.add(Row.FFMPEG);
+        for (Row row : rows) {
+            if (row != Row.FFMPEG) out.add(row);
+        }
+        return out;
+    }
+
     /** As a release build sees them: no dev-only rows. */
     public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
                                     boolean trainSettingsWritable) {
@@ -438,6 +454,8 @@ public enum ClientOptionsTab {
                 rows.add(Row.HEAD_VIEWER_SIZE);
                 rows.add(Row.HEAD_VIEWER_NAMES);
                 rows.add(Row.HEAD_VIEWER_SIZE_STREAMING);
+                // Out of the way once installed; ffmpegFirst lifts it to the top while it is missing.
+                rows.add(Row.FFMPEG);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);
