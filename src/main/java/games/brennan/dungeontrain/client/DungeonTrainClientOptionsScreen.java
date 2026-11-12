@@ -1046,6 +1046,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_LANGUAGES -> Setting.of(open(() -> openChild(new ReadingLanguagesScreen(this),
                     ReadingLanguagesSyncClient::syncNow)), key + ".tip");
 
+            // The player's own Instagram/Threads, so the official posts can tag them. A page: sign-ins happen in
+            // the browser and the list comes from the relay.
+            case MY_SOCIALS -> Setting.of(open(() -> this.minecraft.setScreen(
+                    new games.brennan.dungeontrain.client.social.MySocialsScreen(this))), key + ".tip");
+
             // Literally the same control vanilla's Music & Sounds screen carries (put there by
             // SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over one config
             // accessor, so a player who came looking here rather than there finds the same control at

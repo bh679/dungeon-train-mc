@@ -155,6 +155,8 @@ public enum ClientOptionsTab {
          * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
          */
         TWITCH_ACCOUNT(null),
+        /** Opens My socials: the Instagram/Threads accounts our posts tag the player with ({@code MySocialsScreen}). */
+        MY_SOCIALS("gui.dungeontrain.options.my_socials"),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -370,6 +372,7 @@ public enum ClientOptionsTab {
             case ACCOUNT -> {
                 rows.add(Row.DISCORD_ACCOUNT);
                 rows.add(Row.TWITCH_ACCOUNT);
+                rows.add(Row.MY_SOCIALS);
             }
             case BACKUPS -> {
                 // Its own tab: the block outgrew a heading on General once it had four rows and

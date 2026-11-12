@@ -70,6 +70,7 @@ final class ClientOptionsIcons {
             case AI_POLICY -> Icon.item(Items.PAPER); // the same paper AiPolicyIconButton carries
             case TRANSLATE -> LANGUAGE;
             case BOOK_LANGUAGES -> Icon.item(Items.BOOKSHELF);
+            case MY_SOCIALS -> Icon.item(Items.NAME_TAG);
 
             case BACKUPS -> Icon.item(Items.CHEST);
             case BACKUPS_PER_VERSION -> Icon.item(Items.HOPPER);
