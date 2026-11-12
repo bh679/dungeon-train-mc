@@ -110,7 +110,7 @@ class DriftEngineTest {
 
     @Test
     void noCountAndNoEngineRetrofits() {
-        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.arrivingCoal(-1, shell(), null));
+        assertEquals(DriftEngine.RETROFIT_COAL, DriftEngine.arrivingCoal(-1, shell(), null));
     }
 
     // ---- writing the engine ----
@@ -370,8 +370,8 @@ class DriftEngineTest {
     }
 
     @Test
-    void aFreshCarriageStartsWithTwo() {
-        assertEquals(2, DriftEngine.FRESH_COAL);
+    void aFreshCarriageStartsEmpty() {
+        assertEquals(0, DriftEngine.FRESH_COAL);
     }
 
     @Test
@@ -409,7 +409,7 @@ class DriftEngineTest {
 
     @Test
     void retrofitWithNoHistoryIsTheFreshTwo() {
-        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.retrofitCoal(null, shell()));
+        assertEquals(DriftEngine.RETROFIT_COAL, DriftEngine.retrofitCoal(null, shell()));
     }
 
     @Test
@@ -417,7 +417,7 @@ class DriftEngineTest {
         CompoundTag origin = shell();
         CompoundTag now = with(origin, cell(2, 1, 2, "minecraft:lantern"), cell(3, 1, 2, "minecraft:lantern"),
                 cell(4, 1, 2, "minecraft:lantern"), cell(5, 1, 2, "minecraft:lantern"), cell(6, 1, 2, "minecraft:lantern"));
-        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.RETROFIT_COAL, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
@@ -426,7 +426,7 @@ class DriftEngineTest {
         CompoundTag now = with(origin, cell(1, 1, 2, "minecraft:lantern"), cell(2, 1, 2, "minecraft:lantern"),
                 cell(3, 1, 2, "minecraft:lantern"), cell(4, 1, 2, "minecraft:lantern"), cell(5, 1, 2, "minecraft:lantern"),
                 cell(6, 1, 2, "minecraft:lantern"));
-        assertEquals(DriftEngine.FRESH_COAL + 6, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.RETROFIT_COAL + 6, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
@@ -435,7 +435,7 @@ class DriftEngineTest {
         CompoundTag now = shell();
         ListTag cells = now.getList("cells", Tag.TAG_COMPOUND);
         for (int i = 0; i < 6; i++) cells.getCompound(i).getCompound("s").putString("Name", "minecraft:gold_block");
-        assertEquals(DriftEngine.FRESH_COAL + 6, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.RETROFIT_COAL + 6, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
@@ -443,14 +443,14 @@ class DriftEngineTest {
         CompoundTag origin = with(shell(), chest(2, 1, 2, item("minecraft:bread", 4)));
         CompoundTag now = with(shell(), chest(2, 1, 2, item("minecraft:bread", 4), item("minecraft:torch", 2), shulker(5)));
         // 2 torches + 1 shulker box + 5 diamonds inside it
-        assertEquals(DriftEngine.FRESH_COAL + 8, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.RETROFIT_COAL + 8, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
     void retrofitIgnoresItemsTaken() {
         CompoundTag origin = with(shell(), chest(2, 1, 2, item("minecraft:bread", 9)));
         CompoundTag now = with(shell(), chest(2, 1, 2, item("minecraft:bread", 1)));
-        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.RETROFIT_COAL, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test

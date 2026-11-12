@@ -972,7 +972,7 @@ public final class TrainAssembler {
             // (or the sealed cart between two of them), not this slot's rolled variant, so registering
             // it would upload a corridor to the community pool the first time anyone edited one.
             // An ordinary carriage whose template carries a Drifting Engine Block drifts too: the engine is what
-            // makes a carriage drift. Every fresh drifting carriage gets one, holding three coal, set down
+            // makes a carriage drift. Every fresh drifting carriage gets one, empty (FRESH_COAL), set down
             // before registering so it is not mistaken for somebody's edit.
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)

@@ -18,12 +18,13 @@ import java.util.Map;
  *
  * <ul>
  *   <li>A carriage may hold any number of engines; its fuel is their total.</li>
- *   <li>A fresh drifting carriage starts with {@link #FRESH_COAL}.</li>
+ *   <li>A fresh drifting carriage starts with {@link #FRESH_COAL}: none, so it stays in the world it was
+ *       built in until a rider feeds its engine.</li>
  *   <li>Each time a carriage joins a world from a lease it burns one ({@link #burn}), from the first engine
  *       that still has coal ({@link #burnOne}): one engine runs dry and goes dark before the next is touched.</li>
  *   <li>A carriage that leaves a world at zero is retired by the relay, which refuses to lease it again.</li>
  *   <li>A carriage from before engines (the relay has no fuel for it) is retrofitted once:
- *       {@link #retrofitCoal} — three, or more for every block and item its riders added.</li>
+ *       {@link #retrofitCoal} — {@link #RETROFIT_COAL}, or more for every block and item its riders added.</li>
  * </ul>
  */
 public final class DriftEngine {
@@ -35,8 +36,10 @@ public final class DriftEngine {
      * before the cap came down keep their coal until it burns away, so a stored count is not held to it.
      */
     public static final int MAX_STORED = 10_000;
-    /** Coal a brand-new drifting carriage starts with, and the base a legacy carriage is retrofitted from. */
-    public static final int FRESH_COAL = 2;
+    /** Coal a brand-new drifting carriage starts with. */
+    public static final int FRESH_COAL = 0;
+    /** The base a legacy carriage (one from before engines) is retrofitted from. */
+    public static final int RETROFIT_COAL = 2;
     /** A legacy carriage needs MORE than this many added blocks (or any added item) to earn extra coal. */
     public static final int RETROFIT_BLOCK_THRESHOLD = 5;
 
@@ -214,17 +217,17 @@ public final class DriftEngine {
     // ---- retrofit ----
 
     /**
-     * Coal for a carriage that predates engines. Three, unless its riders added more than
-     * {@link #RETROFIT_BLOCK_THRESHOLD} blocks or any items since it first went up — then three plus one
+     * Coal for a carriage that predates engines. {@link #RETROFIT_COAL}, unless its riders added more than
+     * {@link #RETROFIT_BLOCK_THRESHOLD} blocks or any items since it first went up — then that plus one
      * for every added block still standing and every added item (counting inside shulker boxes), capped
-     * at {@link #MAX_COAL}. {@code origin} is the build as first uploaded; null (no history) gives three.
+     * at {@link #MAX_COAL}. {@code origin} is the build as first uploaded; null (no history) gives the base.
      */
     public static int retrofitCoal(CompoundTag origin, CompoundTag current) {
-        if (origin == null || current == null) return FRESH_COAL;
+        if (origin == null || current == null) return RETROFIT_COAL;
         int blocks = blocksAdded(origin, current);
         int items = Math.max(0, itemsIn(current) - itemsIn(origin));
-        if (blocks <= RETROFIT_BLOCK_THRESHOLD && items == 0) return FRESH_COAL;
-        return Math.min(MAX_COAL, FRESH_COAL + blocks + items);
+        if (blocks <= RETROFIT_BLOCK_THRESHOLD && items == 0) return RETROFIT_COAL;
+        return Math.min(MAX_COAL, RETROFIT_COAL + blocks + items);
     }
 
     /** Cells holding a block now that held nothing, or a different block, in {@code origin}. */
