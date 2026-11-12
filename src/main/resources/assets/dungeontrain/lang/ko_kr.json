@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "코드 복사",
   "gui.dungeontrain.socials.dm.open": "열기",
   "gui.dungeontrain.socials.dm.open.tip": "Instagram에서 @dungeontrain에게 보낼 메시지 열기",
-  "gui.dungeontrain.socials.dm.hint": "내 계정으로 Instagram의 @dungeontrain에게 %s을(를) 보낸 뒤 새로고침을 누르세요. 코드는 15분 동안 유효합니다.",
+  "gui.dungeontrain.socials.dm.hint": "내 계정으로 Instagram의 @dungeontrain에게 %s을(를) 보낸 뒤 새로고침을 누르세요.",
   "gui.dungeontrain.socials.refresh": "새로고침",
   "gui.dungeontrain.socials.opened": "브라우저에서 로그인을 마친 뒤 새로고침을 누르세요.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

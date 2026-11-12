@@ -3485,7 +3485,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Скопировать код",
   "gui.dungeontrain.socials.dm.open": "Открыть",
   "gui.dungeontrain.socials.dm.open.tip": "Открыть сообщение для @dungeontrain в Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Отправьте %s аккаунту @dungeontrain в Instagram со своего аккаунта, затем нажмите «Обновить». Код действует 15 минут.",
+  "gui.dungeontrain.socials.dm.hint": "Отправьте %s аккаунту @dungeontrain в Instagram со своего аккаунта, затем нажмите «Обновить».",
   "gui.dungeontrain.socials.refresh": "Обновить",
   "gui.dungeontrain.socials.opened": "Завершите вход в браузере, затем нажмите Обновить.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

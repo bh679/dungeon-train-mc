@@ -3424,7 +3424,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Copiar o código",
   "gui.dungeontrain.socials.dm.open": "Abrir",
   "gui.dungeontrain.socials.dm.open.tip": "Abrir uma mensagem para @dungeontrain no Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Envia %s para @dungeontrain no Instagram a partir da tua conta e depois carrega em Atualizar. O código é válido durante 15 minutos.",
+  "gui.dungeontrain.socials.dm.hint": "Envia %s para @dungeontrain no Instagram a partir da tua conta e depois carrega em Atualizar.",
   "gui.dungeontrain.socials.refresh": "Atualizar",
   "gui.dungeontrain.socials.opened": "Termina o início de sessão no navegador e depois carrega em Atualizar.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

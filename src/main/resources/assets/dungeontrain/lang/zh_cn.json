@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "复制代码",
   "gui.dungeontrain.socials.dm.open": "打开",
   "gui.dungeontrain.socials.dm.open.tip": "在 Instagram 上打开发给 @dungeontrain 的私信",
-  "gui.dungeontrain.socials.dm.hint": "用你的账号在 Instagram 上把 %s 发送给 @dungeontrain，然后点刷新。代码 15 分钟内有效。",
+  "gui.dungeontrain.socials.dm.hint": "用你的账号在 Instagram 上把 %s 发送给 @dungeontrain，然后点刷新。",
   "gui.dungeontrain.socials.refresh": "刷新",
   "gui.dungeontrain.socials.opened": "在浏览器中完成登录，然后点击刷新。",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

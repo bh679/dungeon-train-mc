@@ -4041,7 +4041,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Скопіювати код",
   "gui.dungeontrain.socials.dm.open": "Відкрити",
   "gui.dungeontrain.socials.dm.open.tip": "Відкрити повідомлення для @dungeontrain в Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Надішліть %s акаунту @dungeontrain в Instagram зі свого акаунта, потім натисніть «Оновити». Код діє 15 хвилин.",
+  "gui.dungeontrain.socials.dm.hint": "Надішліть %s акаунту @dungeontrain в Instagram зі свого акаунта, потім натисніть «Оновити».",
   "gui.dungeontrain.socials.refresh": "Оновити",
   "gui.dungeontrain.socials.opened": "Завершіть вхід у браузері, потім натисніть Оновити.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

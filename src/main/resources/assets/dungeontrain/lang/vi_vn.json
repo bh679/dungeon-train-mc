@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Sao chép mã",
   "gui.dungeontrain.socials.dm.open": "Mở",
   "gui.dungeontrain.socials.dm.open.tip": "Mở tin nhắn tới @dungeontrain trên Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Gửi %s tới @dungeontrain trên Instagram từ tài khoản của bạn, rồi nhấn Làm mới. Mã có hiệu lực 15 phút.",
+  "gui.dungeontrain.socials.dm.hint": "Gửi %s tới @dungeontrain trên Instagram từ tài khoản của bạn, rồi nhấn Làm mới.",
   "gui.dungeontrain.socials.refresh": "Làm mới",
   "gui.dungeontrain.socials.opened": "Hoàn tất đăng nhập trong trình duyệt, rồi nhấn Làm mới.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

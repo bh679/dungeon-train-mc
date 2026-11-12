@@ -4044,7 +4044,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Copiază codul",
   "gui.dungeontrain.socials.dm.open": "Deschide",
   "gui.dungeontrain.socials.dm.open.tip": "Deschide un mesaj către @dungeontrain pe Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Trimite %s lui @dungeontrain pe Instagram de pe contul tău, apoi apasă Reîmprospătează. Codul e valabil 15 minute.",
+  "gui.dungeontrain.socials.dm.hint": "Trimite %s lui @dungeontrain pe Instagram de pe contul tău, apoi apasă Reîmprospătează.",
   "gui.dungeontrain.socials.refresh": "Reîmprospătează",
   "gui.dungeontrain.socials.opened": "Termină conectarea în browser, apoi apasă Reîmprospătează.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Salin kodenya",
   "gui.dungeontrain.socials.dm.open": "Buka",
   "gui.dungeontrain.socials.dm.open.tip": "Buka pesan ke @dungeontrain di Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Kirim %s ke @dungeontrain di Instagram dari akunmu, lalu tekan Muat ulang. Kodenya berlaku 15 menit.",
+  "gui.dungeontrain.socials.dm.hint": "Kirim %s ke @dungeontrain di Instagram dari akunmu, lalu tekan Muat ulang.",
   "gui.dungeontrain.socials.refresh": "Muat ulang",
   "gui.dungeontrain.socials.opened": "Selesaikan proses masuk di browser, lalu tekan Muat ulang.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

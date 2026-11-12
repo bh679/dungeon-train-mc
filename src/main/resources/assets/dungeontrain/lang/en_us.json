@@ -3983,7 +3983,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Copy the code",
   "gui.dungeontrain.socials.dm.open": "Open",
   "gui.dungeontrain.socials.dm.open.tip": "Open a message to @dungeontrain on Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Send %s to @dungeontrain on Instagram from your account, then press Refresh. The code lasts 15 minutes.",
+  "gui.dungeontrain.socials.dm.hint": "Send %s to @dungeontrain on Instagram from your account, then press Refresh.",
   "gui.dungeontrain.socials.refresh": "Refresh",
   "gui.dungeontrain.socials.opened": "Finish signing in in your browser, then press Refresh.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

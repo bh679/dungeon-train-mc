@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "คัดลอกรหัส",
   "gui.dungeontrain.socials.dm.open": "เปิด",
   "gui.dungeontrain.socials.dm.open.tip": "เปิดข้อความถึง @dungeontrain ใน Instagram",
-  "gui.dungeontrain.socials.dm.hint": "ส่ง %s ถึง @dungeontrain ใน Instagram จากบัญชีของคุณ แล้วกด รีเฟรช รหัสใช้ได้ 15 นาที",
+  "gui.dungeontrain.socials.dm.hint": "ส่ง %s ถึง @dungeontrain ใน Instagram จากบัญชีของคุณ แล้วกด รีเฟรช",
   "gui.dungeontrain.socials.refresh": "รีเฟรช",
   "gui.dungeontrain.socials.opened": "ลงชื่อเข้าใช้ในเบราว์เซอร์ให้เสร็จ แล้วกด รีเฟรช",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "Kopyahin ang code",
   "gui.dungeontrain.socials.dm.open": "Buksan",
   "gui.dungeontrain.socials.dm.open.tip": "Magbukas ng mensahe sa @dungeontrain sa Instagram",
-  "gui.dungeontrain.socials.dm.hint": "Ipadala ang %s sa @dungeontrain sa Instagram mula sa account mo, tapos pindutin ang I-refresh. Tatagal ang code nang 15 minuto.",
+  "gui.dungeontrain.socials.dm.hint": "Ipadala ang %s sa @dungeontrain sa Instagram mula sa account mo, tapos pindutin ang I-refresh.",
   "gui.dungeontrain.socials.refresh": "I-refresh",
   "gui.dungeontrain.socials.opened": "Tapusin ang pag-sign in sa iyong browser, pagkatapos pindutin ang I-refresh.",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",

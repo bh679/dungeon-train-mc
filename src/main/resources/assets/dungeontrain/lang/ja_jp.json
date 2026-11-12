@@ -3368,7 +3368,7 @@
   "gui.dungeontrain.socials.dm.copy.tip": "コードをコピー",
   "gui.dungeontrain.socials.dm.open": "開く",
   "gui.dungeontrain.socials.dm.open.tip": "Instagramで@dungeontrainへのメッセージを開く",
-  "gui.dungeontrain.socials.dm.hint": "%s をあなたのアカウントからInstagramの@dungeontrainに送り、更新を押してください。コードの有効期限は15分です。",
+  "gui.dungeontrain.socials.dm.hint": "%s をあなたのアカウントからInstagramの@dungeontrainに送り、更新を押してください。",
   "gui.dungeontrain.socials.refresh": "更新",
   "gui.dungeontrain.socials.opened": "ブラウザでサインインを完了してから、更新を押してください。",
   "gui.dungeontrain.socials.platform.instagram": "Instagram",
