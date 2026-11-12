@@ -16129,6 +16129,15 @@
       ]
     }
   },
+  "gui.dungeontrain.socials.dm.hint": {
+    "1": {
+      "label": "the one-time code the player sends to @dungeontrain on Instagram; never translated",
+      "examples": [
+        "DT-7K2QH",
+        "DT-HZRK3"
+      ]
+    }
+  },
   "gui.dungeontrain.options.account.minecraft": {
     "1": {
       "label": "the player's Minecraft username",
