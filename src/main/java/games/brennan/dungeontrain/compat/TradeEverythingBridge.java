@@ -173,8 +173,8 @@ public final class TradeEverythingBridge {
         // floor every potion at 1 sixteenth — Strength II priced like a stick.
         TradeEverythingApi.registerValueProvider(TradeEverythingBridge::potionValue);
 
-        // Balanced Totems: the rarer the totem in DT's loot, the more it's worth (balancedTotemValue).
-        TradeEverythingApi.registerValueProvider(TradeEverythingBridge::balancedTotemValue);
+        // Dungeon Totems: the rarer the totem in DT's loot, the more it's worth (dungeonTotemValue).
+        TradeEverythingApi.registerValueProvider(TradeEverythingBridge::dungeonTotemValue);
 
         TradeEverythingApi.setItemOverride256ths(
             ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_256THS);
@@ -220,10 +220,10 @@ public final class TradeEverythingBridge {
     private static volatile int vanillaTotemValue = -1;
 
     /**
-     * A Balanced Totem's value, from its weight in DT's {@code random_totem} table: the rarest (lowest
+     * A Dungeon Totem's value, from its weight in DT's {@code random_totem} table: the rarest (lowest
      * weight) is worth a quarter of a vanilla Totem of Undying, heavier ones proportionally less.
      */
-    private static OptionalInt balancedTotemValue(ItemStack stack) {
+    private static OptionalInt dungeonTotemValue(ItemStack stack) {
         if (stack.isEmpty()) return OptionalInt.empty();
         int weight = RandomTotemTable.weightOf(BuiltInRegistries.ITEM.getKey(stack.getItem()));
         if (weight <= 0) return OptionalInt.empty();

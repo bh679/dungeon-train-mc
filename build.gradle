@@ -717,10 +717,10 @@ dependencies {
     implementation "bh679:sablemobpaths:${sablemobpaths_version}"
     jarJar(group: 'bh679', name: 'sablemobpaths', version: sablemobpaths_version)
 
-    // Balanced Totems — cursed Totems of Undying (see gradle.properties). Bundled until its listings are
-    // approved; DT compiles against its API only through compat/BalancedTotemsBridge. Shared bh679 Ivy repo.
-    implementation "bh679:balancedtotems:${balancedtotems_version}"
-    jarJar(group: 'bh679', name: 'balancedtotems', version: balancedtotems_version)
+    // Dungeon Totems — cursed Totems of Undying (see gradle.properties). Bundled until its listings are
+    // approved; DT compiles against its API only through compat/DungeonTotemsBridge. Shared bh679 Ivy repo.
+    implementation "bh679:dungeontotems:${dungeontotems_version}"
+    jarJar(group: 'bh679', name: 'dungeontotems', version: dungeontotems_version)
 
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
@@ -1091,7 +1091,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
-        balancedtotems_min_version       : balancedtotems_min_version,
+        dungeontotems_min_version       : dungeontotems_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
         streamdetect_min_version         : streamdetect_min_version,
         dtmodverify_min_version          : dtmodverify_min_version,

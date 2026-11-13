@@ -48,7 +48,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Deeper Darker + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix/Balanced Totems (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids, and for `balancedtotems` (jarJar'd, not yet listed: every other case runs its nested copy) |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Deeper Darker + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix/Dungeon Totems (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids, and for `dungeontotems` (jarJar'd, not yet listed: every other case runs its nested copy) |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |

@@ -1,11 +1,11 @@
-# Audit: Balanced Totems 0.6.0
+# Audit: Dungeon Totems 0.6.0
 
-Audited 2026-11-12 from the GitHub release jar (`balancedtotems-neoforge-0.6.0.jar`, 115 KB), using [`../newmod.md`](../newmod.md).
+Audited 2026-11-12 from the GitHub release jar (`dungeontotems-neoforge-0.6.0.jar`, 115 KB), using [`../newmod.md`](../newmod.md).
 
 | | |
 |---|---|
-| Mod id | `balancedtotems` (display "Balanced Totems"; store name "Dungeon Totems") |
-| Repo | `bh679/balancedtotems-mc` — our own sibling |
+| Mod id | `dungeontotems` (display "Dungeon Totems") |
+| Repo | `bh679/dungeontotems-mc` — our own sibling |
 | Pins | GitHub release `v0.6.0` via the shared `bh679` Ivy repo. Modrinth `dungeontotems` and CurseForge 1800270 are unapproved drafts: no store pins yet |
 | Shipped as | jarJar'd inside every DT jar (like Sable Mob Paths). No modpack entry, no CurseForge/Modrinth relation |
 | Licence | PolyForm Shield 1.0.0 (ours) |
@@ -18,7 +18,7 @@ Audited 2026-11-12 from the GitHub release jar (`balancedtotems-neoforge-0.6.0.j
 | Category | Count | Action |
 |---|---:|---|
 | Items (totems) | 14 | Kept (requested). Evokers drop them; DT's loot rolls them through `dungeontrain:random_totem` |
-| Items with an unfair advantage | 0 | The Void Totem is steered onto the train (`compat/BalancedTotemsBridge`) |
+| Items with an unfair advantage | 0 | The Void Totem is steered onto the train (`compat/DungeonTotemsBridge`) |
 | Mobs | 0 | None |
 | Structures / world gen | 0 | None |
 | Loot | 1 global loot modifier | Kept: replaces the vanilla totem in `minecraft:entities/evoker`. DT re-picks that totem by its `random_totem` weights (`EvokerTotemLootModifier`), with no Void Totem before the first End band |
@@ -37,7 +37,7 @@ Audited 2026-11-12 from the GitHub release jar (`balancedtotems-neoforge-0.6.0.j
 |---|---|
 | Existing mods | No duplicate ids, no `incompatible` entries, no mixins, no keybinds |
 | World gen | None |
-| Loot tables | Evoker GLM only. DT has no evoker loot override. `StripDisabledItemsLootModifier` does not touch `balancedtotems` |
+| Loot tables | Evoker GLM only. DT has no evoker loot override. `StripDisabledItemsLootModifier` does not touch `dungeontotems` |
 | Vanilla data | `replace:false` tags only: six `minecraft:tags/damage_type/bypasses_*` + `no_knockback` additions for its own damage types |
 | Economy | No recipes, no trades. Trade Everything values set by DT from the loot weights, at most a quarter of a vanilla totem |
 
@@ -47,7 +47,7 @@ Audited 2026-11-12 from the GitHub release jar (`balancedtotems-neoforge-0.6.0.j
 |---|---|
 | Rage / Loneliness targets | With `dungeontrain` loaded villagers never count (`Targets.villagersStandIn`). PlayerMobs count by the `playermob:player_mob` tag entry and by chaining `PlayerMobSocialHooks`' observer at ServerStarted, after DT installs its own at commonSetup. Signatures checked against playermob 0.119.0 |
 | Death | Totem saves cancel `LivingDeathEvent` at HIGHEST, ahead of every DT death handler |
-| Void Totem | Lands on the nearest front pad of the train (`BalancedTotemsBridge`), with DT's deck hold + harmless window |
+| Void Totem | Lands on the nearest front pad of the train (`DungeonTotemsBridge`), with DT's deck hold + harmless window |
 | Sable | Teleport onto a moving sub-level: Gate 2 tested on a moving train |
 | Fair play | Embedded ⇒ auto-approved by `generateApprovedMods`; `unmatched` in `approved_hashes.json` until it has a listing |
 | Text | `en_us` only. Its item names and curse messages are English in DT's other locales |

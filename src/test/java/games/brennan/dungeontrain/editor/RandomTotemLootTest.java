@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * DT's loot hands out Balanced Totems ({@code dungeontrain:random_totem}) wherever it used to hand out
+ * DT's loot hands out Dungeon Totems ({@code dungeontrain:random_totem}) wherever it used to hand out
  * the vanilla Totem of Undying, except ominous vaults, which keep the vanilla one. The ominous pools
  * baked into templates ({@code contents/*.variants.json} and {@code .nbt}) are left alone, so only the
  * hand-editable loot lists are pinned here.

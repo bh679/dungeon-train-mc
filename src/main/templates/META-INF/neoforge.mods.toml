@@ -294,12 +294,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Balanced Totems — sibling (cursed Totems of Undying): jarJar'd INSIDE this jar until its store listings
+# Dungeon Totems — sibling (cursed Totems of Undying): jarJar'd INSIDE this jar until its store listings
 # are approved, so the nested copy always satisfies this. Sends its own S2C payloads: BOTH sides.
 [[dependencies.${mod_id}]]
-    modId="balancedtotems"
+    modId="dungeontotems"
     type="required"
-    versionRange="[${balancedtotems_min_version},)"
+    versionRange="[${dungeontotems_min_version},)"
     ordering="AFTER"
     side="BOTH"
 

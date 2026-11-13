@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * What the {@code dungeontrain:random_totem} loot placeholder becomes: one Balanced Totem, picked by
+ * What the {@code dungeontrain:random_totem} loot placeholder becomes: one Dungeon Totem, picked by
  * the weights in {@link #RESOURCE}. The vanilla Totem of Undying stays in ominous vaults; everywhere
  * else DT's loot carries this placeholder instead (see {@code ContainerContentsRoller}).
  *
@@ -31,7 +31,7 @@ public final class RandomTotemTable {
     static final String RESOURCE = "/data/dungeontrain/loot/random_totem.json";
 
     /** Left out of every roll until the train reaches the void ({@link VoidTotemGate}). */
-    public static final ResourceLocation VOID_TOTEM = ResourceLocation.fromNamespaceAndPath("balancedtotems", "void_totem");
+    public static final ResourceLocation VOID_TOTEM = ResourceLocation.fromNamespaceAndPath("dungeontotems", "void_totem");
 
     private static volatile Map<ResourceLocation, Integer> weights = null;
 
@@ -115,7 +115,7 @@ public final class RandomTotemTable {
     }
 
     /**
-     * {@code {"weights": {"balancedtotems:void_totem": 6, …}}} → an immutable map in file order.
+     * {@code {"weights": {"dungeontotems:void_totem": 6, …}}} → an immutable map in file order.
      * Entries that are not an item id or whose weight is not a positive integer are dropped with a
      * warning; anything unparsable yields an empty map.
      */
