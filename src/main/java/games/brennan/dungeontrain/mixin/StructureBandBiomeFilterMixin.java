@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain;
 import games.brennan.dungeontrain.worldgen.LostCityMixStarts;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures;
 import games.brennan.dungeontrain.worldgen.structure.BandNetherStructures;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -61,5 +62,19 @@ public abstract class StructureBandBiomeFilterMixin {
         if (!BandNetherStructures.isBandEligible((Structure) (Object) this)) return;
         if (BandNetherStructures.open(context, 0) == null) return;   // not band core — vanilla's filter stands
         cir.setReturnValue(this.findGenerationPoint(context));
+    }
+
+    /**
+     * BetterNether's structures on the train overworld: only in a BetterNether band core, sited by their own
+     * code against the band's Nether ({@link BandBetterNetherStructures}). The base-class biome re-check is
+     * skipped for the same reason as above; the scope already checked the core biome where they looked.
+     */
+    @Inject(method = "findValidGenerationPoint", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$betterNetherInBand(Structure.GenerationContext context,
+                                                 CallbackInfoReturnable<Optional<Structure.GenerationStub>> cir) {
+        if (!BandBetterNetherStructures.isBandEligible((Structure) (Object) this)) return;
+        if (!PresetTerrain.isTrainOverworldGenerator(context.chunkGenerator())) return;
+        cir.setReturnValue(BandBetterNetherStructures.findInBand((Structure) (Object) this, context,
+                this::findGenerationPoint));
     }
 }

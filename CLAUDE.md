@@ -342,7 +342,9 @@ contract — paintings are blocks under FP, and templates/shared carriages carry
 `compat/PaintingTransformProcessor` for why flipped stamps still work). **BetterNether: New Dawn** + its
 BCLib/WorldWeaver/WunderLib libraries (`betternether-neoforge(required)` etc., same slugs on both platforms)
 are hard deps too — every second Nether band's core uses BetterNether biomes
-(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
+(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes) and gets half of BetterNether's own structures, sited on the band's terrain
+(`worldgen/structure/BandBetterNetherStructures`); disabled ores are kept out of its decoration and structures
+(`compat/StructureDisabledContentCleanup`). **BetterEnd: New
 Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
 End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
 read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the

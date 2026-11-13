@@ -16,8 +16,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Keeps the band's own structure sets enabled on the overworld generator — the End band's End cities, and
- * the Nether band's fortresses, bastions, fossils and ruined portals.
+ * Keeps the band's own structure sets enabled on the overworld generator — the End band's End cities, the
+ * Nether band's fortresses, bastions, fossils and ruined portals, and BetterNether's own structures.
  *
  * <p>A generator only considers structure sets whose structures' biomes intersect its biome source's
  * {@code possibleBiomes()}. The band's structures live on End or Nether biome columns that DT forces onto
@@ -60,6 +60,7 @@ public abstract class ChunkGeneratorStructureStateMixin {
             Structure structure = entry.structure().value();
             if (ModStructureTypes.isBandStructure(structure.type())
                     || BandNetherStructures.isBandEligible(structure)
+                    || games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures.isBandEligible(structure)
                     || games.brennan.dungeontrain.worldgen.structure.BandOthersideStructures.isBandEligible(structure)) {
                 return true;
             }

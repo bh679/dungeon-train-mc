@@ -204,6 +204,12 @@ public final class ThirdPartyMixinTargets {
             Map.of(), END_VANILLA, true)),
 
         // ── BetterNether ─────────────────────────────────────────────────────────────────────────
+        Map.entry(MIXIN_PACKAGE + "betternether.BetterNetherCityCenterMixin", new Spec(
+            Map.of("org.betterx.betternether.world.structures.city.CityStructure", List.of(
+                method("getCenter", "(Lnet/minecraft/world/level/levelgen/structure/Structure$GenerationContext;"
+                        + "Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/ChunkGenerator;"
+                        + "Lnet/minecraft/world/level/LevelHeightAccessor;)Lnet/minecraft/core/BlockPos;"))),
+            Map.of(), "BetterNether cities in the BetterNether Nether bands build at the overworld's y 40, under the core", false)),
         Map.entry(MIXIN_PACKAGE + "betternether.BetterNetherNagaClientEffectMixin", new Spec(
             Map.of("org.betterx.betternether.entity.EntityNagaProjectile", List.of(
                 invokes("onCollision", "net/minecraft/world/entity/LivingEntity", "addEffect",
