@@ -13,6 +13,8 @@ falls back to carrying the photo URL as its last line, so it still shows.
 
 Env:
   DISCORD_HIGHLIGHTS_WEBHOOK_URL  #highlights channel webhook (secret). Unset → skip, exit 0.
+  DUNGEONTRAIN_RELAY_ADMIN_BASE   Relay admin URL (secret). Set → each post's message id goes to the relay, so
+                                  the update page's "Also on" footer links it. Unset → a warning only.
   DRY_RUN=1                       Print the payloads (and which photo would attach) instead of posting.
 
 Usage:
@@ -38,6 +40,8 @@ import changelog_io
 UPDATE_PAGE_URL = "https://dungeon.training/update/"
 LOGO_URL = "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/src/main/resources/logo.png"
 CONTENT_LIMIT = 2000  # Discord message content cap
+RELAY_ENVS = ("DUNGEONTRAIN_RELAY_ADMIN_BASE", "DUNGEONTRAIN_RELAY_ADMIN_URL")
+SNOWFLAKE = re.compile(r"^\d{5,25}$")
 ATTACHMENT_LIMIT = 10 * 1024 * 1024  # Discord's default per-file upload cap for webhooks
 USER_AGENT = "DiscordBot (https://github.com/bh679/dungeon-train-mc, 1)"  # Python-urllib is blocked
 REPO_RAW_PREFIX = "https://raw.githubusercontent.com/bh679/dungeon-train-mc/"
@@ -151,19 +155,66 @@ def build_multipart(payload: dict, filename: str, data: bytes) -> tuple[bytes, s
     return b"".join(parts), f"multipart/form-data; boundary={boundary}"
 
 
-def post(webhook: str, payload: dict, attachment: tuple[str, bytes] | None = None) -> None:
+def with_wait(webhook: str) -> str:
+    """`?wait=true` on the webhook, so Discord answers with the message it made (its id and channel)."""
+    return webhook + ("&" if "?" in webhook else "?") + "wait=true"
+
+
+def post(webhook: str, payload: dict, attachment: tuple[str, bytes] | None = None) -> dict:
+    """Post and return Discord's message object ({} if it sent none)."""
     if attachment:
         body, content_type = build_multipart(payload, *attachment)
     else:
         body, content_type = json.dumps(payload).encode("utf-8"), "application/json"
     req = urllib.request.Request(
-        webhook,
+        with_wait(webhook),
         data=body,
         headers={"Content-Type": content_type, "User-Agent": USER_AGENT},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
-        resp.read()
+        raw = resp.read()
+    try:
+        message = json.loads(raw.decode("utf-8")) if raw else {}
+    except ValueError:
+        return {}
+    return message if isinstance(message, dict) else {}
+
+
+def relay_admin_base() -> str:
+    """The relay admin URL (the RELAY_ADMIN_BASE secret in CI). Never printed."""
+    for env in RELAY_ENVS:
+        value = os.environ.get(env, "").strip()
+        if value:
+            return value.rstrip("/")
+    return ""
+
+
+def report_to_relay(entry: dict, message: dict) -> None:
+    """Tell the relay where this update's #highlights post is, for the update page's "Also on" footer
+    (dp-relay POST <admin>/socials/updates/discord-post). Never fails the release: warns and moves on."""
+    channel_id, message_id = str(message.get("channel_id") or ""), str(message.get("id") or "")
+    if not (SNOWFLAKE.match(channel_id) and SNOWFLAKE.match(message_id)):
+        print("::warning::Discord sent no message id; the update page won't link this post.")
+        return
+    base = relay_admin_base()
+    if not base:
+        print("::warning::no relay admin URL; the update page won't link this #highlights post.")
+        return
+    entry_id = str(entry.get("id") or entry.get("title") or "")[:120]
+    body = json.dumps({"entryId": entry_id, "channelId": channel_id, "messageId": message_id}).encode("utf-8")
+    req = urllib.request.Request(
+        f"{base}/socials/updates/discord-post", data=body, method="POST",
+        headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            resp.read()
+        print(f"  ↳ the update page links '{entry_id}' to it")
+    except urllib.error.HTTPError as err:
+        # str(err) carries the URL, and so the admin capability: the status only.
+        print(f"::warning::relay refused the #highlights link: HTTP {err.code}")
+    except (urllib.error.URLError, OSError) as err:
+        print(f"::warning::couldn't reach the relay for the #highlights link: {getattr(err, 'reason', err)}")
 
 
 def dry_run_preview(entry: dict, tag: str) -> dict:
@@ -175,10 +226,10 @@ def dry_run_preview(entry: dict, tag: str) -> dict:
     return preview
 
 
-def post_entry(webhook: str, entry: dict, tag: str) -> None:
+def post_entry(webhook: str, entry: dict, tag: str) -> dict:
     attachment = load_image(_image_url(entry))
     with_link = attachment is None and bool(_image_url(entry))
-    post(webhook, build_payload(entry, tag, with_image_link=with_link), attachment)
+    return post(webhook, build_payload(entry, tag, with_image_link=with_link), attachment)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -209,8 +260,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         for e in targets:
-            post_entry(webhook, e, args.tag)
+            message = post_entry(webhook, e, args.tag)
             print(f"✓ Posted '{e['id']}' to #highlights")
+            report_to_relay(e, message)
     except urllib.error.HTTPError as err:
         print(f"::error::#highlights post failed: HTTP {err.code}", file=sys.stderr)
         return 1

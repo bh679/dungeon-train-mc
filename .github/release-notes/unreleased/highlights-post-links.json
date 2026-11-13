@@ -1,0 +1,16 @@
+{
+  "id": "highlights-post-links",
+  "version": "0.1791.0",
+  "type": "ci",
+  "tags": [
+    "community",
+    "internal"
+  ],
+  "title": "Update page links to Discord posts",
+  "summary": "Major updates on the update page can now link to their Discord highlights post.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
