@@ -21,6 +21,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /**
  * Overworld chunks a player has changed, which are always saved ({@code UntouchedChunkSaves} drops the
@@ -89,6 +90,11 @@ public final class TouchedChunks {
     @SubscribeEvent
     public static void onExplosion(ExplosionEvent.Detonate event) {
         for (BlockPos pos : event.getAffectedBlocks()) mark(event.getLevel(), pos);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        UntouchedChunkSaves.onServerStopping(event.getServer());
     }
 
     @SubscribeEvent

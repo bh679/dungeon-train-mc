@@ -37,6 +37,13 @@ class UntouchedChunkSavesTest {
 
     @Test
     void noPlayersMeansNotNear() {
-        assertFalse(UntouchedChunkSaves.nearAnyPlayer(java.util.List.of(), new ChunkPos(0, 0), 14));
+        assertFalse(UntouchedChunkSaves.nearAnySpot(new long[0], new ChunkPos(0, 0), 14));
+    }
+
+    @Test
+    void anySpotWithinKeepIsNear() {
+        long[] spots = {ChunkPos.asLong(0, 0), ChunkPos.asLong(500, 3)};
+        assertTrue(UntouchedChunkSaves.nearAnySpot(spots, new ChunkPos(510, 0), 14));
+        assertFalse(UntouchedChunkSaves.nearAnySpot(spots, new ChunkPos(250, 0), 14));
     }
 }

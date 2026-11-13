@@ -47,7 +47,7 @@ public final class TrackChunkEvents {
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
         long chunkKey = ChunkPos.asLong(cx, cz);
-        boolean regenerated = event.isNewChunk() && UntouchedChunkSaves.forgetDropped(chunkKey);
+        boolean regenerated = event.isNewChunk() && UntouchedChunkSaves.wasDropped(chunkKey);
 
         // Only each train's TAIL provider is ever drained (TrainTickEvents → fillRenderDistance on
         // Trains.tail), so offering to every carriage just grew every other provider's queue for
