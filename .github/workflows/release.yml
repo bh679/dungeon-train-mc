@@ -613,6 +613,7 @@ jobs:
         continue-on-error: true
         env:
           DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: python3 scripts/release-notes/notify-highlights.py --tag "$RELEASE_TAG"
 
