@@ -695,6 +695,19 @@ public final class LiveFeedClient {
         return new MicPolicy(bool(m, "allowed", true), bool(m, "twitch", false));
     }
 
+    /**
+     * A heartbeat reply's {@code mic.track}: whether the relay counts this stream's mic track. Null from a
+     * relay too old to say (or a reply without {@code mic}).
+     */
+    @Nullable
+    public static Boolean parseMicTrack(Result r) {
+        JsonObject body = r.body();
+        if (body == null || !body.has("mic") || !body.get("mic").isJsonObject()) return null;
+        JsonObject m = body.getAsJsonObject("mic");
+        if (!m.has("track") || !m.get("track").isJsonPrimitive() || !m.getAsJsonPrimitive("track").isBoolean()) return null;
+        return m.get("track").getAsBoolean();
+    }
+
     private static boolean bool(JsonObject o, String key, boolean absent) {
         if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.getAsJsonPrimitive(key).isBoolean()) return absent;
         return o.get(key).getAsBoolean();
@@ -732,21 +745,27 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> presign(String token, List<String> files) {
-        return presign(token, files, false);
+        return presign(token, files, false, false);
     }
 
-    /** The heartbeat too: {@code micOn} is whether the streamer's mic is switched on right now. */
-    public static CompletableFuture<Result> presign(String token, List<String> files, boolean micOn) {
-        return post("/live/presign", presignBody(token, files, micOn));
+    /**
+     * The heartbeat too: {@code micOn} is whether the streamer's mic is heard right now, {@code micTrack}
+     * whether the stream carries a mic track (from the start, or added mid-stream: the relay then counts
+     * it and says so in the reply's {@code mic.track}, {@link #parseMicTrack}).
+     */
+    public static CompletableFuture<Result> presign(String token, List<String> files, boolean micOn, boolean micTrack) {
+        return post("/live/presign", presignBody(token, files, micOn, micTrack));
     }
 
-    static JsonObject presignBody(String token, List<String> files, boolean micOn) {
+    static JsonObject presignBody(String token, List<String> files, boolean micOn, boolean micTrack) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
         JsonArray arr = new JsonArray();
         files.forEach(arr::add);
         body.add("files", arr);
         body.addProperty("micOn", micOn);
+        // Only ever true here: the relay counts a track once and never takes it back.
+        if (micTrack) body.addProperty("mic", true);
         return body;
     }
 

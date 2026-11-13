@@ -202,6 +202,8 @@ public enum ClientOptionsTab {
         STREAM_AUDIO("gui.dungeontrain.options.stream_audio"),
         /** Whether the mic may join streams (it still starts each stream off). */
         MIC_SUPPORT("gui.dungeontrain.options.mic_support"),
+        /** The "your mic is off" line at stream start ({@code LiveMicHint}). */
+        MIC_HINT("gui.dungeontrain.options.mic_hint"),
         /** Which capture device the mic uses. */
         MIC_DEVICE("gui.dungeontrain.options.mic_device"),
         /** How loud live streams play from TVs; also on Music &amp; Sounds. */
@@ -439,6 +441,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.MIC_SUPPORT);
                 rows.add(Row.MIC_DEVICE);
                 rows.add(Row.MIC_MODE);
+                rows.add(Row.MIC_HINT);
                 rows.add(Row.STREAM_SECTION_PICTURE);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);

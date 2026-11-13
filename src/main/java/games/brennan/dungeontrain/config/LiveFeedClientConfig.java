@@ -36,6 +36,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_PHOTOS;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_BOOKS;
     public static final ModConfigSpec.BooleanValue TWITCH_SHOUTOUT_HINT;
+    public static final ModConfigSpec.BooleanValue MIC_HINT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -90,7 +91,7 @@ public final class LiveFeedClientConfig {
             .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is its own switch (micSupport). On by default; takes effect from your next stream.")
             .define("streamAudio", true);
         MIC_SUPPORT = b
-            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the voice joins from your next stream. Off by default.")
+            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the stream gains a mic track and the voice joins it in a few seconds. Off by default.")
             .define("micSupport", MIC_SUPPORT_DEFAULT);
         MIC_DEVICE = b
             .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
@@ -135,6 +136,9 @@ public final class LiveFeedClientConfig {
         TWITCH_SHOUTOUT_HINT = b
             .comment("When you go live without a Twitch saved, say in chat that dropping your Twitch username or URL there gets you a shout-out on the official Dungeon Train Twitch. Never shown once a Twitch is saved, or in Kid mode.")
             .define("twitchShoutoutHint", true);
+        MIC_HINT = b
+            .comment("When you go live with your microphone off (on a stream with sound), say in chat where to turn it on. Turned on mid-stream, the voice joins that stream.")
+            .define("micHint", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
@@ -376,6 +380,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || TWITCH_SHOUTOUT_HINT.get() == value) return;
         TWITCH_SHOUTOUT_HINT.set(value);
         TWITCH_SHOUTOUT_HINT.save();
+    }
+
+    /** The "your mic is off" reminder at stream start ({@code LiveMicHint}). */
+    public static boolean micHint() { return !loaded() || MIC_HINT.get(); }
+
+    public static void setMicHint(boolean value) {
+        if (!loaded() || MIC_HINT.get() == value) return;
+        MIC_HINT.set(value);
+        MIC_HINT.save();
     }
 
     /** The Discord live chat switch as set; {@code LiveChatBridge} still forces it off in Kid mode. */

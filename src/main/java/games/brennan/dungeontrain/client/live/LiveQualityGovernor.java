@@ -35,7 +35,7 @@ public final class LiveQualityGovernor {
     static final int LOW_SPEED_WIDTH = 854;
 
     private final int[] rungs;
-    private final int audioKbps;
+    private int audioKbps;
     private int rung;
     private long switchedAtMs;
 
@@ -54,6 +54,11 @@ public final class LiveQualityGovernor {
             .mapToInt(share -> Math.max(LiveEncoder.MIN_BITRATE_KBPS, (int) Math.round(ceiling * share)))
             .distinct()
             .toArray();
+    }
+
+    /** A mic track added mid-stream doubles the sound's share: rungs fit against the new total from here. */
+    public void setAudioKbps(int kbps) {
+        audioKbps = Math.max(0, kbps);
     }
 
     /**
