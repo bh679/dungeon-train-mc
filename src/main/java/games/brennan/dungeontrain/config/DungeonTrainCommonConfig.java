@@ -272,6 +272,13 @@ public final class DungeonTrainCommonConfig {
     public static final boolean DEFAULT_TWIN_SPACE_ROOM_ONLY_CHUNKS = true;
 
     /**
+     * Whether overworld chunks no player has changed are left off the disk ({@code UntouchedChunkSaves}),
+     * so going back regenerates them from the seed. Off by default: vanilla saving. Set from the Options
+     * screen's Performance tab.
+     */
+    public static final boolean DEFAULT_DROP_UNTOUCHED_WORLD_GEN = false;
+
+    /**
      * Chuncks band — a fourth looping phase, appended after the upside-down band's trailing overworld
      * gap. Along +X it is mostly void, sprinkled with occasional real overworld chunks: some vertically
      * complete, some a top-down slice (natural surface kept, flat cut-off bottom — a floating island of
@@ -635,6 +642,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue DISTANT_LOD_LITE_DECORATION;
     public static final ModConfigSpec.BooleanValue TWIN_SPACE_ROOM_ONLY_CHUNKS;
+    public static final ModConfigSpec.BooleanValue DROP_UNTOUCHED_WORLD_GEN;
     public static final ModConfigSpec.BooleanValue NETHER_FOLIAGE_STRIP_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
@@ -716,6 +724,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
         DISTANT_LOD_LITE_DECORATION = pair.getLeft().distantLodLiteDecoration;
         TWIN_SPACE_ROOM_ONLY_CHUNKS = pair.getLeft().twinSpaceRoomOnlyChunks;
+        DROP_UNTOUCHED_WORLD_GEN = pair.getLeft().dropUntouchedWorldGen;
         NETHER_FOLIAGE_STRIP_PRECOMPUTE = pair.getLeft().netherFoliageStripPrecompute;
         UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
@@ -1064,6 +1073,13 @@ public final class DungeonTrainCommonConfig {
                         "the whole overworld above them. true = while there, only the room's own chunks are held.",
                         "false = vanilla loading (original behaviour). Default true.")
                 .define("twinSpaceRoomOnlyChunks", DEFAULT_TWIN_SPACE_ROOM_ONLY_CHUNKS);
+        ModConfigSpec.BooleanValue dropUntouchedWorldGen = b
+                .comment("Smaller saves: don't save terrain nobody changed. Players rarely ride back, so when true an",
+                        "overworld chunk no player has changed (broken, placed, opened, exploded) is not written to disk;",
+                        "going back regenerates it from the seed. The area around players is still saved when the world",
+                        "closes, and so is anything behind spawn and in End bands. Nothing already saved is deleted.",
+                        "false = save every chunk (vanilla). Default false. Also on the Options screen's Performance tab.")
+                .define("dropUntouchedWorldGen", DEFAULT_DROP_UNTOUCHED_WORLD_GEN);
         ModConfigSpec.BooleanValue netherFoliageStripPrecompute = b
                 .comment("Scan the Nether transition band's foliage strip (which overworld leaves/logs/flowers to clear",
                         "off the netherrack crossfade + Nether core) on the worldgen worker thread (SPAWN step) and only",
@@ -1267,7 +1283,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, distantLodLiteDecoration,
-                twinSpaceRoomOnlyChunks,
+                twinSpaceRoomOnlyChunks, dropUntouchedWorldGen,
                 netherFoliageStripPrecompute, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
@@ -1784,6 +1800,18 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? TWIN_SPACE_ROOM_ONLY_CHUNKS.get() : DEFAULT_TWIN_SPACE_ROOM_ONLY_CHUNKS;
     }
 
+    /** Whether untouched overworld chunks are left off the disk; falls back to the default pre-load. */
+    public static boolean isDropUntouchedWorldGen() {
+        return isLoaded() ? DROP_UNTOUCHED_WORLD_GEN.get() : DEFAULT_DROP_UNTOUCHED_WORLD_GEN;
+    }
+
+    /** Sets {@link #isDropUntouchedWorldGen} for every world on this machine; applies to the next chunk saved. */
+    public static void setDropUntouchedWorldGen(boolean value) {
+        if (!isLoaded()) return;
+        DROP_UNTOUCHED_WORLD_GEN.set(value);
+        DROP_UNTOUCHED_WORLD_GEN.save();
+    }
+
     /** Whether the Nether-band foliage strip is scanned off-thread at SPAWN; falls back to the default pre-load. */
     public static boolean isNetherFoliageStripPrecompute() {
         return isLoaded() ? NETHER_FOLIAGE_STRIP_PRECOMPUTE.get() : DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE;
@@ -1971,6 +1999,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
                           ModConfigSpec.BooleanValue distantLodLiteDecoration,
                           ModConfigSpec.BooleanValue twinSpaceRoomOnlyChunks,
+                          ModConfigSpec.BooleanValue dropUntouchedWorldGen,
                           ModConfigSpec.BooleanValue netherFoliageStripPrecompute,
                           ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,

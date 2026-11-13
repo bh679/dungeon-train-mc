@@ -1005,6 +1005,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, mode) -> DungeonTrainCommonConfig.setCatchUpBurstMode(mode)),
                     key + ".tip");
 
+            // Smaller saves: one global value like CATCH_UP_BURST; the next chunk saved reads it.
+            case DROP_UNTOUCHED_WORLD_GEN -> Setting.of(onOff(Component.translatable(key),
+                    DungeonTrainCommonConfig.isDropUntouchedWorldGen(), DungeonTrainCommonConfig::setDropUntouchedWorldGen),
+                    key + ".tip");
+
             // The binding itself lives in vanilla Controls (Dungeon Train category); this only decides
             // whether it does anything, so a player who wants the key back for something else can free
             // it without hunting through the keybind list.

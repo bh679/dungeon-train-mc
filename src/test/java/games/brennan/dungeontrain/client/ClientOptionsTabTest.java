@@ -191,7 +191,8 @@ final class ClientOptionsTabTest {
         assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
                         ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.LIVESTREAM,
                         ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
-                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.PERFORMANCE_TIPS),
+                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.DROP_UNTOUCHED_WORLD_GEN,
+                        ClientOptionsTab.Row.PERFORMANCE_TIPS),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
                 .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
@@ -248,9 +249,9 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 81 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // 82 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(85, rows.size());
+        assertEquals(86, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -365,6 +366,16 @@ final class ClientOptionsTabTest {
                 assertEquals(editor, ClientOptionsTab.rowsFor(ClientOptionsTab.EDITOR, chinese, translate, true));
             }
         }
+    }
+
+    @Test
+    @DisplayName("Smaller saves is absent on a multiplayer client, and only the unpaired tips follow it")
+    void dropUntouchedWorldGen_absentWhenNotWritable() {
+        List<ClientOptionsTab.Row> remote = ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, false);
+        assertFalse(remote.contains(ClientOptionsTab.Row.DROP_UNTOUCHED_WORLD_GEN));
+        List<ClientOptionsTab.Row> local = ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true);
+        assertEquals(ClientOptionsTab.Row.PERFORMANCE_TIPS,
+                local.get(local.indexOf(ClientOptionsTab.Row.DROP_UNTOUCHED_WORLD_GEN) + 1));
     }
 
     @Test
