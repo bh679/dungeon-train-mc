@@ -35595,6 +35595,74 @@
       "released": true,
       "released_in": "v0.1802.0",
       "released_at": "2026-11-13T13:34:21Z"
+    },
+    {
+      "id": "more-nether-structures",
+      "version": "0.1805.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "More to discover in the Nether",
+      "summary": "New structures to find in the Nether.",
+      "highlights": [
+        "New structures to find in the Nether.",
+        "Fixed some ores turning up in the Nether that shouldn't."
+      ],
+      "pr": 2643,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1806.0",
+      "released_at": "2026-11-13T15:39:28Z"
+    },
+    {
+      "id": "morph-first-person-arms",
+      "version": "0.1802.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Totem fix",
+      "summary": "While a totem has transformed you, first person no longer shows human arms. Forms that have arms now see their own.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1806.0",
+      "released_at": "2026-11-13T15:39:28Z"
+    },
+    {
+      "id": "morphing-totem-form-times",
+      "version": "0.1804.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Totem tweak",
+      "summary": "One totem's forms now each last their own length of time, and a few of them come up less often.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1806.0",
+      "released_at": "2026-11-13T15:39:28Z"
+    },
+    {
+      "id": "tv-feed-section-crash",
+      "version": "0.1802.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Fixed a rare crash near TVs",
+      "summary": "Fixed a rare crash that could close the game while TVs were showing a feed.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1806.0",
+      "released_at": "2026-11-13T15:39:28Z"
     }
   ]
 }
