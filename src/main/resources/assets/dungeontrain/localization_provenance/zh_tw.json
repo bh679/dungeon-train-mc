@@ -741,6 +741,7 @@
       "chat.dungeontrain.live.mic_barred",
       "chat.dungeontrain.live.mic_no_device",
       "chat.dungeontrain.live.mic_next_stream",
+      "chat.dungeontrain.live.mic_joining",
       "chat.dungeontrain.live.mic_off_hint",
       "chat.dungeontrain.live.mic_off_hint.path",
       "chat.dungeontrain.live.mic_hint_off",

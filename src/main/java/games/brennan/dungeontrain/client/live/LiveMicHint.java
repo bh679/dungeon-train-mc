@@ -13,10 +13,11 @@ import net.minecraft.network.chat.MutableComponent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The mic line said at go-live, after "N people watching" ({@link LiveStreamController}). A stream
- * only carries a mic track when Microphone and Stream game sound were on as it started, so a player
- * who goes live with it off hears where to turn it on for the next stream. A mic that was wanted but
- * found no device says so here too, not only when the mic key is pressed.
+ * The mic line said at go-live, after "N people watching" ({@link LiveStreamController}). A player
+ * who goes live with the mic off hears where to turn it on: on a stream with sound, switching it on
+ * adds a mic track to this stream ({@code LiveMic.Toggle.JOINING}). A stream without sound cannot
+ * gain one, so it says nothing there. A mic that was wanted but found no device says so here too,
+ * not only when the mic key is pressed.
  */
 public final class LiveMicHint {
 
@@ -28,21 +29,22 @@ public final class LiveMicHint {
     private LiveMicHint() {}
 
     /**
-     * Which line, if any. {@code micTrack}: this stream carries one; {@code barred}: the relay has the
-     * mic off for this streamer (its own line); {@code hintOn}: the reminder is wanted. A mic that is
-     * on but missing for another reason (unapproved mods, the sound restart) already has its own line.
+     * Which line, if any. {@code streamSound}: the stream on air carries sound (a mic needs it);
+     * {@code micTrack}: it carries a mic track; {@code barred}: the relay has the mic off for this
+     * streamer (its own line); {@code hintOn}: the reminder is wanted. A mic that is on but missing for
+     * another reason (unapproved mods, the sound restart) already has its own line.
      */
-    static Kind of(boolean streamAudio, boolean micOption, boolean micTrack, boolean barred,
+    static Kind of(boolean streamSound, boolean micOption, boolean micTrack, boolean barred,
                    boolean noDevice, boolean hintOn) {
-        if (micTrack || barred) return Kind.NONE;
-        if (streamAudio && micOption) return noDevice ? Kind.NO_DEVICE : Kind.NONE;
+        if (!streamSound || micTrack || barred) return Kind.NONE;
+        if (micOption) return noDevice ? Kind.NO_DEVICE : Kind.NONE;
         return hintOn ? Kind.MIC_OFF : Kind.NONE;
     }
 
     /** The line for the stream that just went live, or null for none. Render thread. */
     @Nullable
-    static Component line() {
-        Kind kind = of(LiveFeedClientConfig.streamAudio(), LiveFeedClientConfig.micSupport(), LiveMic.enabled(),
+    static Component line(boolean streamSound) {
+        Kind kind = of(streamSound, LiveFeedClientConfig.micSupport(), LiveMic.enabled(),
             LiveMic.barred(), MicCapture.devices().isEmpty(), LiveFeedClientConfig.micHint());
         return switch (kind) {
             case NONE -> null;

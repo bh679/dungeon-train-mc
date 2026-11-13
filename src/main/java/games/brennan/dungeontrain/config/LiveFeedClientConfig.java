@@ -137,7 +137,7 @@ public final class LiveFeedClientConfig {
             .comment("When you go live without a Twitch saved, say in chat that dropping your Twitch username or URL there gets you a shout-out on the official Dungeon Train Twitch. Never shown once a Twitch is saved, or in Kid mode.")
             .define("twitchShoutoutHint", true);
         MIC_HINT = b
-            .comment("When you go live with your microphone off, say in chat where to turn it on for your next stream.")
+            .comment("When you go live with your microphone off (on a stream with sound), say in chat where to turn it on. Turned on mid-stream, the voice joins that stream.")
             .define("micHint", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")

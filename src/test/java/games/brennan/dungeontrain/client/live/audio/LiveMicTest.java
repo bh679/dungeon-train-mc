@@ -28,6 +28,7 @@ class LiveMicTest {
     void endStream() {
         LiveMic.endStream();
         LiveMic.setOptionForTests(null, null);
+        LiveMic.setMidStreamJoin(() -> LiveMic.Toggle.NEXT_STREAM);
     }
 
     @Test
@@ -130,5 +131,69 @@ class LiveMicTest {
         assertFalse(LiveMic.on());
         LiveMic.endStream();
         assertTrue(option.get(), "a stream ending leaves the option alone");
+    }
+
+    @Test
+    void switchedOnMidStreamWhereATrackCanBeAddedTheStreamIsJoining() {
+        LiveMic.startStream(false);
+        LiveMic.setMidStreamJoin(() -> LiveMic.Toggle.JOINING);
+        assertEquals(LiveMic.Toggle.JOINING, LiveMic.set(true, LiveMic.Source.KEY));
+        assertTrue(option.get(), "saved before the track is added, so the new track opens the mic");
+        assertFalse(LiveMic.heartbeatMicTrack(), "nothing told to the relay until the encoder writes the track");
+    }
+
+    @Test
+    void aTrackAddedMidStreamIsSilentUntilTheRelayCountsIt() {
+        option.set(true);
+        LiveMic.startStream(false);
+        LiveMic.joinMidStream();
+        assertTrue(LiveMic.enabled());
+        assertTrue(LiveMic.held());
+        assertTrue(LiveMic.heartbeatMicTrack(), "the heartbeat now says the stream carries a mic track");
+        assertFalse(LiveMic.on(), "held: Kid-mode viewers have not moved to the game-only track yet");
+        assertFalse(LiveMic.heartbeatMicOn());
+
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.NO), "not counted yet: still held");
+        assertTrue(LiveMic.held());
+        assertTrue(LiveMic.relayTrack(LiveMic.TrackWord.YES), "counted: the voice goes through");
+        assertFalse(LiveMic.held());
+        assertTrue(LiveMic.on());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.YES), "once");
+        assertFalse(LiveMic.takeHeldNotice(), "nothing to say on a relay that counts it");
+    }
+
+    @Test
+    void aRelayTooOldToCountTheTrackKeepsTheVoiceHeldAndSaysSoOnce() {
+        option.set(true);
+        LiveMic.startStream(false);
+        LiveMic.joinMidStream();
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID));
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID));
+        assertTrue(LiveMic.held(), "never heard on this stream");
+        assertFalse(LiveMic.on());
+        assertTrue(LiveMic.takeHeldNotice(), "the next-stream line, once");
+        assertFalse(LiveMic.takeHeldNotice());
+    }
+
+    @Test
+    void aStreamWithATrackFromTheStartIsNeverHeld() {
+        option.set(true);
+        LiveMic.startStream(true);
+        assertFalse(LiveMic.held());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID), "an older relay's silence is nothing to act on");
+        assertFalse(LiveMic.takeHeldNotice());
+        assertTrue(LiveMic.on());
+    }
+
+    @Test
+    void theNextStreamDropsAHeldTrack() {
+        option.set(true);
+        LiveMic.startStream(false);
+        LiveMic.joinMidStream();
+        LiveMic.endStream();
+        assertFalse(LiveMic.held());
+        assertFalse(LiveMic.heartbeatMicTrack());
+        LiveMic.startStream(false);
+        assertFalse(LiveMic.held());
     }
 }

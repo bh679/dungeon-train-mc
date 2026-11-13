@@ -20,8 +20,11 @@ import java.util.function.Supplier;
  * two audio tracks for its whole length (the game with the mic over it, and the game alone), so
  * switching the mic off and on never restarts the encoder: while it is off the mic's half is silence.
  * The mic starts the stream in whatever state the option is in. Switched on during a stream that
- * started without a track, the option is saved but the voice joins from the next stream
- * ({@link Toggle#NEXT_STREAM}); the icon keeps its waiting look.</p>
+ * started without a track, the stream gains one ({@link Toggle#JOINING}): the controller swaps its
+ * encoder for one with a mic track ({@link #setMidStreamJoin}), and the voice is held silent
+ * ({@link #held}) until the relay's heartbeat reply says it counts the track ({@link #relayTrack}), so
+ * viewers in Kid mode have already moved to the game-only track. Where that cannot happen (no stream
+ * sound, a relay too old to say) the voice joins from the next stream ({@link Toggle#NEXT_STREAM}).</p>
  *
  * <p>The capture device opens when the mic goes on and closes when it goes off, so a streamer who
  * never switches it on never meets the system's microphone permission prompt. With push to talk set,
@@ -47,6 +50,12 @@ public final class LiveMic {
     private static volatile Supplier<@Nullable MicCapture> opener = () -> MicCapture.open(LiveFeedClientConfig.micDevice());
     /** The stream on air carries a mic track. */
     private static volatile boolean enabled;
+    /** A mic track added mid-stream, silent until the relay counts it ({@link #relayTrack}). */
+    private static volatile boolean held;
+    /** A relay too old to count a mid-stream track answered: say once that the voice joins next stream. */
+    private static volatile boolean heldNotice;
+    /** Render thread: adds a mic track to the stream on air, or says why not ({@code LiveStreamController}). */
+    private static volatile Supplier<Toggle> midStreamJoin = () -> Toggle.NEXT_STREAM;
     private static volatile boolean pttHeld;
     /** The relay barred the mic mid-stream (uploader thread writes, render and pump threads read). */
     private static volatile boolean barred;
@@ -67,11 +76,16 @@ public final class LiveMic {
     private LiveMic() {}
 
     /**
-     * What a switch did. {@code NEXT_STREAM}: the option went on, but this stream carries no mic track,
-     * so the voice joins from the next one. {@code BARRED}: the relay has the mic turned off for this
-     * streamer. {@code NO_DEVICE}: the option went on but no capture device would open.
+     * What a switch did. {@code JOINING}: the option went on during a stream without a mic track, and
+     * the stream is gaining one; viewers hear the voice once the relay counts it. {@code NEXT_STREAM}:
+     * the option went on, but this stream cannot gain a track, so the voice joins from the next one.
+     * {@code BARRED}: the relay has the mic turned off for this streamer. {@code NO_DEVICE}: the option
+     * went on but no capture device would open.
      */
-    public enum Toggle { ON, OFF, NEXT_STREAM, NO_DEVICE, BARRED }
+    public enum Toggle { ON, OFF, JOINING, NEXT_STREAM, NO_DEVICE, BARRED }
+
+    /** What a heartbeat reply says of the mic track: counted, not counted, or not said (an older relay). */
+    public enum TrackWord { YES, NO, UNSAID }
 
     /** Where a switch came from, for the log. */
     public enum Source { KEY, INVENTORY, OPTIONS }
@@ -84,6 +98,8 @@ public final class LiveMic {
     /** A stream starts: with a mic track or without one. With one, the mic is in whatever state the option is. */
     public static void startStream(boolean withMic) {
         enabled = withMic;
+        held = false;
+        heldNotice = false;
         barred = false;
         barredNotice = false;
         gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
@@ -94,9 +110,66 @@ public final class LiveMic {
     /** The stream is over (or carries no mic track after all): the capture device is let go. The option stays. */
     public static void endStream() {
         enabled = false;
+        held = false;
+        heldNotice = false;
         barred = false;
         barredNotice = false;
         closeCapture();
+    }
+
+    /**
+     * Render thread: the encoder now writes a mic track, added mid-stream. The voice stays silent until
+     * the relay counts the track ({@link #relayTrack}); the device opens now if the option is on.
+     */
+    public static void joinMidStream() {
+        enabled = true;
+        held = true;
+        heldNotice = false;
+        gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
+        agc = new MicDsp.Agc(MicCapture.RATE);
+        if (option.getAsBoolean()) openCapture();
+        LOGGER.info("[DungeonTrain] live mic: track added mid-stream, voice held until the relay counts it");
+    }
+
+    /** Who adds a mic track mid-stream; the controller sets it once. Tests stand in for it. */
+    public static void setMidStreamJoin(Supplier<Toggle> join) {
+        midStreamJoin = join;
+    }
+
+    /**
+     * Any thread: a heartbeat reply's word on the track. A held voice is let through once the relay
+     * counts the track; an older relay that never says leaves it held and asks for the "next stream"
+     * line once ({@link #takeHeldNotice}). True when this reply let the voice through.
+     */
+    public static boolean relayTrack(TrackWord word) {
+        if (!enabled || !held) return false;
+        if (word == TrackWord.YES) {
+            held = false;
+            LOGGER.info("[DungeonTrain] live mic: the relay counts the mid-stream track; voice on");
+            return true;
+        }
+        if (word == TrackWord.UNSAID && !heldNotice) {
+            heldNotice = true;
+            LOGGER.info("[DungeonTrain] live mic: the relay does not count a mid-stream track; voice joins next stream");
+        }
+        return false;
+    }
+
+    /** Render thread: true once, when an older relay left a mid-stream track's voice held. */
+    public static boolean takeHeldNotice() {
+        if (!heldNotice) return false;
+        heldNotice = false;
+        return true;
+    }
+
+    /** The heartbeat's {@code mic}: this stream carries a mic track (from the start or added since). */
+    public static boolean heartbeatMicTrack() {
+        return enabled;
+    }
+
+    /** A mid-stream track still waiting on the relay. */
+    public static boolean held() {
+        return held;
     }
 
     /** True while the stream on air carries a mic track. */
@@ -106,7 +179,7 @@ public final class LiveMic {
 
     /** The mic on this stream, as far as the relay lets it count: the option on, a mic track, not barred. */
     public static boolean on() {
-        return enabled && option.getAsBoolean() && !barred;
+        return enabled && option.getAsBoolean() && !barred && !held;
     }
 
     /** Whether the mic is heard right now: on, allowed, and push to talk held when that is set. */
@@ -179,7 +252,7 @@ public final class LiveMic {
         }
         if (enabled && barred) return Toggle.BARRED;
         saveOption.accept(true);
-        if (!enabled) return Toggle.NEXT_STREAM;
+        if (!enabled) return midStreamJoin.get();
         return openCapture() ? Toggle.ON : Toggle.NO_DEVICE;
     }
 

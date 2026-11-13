@@ -8,10 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LiveMicHintTest {
 
     @Test
-    void micOffOrGameSoundOffSaysWhereToTurnItOn() {
+    void micOffOnAStreamWithSoundSaysWhereToTurnItOn() {
         assertEquals(Kind.MIC_OFF, LiveMicHint.of(true, false, false, false, false, true));
-        assertEquals(Kind.MIC_OFF, LiveMicHint.of(false, true, false, false, false, true), "the mic needs Stream game sound");
         assertEquals(Kind.MIC_OFF, LiveMicHint.of(true, false, false, false, true, true), "no device is not the point while the mic is off");
+    }
+
+    @Test
+    void aStreamWithoutSoundCannotGainAMicSoItSaysNothing() {
+        assertEquals(Kind.NONE, LiveMicHint.of(false, false, false, false, false, true));
+        assertEquals(Kind.NONE, LiveMicHint.of(false, true, false, false, true, true));
     }
 
     @Test

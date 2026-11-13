@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.client.live.audio.LiveAudioPump;
 import games.brennan.dungeontrain.client.live.audio.LiveMic;
+import games.brennan.dungeontrain.client.live.audio.MicCapture;
 import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
@@ -131,6 +132,8 @@ public final class LiveStreamController {
     @Nullable private LiveQualityGovernor governor;
     /** An encoder swap to a new bitrate is under way (render thread). */
     private boolean switching;
+    /** The claim's word on this streamer's mic: false = barred, so no track is added mid-stream either. */
+    private boolean micRelayAllowed = true;
     /** Stream seconds the encoders before the running one wrote: where its timestamps start. */
     private double tsOffsetSeconds;
     /** The streamer was told once this stream that their upload lowered the quality. */
@@ -164,7 +167,10 @@ public final class LiveStreamController {
     /** Render thread: inside {@link #onLoggingOut}, so any ended pop-up waits for the title screen. */
     private boolean leaving;
 
-    private LiveStreamController() {}
+    private LiveStreamController() {
+        // The mic switch turned on during a stream without a mic track: add one (joinMicMidStream).
+        LiveMic.setMidStreamJoin(this::joinMicMidStream);
+    }
 
     public static LiveStreamController get() {
         return INSTANCE;
@@ -443,6 +449,8 @@ public final class LiveStreamController {
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
             // A mic ban that landed on a heartbeat (LiveUploader): the same line as a ban at claim time, once.
             if (LiveMic.takeBarredNotice()) sayMicBarred();
+            // A relay too old to count a mid-stream mic track: the voice waits for the next stream.
+            if (LiveMic.takeHeldNotice()) say(Component.translatable("chat.dungeontrain.live.mic_next_stream").withStyle(ChatFormatting.YELLOW));
         }
     }
 
@@ -496,7 +504,7 @@ public final class LiveStreamController {
             say(LiveWatchLinks.line(claim == null ? null : claim.twitch()));
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
                 .withStyle(ChatFormatting.GREEN));
-            Component mic = LiveMicHint.line();
+            Component mic = LiveMicHint.line(audio != null);
             if (mic != null) say(mic);
             sayShoutoutHint();
             return;
@@ -573,6 +581,7 @@ public final class LiveStreamController {
             // one's Live Eye into a TV).
             tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() == null ? "" : c.prevName());
             LiveFeedClient.MicPolicy mic = LiveFeedClient.parseMic(result);
+            micRelayAllowed = mic.allowed();
             if (micWanted && !mic.allowed()) sayMicBarred();
             beginStreaming(c, hasAac, micWanted && mic.allowed());
         }, mc);
@@ -804,8 +813,25 @@ public final class LiveStreamController {
             if (kbps == enc.videoKbps()) return;
             LOGGER.info("[DungeonTrain] live quality {} -> {} kbit/s (upload {} kbit/s, busy {}% of the time over {} segment(s))",
                 enc.videoKbps(), kbps, snap.throughputKbps(), Math.round(snap.utilisation() * 100), snap.samples());
-            restartAtBitrate(kbps);
+            restartEncoder(kbps, false);
         });
+    }
+
+    /**
+     * Render thread, from the mic switch ({@link LiveMic#setMidStreamJoin}): the mic went on during a
+     * stream without a mic track. With stream sound on, the encoder is swapped for one with a mic track
+     * ({@link #restartEncoder}) and the voice is held silent until the relay counts the track
+     * ({@link LiveMic#relayTrack}). Otherwise the voice joins from the next stream.
+     */
+    private LiveMic.Toggle joinMicMidStream() {
+        if (state != State.STREAMING || audio == null || encoder == null || switching || postMortem.active()) {
+            return LiveMic.Toggle.NEXT_STREAM;
+        }
+        if (!micRelayAllowed) return LiveMic.Toggle.BARRED;
+        if (MicCapture.devices().isEmpty()) return LiveMic.Toggle.NO_DEVICE;
+        LOGGER.info("[DungeonTrain] live mic: switched on mid-stream; adding a mic track");
+        restartEncoder(encoder.videoKbps(), true);
+        return LiveMic.Toggle.JOINING;
     }
 
     /**
@@ -813,9 +839,11 @@ public final class LiveStreamController {
      * one's playlist, segment numbers and clock ({@link LiveEncoder.Resume}), so viewers, the relay's
      * renditions and Twitch's copy see a discontinuity, not a new stream. The uploader is held while the
      * old one writes its ENDLIST, which is taken out again before anyone sees it. Sound needs its own
-     * pump again (one ffmpeg connection each), opened back on the render thread.
+     * pump again (one ffmpeg connection each), opened back on the render thread. {@code addMic}: the new
+     * encoder gains a mic track (a mid-stream mic, {@link #joinMicMidStream}); otherwise the track layout
+     * stays as it was.
      */
-    private void restartAtBitrate(int kbps) {
+    private void restartEncoder(int kbps, boolean addMic) {
         LiveUploader up = uploader;
         var ffmpeg = FfmpegSupport.get();
         LiveFrameGrabber grab = grabber;
@@ -847,20 +875,25 @@ public final class LiveStreamController {
                 restartFailed(err);
                 return;
             }
-            // The same track layout as before the switch, so the mic carries on where it was.
-            LiveAudioPump pump = snd != null && soundAllowedByMods(false) ? LiveAudioPump.open(true, snd.withMic()) : null;
+            // The same track layout as before the switch, so the mic carries on where it was (or gains one).
+            LiveAudioPump pump = snd != null && soundAllowedByMods(false) ? LiveAudioPump.open(true, addMic || snd.withMic()) : null;
             int port = pump == null ? 0 : pump.port();
             boolean micTrack = pump != null && pump.withMic();
             if (!micTrack) LiveMic.endStream();
+            boolean micAdded = addMic && micTrack;
             CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, port, micTrack, save,
                     new LiveEncoder.Resume(offset)), STARTER)
-                .whenCompleteAsync((enc, err2) -> adoptSwitched(gen, enc, err2, pump, offset, from, fps), mc);
+                .whenCompleteAsync((enc, err2) -> adoptSwitched(gen, enc, err2, pump, offset, from, fps, micAdded), mc);
         }, mc);
     }
 
-    /** Render thread: the encoder a bitrate switch spawned is up (or failed). */
+    /**
+     * Render thread: the encoder a switch spawned is up (or failed). {@code micAdded}: it writes a mic
+     * track this stream did not have; only now, with the track really in the segments, does the
+     * heartbeat tell the relay ({@link LiveMic#joinMidStream}).
+     */
     private void adoptSwitched(int gen, @Nullable LiveEncoder enc, @Nullable Throwable err, @Nullable LiveAudioPump pump,
-                               double offset, int fromKbps, int fps) {
+                               double offset, int fromKbps, int fps, boolean micAdded) {
         if (gen != generation || state != State.STREAMING) {
             if (enc != null) closeEncoderAsync(enc);
             if (pump != null) pump.close();
@@ -875,6 +908,10 @@ public final class LiveStreamController {
         encoder = enc;
         audio = pump;
         if (pump != null) pump.start(enc::framesWritten, fps);
+        if (micAdded) {
+            LiveMic.joinMidStream();
+            if (governor != null) governor.setAudioKbps(LiveEncoder.audioKbps(true));
+        }
         if (health != null) health.restart();
         switching = false;
         if (enc.videoKbps() < fromKbps && !toldLowered) {
