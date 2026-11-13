@@ -30,6 +30,14 @@ class LiveChatTranslationsTest {
     }
 
     @Test
+    @DisplayName("a poll names the reader's language only while translations are on")
+    void pollLang() {
+        assertEquals("fr_fr", LiveChatTranslations.pollLang("fr_fr", true));
+        assertNull(LiveChatTranslations.pollLang("fr_fr", false), "off: the relay is asked for nothing");
+        assertNull(LiveChatTranslations.pollLang("english", true));
+    }
+
+    @Test
     @DisplayName("pick: the exact locale first, then the same language, else nothing")
     void pick() {
         Map<String, String> tr = Map.of("zh_cn", "简体", "pt_br", "oi", "de_de", " ");
