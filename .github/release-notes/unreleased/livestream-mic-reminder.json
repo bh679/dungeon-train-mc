@@ -1,0 +1,18 @@
+{
+  "id": "livestream-mic-reminder",
+  "version": "0.1807.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "Mic reminder when you go live",
+  "summary": "Going live with your mic off now shows a reminder in chat, with a link straight to the Microphone setting so viewers can hear you from your next stream. Turn the reminder off from the message itself or in the Stream settings.",
+  "highlights": [],
+  "pr": 2644,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
