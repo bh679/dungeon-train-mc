@@ -197,11 +197,6 @@
       "weight": 1
     },
     {
-      "id": "staircase",
-      "weight": 1,
-      "minLevel": 100
-    },
-    {
       "id": "onionman",
       "weight": 1,
       "minLevel": 30,
