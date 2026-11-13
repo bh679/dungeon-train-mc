@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
@@ -15,6 +16,7 @@ import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
+import games.brennan.dungeontrain.client.live.FfmpegSetupButton;
 import games.brennan.dungeontrain.client.live.LiveMicHotkeys;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
 import games.brennan.dungeontrain.client.live.StreamerBoxPanes;
@@ -52,6 +54,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import games.brennan.dungeontrain.config.MenuClientConfig;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -180,9 +183,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
         this.tabs.clear();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
-            this.tabs.add(new OptionsTab(tab,
-                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable,
-                            DungeonTrain.isDevBuild())));
+            List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(),
+                    trainSettingsWritable, DungeonTrain.isDevBuild());
+            // No FFmpeg, no stream: its button leads the Stream tab until it is installed.
+            if (tab == ClientOptionsTab.STREAM && FfmpegSetupButton.needed()) rows = ClientOptionsTab.ffmpegFirst(rows);
+            this.tabs.add(new OptionsTab(tab, rows));
         }
 
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
@@ -747,6 +752,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 ContentModeSyncClient.syncNow();
             }), key + ".tip");
 
+            // What the Live Eye streams with and TVs play with; pressable only while it is missing.
+            case FFMPEG -> Setting.of(new FfmpegSetupButton(CONTROL_W, ROW_H), key + ".tip");
+
             // What viewers see; the preview under the rows follows both switches live.
             case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),
                     key + ".tip");
@@ -945,6 +953,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(devChat, key + ".tip");
             }
 
+            // The consent card's Public posts switch: the server's Discord gates and the relay both
+            // follow it, so a flip re-syncs both.
+            case PUBLIC_POSTS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isPublicPosts(), on -> {
+                    ClientDisplayConfig.setPublicPosts(on);
+                    ContentModeSyncClient.syncNow();
+                    PublicPostsRelay.syncNow();
+                }), key + ".tip");
+
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.
             case POLITICAL_FILTER -> Setting.of(onOff(Component.translatable(key), PoliticalFilterPrefs.isEnabled(), PoliticalFilterPrefs::answer),
@@ -987,6 +1003,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                             .displayOnlyValue()
                             .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                     (btn, mode) -> DungeonTrainCommonConfig.setCatchUpBurstMode(mode)),
+                    key + ".tip");
+
+            // Smaller saves: one global value like CATCH_UP_BURST; the next chunk saved reads it.
+            case DROP_UNTOUCHED_WORLD_GEN -> Setting.of(onOff(Component.translatable(key),
+                    DungeonTrainCommonConfig.isDropUntouchedWorldGen(), DungeonTrainCommonConfig::setDropUntouchedWorldGen),
                     key + ".tip");
 
             // The binding itself lives in vanilla Controls (Dungeon Train category); this only decides
@@ -1046,6 +1067,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // OFF, then six tiers of the edge streaks (3 = the default look).
             case WIND_EFFECTS -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindEffectsOption.valueOnly()),
                     key + ".tip");
+
+            // What the main menu shows behind its buttons (MenuClientConfig): the change shows the next
+            // time the menu draws.
+            case MENU_BACKDROP -> new Setting(
+                    CycleButton.<MenuClientConfig.Backdrop>builder(DungeonTrainClientOptionsScreen::menuBackdropLabel)
+                            .withValues(MenuClientConfig.Backdrop.values())
+                            .withInitialValue(MenuClientConfig.backdrop())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, backdrop) -> MenuClientConfig.setBackdrop(backdrop)),
+                    Component.translatable(key + ".tip"));
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that
@@ -1377,6 +1409,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static Component autoCollectLabel(AutoCollectMode mode) {
         return Component.translatable("gui.dungeontrain.options.backpack_auto_collect."
                 + mode.name().toLowerCase(Locale.ROOT));
+    }
+
+    private static Component menuBackdropLabel(MenuClientConfig.Backdrop backdrop) {
+        return Component.translatable("gui.dungeontrain.options.menu_backdrop." + backdrop.name().toLowerCase(Locale.ROOT));
     }
 
     private static Component customContentLabel(CustomContentPreference preference) {

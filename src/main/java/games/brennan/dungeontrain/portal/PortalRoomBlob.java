@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.PoolLease;
 import games.brennan.dungeontrain.train.LeaseSnapshots;
+import games.brennan.dungeontrain.train.engine.EngineLease;
 import net.minecraft.nbt.CompoundTag;
 
 import java.io.IOException;
@@ -25,9 +26,16 @@ import java.util.Objects;
  * @param token    the lease token that authorises writing back, or null with {@code relayId}
  * @param owner    dashless uuid of the relay-recorded author, "" when unknown
  * @param seqSeed  the delta floor the room's own edits must clear
+ * @param fuel     coal in the room's Drifting Engine Block after this world's burn; -1 for a live capture
  */
 public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token, String owner,
-                             Credits credits, Deaths deaths, int seqSeed, boolean authoredHere) {
+                             Credits credits, Deaths deaths, int seqSeed, boolean authoredHere, int fuel) {
+
+    /** A blob that says nothing about fuel. */
+    public PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token, String owner,
+                          Credits credits, Deaths deaths, int seqSeed, boolean authoredHere) {
+        this(snapshot, relayId, token, owner, credits, deaths, seqSeed, authoredHere, -1);
+    }
 
     public PortalRoomBlob {
         Objects.requireNonNull(snapshot, "snapshot");
@@ -43,8 +51,10 @@ public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token
      *                     caller hands it back
      */
     public static PortalRoomBlob fromLease(PoolLease lease, boolean authoredHere) throws IOException {
-        return new PortalRoomBlob(LeaseSnapshots.fold(lease), lease.id(), lease.token(), lease.owner(),
-            lease.credits(), lease.deaths(), LeaseSnapshots.seqSeed(lease), authoredHere);
+        // Joining this world costs the room one coal, burnt in the snapshot so its engine lands holding it.
+        EngineLease.Fuelled fuelled = EngineLease.burnOnArrival(lease, LeaseSnapshots.fold(lease));
+        return new PortalRoomBlob(fuelled.snap(), lease.id(), lease.token(), lease.owner(),
+            lease.credits(), lease.deaths(), LeaseSnapshots.seqSeed(lease), authoredHere, fuelled.coal());
     }
 
     /** A live capture of this world's own room, carried across a relocation. */

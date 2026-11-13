@@ -106,6 +106,8 @@ public enum ClientOptionsTab {
         CONTENT_MODE("gui.dungeontrain.options.content_mode"),
         /** Chat with the developer, both ways — the consent card's Developer chat switch (Adult only). */
         DEV_CHAT("gui.dungeontrain.options.dev_chat"),
+        /** Your photos and deaths on Discord and the socials — the consent card's Public posts switch. */
+        PUBLIC_POSTS("gui.dungeontrain.options.public_posts"),
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER("gui.dungeontrain.political_filter.option"),
         BOOK_AUTHOR_CHAT("gui.dungeontrain.options.book_author_chat"),
@@ -119,6 +121,8 @@ public enum ClientOptionsTab {
         OTHER_ADVANCEMENT_TABS("gui.dungeontrain.options.other_advancement_tabs"),
         /** The earned card for advancements outside Dungeon Train's tabs — hidden by default, see {@code AdvancementTabGate}. */
         OTHER_ADVANCEMENT_CARDS("gui.dungeontrain.options.other_advancement_cards"),
+        /** What the main menu shows behind its buttons: the logo over live stream / photos, photos only, or as it was. */
+        MENU_BACKDROP("gui.dungeontrain.options.menu_backdrop"),
         CINEMATIC_HOTKEY("gui.dungeontrain.options.cinematic_hotkey"),
         /** The top-left developer read-out — dev builds only, see {@code VersionHudOverlay}. */
         DEV_HUD("gui.dungeontrain.options.dev_hud"),
@@ -178,10 +182,18 @@ public enum ClientOptionsTab {
          * player can see — the row is absent rather than a control that lies about what it did.
          */
         CATCH_UP_BURST("gui.dungeontrain.options.catch_up_burst"),
+        /**
+         * Smaller saves: terrain no player changed is left off the disk ({@code UntouchedChunkSaves}). A
+         * common-config value like {@link #CATCH_UP_BURST}, so absent on a multiplayer client for the same
+         * reason. Off by default.
+         */
+        DROP_UNTOUCHED_WORLD_GEN("gui.dungeontrain.options.drop_untouched_world_gen"),
 
         // --- Stream (the screen adds the viewer preview under these rows) ---
         /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
         LIVESTREAM("gui.dungeontrain.options.livestream"),
+        /** Download FFmpeg, which the Live Eye streams with and TVs play with; inactive once it is there. */
+        FFMPEG("gui.dungeontrain.options.ffmpeg"),
         /** Whether viewers see the HUD and open menus. Everyone. */
         STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
@@ -315,6 +327,20 @@ public enum ClientOptionsTab {
         return GROUP_LEADERS.contains(row);
     }
 
+    /**
+     * {@code rows} with {@link Row#FFMPEG} moved to the very top, above the first heading: the Stream
+     * tab while this client has no FFmpeg, so the button that fixes it is the first thing seen.
+     */
+    public static List<Row> ffmpegFirst(List<Row> rows) {
+        if (!rows.contains(Row.FFMPEG)) return rows;
+        List<Row> out = new ArrayList<>(rows.size());
+        out.add(Row.FFMPEG);
+        for (Row row : rows) {
+            if (row != Row.FFMPEG) out.add(row);
+        }
+        return out;
+    }
+
     /** As a release build sees them: no dev-only rows. */
     public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
                                     boolean trainSettingsWritable) {
@@ -335,11 +361,13 @@ public enum ClientOptionsTab {
                 // The consent card's Developer chat switch, next to the content mode it defaults
                 // from. Its Livestreaming switch lives on the Stream tab.
                 rows.add(Row.DEV_CHAT);
+                rows.add(Row.PUBLIC_POSTS);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.OTHER_ADVANCEMENT_CARDS);
                 rows.add(Row.PROTECT_OWN_PETS);
+                rows.add(Row.MENU_BACKDROP);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 // Release builds never draw the dev HUD, so the row is absent there, not inert.
                 if (devBuild) {
@@ -432,6 +460,8 @@ public enum ClientOptionsTab {
                 rows.add(Row.HEAD_VIEWER_SIZE);
                 rows.add(Row.HEAD_VIEWER_NAMES);
                 rows.add(Row.HEAD_VIEWER_SIZE_STREAMING);
+                // Out of the way once installed; ffmpegFirst lifts it to the top while it is missing.
+                rows.add(Row.FFMPEG);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);
@@ -459,6 +489,11 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
+                // Conditional (absent on a multiplayer client), so it comes after every paired row:
+                // only the tips, which are not paired, follow it.
+                if (trainSettingsWritable) {
+                    rows.add(Row.DROP_UNTOUCHED_WORLD_GEN);
+                }
                 rows.add(Row.PERFORMANCE_TIPS);
             }
         }

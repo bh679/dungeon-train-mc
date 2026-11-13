@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.logo.LogoRingRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -52,6 +53,9 @@ public final class LoadingScreenTheme {
      */
     private static final int TEXT_ALPHA_FLOOR = 4;
 
+    /** The logo bar's centre sits this far above the rail line the old train stood on. */
+    private static final float LOGO_BAR_LIFT = 6f;
+
     /** Width the story/status line wraps at, shared by every screen that shows one. */
     public static final int TIP_MAX_WIDTH = 260;
 
@@ -79,9 +83,10 @@ public final class LoadingScreenTheme {
         int railLeft = cx - railW / 2;
         int railY = cy + 8;
 
-        drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a);
+        float finish = LogoRingRenderer.get().barFinish(); // the train's loop runs through the title
+        drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a * (1f - finish));
         drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, a);
-        drawPercent(g, font, progress, cx, cy + 34, a);
+        drawPercent(g, font, progress, cx, cy + 34, a * (1f - finish));
         drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH, a);
     }
 
@@ -187,10 +192,15 @@ public final class LoadingScreenTheme {
     /**
      * The same graphic at {@code alpha} (0..1) of its own opacity, for fading the whole train
      * away as the panel dissolves into the world. At 1.0 it is identical to the opaque call.
+     *
+     * <p>Normally this is the logo itself unrolled into a line of carriages
+     * ({@link LogoRingRenderer#drawBar}), its front growing with the progress; the flat train
+     * below only draws where the logo can't (its shader missing, or its cracks still building).</p>
      */
     public static void drawFillingTrain(GuiGraphics g, Font font, int railLeft, int railW, int railY, double progress, long animNanos, float alpha) {
         float a = Mth.clamp(alpha, 0.0f, 1.0f);
         if (a <= 0.0f) return;
+        if (LogoRingRenderer.get().drawBar(g, railLeft, railY - LOGO_BAR_LIFT, railW, progress, a)) return;
         int railRight = railLeft + railW;
         int startX = railLeft + 2;
         int slots = Math.max(1, (railW - INF_RESERVE) / SPACING);

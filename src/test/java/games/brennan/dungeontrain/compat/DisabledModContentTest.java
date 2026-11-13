@@ -133,12 +133,12 @@ final class DisabledModContentTest {
     }
 
     @Test
-    @DisplayName("Vista's viewfinder, wave gate and cassettes are hidden; the TV, mirror, picture tape and DT's live cassette stay")
+    @DisplayName("Vista's viewfinder, wave gate, cassettes and mirror are hidden; the TV, picture tape and DT's live cassette stay")
     void vistaContentHidden() {
-        for (String hidden : new String[] {"viewfinder", "wave_gate", "cassette", "hollow_cassette"}) {
+        for (String hidden : new String[] {"viewfinder", "wave_gate", "cassette", "hollow_cassette", "mirror"}) {
             assertTrue(DisabledModContent.isDisabledItem(id("vista:" + hidden), false), hidden);
         }
-        for (String kept : new String[] {"vista:television", "vista:mirror", "vista:picture_tape",
+        for (String kept : new String[] {"vista:television", "vista:picture_tape",
                 "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette", "dungeontrain:live_cassette_2"}) {
             assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
         }

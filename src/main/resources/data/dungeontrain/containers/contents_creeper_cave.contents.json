@@ -90,7 +90,7 @@
         { "id": "dungeontrain:live_headpiece", "count": 1, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 600, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:edible_backpack", "count": 6, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 400, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:golden_carrot", "count": 25, "weight": 1000, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_ingot", "count": 5, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -122,7 +122,6 @@
         { "id": "minecraft:blaze_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:creaking_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:sulfur_cube_spawn_egg", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:mirror", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:potion", "count": 3, "weight": 260, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
         { "id": "minecraft:splash_potion", "count": 2, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" }
       ]
@@ -153,7 +152,7 @@
         { "id": "dungeontrain:live_headpiece", "count": 1, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 600, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:edible_backpack", "count": 6, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 400, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:golden_carrot", "count": 25, "weight": 1000, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_ingot", "count": 5, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -185,7 +184,6 @@
         { "id": "minecraft:blaze_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:creaking_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:sulfur_cube_spawn_egg", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:mirror", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:potion", "count": 3, "weight": 260, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
         { "id": "minecraft:splash_potion", "count": 2, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" }
       ]
@@ -216,7 +214,7 @@
         { "id": "dungeontrain:live_headpiece", "count": 1, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 600, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:edible_backpack", "count": 6, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 400, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:golden_carrot", "count": 25, "weight": 1000, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_ingot", "count": 5, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -248,7 +246,6 @@
         { "id": "minecraft:blaze_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:creaking_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:sulfur_cube_spawn_egg", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:mirror", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:potion", "count": 3, "weight": 260, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
         { "id": "minecraft:splash_potion", "count": 2, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" }
       ]
@@ -279,7 +276,7 @@
         { "id": "dungeontrain:live_headpiece", "count": 1, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 600, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "ediblebackpacks:edible_backpack", "count": 6, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 2, "weight": 300, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 400, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:golden_carrot", "count": 25, "weight": 1000, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_ingot", "count": 5, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -311,7 +308,6 @@
         { "id": "minecraft:blaze_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:creaking_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:sulfur_cube_spawn_egg", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:mirror", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:potion", "count": 3, "weight": 260, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
         { "id": "minecraft:splash_potion", "count": 2, "weight": 200, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" }
       ]

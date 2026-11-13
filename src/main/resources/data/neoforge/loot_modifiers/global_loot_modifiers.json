@@ -1,6 +1,8 @@
 {
   "replace": false,
   "entries": [
-    "dungeontrain:strip_disabled_mod_items"
+    "dungeontrain:strip_disabled_mod_items",
+    "dungeontrain:mark_fresh_gear",
+    "dungeontrain:evoker_totem"
   ]
 }

@@ -54,6 +54,25 @@ final class DeathManifestFormatTest {
     }
 
     @Test
+    void longDashesNeverReachThePassengerLog() {
+        assertEquals("The line is patient, it can afford to be.",
+                DeathManifestFormat.noLongDashes("The line is patient — it can afford to be."));
+        assertEquals("stops, it", DeathManifestFormat.noLongDashes("stops—it"));
+        assertEquals("stops, it", DeathManifestFormat.noLongDashes("stops – it"));
+        assertEquals("它不会停，只会继续", DeathManifestFormat.noLongDashes("它不会停——只会继续"));
+        assertEquals("止まらない、ただ進む", DeathManifestFormat.noLongDashes("止まらない——ただ進む"));
+        assertEquals("ends here", DeathManifestFormat.noLongDashes("— ends here —"));
+        // Ordinary hyphens (number words, the title) are untouched.
+        assertEquals("forty-seven", DeathManifestFormat.noLongDashes("forty-seven"));
+
+        DeathNarrative n = narr("The Dungeon Train does not stop — it only goes on, deeper, forever.",
+                "", "", "", "the line is patient — it will wait for the rest.");
+        String d = DeathManifestFormat.description(n, 0, 0, 0);
+        assertFalse(d.contains("—") || d.contains("–"), d);
+        assertTrue(d.contains("does not stop, it only goes on"), d);
+    }
+
+    @Test
     void thirdPersonHandlesSubjectObjectAndPossessive() {
         // subject "you" → they
         assertEquals("They felled three things.", DeathManifestFormat.thirdPerson("You felled three things."));

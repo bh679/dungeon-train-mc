@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.provenance.ItemProvenance;
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -116,6 +118,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_HORN_INSTRUMENT = 0x6047A0E2B1A57E27L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
+    /** Salt for which Dungeon Totem a {@code dungeontrain:random_totem} slot becomes. */
+    private static final long SALT_RANDOM_TOTEM = 0x7073E3C0FFEE1D01L;
 
     /**
      * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
@@ -560,11 +564,16 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * True for an entry whose items each roll on their own: books with random enchantments, and packed
-     * shulker boxes, so two from one vault are not copies of each other.
+     * True for an entry whose items each roll on their own: books with random enchantments, packed
+     * shulker boxes and random totems, so two from one vault are not copies of each other.
      */
     static boolean rollsEachBook(ContainerContentsEntry picked) {
-        return (picked.hasEnchants() && picked.enchants().hasRandom()) || picked.hasContents();
+        return (picked.hasEnchants() && picked.enchants().hasRandom()) || picked.hasContents()
+            || isRandomTotem(picked);
+    }
+
+    private static boolean isRandomTotem(ContainerContentsEntry picked) {
+        return resolveItem(picked.itemId()) == ModItems.RANDOM_TOTEM.get();
     }
 
     /**
@@ -1120,6 +1129,18 @@ public final class ContainerContentsRoller {
                                            BlockPos localPos, long worldSeed,
                                            int carriageIndex, int diffIndex, int slot,
                                            HolderLookup.Provider registries) {
+        ItemStack stack = rollItemStackUnmarked(picked, rolledCount, localPos, worldSeed,
+            carriageIndex, diffIndex, slot, registries);
+        // New gear, with its carriage when a train carriage's stamp is in scope (tunnels and
+        // dimensional carriages roll here too, under other kinds of index).
+        ItemProvenance.markFresh(stack, ProvenanceScope.current());
+        return stack;
+    }
+
+    private static ItemStack rollItemStackUnmarked(ContainerContentsEntry picked, int rolledCount,
+                                                   BlockPos localPos, long worldSeed,
+                                                   int carriageIndex, int diffIndex, int slot,
+                                                   HolderLookup.Provider registries) {
         Item item = resolveItem(picked.itemId());
         if (item == null) return ItemStack.EMPTY;
 
@@ -1196,6 +1217,17 @@ public final class ContainerContentsRoller {
         if (item == ModItems.RANDOM_BAD_POTION.get()) {
             return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
+
+        // dungeontrain:random_totem — one Dungeon Totem by RandomTotemTable's weights, with no Void
+        // Totem before the void (VoidTotemGate). A vault's several totems each roll on their own
+        // (rollsEachBook). None registered: the vanilla totem.
+        if (item == ModItems.RANDOM_TOTEM.get()) {
+            long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_TOTEM);
+            return RandomTotemTable.pick(seed, net.minecraft.core.registries.BuiltInRegistries.ITEM::containsKey,
+                    VoidTotemGate.reachedAtCarriage(diffIndex))
+                .map(id -> new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)))
+                .orElseGet(() -> new ItemStack(net.minecraft.world.item.Items.TOTEM_OF_UNDYING));
         }
 
         // A community photo; when the relay has none left to hand out, sometimes a disposable camera

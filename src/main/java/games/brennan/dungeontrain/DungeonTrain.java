@@ -12,12 +12,14 @@ import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobCameraBridge;
+import games.brennan.dungeontrain.compat.DungeonTotemsBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
 import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
 import games.brennan.dungeontrain.client.ContentModeSyncClient;
+import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ConsentDraft;
@@ -357,6 +359,8 @@ public class DungeonTrain {
         games.brennan.dungeontrain.registry.ModIngredientTypes.register(modBus);
         // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
         games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
+        games.brennan.dungeontrain.compat.EvokerTotemLootModifier.register(modBus);
+        games.brennan.dungeontrain.provenance.FreshLootModifier.register(modBus);
 
         // Global achievements (advancements) — custom criterion triggers
         // + per-player run-state attachment.
@@ -397,6 +401,11 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 games.brennan.dungeontrain.config.SupportClientConfig.SPEC,
                 "dungeontrain-support-client.toml");
+        // The main menu's backdrop choice (logo over live stream / photos, or as it was).
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.MenuClientConfig.SPEC,
+                "dungeontrain-menu-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;
@@ -595,6 +604,7 @@ public class DungeonTrain {
                             // they were already in (see switchStart).
                             boolean livestream = livestreamStart(picked);
                             boolean devChat = devChatStart(picked);
+                            boolean publicPosts = publicPostsStart(picked);
                             consentCardReopened = false;
                             ClientDisplayConfig.setContentMode(picked);
                             // The switches land here, after the mode, so an untouched switch takes the
@@ -603,6 +613,7 @@ public class DungeonTrain {
                             // so a stored "on" is inert until the player grants the connection.
                             LIVESTREAM_DRAFT.commit(picked, livestream);
                             DEV_CHAT_DRAFT.commit(picked, devChat);
+                            PUBLIC_POSTS_DRAFT.commit(picked, publicPosts);
                             // Which tier players actually choose, and how that moves when the card is
                             // shown again. Fires on every exit path, because the card records the answer
                             // on every exit path — including Esc, where consent lands DENIED and the
@@ -680,6 +691,17 @@ public class DungeonTrain {
         // reports to (the cap itself is non-secret). Complements DP 0.29.0's "routing" log.
         LOGGER.info("Dungeon Train Discord relay -> {} (build branch '{}')",
                 isDevBuild() ? "DEV channel" : "LIVE community feed", VersionInfo.BRANCH);
+
+        // Void Totem (Dungeon Totems, jarJar'd) lands its save on the nearest front pad of the
+        // train instead of the player's last safe ground, which on a moving train is empty air.
+        if (ModList.get().isLoaded("dungeontotems")) {
+            try {
+                DungeonTotemsBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("Dungeon Totems present but its rescue seam is unavailable ({}); "
+                        + "Void Totems will land on last safe ground.", t.toString());
+            }
+        }
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
         // item gifts. PlayerMob's feeling-tiered gift rewrite removed the
@@ -789,7 +811,9 @@ public class DungeonTrain {
      */
     // 2: the card gained the Livestreaming line (and the Developer chat switch), so everyone who
     // answered version 1 sees it once more and gets the Livestreaming default for their mode.
-    private static final int CONSENT_VERSION = 2;
+    // 3: the card gained the Public posts switch (photos and deaths on Discord and the socials) and
+    // moved to two columns, so everyone sees it once more and gets the Public posts default for their mode.
+    private static final int CONSENT_VERSION = 3;
 
     /**
      * The card's two switches, held across one showing. Discord Presence reports a click the moment
@@ -804,6 +828,11 @@ public class DungeonTrain {
     private static final ConsentDraft DEV_CHAT_DRAFT = new ConsentDraft(value -> {
         ClientDisplayConfig.setDevChatEnabled(value);
         DevMessageConsentClient.resync();
+    });
+    private static final ConsentDraft PUBLIC_POSTS_DRAFT = new ConsentDraft(value -> {
+        ClientDisplayConfig.setPublicPosts(value);
+        ContentModeSyncClient.syncNow(); // the server's Discord gates read it with the content mode
+        PublicPostsRelay.syncNow();
     });
 
     /**
@@ -831,6 +860,12 @@ public class DungeonTrain {
                 ClientDisplayConfig.isDevChatEnabled(), devChatDefault(shown));
     }
 
+    /** Where the card's Public posts switch starts (and lands, if untouched) for {@code shown}. */
+    private static boolean publicPostsStart(ContentMode shown) {
+        return switchStart(consentCardReopened, shown, ClientDisplayConfig.getContentMode(),
+                ClientDisplayConfig.isPublicPosts(), publicPostsDefault(shown));
+    }
+
     /**
      * A consent-card switch's starting value. Reopened from Options on the mode the player is already
      * in, it shows what they have now; on the other mode, or on a first launch or re-ask, it shows that
@@ -851,21 +886,29 @@ public class DungeonTrain {
         return !mode.isKid();
     }
 
+    /** Public posts default per mode: on for Adult, off for Kid. */
+    static boolean publicPostsDefault(ContentMode mode) {
+        return !mode.isKid();
+    }
+
     /** A localized string for the consent card — DP takes raw Strings, not Components, on these seams. */
     private static String tr(String key) {
         return Component.translatable(key).getString();
     }
 
     /**
-     * The consent card's bullet list for one content mode. Both modes list the SAME five things in the
-     * same order so the eye tracks what flips: the three that never change first (player content,
-     * telemetry, reincarnations), then the two that do (developer chat, and the joke).
+     * The consent card's bullet list for one content mode. Discord Presence lays the card out in two
+     * columns, the first half of this list on the left and the rest on the right, so the order is the
+     * layout: the four lines that never change on the left (player content, telemetry, reincarnations,
+     * and the soul joke), the three switches on the right (livestreaming, developer chat, public posts).
+     * Both modes list the same seven things in the same places so the eye tracks what flips. Every hover
+     * is one line, so the card fits a small window.
      *
-     * <p>Only two lines actually differ between the modes. Player content stays on for both but
-     * narrows to the AI-reviewed kid-safe subset, which the label and hover both say. Developer chat
-     * is the one real capability Kid mode removes. Telemetry and reincarnations are on either way —
-     * reincarnations deliberately so: an echo carries another player's name and skin, and a skin is an
-     * image that nothing in the moderation pipeline can review, so it is not part of the choice.</p>
+     * <p>Player content stays on for both modes but narrows to the AI-reviewed kid-safe subset. Developer
+     * chat is the one real capability Kid mode removes. Livestreaming and Public posts are switches in
+     * both modes, on for adults and off for kids by default. Telemetry and reincarnations are on either
+     * way — reincarnations deliberately so: an echo carries another player's name and skin, and a skin is
+     * an image that nothing in the moderation pipeline can review, so it is not part of the choice.</p>
      */
     private static List<ConsentBullet> consentBullets(ContentMode mode) {
         boolean kid = mode.isKid();
@@ -883,6 +926,12 @@ public class DungeonTrain {
                         tr("gui.dungeontrain.consent.reincarnations"), true,
                         tr(kid ? "gui.dungeontrain.consent.reincarnations.kid.tip"
                                : "gui.dungeontrain.consent.reincarnations.adult.tip")),
+                // The soul line is the one whose marker flips the "wrong" way — off for adults, on for
+                // kids — which is the joke. Its hovers carry it, in the developer's own first person.
+                new ConsentBullet(
+                        tr("gui.dungeontrain.consent.harvest_soul"), kid,
+                        tr(kid ? "gui.dungeontrain.consent.harvest_soul.kid.tip"
+                               : "gui.dungeontrain.consent.harvest_soul.adult.tip")),
                 // Livestreaming: a switch in both modes, on for adults and off for kids by default. The
                 // Kid hover says what a stream shares only once the switch is on; off, it just says so.
                 kid
@@ -905,11 +954,16 @@ public class DungeonTrain {
                                 tr("gui.dungeontrain.consent.dev_chat"), devChatStart(mode),
                                 tr("gui.dungeontrain.consent.dev_chat.adult.tip"),
                                 v -> DEV_CHAT_DRAFT.touch(mode, v)),
-                // The soul line is the one whose marker flips the "wrong" way — off for adults, on for
-                // kids — which is the joke. Its hovers carry it, in the developer's own first person.
-                new ConsentBullet(
-                        tr("gui.dungeontrain.consent.harvest_soul"), kid,
-                        tr(kid ? "gui.dungeontrain.consent.harvest_soul.kid.tip"
-                               : "gui.dungeontrain.consent.harvest_soul.adult.tip")));
+                // Public posts: photos and deaths on Discord and the socials. On for adults, off for kids.
+                kid
+                        ? ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.public_posts"), publicPostsStart(mode),
+                                tr("gui.dungeontrain.consent.public_posts.tip"),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip_off"),
+                                v -> PUBLIC_POSTS_DRAFT.touch(mode, v))
+                        : ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.public_posts"), publicPostsStart(mode),
+                                tr("gui.dungeontrain.consent.public_posts.tip"),
+                                v -> PUBLIC_POSTS_DRAFT.touch(mode, v)));
     }
 }

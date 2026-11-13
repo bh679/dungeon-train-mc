@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "181";
+    public static final String PROTOCOL_VERSION = "184";
 
     private DungeonTrainNet() {}
 
@@ -443,6 +443,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(CometShowerPacket.TYPE, CometShowerPacket.STREAM_CODEC, CometShowerPacket::handle);
         // Login: which mobs the client holds photos of, for the shared mob collections. See compat/photo/SharedPhotoCriteria.
         registrar.playToServer(PhotoAlbumReportPacket.TYPE, PhotoAlbumReportPacket.STREAM_CODEC, PhotoAlbumReportPacket::handle);
+        // Effects stuck at 00:00 on the client: the server re-sends or removes each. See client/StuckEffectWatcher.
+        registrar.playToServer(EffectStatusQueryPacket.TYPE, EffectStatusQueryPacket.STREAM_CODEC, EffectStatusQueryPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

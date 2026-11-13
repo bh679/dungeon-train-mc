@@ -374,7 +374,7 @@ public final class RunStatsEvents {
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
                                        boolean cheated) {
         String cause = DiscordMarkdown.escape(deathMessage(player));
-        String title = "💀 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " — Run Ended";
+        String title = "💀 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " - Run Ended";
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
         DiscordService.get().postDeathReport(player, title, cause, fields, icons);
@@ -398,7 +398,14 @@ public final class RunStatsEvents {
             LOGGER.debug("[DungeonTrain] {} ended at {} carriages (< {}, no echo kill) — skipping public death feed",
                     player.getGameProfile().getName(), packet.cartsTravelled(), MIN_CARRIAGES_FOR_PUBLIC_FEED);
         }
-        if ((!cheated || DungeonTrain.isDevBuild()) && !shortRun) {
+        // A player with Public posts off keeps their deaths off the public feed (the threaded report
+        // above still posts). The relay drops the post for an opted-out player too.
+        boolean publicPosts = ContentModeMirror.isPublicPostsOn(player.getUUID());
+        if (!publicPosts) {
+            LOGGER.debug("[DungeonTrain] {} has Public posts off — skipping public death feed",
+                    player.getGameProfile().getName());
+        }
+        if ((!cheated || DungeonTrain.isDevBuild()) && !shortRun && publicPosts) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());

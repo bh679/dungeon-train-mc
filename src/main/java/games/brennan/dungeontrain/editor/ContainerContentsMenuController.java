@@ -174,6 +174,11 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
      * A vault with no loot of its own opens with vanilla's trial reward already in it, as an
      * ordinary local pool the author can edit: that is what it rolls at spawn anyway, so the menu
      * shows it instead of an empty list. A linked vault keeps its prefab.
+     *
+     * <p>Held in the cached store, not saved. Opening a menu is not an edit, and a file written here
+     * would count as custom content and put every later run into Free Play. The first real edit
+     * through the menu saves the store, prefill included; until then the vault rolls this same pool
+     * at spawn without it.</p>
      */
     private static void prefillVault(ServerLevel level, BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos) {
         if (!VaultLoot.isVault(level.getBlockState(worldPos))) return;
@@ -182,12 +187,6 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         ContainerContentsPool pool = VaultLoot.defaultPool(ContainerContentsPool.DEFAULT_VAULT_KEY);
         if (pool.isEmpty()) return;
         store.putPool(localPos, pool);
-        try {
-            store.save();
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Vault prefill save failed for {}: {}", plot.key(), e.toString());
-            return;
-        }
         rerollLocalContainer(level, plot, localPos, pool);
     }
 

@@ -1,0 +1,24 @@
+{
+  "comment": "What a Dungeon Totem from DT's loot or an evoker is: one totem picked by these weights (editor/RandomTotemTable). The Void Totem is left out of the roll until the train reaches the first End band (editor/VoidTotemGate). Trade values follow these weights: the lowest weight is worth a quarter of a vanilla Totem of Undying, heavier ones proportionally less (compat/TradeEverythingBridge). Ids that are not registered are skipped.",
+  "weights": {
+    "dungeontotems:weakness_totem": 10,
+    "dungeontotems:fatigue_totem": 10,
+    "dungeontotems:heartbreak_totem": 10,
+    "dungeontotems:blindness_totem": 7,
+    "dungeontotems:morphing_totem": 20,
+    "dungeontotems:zombification_totem": 11,
+    "dungeontotems:rage_totem": 7,
+    "dungeontotems:loneliness_totem": 8,
+    "dungeontotems:pacifism_totem": 10,
+    "dungeontotems:melon_diet_totem": 5,
+    "dungeontotems:restraint_totem": 10,
+    "dungeontotems:void_totem": 10,
+    "dungeontotems:feather_totem": 7,
+    "dungeontotems:boom_totem": 7,
+    "dungeontotems:fire_totem": 7,
+    "dungeontotems:hunger_totem": 10,
+    "dungeontotems:slowness_totem": 9,
+    "dungeontotems:breathlessness_totem": 10,
+    "dungeontotems:insomnia_totem": 5
+  }
+}

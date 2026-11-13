@@ -5971,6 +5971,32 @@ public final class TrainCarriageAppender {
         return pIdxWithinGroup(nearest.carriage(), player, dims, groupSize);
     }
 
+    /** How far outside a group's bounds a player still counts as in it, squared (8 blocks). */
+    private static final double IN_GROUP_RADIUS_SQ = 8.0 * 8.0;
+
+    /**
+     * The carriage group {@code player} is in or standing beside (within 8 blocks of its bounds), on
+     * any train in {@code level}, or {@code null} when there is none.
+     */
+    public static Trains.Carriage groupAt(ServerLevel level, ServerPlayer player) {
+        NearestGroup nearest = nearestGroup(Trains.allCarriages(level), player.getX(), player.getY(), player.getZ());
+        return nearest == null || nearest.distSq() > IN_GROUP_RADIUS_SQ ? null : nearest.carriage();
+    }
+
+    /**
+     * The absolute index of the carriage {@code player} is in, read in its own group's frame (see
+     * {@link #pIdxWithinGroup}); clamped to the group, so a player on a pad gets the carriage beside it.
+     * {@code null} when they are on no train.
+     */
+    public static Integer carriageIndexAt(ServerLevel level, ServerPlayer player, CarriageDims dims) {
+        Trains.Carriage group = groupAt(level, player);
+        if (group == null) return null;
+        int groupSize = Math.max(1, group.provider().getGroupSize());
+        int pIdx = pIdxWithinGroup(group, player, dims, groupSize);
+        int anchor = group.provider().getPIdx();
+        return Math.max(anchor, Math.min(anchor + groupSize - 1, pIdx));
+    }
+
     /** A group and the squared world-AABB distance from a point to it ({@code 0} = inside). */
     private record NearestGroup(Trains.Carriage carriage, double distSq) {}
 

@@ -33,6 +33,7 @@ jobs:
       - name: Post to #highlights
         env:
           DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
         run: |
           if [ -n "${{ inputs.entry }}" ]; then
             python3 scripts/release-notes/notify-highlights.py --tag "${{ inputs.tag }}" --entry "${{ inputs.entry }}"

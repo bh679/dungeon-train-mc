@@ -16,6 +16,7 @@
     "betterend.BetterEndOreLayerPerThreadMixin",
     "betterend.BetterEndStaticShuffleMixin",
     "betterend.BetterEndWallScatterShuffleMixin",
+    "betternether.BetterNetherNagaClientEffectMixin",
     "wover.WoverBiomePickerOrderMixin",
     "wover.WoverBiomePickerSampleMixin",
     "wover.WoverPossibleBiomesCompatOrderMixin",

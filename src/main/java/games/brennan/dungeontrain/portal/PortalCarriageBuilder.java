@@ -1922,6 +1922,11 @@ public final class PortalCarriageBuilder {
         PortalRoomPools.apply(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
             pairKey, tile, liveMobCount);
+        // Gear baked into the room's storage is a new find, not an old one. Before the fingerprint, which
+        // hashes the items' data: marking after it would make every baked chest look touched. No carriage
+        // index — a room has no ProvenanceScope, so it reads as gear rolled here does.
+        games.brennan.dungeontrain.provenance.BakedGear.markStorage(level, roomOrigin, size,
+            java.util.OptionalInt.empty());
         // Template-baked chest contents were never rolled: fingerprint them as stamped (difficulty swap).
         games.brennan.dungeontrain.event.DifficultyWorldLootEvents.fingerprintRoom(level, roomOrigin, size);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later

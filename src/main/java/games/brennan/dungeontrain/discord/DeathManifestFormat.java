@@ -143,9 +143,43 @@ public final class DeathManifestFormat {
         return out;
     }
 
-    /** Strip the number sentinels, then rewrite the second-person screen voice into the third person. */
+    /**
+     * Strip the number sentinels, drop the long dashes, then rewrite the second-person screen voice
+     * into the third person.
+     */
     static String clean(String s) {
-        return thirdPerson(strip(s));
+        return thirdPerson(noLongDashes(strip(s)));
+    }
+
+    // A run of em/en dashes with any space around it ("stops — it", "stops—it", "停止——它").
+    private static final Pattern LONG_DASH = Pattern.compile("\\s*[\u2014\u2013]+\\s*");
+
+    /**
+     * Long dashes out of the passenger log: a post full of em dashes reads as machine-written. The
+     * English pool has none, but the translated pools and user/datapack lore can, so each run becomes
+     * the comma its script uses: "、" after kana, "，" after Han, a space in Thai, ", " otherwise.
+     * A dash opening or closing the text is dropped. The death screen keeps its text as written.
+     */
+    static String noLongDashes(String s) {
+        if (s == null || s.isEmpty()) return s == null ? "" : s;
+        var m = LONG_DASH.matcher(s);
+        StringBuilder out = new StringBuilder();
+        while (m.find()) {
+            String sep;
+            if (m.start() == 0 || m.end() == s.length()) {
+                sep = "";
+            } else {
+                sep = switch (Character.UnicodeScript.of(s.codePointBefore(m.start()))) {
+                    case HIRAGANA, KATAKANA -> "、";
+                    case HAN -> "，";
+                    case THAI -> " ";
+                    default -> ", ";
+                };
+            }
+            m.appendReplacement(out, sep);
+        }
+        m.appendTail(out);
+        return out.toString();
     }
 
     // The death screen addresses the dead player directly ("you"); the public report is ABOUT them, so

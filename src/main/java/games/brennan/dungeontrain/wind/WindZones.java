@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.wind;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.worldgen.NetherBandBiomes;
-import games.brennan.dungeontrain.worldgen.SpheresSky;
+import games.brennan.dungeontrain.worldgen.BandSky;
 import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
@@ -141,21 +141,11 @@ public final class WindZones {
     }
 
     private static double nether(WorldGenCycle cycle, int x) {
-        if (!DungeonTrainCommonConfig.isNetherTransitionEnabled()) return 0.0;
-        return clamp(cycle.netherRamp(x));
+        return clamp(BandSky.netherSkyIntensityAt(cycle, x));
     }
 
     private static double endSky(WorldGenCycle cycle, int x) {
-        double end = DungeonTrainCommonConfig.isDisintegrationEnabled()
-                ? cycle.endSkyRamp(x, DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks())
-                : 0.0;
-        double spheres = 0.0;
-        if (DungeonTrainCommonConfig.isSpheresEnabled() && DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
-            spheres = SpheresSky.endSky(cycle, SpheresProgressionConfig.segments(), x,
-                    DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks(),
-                    SpheresProgressionConfig.endSkyExitFadeBlocks(), SpheresProgressionConfig.exitVoidBlocks());
-        }
-        return clamp(Math.max(end, spheres));
+        return clamp(BandSky.endSkyIntensityAt(cycle, x));
     }
 
     private static double spheresVoid(WorldGenCycle cycle, int x) {

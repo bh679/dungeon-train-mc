@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.editor.VariantDoc;
+import games.brennan.dungeontrain.provenance.BakedGear;
+import games.brennan.dungeontrain.provenance.ItemProvenance;
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
@@ -506,6 +509,7 @@ public final class CarriageContentsPlacer {
                 // book in the lectern's block-entity; strip any such book so every
                 // narrative lectern starts virgin and the per-world picker runs.
                 clearBakedNarrativeLecternBooks(level, origin, size);
+                BakedGear.markStorage(level, origin, size, ProvenanceScope.current());
             }
             if (spawnEntities) {
                 spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed, flip);
@@ -1106,6 +1110,8 @@ public final class CarriageContentsPlacer {
                 if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx,
                         CarriageTestSession.isTestStamp(carriagePIdx)) != OnboardingOutcome.AS_AUTHORED) continue;
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
+                // Gear the template saved on a stand or in a frame comes in unmarked: mark it new.
+                ItemProvenance.markFreshGear(entity, ProvenanceScope.current());
                 // Diagnostic spawn-coords + tick on the persistent-data
                 // subtree (the standard cross-mod-safe location for custom
                 // per-entity state — survives save/load via NeoForge's

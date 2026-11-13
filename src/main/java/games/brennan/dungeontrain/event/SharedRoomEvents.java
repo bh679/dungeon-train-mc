@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.train.engine.DriftEngine;
+import games.brennan.dungeontrain.train.engine.EngineStamp;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -232,15 +234,21 @@ public final class SharedRoomEvents {
             SharedRoomRegistry.Instance inst = SharedRoomRegistry.register(level, pairKey, structure.roomName(),
                     roomOrigin, structure.roomSize(), true, blob.authoredHere(), blob.owner(),
                     blob.relayId(), blob.token(), blob.seqSeed(), stageId, blob.credits(), blob.deaths());
-            inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+            // The room burnt a coal joining this world (PortalRoomBlob.fromLease); tell the relay now.
+            inst.setFuel(blob.fuel());
+            inst.stampContact(System.currentTimeMillis());
+            SharedUploadFlow.heartbeat(inst);
             return;
         }
         // A stageless pair can never be shared — the relay refuses a build with no stage — so
         // registering it would only queue edits nobody can be served.
         if (stageId == null || stageId.isEmpty()) return;
+        // Every fresh drifting room gets an empty Drifting Engine Block (FRESH_COAL), set down before registering
+        // so it is not mistaken for somebody's edit.
+        int coal = EngineStamp.ensure(level, roomOrigin, structure.roomSize(), DriftEngine.FRESH_COAL);
         SharedRoomRegistry.register(level, pairKey, structure.roomName(), roomOrigin, structure.roomSize(),
                 false, false, "", null, null, 0, stageId, SharedCarriageClient.Credits.EMPTY,
-                SharedCarriageClient.Deaths.EMPTY);
+                SharedCarriageClient.Deaths.EMPTY).setFuel(coal);
         LOGGER.info("[DungeonTrain] drifting room pair={} '{}' registered fresh at {} — an edit inside it uploads",
                 pairKey, structure.roomName(), roomOrigin);
     }
@@ -293,9 +301,10 @@ public final class SharedRoomEvents {
             if (!inst.isOnRelay()) continue;
             Integer id = inst.relayId();
             String token = inst.leaseToken();
+            int fuel = inst.fuel();
             inst.clearRelayLease();
             if (id != null && token != null) {
-                SharedCarriageClient.returnLease(id, token, null, null, 0);
+                SharedCarriageClient.returnLease(id, token, null, null, 0, fuel);
                 detached++;
             }
         }

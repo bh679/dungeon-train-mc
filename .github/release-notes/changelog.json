@@ -34949,6 +34949,602 @@
       "released": true,
       "released_in": "v0.1764.0",
       "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "editor-freeplay-default-off",
+      "version": "0.1766.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Free Play is off by default",
+      "summary": "Your own train designs no longer switch on by themselves. Every new world starts on the built-in trains, without Free Play, unless you turn your designs on with the button beside New World, and only then are you asked to confirm. Just opening the Train Editor no longer counts as changing anything.",
+      "highlights": [
+        "New worlds start without Free Play by default, with no popup",
+        "Turning your designs on still asks you to confirm each new world",
+        "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play",
+        "Runs that count for your stats are now called Ranked"
+      ],
+      "pr": 2601,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1767.0",
+      "released_at": "2026-11-10T23:26:03Z"
+    },
+    {
+      "id": "live-effect",
+      "version": "0.1765.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live effect",
+      "summary": "A new Live effect shows while you're streaming with the Live Eye, and your status effects now sit just below the stream box instead of hiding behind it.",
+      "highlights": [],
+      "pr": 2600,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1767.0",
+      "released_at": "2026-11-10T23:26:03Z"
+    },
+    {
+      "id": "carriage-ids",
+      "version": "0.1768.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Carriages remember how they were built",
+      "summary": "Every carriage now keeps a record of how it was built, laying the groundwork for an upcoming feature.",
+      "highlights": [],
+      "pr": 2603,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "dp-floor-two-column-card",
+      "version": "0.1771.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Welcome card fix",
+      "summary": "The welcome card now fits small screens in the CurseForge modpack too.",
+      "highlights": [],
+      "pr": 2606,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "drifting-engine-block",
+      "version": "0.1768.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "The Drifting Engine",
+      "summary": "Every drifting carriage now has a Drifting Engine Block built into it. It burns one coal each time the carriage drifts into a new world, and a carriage that runs out of fuel stops drifting for good. Feed it coal or charcoal to keep a carriage you love on the line.",
+      "highlights": [
+        "Coal you add counts straight away, and you can take it back out before you leave the world",
+        "The gauge shows how many more worlds the carriage can reach",
+        "Anyone can mine an engine, but it takes as long as obsidian"
+      ],
+      "pr": 2604,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z",
+      "major": true,
+      "notable": true,
+      "description": "It burns to keep your carriages alive. Taking them beyond your world, into the world of others. Let it extinguish, the train forgets it. Move it to a new carriage, and move which carriage drifts with the train.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif"
+    },
+    {
+      "id": "gear-shift-details",
+      "version": "0.1771.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Gear remembers where it came from",
+      "summary": "Hold Shift over a weapon, tool or piece of armour to see who found, made or bought it, and when. Rare vault finds keep their number there now, out of the way.",
+      "highlights": [],
+      "pr": 2607,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "ingame-animated-logo",
+      "version": "0.1772.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "A living main menu and loading screen",
+      "summary": "The Dungeon Train logo now comes alive in the game. The main menu shows whoever is streaming live, or a slideshow of the community's tributed photos, behind a slowly turning logo. When a world finishes loading, the train drives through a portal and becomes the logo.",
+      "highlights": [
+        "Main menu: the live stream when someone is live, otherwise tributed photos credited to their photographer",
+        "Loading screen: the carriages fill in as it loads, then ride through a portal and turn into the logo",
+        "A Main Menu Backdrop option in Dungeon Train settings: live and photos, photos only, or none for the classic menu"
+      ],
+      "pr": 2608,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "public-posts-switch",
+      "version": "0.1770.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Public posts",
+      "summary": "When one of your photos or deaths is shared on our Instagram or Facebook story, you now get a chat message and an inbox note linking to it. A new Public posts switch keeps your photos and deaths off our Discord and socials if you would rather they stay private. It starts off in Kid mode.",
+      "highlights": [
+        "Chat and inbox message when you are featured, with each platform's name linking to the post",
+        "Public posts switch on the welcome card and in Options",
+        "The welcome card is now two columns so it fits small screens, and asks once more"
+      ],
+      "pr": 2605,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "trial-key-train-head",
+      "version": "0.1775.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Dungeon Trial Key has a new look",
+      "summary": "The Dungeon Trial Key now has a train carriage for a head.",
+      "highlights": [],
+      "pr": 2611,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "drifting-engine-embers",
+      "version": "0.1778.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "balance"
+      ],
+      "title": "Engines glow low on their last coal",
+      "summary": "New drifting carriages now start with 2 coal. An engine down to its last coal burns as dim embers, so you can see which carriage is about to stop drifting.",
+      "highlights": [
+        "With several engines, each engine's screen shows its own coal and how far all of them carry the carriage"
+      ],
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z",
+      "pr": 2614
+    },
+    {
+      "id": "drifting-engine-twelve-and-several",
+      "version": "0.1776.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "balance"
+      ],
+      "title": "More engines, further drift",
+      "summary": "A Drifting Engine Block now holds up to 12 coal, and a carriage can carry as many engines as you can fit. They burn one at a time, so every engine you add carries the carriage through more worlds.",
+      "highlights": [
+        "Each engine burns until it runs dry and goes dark, then the next one takes over",
+        "The screen shows how many worlds all of the carriage's engines can reach together",
+        "Engines already holding more than 12 keep their coal until it burns away"
+      ],
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z",
+      "pr": 2612
+    },
+    {
+      "id": "goat-ram-depth-scaling",
+      "version": "0.1779.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Feistier goats further down the line",
+      "summary": "Goats riding the train get feistier the further you travel. Far enough out they headbutt much more often and hit a lot harder, so keep your footing near them.",
+      "highlights": [],
+      "pr": 2616,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z"
+    },
+    {
+      "id": "late-run-phantoms",
+      "version": "0.1779.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Phantoms on the long haul",
+      "summary": "Ride far enough and the night sky turns hostile. Phantoms start hunting riders under open skies whether or not they have slept, and they keep coming more often the further the train goes.",
+      "highlights": [
+        "Deep into a run, phantoms find you even if you sleep",
+        "They come more often the further you travel, and some brave the daylight",
+        "Go far enough and they arrive with buffs, like other monsters"
+      ],
+      "pr": 2615,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z"
+    },
+    {
+      "id": "release-song-selection",
+      "version": "0.1776.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update videos get a chosen song",
+      "summary": "The videos announcing big updates on our socials now carry a song picked for each update.",
+      "highlights": [],
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z",
+      "pr": 2613
+    },
+    {
+      "id": "rare-biomes-eight-rarest",
+      "version": "0.1781.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements",
+        "balance"
+      ],
+      "title": "Rarest biomes reworked",
+      "summary": "The biome collection's rare section now holds the eight rarest biomes, and you need any 4 of them. Rare biomes also turn up at their natural rate again.",
+      "highlights": [
+        "The rare section lists the eight rarest biomes; ride any 4 to finish",
+        "Rare biomes are no longer made more common"
+      ],
+      "pr": 2617,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1781.0",
+      "released_at": "2026-11-11T11:23:27Z"
+    },
+    {
+      "id": "ffmpeg-setup-buttons",
+      "version": "0.1783.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Easier stream setup",
+      "summary": "If the Live Eye can't broadcast because FFmpeg is missing, the message now has a button that sets it up. The Stream settings also have a Download FFmpeg button, shown at the top while you need it.",
+      "highlights": [
+        "The Live Eye's no-broadcast message has a Set up FFmpeg button",
+        "Stream settings: Download FFmpeg button at the top until it's installed"
+      ],
+      "pr": 2621,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1783.0",
+      "released_at": "2026-11-12T09:50:30Z"
+    },
+    {
+      "id": "remove-mirrors",
+      "version": "0.1782.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "loot"
+      ],
+      "title": "Mirrors removed",
+      "summary": "Mirrors no longer turn up in loot or the creative menu, and the room that had them now has ordinary walls. Any mirror you already have is yours to keep.",
+      "highlights": [],
+      "pr": 2618,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1783.0",
+      "released_at": "2026-11-12T09:50:30Z"
+    },
+    {
+      "id": "drifting-carriages-start-empty",
+      "version": "0.1783.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "New drifting carriages start without coal",
+      "summary": "A newly drifting carriage now starts with a cold, empty engine. It only drifts on to another world if someone feeds it coal.",
+      "highlights": [],
+      "pr": 2620,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1784.0",
+      "released_at": "2026-11-12T10:15:55Z"
+    },
+    {
+      "id": "ceiling-climb-void-fix",
+      "version": "0.1786.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Fall out of the world fix",
+      "summary": "Breaking out through a dimensional carriage's ceiling no longer makes the world vanish and drop you into the void.",
+      "highlights": [],
+      "pr": 2624,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "fresh-baked-carriage-gear",
+      "version": "0.1788.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "ui"
+      ],
+      "title": "Found gear remembers its finder",
+      "summary": "Gear taken from armor stands and storage in the carriages now shows who found it, when, and which carriage it came from, instead of claiming it is older than the train remembers.",
+      "highlights": [],
+      "pr": 2626,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "passenger-log-wording",
+      "version": "0.1786.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Passenger log polish",
+      "summary": "Small wording tweaks to death stories.",
+      "highlights": [],
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "release-notes-entry-video",
+      "version": "0.1788.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update posts can carry their own clip and the full update",
+      "summary": "Behind the scenes: an update's social posts can now be built from its own video clip, sound included, and their captions can carry the whole update.",
+      "highlights": [],
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "status-effect-stuck-at-zero",
+      "version": "0.1783.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Status effect fix",
+      "summary": "Status effects no longer get stuck on screen at 00:00 after they wear off.",
+      "highlights": [],
+      "pr": 2619,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "totems-with-a-catch",
+      "version": "0.1786.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Dungeon Totems of Undying",
+      "summary": "A new set of 19 totems can now be found along the train. They will still save your life, mostly.",
+      "highlights": [
+        "Evokers are in on it too."
+      ],
+      "pr": 2622,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z",
+      "major": true,
+      "description": "A new set of 19 totems can now be found along the train. Custom made for this modpack. They will still save your life, mostly...\n\nSome might turn you against your friends, others may turn you into a cow, wolf, llama or more. Some might have you think zombification is better than death... if you can turn back.\n\nWhat else awaits after these totems? The train has the answers.\n\n*Shout out to Lil Detective Crunch (mc: AntonioMacarely) for the idea and help designing this addition to the pack.*\n\n## Upcoming Events\n\nWill [AshSeven](https://twitch.tv/ashseven7) be the first to get the Everything Burrito advancement, completing every other advancement in the game? Join his livestream on [Twitch](https://twitch.tv/ashseven7) at <t:1794697200:F> (Saturday 14 November, 23:00 UTC).",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.gif",
+      "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.mp4",
+      "mentions": {
+        "AshSeven": {
+          "instagram": "@ashyseven7",
+          "tiktok": "@ashseventh"
+        }
+      }
+    },
+    {
+      "id": "fresh-room-gear",
+      "version": "0.1789.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "ui"
+      ],
+      "title": "More found gear remembers its finder",
+      "summary": "Gear found in more places on the train now shows who found it and when, instead of claiming it is older than the train remembers.",
+      "highlights": [],
+      "pr": 2627,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "highlights-post-links",
+      "version": "0.1791.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Update page links to Discord posts",
+      "summary": "Major updates on the update page can now link to their Discord highlights post.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "highlights-webhook-sync",
+      "version": "0.1789.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Community milestones in Discord",
+      "summary": "Community milestones can now be celebrated in the Discord highlights channel.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "photo-advancement-icons",
+      "version": "0.1791.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New photo advancement icons",
+      "summary": "Two photo advancements have fresh icons.",
+      "highlights": [],
+      "pr": 2629,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "editor-flip-button",
+      "version": "0.1796.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Flip button in the editor",
+      "summary": "The editor's toolbar has a Flip button next to Offset. Click it to pick an axis, then X, Y or Z mirrors your whole build across it. Undo puts it back.",
+      "highlights": [
+        "Flip opens an X / Y / Z row above the build preview",
+        "Each axis button mirrors every block of the plot you're standing in"
+      ],
+      "pr": 2633,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1799.0",
+      "released_at": "2026-11-13T08:18:00Z"
+    },
+    {
+      "id": "smaller-saves",
+      "version": "0.1798.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "world",
+        "ui"
+      ],
+      "title": "Smaller saves option",
+      "summary": "A new Smaller saves option on the Options screen's Performance tab keeps your world folder small. Terrain nobody has changed is not saved, and it comes back as before if you ride back. Off by default.",
+      "highlights": [
+        "Your builds, opened chests and the area around you are always kept."
+      ],
+      "pr": 2634,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1799.0",
+      "released_at": "2026-11-13T08:18:00Z"
+    },
+    {
+      "id": "stacking-totems",
+      "version": "0.1799.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Stacking totems",
+      "summary": "Some totems now stack. Each extra totem in the stack makes its curse one level stronger, up to that curse's strongest level, and a save uses up one totem from the stack.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1799.0",
+      "released_at": "2026-11-13T08:18:00Z"
     }
   ]
 }

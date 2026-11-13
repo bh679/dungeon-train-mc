@@ -254,6 +254,18 @@ public final class ModItems {
     );
 
     /**
+     * Loot placeholder for "a random Dungeon Totem". Substituted at chest spawn time by
+     * {@code ContainerContentsRoller} for one totem drawn from {@code editor.RandomTotemTable}'s
+     * weights; each totem in a multi-count roll is picked on its own. DT's loot carries this wherever
+     * it used to carry the vanilla Totem of Undying, except ominous vaults, which keep the vanilla one.
+     * Falls back to the vanilla totem when no Dungeon Totem is registered.
+     */
+    public static final DeferredItem<Item> RANDOM_TOTEM = ITEMS.register(
+        "random_totem",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
      * The loot-facing book, and the only one of these five that ordinary loot tables place: a
      * coin-flip between the two above. Half the time the slot becomes a tall
      * {@link #RANDOM_LEADERBOARD_BOOK} — a ranked board of the whole server — and half the time a
