@@ -1,0 +1,20 @@
+{
+  "id": "random-sherd-goat-horn-loot",
+  "version": "0.1801.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot"
+  ],
+  "title": "Goat horns that play, and pots with any sherd",
+  "summary": "Goat horns found in loot now always carry one of the eight horn sounds, so every horn you find can be played. Pots can now turn up a pottery sherd of any design.",
+  "highlights": [
+    "Every goat horn found in loot can be played",
+    "Pots can hold a sherd of any of the 23 designs"
+  ],
+  "pr": 2637,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
