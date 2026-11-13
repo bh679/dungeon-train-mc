@@ -33,8 +33,11 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
      */
     private static final int GAUGE_X = 37, GAUGE_Y = 25 + EngineMenu.CARRIAGE_LINE_H, GAUGE_W = 130, GAUGE_H = 5;
     private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 180, GAUGE_INPUT_V = 186;
-    /** The status line, under the slot row at the full width of the panel. */
-    private static final int TEXT_X = 12, STATUS_Y = 42 + EngineMenu.CARRIAGE_LINE_H, TEXT_WIDTH = 156;
+    /**
+     * The status line, under the slot row at the full width of the panel: lined up with the title and the
+     * inventory label, and wide enough that "It recognises no carriage here" stays on one line.
+     */
+    private static final int TEXT_X = 8, STATUS_Y = 42 + EngineMenu.CARRIAGE_LINE_H, TEXT_WIDTH = 160;
     private static final int TEXT_COLOUR = 0x404040;
     /** The carriage line, one line under the title, in the lighter grey a label's detail takes. */
     private static final int CARRIAGE_Y_BELOW_TITLE = 10, CARRIAGE_COLOUR = 0x808080;
