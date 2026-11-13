@@ -87,7 +87,7 @@ public final class SocialRowWidget extends AbstractWidget {
             this.codeButtons.add(open);
         } else {
             Button signIn = new DarkTintedButton(0, 0, 10, height, Component.translatable("gui.dungeontrain.socials.sign_in"),
-                b -> { if (via != null) MySocialsState.signIn(via, onChange); });
+                b -> { if (via != null) MySocialsState.signIn(onChange); });
             signIn.setTooltip(Tooltip.create(Component.translatable(via == null ? "gui.dungeontrain.socials.unavailable"
                 : "gui.dungeontrain.socials.sign_in." + via + ".tip")));
             signIn.active = !busy && via != null;

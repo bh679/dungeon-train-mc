@@ -27,16 +27,14 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The relay half of My socials (relay {@code player-socials-web.js}): the Instagram and Threads accounts a player
- * added to their profile, so the official posts that feature their content can tag them.
+ * The relay half of My socials (relay {@code player-socials-web.js}): the Instagram account a player added to their
+ * profile, so the official posts that feature their content can tag them.
  *
  * <ul>
- *   <li>{@code POST /player-socials {uuid}} lists them, with the sign-ins the relay offers.</li>
- *   <li>{@code POST /player-socials/start {uuid, name, serverId, via}} hands back a sign-in URL for the browser. The
- *       handle comes only from that sign-in, so it is proven to be the player's.</li>
+ *   <li>{@code POST /player-socials {uuid}} lists it, with whether the relay offers the DM code.</li>
  *   <li>{@code POST /player-socials/dm-code {uuid, name, serverId}} hands back a code ({@code DT-7K2QH}) the player DMs
- *       to @dungeontrain from their Instagram; the relay reads who sent it (relay {@code player-socials-dm.js}). Any
- *       Instagram account, no Threads needed.</li>
+ *       to @dungeontrain from their Instagram; the relay reads who sent it (relay {@code player-socials-dm.js}), so the
+ *       handle is proven to be the player's. Any Instagram account works.</li>
  *   <li>{@code POST /player-socials/remove|tag} change one platform.</li>
  * </ul>
  *
@@ -56,17 +54,15 @@ public final class PlayerSocialsRelay {
         .build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
     static final String LIST_PATH = "/player-socials";
-    static final String START_PATH = "/player-socials/start";
     static final String REMOVE_PATH = "/player-socials/remove";
     static final String TAG_PATH = "/player-socials/tag";
     static final String DM_CODE_PATH = "/player-socials/dm-code";
-    static final Set<String> PLATFORMS = Set.of("instagram", "threads");
-    /** The ways to add an account the relay may offer: two browser sign-ins and the Instagram DM code. */
-    static final Set<String> SIGN_INS = Set.of("threads", "instagram", "instagram_dm");
-    /** The sign-in that is a DM code rather than a browser hop. */
+    static final Set<String> PLATFORMS = Set.of("instagram");
+    /** The way to add an account: a code DMed to @dungeontrain. */
     public static final String INSTAGRAM_DM = "instagram_dm";
+    static final Set<String> SIGN_INS = Set.of(INSTAGRAM_DM);
     /** The rows My Socials shows, in order. */
-    public static final List<String> PLATFORM_ORDER = List.of("instagram", "threads");
+    public static final List<String> PLATFORM_ORDER = List.of("instagram");
     /** A proven serverId keeps proving on the relay for 10 minutes; reuse it a little less than that. */
     private static final long PROOF_REUSE_MS = 9 * 60 * 1000L;
 
@@ -81,7 +77,7 @@ public final class PlayerSocialsRelay {
     }
 
     /**
-     * The profile: its accounts, the sign-ins on offer ({@code threads}, {@code instagram}, {@code instagram_dm}), the
+     * The profile: its accounts, the sign-ins on offer ({@code instagram_dm} once the relay has it switched on), the
      * site page, and a DM code still waiting, if any.
      */
     public record Status(List<Social> socials, List<String> signIns, @Nullable String page, @Nullable DmCode pendingCode) {
@@ -94,10 +90,10 @@ public final class PlayerSocialsRelay {
     /** Why a change did not happen. */
     public enum Failure { NO_CONSENT, NOT_PROVEN, UNAVAILABLE, FAILED }
 
-    /** A change's outcome: the profile afterwards (or the sign-in URL, or a DM code), or why not. */
-    public record Result(@Nullable Status status, @Nullable String url, @Nullable DmCode code, @Nullable Failure failure) {
+    /** A change's outcome: the profile afterwards (or a DM code), or why not. */
+    public record Result(@Nullable Status status, @Nullable DmCode code, @Nullable Failure failure) {
         static Result failed(Failure f) {
-            return new Result(null, null, null, f);
+            return new Result(null, null, f);
         }
     }
 
@@ -113,11 +109,6 @@ public final class PlayerSocialsRelay {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         return post(LIST_PATH, body).thenApply(r -> r != null && r.statusCode() == 200 ? parseStatus(r.body()) : null);
-    }
-
-    /** A sign-in URL for {@code via} ({@code threads} or {@code instagram}) to open in the browser. */
-    public static CompletableFuture<Result> start(String via) {
-        return proven(body -> body.addProperty("via", via), START_PATH);
     }
 
     /** A code to DM to @dungeontrain from the player's Instagram, which adds that Instagram. */
@@ -161,11 +152,9 @@ public final class PlayerSocialsRelay {
                     }
                     if (r.statusCode() == 503 || r.statusCode() == 404) return Result.failed(Failure.UNAVAILABLE);
                     if (r.statusCode() != 200) return Result.failed(Failure.FAILED);
-                    String url = parseUrl(r.body());
-                    if (url != null) return new Result(null, url, null, null);
                     DmCode code = parseDmCode(r.body());
-                    if (code != null) return new Result(null, null, code, null);
-                    return new Result(parseStatus(r.body()), null, null, null);
+                    if (code != null) return new Result(null, code, null);
+                    return new Result(parseStatus(r.body()), null, null);
                 });
             }).exceptionally(t -> {
                 LOGGER.debug("[DungeonTrain] player-socials {} failed: {}", path, t.toString());
@@ -227,18 +216,10 @@ public final class PlayerSocialsRelay {
         }
     }
 
-    /**
-     * The sign-in a platform's row uses, from those the relay offers, or null. Instagram: the DM code (any account, no
-     * Threads needed), else Instagram Login (business accounts), else Threads (same username). Threads: its own
-     * sign-in. Pure.
-     */
+    /** The sign-in a platform's row uses, from those the relay offers, or null: Instagram's DM code. Pure. */
     @Nullable
     public static String signInFor(String platform, List<String> signIns) {
-        if ("instagram".equals(platform)) {
-            if (signIns.contains(INSTAGRAM_DM)) return INSTAGRAM_DM;
-            if (signIns.contains("instagram")) return "instagram";
-        }
-        return signIns.contains("threads") ? "threads" : null;
+        return "instagram".equals(platform) && signIns.contains(INSTAGRAM_DM) ? INSTAGRAM_DM : null;
     }
 
     /** A {@code /dm-code} answer as a DmCode, or null. Pure. */
@@ -271,21 +252,8 @@ public final class PlayerSocialsRelay {
         if (handle == null || !handle.matches("[A-Za-z0-9._]{1,30}")) return null;
         return switch (platform) {
             case "instagram" -> "https://www.instagram.com/" + handle + "/";
-            case "threads" -> "https://www.threads.com/@" + handle;
             default -> null;
         };
-    }
-
-    /** A start's https sign-in URL, or null. Pure. */
-    @Nullable
-    static String parseUrl(String body) {
-        try {
-            JsonElement root = JsonParser.parseString(body);
-            String url = root.isJsonObject() ? str(root.getAsJsonObject(), "url") : null;
-            return url != null && url.startsWith("https://") ? url : null;
-        } catch (RuntimeException ex) {
-            return null;
-        }
     }
 
     @Nullable

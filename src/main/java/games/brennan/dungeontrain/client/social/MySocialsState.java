@@ -1,14 +1,12 @@
 package games.brennan.dungeontrain.client.social;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -30,10 +28,8 @@ public final class MySocialsState {
     private static PlayerSocialsRelay.Status status;
     private static boolean busy;
     private static boolean inFlight;
-    /** The last thing a change has to say (browser opened, or why it failed), or empty. */
+    /** Why the last change failed, or empty. */
     private static Component message = Component.empty();
-    /** Whether {@link #message} is the browser hint, which carries a Refresh button. */
-    private static boolean awaitingBrowser;
     /** The DM code this client just got, until the relay's list carries it. */
     @Nullable
     private static PlayerSocialsRelay.DmCode minted;
@@ -57,10 +53,6 @@ public final class MySocialsState {
         return message;
     }
 
-    public static boolean awaitingBrowser() {
-        return awaitingBrowser;
-    }
-
     /** The Instagram DM code still waiting to be sent, or null. */
     @Nullable
     public static PlayerSocialsRelay.DmCode pendingCode() {
@@ -80,7 +72,6 @@ public final class MySocialsState {
                 status = s;
                 minted = null; // the relay's list now says whether a code still waits
                 phase = Phase.READY;
-                awaitingBrowser = false;
                 message = Component.empty();
             } else if (status == null) {
                 phase = Phase.FAILED;
@@ -89,9 +80,9 @@ public final class MySocialsState {
         }));
     }
 
-    /** Open {@code via}'s sign-in in the browser, or for the Instagram DM code, get a code to send. */
-    public static void signIn(String via, Runnable onChange) {
-        begin(PlayerSocialsRelay.INSTAGRAM_DM.equals(via) ? PlayerSocialsRelay.dmCode() : PlayerSocialsRelay.start(via), onChange);
+    /** Get a code to DM to @dungeontrain from the player's Instagram. */
+    public static void signIn(Runnable onChange) {
+        begin(PlayerSocialsRelay.dmCode(), onChange);
     }
 
     public static void setTag(String platform, boolean on, Runnable onChange) {
@@ -105,15 +96,10 @@ public final class MySocialsState {
     private static void begin(CompletableFuture<PlayerSocialsRelay.Result> call, Runnable onChange) {
         busy = true;
         message = Component.empty();
-        awaitingBrowser = false;
         onChange.run();
         call.thenAccept(r -> Minecraft.getInstance().execute(() -> {
             busy = false;
-            if (r.url() != null) {
-                Util.getPlatform().openUri(URI.create(r.url()));
-                message = Component.translatable("gui.dungeontrain.socials.opened");
-                awaitingBrowser = true;
-            } else if (r.code() != null) {
+            if (r.code() != null) {
                 minted = r.code(); // the Instagram row shows it, with the hint and Refresh under the block
             } else if (r.status() != null) {
                 status = r.status();

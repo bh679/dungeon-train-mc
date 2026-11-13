@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,17 +15,16 @@ class PlayerSocialsRelayTest {
     void parsesSocialsAndSignInsDroppingWhatItCannotShow() {
         PlayerSocialsRelay.Status s = PlayerSocialsRelay.parseStatus("""
             {"ok":true,"socials":[
-              {"platform":"instagram","handle":"alex.builds","tag":true,"via":"threads","ts":1},
+              {"platform":"instagram","handle":"alex.builds","tag":true,"via":"instagram_dm","ts":1},
               {"platform":"threads","handle":"alex.builds","tag":false,"via":"threads","ts":1},
               {"platform":"myspace","handle":"alex","tag":true},
               {"platform":"instagram","handle":"§cred name","tag":true}
-            ],"signIns":["threads","instagram","bluesky"],"page":"https://dungeon.training/link/socials/"}""");
+            ],"signIns":["threads","instagram","instagram_dm","bluesky"],"page":"https://dungeon.training/link/socials/"}""");
         assertNotNull(s);
-        assertEquals(List.of("instagram", "threads"), s.socials().stream().map(PlayerSocialsRelay.Social::platform).toList());
+        assertEquals(List.of("instagram"), s.socials().stream().map(PlayerSocialsRelay.Social::platform).toList());
         assertTrue(s.socials().get(0).tag());
-        assertFalse(s.socials().get(1).tag());
-        assertEquals("threads", s.socials().get(0).via());
-        assertEquals(List.of("threads", "instagram"), s.signIns());
+        assertEquals("instagram_dm", s.socials().get(0).via());
+        assertEquals(List.of("instagram_dm"), s.signIns(), "browser sign-ins are not offered in game");
         assertEquals("https://dungeon.training/link/socials/", s.page());
     }
 
@@ -40,27 +38,17 @@ class PlayerSocialsRelayTest {
     }
 
     @Test
-    void aStartOnlyOpensHttpsUrls() {
-        assertEquals("https://dungeon.training/api/dp-relay/player-socials/auth/start?via=threads&code=ab",
-            PlayerSocialsRelay.parseUrl("{\"ok\":true,\"url\":\"https://dungeon.training/api/dp-relay/player-socials/auth/start?via=threads&code=ab\"}"));
-        assertNull(PlayerSocialsRelay.parseUrl("{\"url\":\"file:///etc/passwd\"}"));
-        assertNull(PlayerSocialsRelay.parseUrl("{\"ok\":true,\"socials\":[]}"));
-    }
-
-    @Test
     void profileLinksPointAtThePlatform() {
         assertEquals("https://www.instagram.com/alex.builds/", PlayerSocialsRelay.profileUrl("instagram", "alex.builds"));
-        assertEquals("https://www.threads.com/@alex.builds", PlayerSocialsRelay.profileUrl("threads", "alex.builds"));
+        assertNull(PlayerSocialsRelay.profileUrl("threads", "alex.builds"));
         assertNull(PlayerSocialsRelay.profileUrl("myspace", "alex"));
         assertNull(PlayerSocialsRelay.profileUrl("instagram", "../evil"));
     }
 
     @Test
-    void instagramSignsInByDmCodeFirstAndNeverNeedsThreads() {
-        assertEquals("instagram_dm", PlayerSocialsRelay.signInFor("instagram", List.of("threads", "instagram_dm")));
-        assertEquals("instagram", PlayerSocialsRelay.signInFor("instagram", List.of("threads", "instagram")));
-        assertEquals("threads", PlayerSocialsRelay.signInFor("instagram", List.of("threads")));
-        assertEquals("threads", PlayerSocialsRelay.signInFor("threads", List.of("instagram_dm", "threads")));
+    void instagramIsAddedOnlyByDmCode() {
+        assertEquals("instagram_dm", PlayerSocialsRelay.signInFor("instagram", List.of("instagram_dm")));
+        assertNull(PlayerSocialsRelay.signInFor("instagram", List.of("instagram", "threads")));
         assertNull(PlayerSocialsRelay.signInFor("threads", List.of("instagram_dm")));
         assertNull(PlayerSocialsRelay.signInFor("instagram", List.of()));
     }
@@ -80,7 +68,7 @@ class PlayerSocialsRelayTest {
         PlayerSocialsRelay.Status s = PlayerSocialsRelay.parseStatus(
             "{\"socials\":[],\"signIns\":[\"threads\",\"instagram_dm\"],\"pendingCode\":{\"code\":\"DT-7K2QH\",\"expiresAt\":1900000000000,\"dmUrl\":\"https://ig.me/m/dungeontrain\"}}");
         assertNotNull(s);
-        assertEquals(List.of("threads", "instagram_dm"), s.signIns());
+        assertEquals(List.of("instagram_dm"), s.signIns());
         assertNotNull(s.pendingCode());
         assertEquals("DT-7K2QH", s.pendingCode().code());
         assertNull(PlayerSocialsRelay.parseStatus("{\"socials\":[],\"pendingCode\":null}").pendingCode());

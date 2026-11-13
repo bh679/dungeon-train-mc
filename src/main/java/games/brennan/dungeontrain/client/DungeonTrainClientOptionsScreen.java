@@ -576,12 +576,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         }
         Component message = MySocialsState.message();
         if (pending != null) {
-            // The code is sent from the player's phone, so the block waits on a Refresh, like a browser sign-in.
+            // The code is sent from the player's phone, so the block waits on a Refresh.
             list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H,
                     Component.translatable("gui.dungeontrain.socials.dm.hint", pending.code()),
-                    Component.translatable("gui.dungeontrain.socials.refresh"), () -> MySocialsState.refresh(this::rebuildIfShown)));
-        } else if (MySocialsState.awaitingBrowser()) {
-            list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H, message,
                     Component.translatable("gui.dungeontrain.socials.refresh"), () -> MySocialsState.refresh(this::rebuildIfShown)));
         } else if (!message.getString().isEmpty()) {
             list.addWidget(caption(message));
