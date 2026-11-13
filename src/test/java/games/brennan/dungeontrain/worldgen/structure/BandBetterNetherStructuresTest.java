@@ -59,4 +59,35 @@ class BandBetterNetherStructuresTest {
         assertFalse(DisabledModContent.isDisabledOreBlock(ResourceLocation.parse("minecraft:nether_gold_ore")));
         assertFalse(DisabledModContent.isDisabledOreBlock(null));
     }
+
+    @Test
+    @DisplayName("half of BetterNether's attempts are kept, the same ones for the same seed")
+    void keepsHalf() {
+        int kept = 0;
+        int total = 0;
+        for (int cx = -200; cx < 200; cx++) {
+            for (int cz = -50; cz < 50; cz++) {
+                boolean k = BandBetterNetherStructures.keeps(1234L, "betternether:altars", cx, cz);
+                assertEquals(k, BandBetterNetherStructures.keeps(1234L, "betternether:altars", cx, cz));
+                if (k) kept++;
+                total++;
+            }
+        }
+        double share = kept / (double) total;
+        assertTrue(Math.abs(share - BandBetterNetherStructures.BAND_KEEP_CHANCE) < 0.01, "kept share " + share);
+    }
+
+    @Test
+    @DisplayName("searched types try the chunk middle first, then a 5x5 grid of nearby spots within 8 blocks")
+    void spotGrid() {
+        var spots = BandBetterNetherStructures.SPOT_OFFSETS;
+        assertEquals(25, spots.size());
+        assertEquals(0, spots.get(0)[0]);
+        assertEquals(0, spots.get(0)[1]);
+        for (int[] s : spots) {
+            assertTrue(Math.abs(s[0]) <= 8 && Math.abs(s[1]) <= 8);
+        }
+        assertTrue(BandBetterNetherStructures.SEARCHED.containsAll(
+                java.util.Set.of("pyramid", "jungle_temples", "gardens", "portals", "spawn_altar_ladder")));
+    }
 }

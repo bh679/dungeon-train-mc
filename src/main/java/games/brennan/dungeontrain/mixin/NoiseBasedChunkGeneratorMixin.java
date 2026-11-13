@@ -243,6 +243,13 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         }
     }
 
+    /** A BetterNether structure siting in a BetterNether band core reads the band's lava sea as the sea level. */
+    @Inject(method = "getSeaLevel", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$bandSeaLevel(CallbackInfoReturnable<Integer> cir) {
+        Integer band = games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures.scopedSeaLevel();
+        if (band != null) cir.setReturnValue(band);
+    }
+
     /** {@link #dungeontrain$sunkBaseHeight}'s twin for the full column (structure pieces probe it too). */
     @Inject(method = "getBaseColumn", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$sunkBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random,

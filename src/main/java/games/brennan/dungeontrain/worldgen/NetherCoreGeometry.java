@@ -134,6 +134,11 @@ public final class NetherCoreGeometry {
         return cells.worldY(netherY);
     }
 
+    /** World Y of the first row above the core's lava sea — the band's own sea level. */
+    public int seaLevelY() {
+        return worldY(source.netherSeaLevel());
+    }
+
     /**
      * True when a non-solid block at this world Y is lava rather than air — i.e. it sits below the
      * Nether's own sea level, translated onto track level.

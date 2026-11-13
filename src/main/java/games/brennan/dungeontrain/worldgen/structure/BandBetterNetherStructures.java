@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -16,10 +17,15 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePiecesBuilder;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -37,6 +43,13 @@ import java.util.function.Consumer;
  *
  * <p>The city is the one that doesn't scan: it builds at a fixed Nether {@code y=40} and digs its own cave.
  * {@link #cityCenterY} moves that to the band's own y 40 ({@code BetterNetherCityCenterMixin}).</p>
+ *
+ * <p>Two band-only adjustments. Half of BetterNether's attempts are dropped ({@link #BAND_KEEP_CHANCE}, by
+ * seed and chunk), so the bands are less crowded than BetterNether's own Nether. And the types that test only
+ * their chunk's middle for a flat floor or a lava sea ({@link #SEARCHED}: pyramids, jungle temples, gardens,
+ * portals, spawn altar ladders) are offered a small grid of nearby spots ({@link #SPOT_OFFSETS}), in a fixed
+ * order: the band's caves are rarely flat right at a chunk's middle, and without it those five never stood
+ * there. The spot that passes BetterNether's own test is where the structure is moved to.</p>
  *
  * <p>Only the BetterNether passes get them: their biome tags include {@code nether_wastes}, so a vanilla-look
  * band would otherwise sprout cities too. The real Nether is untouched — the overworld-only structure-set
@@ -61,12 +74,35 @@ public final class BandBetterNetherStructures {
     private static final BlockState LAVA = Blocks.LAVA.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
+    /** Share of BetterNether's structure attempts kept in a band — half of what its own spacing gives. */
+    static final double BAND_KEEP_CHANCE = 0.5;
+    private static final long KEEP_SALT = 0x6B4E5A1D2C3F7E19L;
+
+    /** Structure types whose siting needs a flat floor or a lava sea at its chunk's middle. */
+    static final Set<String> SEARCHED = Set.of("pyramid", "jungle_temples", "gardens", "portals", "spawn_altar_ladder");
+    /** Spots (block offsets from the chunk middle) a {@link #SEARCHED} type tries, nearest first. */
+    static final List<int[]> SPOT_OFFSETS = spotOffsets(8, 4);
+    /** Jungle temples want a wide floor flat to 4 blocks, inside one biome: they search farther. */
+    private static final String WIDE_SEARCH = "jungle_temples";
+    static final List<int[]> WIDE_SPOT_OFFSETS = spotOffsets(16, 4);
+
     private static final ThreadLocal<Scope> SCOPE = new ThreadLocal<>();
 
     private BandBetterNetherStructures() {}
 
-    /** One attempt's band: the core terrain it sites into. */
-    public record Scope(BandNetherStructures.Site site) {}
+    /**
+     * One attempt's band: the core terrain it sites into, and the spot it is trying — BetterNether's siting
+     * reads the terrain and biome {@code offsetX, offsetZ} blocks from where it looks.
+     */
+    public record Scope(BandNetherStructures.Site site, int offsetX, int offsetZ) {
+        public Scope(BandNetherStructures.Site site) {
+            this(site, 0, 0);
+        }
+
+        Scope at(int[] offset) {
+            return new Scope(site, offset[0], offset[1]);
+        }
+    }
 
     /** True for a BetterNether structure, by its structure type's namespace (no class dependency). */
     public static boolean isBandEligible(Structure structure) {
@@ -79,6 +115,36 @@ public final class BandBetterNetherStructures {
         return type != null && CITY.equals(type.getPath());
     }
 
+    private static boolean isSearched(Structure structure) {
+        ResourceLocation type = BuiltInRegistries.STRUCTURE_TYPE.getKey(structure.type());
+        return type != null && SEARCHED.contains(type.getPath());
+    }
+
+    /** The grid of offsets within {@code radius} at {@code step}, nearest the middle first (ties in grid order). */
+    static List<int[]> spotOffsets(int radius, int step) {
+        List<int[]> offsets = new ArrayList<>();
+        for (int dx = -radius; dx <= radius; dx += step) {
+            for (int dz = -radius; dz <= radius; dz += step) {
+                offsets.add(new int[] {dx, dz});
+            }
+        }
+        offsets.sort(Comparator.comparingInt(o -> o[0] * o[0] + o[1] * o[1]));
+        return List.copyOf(offsets);
+    }
+
+    /**
+     * Whether this attempt is one of the half kept ({@link #BAND_KEEP_CHANCE}): a hash of the world seed, the
+     * structure type and the chunk, so the same world always keeps the same ones.
+     */
+    static boolean keeps(long seed, String type, int chunkX, int chunkZ) {
+        long h = seed ^ KEEP_SALT ^ (type.hashCode() * 0x9E3779B97F4A7C15L);
+        h += chunkX * 341873128712L + chunkZ * 132897987541L;
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= h >>> 31;
+        return (h >>> 11) * 0x1.0p-53 < BAND_KEEP_CHANCE;
+    }
+
     /**
      * BetterNether's own generation point, run against the band, or empty when this attempt is not in a
      * BetterNether core (then nothing places: the overworld has no other home for these).
@@ -87,10 +153,19 @@ public final class BandBetterNetherStructures {
                                                                 java.util.function.Function<Structure.GenerationContext,
                                                                         Optional<Structure.GenerationStub>> find) {
         try {
+            ResourceLocation type = BuiltInRegistries.STRUCTURE_TYPE.getKey(structure.type());
+            ChunkPos chunkPos = context.chunkPos();
+            if (type == null || !keeps(context.seed(), type.toString(), chunkPos.x, chunkPos.z)) return Optional.empty();
             Scope scope = open(structure, context);
             if (scope == null) return Optional.empty();
-            Optional<Structure.GenerationStub> stub = runIn(scope, () -> find.apply(context));
-            return stub.map(s -> rescoped(s, scope));
+            List<int[]> spots = !isSearched(structure) ? List.of(new int[] {0, 0})
+                    : WIDE_SEARCH.equals(type.getPath()) ? WIDE_SPOT_OFFSETS : SPOT_OFFSETS;
+            for (int[] spot : spots) {
+                Scope at = scope.at(spot);
+                Optional<Structure.GenerationStub> stub = runIn(at, () -> find.apply(context));
+                if (stub.isPresent()) return Optional.of(rescoped(stub.get(), at));
+            }
+            return Optional.empty();
         } catch (Throwable t) {
             SITE_ERRORS.error(LOGGER, "[DungeonTrain] BetterNether band structure siting failed; none in this chunk", t);
             return Optional.empty();
@@ -119,13 +194,33 @@ public final class BandBetterNetherStructures {
      * {@code findValidGenerationPoint} returns, and the city reads its centre again while it builds.
      */
     private static Structure.GenerationStub rescoped(Structure.GenerationStub stub, Scope scope) {
+        int dx = scope.offsetX();
+        int dz = scope.offsetZ();
+        BlockPos position = stub.position().offset(dx, 0, dz);
         Either<Consumer<StructurePiecesBuilder>, StructurePiecesBuilder> generator = stub.generator();
-        if (generator.right().isPresent()) return stub;
+        if (generator.right().isPresent()) {
+            StructurePiecesBuilder built = generator.right().get();
+            return new Structure.GenerationStub(position, builder -> moveInto(built, builder, dx, dz));
+        }
         Consumer<StructurePiecesBuilder> build = generator.left().orElseThrow();
-        return new Structure.GenerationStub(stub.position(), builder -> runIn(scope, () -> {
-            build.accept(builder);
+        return new Structure.GenerationStub(position, builder -> runIn(scope, () -> {
+            if (dx == 0 && dz == 0) {
+                build.accept(builder);
+            } else {
+                StructurePiecesBuilder sited = new StructurePiecesBuilder();
+                build.accept(sited);
+                moveInto(sited, builder, dx, dz);
+            }
             return null;
         }));
+    }
+
+    /** {@code from}'s pieces, moved to the spot that passed, added to {@code to}. */
+    private static void moveInto(StructurePiecesBuilder from, StructurePiecesBuilder to, int dx, int dz) {
+        for (StructurePiece piece : from.build().pieces()) {
+            piece.move(dx, 0, dz);
+            to.addPiece(piece);
+        }
     }
 
     private static <T> T runIn(Scope scope, java.util.function.Supplier<T> body) {
@@ -151,7 +246,7 @@ public final class BandBetterNetherStructures {
         Scope scope = SCOPE.get();
         if (scope == null) return null;
         NetherCoreGeometry geometry = scope.site().geometry();
-        NetherCoreGeometry.Column column = scope.site().column(x, z);
+        NetherCoreGeometry.Column column = scope.site().column(x + scope.offsetX(), z + scope.offsetZ());
         int minY = level.getMinBuildHeight();
         BlockState[] states = new BlockState[level.getHeight()];
         for (int i = 0; i < states.length; i++) {
@@ -171,7 +266,18 @@ public final class BandBetterNetherStructures {
     public static Holder<Biome> scopedBiome(int blockX, int blockZ) {
         Scope scope = SCOPE.get();
         if (scope == null) return null;
-        return scope.site().ctx().netherCoreBiomes().biomeAt(blockX, blockZ, CycleLayout.Style.BETTER);
+        return scope.site().ctx().netherCoreBiomes()
+                .biomeAt(blockX + scope.offsetX(), blockZ + scope.offsetZ(), CycleLayout.Style.BETTER);
+    }
+
+    /**
+     * The band's own sea level inside a scope — the top of the core's lava sea — else {@code null}. Pyramids
+     * look for lava just below the generator's sea level, and the overworld's 63 is not where the band's is.
+     */
+    public static Integer scopedSeaLevel() {
+        Scope scope = SCOPE.get();
+        if (scope == null) return null;
+        return scope.site().geometry().seaLevelY();
     }
 
     /** The city's centre y inside a scope — the band's Nether y 40 — or {@code y} unchanged outside one. */
