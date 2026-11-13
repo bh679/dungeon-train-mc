@@ -15,15 +15,15 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV",
-        "CLASSIC",
         "SKYLANDS",
+        "INFDEV",
         "FLOATING",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -43,15 +43,15 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV",
-        "CLASSIC",
         "SKYLANDS",
+        "INFDEV",
         "FLOATING",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -138,15 +138,15 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV",
-        "CLASSIC",
         "SKYLANDS",
+        "INFDEV",
         "FLOATING",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -173,12 +173,12 @@
         "BETA",
         "ALPHA",
         "INFDEV",
-        "CLASSIC",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -195,6 +195,23 @@
     {
       "id": "lowkeyabridge",
       "weight": 1
+    },
+    {
+      "id": "staircase",
+      "weight": 1,
+      "minLevel": 100
+    },
+    {
+      "id": "onionman",
+      "weight": 1,
+      "minLevel": 30,
+      "maxLevel": 31
+    },
+    {
+      "id": "nnout",
+      "weight": 1,
+      "minLevel": 10,
+      "maxLevel": 16
     }
   ]
 }

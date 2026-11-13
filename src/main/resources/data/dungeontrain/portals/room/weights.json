@@ -324,6 +324,25 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on:15"
   },
+  "nnout": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "void/exact/off/off/off/none/sealed/0/7"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "void"
@@ -336,6 +355,7 @@
       "name": "AntonioMacarely"
     }
   },
+  "onionman": 1,
   "outsidethebox": {
     "weight": 0,
     "mode": "endless_open/single:minecraft:stone"
@@ -443,6 +463,10 @@
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/1/-1/1"
   },
+  "staircase": {
+    "weight": 1,
+    "mode": "void/exact/off/off/off/end/sealed/0/0/0/43/minecraft:bedrock/on"
+  },
   "statue2": {
     "weight": 1,
     "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
@@ -529,6 +553,10 @@
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
     }
+  },
+  "user_builds": {
+    "weight": 1,
+    "name": "User builds"
   },
   "window": {
     "weight": 1,
