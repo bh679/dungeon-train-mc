@@ -110,4 +110,10 @@ def golden_burrito(adv_dir: Path, tabs: dict) -> str:
     files = {"dungeontrain:" + f.relative_to(adv_dir).with_suffix("").as_posix(): f for f in adv_dir.rglob("*.json")}
     parent_of = lambda a: json.loads(files[a].read_text()).get("parent") if a in files else None  # noqa: E731
     in_dt = lambda a: tab_root(a, parent_of) == DT_ROOT  # noqa: E731
+    files = {a: f for a, f in files.items() if not switched_off(json.loads(f.read_text()))}
     return "\n".join(i for i in sorted(files) if effective(i, linked(tabs), books, tabs, in_dt(i))[0]) + "\n"
+
+
+def switched_off(adv: dict) -> bool:
+    """A neoforge:false load condition keeps an advancement out of the game, so nothing can require it."""
+    return any(c.get("type") == "neoforge:false" for c in adv.get("neoforge:conditions", []) if isinstance(c, dict))

@@ -217,4 +217,14 @@ final class EnchiridionAdvancementsTest {
             }
         }
     }
+
+    @Test
+    @DisplayName("Photobomb ships switched off until launch")
+    void photobombSwitchedOff() throws IOException {
+        // Not launched yet: a neoforge:false condition keeps it out of the game, the Burrito and Fully Developed.
+        // To launch, delete the condition from photobomb.json and this test in the same PR.
+        JsonObject json = JsonParser.parseString(Files.readString(
+                RepoPaths.advancements().resolve("enchiridion/photobomb.json"), StandardCharsets.UTF_8)).getAsJsonObject();
+        assertTrue(AdvancementTabsTest.switchedOff(json), "photobomb.json lost its neoforge:false condition");
+    }
 }

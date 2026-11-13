@@ -179,7 +179,6 @@ dungeontrain:enchiridion/photo_superflat
 dungeontrain:enchiridion/photo_upside_down
 dungeontrain:enchiridion/photo_void
 dungeontrain:enchiridion/photo_wwoo
-dungeontrain:enchiridion/photobomb
 dungeontrain:enchiridion/rogues_gallery
 dungeontrain:enchiridion/run_away
 dungeontrain:enchiridion/say_cheese

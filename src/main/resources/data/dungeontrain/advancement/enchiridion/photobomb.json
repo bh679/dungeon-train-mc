@@ -1,4 +1,9 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:false"
+    }
+  ],
   "parent": "dungeontrain:enchiridion/family_photo",
   "display": {
     "icon": {
