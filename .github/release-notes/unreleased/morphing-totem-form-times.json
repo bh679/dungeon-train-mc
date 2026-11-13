@@ -1,0 +1,16 @@
+{
+  "id": "morphing-totem-form-times",
+  "version": "0.1804.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "balance"
+  ],
+  "title": "Totem tweak",
+  "summary": "One totem's forms now each last their own length of time, and a few of them come up less often. Those forms also look right in first person.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
