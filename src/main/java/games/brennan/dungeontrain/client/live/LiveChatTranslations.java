@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * The pure rules behind a Live chat line's translation: which language this reader reads, which of the
  * relay's translations is theirs, and how it reads in chat. No Minecraft state — everything comes in as
  * arguments. {@link LiveChatBridge} decides when; {@code LiveFeedClientConfig.liveChatTranslation()}
- * decides where (under the original, instead of it, or first).
+ * decides where (under the original, instead of it, or first), or that they are off.
  *
  * <p>The relay translates only while the Live Translations community reward is on, into the languages
  * its readers report on each poll ({@code lang=}), a poll or two after the line.</p>
@@ -46,6 +46,15 @@ public final class LiveChatTranslations {
         if (languageCode == null) return null;
         String code = languageCode.strip().toLowerCase(Locale.ROOT).replace('-', '_');
         return LOCALE.matcher(code).matches() ? code : null;
+    }
+
+    /**
+     * The language a chat poll names to the relay: this reader's ({@link #readerLang}) while translations
+     * are on, else null, so the relay is never asked to translate into a language read with them off.
+     */
+    @Nullable
+    public static String pollLang(@Nullable String languageCode, boolean translationsOn) {
+        return translationsOn ? readerLang(languageCode) : null;
     }
 
     /**
