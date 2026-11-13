@@ -5,6 +5,11 @@ import games.brennan.dungeontrain.editor.VaultRarity;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
@@ -88,6 +93,51 @@ public final class ItemProvenance {
             tag.putBoolean(KEY_FRESH, true);
             if (pIdx.isPresent() && !tag.contains(KEY_PIDX)) tag.putInt(KEY_PIDX, pIdx.getAsInt());
         });
+    }
+
+    /**
+     * Mark the gear {@code entity} is wearing or holding (an armor stand, a mob) or showing (an item
+     * frame) as new: gear baked into a carriage template is copied in as it was saved, unmarked.
+     */
+    public static void markFreshGear(Entity entity, OptionalInt pIdx) {
+        if (entity instanceof LivingEntity living) {
+            for (EquipmentSlot slot : EquipmentSlot.values()) {
+                ItemStack stack = living.getItemBySlot(slot);
+                if (!needsMark(stack)) continue;
+                ItemStack marked = stack.copy();
+                markFresh(marked, pIdx);
+                living.setItemSlot(slot, marked);
+            }
+        } else if (entity instanceof ItemFrame frame && needsMark(frame.getItem())) {
+            ItemStack marked = frame.getItem().copy();
+            markFresh(marked, pIdx);
+            frame.setItem(marked, false);
+        }
+    }
+
+    /**
+     * Mark the gear in {@code container} as new, for storage baked into a carriage template.
+     *
+     * @return whether any slot changed, so the caller can save the block entity
+     */
+    public static boolean markFreshContents(Container container, OptionalInt pIdx) {
+        boolean changed = false;
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (!needsMark(stack)) continue;
+            ItemStack marked = stack.copy();
+            markFresh(marked, pIdx);
+            container.setItem(i, marked);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /** Gear with neither a holder nor a fresh mark yet. */
+    private static boolean needsMark(ItemStack stack) {
+        if (!eligible(stack) || hasHolder(stack)) return false;
+        CompoundTag tag = read(stack);
+        return tag == null || !tag.getBoolean(KEY_FRESH);
     }
 
     /** Mark {@code stack} as new and record how it is coming to its holder: made or bought. */
