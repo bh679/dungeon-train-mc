@@ -208,7 +208,8 @@
     "dungeontrain:dungeon_train/three_melons": true,
     "dungeontrain:dungeon_train/the_challenge": true,
     "dungeontrain:enchiridion/family_photo": true,
-    "dungeontrain:enchiridion/skeleton_crew": true
+    "dungeontrain:enchiridion/skeleton_crew": true,
+    "dungeontrain:enchiridion/photobomb": true
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",
@@ -221,7 +222,8 @@
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",
-    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned"
+    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned",
+    "dungeontrain:enchiridion/photobomb": "always"
   },
   "complete": {
     "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",

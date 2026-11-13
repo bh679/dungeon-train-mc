@@ -5,6 +5,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
@@ -48,6 +49,24 @@ final class ItemProvenanceTest {
             ItemProvenance.markFresh(stack, OptionalInt.of(4));
             assertFalse(stack.has(DataComponents.CUSTOM_DATA), "plain items stay unmarked so they keep stacking");
         }
+    }
+
+    @Test
+    @DisplayName("gear baked into storage is marked new; plain items and held gear are left alone")
+    void markFreshContents_marksOnlyUnclaimedGear() {
+        ItemStack held = new ItemStack(Items.IRON_HELMET);
+        ItemProvenance.claim(held, STEVE, "Steve", DAY, Optional.empty(), 0);
+        SimpleContainer chest = new SimpleContainer(
+            new ItemStack(Items.DIAMOND_SWORD), new ItemStack(Items.COBBLESTONE, 12), held);
+
+        assertTrue(ItemProvenance.markFreshContents(chest, OptionalInt.of(7)));
+        assertEquals(OptionalInt.of(7), ItemProvenance.pIdx(chest.getItem(0)));
+        assertFalse(chest.getItem(1).has(DataComponents.CUSTOM_DATA));
+        assertEquals(ItemProvenance.How.OLD, ItemProvenance.view(chest.getItem(2)).orElseThrow().how());
+        assertFalse(ItemProvenance.markFreshContents(chest, OptionalInt.of(7)), "a second pass changes nothing");
+
+        assertTrue(ItemProvenance.claim(chest.getItem(0), STEVE, "Steve", DAY, Optional.empty(), 0));
+        assertEquals(ItemProvenance.How.FOUND, ItemProvenance.view(chest.getItem(0)).orElseThrow().how());
     }
 
     @Test

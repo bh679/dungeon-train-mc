@@ -1,0 +1,16 @@
+{
+  "id": "highlights-webhook-sync",
+  "version": "0.1789.0",
+  "type": "ci",
+  "tags": [
+    "community",
+    "internal"
+  ],
+  "title": "Community milestones in Discord",
+  "summary": "Community milestones can now be celebrated in the Discord highlights channel.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

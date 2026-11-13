@@ -1,0 +1,17 @@
+{
+  "id": "photo-advancement-icons",
+  "version": "0.1791.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements"
+  ],
+  "title": "New photo advancement icons",
+  "summary": "Two photo advancements have fresh icons.",
+  "highlights": [],
+  "pr": 2629,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
