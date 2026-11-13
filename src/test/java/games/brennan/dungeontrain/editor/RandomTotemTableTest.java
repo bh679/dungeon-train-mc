@@ -79,9 +79,9 @@ final class RandomTotemTableTest {
         assertEquals(5, RandomTotemTable.minWeight());
         assertEquals(5, RandomTotemTable.weightOf(rl("dungeontotems:insomnia_totem")));
         assertEquals(7, RandomTotemTable.weightOf(rl("dungeontotems:rage_totem")));
-        assertEquals(15, RandomTotemTable.weightOf(rl("dungeontotems:morphing_totem")));
+        assertEquals(20, RandomTotemTable.weightOf(rl("dungeontotems:morphing_totem")));
         assertEquals(10, RandomTotemTable.weightOf(RandomTotemTable.VOID_TOTEM));
-        assertEquals(168, RandomTotemTable.all().values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(173, RandomTotemTable.all().values().stream().mapToInt(Integer::intValue).sum());
     }
 
     @Test
