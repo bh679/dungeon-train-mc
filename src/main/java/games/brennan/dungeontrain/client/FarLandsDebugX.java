@@ -92,14 +92,11 @@ public final class FarLandsDebugX {
     }
 
     /**
-     * Where era {@code e} takes over: halfway through the fade into it. One past the last era is halfway
-     * through the run's exit fade, where the overworld takes over.
+     * Where era {@code e} takes over: halfway through the fade into it. One past the last era is the end of
+     * the run's exit fade, the first block of plain overworld, so the last era keeps the whole fade.
      */
     private static long switchX(List<WorldGenCycle.LegacyRunEra> eras, int e, long runEndX) {
-        if (e >= eras.size()) {
-            long lastCoreEnd = eras.get(eras.size() - 1).coreEndX();
-            return lastCoreEnd + (runEndX - lastCoreEnd) / 2L;
-        }
+        if (e >= eras.size()) return runEndX;
         WorldGenCycle.LegacyRunEra era = eras.get(e);
         return era.fadeStartX() + (era.coreStartX() - era.fadeStartX()) / 2L;
     }
