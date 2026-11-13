@@ -1,0 +1,16 @@
+{
+  "id": "known-feature-notes",
+  "version": "0.1809.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Answers to your feedback",
+  "summary": "Ask in your feedback or in chat for something the game already has, like a trash slot, backpacks, inventory sorting or recipe lookup, and a short note now shows you how to find it. Asking for saving mid-run or multiplayer brings a note that both are coming, with a link to the roadmap.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
