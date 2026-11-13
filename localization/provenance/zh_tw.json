@@ -5719,6 +5719,8 @@
   "item.dungeontrain.random_potion": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "06517a59acd2f7be"},
   "item.dungeontrain.random_good_potion": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "1c1cadaafa018add"},
   "item.dungeontrain.random_bad_potion": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4bcb3af91f3ac6d3"},
+  "item.dungeontrain.random_pottery_sherd": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "988dac5d4d27f915"},
+  "item.dungeontrain.random_goat_horn": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "013206ffbb7035b6"},
   "item.dungeontrain.random_totem": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "91ab48e9b6012a09"},
   "item.dungeontrain.disposable_camera": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f0fd8f7a59f59b1d"},
   "gui.dungeontrain.options.book_author_chat": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a48f30db24b928a1"},

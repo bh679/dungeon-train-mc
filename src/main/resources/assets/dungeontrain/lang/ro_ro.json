@@ -2828,6 +2828,8 @@
   "item.dungeontrain.random_potion": "Poțiune aleatorie",
   "item.dungeontrain.random_good_potion": "Poțiune bună aleatorie",
   "item.dungeontrain.random_bad_potion": "Poțiune rea aleatorie",
+  "item.dungeontrain.random_pottery_sherd": "Ciob de ceramică aleatoriu",
+  "item.dungeontrain.random_goat_horn": "Corn de capră aleatoriu",
   "item.dungeontrain.random_totem": "Totem aleatoriu",
   "item.dungeontrain.disposable_camera": "Aparat foto de unică folosință",
   "gui.dungeontrain.prefab_tab.variants": "Variante de bloc",

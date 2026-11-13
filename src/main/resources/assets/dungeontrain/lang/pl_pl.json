@@ -5839,6 +5839,8 @@
   "item.dungeontrain.random_potion": "Losowa mikstura",
   "item.dungeontrain.random_good_potion": "Losowa dobra mikstura",
   "item.dungeontrain.random_bad_potion": "Losowa zła mikstura",
+  "item.dungeontrain.random_pottery_sherd": "Losowa skorupa naczynia",
+  "item.dungeontrain.random_goat_horn": "Losowy kozi róg",
   "item.dungeontrain.random_totem": "Losowy totem",
   "item.dungeontrain.disposable_camera": "Aparat jednorazowy",
   "gui.dungeontrain.options.book_author_chat": "Autor książki na czacie",

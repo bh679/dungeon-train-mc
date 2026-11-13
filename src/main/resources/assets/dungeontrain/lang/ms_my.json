@@ -5705,6 +5705,8 @@
   "item.dungeontrain.random_potion": "Ramuan Rawak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Rawak",
   "item.dungeontrain.random_bad_potion": "Ramuan Buruk Rawak",
+  "item.dungeontrain.random_pottery_sherd": "Serpihan Tembikar Rawak",
+  "item.dungeontrain.random_goat_horn": "Tanduk Kambing Rawak",
   "item.dungeontrain.random_totem": "Totem Rawak",
   "item.dungeontrain.disposable_camera": "Kamera Pakai Buang",
   "gui.dungeontrain.options.book_author_chat": "Penulis buku dalam sembang",
