@@ -98,23 +98,24 @@ public final class EnchiridionAdvancements {
     /** Collections that keep a photo for every entry, not just the one that completed them. */
     private static final Set<String> ENTITY_ALBUMS = Set.of(
             PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted",
-            PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew");
+            PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew", PATH_PREFIX + "photobomb");
 
     /**
-     * The mob collections that share ticks by name ({@code SharedPhotoCriteria}): Most Wanted and its two
+     * The mob collections that share ticks by name ({@code SharedPhotoCriteria}): Most Wanted and its three
      * subsets. The client reports which of their mobs it holds photos of at login.
      */
     public static final java.util.List<String> SHARED_PHOTO_LISTS = java.util.List.of(
-            PATH_PREFIX + "most_wanted", PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew");
+            PATH_PREFIX + "most_wanted", PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew",
+            PATH_PREFIX + "photobomb");
 
     /**
-     * Where a collection borrows a mob's photo when its own album has none: Family Photo and Skeleton Crew
-     * are subsets of Most Wanted, and a tick copied across from it ({@code SharedPhotoCriteria}) brings no photo.
+     * Where a collection borrows a mob's photo when its own album has none: Family Photo, Skeleton Crew and
+     * Photobomb are subsets of Most Wanted, and a tick copied across from it ({@code SharedPhotoCriteria}) brings no photo.
      * {@code null} for every other advancement.
      */
     public static String photoFallbackAlbum(String path) {
         return (PATH_PREFIX + "family_photo").equals(path) || (PATH_PREFIX + "skeleton_crew").equals(path)
-                ? PATH_PREFIX + "most_wanted" : null;
+                || (PATH_PREFIX + "photobomb").equals(path) ? PATH_PREFIX + "most_wanted" : null;
     }
 
     /**

@@ -134,7 +134,8 @@ final class EnchiridionAdvancementsTest {
         // Earned: Say Cheese and everything above it; no collection yet.
         Set<String> earned = new java.util.HashSet<>();
         for (String at = "enchiridion/say_cheese"; at != null; at = parents.get(at)) earned.add(at);
-        for (String collection : List.of("enchiridion/family_photo", "enchiridion/skeleton_crew", "enchiridion/most_wanted")) {
+        for (String collection : List.of("enchiridion/family_photo", "enchiridion/skeleton_crew", "enchiridion/photobomb",
+                "enchiridion/most_wanted")) {
             assertTrue(AdvancementVisibilityRule.isVisible(collection, parents::get, earned::contains,
                     p -> AdvancementVisibilityRule.Mode.parse(layout.visibility().get(rl(p).toString())),
                     p -> false), collection);
@@ -149,6 +150,7 @@ final class EnchiridionAdvancementsTest {
         assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.albumOf("enchiridion/most_wanted"));
         assertEquals("enchiridion/family_photo", EnchiridionAdvancements.albumOf("enchiridion/family_photo"));
         assertEquals("enchiridion/skeleton_crew", EnchiridionAdvancements.albumOf("enchiridion/skeleton_crew"));
+        assertEquals("enchiridion/photobomb", EnchiridionAdvancements.albumOf("enchiridion/photobomb"));
         for (String tier : List.of("enchiridion/scenic_route", "enchiridion/travel_brochure", "enchiridion/coffee_table_book")) {
             assertTrue(parents.containsKey(tier), tier);
             assertEquals(EnchiridionAdvancements.BIOME_ALBUM, EnchiridionAdvancements.albumOf(tier));
@@ -159,10 +161,11 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("Family Photo and Skeleton Crew borrow a missing photo from Most Wanted, nothing else does")
+    @DisplayName("Family Photo, Skeleton Crew and Photobomb borrow a missing photo from Most Wanted, nothing else does")
     void photoFallbackAlbums() {
         assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.photoFallbackAlbum("enchiridion/family_photo"));
         assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.photoFallbackAlbum("enchiridion/skeleton_crew"));
+        assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.photoFallbackAlbum("enchiridion/photobomb"));
         assertNull(EnchiridionAdvancements.photoFallbackAlbum("enchiridion/most_wanted"));
         assertNull(EnchiridionAdvancements.photoFallbackAlbum("enchiridion/nature_documentary"));
         assertNull(EnchiridionAdvancements.photoFallbackAlbum(null));

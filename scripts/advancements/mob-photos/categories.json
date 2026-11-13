@@ -31,7 +31,7 @@
     "ids": ["minecraft:creaking", "minecraft:happy_ghast", "minecraft:sulfur_cube"]
   },
   "families": {
-    "_doc": "Advancement -> the mobs it asks for. A member joins once the train can spawn it, so an unplaced mob here is fine. A spawnable hostile with zombie or skeleton in its id must be in a family, or the build stops.",
+    "_doc": "Advancement -> the mobs it asks for. A member joins once the train can spawn it, so an unplaced mob here is fine. A spawnable hostile with zombie, skeleton or creeper in its id must be in a family, or the build stops.",
     "family_photo": [
       "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager",
       "luminous_monsters:cherry_zombie", "luminous_monsters:crimson_walker", "luminous_monsters:dark_oak_zombie",
@@ -43,6 +43,14 @@
       "luminous_monsters:cherry_skeleton", "luminous_monsters:dark_oak_skeleton", "luminous_monsters:hollow_skeleton",
       "luminous_monsters:icy_skeleton", "luminous_monsters:miner_skeleton", "luminous_monsters:revenant_skeleton",
       "luminous_monsters:savanna_skeleton", "luminous_monsters:sunken_skeleton", "luminous_monsters:swamp_skeleton"
+    ],
+    "photobomb": [
+      "minecraft:creeper", "creeperoverhaul:badlands_creeper", "creeperoverhaul:bamboo_creeper", "creeperoverhaul:beach_creeper",
+      "creeperoverhaul:birch_creeper", "creeperoverhaul:cave_creeper", "creeperoverhaul:dark_oak_creeper",
+      "creeperoverhaul:desert_creeper", "creeperoverhaul:dripstone_creeper", "creeperoverhaul:hills_creeper",
+      "creeperoverhaul:jungle_creeper", "creeperoverhaul:mushroom_creeper", "creeperoverhaul:ocean_creeper",
+      "creeperoverhaul:savannah_creeper", "creeperoverhaul:snowy_creeper", "creeperoverhaul:spruce_creeper",
+      "creeperoverhaul:swamp_creeper"
     ]
   },
   "categories": {
