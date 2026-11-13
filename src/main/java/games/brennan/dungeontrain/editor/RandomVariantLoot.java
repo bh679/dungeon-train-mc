@@ -15,7 +15,9 @@ import net.minecraft.world.item.Instrument;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.entity.PotDecorations;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +34,9 @@ import java.util.Optional;
  * <p>Also gives a plain {@code minecraft:goat_horn} entry an instrument: a loot entry cannot store
  * one, and vanilla's {@code InstrumentItem#use} fails on a horn without one, so every horn loot
  * ever placed was silent until this fill.</p>
+ *
+ * <p>And rolls the occasional loot pot's sherd sides ({@link #decoratePot}); vanilla never generates
+ * a pot with sherds on it.</p>
  */
 public final class RandomVariantLoot {
 
@@ -68,6 +73,61 @@ public final class RandomVariantLoot {
         if (pool.isEmpty()) return false;
         stack.set(DataComponents.INSTRUMENT, pool.get(pickIndex(seed, pool.size())));
         return true;
+    }
+
+    /** One in this many loot pots is decorated with sherds. */
+    static final int POT_DECOR_CHANCE = 80;
+    /** Once a pot is decorated, one in this many chances of each further sherd side. */
+    static final int EXTRA_SIDE_CHANCE = 10;
+    /** Percent chance a further side repeats the previous side's sherd rather than picking anew. */
+    static final int SAME_SHERD_PERCENT = 50;
+    /** {@link #rollPotSides} value for a plain (brick) side. */
+    static final int PLAIN_SIDE = -1;
+
+    /**
+     * Sherd sides for a loot pot, or {@link PotDecorations#EMPTY} for the plain pot most of them stay.
+     * See {@link #rollPotSides} for the odds. Empty too when the sherd tag is.
+     */
+    static PotDecorations decoratePot(long seed, HolderLookup.Provider registries) {
+        // The chance first: the other 79 pots in 80 never touch the sherd tag.
+        if (!isDecorated(RandomSource.create(seed))) return PotDecorations.EMPTY;
+        List<Holder<Item>> pool = sortedTag(registries, Registries.ITEM, ItemTags.DECORATED_POT_SHERDS);
+        if (pool.isEmpty()) return PotDecorations.EMPTY;
+        int[] sides = rollPotSides(seed, pool.size());
+        if (sides == null) return PotDecorations.EMPTY;
+        return new PotDecorations(
+            sideItem(pool, sides[0]), sideItem(pool, sides[1]),
+            sideItem(pool, sides[2]), sideItem(pool, sides[3]));
+    }
+
+    /**
+     * Sherd indices for a pot's four sides (back, left, right, front; {@link #PLAIN_SIDE} for brick),
+     * or null when the pot stays plain. One pot in {@link #POT_DECOR_CHANCE} gets one random sherd on
+     * a random side; each further side then comes with a one in {@link #EXTRA_SIDE_CHANCE} chance,
+     * stopping at the first miss, and repeats the previous sherd {@link #SAME_SHERD_PERCENT} percent
+     * of the time. Package-private for tests.
+     */
+    static int[] rollPotSides(long seed, int poolSize) {
+        RandomSource random = RandomSource.create(seed);
+        if (poolSize <= 0 || !isDecorated(random)) return null;
+        int[] sides = {PLAIN_SIDE, PLAIN_SIDE, PLAIN_SIDE, PLAIN_SIDE};
+        List<Integer> free = new ArrayList<>(List.of(0, 1, 2, 3));
+        int sherd = random.nextInt(poolSize);
+        sides[free.remove(random.nextInt(free.size()))] = sherd;
+        while (!free.isEmpty() && random.nextInt(EXTRA_SIDE_CHANCE) == 0) {
+            if (random.nextInt(100) >= SAME_SHERD_PERCENT) sherd = random.nextInt(poolSize);
+            sides[free.remove(random.nextInt(free.size()))] = sherd;
+        }
+        return sides;
+    }
+
+    /** The one-in-{@link #POT_DECOR_CHANCE} draw; always the first draw from a pot's seed. */
+    private static boolean isDecorated(RandomSource random) {
+        return random.nextInt(POT_DECOR_CHANCE) == 0;
+    }
+
+    private static Optional<Item> sideItem(List<Holder<Item>> pool, int index) {
+        return index == PLAIN_SIDE ? Optional.empty() : Optional.of(pool.get(index).value());
     }
 
     /** Uniform index in {@code [0, size)} for {@code seed}. Package-private for tests. */

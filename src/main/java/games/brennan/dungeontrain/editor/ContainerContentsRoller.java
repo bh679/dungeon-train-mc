@@ -34,6 +34,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BrushableBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.PotDecorations;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
@@ -116,6 +117,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_SHERD = 0x5E2D5E2D90770E12L;
     /** Salt for a goat horn's instrument (the random_goat_horn placeholder, or a plain horn entry). */
     private static final long SALT_HORN_INSTRUMENT = 0x6047A0E2B1A57E27L;
+    /** Salt for a loot pot's sherd sides; left out of diffIndex so a pot looks the same at every difficulty. */
+    private static final long SALT_POT_DECOR = 0xDEC0257E2D5A1DE5L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
     /** Salt for which Dungeon Totem a {@code dungeontrain:random_totem} slot becomes. */
@@ -177,6 +180,8 @@ public final class ContainerContentsRoller {
      * spills it on break alongside the sherd shards.
      */
     private static final String NBT_POT_ITEM = "item";
+    /** Vanilla {@code DecoratedPotBlockEntity} key for its four side items (1.21.1). */
+    private static final String NBT_POT_SHERDS = "sherds";
 
     // ------------------------------------------------------------------
     // Epoch effects: random vanilla potions whose power escalates as the run
@@ -435,7 +440,8 @@ public final class ContainerContentsRoller {
         // chest-style branch below would silently drop the rolled stack on
         // load. Route it to rollDecoratedPot before the generic path runs.
         if (isDecoratedPot(state)) {
-            return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+            CompoundTag pot = rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+            return state.is(Blocks.DECORATED_POT) ? withRandomSherdSides(pot, localPos, worldSeed, carriageIndex, registries) : pot;
         }
         // Suspicious sand / gravel hold one item under the same "item" key, but aren't a
         // Container at all — an authored pool rolls into it the way a vase does.
@@ -768,6 +774,18 @@ public final class ContainerContentsRoller {
             pool, localPos, worldSeed, carriageIndex, diffIndex, LuckyBonusRoller.VASE_BONUS, registries);
         out = LuckyBonusRoller.withBonus(out, bonus);
         return putSingleItem(out, pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, registries);
+    }
+
+    /**
+     * One loot pot in {@link RandomVariantLoot#POT_DECOR_CHANCE} gets random sherd sides, written as
+     * vanilla's {@code sherds} key. A pot whose template already carries sherds keeps them.
+     */
+    private static CompoundTag withRandomSherdSides(CompoundTag pot, BlockPos localPos, long worldSeed,
+                                                    int carriageIndex, HolderLookup.Provider registries) {
+        if (pot.contains(NBT_POT_SHERDS)) return pot;
+        PotDecorations sides = RandomVariantLoot.decoratePot(
+            mix(localPos, worldSeed, carriageIndex, /*slot*/ 0, SALT_POT_DECOR), registries);
+        return sides.equals(PotDecorations.EMPTY) ? pot : sides.save(pot);
     }
 
     /**
