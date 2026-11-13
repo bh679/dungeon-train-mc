@@ -248,6 +248,12 @@ public abstract class NoiseBasedChunkGeneratorMixin {
     private void dungeontrain$sunkBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random,
                                              CallbackInfoReturnable<NoiseColumn> cir) {
         try {
+            // A BetterNether structure siting in a BetterNether band core reads the core's Nether terrain.
+            NoiseColumn band = games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures.bandColumn(x, z, level);
+            if (band != null) {
+                cir.setReturnValue(band);
+                return;
+            }
             PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
             if (preset != null) {
                 cir.setReturnValue(preset.generator().getBaseColumn(x, z, level, preset.randomState()));

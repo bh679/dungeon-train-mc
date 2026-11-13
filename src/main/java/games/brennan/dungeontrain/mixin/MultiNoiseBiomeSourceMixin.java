@@ -84,6 +84,17 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                          CallbackInfoReturnable<Holder<Biome>> cir) {
         long genT0 = GenProfiler.t0();
         try {
+            // A BetterNether structure siting in a BetterNether band core: its core biome, at any height. Marked
+            // overworld source only — the core's own biome sampler asks the real Nether's source in here too.
+            if (dungeontrain$overworld
+                    && games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures.inScope()) {
+                Holder<Biome> scoped = games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures
+                        .scopedBiome(x << 2, z << 2);
+                if (scoped != null) {
+                    cir.setReturnValue(scoped);
+                    return;
+                }
+            }
             NetherBandContext ctx = NetherBandContext.current();
             // Overworld-only: the Nether also uses a MultiNoiseBiomeSource. The mark (not identity)
             // also covers TerraBlender's per-chunk clones of the overworld source, and outlives the

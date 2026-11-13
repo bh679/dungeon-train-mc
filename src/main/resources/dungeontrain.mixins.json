@@ -92,6 +92,7 @@
     "ServerLevelSaveFlushFlagMixin",
     "WorldGenRegionFloorMixin",
     "StructureBasementMixin",
+    "StructureStartDisabledContentMixin",
     "ChunkGeneratorMixLostCityMixin",
     "StructurePlacementMixLostCityMixin",
     "StructureMixCentreMixin",

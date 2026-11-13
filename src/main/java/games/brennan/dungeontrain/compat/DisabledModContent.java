@@ -187,6 +187,11 @@ public final class DisabledModContent {
             && ORE.matcher(placedFeature.getPath()).matches();
     }
 
+    /** A disabled mod's ore block ({@code betternether:cincinnasite_ore}, …) — its ore features never place it. */
+    public static boolean isDisabledOreBlock(ResourceLocation blockId) {
+        return isDisabledOreFeature(blockId);
+    }
+
     /** A biome mod's own creative tab ({@code betternether:blocks_tab}, {@code biomesoplenty:main},
      *  {@code vanillabackport:vanilla_backport}, …). Hidden, and kept out of the creative search, unless
      *  the client's two creative settings say otherwise — see {@link DisabledModCreativeTabs}. */
