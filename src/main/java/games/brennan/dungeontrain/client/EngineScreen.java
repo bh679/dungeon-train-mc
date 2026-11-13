@@ -15,9 +15,10 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.List;
 
 /**
- * The Drifting Engine Block screen: the coal slot and this engine's gauge side by side, and under them how
- * many more worlds this engine's coal lasts, plus, when other engines in the carriage hold coal too, how
- * far all of them carry it.
+ * The Drifting Engine Block screen: under the title, the drifting carriage the engine is in, by its name
+ * id; then the coal slot and this engine's gauge side by side, and under them how many more worlds this
+ * engine's coal lasts, plus, when other engines in the carriage hold coal too, how far all of them carry
+ * it. With no carriage the fuel lines give way to a line saying so: fuel only matters to a carriage.
  */
 public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
 
@@ -30,14 +31,18 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
      * while showing which part can still be taken back. Both sprites span the full width, so the light
      * part picks up the gradient where the banked part leaves off.
      */
-    private static final int GAUGE_X = 37, GAUGE_Y = 25, GAUGE_W = 130, GAUGE_H = 5;
-    private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 170, GAUGE_INPUT_V = 176;
+    private static final int GAUGE_X = 37, GAUGE_Y = 25 + EngineMenu.CARRIAGE_LINE_H, GAUGE_W = 130, GAUGE_H = 5;
+    private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 180, GAUGE_INPUT_V = 186;
     /** The status line, under the slot row at the full width of the panel. */
-    private static final int TEXT_X = 12, STATUS_Y = 42, TEXT_WIDTH = 156;
+    private static final int TEXT_X = 12, STATUS_Y = 42 + EngineMenu.CARRIAGE_LINE_H, TEXT_WIDTH = 156;
     private static final int TEXT_COLOUR = 0x404040;
+    /** The carriage line, one line under the title, in the lighter grey a label's detail takes. */
+    private static final int CARRIAGE_Y_BELOW_TITLE = 10, CARRIAGE_COLOUR = 0x808080;
 
     public EngineScreen(EngineMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
+        imageHeight = 166 + EngineMenu.CARRIAGE_LINE_H;
+        inventoryLabelY = imageHeight - 94;
     }
 
     @Override
@@ -80,16 +85,31 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        int own = menu.coal();
-        int carriage = menu.carriageCoal();
-        List<FormattedCharSequence> lines = new java.util.ArrayList<>(font.split(status(own, carriage), TEXT_WIDTH));
-        // Other engines in the carriage hold coal too: say how far all of them carry it.
-        if (carriage > own) {
-            lines.addAll(font.split(Component.translatable("gui.dungeontrain.engine_block.carriage", carriage), TEXT_WIDTH));
+        graphics.drawString(font, carriageLine(menu.carriageId()), titleLabelX, titleLabelY + CARRIAGE_Y_BELOW_TITLE,
+                CARRIAGE_COLOUR, false);
+        List<FormattedCharSequence> lines = new java.util.ArrayList<>();
+        if (!menu.inCarriage()) {
+            // No carriage: nothing for the fuel to carry anywhere.
+            lines.addAll(font.split(Component.translatable("gui.dungeontrain.engine_block.no_carriage"), TEXT_WIDTH));
+        } else {
+            int own = menu.coal();
+            int carriage = menu.carriageCoal();
+            lines.addAll(font.split(status(own, carriage), TEXT_WIDTH));
+            // Other engines in the carriage hold coal too: say how far all of them carry it.
+            if (carriage > own) {
+                lines.addAll(font.split(Component.translatable("gui.dungeontrain.engine_block.carriage", carriage), TEXT_WIDTH));
+            }
         }
         for (int i = 0; i < lines.size(); i++) {
             graphics.drawString(font, lines.get(i), TEXT_X, STATUS_Y + i * (font.lineHeight + 1), TEXT_COLOUR, false);
         }
+    }
+
+    /** The line under the title: the carriage's name id (never translated), or that there is none. */
+    private static Component carriageLine(String carriageId) {
+        return carriageId.isEmpty()
+                ? Component.translatable("gui.dungeontrain.engine_block.carriage_not_found")
+                : Component.translatable("gui.dungeontrain.engine_block.carriage_id", carriageId);
     }
 
     /** This engine's line: the worlds its own coal lasts, or spent while others still burn, or the end of the line. */

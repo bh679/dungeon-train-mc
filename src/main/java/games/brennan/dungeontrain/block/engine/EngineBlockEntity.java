@@ -91,6 +91,19 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         return coal();
     }
 
+    /** The drifting carriage or room this engine stands in, if it is live; null otherwise. Server side. */
+    private games.brennan.dungeontrain.train.SharedBuild liveBuild() {
+        if (!(level instanceof ServerLevel server)) return null;
+        games.brennan.dungeontrain.train.SharedBuild build = EngineFuelTracker.buildAt(server, worldPosition);
+        return build == null || build.isCulled() ? null : build;
+    }
+
+    /** The open-screen data for {@link EngineMenu#fromNetwork}: the carriage this engine is in, and its name id. */
+    public void writeMenuExtra(net.minecraft.network.RegistryFriendlyByteBuf buf) {
+        games.brennan.dungeontrain.train.SharedBuild build = liveBuild();
+        EngineMenu.writeExtra(buf, build != null, build == null ? "" : build.nameId());
+    }
+
     private int inputCount() {
         return isFuel(input) ? input.getCount() : 0;
     }
@@ -196,7 +209,8 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
 
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
-        return new EngineMenu(id, inventory, this, data);
+        games.brennan.dungeontrain.train.SharedBuild build = liveBuild();
+        return new EngineMenu(id, inventory, this, data, build != null, build == null ? "" : build.nameId());
     }
 
     // ---- change propagation ----
