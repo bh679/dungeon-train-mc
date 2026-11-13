@@ -116,15 +116,21 @@ final class FarLandsDebugXTest {
     }
 
     @Test
-    @DisplayName("the Void reads the negative edge where it begins, then the overworld tells the truth")
+    @DisplayName("the Void builds down to the negative edge on its last block, then the overworld tells the truth")
     void voidThenTruth() {
         WorldGenCycle.LegacyRun run = run(0);
         WorldGenCycle.LegacyRunEra v = era(run, LegacyBandKind.VOID);
         long from = switchX(v);
-        assertEquals(-FarLandsShift.EDGE, shown(from));
-        assertEquals(-FarLandsShift.EDGE + 50, shown(from + 50));
         long exit = v.coreEndX() + (run.endX() - v.coreEndX()) / 2L;
-        assertEquals(exit - 1 - from - FarLandsShift.EDGE, shown(exit - 1));
+        assertEquals(0L, shown(from));
+        long prev = Long.MAX_VALUE;
+        for (long x = from; x < exit; x++) {
+            long s = shown(x);
+            assertTrue(s < prev, "did not build down at " + x);
+            assertTrue(s > -FarLandsShift.EDGE || x == exit - 1, "hit the edge early at " + x);
+            prev = s;
+        }
+        assertEquals(-FarLandsShift.EDGE, shown(exit - 1));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) exit));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) run.endX() + 5));
     }
@@ -135,7 +141,8 @@ final class FarLandsDebugXTest {
         WorldGenCycle.LegacyRun run = run(1);
         assertEquals(FarLandsShift.EDGE, shown(wall(run)));
         assertEquals(0L, shown(mid(era(run, LegacyBandKind.CLASSIC))));
-        assertEquals(-FarLandsShift.EDGE, shown(switchX(era(run, LegacyBandKind.VOID))));
+        WorldGenCycle.LegacyRunEra v = era(run, LegacyBandKind.VOID);
+        assertEquals(-FarLandsShift.EDGE, shown(v.coreEndX() + (run.endX() - v.coreEndX()) / 2L - 1));
     }
 
     @Test

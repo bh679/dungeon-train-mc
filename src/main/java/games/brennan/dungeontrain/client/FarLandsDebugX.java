@@ -20,7 +20,8 @@ import java.util.Set;
  *       up from the edge with the train.</li>
  *   <li><b>Each old era after the islands</b> ({@link #CENTRED}) — its own small world: X 0 at its core's
  *       centre.</li>
- *   <li><b>Void</b> — the negative Far Lands: {@code −EDGE} where it begins, counting up.</li>
+ *   <li><b>Void</b> — builds down to the negative Far Lands: from 0 where it begins, on the approach's ease
+ *       run downwards, to exactly {@code −EDGE} on the last block before the overworld takes over.</li>
  *   <li><b>The overworld after the run</b> — the truth.</li>
  * </ol>
  *
@@ -76,7 +77,9 @@ public final class FarLandsDebugX {
             if (worldX < from || worldX >= to) continue;
             WorldGenCycle.LegacyRunEra era = eras.get(e);
             if (CENTRED.contains(era.kind())) return -Math.floorDiv(era.coreStartX() + era.coreEndX(), 2L);
-            if (era.kind() == LegacyBandKind.VOID) return -(long) FarLandsShift.EDGE - from;
+            if (era.kind() == LegacyBandKind.VOID) {
+                return -approach(FarLandsShift.EDGE, worldX - from, to - 1 - from) - worldX;
+            }
             return 0L;
         }
         return 0L;
