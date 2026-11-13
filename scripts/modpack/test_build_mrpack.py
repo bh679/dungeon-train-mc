@@ -355,7 +355,7 @@ def test_real_config_every_mod_has_modrinth_pins():
         by_slug_all["windy"]
     cf_only = [o for o in cf_only_all if o["slug"] not in split]
     assert sorted(o["slug"] for o in cf_only) == [
-        "discord-presence", "dpi-bypass-detect", "dungeon-train-backup",
+        "discord-presence", "dpi-bypass-detect", "dungeon-totems", "dungeon-train-backup",
         "dungeon-train-mod-verification", "edible-backpacks", "keep-trim",
         "lost-city-terrain-fit-wwoo-and-vanilla", "pigman-villagers",
         "sable-fence-trapdoor-fix", "stream-detect",
