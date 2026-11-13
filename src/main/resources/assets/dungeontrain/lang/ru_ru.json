@@ -5846,6 +5846,8 @@
   "item.dungeontrain.random_potion": "Случайное зелье",
   "item.dungeontrain.random_good_potion": "Случайное хорошее зелье",
   "item.dungeontrain.random_bad_potion": "Случайное плохое зелье",
+  "item.dungeontrain.random_pottery_sherd": "Случайный черепок",
+  "item.dungeontrain.random_goat_horn": "Случайный козий рог",
   "item.dungeontrain.random_totem": "Случайный тотем",
   "item.dungeontrain.disposable_camera": "Одноразовая камера",
   "gui.dungeontrain.options.book_author_chat": "Автор книги в чате",
