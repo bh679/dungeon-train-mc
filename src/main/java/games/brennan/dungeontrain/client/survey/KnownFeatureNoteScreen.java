@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.survey;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
-import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -12,18 +11,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Brennan's note to a player who scored the game 0-4 and mentioned AI ({@link AiMentionDetector}):
- * who made the game, who writes the stories, and a way into the {@link AiPolicyScreen}.
+ * Brennan's note after a {@code /feedback} answer that asked for something the game already has, or
+ * that is already on the roadmap ({@link KnownFeature}). The death screen shows the same notes as
+ * pages of its own; this card is for {@code /feedback}, which has no death screen around it.
  *
  * <p>Same flat card as {@link games.brennan.dungeontrain.client.moty.ModOfTheYearPopupScreen}, so
- * every one-time message looks like it came from the same place. The policy returns here, and
- * "Close" and Esc return to the survey underneath.</p>
+ * every one-time message looks like it came from the same place. Several notes chain: "Close" and
+ * Esc open the next one, and the last returns to the survey underneath. The button's screen returns
+ * here.</p>
  */
-public final class NpsAiNoteScreen extends Screen {
+public final class KnownFeatureNoteScreen extends Screen {
 
-    private static final String KEY = "gui.dungeontrain.nps_ai_note.";
     private static final String TARGET_NOTE = "note";
-    private static final String TARGET_POLICY = "policy";
     private static final String TARGET_CLOSE = "close";
 
     private static final int CARD_W = 280;
@@ -42,7 +41,10 @@ public final class NpsAiNoteScreen extends Screen {
     private static final int COLOR_BODY = 0xFFE0E0E0;
 
     private final Screen parent;
-    // The policy can return here more than once; "Close" and Esc count once however the card is left.
+    private final KnownFeature feature;
+    /** The notes still to show after this one. */
+    private final List<KnownFeature> rest;
+    // The button's screen can return here more than once; "Close" and Esc count once however the card is left.
     private boolean closed;
 
     private int panelX;
@@ -52,19 +54,20 @@ public final class NpsAiNoteScreen extends Screen {
     private int bodyY;
     private List<List<FormattedCharSequence>> paragraphs = List.of();
 
-    public NpsAiNoteScreen(Screen parent) {
-        super(Component.translatable(KEY + "title"));
+    /** The first of {@code features} (never empty), chaining to the rest. */
+    public KnownFeatureNoteScreen(Screen parent, List<KnownFeature> features) {
+        super(KnownFeatureNotes.title(features.get(0)));
         this.parent = parent;
-        UiAnalytics.shown(UiAnalytics.SURFACE_NPS_AI_NOTE, TARGET_NOTE);
+        this.feature = features.get(0);
+        this.rest = List.copyOf(features.subList(1, features.size()));
+        if (feature == KnownFeature.AI) UiAnalytics.shown(UiAnalytics.SURFACE_NPS_AI_NOTE, TARGET_NOTE);
     }
 
     @Override
     protected void init() {
         int innerWidth = CARD_W - 2 * PAD;
         List<List<FormattedCharSequence>> split = new ArrayList<>();
-        for (String part : List.of("body.1", "body.2", "signature")) {
-            split.add(font.split(Component.translatable(KEY + part), innerWidth));
-        }
+        for (Component part : KnownFeatureNotes.paragraphs(feature)) split.add(font.split(part, innerWidth));
         paragraphs = List.copyOf(split);
 
         int bodyH = GAP_PARAGRAPH * (paragraphs.size() - 1);
@@ -77,18 +80,21 @@ public final class NpsAiNoteScreen extends Screen {
 
         int buttonY = bodyY + bodyH + GAP_BODY;
         int innerLeft = panelX + PAD;
+        Component action = KnownFeatureNotes.buttonLabel(feature);
+        Component close = Component.translatable("gui.dungeontrain.known_feature.button.close");
+        if (action == null) {
+            addRenderableWidget(Button.builder(close, b -> onClose())
+                    .bounds(innerLeft, buttonY, innerWidth, BUTTON_H)
+                    .build());
+            return;
+        }
         int buttonW = (innerWidth - BUTTON_GAP) / 2;
-        addRenderableWidget(Button.builder(Component.translatable(KEY + "button.policy"), b -> openPolicy())
+        addRenderableWidget(Button.builder(action, b -> KnownFeatureNotes.runAction(feature, this))
                 .bounds(innerLeft, buttonY, buttonW, BUTTON_H)
                 .build());
-        addRenderableWidget(Button.builder(Component.translatable(KEY + "button.close"), b -> onClose())
+        addRenderableWidget(Button.builder(close, b -> onClose())
                 .bounds(innerLeft + buttonW + BUTTON_GAP, buttonY, innerWidth - buttonW - BUTTON_GAP, BUTTON_H)
                 .build());
-    }
-
-    private void openPolicy() {
-        UiAnalytics.click(UiAnalytics.SURFACE_NPS_AI_NOTE, TARGET_POLICY);
-        this.minecraft.setScreen(new AiPolicyScreen(this));
     }
 
     @Override
@@ -122,8 +128,8 @@ public final class NpsAiNoteScreen extends Screen {
     public void onClose() {
         if (!closed) {
             closed = true;
-            UiAnalytics.click(UiAnalytics.SURFACE_NPS_AI_NOTE, TARGET_CLOSE);
+            if (feature == KnownFeature.AI) UiAnalytics.click(UiAnalytics.SURFACE_NPS_AI_NOTE, TARGET_CLOSE);
         }
-        this.minecraft.setScreen(parent);
+        this.minecraft.setScreen(rest.isEmpty() ? parent : new KnownFeatureNoteScreen(parent, rest));
     }
 }

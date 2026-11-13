@@ -18387,5 +18387,51 @@
         "30"
       ]
     }
+  },
+
+  "gui.dungeontrain.known_feature.off": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.curseforge": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.modrinth": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.other": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "chat.dungeontrain.known_feature.line": {
+    "1": {
+      "label": "the note's title, already translated",
+      "examples": [
+        "You already have a trash slot",
+        "Multiplayer is coming"
+      ]
+    }
   }
 }
