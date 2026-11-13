@@ -134,6 +134,9 @@ resolve() {
     # Discord Presence — hybrid like eb: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
     dp)       cached "bh679/discordpresence"         "$(prop discordpresence_version)" ;;
+    # Dungeon Totems — jarJar'd inside the DT jar and not yet listed anywhere. Present (Case A) it models
+    # the future CurseForge-app install (top-level copy wins); every other case loads the nested copy.
+    bt)       cached "bh679/dungeontotems"          "$(prop dungeontotems_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

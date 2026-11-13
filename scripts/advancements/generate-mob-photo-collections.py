@@ -17,7 +17,7 @@ with no category stops the build: add one line there. Existing criteria are neve
 progress and the album keep their keys) unless their id is set to skip; new ones are appended in
 id order, vanilla first.
 
-Family Photo (every zombie) and Skeleton Crew (every skeleton) work the same way from the families
+Family Photo (every zombie), Skeleton Crew (every skeleton) and Photobomb (every creeper) work the same way from the families
 lists in that file, holding only the members the train can spawn.
 
 Run with --check to fail instead of writing (CI). Stdlib only.
@@ -39,7 +39,7 @@ CATEGORIES = Path(__file__).resolve().parent / "mob-photos/categories.json"
 SIDECAR_DIRS = ("contents", "portals/room", "prefabs/block_variants")
 NBT_DIRS = ("contents", "portals/room")
 COLLECTIONS = {"hostile": "most_wanted", "animal": "nature_documentary"}
-FAMILY_WORDS = ("zombie", "skeleton")
+FAMILY_WORDS = ("zombie", "skeleton", "creeper")
 CATEGORY_VALUES = {"hostile", "animal", "skip"}
 TRIGGER = "dungeontrain:photo_subject"
 SUBJECT_PREFIX = "entity:"

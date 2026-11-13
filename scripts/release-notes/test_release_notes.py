@@ -920,6 +920,73 @@ def test_set_major_attaches_and_clears_image() -> None:
     assert r.returncode == 1 and "no changelog entry" in r.stderr, r.stderr
 
 
+def test_validate_major_fields_video_and_cover() -> None:
+    changelog_io.validate_major_fields(None, None, "https://x.test/clip.MP4", 4.5)
+    for bad in ("http://x.test/c.mp4", "https://x.test/c.gif", "https://x.test/a b.mp4", "https://.mp4x"):
+        try:
+            changelog_io.validate_major_fields(None, None, bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted {bad!r}")
+    try:
+        changelog_io.validate_major_fields(None, None, None, -1)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("accepted a negative cover time")
+
+
+def test_append_major_with_video() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "clip", "--major", "--image", "https://x.test/p.gif", "--video", "https://x.test/c.mp4", "--video-cover", "4.5")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["video"] == "https://x.test/c.mp4" and e["video_cover"] == 4.5, e
+    r = append(ws, "small", "--video", "https://x.test/c.mp4")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+    r = append(ws, "bad", "--major", "--video", "https://x.test/c.gif")
+    assert r.returncode == 1 and ".mp4" in r.stderr, r.stderr
+    r = append(ws, "nocover", "--major", "--video-cover", "2")
+    assert r.returncode == 1 and "needs a video" in r.stderr, r.stderr
+
+
+def test_set_major_attaches_and_clears_video() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--video", "https://x.test/c.mp4")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["video"] == "https://x.test/c.mp4" and "video_cover" not in e, e
+    r = run(SET_MAJOR, ws, "--id", "drop", "--video-cover", "3")
+    assert r.returncode == 0 and read_changelog(ws)["entries"][0]["video_cover"] == 3.0, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--clear-video", "--video-cover", "1")
+    assert r.returncode == 1 and "contradict" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--clear-video")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "video" not in e and "video_cover" not in e, (r.stderr, e)
+
+
+def test_mentions_merge_validate_and_clear() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "event", "--major", "--mention", "AshSeven", "instagram", "@ashyseven7")
+    assert r.returncode == 0, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "event", "--mention", "AshSeven", "tiktok", "@ashseventh")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["mentions"] == {"AshSeven": {"instagram": "@ashyseven7", "tiktok": "@ashseventh"}}, e
+    r = run(SET_MAJOR, ws, "--id", "event", "--mention", "AshSeven", "facebook", "@ash")
+    assert r.returncode == 1 and "platform must be one of" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "event", "--mention", "AshSeven", "tiktok", "ashseventh")
+    assert r.returncode == 1 and "look like @name" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "event", "--clear-mentions")
+    assert r.returncode == 0 and "mentions" not in read_changelog(ws)["entries"][0], r.stderr
+    r = append(ws, "small", "--mention", "A", "tiktok", "@a")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+
+
 def test_set_major_milestone_sets_keeps_and_drops() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")
@@ -1191,6 +1258,9 @@ def main() -> int:
         test_validate_major_fields_rejects_bad_image_and_blank_description,
         test_append_major_with_description_and_image,
         test_set_major_attaches_and_clears_image,
+        test_validate_major_fields_video_and_cover,
+        test_append_major_with_video,
+        test_set_major_attaches_and_clears_video,
         test_set_major_milestone_sets_keeps_and_drops,
         test_set_major_notable_sets_keeps_and_drops,
         test_append_notable_implies_major,

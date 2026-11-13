@@ -1,0 +1,21 @@
+{
+  "id": "editor-flip-button",
+  "version": "0.1796.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "ui"
+  ],
+  "title": "Flip button in the editor",
+  "summary": "The editor's toolbar has a Flip button next to Offset. Click it to pick an axis, then X, Y or Z mirrors your whole build across it. Undo puts it back.",
+  "highlights": [
+    "Flip opens an X / Y / Z row above the build preview",
+    "Each axis button mirrors every block of the plot you're standing in"
+  ],
+  "pr": 2633,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

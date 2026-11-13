@@ -294,6 +294,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Dungeon Totems — sibling (cursed Totems of Undying): jarJar'd INSIDE this jar until its store listings
+# are approved, so the nested copy always satisfies this. Sends its own S2C payloads: BOTH sides.
+[[dependencies.${mod_id}]]
+    modId="dungeontotems"
+    type="required"
+    versionRange="[${dungeontotems_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Pigman Villagers — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
 # required external download on CurseForge, where the CF app's top-level copy replaces the nested one. Adds a synced entity-data flag to Villager, so it must be on BOTH sides. Range keys off the
 # FLOOR so a separately installed copy is checked like the other siblings.

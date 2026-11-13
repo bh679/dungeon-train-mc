@@ -18,7 +18,7 @@
     { "id": "minecraft:heavy_core", "count": 1, "weight": 40, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "exposure_polaroid:instant_camera", "count": 8, "weight": 195, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "minCount": 4 },
     { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 730, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:totem_of_undying", "count": 7, "weight": 365, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "minCount": 3 },
+    { "id": "dungeontrain:random_totem", "count": 7, "weight": 365, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "minCount": 3 },
     { "id": "minecraft:diamond_sword", "count": 1, "weight": 487, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:golden_carrot", "count": 64, "weight": 1217, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "minCount": 20 },
     { "id": "minecraft:netherite_ingot", "count": 12, "weight": 243, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "minCount": 4 },

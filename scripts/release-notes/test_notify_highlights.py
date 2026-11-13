@@ -141,6 +141,114 @@ def test_unknown_entry_errors():
     assert r.returncode == 1
 
 
+# ---- the update page's "Also on" link: the post's message id goes to the relay ----
+
+import contextlib
+import io
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+CAP = "secret-cap"
+MESSAGE = {"id": "1570653042519310462", "channel_id": "1234567890123456789"}
+
+
+class _Stub:
+    """A local HTTP endpoint recording POSTs and answering `reply` with `status`."""
+
+    def __init__(self, status=200, reply=None):
+        self.calls = []
+        stub = self
+
+        class H(BaseHTTPRequestHandler):
+            def do_POST(self):
+                body = self.rfile.read(int(self.headers["Content-Length"]))
+                stub.calls.append((self.path, body))
+                out = json.dumps(reply if reply is not None else {"ok": True}).encode()
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(out)
+
+            def log_message(self, *a):
+                pass
+
+        self.server = HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+
+    def close(self):
+        self.server.shutdown()
+
+
+@contextlib.contextmanager
+def _admin(base):
+    saved = {k: os.environ.get(k) for k in nh.RELAY_ENVS}
+    for k in nh.RELAY_ENVS:
+        os.environ.pop(k, None)
+    if base:
+        os.environ["DUNGEONTRAIN_RELAY_ADMIN_BASE"] = base
+    try:
+        yield
+    finally:
+        for k, v in saved.items():
+            os.environ.pop(k, None)
+            if v is not None:
+                os.environ[k] = v
+
+
+def _quiet(fn, *a):
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+        fn(*a)
+    return out.getvalue()
+
+
+def test_post_waits_for_and_returns_the_message():
+    hook = _Stub(reply=MESSAGE)
+    try:
+        assert nh.post(hook.base + "/api/webhooks/1/t", {"content": "x"}) == MESSAGE
+        assert hook.calls[0][0] == "/api/webhooks/1/t?wait=true"
+    finally:
+        hook.close()
+    assert nh.with_wait("https://d/api/webhooks/1/t?thread_id=9") == "https://d/api/webhooks/1/t?thread_id=9&wait=true"
+
+
+def test_report_sends_entry_channel_and_message_and_never_prints_the_admin_url():
+    relay = _Stub()
+    try:
+        with _admin(f"{relay.base}/{CAP}"):
+            text = _quiet(nh.report_to_relay, MAJOR, MESSAGE)
+        path, body = relay.calls[0]
+        assert path == f"/{CAP}/socials/updates/discord-post"
+        assert json.loads(body) == {"entryId": "release-x", "channelId": MESSAGE["channel_id"], "messageId": MESSAGE["id"]}
+        assert CAP not in text
+    finally:
+        relay.close()
+
+
+def test_report_without_admin_url_or_message_id_only_warns():
+    with _admin(None):
+        assert "::warning::" in _quiet(nh.report_to_relay, MAJOR, MESSAGE)
+    relay = _Stub()
+    try:
+        with _admin(relay.base):
+            assert "::warning::" in _quiet(nh.report_to_relay, MAJOR, {})
+            assert "::warning::" in _quiet(nh.report_to_relay, MAJOR, {"id": "1/2", "channel_id": "x"})
+        assert relay.calls == []
+    finally:
+        relay.close()
+
+
+def test_relay_refusal_is_a_warning_without_the_url():
+    relay = _Stub(status=400, reply={"error": "bad_id"})
+    try:
+        with _admin(f"{relay.base}/{CAP}"):
+            text = _quiet(nh.report_to_relay, MAJOR, MESSAGE)
+        assert "::warning::" in text and "HTTP 400" in text and CAP not in text
+    finally:
+        relay.close()
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

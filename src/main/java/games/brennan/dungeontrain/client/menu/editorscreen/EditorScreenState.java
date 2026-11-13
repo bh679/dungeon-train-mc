@@ -39,8 +39,10 @@ public final class EditorScreenState {
     private static Set<String> expandedGroups = Set.of();
     /** Whether the filter bar shows every filter, or only the ones in force on its one row. */
     private static boolean filtersExpanded;
-    /** Whether the detail pane's offset row is open — folded until its arrow button is pressed. */
-    private static boolean offsetRowOpen;
+    /** The row under the detail pane's toolbar: which button opened it. Both share one slot. */
+    public enum ToolRow { NONE, OFFSET, FLIP }
+    /** Folded until the Offset or Flip button is pressed; opening one closes the other. */
+    private static ToolRow toolRow = ToolRow.NONE;
     /** How many blocks each offset button moves the plot's blocks. */
     private static int offsetDistance = OffsetControls.DEFAULT_DISTANCE;
     /**
@@ -139,9 +141,13 @@ public final class EditorScreenState {
     public static void toggleFilters() {
         filtersExpanded = !filtersExpanded;
     }
-    public static boolean offsetRowOpen() { return offsetRowOpen; }
+    public static boolean offsetRowOpen() { return toolRow == ToolRow.OFFSET; }
+    public static boolean flipRowOpen() { return toolRow == ToolRow.FLIP; }
     public static void toggleOffsetRow() {
-        offsetRowOpen = !offsetRowOpen;
+        toolRow = toolRow == ToolRow.OFFSET ? ToolRow.NONE : ToolRow.OFFSET;
+    }
+    public static void toggleFlipRow() {
+        toolRow = toolRow == ToolRow.FLIP ? ToolRow.NONE : ToolRow.FLIP;
     }
     public static int offsetDistance() { return offsetDistance; }
     /** Set the offset step, held to what the buttons take; anything outside that is ignored. */
