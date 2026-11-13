@@ -99,6 +99,19 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-chunk flag: a player has changed this chunk (broke, placed or used a block, an explosion, a
+     * portal built for them), so it is always saved. An untouched chunk is dropped once no player is near
+     * it and regenerates from the seed instead ({@code UntouchedChunkSaves}). Set once, never cleared.
+     * Serialized only while set.
+     */
+    public static final Supplier<AttachmentType<Boolean>> CHUNK_TOUCHED =
+        TYPES.register("chunk_touched",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL, touched -> touched)
+                .build()
+        );
+
+    /**
      * Per-chunk flag: this chunk sits in a BetterEnd End-band pass and is still owed its real-End terrain,
      * which is generated off-thread and written in a moment after the chunk loads
      * ({@code WorldEndBandEvents}). Persisted so a chunk that unloads first is filled on its next load;

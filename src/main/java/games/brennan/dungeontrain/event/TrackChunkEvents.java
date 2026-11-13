@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.worldgen.UntouchedChunkSaves;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -46,6 +47,7 @@ public final class TrackChunkEvents {
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
         long chunkKey = ChunkPos.asLong(cx, cz);
+        boolean regenerated = event.isNewChunk() && UntouchedChunkSaves.forgetDropped(chunkKey);
 
         // Only each train's TAIL provider is ever drained (TrainTickEvents → fillRenderDistance on
         // Trains.tail), so offering to every carriage just grew every other provider's queue for
@@ -59,6 +61,9 @@ public final class TrackChunkEvents {
             // marks feature-painted chunks as filled at spawn time, so the
             // bed-already-painted shortcut is handled there once-per-train
             // rather than every chunk-load tick.)
+            // A chunk that was never saved (UntouchedChunkSaves) comes back freshly generated, so a
+            // fill recorded for an earlier copy of it no longer stands.
+            if (regenerated) provider.getFilledChunks().remove(chunkKey);
             if (provider.getFilledChunks().contains(chunkKey)) continue;
             // offer() appends to the tail — drain pops from head, so order
             // matches load order ≈ spatial proximity to the player.

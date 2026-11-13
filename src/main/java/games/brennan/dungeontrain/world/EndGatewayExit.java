@@ -62,6 +62,7 @@ public final class EndGatewayExit {
         BlockPos gateway = new BlockPos(x, centre, z);
         Feature.END_GATEWAY.place(EndGatewayConfiguration.delayedExitSearch(), level,
                 level.getChunkSource().getGenerator(), level.getRandom(), gateway);
+        TouchedChunks.mark(level, gateway);
         return gateway;
     }
 
@@ -75,6 +76,7 @@ public final class EndGatewayExit {
         int y = Math.abs(ground - foot) <= GROUND_REACH ? ground : foot;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos(x, y - 1, z);
         if (!level.getBlockState(p).isSolid()) placePad(level, x, y - 1, z);
+        TouchedChunks.mark(level, p);
         level.setBlock(p.set(x, y, z), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
         level.setBlock(p.set(x, y + 1, z), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
         return new Vec3(x + 0.5, y, z + 0.5);

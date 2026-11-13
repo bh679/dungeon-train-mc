@@ -160,6 +160,9 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setLostCityMemo(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLostCityMemo(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> lostCityMemoStatus(ctx.getSource()))))
+            // /dungeontrain debug chunk-saves — overworld chunks dropped vs written since the server started
+            // (UntouchedChunkSaves): an untouched chunk with no player near it is not saved.
+            .then(Commands.literal("chunk-saves").executes(ctx -> chunkSavesStatus(ctx.getSource())))
             // /dungeontrain debug disk-memo <on|off|verify|status> — toggles DiskTestMemo, which skips the disk
             // feature's repeated block tests (WWOO's cliff disks). OFF = vanilla's path; VERIFY re-runs the real
             // test on every remembered answer and counts mismatches (expect 0). status prints and resets counts.
@@ -674,6 +677,17 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Disk test memo " + mode + (off ? " (vanilla path, A/B mode)" : "")
         ).withStyle(off ? ChatFormatting.GOLD : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int chunkSavesStatus(CommandSourceStack source) {
+        long dropped = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.dropped();
+        long written = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.written();
+        boolean off = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isSaveUntouchedWorldGen();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chunk saves: dropped=" + dropped + " written=" + written
+                + (off ? " (saveUntouchedWorldGen=true: nothing is dropped)" : "")
+        ), false);
         return 1;
     }
 
