@@ -483,7 +483,7 @@ public final class LiveStreamController {
     /**
      * "You are now live on" and its logo row ({@link LiveWatchLinks}) then "N people
      * watching" once the relay's first viewer count lands (or after
-     * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0), then a line each time the count settles in a
+     * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0) and the mic line ({@link LiveMicHint}), then a line each time the count settles in a
      * new band ({@link LiveViewerBands}).
      */
     private void announceViewers(long nowMs) {
@@ -496,6 +496,8 @@ public final class LiveStreamController {
             say(LiveWatchLinks.line(claim == null ? null : claim.twitch()));
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
                 .withStyle(ChatFormatting.GREEN));
+            Component mic = LiveMicHint.line();
+            if (mic != null) say(mic);
             sayShoutoutHint();
             return;
         }

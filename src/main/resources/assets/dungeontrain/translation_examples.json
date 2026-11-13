@@ -16219,6 +16219,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live.mic_off_hint": {
+    "1": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live.mic_off_hint.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Microphone"
+      ]
+    }
+  },
   "chat.dungeontrain.live.needs_internet": {
     "1": {
       "label": "the clickable link that opens the internet consent card, already translated (chat.dungeontrain.live.needs_internet.link)",

@@ -95,6 +95,7 @@ final class ClientOptionsIcons {
             case STREAM_VOLUME -> Icon.item(Items.MUSIC_DISC_13);
             case MIC_MIX -> Icon.item(Items.GOAT_HORN);
             case MIC_MODE -> Icon.item(Items.STONE_BUTTON);
+            case MIC_HINT -> Icon.item(Items.PAPER);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
             case LIVE_CHAT -> Icon.item(Items.BELL);

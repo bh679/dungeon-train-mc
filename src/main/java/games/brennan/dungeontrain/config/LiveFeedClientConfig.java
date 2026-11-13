@@ -36,6 +36,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_PHOTOS;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_BOOKS;
     public static final ModConfigSpec.BooleanValue TWITCH_SHOUTOUT_HINT;
+    public static final ModConfigSpec.BooleanValue MIC_HINT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -135,6 +136,9 @@ public final class LiveFeedClientConfig {
         TWITCH_SHOUTOUT_HINT = b
             .comment("When you go live without a Twitch saved, say in chat that dropping your Twitch username or URL there gets you a shout-out on the official Dungeon Train Twitch. Never shown once a Twitch is saved, or in Kid mode.")
             .define("twitchShoutoutHint", true);
+        MIC_HINT = b
+            .comment("When you go live with your microphone off, say in chat where to turn it on for your next stream.")
+            .define("micHint", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
@@ -376,6 +380,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || TWITCH_SHOUTOUT_HINT.get() == value) return;
         TWITCH_SHOUTOUT_HINT.set(value);
         TWITCH_SHOUTOUT_HINT.save();
+    }
+
+    /** The "your mic is off" reminder at stream start ({@code LiveMicHint}). */
+    public static boolean micHint() { return !loaded() || MIC_HINT.get(); }
+
+    public static void setMicHint(boolean value) {
+        if (!loaded() || MIC_HINT.get() == value) return;
+        MIC_HINT.set(value);
+        MIC_HINT.save();
     }
 
     /** The Discord live chat switch as set; {@code LiveChatBridge} still forces it off in Kid mode. */

@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
 import games.brennan.dungeontrain.client.live.LiveChatFlip;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
 import games.brennan.dungeontrain.client.live.LiveReportButton;
+import games.brennan.dungeontrain.client.live.LiveMicHint;
 import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import games.brennan.dungeontrain.client.perf.LagReportPrompt;
@@ -52,6 +53,7 @@ public final class DungeonTrainClient {
         LiveChatFlip.registerClicks();
         LiveReportButton.registerClicks();
         LiveOptionsCommand.registerClicks();
+        LiveMicHint.registerClicks();
         LogRequestClient.registerClicks();
         LagReportPrompt.registerClicks();
         BugResponseChatNotifier.registerClicks();

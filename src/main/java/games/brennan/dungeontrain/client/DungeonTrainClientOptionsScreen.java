@@ -778,6 +778,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // the next stream starts; the balance and mode apply at once.
             case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
                     LiveMicHotkeys::setFromOptions), key + ".tip");
+            case MIC_HINT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micHint(),
+                    LiveFeedClientConfig::setMicHint), key + ".tip");
             case MIC_DEVICE -> {
                 List<String> devices = new ArrayList<>();
                 devices.add("");
