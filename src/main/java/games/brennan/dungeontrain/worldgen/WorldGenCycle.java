@@ -2651,6 +2651,42 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * One era of a legacy run in world blocks: where the fade into it begins, and where its core begins and
+     * ends. See {@link #legacyRunAt}.
+     */
+    public record LegacyRunEra(LegacyBandKind kind, long fadeStartX, long coreStartX, long coreEndX) {}
+
+    /**
+     * The legacy run whose slot holds {@code worldX}, laid out in world blocks for that run's doubling.
+     *
+     * @param eras  the run's eras in riding order
+     * @param endX  one past the run's exit fade, where the overworld after it begins
+     */
+    public record LegacyRun(java.util.List<LegacyRunEra> eras, long endX) {}
+
+    /**
+     * The legacy run whose slot holds {@code worldX}, from anywhere in that slot, so a caller can see the
+     * eras ahead of the one it is in. {@code null} outside a legacy-run slot, behind spawn, and with no
+     * layout. Pure.
+     */
+    public LegacyRun legacyRunAt(int worldX) {
+        if (layout == null || isMirroredAt(worldX)) return null;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.LEGACY_RUN) return null;
+        LegacySpan[] eras = layout.eras(i);
+        java.util.List<LegacyRunEra> out = new java.util.ArrayList<>(eras.length);
+        long at = layout.start(i);
+        for (int e = 0; e < eras.length; e++) {
+            long fadeStart = at;
+            long coreStart = fadeStart + layout.fadeBefore(i, e);
+            at = coreStart + eras[e].holdLen();
+            out.add(new LegacyRunEra(eras[e].kind(),
+                    worldOf(worldX, fadeStart), worldOf(worldX, coreStart), worldOf(worldX, at)));
+        }
+        return new LegacyRun(java.util.List.copyOf(out), worldOf(worldX, layout.start(i) + layout.length(i)));
+    }
+
+    /**
      * Where {@code worldX} sits along legacy band {@code kind}'s core: {@code 0} at the first core block,
      * {@code 1} one past the last, below 0 in the lead gap / entry fade and above 1 in the exit fade.
      * {@code NaN} outside the band's slot or when it is disabled. Pure.
