@@ -8,7 +8,7 @@
     "ui"
   ],
   "title": "Mic reminder when you go live",
-  "summary": "Going live with your mic off now shows a reminder in chat, with a link straight to the Microphone setting. Turning your mic on mid-stream now works straight away, no need to wait for your next stream. Turn the reminder off from the message itself or in the Stream settings.",
+  "summary": "Going live with your mic off now shows a reminder in chat, with a link straight to the Microphone setting. Turning your mic on mid-stream now joins that stream within about half a minute, no need to wait for your next stream. Turn the reminder off from the message itself or in the Stream settings.",
   "highlights": [],
   "pr": 2644,
   "date": "2026-11-13",
