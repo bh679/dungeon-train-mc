@@ -28,8 +28,8 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.EnumValue<StreamerBoxStreams> STREAMER_BOX_STREAMS;
     public static final ModConfigSpec.EnumValue<LiveChatTranslation> LIVE_CHAT_TRANSLATION;
 
-    /** Where a Live chat line's translation goes while the Live Translations reward is on. */
-    public enum LiveChatTranslation { UNDER, REPLACE, FIRST }
+    /** Where a Live chat line's translation goes while the Live Translations reward is on; OFF shows lines as written. */
+    public enum LiveChatTranslation { UNDER, REPLACE, FIRST, OFF }
     public static final ModConfigSpec.BooleanValue POPUPS_OVER_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
@@ -121,7 +121,7 @@ public final class LiveFeedClientConfig {
             .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
         LIVE_CHAT_TRANSLATION = b
-            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original, click it to flip), UNDER the original in grey, or FIRST with the original under it.")
+            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original, click it to flip), UNDER the original in grey, or FIRST with the original under it. OFF shows every line as written and asks for no translations.")
             // Renamed from liveChatTranslation: the old default, UNDER, was saved in every player's file, so a new default never reached them.
             .defineEnum("liveChatTranslationMode", LiveChatTranslation.REPLACE);
         LIVE_MOMENT_ADVANCEMENTS = b
@@ -402,6 +402,9 @@ public final class LiveFeedClientConfig {
 
     /** Where a translated Live chat line goes; UNDER until the config loads. */
     public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.REPLACE; }
+
+    /** Whether Live chat lines are translated for this reader at all (any mode but OFF). */
+    public static boolean liveChatTranslationOn() { return liveChatTranslation() != LiveChatTranslation.OFF; }
 
     public static void setLiveChatTranslation(LiveChatTranslation value) {
         if (!loaded() || LIVE_CHAT_TRANSLATION.get() == value) return;
