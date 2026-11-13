@@ -467,14 +467,47 @@ def _plain_https(url: str) -> bool:
     return url.startswith("https://") and not any(c.isspace() for c in url) and len(url) > len("https://")
 
 
+# The platforms whose captions can't hold links, so a mentioned link shows as the handle there (dp-relay
+# socials-update-text.js reads the same field).
+MENTION_PLATFORMS = ("instagram", "tiktok")
+_HANDLE = re.compile(r"^@[A-Za-z0-9._]{1,30}$")
+
+
+def validate_mentions(mentions: dict) -> None:
+    """Raise ValueError unless `mentions` is {link text: {platform: "@handle"}} with known platforms."""
+    if not isinstance(mentions, dict):
+        raise ValueError(f"mentions must be an object, got {mentions!r}")
+    for text, handles in mentions.items():
+        if not str(text).strip():
+            raise ValueError("a mention needs the link text it replaces")
+        if not isinstance(handles, dict) or not handles:
+            raise ValueError(f"mention {text!r} needs at least one platform handle")
+        for platform, handle in handles.items():
+            if platform not in MENTION_PLATFORMS:
+                raise ValueError(f"mention {text!r}: platform must be one of {', '.join(MENTION_PLATFORMS)}, got {platform!r}")
+            if not isinstance(handle, str) or not _HANDLE.match(handle):
+                raise ValueError(f"mention {text!r}: {platform} handle must look like @name, got {handle!r}")
+
+
+def mentions_from_args(triples: list[list[str]] | None) -> dict | None:
+    """`--mention TEXT PLATFORM HANDLE` triples as {text: {platform: handle}}, or None for none."""
+    if not triples:
+        return None
+    out: dict[str, dict[str, str]] = {}
+    for text, platform, handle in triples:
+        out[text] = {**out.get(text, {}), platform: handle}
+    return out
+
+
 def validate_major_fields(
     description: str | None,
     image: str | None,
     video: str | None = None,
     video_cover: float | None = None,
+    mentions: dict | None = None,
 ) -> None:
     """Raise ValueError for a blank description, an image or video that is not a plain https URL (the video an
-    .mp4), or a negative video cover time."""
+    .mp4), a negative video cover time, or malformed mentions."""
     if description is not None and not description.strip():
         raise ValueError("major description must not be blank")
     if image is not None and not _plain_https(image):
@@ -483,6 +516,8 @@ def validate_major_fields(
         raise ValueError(f"major video must be an https:// URL of an .mp4 with no spaces, got {video!r}")
     if video_cover is not None and not (isinstance(video_cover, (int, float)) and video_cover >= 0):
         raise ValueError(f"video cover must be a time in seconds, 0 or more, got {video_cover!r}")
+    if mentions is not None:
+        validate_mentions(mentions)
 
 
 def with_major(
@@ -495,6 +530,8 @@ def with_major(
     video: str | None = None,
     clear_video: bool = False,
     video_cover: float | None = None,
+    mentions: dict | None = None,
+    clear_mentions: bool = False,
 ) -> dict:
     """Return a copy of `entry` marked as a major release.
 
@@ -505,14 +542,16 @@ def with_major(
     "Notable update" card on the update page). An entry is never both a
     milestone and notable. `video` (an .mp4 with sound) replaces the clip the
     social posts are built from and `video_cover` the second of its cover frame;
-    `clear_video` drops both. Raises ValueError (see validate_major_fields), and
-    for a cover time with no video.
+    `clear_video` drops both. `mentions` ({link text: {platform: "@handle"}}) is
+    merged over the entry's own, per link text; `clear_mentions` drops them first.
+    Raises ValueError (see validate_major_fields), and for a cover time with no video.
     """
-    validate_major_fields(description, image, video, video_cover)
+    validate_major_fields(description, image, video, video_cover, mentions)
     out = {
         k: v for k, v in entry.items()
         if not (clear_image and k == "image")
         and not (clear_video and k in ("video", "video_cover"))
+        and not (clear_mentions and k == "mentions")
         and not (milestone is False and k == "milestone")
         and not (notable is False and k == "notable")
     }
@@ -531,6 +570,11 @@ def with_major(
         out["video"] = video
     if video_cover is not None:
         out["video_cover"] = video_cover
+    if mentions:
+        merged = {k: dict(v) for k, v in out.get("mentions", {}).items()}
+        for text, handles in mentions.items():
+            merged[text] = {**merged.get(text, {}), **handles}
+        out["mentions"] = merged
     if "video_cover" in out and "video" not in out:
         raise ValueError("a video cover time needs a video")
     return out

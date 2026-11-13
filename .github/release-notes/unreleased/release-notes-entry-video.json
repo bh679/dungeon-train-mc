@@ -5,8 +5,8 @@
   "tags": [
     "internal"
   ],
-  "title": "Update posts can carry their own clip",
-  "summary": "Behind the scenes: an update's social posts can now be built from its own video clip, sound included.",
+  "title": "Update posts can carry their own clip and the full update",
+  "summary": "Behind the scenes: an update's social posts can now be built from its own video clip, sound included, and their captions can carry the whole update.",
   "highlights": [],
   "date": "2026-11-12",
   "released": false,

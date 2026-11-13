@@ -43,6 +43,8 @@ Optional:
   --video URL       https:// URL of an .mp4 clip with sound: the social posts' videos
                     are built from it (its sound kept) instead of the photo.
   --video-cover S   The second of the clip whose frame is the posts' cover (default 0.5).
+  --mention TEXT PLATFORM HANDLE  A description link whose text is TEXT shows as
+                    HANDLE (@name) in that platform's caption (instagram, tiktok).
   --notable         The middle tier: a major that the web update page shows as a
                     smaller "Notable update" card (milestone-sized). Implies --major.
   Attach or change these later with set-major.py.
@@ -141,6 +143,15 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Major release only: https:// URL of an .mp4 clip with sound for the social posts.",
     )
     p.add_argument(
+        "--mention",
+        nargs=3,
+        action="append",
+        default=None,
+        metavar=("TEXT", "PLATFORM", "HANDLE"),
+        help="Major release only: a description link whose text is TEXT shows as HANDLE (@name) in that "
+        "PLATFORM's caption (instagram or tiktok). Repeat for each.",
+    )
+    p.add_argument(
         "--video-cover",
         type=float,
         default=None,
@@ -223,8 +234,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.notable:
         args.major = True
-    if (args.description_file or args.image or args.video or args.video_cover is not None) and not args.major:
-        print("::error::--description-file / --image / --video need --major", file=sys.stderr)
+    if (args.description_file or args.image or args.video or args.video_cover is not None or args.mention) and not args.major:
+        print("::error::--description-file / --image / --video / --mention need --major", file=sys.stderr)
         return 1
     if args.major:
         try:
@@ -232,6 +243,7 @@ def main(argv: list[str] | None = None) -> int:
             entry = changelog_io.with_major(
                 entry, description=description, image=args.image, notable=args.notable or None,
                 video=args.video, video_cover=args.video_cover,
+                mentions=changelog_io.mentions_from_args(args.mention),
             )
         except (OSError, ValueError) as e:
             print(f"::error::{e}", file=sys.stderr)

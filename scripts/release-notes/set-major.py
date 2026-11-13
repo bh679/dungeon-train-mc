@@ -16,6 +16,8 @@ Usage:
     --video https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/totems.mp4 \
     --video-cover 4.5
   python3 scripts/release-notes/set-major.py --id totems-with-a-catch --clear-video
+  python3 scripts/release-notes/set-major.py --id totems-with-a-catch \
+    --mention AshSeven instagram @ashyseven7 --mention AshSeven tiktok @ashseventh
   python3 scripts/release-notes/set-major.py --id release-approved-on-modrinth --milestone
   python3 scripts/release-notes/set-major.py --id release-advancement-tabs --notable
 
@@ -38,6 +40,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--video-cover", type=float, default=None,
                    help="The second of the clip whose frame is the social posts' cover (default 0.5).")
     p.add_argument("--clear-video", action="store_true", help="Remove the clip and its cover time.")
+    p.add_argument("--mention", nargs=3, action="append", default=None, metavar=("TEXT", "PLATFORM", "HANDLE"),
+                   help="A description link whose text is TEXT shows as HANDLE (@name) in that PLATFORM's caption "
+                        "(instagram or tiktok, which can't hold links). Repeat for each.")
+    p.add_argument("--clear-mentions", action="store_true", help="Remove every mention (before adding --mention ones).")
     p.add_argument("--milestone", action="store_true", default=None,
                    help="A moment, not an update: the update page labels it 'Milestone'.")
     p.add_argument("--not-milestone", dest="milestone", action="store_false",
@@ -69,7 +75,9 @@ def main(argv: list[str] | None = None) -> int:
             changelog_io.with_major(e, description=description, image=args.image,
                                     clear_image=args.clear_image, milestone=args.milestone,
                                     notable=args.notable, video=args.video, clear_video=args.clear_video,
-                                    video_cover=args.video_cover)
+                                    video_cover=args.video_cover,
+                                    mentions=changelog_io.mentions_from_args(args.mention),
+                                    clear_mentions=args.clear_mentions)
             if e["id"] == args.id else e
             for e in entries
         ]

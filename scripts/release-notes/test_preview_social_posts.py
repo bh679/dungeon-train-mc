@@ -92,6 +92,12 @@ class Clip(unittest.TestCase):
         self.assertNotIn("clipPath", e)
         self.assertNotIn("clipCover", e)
 
+    def test_description_and_mentions_reach_the_relay_entry(self):
+        mentions = {"AshSeven": {"instagram": "@ashyseven7"}}
+        e = preview.postable([self.entry(description="All of it.", mentions=mentions)], "0.1788.0")[0]
+        self.assertEqual((e["description"], e["mentions"]), ("All of it.", mentions))
+        self.assertNotIn("mentions", preview.postable([self.entry()], "0.1788.0")[0])
+
     def test_a_clip_missing_from_the_images_folder_is_an_error(self):
         with self.assertRaises(ValueError):
             preview.postable([self.entry(video="https://x.test/gone.mp4")], "0.1788.0")
@@ -99,7 +105,8 @@ class Clip(unittest.TestCase):
     def test_the_story_and_tiktok_show_the_clip_videos(self):
         self.assertIn('src="x/story-video.mp4"', preview.media_block(CLIP_POST, "story", "story-video"))
         self.assertIn('src="x/tiktok-video.mp4"', preview.tiktok_block(CLIP_POST))
-        self.assertEqual(preview.tiktok_block(POST), "", "no clip, no TikTok card")
+        self.assertNotIn("<video", preview.tiktok_block({**POST, "captions": {"tiktok": "Hi @ash"}}), "no clip: caption only")
+        self.assertIn("Hi @ash", preview.tiktok_block({**POST, "captions": {"tiktok": "Hi @ash"}}))
         self.assertIn("10 dB under it", preview.music_block(CLIP_POST))
         page = preview.page("0.1788.0", [{**CLIP_POST, "title": "T", "captions": {"facebook": "f", "instagram": "i"}}],
                             [{"id": POST["id"], "title": "T", "summary": "S"}], "dev/x")

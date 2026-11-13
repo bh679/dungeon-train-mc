@@ -968,6 +968,25 @@ def test_set_major_attaches_and_clears_video() -> None:
     assert r.returncode == 0 and "video" not in e and "video_cover" not in e, (r.stderr, e)
 
 
+def test_mentions_merge_validate_and_clear() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "event", "--major", "--mention", "AshSeven", "instagram", "@ashyseven7")
+    assert r.returncode == 0, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "event", "--mention", "AshSeven", "tiktok", "@ashseventh")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["mentions"] == {"AshSeven": {"instagram": "@ashyseven7", "tiktok": "@ashseventh"}}, e
+    r = run(SET_MAJOR, ws, "--id", "event", "--mention", "AshSeven", "facebook", "@ash")
+    assert r.returncode == 1 and "platform must be one of" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "event", "--mention", "AshSeven", "tiktok", "ashseventh")
+    assert r.returncode == 1 and "look like @name" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "event", "--clear-mentions")
+    assert r.returncode == 0 and "mentions" not in read_changelog(ws)["entries"][0], r.stderr
+    r = append(ws, "small", "--mention", "A", "tiktok", "@a")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+
+
 def test_set_major_milestone_sets_keeps_and_drops() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")

@@ -12,6 +12,9 @@ An entry with its own clip (`video`, an .mp4 with sound) is shown as the relay p
 feed video, the story video and the TikTok video, all built from the clip with its own sound and the song under it,
 and the clip's cover frame. The clip is read from the same images folder by its file name.
 
+Each card shows that platform's caption: an entry with a `description` carries the whole update as plain text, links
+kept on Facebook and shown as their text, or the `mentions` handle, on Instagram and TikTok.
+
 An animated picture's feed video carries its song, as the relay posts it (socials-music.js): the update's vibe (from
 its tags, or --vibe) and a track from that vibe, picked the way the relay picks (seeded, so a rerun shows the same
 one), or the one named with --music. The card shows the song, where it starts, the vibe's other tracks and their
@@ -125,7 +128,7 @@ async function clipPosts(e, save, log) {
     done.push({ id: e.id, title: e.title, files,
       music: tune && { clip: !!e.clipPath, id: tune.t.id, title: tune.t.title, composer: tune.t.composer, start: tune.start, vibe: tune.vibe,
         vibeFrom: tune.vibeFrom, chosen: tune.chosen, others: tune.others, credit: music.credit(track) },
-      captions: Object.fromEntries(['facebook', 'instagram'].map((p) => [p, updates.caption(e, p, track)])) });
+      captions: Object.fromEntries(['facebook', 'instagram', 'tiktok'].map((p) => [p, updates.caption(e, p, track)])) });
   }
   fs.writeFileSync(path.join(out, 'posts.json'), JSON.stringify(done));
   process.exit(0);
@@ -172,6 +175,11 @@ def clip_fields(e: dict) -> dict:
     return out
 
 
+def text_fields(e: dict) -> dict:
+    """`description` and `mentions` as the relay keeps them: its captions carry the whole update, each platform's way."""
+    return {k: e[k] for k in ("description", "mentions") if e.get(k)}
+
+
 def postable(entries: list[dict], version: str) -> list[dict]:
     """The unreleased major/notable entries with a local picture, shaped as the relay's update entries."""
     out = []
@@ -185,6 +193,7 @@ def postable(entries: list[dict], version: str) -> list[dict]:
             "notable": bool(e.get("notable")), "milestone": bool(e.get("milestone")),
             "picturePath": os.path.abspath(local),
             **clip_fields(e),
+            **text_fields(e),
         })
     return out
 
@@ -214,11 +223,12 @@ def media_block(post: dict, platform: str, video_key: str = "feed-video") -> str
 
 
 def tiktok_block(post: dict) -> str:
-    """The TikTok video card, for an entry with its own clip."""
+    """The TikTok card: its caption (Brennan pastes it when he posts the draft), and the video for an entry with its
+    own clip."""
     tiktok = post["files"].get("tiktok-video")
-    if not tiktok:
-        return ""
-    return f'<div class=card><h3>TikTok</h3><video src="{tiktok}" controls loop playsinline></video></div>'
+    video = f'<video src="{tiktok}" controls loop playsinline></video>' if tiktok else ""
+    caption = post.get("captions", {}).get("tiktok", "")
+    return f"<div class=card><h3>TikTok</h3>{video}<pre>{html.escape(caption)}</pre></div>"
 
 
 def music_block(post: dict) -> str:
