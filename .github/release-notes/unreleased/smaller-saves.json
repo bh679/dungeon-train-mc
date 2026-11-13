@@ -1,0 +1,21 @@
+{
+  "id": "smaller-saves",
+  "version": "0.1798.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "performance",
+    "world",
+    "ui"
+  ],
+  "title": "Smaller saves option",
+  "summary": "A new Smaller saves option on the Options screen's Performance tab keeps your world folder small. Terrain nobody has changed is not saved, and it comes back as before if you ride back. Off by default.",
+  "highlights": [
+    "Your builds, opened chests and the area around you are always kept."
+  ],
+  "pr": 2634,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
