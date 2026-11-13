@@ -173,6 +173,8 @@ class LiveMicTest {
         assertFalse(LiveMic.on());
         assertTrue(LiveMic.takeHeldNotice(), "the next-stream line, once");
         assertFalse(LiveMic.takeHeldNotice());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID), "the next heartbeat after the line was said");
+        assertFalse(LiveMic.takeHeldNotice(), "is not said again (every heartbeat repeated it before)");
     }
 
     @Test

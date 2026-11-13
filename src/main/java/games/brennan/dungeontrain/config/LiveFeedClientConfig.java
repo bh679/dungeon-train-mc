@@ -91,7 +91,7 @@ public final class LiveFeedClientConfig {
             .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is its own switch (micSupport). On by default; takes effect from your next stream.")
             .define("streamAudio", true);
         MIC_SUPPORT = b
-            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the voice joins from your next stream. Off by default.")
+            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the stream gains a mic track and the voice joins it in a few seconds. Off by default.")
             .define("micSupport", MIC_SUPPORT_DEFAULT);
         MIC_DEVICE = b
             .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")

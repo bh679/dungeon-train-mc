@@ -54,6 +54,8 @@ public final class LiveMic {
     private static volatile boolean held;
     /** A relay too old to count a mid-stream track answered: say once that the voice joins next stream. */
     private static volatile boolean heldNotice;
+    /** That line has been asked for this stream; later heartbeats from the same relay say nothing new. */
+    private static volatile boolean heldTold;
     /** Render thread: adds a mic track to the stream on air, or says why not ({@code LiveStreamController}). */
     private static volatile Supplier<Toggle> midStreamJoin = () -> Toggle.NEXT_STREAM;
     private static volatile boolean pttHeld;
@@ -100,6 +102,7 @@ public final class LiveMic {
         enabled = withMic;
         held = false;
         heldNotice = false;
+        heldTold = false;
         barred = false;
         barredNotice = false;
         gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
@@ -112,6 +115,7 @@ public final class LiveMic {
         enabled = false;
         held = false;
         heldNotice = false;
+        heldTold = false;
         barred = false;
         barredNotice = false;
         closeCapture();
@@ -125,6 +129,7 @@ public final class LiveMic {
         enabled = true;
         held = true;
         heldNotice = false;
+        heldTold = false;
         gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
         agc = new MicDsp.Agc(MicCapture.RATE);
         if (option.getAsBoolean()) openCapture();
@@ -148,7 +153,8 @@ public final class LiveMic {
             LOGGER.info("[DungeonTrain] live mic: the relay counts the mid-stream track; voice on");
             return true;
         }
-        if (word == TrackWord.UNSAID && !heldNotice) {
+        if (word == TrackWord.UNSAID && !heldTold) {
+            heldTold = true;
             heldNotice = true;
             LOGGER.info("[DungeonTrain] live mic: the relay does not count a mid-stream track; voice joins next stream");
         }
