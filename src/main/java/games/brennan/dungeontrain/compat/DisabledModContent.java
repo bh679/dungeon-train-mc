@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * ({@link #isDisabledEnchantment}) — today BetterNether's Obsidian Breaker and Ruby Fire and BetterEnd's
  * Resonance and End Veil — kept out of the enchanting table and villager books by the {@code remove} lists in
  * {@code data/minecraft/tags/enchantment/}, and stripped from loot and creative here. And a handful of the mods'
- * blocks ({@link #DISABLED_BLOCKS}) — respawn statues, the ritual pedestal and the gear chain's anvils and smelter.
+ * blocks ({@link #DISABLED_BLOCKS}) — respawn statues, the ritual pedestal, the mods' anvils and the gear chain's smelter.
  *
  * <p>Single source of truth for five enforcement points: recipes ({@code RecipeManagerDisableMixin}),
  * loot ({@link StripDisabledItemsLootModifier}), ore placement ({@code ChunkGeneratorDecorationMixin})
@@ -147,12 +147,14 @@ public final class DisabledModContent {
     /**
      * Blocks turned off outright: BetterNether's Respawner Statue and BetterEnd's Respawn Obelisk (both set a
      * respawn point, around DT's own death rules), BetterEnd's Infusion Pedestal (ritual crafting), its
-     * Thallasium/Terminite/Aeternium Anvils and End Stone Smelter (the dead gear chain). Their items share the
+     * Thallasium/Terminite/Aeternium Anvils and End Stone Smelter (the dead gear chain), and BetterNether's
+     * Cincinnasite Anvil (craftable from the cincinnasite its band structures are built of). Their items share the
      * block's id, so {@link #isDisabledItem} hides them; copies placed by the mods' own structures are kept
      * from working by {@link DisabledBlockUseGate}.
      */
     static final Set<String> DISABLED_BLOCKS = Set.of(
         "betternether:pig_statue_respawner",
+        "betternether:cincinnasite_anvil",
         "betterend:respawn_obelisk",
         "betterend:infusion_pedestal",
         "betterend:aeternium_anvil",

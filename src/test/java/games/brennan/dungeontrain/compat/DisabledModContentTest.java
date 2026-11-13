@@ -244,7 +244,7 @@ final class DisabledModContentTest {
     }
 
     private static final List<String> DISABLED_BLOCKS = List.of(
-        "betternether:pig_statue_respawner", "betterend:respawn_obelisk", "betterend:infusion_pedestal",
+        "betternether:pig_statue_respawner", "betternether:cincinnasite_anvil", "betterend:respawn_obelisk", "betterend:infusion_pedestal",
         "betterend:aeternium_anvil", "betterend:terminite_anvil", "betterend:thallasium_anvil",
         "betterend:end_stone_smelter");
 
