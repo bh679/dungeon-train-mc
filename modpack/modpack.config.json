@@ -797,6 +797,24 @@
       "curseforge_only": true
     },
     {
+      "name": "Dungeon Totems",
+      "slug": "dungeon-totems",
+      "mod_ids": [
+        "dungeontotems"
+      ],
+      "sha1": "b5d3055477ccf85f64b0a0e5cd3c25bb2a7ba428",
+      "packages": [
+        "games.brennan"
+      ],
+      "project_id": 1800270,
+      "file_id": 9591352,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.14.0",
+      "gradle_property": "dungeontotems_min_version",
+      "curseforge_only": true
+    },
+    {
       "name": "AppleSkin",
       "slug": "appleskin",
       "mod_ids": [

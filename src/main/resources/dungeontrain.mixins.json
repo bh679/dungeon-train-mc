@@ -298,6 +298,7 @@
     "client.SubLevelSealCullMixin",
     "client.LivingEntityPlotLerpGuardMixin",
     "client.SectionOcclusionGraphPortalSwapMixin",
+    "client.SectionOcclusionGraphUnbuiltGuardMixin",
     "client.LevelRendererPortalSwapCompileMixin",
     "client.LevelRendererArrivalListMixin",
     "client.LevelRendererPrewarmAccessor",

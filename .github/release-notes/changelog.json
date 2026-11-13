@@ -35486,6 +35486,115 @@
       "released": true,
       "released_in": "v0.1795.0",
       "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "editor-flip-button",
+      "version": "0.1796.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Flip button in the editor",
+      "summary": "The editor's toolbar has a Flip button next to Offset. Click it to pick an axis, then X, Y or Z mirrors your whole build across it. Undo puts it back.",
+      "highlights": [
+        "Flip opens an X / Y / Z row above the build preview",
+        "Each axis button mirrors every block of the plot you're standing in"
+      ],
+      "pr": 2633,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1799.0",
+      "released_at": "2026-11-13T08:18:00Z"
+    },
+    {
+      "id": "smaller-saves",
+      "version": "0.1798.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "world",
+        "ui"
+      ],
+      "title": "Smaller saves option",
+      "summary": "A new Smaller saves option on the Options screen's Performance tab keeps your world folder small. Terrain nobody has changed is not saved, and it comes back as before if you ride back. Off by default.",
+      "highlights": [
+        "Your builds, opened chests and the area around you are always kept."
+      ],
+      "pr": 2634,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1799.0",
+      "released_at": "2026-11-13T08:18:00Z"
+    },
+    {
+      "id": "stacking-totems",
+      "version": "0.1799.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Stacking totems",
+      "summary": "Some totems now stack. Each extra totem in the stack makes its curse one level stronger, up to that curse's strongest level, and a save uses up one totem from the stack.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1799.0",
+      "released_at": "2026-11-13T08:18:00Z"
+    },
+    {
+      "id": "morphing-totem-weight-20",
+      "version": "0.1800.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Totem loot tweak",
+      "summary": "One kind of totem now turns up a little more often in chests, vaults and evoker drops.",
+      "highlights": [],
+      "pr": 2636,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1801.0",
+      "released_at": "2026-11-13T12:45:13Z"
+    },
+    {
+      "id": "zombification-totem-until-cured",
+      "version": "0.1801.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Totem tweak",
+      "summary": "One totem's catch no longer runs out on its own. It lasts until you cure it, and it no longer kills you when time is up.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1801.0",
+      "released_at": "2026-11-13T12:45:13Z"
+    },
+    {
+      "id": "dungeon-totems-curseforge-dependency",
+      "version": "0.1802.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "CurseForge install tweak",
+      "summary": "On CurseForge, Dungeon Train now installs one of its companion mods from that mod's own page.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1802.0",
+      "released_at": "2026-11-13T13:34:21Z"
     }
   ]
 }
