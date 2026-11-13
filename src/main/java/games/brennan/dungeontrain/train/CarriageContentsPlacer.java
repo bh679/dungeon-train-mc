@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.editor.VariantDoc;
+import games.brennan.dungeontrain.provenance.BakedGear;
 import games.brennan.dungeontrain.provenance.ItemProvenance;
 import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import games.brennan.dungeontrain.editor.GrowthPass;
@@ -43,7 +44,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -56,7 +56,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -66,7 +65,6 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
@@ -511,7 +509,7 @@ public final class CarriageContentsPlacer {
                 // book in the lectern's block-entity; strip any such book so every
                 // narrative lectern starts virgin and the per-world picker runs.
                 clearBakedNarrativeLecternBooks(level, origin, size);
-                markBakedStorageFresh(level, origin, size);
+                BakedGear.markStorage(level, origin, size, ProvenanceScope.current());
             }
             if (spawnEntities) {
                 spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed, flip);
@@ -581,34 +579,6 @@ public final class CarriageContentsPlacer {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * Mark gear saved into the template's chests and barrels as new ({@link ItemProvenance}), with this
-     * carriage when its stamp is in scope. The stamp copies it in as saved, unmarked, so the first
-     * player to take it would otherwise be told it is older than the train remembers.
-     */
-    private static void markBakedStorageFresh(ServerLevel level, BlockPos origin, Vec3i size) {
-        OptionalInt pIdx = ProvenanceScope.current();
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        int marked = 0;
-        for (int dx = 0; dx < size.getX(); dx++) {
-            for (int dy = 0; dy < size.getY(); dy++) {
-                for (int dz = 0; dz < size.getZ(); dz++) {
-                    cursor.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
-                    if (level.getBlockEntity(cursor) instanceof Container container
-                            && container instanceof BlockEntity be
-                            && ItemProvenance.markFreshContents(container, pIdx)) {
-                        be.setChanged();
-                        marked++;
-                    }
-                }
-            }
-        }
-        if (marked > 0) {
-            LOGGER.debug("[DungeonTrain] Provenance: marked baked gear new in {} container(s) at {} pIdx={}",
-                marked, origin, pIdx);
         }
     }
 
