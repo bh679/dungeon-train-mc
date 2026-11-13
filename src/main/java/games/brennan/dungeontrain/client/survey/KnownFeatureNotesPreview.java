@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.survey;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.discordpresence.client.SurveyClientState;
+import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import net.minecraft.client.Minecraft;
@@ -42,6 +44,14 @@ public final class KnownFeatureNotesPreview {
     /** One shot: a death-screen page ({@code card} false) or the {@code /feedback} card. */
     private record Shot(KnownFeature feature, boolean card) {}
 
+    /**
+     * Stands in when the dev world's survey sent no questions, so the death screen has a question to
+     * hang its note pages on. Cleared again once the preview ends.
+     */
+    private static final SurveyQuestionPayload.Entry STAND_IN = new SurveyQuestionPayload.Entry(
+            "dungeontrain:change_one_thing", "If you could change one thing about the mod, what would it be?", 0, -1, true);
+    private static boolean seededQuestions;
+
     private static List<Shot> queue = List.of();
     private static NarrativeDeathScreen deathScreen;
     private static Shot current;
@@ -64,8 +74,9 @@ public final class KnownFeatureNotesPreview {
         for (KnownFeature f : KnownFeature.values()) shots.add(new Shot(f, false));
         for (KnownFeature f : KnownFeature.values()) shots.add(new Shot(f, true));
         queue = shots;
+        seededQuestions = !SurveyClientState.hasQuestions();
+        if (seededQuestions) SurveyClientState.set(List.of(STAND_IN));
         deathScreen = new NarrativeDeathScreen();
-        Minecraft.getInstance().setScreen(deathScreen);
         current = null;
         ticks = 0;
     }
@@ -90,6 +101,8 @@ public final class KnownFeatureNotesPreview {
         if (queue.isEmpty()) {
             deathScreen = null;
             mc.setScreen(null);
+            if (seededQuestions) SurveyClientState.clear();
+            seededQuestions = false;
             LOGGER.info("[DungeonTrain] known-notes preview done");
             return;
         }
@@ -98,12 +111,25 @@ public final class KnownFeatureNotesPreview {
         if (current.card()) {
             mc.setScreen(new KnownFeatureNoteScreen(null, List.of(current.feature())));
         } else {
-            if (mc.screen != deathScreen) mc.setScreen(deathScreen);
+            if (mc.screen != deathScreen) {
+                // The screen builds its pages when it opens: try this shot again next round.
+                mc.setScreen(deathScreen);
+                queue = prepend(current, queue);
+                current = null;
+                return;
+            }
             if (!deathScreen.previewNote(current.feature())) {
                 LOGGER.warn("[DungeonTrain] known-notes preview: no survey question to hang a note on");
                 current = null;
             }
         }
+    }
+
+    private static List<Shot> prepend(Shot shot, List<Shot> rest) {
+        List<Shot> out = new ArrayList<>(rest.size() + 1);
+        out.add(shot);
+        out.addAll(rest);
+        return out;
     }
 
     private static void pollFlag(Minecraft mc) {
