@@ -12,7 +12,7 @@ final class TradeEverythingTotemValueTest {
     private static final int VANILLA = 432; // TE 0.17.0's Totem of Undying, in sixteenths
 
     @Test
-    @DisplayName("the bundled weights price at 108 / 68 / 54 / 36 sixteenths")
+    @DisplayName("weights 5 / 8 / 10 / 15 price at 108 / 68 / 54 / 36 sixteenths")
     void tableValues() {
         assertEquals(108, TradeEverythingBridge.totemValue(5, 5, VANILLA));
         assertEquals(68, TradeEverythingBridge.totemValue(8, 5, VANILLA));

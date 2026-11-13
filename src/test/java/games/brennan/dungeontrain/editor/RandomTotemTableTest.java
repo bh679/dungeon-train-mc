@@ -74,14 +74,14 @@ final class RandomTotemTableTest {
     }
 
     @Test
-    @DisplayName("the bundled weights: Weakness and Fatigue rarest at 5, Void rolls at 10")
+    @DisplayName("the bundled weights: Insomnia and Melon Diet rarest at 5, Void rolls at 10")
     void bundledWeights() {
         assertEquals(5, RandomTotemTable.minWeight());
-        assertEquals(5, RandomTotemTable.weightOf(rl("dungeontotems:weakness_totem")));
-        assertEquals(8, RandomTotemTable.weightOf(rl("dungeontotems:rage_totem")));
-        assertEquals(15, RandomTotemTable.weightOf(rl("dungeontotems:pacifism_totem")));
+        assertEquals(5, RandomTotemTable.weightOf(rl("dungeontotems:insomnia_totem")));
+        assertEquals(7, RandomTotemTable.weightOf(rl("dungeontotems:rage_totem")));
+        assertEquals(15, RandomTotemTable.weightOf(rl("dungeontotems:morphing_totem")));
         assertEquals(10, RandomTotemTable.weightOf(RandomTotemTable.VOID_TOTEM));
-        assertEquals(193, RandomTotemTable.all().values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(168, RandomTotemTable.all().values().stream().mapToInt(Integer::intValue).sum());
     }
 
     @Test

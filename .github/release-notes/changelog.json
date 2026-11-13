@@ -35305,6 +35305,187 @@
       "released": true,
       "released_in": "v0.1784.0",
       "released_at": "2026-11-12T10:15:55Z"
+    },
+    {
+      "id": "ceiling-climb-void-fix",
+      "version": "0.1786.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Fall out of the world fix",
+      "summary": "Breaking out through a dimensional carriage's ceiling no longer makes the world vanish and drop you into the void.",
+      "highlights": [],
+      "pr": 2624,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "fresh-baked-carriage-gear",
+      "version": "0.1788.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "ui"
+      ],
+      "title": "Found gear remembers its finder",
+      "summary": "Gear taken from armor stands and storage in the carriages now shows who found it, when, and which carriage it came from, instead of claiming it is older than the train remembers.",
+      "highlights": [],
+      "pr": 2626,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "passenger-log-wording",
+      "version": "0.1786.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Passenger log polish",
+      "summary": "Small wording tweaks to death stories.",
+      "highlights": [],
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "release-notes-entry-video",
+      "version": "0.1788.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update posts can carry their own clip and the full update",
+      "summary": "Behind the scenes: an update's social posts can now be built from its own video clip, sound included, and their captions can carry the whole update.",
+      "highlights": [],
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "status-effect-stuck-at-zero",
+      "version": "0.1783.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Status effect fix",
+      "summary": "Status effects no longer get stuck on screen at 00:00 after they wear off.",
+      "highlights": [],
+      "pr": 2619,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "totems-with-a-catch",
+      "version": "0.1786.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Dungeon Totems of Undying",
+      "summary": "A new set of 19 totems can now be found along the train. They will still save your life, mostly.",
+      "highlights": [
+        "Evokers are in on it too."
+      ],
+      "pr": 2622,
+      "date": "2026-11-12",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z",
+      "major": true,
+      "description": "A new set of 19 totems can now be found along the train. Custom made for this modpack. They will still save your life, mostly...\n\nSome might turn you against your friends, others may turn you into a cow, wolf, llama or more. Some might have you think zombification is better than death... if you can turn back.\n\nWhat else awaits after these totems? The train has the answers.\n\n*Shout out to Lil Detective Crunch (mc: AntonioMacarely) for the idea and help designing this addition to the pack.*\n\n## Upcoming Events\n\nWill [AshSeven](https://twitch.tv/ashseven7) be the first to get the Everything Burrito advancement, completing every other advancement in the game? Join his livestream on [Twitch](https://twitch.tv/ashseven7) at <t:1794697200:F> (Saturday 14 November, 23:00 UTC).",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.gif",
+      "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.mp4",
+      "mentions": {
+        "AshSeven": {
+          "instagram": "@ashyseven7",
+          "tiktok": "@ashseventh"
+        }
+      }
+    },
+    {
+      "id": "fresh-room-gear",
+      "version": "0.1789.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "ui"
+      ],
+      "title": "More found gear remembers its finder",
+      "summary": "Gear found in more places on the train now shows who found it and when, instead of claiming it is older than the train remembers.",
+      "highlights": [],
+      "pr": 2627,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "highlights-post-links",
+      "version": "0.1791.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Update page links to Discord posts",
+      "summary": "Major updates on the update page can now link to their Discord highlights post.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "highlights-webhook-sync",
+      "version": "0.1789.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Community milestones in Discord",
+      "summary": "Community milestones can now be celebrated in the Discord highlights channel.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
+    },
+    {
+      "id": "photo-advancement-icons",
+      "version": "0.1791.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New photo advancement icons",
+      "summary": "Two photo advancements have fresh icons.",
+      "highlights": [],
+      "pr": 2629,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1795.0",
+      "released_at": "2026-11-13T06:47:23Z"
     }
   ]
 }
