@@ -1,0 +1,16 @@
+{
+  "id": "zombification-totem-until-cured",
+  "version": "0.1801.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "balance"
+  ],
+  "title": "Totem tweak",
+  "summary": "One totem's catch no longer runs out on its own. It lasts until you cure it, and it no longer kills you when time is up.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
