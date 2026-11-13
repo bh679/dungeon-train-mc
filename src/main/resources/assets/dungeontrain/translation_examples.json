@@ -18388,6 +18388,15 @@
       ]
     }
   },
+  "gui.dungeontrain.engine_block.carriage_id": {
+    "1": {
+      "label": "the drifting carriage's id, letters and digits, never translated",
+      "examples": [
+        "MZXW K 0C9-3",
+        "NOPI 3F L4 0C9P-7"
+      ]
+    }
+  },
 
   "gui.dungeontrain.known_feature.off": {
     "1": {
