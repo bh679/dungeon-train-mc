@@ -1,0 +1,17 @@
+{
+  "id": "stacking-totems",
+  "version": "0.1799.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Stacking totems",
+  "summary": "Some totems now stack. Each extra totem in the stack makes its curse one level stronger, up to that curse's strongest level, and a save uses up one totem from the stack.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
