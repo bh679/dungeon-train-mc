@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.survey;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.ClientLanguage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -12,15 +11,17 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
+import java.util.List;
+
 /**
- * When to show the {@link NpsAiNoteScreen}: right after a qualifying NPS answer from the death screen
- * or {@code /feedback}, over the survey, which it returns to when closed. If that screen goes away
- * first (a quick respawn, or the last question), it waits until the player is back in the game or on
- * the title screen. Same timing as {@code ModOfTheYearPopupHandler}, whose ask needs a score of 8-10,
- * so the two never compete for the same answer.
+ * When to show the {@link KnownFeatureNoteScreen}: right after a {@code /feedback} answer that earns
+ * a note, over the survey, which it returns to when closed. If that screen goes away first (the last
+ * question), it waits until the player is back in the game or on the title screen. Same timing as
+ * {@code ModOfTheYearPopupHandler}. The death screen shows these notes as pages instead, so it never
+ * calls this.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
-public final class NpsAiNoteHandler {
+public final class KnownFeatureNoteHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -29,6 +30,8 @@ public final class NpsAiNoteHandler {
     /** ~1.2 s once the player is free again, so the note doesn't land on the first frame back. */
     private static final int FREE_DELAY_TICKS = 24;
 
+    /** The notes waiting to be shown; empty when nothing is scheduled. */
+    private static List<KnownFeature> pendingNotes = List.of();
     /** The note lost its screen; show it once the player is free (see {@link #playerIsFree}). */
     private static boolean showWhenFree = false;
     /** Ticks until a scheduled open; {@code -1} when nothing is scheduled. */
@@ -36,12 +39,14 @@ public final class NpsAiNoteHandler {
     /** The screen the scheduled note will sit over; the open is put off if the player has moved on. */
     private static Screen pendingParent = null;
 
-    private NpsAiNoteHandler() {}
+    private KnownFeatureNoteHandler() {}
 
-    /** An NPS answer from either survey path. Client thread. */
-    public static void onNpsAnswered(int score, String comment) {
-        if (!AiMentionDetector.shouldShowNote(score, comment, ClientLanguage.selected())) return;
-        LOGGER.info("NpsAiNote: low score mentioning AI — showing the note");
+    /** A {@code /feedback} answer. {@code score} is the chosen rating, or -1 for a text question. Client thread. */
+    public static void onAnswered(String formId, int score, String comment) {
+        List<KnownFeature> notes = KnownFeatureNotes.forAnswer(formId, score, comment);
+        if (notes.isEmpty()) return;
+        LOGGER.info("KnownFeatureNote: {} — showing the note", notes);
+        pendingNotes = notes;
         schedule(Minecraft.getInstance().screen, ANSWER_DELAY_TICKS);
     }
 
@@ -55,7 +60,7 @@ public final class NpsAiNoteHandler {
         if (openDelayRemaining < 0) return;
         if (mc.getOverlay() != null) return;
         if (mc.screen != pendingParent) {
-            LOGGER.info("NpsAiNote: screen changed during open delay; showing later");
+            LOGGER.info("KnownFeatureNote: screen changed during open delay; showing later");
             showWhenFree = true;
             openDelayRemaining = -1;
             pendingParent = null;
@@ -65,7 +70,9 @@ public final class NpsAiNoteHandler {
         openDelayRemaining = -1;
         Screen parent = pendingParent;
         pendingParent = null;
-        mc.setScreen(new NpsAiNoteScreen(parent));
+        List<KnownFeature> notes = pendingNotes;
+        pendingNotes = List.of();
+        if (!notes.isEmpty()) mc.setScreen(new KnownFeatureNoteScreen(parent, notes));
     }
 
     private static void schedule(Screen parent, int delayTicks) {

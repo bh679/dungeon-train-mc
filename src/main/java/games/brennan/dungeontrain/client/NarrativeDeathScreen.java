@@ -7,7 +7,9 @@ import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
-import games.brennan.dungeontrain.client.survey.NpsAiNoteHandler;
+import games.brennan.dungeontrain.client.survey.KnownFeature;
+import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
+import games.brennan.dungeontrain.client.survey.KnownFeatureNotes;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.bugresponse.BugIssueClassifier;
 import games.brennan.dungeontrain.narrative.PluralRules;
@@ -123,11 +125,13 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, DONATE, PHOTOS, PLATFORM }
+    private enum Kind { FALL, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM }
 
-    private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
-        static Page of(Kind k) { return new Page(k, null); }
-        static Page survey(SurveyQuestionPayload.Entry e) { return new Page(Kind.SURVEY, e); }
+    /** {@code slot} is which of its form's notes a NOTE page shows (see {@link #notes}); 0 elsewhere. */
+    private record Page(Kind kind, SurveyQuestionPayload.Entry survey, int slot) {
+        static Page of(Kind k) { return new Page(k, null, 0); }
+        static Page survey(SurveyQuestionPayload.Entry e) { return new Page(Kind.SURVEY, e, 0); }
+        static Page note(SurveyQuestionPayload.Entry e, int slot) { return new Page(Kind.NOTE, e, slot); }
     }
 
     private record Rect(int x, int y, int w, int h) {
@@ -246,6 +250,8 @@ public final class NarrativeDeathScreen extends Screen {
     // The id and the collect-and-ship logic live in the shared {@link BugLogReporter} (also used
     // by the on-demand /bug + /feedback survey).
     private static final String BUG_REPORT_ID = BugLogReporter.BUG_REPORT_ID;
+    /** NOTE pages after each question: one per note an answer can earn. */
+    private static final int KNOWN_FEATURE_NOTE_PAGES = KnownFeatureDetector.MAX_NOTES;
 
     // Which death-screen forms this player has answered before, and which they have asked not to be
     // shown again. Read ONCE, at construction: buildPages() and the opt-out checkbox both consult
@@ -397,6 +403,12 @@ public final class NarrativeDeathScreen extends Screen {
     // Red "Submit Bug" shortcut (start page only); null when absent or shown as the
     // non-clickable green "Bug Submitted" status.
     private Rect bugReportRect;
+    private Rect noteActionRect;            // a NOTE page's button (AI Policy, Key Binds, roadmap)
+    /**
+     * The notes each submitted answer earned ({@link KnownFeatureNotes#forAnswer}), by form id. A
+     * NOTE page joins the flow once its form has a note in its slot; changing the answer clears them.
+     */
+    private final Map<String, List<KnownFeature>> notes = new HashMap<>();
     // Set when the bug page is opened via the shortcut, so the next Next Screen on that
     // page returns to the start page instead of advancing forward.
     private boolean returnToStartAfterBug = false;
@@ -446,6 +458,23 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
+    /**
+     * Dev preview: show {@code feature}'s note page as if the first question's answer had earned it.
+     * False when the survey sent no question that can carry a note.
+     */
+    public boolean previewNote(KnownFeature feature) {
+        for (int i = 0; i < pages.size(); i++) {
+            Page p = pages.get(i);
+            if (p.kind() == Kind.NOTE && p.slot() == 0) {
+                notes.put(p.survey().id(), List.of(feature));
+                if (i == currentPage) init(this.minecraft, this.width, this.height);
+                else startTransition(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     private List<Page> buildPages() {
         List<Page> list = new ArrayList<>();
         list.add(Page.of(Kind.FALL));
@@ -465,7 +494,12 @@ public final class NarrativeDeathScreen extends Screen {
             list.add(Page.survey(e));
             // The answer to a submitted bug report gets its own page straight after the question.
             // Always in the deck, but out of flow until a real bug has been sent (see outOfFlow).
-            if (BUG_REPORT_ID.equals(e.id())) list.add(Page.of(Kind.BUG_RESPONSE));
+            if (BUG_REPORT_ID.equals(e.id())) {
+                list.add(Page.of(Kind.BUG_RESPONSE));
+            } else {
+                // "You already have this" notes, out of flow until the answer earns one (see notes).
+                for (int slot = 0; slot < KNOWN_FEATURE_NOTE_PAGES; slot++) list.add(Page.note(e, slot));
+            }
         }
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
         // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
@@ -495,8 +529,16 @@ public final class NarrativeDeathScreen extends Screen {
     private boolean outOfFlow(Page p) {
         if (p.kind() == Kind.DONATE) return !donateInFlow;
         if (p.kind() == Kind.BUG_RESPONSE) return bugCard == null;
+        if (p.kind() == Kind.NOTE) return noteFor(p) == null;
         String id = formId(p);
         return id != null && deckMutedForms.contains(id);
+    }
+
+    /** The note a NOTE page shows, or null while its form has earned none in that slot. */
+    private KnownFeature noteFor(Page p) {
+        if (p.survey() == null) return null;
+        List<KnownFeature> earned = notes.getOrDefault(p.survey().id(), List.of());
+        return p.slot() < earned.size() ? earned.get(p.slot()) : null;
     }
 
     /** Index of the first feedback-survey page, or -1 when the survey sent no questions. */
@@ -588,6 +630,7 @@ public final class NarrativeDeathScreen extends Screen {
             commentBox.setResponder(s -> {
                 comments.put(qid, s);
                 submitted.remove(qid);
+                notes.remove(qid);
                 if (qid.equals(BUG_REPORT_ID)) bugCard = null;
             });
             // The bug question asks for a detailed free-text description; otherwise a text question
@@ -803,6 +846,7 @@ public final class NarrativeDeathScreen extends Screen {
         continueRect = null;
         backRect = null;
         bugReportRect = null;
+        noteActionRect = null;
         containersRect = null;
         booksRect = null;
         writtenRect = null;
@@ -833,6 +877,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
+                case NOTE -> y = drawNote(g, page, left, contentW, cx, y);
                 case BROADCAST -> y = broadcastPage.draw(g, liveStats(), RewardsLink.rewards(), Util.getEpochMillis(),
                         diedAtMs, left, contentW, cx, y, this.height - 32);
                 case CROWD -> y = crowdPage.draw(g, liveStats(), RewardsLink.rewards(), Util.getEpochMillis(),
@@ -928,7 +973,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case BROADCAST, CROWD, SURVEY, BUG_RESPONSE, DONATE, PHOTOS, PLATFORM -> List.of();
+            case BROADCAST, CROWD, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM -> List.of();
         };
     }
 
@@ -945,7 +990,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS -> UiAnalytics.PAGE_DEEDS;
             case GEAR -> UiAnalytics.PAGE_GEAR;
             case LIVES -> UiAnalytics.PAGE_LIVES;
-            case SURVEY, BUG_RESPONSE -> UiAnalytics.PAGE_SURVEY;
+            case SURVEY, BUG_RESPONSE, NOTE -> UiAnalytics.PAGE_SURVEY;
             case BROADCAST -> UiAnalytics.PAGE_BROADCAST;
             case CROWD -> UiAnalytics.PAGE_CROWD;
             case DONATE -> UiAnalytics.PAGE_DONATE;
@@ -1504,6 +1549,30 @@ public final class NarrativeDeathScreen extends Screen {
         // Wider than the page column: the card carries buttons and release titles.
         int cardW = Math.max(w, Math.min(this.width - 24, 460));
         return bugCard.render(g, this.font, bugCardChrome, cx, cardW, y) + 4;
+    }
+
+    /** A "you already have this" note from Brennan, after the answer that asked for it. */
+    private int drawNote(GuiGraphics g, Page page, int left, int w, int cx, int y) {
+        drawKicker(g, cx, y, "gui.dungeontrain.known_feature.kicker");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        KnownFeature note = noteFor(page);
+        if (note == null) return y;
+        y = drawQuestion(g, KnownFeatureNotes.title(note).getString(), cx, w, y);
+        y += 6;
+        for (Component paragraph : KnownFeatureNotes.paragraphs(note)) {
+            y = drawCentered(g, paragraph, cx, w, y, NARR);
+            y += 6;
+        }
+        Component label = KnownFeatureNotes.buttonLabel(note);
+        if (label != null) {
+            y += 4;
+            int bw = Math.max(140, this.font.width(label) + 24);
+            noteActionRect = drawBevel(g, cx - bw / 2, y, bw, 20, label, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+            y += 26;
+        }
+        return y;
     }
 
     private int drawSurvey(GuiGraphics g, SurveyQuestionPayload.Entry e, int left, int w, int cx, int y) {
@@ -2452,6 +2521,11 @@ public final class NarrativeDeathScreen extends Screen {
             if (page.kind() == Kind.BUG_RESPONSE && bugCard != null && bugCard.click(mx, my)) {
                 return true;
             }
+            if (page.kind() == Kind.NOTE && noteActionRect != null && noteActionRect.has(mx, my)) {
+                KnownFeature note = noteFor(page);
+                if (note != null) KnownFeatureNotes.runAction(note, this);
+                return true;
+            }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
                 String qid = page.survey().id();
                 for (int i = 0; i < scoreRects.size(); i++) {
@@ -2461,6 +2535,7 @@ public final class NarrativeDeathScreen extends Screen {
                         // Next Screen; re-clicking the same tile is a no-op for that state.
                         if (value != scores.getOrDefault(qid, -1)) {
                             submitted.remove(qid);
+                            notes.remove(qid);
                             if (qid.equals(BUG_REPORT_ID)) bugCard = null;
                         }
                         scores.put(qid, value);
@@ -2520,13 +2595,22 @@ public final class NarrativeDeathScreen extends Screen {
                 }
             }
         }
+        // An answer that earned a "you already have this" note shows it before anything else, on
+        // the survey tour and from a chip too.
+        if (page.kind() == Kind.SURVEY || page.kind() == Kind.NOTE) {
+            int next = currentPage + 1;
+            if (next < pages.size() && pages.get(next).kind() == Kind.NOTE && !outOfFlow(pages.get(next))) {
+                startTransition(next);
+                return;
+            }
+        }
         // Bug page (or its response page) reached via the start-page shortcut: Next Screen returns
         // to the start (page 0) instead of paging forward. Consume the flag either way.
         boolean returnToStart = returnToStartAfterBug && isBugFlowPage(page);
         returnToStartAfterBug = false;
         // Walking the survey via the envelope chip: Next Screen steps to the following question
         // (muted ones included) and only hands back once they have all been offered.
-        if (surveyTour && (page.kind() == Kind.SURVEY || page.kind() == Kind.BUG_RESPONSE)) {
+        if (surveyTour && (page.kind() == Kind.SURVEY || page.kind() == Kind.BUG_RESPONSE || page.kind() == Kind.NOTE)) {
             int next = nextSurveyPage(currentPage, +1);
             if (next >= 0) {
                 startTransition(next);
@@ -2556,6 +2640,11 @@ public final class NarrativeDeathScreen extends Screen {
         if (uiBusy) return;
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.BUG_RESPONSE && bugPageIndex() >= 0) {
             startTransition(bugPageIndex());
+            return;
+        }
+        // A note steps back to the answer (or the note) right before it, in every flow.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.NOTE && currentPage > 0) {
+            startTransition(currentPage - 1);
             return;
         }
         returnToStartAfterBug = false;
@@ -2600,7 +2689,14 @@ public final class NarrativeDeathScreen extends Screen {
         // recommendation brings up the Mod of the Year ask over this screen, returning here after.
         if (e.scaleMax() >= e.scaleMin() && SurveyRegistry.NPS_ID.equals(e.id())) {
             ModOfTheYearPopupHandler.onNpsAnswered(score);
-            NpsAiNoteHandler.onNpsAnswered(score, comment);
+        }
+        // Asked for something the game already has (or that is coming)? Its note is the next page.
+        List<KnownFeature> earned = KnownFeatureNotes.forAnswer(e.id(), e.scaleMax() >= e.scaleMin() ? score : -1, comment);
+        if (earned.isEmpty()) {
+            notes.remove(e.id());
+        } else {
+            notes.put(e.id(), earned);
+            if (earned.contains(KnownFeature.AI)) UiAnalytics.shown(UiAnalytics.SURFACE_NPS_AI_NOTE, "note");
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
