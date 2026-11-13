@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.advancement;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
@@ -10,7 +11,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
 import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.SealedJson;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import org.slf4j.Logger;
 
@@ -60,13 +63,25 @@ import java.util.stream.Stream;
  * the persist policy lives at the call sites in
  * {@link AdvancementProfiles#shouldPersist}.</p>
  *
+ * <p><b>Two lists, one profile.</b> {@code granted} holds what was earned live on this install.
+ * {@code absorbed} holds what the store took on trust: ids banked from a world's own advancement
+ * file at login ({@link AdvancementProfiles#absorb}), and everything in a file whose seal was
+ * missing on an install that had sealed before (see {@link SealedJson}). Both replay the same, so the
+ * player sees no difference; only the records care ({@link CompletionistAdvancement#isVerifiedEarn}),
+ * because a world's advancement file is as editable as this one.</p>
+ *
+ * <p><b>Sealed.</b> Every write carries a {@link SealedJson} seal. A read whose seal does not match
+ * keeps the contents but marks the player ({@link ProfileIntegrity}) and rewrites the file with the
+ * taint under the seal, so it holds until the profile is reset.</p>
+ *
  * <p>JSON shape:
  * <pre>{@code
  * { "granted": [
  *     "minecraft:story/mine_stone",
- *     "dungeontrain:dungeon_train/chests_100_unique",
- *     "dungeontrain:dungeon_train/carts_100"
- *   ] }
+ *     "dungeontrain:dungeon_train/chests_100_unique"
+ *   ],
+ *   "absorbed": [ "dungeontrain:dungeon_train/carts_100" ],
+ *   "seal": "…" }
  * }</pre>
  *
  * <p>Disk I/O stays off the server thread after a profile's first read. Each partition is
@@ -86,14 +101,40 @@ public final class GlobalAchievementStore {
     private static final String LEGACY_DIR_NAME = "dungeontrain-achievements";
     /** How long a flush waits for the writer before giving up (and logging). */
     private static final long FLUSH_TIMEOUT_SECONDS = 10;
+    /** The store's name in every file's seal scope. */
+    static final String SEAL_STORE = "achievements";
 
     /** One player's profile in one partition — the cache key, so lookups never touch the disk. */
     private record Key(UUID uuid, String partition) {}
 
-    /** Each loaded partition's own file contents (unmodifiable snapshots). */
-    private static final Map<Key, Set<ResourceLocation>> CACHE = new ConcurrentHashMap<>();
+    /**
+     * One partition's contents: the ids earned live and the ids taken on trust (disjoint), plus
+     * whether the file was caught edited. Immutable; every change makes a new one.
+     */
+    public record Profile(Set<ResourceLocation> granted, Set<ResourceLocation> absorbed, boolean tainted) {
+        public static final Profile EMPTY = new Profile(Set.of(), Set.of(), false);
+
+        public Profile {
+            granted = Collections.unmodifiableSet(new LinkedHashSet<>(granted));
+            absorbed = Collections.unmodifiableSet(new LinkedHashSet<>(absorbed));
+        }
+
+        /** Everything the profile holds, earned or absorbed, in file order. */
+        public Set<ResourceLocation> all() {
+            Set<ResourceLocation> all = new LinkedHashSet<>(granted);
+            all.addAll(absorbed);
+            return all;
+        }
+
+        Profile withGranted(Set<ResourceLocation> ids) { return new Profile(ids, absorbed, tainted); }
+        Profile withAbsorbed(Set<ResourceLocation> ids) { return new Profile(granted, ids, tainted); }
+        Profile asTainted() { return new Profile(granted, absorbed, true); }
+    }
+
+    /** Each loaded partition's own file contents. */
+    private static final Map<Key, Profile> CACHE = new ConcurrentHashMap<>();
     /** The newest snapshot of each partition still waiting to be written. */
-    private static final Map<Key, Set<ResourceLocation>> PENDING = new ConcurrentHashMap<>();
+    private static final Map<Key, Profile> PENDING = new ConcurrentHashMap<>();
     private static final ExecutorService WRITER = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "DungeonTrain-AchievementStore");
         thread.setDaemon(true);
@@ -102,13 +143,14 @@ public final class GlobalAchievementStore {
     /** Where a partition's file lives; swapped for a temp directory in tests. */
     private static volatile BiFunction<UUID, String, Path> resolver = GlobalAchievementStore::file;
 
-    /** Schema record. {@code granted} stored as a list to preserve insertion order in the JSON. */
-    public record Data(List<ResourceLocation> granted) {
+    /** Schema record. Lists, to preserve insertion order in the JSON. */
+    public record Data(List<ResourceLocation> granted, List<ResourceLocation> absorbed) {
         public static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
-            ResourceLocation.CODEC.listOf().optionalFieldOf("granted", List.of()).forGetter(Data::granted)
+            ResourceLocation.CODEC.listOf().optionalFieldOf("granted", List.of()).forGetter(Data::granted),
+            ResourceLocation.CODEC.listOf().optionalFieldOf("absorbed", List.of()).forGetter(Data::absorbed)
         ).apply(in, Data::new));
 
-        public static final Data EMPTY = new Data(List.of());
+        public static final Data EMPTY = new Data(List.of(), List.of());
     }
 
     /**
@@ -169,8 +211,9 @@ public final class GlobalAchievementStore {
     }
 
     /**
-     * Read {@code playerUuid}'s {@code partitionKey} sidecar. Returns an empty set when the file
-     * does not exist or is malformed (warn-logged in the malformed case).
+     * Read {@code playerUuid}'s {@code partitionKey} sidecar: everything it holds, earned or
+     * absorbed. Returns an empty set when the file does not exist or is malformed (warn-logged in
+     * the malformed case).
      *
      * <p>Served from the cache once the partition has been loaded, so only the first read of a
      * session touches the disk.</p>
@@ -180,9 +223,14 @@ public final class GlobalAchievementStore {
      * a Hard profile sees the editor tab it already earned. See {@link #sharedView}.</p>
      */
     public static synchronized Set<ResourceLocation> read(UUID playerUuid, String partitionKey) {
-        Set<ResourceLocation> own = cached(new Key(playerUuid, partitionKey));
-        if (!SHARED.equals(partitionKey)) return new LinkedHashSet<>(own);
-        return sharedView(own, cached(new Key(playerUuid, DifficultyPartition.LEGACY_KEY)));
+        Set<ResourceLocation> own = cached(new Key(playerUuid, partitionKey)).all();
+        if (!SHARED.equals(partitionKey)) return own;
+        return sharedView(own, cached(new Key(playerUuid, DifficultyPartition.LEGACY_KEY)).all());
+    }
+
+    /** The ids in {@code partitionKey} the store took on trust rather than saw earned. */
+    public static synchronized Set<ResourceLocation> unverified(UUID playerUuid, String partitionKey) {
+        return cached(new Key(playerUuid, partitionKey)).absorbed();
     }
 
     /** The shared partition's contents: its own file plus the legacy file's editor ids. */
@@ -194,21 +242,57 @@ public final class GlobalAchievementStore {
         return view;
     }
 
-    static Set<ResourceLocation> readFile(Path path) {
-        if (!Files.isRegularFile(path)) return Set.of();
+    /**
+     * Read one file and judge its seal. Malformed JSON is an empty profile, as before: a crash can
+     * leave that, and it is not evidence of anything. A seal that does not match marks the player
+     * and taints the profile; a missing seal on an install that had sealed before moves every id to
+     * {@code absorbed}.
+     */
+    static Profile readFile(Path path, UUID uuid, String partition) {
+        if (!Files.isRegularFile(path)) return Profile.EMPTY;
+        JsonElement element;
         try (Reader reader = Files.newBufferedReader(path)) {
-            JsonElement element = JsonParser.parseReader(reader);
-            var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
-            if (result.error().isPresent()) {
-                LOGGER.warn("[DungeonTrain] GlobalAchievementStore: failed to parse {}: {}",
-                    path, result.error().get().message());
-                return Set.of();
+            element = JsonParser.parseReader(reader);
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] GlobalAchievementStore: I/O error reading {}: {}", path, e.getMessage());
+            return Profile.EMPTY;
+        }
+        var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
+        if (result.error().isPresent() || !element.isJsonObject()) {
+            LOGGER.warn("[DungeonTrain] GlobalAchievementStore: failed to parse {}: {}",
+                path, result.error().map(e -> e.message()).orElse("not an object"));
+            return Profile.EMPTY;
+        }
+        Data data = result.result().orElse(Data.EMPTY);
+        SealedJson.Verdict verdict = SealedJson.verify(element.getAsJsonObject(),
+            SealedJson.scope(SEAL_STORE, uuid, partition));
+        return judged(new Profile(new LinkedHashSet<>(data.granted()), new LinkedHashSet<>(data.absorbed()), false),
+            verdict, uuid, path);
+    }
+
+    /** Apply a read's verdict to the profile it read. Package-private for tests. */
+    static Profile judged(Profile profile, SealedJson.Verdict verdict, UUID uuid, Path path) {
+        switch (verdict.provenance()) {
+            case TAMPERED -> {
+                ProfileIntegrity.markTampered(uuid, "The advancement profile " + path.getFileName());
+                return profile.asTainted();
             }
-            return new LinkedHashSet<>(result.result().orElse(Data.EMPTY).granted());
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] GlobalAchievementStore: I/O error reading {}: {}",
-                path, e.getMessage());
-            return Set.of();
+            case UNVERIFIED -> {
+                if (profile.granted().isEmpty()) return profile;
+                LOGGER.warn("[DungeonTrain] GlobalAchievementStore: {} has no seal on an install that has "
+                    + "sealed before; its {} advancement(s) are kept but not vouched for.",
+                    path.getFileName(), profile.granted().size());
+                Set<ResourceLocation> absorbed = new LinkedHashSet<>(profile.absorbed());
+                absorbed.addAll(profile.granted());
+                return new Profile(Set.of(), absorbed, false);
+            }
+            default -> {
+                if (verdict.tainted()) {
+                    ProfileIntegrity.markTampered(uuid, "The advancement profile " + path.getFileName());
+                    return profile.asTainted();
+                }
+                return profile;
+            }
         }
     }
 
@@ -219,27 +303,50 @@ public final class GlobalAchievementStore {
      * @return {@code true} when the profile actually changed.
      */
     public static synchronized boolean append(UUID playerUuid, String partitionKey, ResourceLocation advancement) {
-        Set<ResourceLocation> current = read(playerUuid, partitionKey);
-        if (!current.add(advancement)) return false;
-        store(new Key(playerUuid, partitionKey), current);
-        return true;
+        return appendAll(playerUuid, partitionKey, List.of(advancement)) > 0;
     }
 
     /**
-     * Append every advancement in {@code advancements} not already present, in a single
-     * read-modify-write. Used by the login back-fill that absorbs a world's already-earned
-     * advancements into the cross-world store — one write, not N, and none when nothing new is added.
+     * Append every advancement in {@code advancements} not already present as a live earn, in a
+     * single read-modify-write.
      *
      * @return the number of ids actually added (0 when all were already present).
      */
     public static synchronized int appendAll(UUID playerUuid, String partitionKey,
                                              Collection<ResourceLocation> advancements) {
         if (advancements.isEmpty()) return 0;
-        Set<ResourceLocation> current = read(playerUuid, partitionKey);
-        int before = current.size();
-        current.addAll(advancements);
-        int added = current.size() - before;
-        if (added > 0) store(new Key(playerUuid, partitionKey), current);
+        Key key = new Key(playerUuid, partitionKey);
+        Profile current = cached(key);
+        Set<ResourceLocation> granted = new LinkedHashSet<>(current.granted());
+        int before = granted.size();
+        for (ResourceLocation id : advancements) {
+            if (!current.absorbed().contains(id)) granted.add(id);
+        }
+        int added = granted.size() - before;
+        if (added > 0) store(key, current.withGranted(granted));
+        return added;
+    }
+
+    /**
+     * Append every advancement in {@code advancements} the profile does not hold yet as
+     * <em>absorbed</em>: present, replayed, but not vouched for. Used by the login back-fill that
+     * takes a world's already-earned advancements into the cross-world store, since that world's
+     * advancement file is as editable as this one.
+     *
+     * @return the number of ids actually added.
+     */
+    public static synchronized int appendAllAbsorbed(UUID playerUuid, String partitionKey,
+                                                     Collection<ResourceLocation> advancements) {
+        if (advancements.isEmpty()) return 0;
+        Key key = new Key(playerUuid, partitionKey);
+        Profile current = cached(key);
+        Set<ResourceLocation> absorbed = new LinkedHashSet<>(current.absorbed());
+        int before = absorbed.size();
+        for (ResourceLocation id : advancements) {
+            if (!current.granted().contains(id)) absorbed.add(id);
+        }
+        int added = absorbed.size() - before;
+        if (added > 0) store(key, current.withAbsorbed(absorbed));
         return added;
     }
 
@@ -276,9 +383,12 @@ public final class GlobalAchievementStore {
     }
 
     private static boolean removeFrom(Key key, ResourceLocation advancement) {
-        Set<ResourceLocation> current = new LinkedHashSet<>(cached(key));
-        if (!current.remove(advancement)) return false;
-        store(key, current);
+        Profile current = cached(key);
+        Set<ResourceLocation> granted = new LinkedHashSet<>(current.granted());
+        Set<ResourceLocation> absorbed = new LinkedHashSet<>(current.absorbed());
+        boolean removed = granted.remove(advancement) | absorbed.remove(advancement);
+        if (!removed) return false;
+        store(key, new Profile(granted, absorbed, current.tainted()));
         return true;
     }
 
@@ -288,13 +398,14 @@ public final class GlobalAchievementStore {
      * login replay in {@code AchievementEvents} has nothing left to replay.
      *
      * <p>Queued writes land first and the player's cache is dropped, so neither can bring a deleted
-     * file back.</p>
+     * file back. A taint caught in one of these files goes with it.</p>
      *
      * @return {@code true} when a file was actually removed.
      */
     public static synchronized boolean deleteFor(UUID playerUuid) throws IOException {
         flush();
         evict(playerUuid);
+        ProfileIntegrity.clear(playerUuid);
         // Both addresses: a legacy copy the migration had to leave behind would otherwise survive
         // the reset and reappear as soon as the new file was gone.
         boolean removed = false;
@@ -309,38 +420,41 @@ public final class GlobalAchievementStore {
     // ---------------- Cache + background writer ----------------
 
     /** The partition's own file contents, loaded from disk on first use and cached after that. */
-    private static Set<ResourceLocation> cached(Key key) {
+    private static Profile cached(Key key) {
         return CACHE.computeIfAbsent(key, k -> {
-            Set<ResourceLocation> pending = PENDING.get(k);
-            return pending != null ? pending : freeze(readFile(resolver.apply(k.uuid(), k.partition())));
+            Profile pending = PENDING.get(k);
+            if (pending != null) return pending;
+            Profile loaded = readFile(resolver.apply(k.uuid(), k.partition()), k.uuid(), k.partition());
+            // A freshly caught edit is written straight back with the taint under the seal, so the
+            // mark survives even if nothing else is ever earned on this profile.
+            if (loaded.tainted()) {
+                PENDING.put(k, loaded);
+                WRITER.execute(() -> writePending(k));
+            }
+            return loaded;
         });
     }
 
-    /** Make {@code granted} the partition's contents now, and queue it for disk. */
-    private static void store(Key key, Set<ResourceLocation> granted) {
-        Set<ResourceLocation> snapshot = freeze(granted);
-        CACHE.put(key, snapshot);
+    /** Make {@code profile} the partition's contents now, and queue it for disk. */
+    private static void store(Key key, Profile profile) {
+        CACHE.put(key, profile);
         // Only the newest snapshot is kept: a burst of earns queues several tasks, the first writes
         // the final state and the rest find nothing left to do.
-        PENDING.put(key, snapshot);
+        PENDING.put(key, profile);
         WRITER.execute(() -> writePending(key));
     }
 
     private static void writePending(Key key) {
-        Set<ResourceLocation> snapshot = PENDING.get(key);
+        Profile snapshot = PENDING.get(key);
         if (snapshot == null) return;
         try {
-            writeAtomic(resolver.apply(key.uuid(), key.partition()), snapshot);
+            writeAtomic(resolver.apply(key.uuid(), key.partition()), key.uuid(), key.partition(), snapshot);
         } catch (RuntimeException e) {
             LOGGER.error("[DungeonTrain] GlobalAchievementStore: background write for {} failed", key, e);
         }
         // Only once it's on disk, and only if no newer snapshot arrived meanwhile — until then a
         // cache miss is served this snapshot rather than the file it is replacing.
         PENDING.remove(key, snapshot);
-    }
-
-    private static Set<ResourceLocation> freeze(Set<ResourceLocation> granted) {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(granted));
     }
 
     /** Wait for every write queued so far to reach the disk. */
@@ -378,6 +492,7 @@ public final class GlobalAchievementStore {
     static void useDirectoryForTests(Path dir) {
         flushAndClearAll();
         resolver = (uuid, partition) -> dir.resolve(fileName(uuid, partition));
+        games.brennan.dungeontrain.data.InstallKey.useDirectoryForTests(dir);
     }
 
     /** Tests only: queue {@code task} on the writer, e.g. to hold it back like a slow disk. */
@@ -389,9 +504,11 @@ public final class GlobalAchievementStore {
     static void resetForTests() {
         flushAndClearAll();
         resolver = GlobalAchievementStore::file;
+        games.brennan.dungeontrain.data.InstallKey.resetForTests();
     }
 
-    static void writeAtomic(Path path, Set<ResourceLocation> granted) {
+    /** Write {@code profile} to {@code path}, sealed for {@code uuid}'s {@code partition}. */
+    static void writeAtomic(Path path, UUID uuid, String partition, Profile profile) {
         try {
             Files.createDirectories(path.getParent());
         } catch (IOException e) {
@@ -400,14 +517,15 @@ public final class GlobalAchievementStore {
             return;
         }
         Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
-        Data data = new Data(List.copyOf(granted));
+        Data data = new Data(List.copyOf(profile.granted()), List.copyOf(profile.absorbed()));
         var result = Data.CODEC.encodeStart(JsonOps.INSTANCE, data);
         if (result.error().isPresent()) {
             LOGGER.error("[DungeonTrain] GlobalAchievementStore: encode failed: {}",
                 result.error().get().message());
             return;
         }
-        JsonElement element = result.result().orElseThrow();
+        JsonObject element = SealedJson.seal(result.result().orElseThrow().getAsJsonObject(),
+            SealedJson.scope(SEAL_STORE, uuid, partition), profile.tainted());
         try (Writer writer = Files.newBufferedWriter(tmp)) {
             writer.write(element.toString());
         } catch (IOException e) {

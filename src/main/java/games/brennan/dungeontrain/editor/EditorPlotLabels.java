@@ -72,8 +72,30 @@ public final class EditorPlotLabels {
         String roomMode,
         String copiesFloorBlock,
         String copiesRoofBlock,
-        int copiesFloorHeight
+        int copiesFloorHeight,
+        String note
     ) {
+        public Label {
+            if (note == null) note = "";
+        }
+
+        /** The shape before plots carried a note line — none. */
+        public Label(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode,
+                     String copiesFloorBlock, String copiesRoofBlock, int copiesFloorHeight) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, copiesFloorBlock, copiesRoofBlock, copiesFloorHeight, "");
+        }
+
+        /** Copy carrying {@code text} as the line drawn under the name. */
+        public Label withNote(String text) {
+            return new Label(worldPos, name, weight, category, modelId, modelName,
+                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
+                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight, text);
+        }
+
         /** The shape before the floor had a depth — one plane. */
         public Label(BlockPos worldPos, String name, int weight, String category,
                      String modelId, String modelName,
@@ -106,7 +128,7 @@ public final class EditorPlotLabels {
         public Label withInPlot(boolean newInPlot) {
             return new Label(worldPos, name, weight, category, modelId, modelName,
                 newInPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
-                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight);
+                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight, note);
         }
     }
 
@@ -241,7 +263,8 @@ public final class EditorPlotLabels {
             int w = weights.weightFor(c.id());
             Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                weights.nameFor(c.id()), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
+                weights.nameFor(c.id()), w, category, c.id(), c.id(), false, p.isUser, p.isImported)
+                .withNote(ContentsPoolNotes.noteFor(c.id())));
         }
         return out;
     }

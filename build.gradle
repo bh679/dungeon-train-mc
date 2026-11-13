@@ -230,11 +230,29 @@ neoForge {
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
             }
+            // Release-build Quick Play block on a dev build: ./gradlew runClient -PquickWorld=… -PquickPlayBlock
+            // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
+            if (project.hasProperty('quickPlayBlock')) {
+                systemProperty 'dungeontrain.quickPlayBlock', 'force'
+            }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
             }
             if (project.hasProperty('tvPoseSwap')) {
                 systemProperty 'dungeontrain.tvPoseSwap', 'true'
+            }
+            // Client-freeze seam: ./gradlew runClient -PquickWorld=… -PclientFreeze=3000 hangs the render
+            // thread once, 10 min 10 s into the world, so client/perf/ClientStallWatchdog's dump can be checked
+            // without typing /dt-client-freeze. Dev builds only (client/perf/ClientFreezeCommand).
+            // -PlagReportClick=send|decline answers the "Lag detected" chat prompt that follows
+            // (client/perf/LagReportPrompt).
+            def clientFreeze = project.findProperty('clientFreeze')
+            if (clientFreeze) {
+                systemProperty 'dungeontrain.clientFreezeMs', clientFreeze.toString()
+            }
+            def lagReportClick = project.findProperty('lagReportClick')
+            if (lagReportClick) {
+                systemProperty 'dungeontrain.lagReportClick', lagReportClick.toString()
             }
             // Muted-launch seam: CLI / agent-driven dev clients start at master volume 0 on every
             // launch (client/DevFirstLaunchDefaults). On automatically when an agent shell launched
@@ -286,6 +304,11 @@ neoForge {
             }
             if (project.hasProperty('updatePollSeconds')) {
                 systemProperty 'dungeontrain.updatePollSeconds', project.property('updatePollSeconds').toString()
+            }
+            // Low-storage warning seam: ./gradlew runClient -PfakeFreeMB=4000 (low) or =800 (critical)
+            // makes DiskSpace report that much free space instead of reading the drive. Dev builds only.
+            if (project.hasProperty('fakeFreeMB')) {
+                systemProperty 'dungeontrain.diskSpace.fakeFreeMB', project.property('fakeFreeMB').toString()
             }
             // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes the
             // DPI Bypass Detect add-on report that process without looking at the real process table, so
@@ -347,6 +370,10 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Low-storage warning seam (see the client run): ./gradlew runServer -PfakeFreeMB=800
+            if (project.hasProperty('fakeFreeMB')) {
+                systemProperty 'dungeontrain.diskSpace.fakeFreeMB', project.property('fakeFreeMB').toString()
+            }
             // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
             // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
             // traingen trace (DevTraceDefaults) left off.
@@ -405,6 +432,11 @@ neoForge {
                 requireQuickWorldSave(file(project.findProperty('serverDir') ?: 'run'), quickWorld.toString())
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
+            }
+            // Release-build Quick Play block on a dev build: ./gradlew runClient -PquickWorld=… -PquickPlayBlock
+            // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
+            if (project.hasProperty('quickPlayBlock')) {
+                systemProperty 'dungeontrain.quickPlayBlock', 'force'
             }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
@@ -680,6 +712,16 @@ dependencies {
         implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
     }
 
+    // Sable Mob Paths — our clean-room mob pathing across sub-levels (see gradle.properties). Yields to
+    // Sable Pathfinder at load, so -PnoSablePathfinder is what exercises it in dev. Shared bh679 Ivy repo.
+    implementation "bh679:sablemobpaths:${sablemobpaths_version}"
+    jarJar(group: 'bh679', name: 'sablemobpaths', version: sablemobpaths_version)
+
+    // Dungeon Totems — cursed Totems of Undying (see gradle.properties). Bundled until its listings are
+    // approved; DT compiles against its API only through compat/DungeonTotemsBridge. Shared bh679 Ivy repo.
+    implementation "bh679:dungeontotems:${dungeontotems_version}"
+    jarJar(group: 'bh679', name: 'dungeontotems', version: dungeontotems_version)
+
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
     // except TerraBlender, whose Regions API builds the BoP-only biome source.
@@ -711,6 +753,17 @@ dependencies {
     // its Otherside dimension; DT names its level, biomes and structures by registry id only.
     implementation "maven.modrinth:deeperdarker:${deeperdarker_version}"
 
+    // Luminous Monsters — REQUIRED third-party dep (see gradle.properties). Natural biome-spawned mobs; DT names
+    // them by registry id only.
+    implementation "maven.modrinth:luminous-monsters:${luminous_monsters_version}"
+
+    // Creeper Overhaul + its libraries — REQUIRED third-party deps (see gradle.properties). Biome creepers placed in
+    // carriage rooms; DT names them by registry id only, so nothing compiles against these jars.
+    implementation "maven.modrinth:creeper-overhaul:${creeperoverhaul_version}"
+    implementation "maven.modrinth:geckolib:${geckolib_version}"
+    implementation "maven.modrinth:resourceful-lib:${resourcefullib_version}"
+    implementation "maven.modrinth:resourceful-config:${resourcefulconfig_version}"
+
     // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
     // DT names its entities and items by registry id only.
     implementation "maven.modrinth:piglin-proliferation:${piglinproliferation_version}"
@@ -735,6 +788,12 @@ dependencies {
     // ignores Sable's carriage pose, so on a moving train it names the block behind thin ones (a
     // photo frame reads as the wall). Dev runtime only, so the dev client sees what players see.
     localRuntime "maven.modrinth:jade-sable-compat:${jade_sable_compat_version}"
+
+    // Advancement Plaques + its Iceberg library — OPTIONAL modpack companions. Dev runtime only, so the
+    // dev client shows the Night Crest plaque (mixin/advancementplaques, string targets, no compile dep).
+    // Pinned to the modpack's builds (modpack.config.json → advancement-plaques / iceberg modrinth_version).
+    localRuntime "maven.modrinth:advancement-plaques:${advancement_plaques_version}"
+    localRuntime "maven.modrinth:iceberg:${iceberg_version}"
 
     // Windy: Configurable (client-only visuals for the train wind; see wind/WindServer and the
     // dungeontrain.windy.mixins.json entry in neoforge.mods.toml). Runtime only: the dev client gets the
@@ -1032,6 +1091,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
+        dungeontotems_min_version       : dungeontotems_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
         streamdetect_min_version         : streamdetect_min_version,
         dtmodverify_min_version          : dtmodverify_min_version,
@@ -1069,6 +1129,10 @@ tasks.register('generateModMetadata', ProcessResources) {
         platform_min_version              : platform_min_version,
         // Deeper Darker — floor only.
         deeperdarker_min_version          : deeperdarker_min_version,
+        // Luminous Monsters — floor only.
+        luminous_monsters_min_version     : luminous_monsters_min_version,
+        // Creeper Overhaul — floor only.
+        creeperoverhaul_min_version       : creeperoverhaul_min_version,
         // Piglin Proliferation — floor only.
         piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.

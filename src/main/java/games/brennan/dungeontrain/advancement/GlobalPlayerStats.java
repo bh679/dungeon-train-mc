@@ -9,7 +9,9 @@ import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import games.brennan.dungeonbackup.api.Located;
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.SealedJson;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -21,6 +23,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -73,6 +76,8 @@ public final class GlobalPlayerStats {
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Pre-relocation home, still read while a file is left there. */
     private static final String LEGACY_DIR_NAME = "dungeontrain-stats";
+    static final String SEAL_STORE = "stats";
+    private static final String SEAL_PARTITION = "all";
 
     /**
      * Lifetime damage dealt / taken (health points). Bundled into one nested field so the top-level
@@ -260,6 +265,10 @@ public final class GlobalPlayerStats {
 
     /** In-memory cache. Holds the full {@link Data} record per UUID. */
     private static final Map<UUID, Data> CACHE = new ConcurrentHashMap<>();
+    /** Players whose file had no seal on an install that had sealed before: kept, not vouched for. */
+    private static final Set<UUID> UNVERIFIED = ConcurrentHashMap.newKeySet();
+    /** Players whose file was caught edited: written back with the taint under the seal. */
+    private static final Set<UUID> TAINTED = ConcurrentHashMap.newKeySet();
 
     private GlobalPlayerStats() {}
 
@@ -284,6 +293,12 @@ public final class GlobalPlayerStats {
     // ---- Getters (read disk on first access per UUID) ----
 
     public static long trainTicks(UUID uuid)          { return current(uuid).trainTicks(); }
+
+    /** Were this player's stats read from a file the store could not vouch for? */
+    public static boolean isUnverified(UUID uuid) {
+        current(uuid);
+        return UNVERIFIED.contains(uuid);
+    }
     public static long randomBooksRead(UUID uuid)     { return current(uuid).randomBooksRead(); }
     public static long startingBooksRead(UUID uuid)   { return current(uuid).startingBooksRead(); }
     public static long playersEncountered(UUID uuid)  { return current(uuid).playersEncountered(); }
@@ -467,6 +482,9 @@ public final class GlobalPlayerStats {
      * @return true when a file was actually removed
      */
     public static boolean deleteFor(UUID uuid) throws IOException {
+        UNVERIFIED.remove(uuid);
+        TAINTED.remove(uuid);
+        ProfileIntegrity.clear(uuid);
         CACHE.remove(uuid);
         // Both addresses — a legacy copy left behind by a partial migration must not outlive the
         // reset and reappear.
@@ -509,20 +527,45 @@ public final class GlobalPlayerStats {
     private static Data loadFromDisk(UUID uuid) {
         Path path = file(uuid);
         if (!Files.isRegularFile(path)) return Data.EMPTY;
+        JsonElement raw;
         try (Reader reader = Files.newBufferedReader(path)) {
-            JsonElement element = migrateLegacy(JsonParser.parseReader(reader));
-            var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
-            if (result.error().isPresent()) {
-                LOGGER.warn("[DungeonTrain] GlobalPlayerStats: parse failed for {}: {}",
-                    path, result.error().get().message());
-                return Data.EMPTY;
-            }
-            return result.result().orElse(Data.EMPTY);
-        } catch (IOException e) {
+            raw = JsonParser.parseReader(reader);
+        } catch (IOException | RuntimeException e) {
             LOGGER.warn("[DungeonTrain] GlobalPlayerStats: I/O error reading {}: {}",
                 path, e.getMessage());
             return Data.EMPTY;
         }
+        JsonElement element = migrateLegacy(raw);
+        var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
+        if (result.error().isPresent() || !raw.isJsonObject()) {
+            LOGGER.warn("[DungeonTrain] GlobalPlayerStats: parse failed for {}: {}",
+                path, result.error().map(e -> e.message()).orElse("not an object"));
+            return Data.EMPTY;
+        }
+        Data data = result.result().orElse(Data.EMPTY);
+        // Verified as written, before the legacy migration reshapes it: a migrated file is unsealed.
+        SealedJson.Verdict verdict = SealedJson.verify(raw.getAsJsonObject(), scope(uuid));
+        switch (verdict.provenance()) {
+            case TAMPERED -> taint(uuid, path, data);
+            case UNVERIFIED -> {
+                UNVERIFIED.add(uuid);
+                LOGGER.warn("[DungeonTrain] GlobalPlayerStats: {} has no seal on an install that has sealed "
+                    + "before; its totals are kept but not vouched for.", path.getFileName());
+            }
+            default -> { if (verdict.tainted()) taint(uuid, path, data); }
+        }
+        return data;
+    }
+
+    /** The file was caught edited: mark the player and write the taint back under the seal. */
+    private static void taint(UUID uuid, Path path, Data data) {
+        TAINTED.add(uuid);
+        ProfileIntegrity.markTampered(uuid, "The lifetime stats " + path.getFileName());
+        saveToDisk(uuid, data);
+    }
+
+    private static String scope(UUID uuid) {
+        return SealedJson.scope(SEAL_STORE, uuid, SEAL_PARTITION);
     }
 
     private static synchronized void saveToDisk(UUID uuid, Data data) {
@@ -541,7 +584,8 @@ public final class GlobalPlayerStats {
                 result.error().get().message());
             return;
         }
-        JsonElement element = result.result().orElseThrow();
+        JsonObject element = SealedJson.seal(result.result().orElseThrow().getAsJsonObject(),
+            scope(uuid), TAINTED.contains(uuid));
         try (Writer writer = Files.newBufferedWriter(tmp)) {
             writer.write(element.toString());
         } catch (IOException e) {

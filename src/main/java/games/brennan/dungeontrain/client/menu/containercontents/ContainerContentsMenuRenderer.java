@@ -17,6 +17,8 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import games.brennan.dungeontrain.editor.BookEnchants;
+import games.brennan.dungeontrain.editor.ContainerContentsEnchants;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -103,6 +105,13 @@ public final class ContainerContentsMenuRenderer {
      */
     static final double SEARCH_COLUMN_WIDTH = 1.9;
 
+    /** Count cell text: {@code x5} when the stack rolls from 1, {@code x2-5} once a min is set. */
+    static String countLabel(ContainerContentsSyncPacket.Entry entry) {
+        return entry.minCount() > 1
+            ? "x" + entry.minCount() + "-" + entry.count()
+            : "x" + entry.count();
+    }
+
     /** True when the menu currently has a link sub-row to draw. */
     static boolean hasLinkRow() {
         return ContainerContentsMenu.linkedPrefabId() != null;
@@ -185,6 +194,9 @@ public final class ContainerContentsMenuRenderer {
     record PanelSize(double panelW, double panelH) {}
 
     static PanelSize panelSize() {
+        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.BOOK_ENCHANTS) {
+            return BookEnchantListPanel.size();
+        }
         if (ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ROOT) {
             List<String> filtered = ContainerContentsMenu.filteredItemIds();
             int maxRows = ContainerContentsMenu.ROWS_PER_COLUMN * 4;
@@ -214,6 +226,8 @@ public final class ContainerContentsMenuRenderer {
                           @Nullable PanelIconBatch icons) {
         if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
             drawRoot(ps, buffer, font, icons);
+        } else if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.BOOK_ENCHANTS) {
+            BookEnchantListPanel.draw(ps, buffer, font);
         } else {
             drawSearch(ps, buffer, font);
         }
@@ -385,7 +399,7 @@ public final class ContainerContentsMenuRenderer {
             int countTint = countHover ? 0xC0FFCC33 : 0x40FFFFFF;
             drawQuad(ps, buffer, countL + 0.005, rowBottom + 0.005,
                 countR - 0.005, rowTop - 0.005, countTint);
-            drawCenteredText(ps, buffer, font, "x" + entry.count(),
+            drawCenteredText(ps, buffer, font, countLabel(entry),
                 (countL + countR) / 2.0, rowCY,
                 countHover ? 0xFF000000 : 0xFFFFFFFF);
 
@@ -432,7 +446,8 @@ public final class ContainerContentsMenuRenderer {
             boolean showDur = layout.showDur[i];
             boolean showEnch = layout.showEnch[i];
             boolean showScale = layout.showScale[i];
-            if (!showDur && !showEnch && !showScale) continue;
+            boolean showBookEnch = layout.showBookEnch[i];
+            if (!layout.hasSubRow(i)) continue;
 
             double subTop = rowBottom;
             double subBottom = subTop - SUB_ROW_HEIGHT;
@@ -451,19 +466,53 @@ public final class ContainerContentsMenuRenderer {
             double ench2L = ench1R;
             double ench2R = colXR - 0.01;
 
+            if (layout.showContents[i]) {
+                // Shulker box: one wide cell naming the loot prefab it is packed from. Click while holding
+                // a loot prefab to pack it from that prefab, with anything else to empty it.
+                boolean contentsHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_CONTENTS && hovered.index() == i;
+                boolean packed = entry.contents() != null && !entry.contents().isEmpty();
+                int contentsTint = contentsHover
+                    ? (packed ? 0xC0CC99FF : 0xC0AAAAAA)
+                    : (packed ? 0x73A06EDC : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    ench2R - 0.005, subTop - 0.005, contentsTint);
+                drawCenteredText(ps, buffer, font,
+                    packed ? MenuLang.t("container.contents", entry.contents()) : MenuLang.t("container.contents_empty"),
+                    (dur1L + ench2R) / 2.0, subCY,
+                    contentsHover ? 0xFF000000 : 0xFFFFFFFF);
+                continue;
+            }
+
             if (showScale) {
                 // Random-potion placeholder: scale-with-distance toggle. Potions are
                 // neither damageable nor enchantable, so this is the sub-row's only cell.
+                // Placeholders that can roll Luck give its right quarter to the Luck toggle.
+                boolean showLuck = hasLuckToggle(entry.itemId());
+                double scaleR = showLuck ? dur1R : dur2R;
                 boolean scaleHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE && hovered.index() == i;
                 boolean scaleOn = entry.scaleWithDistance();
                 int scaleTint = scaleHover
                     ? (scaleOn ? 0xC0FFCC99 : 0xC0AAAAAA)
                     : (scaleOn ? 0x60CC8833 : 0x40555555);
                 drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
-                    dur2R - 0.005, subTop - 0.005, scaleTint);
+                    scaleR - 0.005, subTop - 0.005, scaleTint);
                 drawCenteredText(ps, buffer, font, MenuLang.t(scaleOn ? "container.scale_on" : "container.scale_off"),
-                    (dur1L + dur2R) / 2.0, subCY,
+                    (dur1L + scaleR) / 2.0, subCY,
                     scaleHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                if (showLuck) {
+                    // Luck toggle: off leaves Potion of Luck and Luck II out of the pick.
+                    boolean luckHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_LUCK_TOGGLE && hovered.index() == i;
+                    boolean luckOn = entry.includeLuck();
+                    int luckTint = luckHover
+                        ? (luckOn ? 0xC066FF99 : 0xC0AAAAAA)
+                        : (luckOn ? 0x6033CC66 : 0x40555555);
+                    drawQuad(ps, buffer, dur2L + 0.005, subBottom + 0.005,
+                        dur2R - 0.005, subTop - 0.005, luckTint);
+                    drawCenteredText(ps, buffer, font, MenuLang.t(luckOn ? "container.luck_on" : "container.luck_off"),
+                        (dur2L + dur2R) / 2.0, subCY,
+                        luckHover ? 0xFF000000 : 0xFFFFFFFF);
+                }
 
                 // Bottle form cell: Any / Potion / Splash / Lingering, click to step.
                 boolean formHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_POTION_FORM && hovered.index() == i;
@@ -501,7 +550,44 @@ public final class ContainerContentsMenuRenderer {
                     durChanceHover ? 0xFF000000 : 0xFFFFFFFF);
             }
 
-            if (showEnch) {
+            if (showBookEnch) {
+                // A book's random-enchantment range. Off, it takes the left half (books have no
+                // durability cells). On, it decides the book's enchantments, so the ordinary toggle
+                // and % give way to its Level and List cells.
+                boolean bookHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH && hovered.index() == i;
+                boolean bookOn = entry.hasRandomBookEnchants();
+                double bookR = bookOn ? dur1R : dur2R;
+                int bookTint = bookHover
+                    ? (bookOn ? 0xC0CCAAFF : 0xC0AAAAAA)
+                    : (bookOn ? 0x806A4A9F : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    bookR - 0.005, subTop - 0.005, bookTint);
+                String range = entry.bookEnchMin() == entry.bookEnchMax()
+                    ? Integer.toString(entry.bookEnchMax())
+                    : entry.bookEnchMin() + "-" + entry.bookEnchMax();
+                drawCenteredText(ps, buffer, font,
+                    bookOn ? MenuLang.t("container.book_ench", range) : MenuLang.t("container.book_ench_off"),
+                    (dur1L + bookR) / 2.0, subCY,
+                    bookHover ? 0xFF000000 : 0xFFFFFFFF);
+                if (bookOn) {
+                    boolean levelHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_LEVEL && hovered.index() == i;
+                    drawQuad(ps, buffer, dur2L + 0.005, subBottom + 0.005,
+                        dur2R - 0.005, subTop - 0.005, levelHover ? 0xC0CCAAFF : 0x806A4A9F);
+                    drawCenteredText(ps, buffer, font,
+                        MenuLang.t("container.book_level", BookEnchants.levelLabel(entry.bookLevelMin(), entry.bookLevelMax())
+                            .replace("max", MenuLang.t("container.book_level_max"))),
+                        (dur2L + dur2R) / 2.0, subCY, levelHover ? 0xFF000000 : 0xFFFFFFFF);
+                    boolean listHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_LIST && hovered.index() == i;
+                    boolean undecided = BookEnchantListPanel.hasUndecided(entry);
+                    drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
+                        ench2R - 0.005, subTop - 0.005,
+                        listHover ? 0xC0FFCC33 : undecided ? 0xA0B07A10 : 0x6033AACC);
+                    drawCenteredText(ps, buffer, font, BookEnchantListPanel.summary(entry) + " >",
+                        (ench1L + ench2R) / 2.0, subCY, listHover ? 0xFF000000 : 0xFFFFFFFF);
+                }
+            }
+
+            if (showEnch && !(showBookEnch && entry.hasRandomBookEnchants())) {
                 // Random-enchantment toggle.
                 boolean enchTogHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_RAND_ENCH_TOGGLE && hovered.index() == i;
                 boolean enchOn = entry.randomEnchantment();
@@ -544,11 +630,12 @@ public final class ContainerContentsMenuRenderer {
      * is.</p>
      */
     record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, boolean[] showScale,
+                       boolean[] showBookEnch, boolean[] showContents,
                        double gridHeight, double[] colWidth, double[] colLeft, double panelWidth) {
 
         /** True when entry {@code i} draws a sub-row (any of its per-entry options applies). */
         boolean hasSubRow(int i) {
-            return showDur[i] || showEnch[i] || showScale[i];
+            return showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i] || showContents[i];
         }
     }
 
@@ -559,6 +646,8 @@ public final class ContainerContentsMenuRenderer {
         boolean[] showDur = new boolean[n];
         boolean[] showEnch = new boolean[n];
         boolean[] showScale = new boolean[n];
+        boolean[] showBookEnch = new boolean[n];
+        boolean[] showContents = new boolean[n];
         double[] colTotalH = new double[cols];
         // Extra width each column needs for the longest name revealed inside it.
         double[] colNameW = new double[cols];
@@ -569,11 +658,15 @@ public final class ContainerContentsMenuRenderer {
             showDur[i] = isDamageable(id);
             showEnch[i] = isEnchantable(id);
             showScale[i] = isRandomPotionPlaceholder(id);
-            double h = (showDur[i] || showEnch[i] || showScale[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
+            showBookEnch[i] = isBook(id);
+            showContents[i] = isShulkerBox(id);
+            double h = (showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i] || showContents[i])
+                ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
             if (ContainerContentsMenu.isExpanded(i)) {
-                double nameW = font.width(shortenItemLabel(id)) * TEXT_SCALE + NAME_PAD;
+                // The full row label: a book title or enchantments widen it past the item name.
+                double nameW = font.width(entryLabel(entries.get(i))) * TEXT_SCALE + NAME_PAD;
                 colNameW[col] = Math.max(colNameW[col], nameW);
             }
         }
@@ -599,7 +692,14 @@ public final class ContainerContentsMenuRenderer {
         }
         double[] colLeft = new double[cols];
         for (int c = 1; c < cols; c++) colLeft[c] = colLeft[c - 1] + colWidth[c - 1];
-        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, gridH, colWidth, colLeft, sumW);
+        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, showBookEnch, showContents, gridH, colWidth,
+            colLeft, sumW);
+    }
+
+    /** True for a plain or enchanted book: its row offers the random-enchantment range. */
+    static boolean isBook(String itemId) {
+        ResourceLocation id = ResourceLocation.tryParse(itemId);
+        return id != null && ContainerContentsEnchants.isBookId(id);
     }
 
     /**
@@ -637,12 +737,29 @@ public final class ContainerContentsMenuRenderer {
      * {@code random_bad_potion} placeholders — the only entries that carry the
      * scale-with-distance toggle.
      */
+    /** A shulker box of any colour: its sub-row is the Contents cell. */
+    static boolean isShulkerBox(String itemId) {
+        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(itemId);
+        return id != null && games.brennan.dungeontrain.editor.ContainerContentsEntry.isShulkerBox(id);
+    }
+
     static boolean isRandomPotionPlaceholder(String itemId) {
         Item item = resolveItem(itemId);
         return item != null
             && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
                 || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get()
                 || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_BAD_POTION.get());
+    }
+
+    /**
+     * True for the placeholders whose pick can hold Potion of Luck ({@code random_potion} /
+     * {@code random_good_potion}) — the entries that carry the Luck toggle.
+     */
+    static boolean hasLuckToggle(String itemId) {
+        Item item = resolveItem(itemId);
+        return item != null
+            && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get());
     }
 
     private static Item resolveItem(String itemId) {
@@ -718,7 +835,7 @@ public final class ContainerContentsMenuRenderer {
     /**
      * Row label for an entry: the short item id, plus the stored potion in parentheses for a
      * potion entry so "potion (healing)" and "potion (water)" are told apart at a glance, and the
-     * stored book's title for a signed-book entry.
+     * stored book's title for a signed-book entry (or its enchantments for an enchanted-book one).
      */
     static String entryLabel(ContainerContentsSyncPacket.Entry entry) {
         String base = shortenItemLabel(entry.itemId());

@@ -9,13 +9,26 @@ release workflow then marks the shipped entries released.
 This replaces leaning on GitHub's raw `generate-notes` commit diff for player-facing notes — the
 ledger captures intent at the moment a feature ships.
 
+## Two places: `changelog.json` (released) + `unreleased/<id>.json`
+
+Released entries live in `changelog.json`. Each **unreleased** entry is its own file,
+`unreleased/<id>.json`, holding one entry object. A PR adds a new file and never edits
+`changelog.json`, so open PRs don't conflict with each other or with a release marking entries
+released. That matters on GitHub, where a conflicting PR gets no CI run at all.
+
+Every script reads and writes through `changelog_io.load_changelog` / `save_changelog`, which
+present one merged `entries` list (ledger first, then the unreleased files ordered by `date`, `id`)
+and split it back on save. Outside readers of `changelog.json` (the in-game Versions page and
+update notifier, the web update page) only use released entries, so they see no difference.
+Never hand-edit either place; use the scripts below.
+
 ## Flow
 
 ```
 Gate 3 merge (agent, on the feature branch)
    └─ scripts/release-notes/append-entry.py
-        appends a curated entry to changelog.json (released:false, version = post-merge mod_version)
-        → lands in the PR diff, reviewed at the gate, squash-merged atomically
+        writes unreleased/<id>.json (released:false, version = post-merge mod_version)
+        → one new file in the PR diff, reviewed at the gate, squash-merged atomically
 
 Release (agent → CLAUDE.md "Releasing")
    ├─ scripts/release-notes/render-unreleased.py   → Markdown of every released:false entry
@@ -24,16 +37,16 @@ Release (agent → CLAUDE.md "Releasing")
 
 release.yml (CI, on success, only when auto == false)
    └─ scripts/release-notes/mark-released.py --released-in vX.Y.0
-        flips released:true + stamps released_in/released_at
+        flips released:true + stamps released_in/released_at, moving each shipped
+        entry from unreleased/<id>.json into changelog.json
         → commits "chore(release-notes): mark vX.Y.0 released [skip ci]" to main
 ```
 
 ## The `released` flag is the boundary (not version numbers)
 
 Inclusion in a release is governed by the per-entry **`released`** flag, never by comparing
-version numbers. Back-to-back Gate-3 merges can share one `X.Y.0` (`version-bump.yml` skips the
-bump when PATCH==0), so a version-comparison boundary would wrongly treat a feature merged right
-after a release as already-released. The flag is unambiguous. The `version` field is descriptive
+version numbers. An entry's `version` is computed when it is logged, and main may move before the
+PR merges, so a version-comparison boundary would misplace entries merged around a release. The flag is unambiguous. The `version` field is descriptive
 metadata and drives grouping in the rendered notes.
 
 ## Cascade interaction
@@ -43,6 +56,9 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 "unreleased" therefore means **since the last *real* (operator-dispatched) release**.
 
 ## Entry shape
+
+`changelog.json` holds `{"entries": [ … ]}`; an `unreleased/<id>.json` file holds one bare entry
+object, with `id` matching the file name.
 
 ```json
 {
@@ -73,9 +89,12 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `tags` | yes | Player-facing classification the in-game Versions page filters by, chosen by the agent from context (see [Tags](#tags)). The type-derived tag is always present (chore/ci/refactor/docs/test derive `internal`), so it is never empty. |
 | `title` | yes | Short headline. |
 | `summary` | yes | Player-facing prose. |
-| `major` | no | `true` makes the entry a major release: it renders first (title as a `#` heading, photo, then `description` — or, without one, the summary plus highlights under "Other significant updates"), above the tag line, so it opens the release body and Discord post. The web update page (brennan.games/dungeontrain/update/) shows it as a headline card with the photo. Log it with `append-entry.py --major`. |
+| `major` | no | `true` makes the entry a major release: it renders first (title as a `#` heading, photo, then `description` — or, without one, the summary plus highlights under "Other significant updates"), above the tag line, so it opens the release body and Discord post. The web update page (dungeon.training/update/) shows it as a headline card with the photo. Log it with `append-entry.py --major`. |
 | `description` | no | Major release only: markdown (headings, `-` bullets, `**bold**`, `*italic*`, `[links](https://…)`) shown under the title in place of summary + highlights. `--description-file` on `append-entry.py` / `set-major.py`. |
 | `image` | no | Major release only: `https://` URL of the release photo. Attach or change it any time, even after the release shipped: `set-major.py --id <entry> --image <url>` (`--clear-image` removes it). |
+| `video` | no | Major release only: `https://` URL of an `.mp4` clip with sound, at most 30 s. The relay builds the update's Facebook, Instagram (feed and story) and TikTok videos from it, keeping its sound, with the release's song 10 dB under it; without it they loop the `image`. `set-major.py --id <entry> --video <url>` (`--clear-video` removes it). |
+| `video_cover` | no | With `video`: the second of the clip whose frame is the posts' cover (`--video-cover 4.5`); without it, 0.5 s in. |
+| `mentions` | no | Major release only: `{"<link text>": {"instagram": "@handle", "tiktok": "@handle"}}`. The relay's Facebook, Instagram and TikTok captions carry the whole `description` as plain text (the summary when it would pass the platform's limit). Instagram and TikTok can't hold links, so a description link shows its text there, or the handle given for that text; Facebook keeps "text (url)". `set-major.py --id <entry> --mention AshSeven instagram @ashyseven7` (repeat; `--clear-mentions` removes them). |
 | `milestone` | no | Major release only: `true` for a moment rather than an update (a store launch, an approval). The update page labels its card "Milestone". `set-major.py --id <entry> --milestone` (`--not-milestone` drops it). |
 | `notable` | no | Major release only: `true` for the middle tier between a major and a minor update. It still leads the release notes and posts to Discord #highlights, but the update page shows it as a smaller, milestone-sized "Notable update" card (green, with its version and changes). Never with `milestone`. Log it with `append-entry.py --notable` (implies `--major`), or `set-major.py --id <entry> --notable` (`--not-notable` makes it a full major again). |
 | `highlights` | no | Bullet points. |
@@ -85,7 +104,8 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `released` | yes | `false` until shipped; flipped by `release.yml`. |
 | `released_in` / `released_at` | no | Stamped on release (tag + UTC timestamp). |
 
-Validated by `schema/changelog.schema.json` (JSON Schema 2020-12).
+Validated by `schema/changelog.schema.json` (JSON Schema 2020-12); an unreleased file is one
+`$defs/entry`.
 
 ## Tags
 
@@ -163,10 +183,10 @@ topical tags.
 
 | Script | When | What |
 |---|---|---|
-| `append-entry.py` | Gate 3 (agent) | Append one curated entry. Computes `version` from `gradle.properties` + `date`; a tag decision is mandatory — `--tag` (repeatable) or `--no-topical-tags`; `--tag-guide` prints the questions. |
+| `append-entry.py` | Gate 3 (agent) | Write one curated entry to `unreleased/<id>.json` (touches nothing else). Computes `version` from `gradle.properties` + `date`; a tag decision is mandatory — `--tag` (repeatable) or `--no-topical-tags`; `--tag-guide` prints the questions. |
 | `set-tags.py` | Correction pass | Replace the topical tags of listed entries from a reviewed `{id: [tags]}` mapping. `--dry-run` reports, `--show-changes` lists moves, `--report` prints current counts. |
 | `render-unreleased.py` | Release (agent) | Print Markdown of all `released:false` entries, grouped by version (newest first). Empty output when nothing is unreleased. |
-| `mark-released.py` | Release (CI) | Flip every `released:false` entry to released; stamp the tag + timestamp. |
+| `mark-released.py` | Release (CI) | Flip the release's `released:false` entries to released; stamp the tag + timestamp; move them from `unreleased/` into `changelog.json`. Run by `mark-released-and-push.sh`, which snapshots the release commit's whole release-notes dir (`--release-ledger`). |
 | `notify-highlights.py` | Release (CI) | Post each `major` entry the tag shipped to Discord #highlights as a plain markdown message (`# title`, description, update-page link, photo uploaded as an attachment — its URL only if the file can't be loaded) via the `DISCORD_HIGHLIGHTS_WEBHOOK_URL` secret. Real releases only; skips when unset. `--entry <id>` re-posts one; `DRY_RUN=1` prints the payload. |
 
 ```bash
@@ -184,7 +204,8 @@ python3 scripts/release-notes/append-entry.py \
 python3 scripts/release-notes/render-unreleased.py
 ```
 
-Path env overrides (used by the tests): `CHANGELOG_FILE`, `GRADLE_PROPERTIES_FILE`.
+Path env overrides (used by the tests): `CHANGELOG_FILE`, `CHANGELOG_ENTRIES_DIR` (default:
+`unreleased/` beside the changelog file), `GRADLE_PROPERTIES_FILE`.
 
 Tests: `python3 scripts/release-notes/test_release_notes.py` (stdlib + optional `jsonschema`;
 local-only, not CI-gated — matching the auto-release test convention).

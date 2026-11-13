@@ -3562,8 +3562,9 @@ public final class TrainCarriageAppender {
         // caused once a long ride exceeded it.
         boolean resumeHold = isResumeHoldActive(trainId, level.getGameTime());
         // Tell Sable's own wake-on-chunk-load which groups this train wants this tick; one
-        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto).
-        if (playerNear && !resumeHold && nearMinPIdx <= nearMaxPIdx && !train.isEmpty()) {
+        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto). A resume or
+        // save hold keeps this on: lifting it woke every group waiting on it, at each autosave.
+        if (HeldGroupWakeVeto.windowApplies(playerNear, nearMinPIdx, nearMaxPIdx, train.isEmpty())) {
             int groupSize = train.get(0).provider().getGroupSize();
             HeldGroupWakeVeto.record(trainId, nearMinPIdx, nearHoldTop(nearMaxPIdx, groupSize),
                 groupSize, level.getGameTime());
@@ -5968,6 +5969,32 @@ public final class TrainCarriageAppender {
         NearestGroup nearest = nearestGroup(train, player.getX(), player.getY(), player.getZ());
         if (nearest == null) return null;
         return pIdxWithinGroup(nearest.carriage(), player, dims, groupSize);
+    }
+
+    /** How far outside a group's bounds a player still counts as in it, squared (8 blocks). */
+    private static final double IN_GROUP_RADIUS_SQ = 8.0 * 8.0;
+
+    /**
+     * The carriage group {@code player} is in or standing beside (within 8 blocks of its bounds), on
+     * any train in {@code level}, or {@code null} when there is none.
+     */
+    public static Trains.Carriage groupAt(ServerLevel level, ServerPlayer player) {
+        NearestGroup nearest = nearestGroup(Trains.allCarriages(level), player.getX(), player.getY(), player.getZ());
+        return nearest == null || nearest.distSq() > IN_GROUP_RADIUS_SQ ? null : nearest.carriage();
+    }
+
+    /**
+     * The absolute index of the carriage {@code player} is in, read in its own group's frame (see
+     * {@link #pIdxWithinGroup}); clamped to the group, so a player on a pad gets the carriage beside it.
+     * {@code null} when they are on no train.
+     */
+    public static Integer carriageIndexAt(ServerLevel level, ServerPlayer player, CarriageDims dims) {
+        Trains.Carriage group = groupAt(level, player);
+        if (group == null) return null;
+        int groupSize = Math.max(1, group.provider().getGroupSize());
+        int pIdx = pIdxWithinGroup(group, player, dims, groupSize);
+        int anchor = group.provider().getPIdx();
+        return Math.max(anchor, Math.min(anchor + groupSize - 1, pIdx));
     }
 
     /** A group and the squared world-AABB distance from a point to it ({@code 0} = inside). */

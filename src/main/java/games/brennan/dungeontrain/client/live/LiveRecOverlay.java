@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.audio.LiveMic;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -10,6 +12,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -45,6 +48,17 @@ import java.util.function.Consumer;
  * <p>While the stream carries on after death ({@link LivePostMortem}) an End Stream button sits right
  * of LIVE. It is drawn in the same pass, so it never reaches the broadcast either; being outside any
  * screen's widget list, its click is caught in {@link #onMousePressed}.</p>
+ *
+ * <p>On a stream that carries a mic track ({@link LiveMic#enabled()}) the mic sits right of LIVE
+ * (End Stream moves right of it): crossed out in red while the mic is off. In play it is a small icon
+ * only; with a screen open, where the mouse can reach it, it is a button that flips the one mic switch,
+ * the Microphone option (Toggle Mic, {@link LiveMicHotkeys}, and the Stream tab flip the same one).
+ * With push to talk set it shows dimmed until the key is held. While the mic is heard it fills with
+ * green from the bottom as loud as the voice is ({@link LiveMic#level()}).</p>
+ *
+ * <p>While the mic is off, a line under LIVE says how to turn it on ({@link MicHint}): for the first
+ * seconds of the stream, and again each time a container screen such as the inventory closes with
+ * the mic still off, since that is where the button is.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -81,8 +95,21 @@ public final class LiveRecOverlay {
     private static final ResourceLocation BUTTON = ResourceLocation.withDefaultNamespace("widget/button");
     private static final ResourceLocation BUTTON_HOVER = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
     private static final int END_TEXT = 0xFFFF5555;
+    /** The mic button: a square vanilla button right of LIVE, the mic sprite inside. */
+    static final int MIC_SIZE = 20;
+    static final int MIC_ICON = 16;
+    /** The mic's state in play, with no screen open: just the sprite, smaller, nothing to press. */
+    static final int MIC_HUD_ICON = 10;
+    /** The level fill's tint over the white mic: a clear green, the outline stays dark. */
+    private static final float LEVEL_R = 0.33f;
+    private static final float LEVEL_G = 1f;
+    private static final float LEVEL_B = 0.33f;
+    private static final ResourceLocation MIC_ON = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_on");
+    private static final ResourceLocation MIC_OFF = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_off");
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
+    /** The "how to turn the mic on" line under LIVE: a soft yellow, like a hotbar hint. */
+    private static final int HINT = 0xFFFFE680;
     /** The corner mask as runs of set pixels, {lx0, lx1, ly} in local space — worked out once, not per frame. */
     static final int[][] CORNER_SPANS = spans(CORNER_LEN, CORNER_LEN, LiveRecOverlay::inCorner);
     /** The eye's runs, same layout. */
@@ -164,18 +191,140 @@ public final class LiveRecOverlay {
         g.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
         g.drawString(font, LABEL, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
+        if (LiveMic.enabled()) {
+            // A button only where a mouse can press it; in play, a small state icon.
+            if (Minecraft.getInstance().screen != null) micButton(g, font);
+            else micIcon(g, font);
+        }
         if (LiveStreamController.get().postMortem()) endStreamButton(g, font);
         int viewers = LiveStreamController.get().viewerCount();
-        if (viewers >= 0) viewerCount(g, font, left, countTop(font.lineHeight), viewers);
+        int countTop = countTop(font.lineHeight);
+        if (viewers >= 0) viewerCount(g, font, left, countTop, viewers);
+        if (micHintShowing()) micHint(g, font, left, countTop + (viewers >= 0 ? font.lineHeight + COUNT_GAP : 0));
     }
 
-    /** The End Stream button's place: right of LIVE, centred on it. */
+    /** The hint is for a stream with a mic track whose mic is off and not barred, while its window is open. */
+    private static boolean micHintShowing() {
+        if (!LiveMic.enabled() || LiveMic.on() || LiveMic.barred()) return false;
+        return MicHint.showing(System.currentTimeMillis(), LiveStreamController.get().streamStartedMs());
+    }
+
+    private static void micHint(GuiGraphics g, Font font, int left, int top) {
+        g.drawString(font, Component.translatable("gui.dungeontrain.live.mic_hint", LiveMicHotkeys.toggleKeyName()),
+            left, top, HINT, true);
+    }
+
+    /**
+     * When the "how to turn the mic on" line shows: the first {@link #FIRST_MS} of a stream, and
+     * {@link #AFTER_CLOSE_MS} after each container screen closes with the mic still off.
+     */
+    static final class MicHint {
+        static final long FIRST_MS = 8000;
+        static final long AFTER_CLOSE_MS = 8000;
+        private static volatile long until;
+
+        private MicHint() {}
+
+        /** A container screen (the inventory) closed with the mic off: show the line again for a while. */
+        static void screenClosed(long nowMs) {
+            until = nowMs + AFTER_CLOSE_MS;
+        }
+
+        static boolean showing(long nowMs, long streamStartedMs) {
+            return nowMs - streamStartedMs < FIRST_MS || nowMs < until;
+        }
+
+        static void reset() {
+            until = 0;
+        }
+    }
+
+    /** A container screen closing with the mic still off: the hint comes back for a while. */
+    @SubscribeEvent
+    public static void onScreenClosing(ScreenEvent.Closing event) {
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?>)) return;
+        if (!LiveStreamController.get().streaming() || !LiveMic.enabled() || LiveMic.on()) return;
+        MicHint.screenClosed(System.currentTimeMillis());
+    }
+
+    /** Right edge of LIVE. */
+    private static int labelRight(Font font) {
+        return innerLeft() + 2 * DOT_RADIUS + LABEL_GAP + Math.round(font.width(LABEL) * BADGE_SCALE);
+    }
+
+    /** The mic button's place: right of LIVE, centred on it. */
+    static LiveHeadViewer.Box micBox(Font font) {
+        int innerTop = MARGIN + LINE + BADGE_PAD;
+        int textH = Math.round(font.lineHeight * BADGE_SCALE);
+        return new LiveHeadViewer.Box(labelRight(font) + END_GAP, innerTop + (textH - MIC_SIZE) / 2, MIC_SIZE, MIC_SIZE);
+    }
+
+    /** The End Stream button's place: right of LIVE (and of the mic button, when there is one), centred on it. */
     static LiveHeadViewer.Box endStreamBox(Font font) {
         int innerTop = MARGIN + LINE + BADGE_PAD;
         int textH = Math.round(font.lineHeight * BADGE_SCALE);
-        int labelRight = innerLeft() + 2 * DOT_RADIUS + LABEL_GAP + Math.round(font.width(LABEL) * BADGE_SCALE);
+        int left = LiveMic.enabled() ? micBox(font).x() + MIC_SIZE + END_GAP : labelRight(font) + END_GAP;
         int w = font.width(END_STREAM) + 2 * END_PAD_X;
-        return new LiveHeadViewer.Box(labelRight + END_GAP, innerTop + (textH - END_H) / 2, w, END_H);
+        return new LiveHeadViewer.Box(left, innerTop + (textH - END_H) / 2, w, END_H);
+    }
+
+    /** The in-play mic: the sprite alone, beside LIVE, dimmed while push to talk is up. */
+    private static void micIcon(GuiGraphics g, Font font) {
+        LiveHeadViewer.Box b = micBox(font);
+        int x = b.x() + (MIC_SIZE - MIC_HUD_ICON) / 2;
+        int y = b.y() + (MIC_SIZE - MIC_HUD_ICON) / 2;
+        boolean on = LiveMic.on();
+        boolean dim = on && !LiveMic.transmitting();
+        if (dim) g.setColor(1f, 1f, 1f, 0.45f);
+        RenderSystem.enableBlend();
+        g.blitSprite(on ? MIC_ON : MIC_OFF, x, y, MIC_HUD_ICON, MIC_HUD_ICON);
+        if (dim) g.setColor(1f, 1f, 1f, 1f);
+        levelFill(g, x, y, MIC_HUD_ICON);
+    }
+
+    /**
+     * The voice's loudness ({@link LiveMic#level()}) as green rising up the mic sprite from the bottom:
+     * the sprite drawn again, tinted, cut to the filled rows. Only while the mic is heard; off and push
+     * to talk with the key up keep their plain look.
+     */
+    private static void levelFill(GuiGraphics g, int x, int y, int size) {
+        if (!LiveMic.transmitting()) return;
+        int rows = Math.round(LiveMic.level() * size);
+        if (rows <= 0) return;
+        g.enableScissor(x, y + size - rows, x + size, y + size);
+        g.setColor(LEVEL_R, LEVEL_G, LEVEL_B, 1f);
+        RenderSystem.enableBlend();
+        g.blitSprite(MIC_ON, x, y, size, size);
+        g.setColor(1f, 1f, 1f, 1f);
+        g.disableScissor();
+    }
+
+    private static void micButton(GuiGraphics g, Font font) {
+        LiveHeadViewer.Box b = micBox(font);
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth();
+        double my = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
+        boolean hover = mc.screen != null && LiveStreamSettingsButton.contains(b, mx, my);
+        g.blitSprite(hover ? BUTTON_HOVER : BUTTON, b.x(), b.y(), b.w(), b.h());
+        boolean on = LiveMic.on();
+        int inset = (MIC_SIZE - MIC_ICON) / 2;
+        // Push to talk with the key up: on, but not heard, so dimmed.
+        boolean dim = on && !LiveMic.transmitting();
+        if (dim) g.setColor(1f, 1f, 1f, 0.45f);
+        RenderSystem.enableBlend();
+        g.blitSprite(on ? MIC_ON : MIC_OFF, b.x() + inset, b.y() + inset, MIC_ICON, MIC_ICON);
+        if (dim) g.setColor(1f, 1f, 1f, 1f);
+        levelFill(g, b.x() + inset, b.y() + inset, MIC_ICON);
+        if (hover) g.renderTooltip(font, micTooltip(on), (int) mx, (int) my);
+    }
+
+    private static Component micTooltip(boolean on) {
+        // Barred by the relay mid-stream: the icon shows off, and the tip says it is off for this streamer.
+        if (LiveMic.barred()) return Component.translatable("chat.dungeontrain.live.mic_barred");
+        if (!on) return Component.translatable("gui.dungeontrain.live.mic_tip_off");
+        return Component.translatable(LiveFeedClientConfig.micPushToTalk()
+            ? "gui.dungeontrain.live.mic_tip_on_ptt" : "gui.dungeontrain.live.mic_tip_on");
     }
 
     private static void endStreamButton(GuiGraphics g, Font font) {
@@ -194,8 +343,14 @@ public final class LiveRecOverlay {
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         LiveStreamController live = LiveStreamController.get();
-        if (!live.postMortem()) return;
         Minecraft mc = Minecraft.getInstance();
+        if (live.streaming() && LiveMic.enabled()
+            && LiveStreamSettingsButton.contains(micBox(mc.font), event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            LiveMicHotkeys.toggle(LiveMic.Source.INVENTORY);
+            return;
+        }
+        if (!live.postMortem()) return;
         if (!LiveStreamSettingsButton.contains(endStreamBox(mc.font), event.getMouseX(), event.getMouseY())) return;
         event.setCanceled(true);
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));

@@ -117,6 +117,7 @@ final class ThirdPartyMixinTargetsTest {
         assertEquals("bclib", ThirdPartyMixinTargets.libraryOf("org.betterx.bclib.util.StructureErode"));
         assertEquals("bclib", ThirdPartyMixinTargets.libraryOf("org.betterx.bclib.util.MHelper"));
         assertEquals("betterend", ThirdPartyMixinTargets.libraryOf("org.betterx.betterend.world.features.WallScatterFeature"));
+        assertEquals("betternether", ThirdPartyMixinTargets.libraryOf("org.betterx.betternether.entity.EntityNagaProjectile"));
         assertEquals("wover", ThirdPartyMixinTargets.libraryOf("org.betterx.wover.generator.api.biomesource.WoverBiomePicker"));
         assertEquals("terrablender", ThirdPartyMixinTargets.libraryOf("terrablender.api.SurfaceRuleManager"));
         assertEquals("deeperdarker", ThirdPartyMixinTargets.libraryOf("com.kyanite.deeperdarker.content.blocks.OthersidePortalBlock"));

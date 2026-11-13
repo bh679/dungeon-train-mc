@@ -4,6 +4,9 @@ import games.brennan.discordpresence.client.SurveySubmitClientHook;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseChatNotifier;
+import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
+import games.brennan.dungeontrain.client.survey.NpsAiNoteHandler;
+import games.brennan.discordpresence.survey.SurveyRegistry;
 import org.slf4j.Logger;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,9 +16,12 @@ import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import games.brennan.dungeontrain.client.live.FfmpegHint;
 import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
 import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
+import games.brennan.dungeontrain.client.live.LiveChatFlip;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
+import games.brennan.dungeontrain.client.live.LiveReportButton;
 import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
+import games.brennan.dungeontrain.client.perf.LagReportPrompt;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.worldgen.UpsideDownGravity;
@@ -43,8 +49,11 @@ public final class DungeonTrainClient {
         LiveTakeoverOffer.registerClicks();
         LiveTakeoverChat.registerClicks();
         LiveGiftClient.registerClicks();
+        LiveChatFlip.registerClicks();
+        LiveReportButton.registerClicks();
         LiveOptionsCommand.registerClicks();
         LogRequestClient.registerClicks();
+        LagReportPrompt.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
         FfmpegHint.registerClicks();
@@ -69,6 +78,21 @@ public final class DungeonTrainClient {
                 BugResponseChatNotifier.onSurveySubmit(entry, score);
             } catch (Exception ex) {
                 LOGGER.warn("[DungeonTrain] Bug-report chat response failed: {}", ex.toString());
+            }
+            try {
+                if (entry.scaleMax() >= entry.scaleMin() && SurveyRegistry.NPS_ID.equals(entry.id())) {
+                    ModOfTheYearPopupHandler.onNpsAnswered(score);
+                }
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] Recording the NPS answer failed: {}", ex.toString());
+            }
+            try {
+                if (entry.scaleMax() >= entry.scaleMin() && SurveyRegistry.NPS_ID.equals(entry.id())) {
+                    NpsAiNoteHandler.onNpsAnswered(score,
+                            BugResponseChatNotifier.surveyComment(net.minecraft.client.Minecraft.getInstance()));
+                }
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] The NPS AI note failed: {}", ex.toString());
             }
         });
 
@@ -109,5 +133,6 @@ public final class DungeonTrainClient {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.FREE_PLAY_ENDER_CHEST.get(), FreePlayEnderChestScreen::new);
+        event.register(ModMenuTypes.ENGINE_BLOCK.get(), EngineScreen::new);
     }
 }

@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
+import games.brennan.dungeontrain.worldgen.VanillaEndSequence;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -105,12 +106,16 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);
             long genSeed = data.getGenerationSeed();
             boolean[] sampledColumn = new boolean[256];
+            // Progress through the owning vanilla piece per column (-1 outside one): the vanilla sequence —
+            // small islands, then highlands — thins the stamp and gates chorus (EndCoreBiomes#islandBiomeAt).
+            double[] pieceProgress = new double[256];
             boolean anyStamped = false;
             for (int dx = 0; dx < 16; dx++) {
                 for (int dz = 0; dz < 16; dz++) {
-                    boolean sampled = EndBandSampler.appliesTo(server,
-                            cycle.endSourceLookAt(chunkMinX + dx, cp.getMinBlockZ() + dz, genSeed));
+                    long pass = cycle.endSourcePassAt(chunkMinX + dx, cp.getMinBlockZ() + dz, genSeed);
+                    boolean sampled = EndBandSampler.appliesTo(server, cycle.endStyleOfPass(pass));
                     sampledColumn[dx * 16 + dz] = sampled;
+                    pieceProgress[dx * 16 + dz] = cycle.endPieceProgress(chunkMinX + dx, pass);
                     if (!sampled) anyStamped = true;
                 }
             }
@@ -155,6 +160,8 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // Stamp around it rather than through it. Outside the core there are no cities, and real
             // terrain is still present, so the stamp keeps overwriting as before.
             boolean protectExisting = DisintegrationBand.isChunkFullyEroded(overworld, chunkMinX, chunkMinZ);
+            NetherBandContext bandCtx = NetherBandContext.current();
+            EndCoreBiomes endBiomes = bandCtx != null ? bandCtx.endCoreBiomes() : null;
 
             for (int dx = 0; dx < 16; dx++) {
                 double e = endRamp[dx];
@@ -163,11 +170,15 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 for (int dz = 0; dz < 16; dz++) {
                     if (sampledColumn[dx * 16 + dz]) continue;          // the copied-in look owns this column
                     int worldZ = chunkMinZ + dz;
+                    // A vanilla piece's small-islands stage keeps only the islands' dense hearts.
+                    VanillaEndSequence.Stage stage = endBiomes == null ? null
+                            : endBiomes.vanillaStageAt(worldX, worldZ, pieceProgress[dx * 16 + dz]);
+                    double fill = stage == null ? e : e * VanillaEndSequence.islandFill(stage);
                     int[] top = {Integer.MIN_VALUE};
                     boolean[] wrote = {false};
                     final int fdx = dx;
                     final int fdz = dz;
-                    geometry.forEachSolidY(worldX, worldZ, e, y -> {
+                    geometry.forEachSolidY(worldX, worldZ, fill, y -> {
                         if (protectExisting && isOccupied(chunk, fdx, y, fdz)) {
                             top[0] = y; // the city's own floor is still island surface for chorus purposes
                             return;
@@ -187,12 +198,10 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             // Grow real chorus plants — matching vanilla's distribution exactly: 0-4 attempts per chunk
             // (CountPlacement), random X/Z (InSquarePlacement), and ONLY in the end_highlands biome (the
-            // sole End biome that carries CHORUS_PLANT). We ask the island-field biome (the vanilla End
-            // biome layout, even with BetterEnd installed) at the sample column so chorus lands in the same
-            // places it would in the vanilla End — the same patch of outer End that BandEndCityStructure
-            // asks about before standing an End city on the island.
-            NetherBandContext bandCtx = NetherBandContext.current();
-            EndCoreBiomes endBiomes = bandCtx != null ? bandCtx.endCoreBiomes() : null;
+            // sole End biome that carries CHORUS_PLANT). We ask the island biome (a vanilla piece's sequence
+            // stage, else the vanilla End layout of the island field, even with BetterEnd installed) at the
+            // sample column so chorus lands where it would in the vanilla End — the same answer
+            // BandEndCityStructure asks for before standing an End city on the island.
             if (endBiomes == null) {
                 chunk.setUnsaved(true);
                 return true;
@@ -209,7 +218,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 int worldZ = chunkMinZ + dz;
                 int endY = EndIslandGeometry.END_ISLAND_CENTER_Y + (top - bedY);
                 net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome =
-                        endBiomes.islandFieldBiomeAt(chunkMinX + dx, endY, worldZ);
+                        endBiomes.islandBiomeAt(chunkMinX + dx, endY, worldZ, pieceProgress[dx * 16 + dz]);
                 if (!biome.is(net.minecraft.world.level.biome.Biomes.END_HIGHLANDS)) continue;
                 for (int dy = 1; dy <= CHORUS_POCKET && top + dy <= maxY; dy++) {
                     setRaw(chunk, dx, top + dy, dz, Blocks.AIR.defaultBlockState());

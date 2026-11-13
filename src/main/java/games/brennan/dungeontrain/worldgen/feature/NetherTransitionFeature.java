@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.compat.DisabledModContent;
+import net.minecraft.resources.ResourceKey;
 import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -19,6 +21,7 @@ import games.brennan.dungeontrain.worldgen.OthersideCore;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.density.NetherBandFloodednessDensityFunction;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -476,7 +479,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      *
      * <p>A vanilla ({@code minecraft:}) core biome places only vanilla and Dungeon Train features — see
      * {@link NetherCoreFeatureFilter}. Other mods add their own ores to the vanilla Nether biomes, and the
-     * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list.</p>
+     * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list, minus the ores
+     * DT has turned off ({@link DisabledModContent}).</p>
      *
      * <p><b>LOD-lite:</b> on a Distant Horizons generator thread ({@link LodGeneration#liteDecoration()})
      * only the silhouette steps ({@link LodGeneration#LOD_VISIBLE_STEPS}) are placed. A skipped feature
@@ -489,7 +493,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                                      NetherBandContext bandCtx) {
         List<Holder<Biome>> biomes = coreChunkBiomes(server, cp, bandCtx);
         if (biomes.isEmpty()) return; // no biome resolvable (data pack stripped?) — never fail worldgen
-        NetherCoreDecoration.begin();   // decoration in here never replaces a standing block (StandingBlockKeep)
+        // Decoration in here never replaces a standing block (StandingBlockKeep) and never lands on the roof.
+        NetherCoreDecoration.begin(coreTopY(bandCtx, cp, bedY));
         try {
             placeCoreFeatures(level, generator, cp, bedY, bandCtx, biomes);
         } finally {
@@ -505,7 +510,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         // A Deeper Dark core is the whole Otherside slab instead (its features are calibrated to y0..128 too).
         boolean otherside = NetherCoreStamp.isOthersideColumn(bandCtx, cp.getMiddleBlockX(), cp.getMiddleBlockZ());
         int coreBottom = otherside ? OthersideCore.slabBottom(bedY) : bedY + (NETHER_SAMPLE_Y_MIN - NETHER_CENTER_Y);
-        int coreTop = otherside ? OthersideCore.slabTop(bedY) : bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
+        int coreTop = coreTopY(bandCtx, cp, bedY);
         BlockPos origin = cp.getWorldPosition(); // chunk min corner; placement modifiers spread/raise from here
         WorldgenRandom random = new WorldgenRandom(new XoroshiroRandomSource(level.getSeed()));
         long decoSeed = random.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
@@ -536,6 +541,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     PlacedFeature pf = holder.value();
                     if (!placedThisStep.add(pf)) continue;
                     int seedIndex = featureIndex++;          // consumed even when LOD-lite skips: seeds stay identical
+                    // BetterNether's ores are off in DT. The decoration veto that keeps them out everywhere else
+                    // reads the feature's registry id, which remapForCore's copy no longer has, so it's asked
+                    // here. After the seed index, so every other feature keeps its seed.
+                    if (DisabledModContent.isDisabledOreFeature(holder.unwrapKey().map(ResourceKey::location).orElse(null))) {
+                        skipped++;
+                        continue;
+                    }
                     if (!lodVisibleStep) {
                         lodSkipped++;
                         continue;
@@ -570,6 +582,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
+     * Top world Y of the stamped core slab over this chunk — the Nether band's roof (the Otherside's bedrock
+     * roof in a Deeper Dark pass). The feature pass is retargeted up to here, and nothing it writes may land above.
+     */
+    private static int coreTopY(NetherBandContext bandCtx, ChunkPos cp, int bedY) {
+        boolean otherside = NetherCoreStamp.isOthersideColumn(bandCtx, cp.getMiddleBlockX(), cp.getMiddleBlockZ());
+        return otherside ? OthersideCore.slabTop(bedY) : NetherCoreGeometry.coreTopY(bedY);
+    }
+
+    /**
      * The distinct real-Nether biomes covering this core chunk — sampled at the four corners + centre via
      * the same {@link NetherCoreBiomes} the world label uses, so the features match the labelled biome.
      * Falls back to {@code nether_wastes} when the band snapshot or Nether dimension is unavailable.
@@ -581,7 +602,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ(), x1 = cp.getMaxBlockX(), z1 = cp.getMaxBlockZ();
             int[][] pts = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, {(x0 + x1) >> 1, (z0 + z1) >> 1}};
             for (int[] p : pts) {
-                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().netherLookAt(p[0], p[1], ncb.seed()));
+                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.netherLookAt(p[0], p[1]));
                 if (b != null) out.add(b);
             }
         }
@@ -612,7 +633,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         NetherCoreBiomes ncb = bandCtx.netherCoreBiomes();
         NetherCoreBiomes.SampleMemo samples = new NetherCoreBiomes.SampleMemo();
         return new CoreBiomeFilter.ColumnBiomes(
-                (x, z) -> ncb.biomeAt(x, z, bandCtx.cycle().netherLookAt(x, z, ncb.seed()), samples));
+                (x, z) -> ncb.biomeAt(x, z, bandCtx.netherLookAt(x, z), samples));
     }
 
     /** Registry namespace of a holder's key, or {@code null} for an unkeyed (direct) holder. */
@@ -672,7 +693,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
      * the recoloured skin is only the top few blocks, so the mountain body underneath is still overworld
      * terrain and {@code aquifers_enabled} can leave water in it. The real Nether is bone-dry, so any
-     * water in the netherrack crossfade is replaced with air. This runs during chunk generation (no
+     * water in the netherrack crossfade is replaced with air — except inside the mountain's lush caves,
+     * which keep their pools and aquifer lakes as in a vanilla lush cave (outside the track's dry corridor). This runs during chunk generation (no
      * fluid-cascade hazard) and only for crossfade columns — overworld gaps, the green approach mountains,
      * the ocean beach/shore and the End band all keep their water. The Nether core needs no drain: its
      * whole band is already overwritten with netherrack/lava/air by {@link NetherCoreStamp}.</p>
@@ -704,13 +726,23 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         }
         // Drain any worldgen water in the column. Scan from the motion-blocking surface (the top of any
         // water) down to the build floor; only water cells are cleared, so solid terrain is untouched.
+        // Lush caves inside the mountain keep their pools and lakes, away from the track (a pool over the
+        // track tunnel would be left floating above the rails).
+        boolean keepLushWater = !NetherBandFloodednessDensityFunction.inTrackDryCorridor(worldZ);
         int waterTop = Math.min(worldTop, chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, dx, dz));
         for (int y = waterTop; y >= minY; y--) {
             if (!w.isWater(dx, y, dz)) continue;
+            if (keepLushWater && isLushCave(chunk, worldX, y, worldZ)) continue;
             w.set(dx, y, dz, AIR);
             changed = true;
         }
         return changed;
+    }
+
+    /** Whether the chunk's biome at this block is lush caves (the mountain interior's cave label). */
+    private static boolean isLushCave(ChunkAccess chunk, int worldX, int worldY, int worldZ) {
+        return chunk.getNoiseBiome(QuartPos.fromBlock(worldX), QuartPos.fromBlock(worldY), QuartPos.fromBlock(worldZ))
+                .is(Biomes.LUSH_CAVES);
     }
 
     /**

@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The shelf rules every Community Rewards surface shares: which reward is featured, when the next month starts. */
 class CommunityRewardsTest {
@@ -76,6 +78,18 @@ class CommunityRewardsTest {
     }
 
     @Test
+    void raisedOnlyWhenTheRelayQuotesAboveTheBase() {
+        assertTrue(CommunityRewards.raisedAud(null).isEmpty(), "no quote: the lang-key amount");
+        assertTrue(CommunityRewards.raisedAud(new LiveRewards.Quote(94, 94, List.of())).isEmpty());
+        LiveRewards.Quote two = new LiveRewards.Quote(150, 100, List.of("hd_streams", "quicker_streams", "free_money"));
+        assertEquals(150, CommunityRewards.raisedAud(two).getAsInt());
+        // Shelf order, unknown ids left out.
+        assertEquals(List.of(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.Reward.HD_STREAMS),
+                CommunityRewards.raisedBy(two));
+        assertEquals(100, CommunityRewards.Reward.TWO_STREAMS.costAud(), "Two Streams' solo base");
+    }
+
+    @Test
     void analyticsTargetsMatchTheRelayAllowlist() {
         assertEquals("reward_quicker_streams", CommunityRewards.Reward.QUICKER_STREAMS.analyticsTarget());
         assertEquals("reward_replays_kept", CommunityRewards.Reward.REPLAYS_KEPT.analyticsTarget());
@@ -116,5 +130,18 @@ class CommunityRewardsTest {
         LiveRewards state = new LiveRewards(List.of(on(LiveRewards.LIVE_TRANSLATION, 10 * DAY, "Moth", "Ash", "Wren")));
         assertEquals(NOW + 10 * DAY + 2 * CommunityRewards.MONTH_MS,
                 CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+    }
+
+    @Test
+    void freeCreditsAreOnButLeaveAGiftStartingNow() {
+        LiveRewards state = new LiveRewards(List.of(
+                new LiveRewards.Reward(LiveRewards.LIVE_TRANSLATION, NOW + 10 * DAY, "Brennan", List.of(), true),
+                on(LiveRewards.QUICKER_STREAMS, 10 * DAY, "Moth")));
+        assertTrue(CommunityRewards.active(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+        assertTrue(CommunityRewards.onFreeCredits(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+        assertFalse(CommunityRewards.giftRunning(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+        assertFalse(CommunityRewards.onFreeCredits(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        assertTrue(CommunityRewards.giftRunning(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        assertFalse(CommunityRewards.giftRunning(state, CommunityRewards.Reward.HD_STREAMS, NOW));
     }
 }

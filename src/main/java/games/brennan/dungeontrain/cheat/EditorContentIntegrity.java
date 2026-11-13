@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.cheat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.PendingCustomContentChoice;
+import games.brennan.dungeontrain.editor.EditorQuietRuleEvents;
 import games.brennan.dungeontrain.editor.PackageInfo;
 import games.brennan.dungeontrain.editor.PackageRegistry;
 import games.brennan.dungeontrain.editor.UserContentPaths;
@@ -130,9 +131,9 @@ public final class EditorContentIntegrity {
 
     /**
      * Is the current session Free Play because Train Editor content is active? True when custom
-     * content exists AND this world hasn't disabled it. Note {@link CustomContentChoice#UNSET}
-     * counts as active — the content is loading whether or not anyone has answered yet, so the
-     * run is Free Play from the first tick rather than only after the player clicks Continue.
+     * content exists AND this world has turned it on. {@link CustomContentChoice#UNSET} counts as
+     * off — the content is suppressed until someone answers, so a world nobody asked about plays
+     * Live on the bundled content rather than starting in Free Play.
      *
      * <p>{@link CustomContentChoice#DEV_IGNORE} waives the taint, but only on a dev build — this is
      * the single choke point for that rule, so the prompt, {@code /customcontent} and a save
@@ -225,6 +226,15 @@ public final class EditorContentIntegrity {
             data.setCustomContentChoice(choice);
             LOGGER.info("[DungeonTrain] Committed the pre-world custom content choice: {}", choice);
         }
+        if (!choice.isAnswered() && EditorQuietRuleEvents.isEditorWorld(overworld)) {
+            // An unanswered world plays the bundled content, but the Train Editor's world exists to
+            // edit the player's own designs — and is creative, so Free Play either way. New editor
+            // worlds already arrive with ALLOW from CustomContentGate; this covers one reopened from
+            // the vanilla world list, or made before the gate existed.
+            choice = CustomContentChoice.ALLOW;
+            data.setCustomContentChoice(choice);
+            LOGGER.info("[DungeonTrain] Train Editor world had no custom content choice; recorded {}.", choice);
+        }
         // Consumed either way. A world that already has an answer keeps it — its own decision
         // outranks one left over from a world creation that was abandoned — and a stale value must
         // not survive to reach the world after that.
@@ -272,17 +282,41 @@ public final class EditorContentIntegrity {
      * player-editable data must never take the game down, and the conservative answer here is the
      * one that leaves the run clean.
      *
-     * <p>One kind of file does not count: a building the game has accepted, with the sidecar beside
-     * it ({@link ApprovedBuildings}). That is content the game said yes to, not something this
-     * install changed.</p>
+     * <p>Some files do not count: a building the game has accepted, with the sidecar beside it
+     * ({@link ApprovedBuildings}), which is content the game said yes to; and files that are not
+     * content at all ({@link #isNotContent}). Only a real edit should put a player into Free Play.</p>
      */
     static boolean containsAnyFile(Path dir) {
         if (dir == null || !Files.isDirectory(dir)) return false;
         try (Stream<Path> walk = Files.walk(dir)) {
-            return walk.anyMatch(file -> Files.isRegularFile(file) && !ApprovedBuildings.exempts(dir, file));
+            return walk.anyMatch(file -> Files.isRegularFile(file)
+                && !isNotContent(dir, file)
+                && !ApprovedBuildings.exempts(dir, file));
         } catch (IOException | SecurityException e) {
             LOGGER.warn("[DungeonTrain] Couldn't scan {} for editor content: {}", dir, e.toString());
             return false;
         }
     }
+
+    /**
+     * Files that sit in a package folder without being anything a train spawns from. Pure.
+     * <ul>
+     *   <li>Hidden and OS files ({@code .DS_Store}, {@code Thumbs.db}, {@code desktop.ini}): the OS
+     *       drops them as soon as someone opens the folder to look.</li>
+     *   <li>{@code contents-shells.json} at the package root: which carriage a contents plot stands
+     *       in inside the editor ({@code ContentsShellOverrides}). The X menu's Reroll writes it
+     *       without a Save, and nothing outside the editor reads it.</li>
+     * </ul>
+     */
+    static boolean isNotContent(Path packageDir, Path file) {
+        if (file == null || file.getFileName() == null) return false;
+        String name = file.getFileName().toString();
+        if (name.startsWith(".") || name.equalsIgnoreCase("Thumbs.db") || name.equalsIgnoreCase("desktop.ini")) {
+            return true;
+        }
+        return packageDir != null && file.equals(packageDir.resolve(EDITOR_VIEW_FILE));
+    }
+
+    /** {@code ContentsShellOverrides}' user file — see {@link #isNotContent}. */
+    static final String EDITOR_VIEW_FILE = "contents-shells.json";
 }

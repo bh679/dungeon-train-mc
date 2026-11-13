@@ -102,6 +102,10 @@ public final class EditorPlotLabelsRenderer {
         COPIES_ROOF_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
+        /** The ground row — which row an Endless Open copy repeats as its floor. */
+        GROUND_CYCLE,
+        /** The Everything Below checkbox under it. */
+        GROUND_BELOW_TOGGLE,
         /** The door-wall row — whether a copy carries its own wall through a corridor mouth. */
         DOOR_WALL_CYCLE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
@@ -133,7 +137,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
+        NAME, NOTE, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
+        DOOR_WALL,
         DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS
     }
@@ -150,6 +155,7 @@ public final class EditorPlotLabelsRenderer {
         RowKind[] buf = new RowKind[RowKind.values().length];
         int n = 0;
         buf[n++] = RowKind.NAME;
+        if (!entry.note().isEmpty()) buf[n++] = RowKind.NOTE;
         if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) buf[n++] = RowKind.WEIGHT;
         if (hasDimensionRows(entry)) {
             buf[n++] = RowKind.LENGTH;
@@ -163,6 +169,8 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.COPIES_FLOOR;
             buf[n++] = RowKind.COPIES_ROOF;
         }
+        if (hasGroundRow(entry)) buf[n++] = RowKind.GROUND;
+        if (hasGroundBelowRow(entry)) buf[n++] = RowKind.GROUND_BELOW;
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
         if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
@@ -490,6 +498,46 @@ public final class EditorPlotLabelsRenderer {
         return hasModeRow(entry) && hasDoorWallRow(entry.roomMode());
     }
 
+    /** Whether the Ground row shows: see {@link #hasGroundRow(String)}. */
+    public static boolean hasGroundRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasGroundRow(entry.roomMode());
+    }
+
+    /** Whether the Ground row shows: only under Endless Open, the one mode it means anything in. */
+    public static boolean hasGroundRow(String modeTag) {
+        if (modeTag == null) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).groundApplies();
+    }
+
+    /** Whether the Everything Below box shows: see {@link #hasGroundBelowRow(String)}. */
+    public static boolean hasGroundBelowRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasGroundBelowRow(entry.roomMode());
+    }
+
+    /** Whether the Everything Below box shows: only with a raised ground, which has rows under it. */
+    public static boolean hasGroundBelowRow(String modeTag) {
+        if (modeTag == null) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).effectiveGround().level()
+            != games.brennan.dungeontrain.portal.PortalRoomGround.Level.BOTTOM;
+    }
+
+    /** What the Ground row reads, e.g. {@code "Ground: Door (Y 4)"}. */
+    public static String groundLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        games.brennan.dungeontrain.portal.PortalRoomGround ground = settings.effectiveGround();
+        return MenuLang.t("plot.ground",
+            MenuLang.named("portal.ground", ground.level().id(), ground.level().displayName()),
+            ground.row(settings.doorHeightOffset().value()));
+    }
+
+    /** What the Everything Below row reads, a bracket checkbox like the parts rows draw. */
+    public static String groundBelowLabel(String modeTag) {
+        boolean below = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .effectiveGround().below();
+        return (below ? "[x] " : "[ ] ") + MenuLang.t("plot.ground_below");
+    }
+
     /**
      * Whether the Door Wall row shows: only under Endless Repetition, the one mode whose appended
      * tiles carry a wall of their own for the corridor mouth's plane to be filled from.
@@ -696,6 +744,8 @@ public final class EditorPlotLabelsRenderer {
 
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
+    /** The note row's band: a pale wash of the weight colour. */
+    private static final int NOTE_BG = 0x28FFEEBB;
     private static final int BUTTON_TEXT_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_DIM_COLOR = 0xFFAAAAAA;
     /** The Copies Block row's "nothing here yet" hint — dimmer than a value. */
@@ -817,6 +867,9 @@ public final class EditorPlotLabelsRenderer {
         // The name stays centred, so the face button's square is reserved on both sides of it.
         double w = Math.max(MIN_HALF_W * 2.0,
             measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X + 2 * EditorPanelFacing.BUTTON_W);
+        if (!entry.note().isEmpty()) {
+            w = Math.max(w, measure.applyAsInt(entry.note()) * TEXT_SCALE + 2 * PAD_X);
+        }
         if (hasModeRow(entry)) {
             w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
@@ -948,6 +1001,7 @@ public final class EditorPlotLabelsRenderer {
             // Name — clickable teleport target, except on parts plots, which have an empty
             // category and stay non-interactive to match their lack of action buttons.
             case NAME -> entry.category().isEmpty() ? CellKind.NONE : CellKind.NAME;
+            case NOTE -> CellKind.NONE;
             // Weight is always visible (display only) but its arrows are clickable only from
             // inside the plot.
             case WEIGHT -> hasWeightArrows(entry) ? CellKind.WEIGHT_NUMBER : CellKind.NONE;
@@ -966,6 +1020,8 @@ public final class EditorPlotLabelsRenderer {
             case COPIES_FLOOR -> copiesFloorCell(halfW, hitX);
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
+            case GROUND -> CellKind.GROUND_CYCLE;
+            case GROUND_BELOW -> CellKind.GROUND_BELOW_TOGGLE;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
             // Read-only — there is nothing to click. The door offset is detected from a placed door,
             // not dialled in here; see PortalRoomDoorDetection.
@@ -1109,6 +1165,12 @@ public final class EditorPlotLabelsRenderer {
                     drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
                         faceLeft + EditorPanelFacing.BUTTON_W / 2.0, rCY, EditorPanelFacing.BUTTON_COLOR);
                 }
+                // Note — a read-only line under the name, e.g. which pool slot a contents group shares.
+                case NOTE -> {
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005, halfW - 0.005, rTop - 0.005, NOTE_BG);
+                    drawCenteredText(ps, buffer, font, entry.note(), 0, rCY, WEIGHT_COLOR);
+                }
                 // Weight — display always when there's a weight pool; arrows only when inside
                 // the plot (the player has to step into the cage to edit).
                 case WEIGHT -> {
@@ -1201,6 +1263,18 @@ public final class EditorPlotLabelsRenderer {
                         drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                         drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                     }
+                }
+                // Ground — which row an Endless Open copy repeats as its floor. Same one-cell cycle
+                // as Sky; the checkbox under it is one cell too.
+                case GROUND -> {
+                    int bg = hovered == CellKind.GROUND_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, groundLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                case GROUND_BELOW -> {
+                    int bg = hovered == CellKind.GROUND_BELOW_TOGGLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, groundBelowLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Door Wall — whether the copies standing against the portal carriages carry their
                 // own end wall through the corridor mouth's plane. Sealed by default, which is what

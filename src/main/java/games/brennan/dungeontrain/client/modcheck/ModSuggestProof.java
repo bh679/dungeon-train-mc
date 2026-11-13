@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.modcheck;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.cheat.ModSuggestClient;
 import games.brennan.dungeontrain.client.OwnerProofJoin;
+import games.brennan.dungeontrain.compat.DtModVerifyBridge;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import net.minecraft.client.Minecraft;
@@ -24,7 +25,8 @@ import java.util.concurrent.CompletableFuture;
  *   <li>{@code POST /carriages/owner-proof {uuid}} — the relay hands back a {@code serverId}.</li>
  *   <li>{@link OwnerProofJoin#join} — tell Mojang this account is joining that serverId (the access
  *       token goes to Mojang only, never to the relay).</li>
- *   <li>{@code POST /mods/suggest} — with the serverId when the join worked, without it otherwise.</li>
+ *   <li>{@code POST /mods/suggest} — with the serverId when the join worked, without it otherwise, and
+ *       the installed jar's fingerprint when dtmodverify has scanned it (an approval needs a hash).</li>
  * </ol>
  */
 @OnlyIn(Dist.CLIENT)
@@ -50,7 +52,8 @@ public final class ModSuggestProof {
                     .exceptionally(t -> "")
                 : CompletableFuture.completedFuture("");
             return proof
-                .thenCompose(serverId -> ModSuggestClient.suggest(base, uuid.toString(), name, serverId, modId, kind, comment))
+                .thenCompose(serverId -> ModSuggestClient.suggest(base, uuid.toString(), name, serverId, modId, kind, comment,
+                    DtModVerifyBridge.fileOf(modId)))
                 .exceptionally(t -> {
                     LOGGER.info("[DungeonTrain] mod suggestion for {} failed: {}", modId, t.toString());
                     return ModSuggestClient.Result.FAILED;

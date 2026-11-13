@@ -82,7 +82,6 @@ dungeontrain:dungeon_train/reached_superflat
 dungeontrain:dungeon_train/reached_void
 dungeontrain:dungeon_train/reached_wwoo
 dungeontrain:dungeon_train/read_all_nether_starting_books
-dungeontrain:dungeon_train/read_all_rules
 dungeontrain:dungeon_train/read_all_stories
 dungeontrain:dungeon_train/read_shared_book
 dungeontrain:dungeon_train/reassembly_required
@@ -135,6 +134,7 @@ dungeontrain:enchiridion/danger_close
 dungeontrain:enchiridion/darkroom
 dungeontrain:enchiridion/end_credits
 dungeontrain:enchiridion/familiar_faces
+dungeontrain:enchiridion/family_photo
 dungeontrain:enchiridion/field_guide
 dungeontrain:enchiridion/final_moments
 dungeontrain:enchiridion/found_footage
@@ -187,6 +187,7 @@ dungeontrain:enchiridion/self_care
 dungeontrain:enchiridion/self_employed_photographer
 dungeontrain:enchiridion/shameless_self_promotion
 dungeontrain:enchiridion/shh
+dungeontrain:enchiridion/skeleton_crew
 dungeontrain:enchiridion/some_pig
 dungeontrain:enchiridion/spirit_photography
 dungeontrain:enchiridion/supporting_artists

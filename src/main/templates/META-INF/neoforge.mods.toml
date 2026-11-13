@@ -105,6 +105,25 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Luminous Monsters — REQUIRED. Its mobs spawn naturally, so its entities have to exist on both sides. AFTER also
+# lets DT's data/luminous_monsters/neoforge/biome_modifier overrides win over the mod's own every-biome spawn lists.
+[[dependencies.${mod_id}]]
+    modId="luminous_monsters"
+    type="required"
+    versionRange="[${luminous_monsters_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Creeper Overhaul — REQUIRED. Its creepers stand in carriages and spawn naturally, so its entities have to exist on
+# both sides. AFTER also lets DT's data/creeperoverhaul/neoforge/biome_modifier overrides win over the mod's own
+# (remove_vanilla.json is emptied: event/NaturalSpawnLevelGate drops the vanilla creeper per biome instead).
+[[dependencies.${mod_id}]]
+    modId="creeperoverhaul"
+    type="required"
+    versionRange="[${creeperoverhaul_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Piglin Proliferation — REQUIRED. Its Piglin Alchemist and Piglin Traveler stand in carriages; its entities,
 # items and blocks have to exist on both sides.
 [[dependencies.${mod_id}]]
@@ -272,6 +291,15 @@ logoFile="logo.png"
     modId="keeptrim"
     type="required"
     versionRange="[${keeptrim_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Dungeon Totems — sibling (cursed Totems of Undying): jarJar'd INSIDE this jar until its store listings
+# are approved, so the nested copy always satisfies this. Sends its own S2C payloads: BOTH sides.
+[[dependencies.${mod_id}]]
+    modId="dungeontotems"
+    type="required"
+    versionRange="[${dungeontotems_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
@@ -477,6 +505,12 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.betteradvancements.mixins.json"
+
+# Advancement Plaques (bundled companion, optional) — the star-frame advancements (tab-complete,
+# Everything Burrito, It's Not That Simple) get DT's own Night Crest plaque (see
+# client/NightCrestPlaque). Gated by AdvancementPlaquesMixinPlugin: a no-op without the mod.
+[[mixins]]
+    config="${mod_id}.advancementplaques.mixins.json"
 
 # Distant Horizons (optional) reads GL_POLYGON_MODE through LWJGL's one-int glGetInteger; Apple's GL
 # driver writes two ints, corrupting the native heap just past the render thread's stack every frame

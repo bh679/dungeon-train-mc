@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * The community rewards the server is running, as the relay's donation summary payload carries them
- * ({@code rewards[]}: id, activeUntil, by, queued[]). Read defensively: the block may not exist yet
+ * ({@code rewards[]}: id, activeUntil, by, queued[], free). Read defensively: the block may not exist yet
  * (an older relay, or before the rewards shelf ships), and an absent or malformed block simply means
  * no reward is on. The Live Eye death pages read it to thank a buyer or pitch the next month.
  *
@@ -35,11 +35,18 @@ public record LiveRewards(List<Reward> rewards) {
     /** The dev preview's made-up state; while set, summary fetches do not replace what it shows. */
     @Nullable private static volatile LiveRewards preview;
 
-    /** One reward: on until {@code activeUntilMs} (0 = off), bought by {@code by}, later months queued. */
-    public record Reward(String id, long activeUntilMs, String by, List<String> queuedBy) {
+    /**
+     * One reward: on until {@code activeUntilMs} (0 = off), bought by {@code by}, later months queued.
+     * {@code free}: on through free credits rather than a gift, so {@code by} is thanked, not a buyer.
+     */
+    public record Reward(String id, long activeUntilMs, String by, List<String> queuedBy, boolean free) {
         public Reward {
             by = by == null ? "" : by;
             queuedBy = List.copyOf(queuedBy == null ? List.of() : queuedBy);
+        }
+
+        public Reward(String id, long activeUntilMs, String by, List<String> queuedBy) {
+            this(id, activeUntilMs, by, queuedBy, false);
         }
     }
 
@@ -59,6 +66,70 @@ public record LiveRewards(List<Reward> rewards) {
         StreamDelay d = StreamDelay.parseBody(body);
         if (d != null) streamDelay = d;
         openIds = parseOpen(body);
+        quotes = parseQuotes(body);
+    }
+
+    /**
+     * What one more gift of a reward costs right now, as the relay quotes it (summary
+     * {@code rewardPrices}): {@code base} is the reward on its own, {@code aud} that raised by the
+     * rewards already on that cost it more to run ({@code raisedBy}, their ids). Whole AUD.
+     */
+    public record Quote(int aud, int base, List<String> raisedBy) {
+        public Quote {
+            raisedBy = List.copyOf(raisedBy == null ? List.of() : raisedBy);
+        }
+
+        /** Whether other rewards being on push this one above its own base. */
+        public boolean raised() {
+            return aud > base && !raisedBy.isEmpty();
+        }
+    }
+
+    private static volatile java.util.Map<String, Quote> quotes = java.util.Map.of();
+
+    /** The relay's quote for reward {@code id}, or null when it sent none (an older relay: show the lang-key amount). */
+    @Nullable
+    public static Quote quote(String id) {
+        return quotes.get(id);
+    }
+
+    /**
+     * The {@code rewardPrices} quotes of a summary body ({@code {id: {aud, base, raisedBy: [{id}]}}});
+     * empty when absent or malformed. A quote with an unusable amount is skipped, never guessed.
+     */
+    static java.util.Map<String, Quote> parseQuotes(String body) {
+        try {
+            JsonElement root = JsonParser.parseString(body);
+            if (!root.isJsonObject()) return java.util.Map.of();
+            JsonObject o = root.getAsJsonObject();
+            if (!o.has("rewardPrices") || !o.get("rewardPrices").isJsonObject()) return java.util.Map.of();
+            java.util.Map<String, Quote> out = new java.util.HashMap<>();
+            for (var e : o.getAsJsonObject("rewardPrices").entrySet()) {
+                Quote q = parseQuote(e.getValue());
+                if (q != null) out.put(e.getKey(), q);
+            }
+            return java.util.Map.copyOf(out);
+        } catch (RuntimeException e) {
+            return java.util.Map.of();
+        }
+    }
+
+    @Nullable
+    private static Quote parseQuote(JsonElement v) {
+        if (!v.isJsonObject()) return null;
+        JsonObject q = v.getAsJsonObject();
+        int aud = q.has("aud") && q.get("aud").isJsonPrimitive() ? q.get("aud").getAsInt() : 0;
+        int base = q.has("base") && q.get("base").isJsonPrimitive() ? q.get("base").getAsInt() : 0;
+        if (aud <= 0 || base <= 0 || aud < base) return null;
+        List<String> by = new ArrayList<>();
+        if (q.has("raisedBy") && q.get("raisedBy").isJsonArray()) {
+            for (JsonElement r : q.getAsJsonArray("raisedBy")) {
+                if (r.isJsonObject() && r.getAsJsonObject().has("id") && r.getAsJsonObject().get("id").isJsonPrimitive()) {
+                    by.add(r.getAsJsonObject().get("id").getAsString());
+                }
+            }
+        }
+        return new Quote(aud, base, by);
     }
 
     private static volatile java.util.Set<String> openIds = java.util.Set.of();
@@ -166,7 +237,7 @@ public record LiveRewards(List<Reward> rewards) {
                     else if (q.isJsonObject()) queued.add(str(q.getAsJsonObject(), "by"));
                 }
             }
-            out.add(new Reward(id, timeOf(o.get("activeUntil")), str(o, "by"), queued));
+            out.add(new Reward(id, timeOf(o.get("activeUntil")), str(o, "by"), queued, "true".equals(str(o, "free"))));
         }
         return new LiveRewards(out);
     }

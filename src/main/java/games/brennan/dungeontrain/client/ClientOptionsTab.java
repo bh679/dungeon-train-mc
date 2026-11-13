@@ -72,6 +72,24 @@ public enum ClientOptionsTab {
         return active;
     }
 
+    /** The tab named {@code name}, or null: a chat link's segment ({@code LiveOptionsCommand}). */
+    @org.jetbrains.annotations.Nullable
+    public static ClientOptionsTab tabNamed(String name) {
+        for (ClientOptionsTab tab : values()) {
+            if (tab.name().equals(name)) return tab;
+        }
+        return null;
+    }
+
+    /** The row named {@code name}, or null: a chat link's segment ({@code LiveOptionsCommand}). */
+    @org.jetbrains.annotations.Nullable
+    public static Row rowNamed(String name) {
+        for (Row row : Row.values()) {
+            if (row.name().equals(name)) return row;
+        }
+        return null;
+    }
+
     public static void select(ClientOptionsTab tab) {
         if (tab != null) active = tab;
     }
@@ -88,6 +106,8 @@ public enum ClientOptionsTab {
         CONTENT_MODE("gui.dungeontrain.options.content_mode"),
         /** Chat with the developer, both ways — the consent card's Developer chat switch (Adult only). */
         DEV_CHAT("gui.dungeontrain.options.dev_chat"),
+        /** Your photos and deaths on Discord and the socials — the consent card's Public posts switch. */
+        PUBLIC_POSTS("gui.dungeontrain.options.public_posts"),
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER("gui.dungeontrain.political_filter.option"),
         BOOK_AUTHOR_CHAT("gui.dungeontrain.options.book_author_chat"),
@@ -101,6 +121,8 @@ public enum ClientOptionsTab {
         OTHER_ADVANCEMENT_TABS("gui.dungeontrain.options.other_advancement_tabs"),
         /** The earned card for advancements outside Dungeon Train's tabs — hidden by default, see {@code AdvancementTabGate}. */
         OTHER_ADVANCEMENT_CARDS("gui.dungeontrain.options.other_advancement_cards"),
+        /** What the main menu shows behind its buttons: the logo over live stream / photos, photos only, or as it was. */
+        MENU_BACKDROP("gui.dungeontrain.options.menu_backdrop"),
         CINEMATIC_HOTKEY("gui.dungeontrain.options.cinematic_hotkey"),
         /** The top-left developer read-out — dev builds only, see {@code VersionHudOverlay}. */
         DEV_HUD("gui.dungeontrain.options.dev_hud"),
@@ -160,16 +182,34 @@ public enum ClientOptionsTab {
          * player can see — the row is absent rather than a control that lies about what it did.
          */
         CATCH_UP_BURST("gui.dungeontrain.options.catch_up_burst"),
+        /**
+         * Smaller saves: terrain no player changed is left off the disk ({@code UntouchedChunkSaves}). A
+         * common-config value like {@link #CATCH_UP_BURST}, so absent on a multiplayer client for the same
+         * reason. Off by default.
+         */
+        DROP_UNTOUCHED_WORLD_GEN("gui.dungeontrain.options.drop_untouched_world_gen"),
 
         // --- Stream (the screen adds the viewer preview under these rows) ---
         /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
         LIVESTREAM("gui.dungeontrain.options.livestream"),
+        /** Download FFmpeg, which the Live Eye streams with and TVs play with; inactive once it is there. */
+        FFMPEG("gui.dungeontrain.options.ffmpeg"),
         /** Whether viewers see the HUD and open menus. Everyone. */
         STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
         STREAM_CHAT("gui.dungeontrain.options.stream_chat"),
         /** Whether the stream carries the game's sound. Off by default. */
         STREAM_AUDIO("gui.dungeontrain.options.stream_audio"),
+        /** Whether the mic may join streams (it still starts each stream off). */
+        MIC_SUPPORT("gui.dungeontrain.options.mic_support"),
+        /** Which capture device the mic uses. */
+        MIC_DEVICE("gui.dungeontrain.options.mic_device"),
+        /** How loud live streams play from TVs; also on Music &amp; Sounds. */
+        STREAM_VOLUME("gui.dungeontrain.options.stream_volume"),
+        /** Game sound versus voice in the stream's mix, one slider (0 = game only, 100 = mic only); also on Music &amp; Sounds. */
+        MIC_MIX("gui.dungeontrain.options.mic_mix"),
+        /** Always on (while switched on) or push to talk. */
+        MIC_MODE("gui.dungeontrain.options.mic_mode"),
         /** Which name viewers see above the hotbar. Locked to none in Kid mode. */
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
         /** Pop-ups drawn back over the stream's name tag. Also on Performance, as a per-frame cost. */
@@ -192,14 +232,29 @@ public enum ClientOptionsTab {
         WORN_TV_STREAMS("gui.dungeontrain.options.worn_tv_streams"),
         /** What the streamer's own box shows while someone else is live too: theirs, the other, both or none. */
         STREAMER_BOX_STREAMS("gui.dungeontrain.options.streamer_box_streams"),
+        /** Whether TVs play a stream's sound at all. On by default. */
+        TV_STREAM_SOUND("gui.dungeontrain.options.tv_stream_sound"),
+        /** Whether the TVs placed on the train play sound (a worn or held TV always may). On by default; inert while TV stream sound is off. */
+        TV_SOUND_ON_TRAIN("gui.dungeontrain.options.tv_sound_on_train"),
+        /** The streamers this viewer muted on TVs, each with an Unmute button (its own page). */
+        MUTED_STREAMERS("gui.dungeontrain.options.muted_streamers"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
         STREAM_SAVE_BANDWIDTH("gui.dungeontrain.options.stream_save_bandwidth"),
         /** The live feed pinned top-right on the HUD while you watch. */
         HEAD_VIEWER_SIZE("gui.dungeontrain.options.head_viewer_size"),
+        /** Who is live, in a line under each pane of that pinned feed. On by default. */
+        HEAD_VIEWER_NAMES("gui.dungeontrain.options.head_viewer_names"),
         /** The same pinned feed while you stream; the preview outlines it. */
         HEAD_VIEWER_SIZE_STREAMING("gui.dungeontrain.options.head_viewer_size_streaming"),
+        // The Stream tab's section titles (HEADINGS): a caption only, no hint or control.
+        STREAM_SECTION_BROADCAST("gui.dungeontrain.options.section.broadcast"),
+        STREAM_SECTION_SOUND("gui.dungeontrain.options.section.stream_sound"),
+        STREAM_SECTION_MIC("gui.dungeontrain.options.section.microphone"),
+        STREAM_SECTION_PICTURE("gui.dungeontrain.options.section.picture"),
+        STREAM_SECTION_CHAT("gui.dungeontrain.options.section.live_chat"),
+        STREAM_SECTION_WATCHING("gui.dungeontrain.options.section.watching"),
 
         // --- Editor ---
         SCALE_ALL("gui.dungeontrain.editor_settings.all_displays"),
@@ -259,7 +314,8 @@ public enum ClientOptionsTab {
      * Rows that are captions rather than settings: no widget to operate, and always a line to
      * themselves.
      */
-    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.noneOf(Row.class);
+    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.STREAM_SECTION_BROADCAST,
+            Row.STREAM_SECTION_SOUND, Row.STREAM_SECTION_MIC, Row.STREAM_SECTION_PICTURE, Row.STREAM_SECTION_CHAT, Row.STREAM_SECTION_WATCHING);
 
     /** Whether {@code row} is a caption rather than a setting. */
     public static boolean isHeading(Row row) {
@@ -269,6 +325,20 @@ public enum ClientOptionsTab {
     /** Whether {@code row} begins a visual group. See {@link #GROUP_LEADERS}. */
     public static boolean startsGroup(Row row) {
         return GROUP_LEADERS.contains(row);
+    }
+
+    /**
+     * {@code rows} with {@link Row#FFMPEG} moved to the very top, above the first heading: the Stream
+     * tab while this client has no FFmpeg, so the button that fixes it is the first thing seen.
+     */
+    public static List<Row> ffmpegFirst(List<Row> rows) {
+        if (!rows.contains(Row.FFMPEG)) return rows;
+        List<Row> out = new ArrayList<>(rows.size());
+        out.add(Row.FFMPEG);
+        for (Row row : rows) {
+            if (row != Row.FFMPEG) out.add(row);
+        }
+        return out;
     }
 
     /** As a release build sees them: no dev-only rows. */
@@ -291,11 +361,13 @@ public enum ClientOptionsTab {
                 // The consent card's Developer chat switch, next to the content mode it defaults
                 // from. Its Livestreaming switch lives on the Stream tab.
                 rows.add(Row.DEV_CHAT);
+                rows.add(Row.PUBLIC_POSTS);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.OTHER_ADVANCEMENT_CARDS);
                 rows.add(Row.PROTECT_OWN_PETS);
+                rows.add(Row.MENU_BACKDROP);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 // Release builds never draw the dev HUD, so the row is absent there, not inert.
                 if (devBuild) {
@@ -350,25 +422,46 @@ public enum ClientOptionsTab {
                 }
             }
             case STREAM -> {
+                // Titled sections: what goes out, the mic, the picture, the chat around it, then watching others.
+                rows.add(Row.STREAM_SECTION_BROADCAST);
                 rows.add(Row.LIVESTREAM);
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
-                rows.add(Row.STREAM_AUDIO);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
+                // Last in the section, right above the sound rows.
+                rows.add(Row.STREAM_AUDIO);
+                // The two sound sliders, the same pair as on vanilla's Music & Sounds screen.
+                rows.add(Row.STREAM_SECTION_SOUND);
+                rows.add(Row.STREAM_VOLUME);
+                rows.add(Row.MIC_MIX);
+                rows.add(Row.STREAM_SECTION_MIC);
+                rows.add(Row.MIC_SUPPORT);
+                rows.add(Row.MIC_DEVICE);
+                rows.add(Row.MIC_MODE);
+                rows.add(Row.STREAM_SECTION_PICTURE);
+                rows.add(Row.STREAM_SIZE);
+                rows.add(Row.STREAM_SAVE_BANDWIDTH);
+                rows.add(Row.STREAM_SECTION_CHAT);
                 rows.add(Row.LIVE_CHAT);
                 rows.add(Row.LIVE_CHAT_TRANSLATION);
                 rows.add(Row.LIVE_MOMENT_ADVANCEMENTS);
                 rows.add(Row.LIVE_MOMENT_PHOTOS);
                 rows.add(Row.LIVE_MOMENT_BOOKS);
                 rows.add(Row.TWITCH_HINT);
+                rows.add(Row.STREAM_SECTION_WATCHING);
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.WORN_TV_STREAMS);
                 rows.add(Row.STREAMER_BOX_STREAMS);
-                rows.add(Row.STREAM_SIZE);
-                rows.add(Row.STREAM_SAVE_BANDWIDTH);
+                // TV stream sound and its placed-TV sub-switch: a pair, so the rows after keep their pairing.
+                rows.add(Row.TV_STREAM_SOUND);
+                rows.add(Row.TV_SOUND_ON_TRAIN);
+                rows.add(Row.MUTED_STREAMERS);
                 rows.add(Row.HEAD_VIEWER_SIZE);
+                rows.add(Row.HEAD_VIEWER_NAMES);
                 rows.add(Row.HEAD_VIEWER_SIZE_STREAMING);
+                // Out of the way once installed; ffmpegFirst lifts it to the top while it is missing.
+                rows.add(Row.FFMPEG);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);
@@ -396,6 +489,11 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
+                // Conditional (absent on a multiplayer client), so it comes after every paired row:
+                // only the tips, which are not paired, follow it.
+                if (trainSettingsWritable) {
+                    rows.add(Row.DROP_UNTOUCHED_WORLD_GEN);
+                }
                 rows.add(Row.PERFORMANCE_TIPS);
             }
         }

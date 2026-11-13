@@ -35,6 +35,7 @@ import java.util.stream.Stream;
  *
  * <pre>
  *   albums/&lt;uuid&gt;/live.json        { rev, pages: [ { hash|null, note, photo|null } ] }
+ *   albums/&lt;uuid&gt;/live_2.json      a donor's second live album, live_3.json the third, …
  *   albums/&lt;uuid&gt;/free_play.json
  *   albums/images/&lt;hash&gt;.png        each picture once, named by {@link AlbumImageHash}
  * </pre>
@@ -79,7 +80,7 @@ public final class AlbumStore {
         return entry.pages().stream().map(p -> pageKey(p.hash(), "", p.note())).toList();
     }
 
-    private record Key(UUID owner, AlbumKind kind) {}
+    private record Key(UUID owner, AlbumKind kind, int index) {}
 
     private static volatile AlbumStore instance;
 
@@ -110,23 +111,67 @@ public final class AlbumStore {
 
     // ---- albums -------------------------------------------------------------------
 
-    /** The owner's album of this kind, read from disk the first time; {@link Entry#EMPTY} when they have none. */
+    /** The owner's first album of this kind, read from disk the first time; {@link Entry#EMPTY} when they have none. */
     public Entry entry(UUID owner, AlbumKind kind) {
-        return entries.computeIfAbsent(new Key(owner, kind), key -> read(albumFile(key)));
+        return entry(owner, kind, 0);
     }
 
-    /** Keep {@code entry} as the owner's album of this kind: at once in memory, on disk in the background. */
+    /** The owner's album of this kind at {@code index} (0 is the first). */
+    public Entry entry(UUID owner, AlbumKind kind, int index) {
+        return entries.computeIfAbsent(new Key(owner, kind, Math.max(index, 0)), key -> read(albumFile(key)));
+    }
+
+    /** Keep {@code entry} as the owner's first album of this kind: at once in memory, on disk in the background. */
     public void put(UUID owner, AlbumKind kind, Entry entry) {
-        Key key = new Key(owner, kind);
+        put(owner, kind, 0, entry);
+    }
+
+    /** Keep {@code entry} as the owner's album of this kind at {@code index}. */
+    public void put(UUID owner, AlbumKind kind, int index, Entry entry) {
+        Key key = new Key(owner, kind, Math.max(index, 0));
         entries.put(key, entry);
         io.execute(() -> {
             try {
                 write(albumFile(key), GSON.toJson(toJson(entry)).getBytes(StandardCharsets.UTF_8));
                 prune();
             } catch (IOException | UncheckedIOException e) {
-                LOGGER.warn("[DungeonTrain] Album {} of {} not saved: {}", kind.fileName(), owner, e.toString());
+                LOGGER.warn("[DungeonTrain] Album {} of {} not saved: {}", fileName(key), owner, e.toString());
             }
         });
+    }
+
+    /**
+     * How many albums of this kind the owner has: one past the highest index held in memory or on
+     * disk, and never less than 1 — everyone has a first album, empty or not.
+     */
+    public int count(UUID owner, AlbumKind kind) {
+        int highest = 0;
+        for (Key key : entries.keySet()) {
+            if (key.owner().equals(owner) && key.kind() == kind) highest = Math.max(highest, key.index());
+        }
+        Path dir = root.resolve(owner.toString());
+        if (Files.isDirectory(dir)) {
+            try (Stream<Path> files = Files.list(dir)) {
+                for (Path file : files.toList()) {
+                    highest = Math.max(highest, indexOf(file.getFileName().toString(), kind));
+                }
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Albums of {} unlistable: {}", owner, e.toString());
+            }
+        }
+        return highest + 1;
+    }
+
+    /** The index a file name holds an album of {@code kind} at, or 0 when it is the first or not one of them. */
+    static int indexOf(String file, AlbumKind kind) {
+        String prefix = kind.fileName() + "_";
+        if (!file.startsWith(prefix) || !file.endsWith(".json")) return 0;
+        try {
+            int number = Integer.parseInt(file.substring(prefix.length(), file.length() - ".json".length()));
+            return number >= 2 ? number - 1 : 0;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // ---- pictures -----------------------------------------------------------------
@@ -184,7 +229,12 @@ public final class AlbumStore {
     // ---- files --------------------------------------------------------------------
 
     private Path albumFile(Key key) {
-        return root.resolve(key.owner().toString()).resolve(key.kind().fileName() + ".json");
+        return root.resolve(key.owner().toString()).resolve(fileName(key) + ".json");
+    }
+
+    /** The first album keeps its old name ({@code live}); later ones are numbered as players see them ({@code live_2}). */
+    private static String fileName(Key key) {
+        return key.index() == 0 ? key.kind().fileName() : key.kind().fileName() + "_" + (key.index() + 1);
     }
 
     private Path imageFile(String hash) {

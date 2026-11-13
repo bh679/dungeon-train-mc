@@ -136,8 +136,8 @@ public final class BookFactory {
      *   <li><b>(c)</b> Coin flip ({@link #narrativeLecternChanceForWorld}, tapered): with that chance
      *       START a new approved player series instead of a new mod story.</li>
      *   <li><b>(d)</b> Otherwise serve a MOD story — a random uncompleted one, or (once all are read) a
-     *       seeded RE-READ of an already-read one, so built-in stories keep their fair share and never
-     *       vanish.</li>
+     *       RE-READ of an already-read one, in order from letter 1, so built-in stories keep their fair
+     *       share and never vanish.</li>
      *   <li><b>(e)</b> Only when there is no content at all (no mod stories AND empty player pool) →
      *       {@link Optional#empty()} (the lectern then shows "All narratives complete").</li>
      * </ol>
@@ -191,7 +191,7 @@ public final class BookFactory {
             Optional<ItemStack> book = buildModStoryLetter(data, fresh.get(), seed);
             if (book.isPresent()) return book;
         }
-        Optional<ItemStack> reread = buildModStoryReread(seed);
+        Optional<ItemStack> reread = buildModStoryReread(data, seed);
         if (reread.isPresent()) return reread;
 
         // (e) No content at all → let the lectern show "All narratives complete".
@@ -211,25 +211,17 @@ public final class BookFactory {
     }
 
     /**
-     * A seeded RE-READ of an already-read mod story — served once every story is complete so built-in
-     * content keeps its fair share rather than vanishing. Every story is equal here: the hold-back
-     * tier only governs the ORDER series are first served in, and by now they have all been read. Picks a story + letter deterministically from
-     * {@code seed}; the book is a normal mod-story book ({@link NarrativeBookTag}), and its idempotent
-     * read-credit re-marks already-read progress harmlessly.
+     * A RE-READ of an already-read mod story — served once every story is done so built-in content
+     * keeps its fair share rather than vanishing. Re-reads run in order from letter 1, like a first read:
+     * the story and letter come from {@link NarrativeProgressData#nextRereadStory}, which continues the
+     * story this world is re-reading, else starts another (every story equal — the hold-back tiers only
+     * govern first-read ORDER), and starts a fresh round once this world has re-read them all. The book
+     * is a normal mod-story book ({@link NarrativeBookTag}), so reading it advances the world's cursor.
      */
-    private static Optional<ItemStack> buildModStoryReread(long seed) {
-        List<String> names = StoryRegistry.basenames();
-        if (names.isEmpty()) return Optional.empty();
-        String basename = names.get((int) Math.floorMod(mixNarrative(seed, SALT_REREAD_STORY), names.size()));
-        Optional<StoryFile> storyOpt = StoryRegistry.getByBasename(basename);
-        if (storyOpt.isEmpty()) return Optional.empty();
-        StoryFile story = storyOpt.get();
-        int letterCount = story.letters().size();
-        if (letterCount < 1) return Optional.empty();
-        int index = (int) Math.floorMod(mixNarrative(seed, SALT_REREAD_LETTER), letterCount) + 1; // 1-based
-        Letter letter = story.letterByIndex(index).orElse(null);
-        if (letter == null) return Optional.empty();
-        return Optional.of(buildSignedBook(story, letter, seed));
+    private static Optional<ItemStack> buildModStoryReread(NarrativeProgressData data, long seed) {
+        Optional<String> basename = data.nextRereadStory(mixNarrative(seed, SALT_REREAD_STORY));
+        if (basename.isEmpty()) return Optional.empty();
+        return buildModStoryLetter(data, basename.get(), seed);
     }
 
     /**
@@ -248,6 +240,10 @@ public final class BookFactory {
             // finishing it — the world simply stops offering its letters and lecterns fall through to
             // mod stories. Honouring the setting immediately beats honouring an earlier commitment.
             if (skipPolitical && series.political()) continue;
+            // A reader reported this series from a lectern: the world stops serving the rest of it at
+            // once, without waiting for the relay to pull it. (Starting it again can't happen either —
+            // a reported series was read here, so it is already in the started set pickUnstarted skips.)
+            if (data.isSeriesReported(series.seriesId())) continue;
             Optional<NarrativePool.SeriesLetter> next = nextUnreadPlayerLetter(data, series);
             if (next.isPresent()) return Optional.of(buildPlayerSeriesLetter(series, next.get()));
         }
@@ -300,14 +296,27 @@ public final class BookFactory {
      * letters V) and {@code ramp} holds the chance at 0 until a configured fraction {@code T} of the mod
      * letters is read, then rises to 1. Settles permanently at the pool-size fair share; never capped,
      * never 100%. Returns 0 when discovery is off or the pool is empty/unknown. Package-private for tests.
+     *
+     * <p>"Read" is the larger of this world's count and the cross-world
+     * {@link games.brennan.dungeontrain.advancement.GlobalNarrativeProgress} count, so the ramp carries
+     * across worlds: each new world starts as far along as the player has read in all of them.</p>
      */
     static double narrativeLecternChanceForWorld(ServerLevel overworld, NarrativeProgressData data) {
         if (!SharedBookGate.canDiscoverNarratives()) return 0.0;
         return discoveryChance(
                 NarrativePool.approvedTotal(),
                 StoryRegistry.totalLetterCount(),
-                data.distinctModStoryLettersRead(),
+                Math.max(data.distinctModStoryLettersRead(), globalModStoryLettersRead()),
                 DungeonTrainConfig.getNarrativeDiscoveryRampThreshold());
+    }
+
+    /** Mod-story letters read in any world, counting only stories currently loaded. */
+    private static int globalModStoryLettersRead() {
+        int total = 0;
+        for (String basename : StoryRegistry.basenames()) {
+            total += games.brennan.dungeontrain.advancement.GlobalNarrativeProgress.progressFor(basename).readCount();
+        }
+        return total;
     }
 
     /**
@@ -342,7 +351,6 @@ public final class BookFactory {
 
     private static final long SALT_CHANCE = 0x4E4C43_43L;         // narrative-lectern chance flip
     private static final long SALT_REREAD_STORY = 0x4E4C52_53L;   // re-read story pick
-    private static final long SALT_REREAD_LETTER = 0x4E4C52_4CL;  // re-read letter pick
 
     /** Splittable-mix so a raw lectern seed spreads uniformly for a given decision salt. */
     private static long mixNarrative(long seed, long salt) {

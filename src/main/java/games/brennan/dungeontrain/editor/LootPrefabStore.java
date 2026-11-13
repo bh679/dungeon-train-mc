@@ -464,6 +464,8 @@ public final class LootPrefabStore {
                 if (rl == null) continue;
                 int count = e.has("count") && e.get("count").isJsonPrimitive()
                     ? e.get("count").getAsInt() : 1;
+                int minCount = e.has("minCount") && e.get("minCount").isJsonPrimitive()
+                    ? e.get("minCount").getAsInt() : ContainerContentsEntry.DEFAULT_MIN_COUNT;
                 int weight = e.has("weight") && e.get("weight").isJsonPrimitive()
                     ? e.get("weight").getAsInt() : 1;
                 boolean randDur = e.has("randDur") && e.get("randDur").isJsonPrimitive()
@@ -490,9 +492,14 @@ public final class LootPrefabStore {
                 PotionForm form = e.has("form") && e.get("form").isJsonPrimitive()
                     ? PotionForm.parse(e.get("form").getAsString())
                     : ContainerContentsEntry.DEFAULT_POTION_FORM;
+                boolean luck = e.has("luck") && e.get("luck").isJsonPrimitive()
+                    ? e.get("luck").getAsBoolean()
+                    : ContainerContentsEntry.DEFAULT_INCLUDE_LUCK;
                 StoredBook book = ContainerContentsBooks.fromJson(e.get("book"));
-                entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
+                entries.add(new ContainerContentsEntry(rl, count, minCount, weight,
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
+                    BookEnchantsCodec.fromJson(e), luck,
+                    e.has("contents") && e.get("contents").isJsonPrimitive() ? e.get("contents").getAsString() : null));
             }
         }
         return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey)));
@@ -525,13 +532,19 @@ public final class LootPrefabStore {
                 .append(" \"durChance\": ").append(e.durabilityChance()).append(",")
                 .append(" \"randEnch\": ").append(e.randomEnchantment()).append(",")
                 .append(" \"enchChance\": ").append(e.enchantmentChance());
+            if (e.hasMinCount()) {
+                sb.append(", \"minCount\": ").append(e.minCount());
+            }
             if (e.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                 sb.append(", \"slot\": ").append(e.slotOverride());
             }
             if (e.potionId() != null) {
                 sb.append(", \"potion\": \"").append(e.potionId()).append("\"");
             }
-            if (!e.scaleWithDistance()) {
+            if (e.includeLuck()) {
+                    sb.append(", \"luck\": true");
+                }
+                if (!e.scaleWithDistance()) {
                 sb.append(", \"scale\": false");
             }
             if (e.potionForm() != PotionForm.ANY) {
@@ -539,6 +552,10 @@ public final class LootPrefabStore {
             }
             if (e.book() != null) {
                 sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(e.book()));
+            }
+            BookEnchantsCodec.appendJson(sb, e.enchants());
+            if (e.hasContents()) {
+                sb.append(", \"contents\": \"").append(e.contents()).append("\"");
             }
             sb.append(" }");
             first = false;

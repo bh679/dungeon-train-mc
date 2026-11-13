@@ -17,8 +17,8 @@ import java.util.Optional;
  * {@code dt_pnarr_*} keys so exactly one of the two tags is ever present on a book — a mod-story book
  * carries {@code dt_narrative_*} and routes into canon progress/advancements; a player-narrative book
  * carries {@code dt_pnarr_*} and routes only into the world-local player-series store, never touching
- * {@code GlobalNarrativeProgress} or advancements. There is no variant field (player letters have a
- * single page list).</p>
+ * {@code GlobalNarrativeProgress}. Finishing a series earns "A Library In Motion"
+ * ({@code finished_player_series}). There is no variant field (player letters have a single page list).</p>
  */
 public final class PlayerNarrativeBookTag {
 
@@ -26,6 +26,13 @@ public final class PlayerNarrativeBookTag {
     public static final String NBT_SERIES = "dt_pnarr_series";
     /** Letter index within the series, 1-based. */
     public static final String NBT_LETTER = "dt_pnarr_letter";
+    /**
+     * True when the player who OPENED this lectern has reported the book's series. A lectern's stack is
+     * shared by everyone, so the server re-stamps this for each opener just before the menu opens
+     * ({@code NarrativeLecternBlock}) from the world's per-player record, and the menu sync carries it
+     * to the client's ⚠ control. Display only: the report itself is judged server-side.
+     */
+    public static final String NBT_REPORTED = "dt_pnarr_reported";
 
     private PlayerNarrativeBookTag() {}
 
@@ -51,6 +58,25 @@ public final class PlayerNarrativeBookTag {
         String seriesId = tag.getString(NBT_SERIES);
         if (seriesId.isEmpty()) return Optional.empty();
         return Optional.of(new PlayerNarrativeIdentity(seriesId, tag.getInt(NBT_LETTER)));
+    }
+
+    /** Set or clear the opener's reported mark (see {@link #NBT_REPORTED}). No-op on a non-letter stack. */
+    public static void setReported(ItemStack stack, boolean reported) {
+        if (stack == null || stack.isEmpty() || read(stack).isEmpty()) return;
+        if (isReported(stack) == reported) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            if (reported) tag.putBoolean(NBT_REPORTED, true);
+            else tag.remove(NBT_REPORTED);
+        });
+    }
+
+    /** True when the stack carries the opener's reported mark. False on empty/null stacks. */
+    public static boolean isReported(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null || cd.isEmpty()) return false;
+        CompoundTag tag = cd.copyTag();
+        return tag.contains(NBT_REPORTED, Tag.TAG_BYTE) && tag.getBoolean(NBT_REPORTED);
     }
 
     /** {@code (seriesId, letterIndex)} pair as stamped on a served player-narrative book. */

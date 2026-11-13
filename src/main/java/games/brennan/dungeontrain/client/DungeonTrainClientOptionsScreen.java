@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
@@ -15,12 +16,17 @@ import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
+import games.brennan.dungeontrain.client.live.FfmpegSetupButton;
+import games.brennan.dungeontrain.client.live.LiveMicHotkeys;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
 import games.brennan.dungeontrain.client.live.StreamerBoxPanes;
+import games.brennan.dungeontrain.client.live.audio.MicCapture;
 import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
+import games.brennan.dungeontrain.client.sound.MicBalanceOption;
+import games.brennan.dungeontrain.client.sound.StreamVolumeOption;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -40,11 +46,15 @@ import games.brennan.ediblebackpacks.client.ClientAutoCollect;
 import games.brennan.ediblebackpacks.config.AutoCollectMode;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import games.brennan.dungeontrain.config.MenuClientConfig;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -58,7 +68,9 @@ import net.minecraft.world.Difficulty;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -137,6 +149,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      */
     @Nullable private Runnable onReturn;
     private boolean donationPrefsRequested = false;
+    /**
+     * The row a chat link asked to show, kept until the player clicks, scrolls or presses a key:
+     * the Account tab's relay answer rebuilds every list, which would otherwise scroll away from it.
+     */
+    @Nullable private ClientOptionsTab.Row focusRow;
+    /** When the highlight began; a rebuild carries on the same fade. Unset until the row is first shown. */
+    private long focusStartMs = -1;
+
+    /** The screen on {@link ClientOptionsTab#active()}, scrolled to {@code row} with that row highlighted. */
+    public DungeonTrainClientOptionsScreen(Screen parent, ClientOptionsTab.Row row) {
+        this(parent);
+        this.focusRow = row;
+    }
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -158,9 +183,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
         this.tabs.clear();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
-            this.tabs.add(new OptionsTab(tab,
-                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable,
-                            DungeonTrain.isDevBuild())));
+            List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(),
+                    trainSettingsWritable, DungeonTrain.isDevBuild());
+            // No FFmpeg, no stream: its button leads the Stream tab until it is installed.
+            if (tab == ClientOptionsTab.STREAM && FfmpegSetupButton.needed()) rows = ClientOptionsTab.ffmpegFirst(rows);
+            this.tabs.add(new OptionsTab(tab, rows));
         }
 
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
@@ -177,6 +204,24 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         // Reopen (and re-init after a resize) on whichever tab the player last chose.
         this.tabNavigationBar.selectTab(ClientOptionsTab.active().ordinal(), false);
         repositionElements();
+        applyFocus();
+    }
+
+    /** Runs once the current tab has its size: {@code centerScrollOn} clamps to the list's height. */
+    private void applyFocus() {
+        if (this.focusRow == null || !(this.tabManager.getCurrentTab() instanceof OptionsTab current)) {
+            return;
+        }
+        SettingsRowList.Entry entry = current.entries.get(this.focusRow);
+        if (entry == null) {
+            // A conditional row this client doesn't have: the tab alone is the best the link can do.
+            this.focusRow = null;
+            return;
+        }
+        if (this.focusStartMs < 0) {
+            this.focusStartMs = Util.getMillis();
+        }
+        current.list.focus(entry, this.focusStartMs);
     }
 
     /**
@@ -241,7 +286,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.focusRow = null;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        this.focusRow = null;
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.focusRow = null;
         // Ctrl+Tab / Ctrl+Shift+Tab between tabs, as on every other tabbed vanilla screen.
         return this.tabNavigationBar.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -264,6 +322,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
         private final ClientOptionsTab id;
         private final SettingsRowList list;
+        /** This tab's setting rows, for a chat link to find one. */
+        private final Map<ClientOptionsTab.Row, SettingsRowList.Entry> entries = new EnumMap<>(ClientOptionsTab.Row.class);
         /** Stream tab only: what viewers would see, under the rows that change it. */
         @Nullable private final StreamPreviewWidget preview;
 
@@ -272,7 +332,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             this.list = new SettingsRowList(DungeonTrainClientOptionsScreen.this.minecraft,
                     DungeonTrainClientOptionsScreen.this.width, 0, 0);
             for (ClientOptionsTab.Row row : rows) {
-                addRow(this.list, row);
+                SettingsRowList.Entry entry = addRow(this.list, row);
+                if (entry != null) this.entries.put(row, entry);
             }
             this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
         }
@@ -308,19 +369,27 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /**
      * Adds one row of the model to a tab's list: a setting row with its icon, name, hint and control,
      * or — for the two rows that stand for several — the expanded lines.
+     *
+     * @return the setting row's entry; null for a heading or a row that expands into several lines
      */
-    private void addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+    @Nullable
+    private SettingsRowList.Entry addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        if (ClientOptionsTab.isHeading(row)) {
+            list.addWidget(caption(Component.translatable(row.captionKey()).withStyle(ChatFormatting.BOLD)));
+            return null;
+        }
         switch (row) {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
             case TWITCH_ACCOUNT -> addTwitchAccount(list);
             default -> {
                 Setting setting = build(row);
-                list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
+                return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
                         setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
                         setting.control, setting.tooltip);
             }
         }
+        return null;
     }
 
     /**
@@ -683,6 +752,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 ContentModeSyncClient.syncNow();
             }), key + ".tip");
 
+            // What the Live Eye streams with and TVs play with; pressable only while it is missing.
+            case FFMPEG -> Setting.of(new FfmpegSetupButton(CONTROL_W, ROW_H), key + ".tip");
+
             // What viewers see; the preview under the rows follows both switches live.
             case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),
                     key + ".tip");
@@ -700,6 +772,39 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // The game's sound on the stream; read when the next stream starts.
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
+
+            // ---- Microphone (LiveMic). The Microphone row IS the mic switch, the same one as the button by
+            // LIVE: on a stream with a mic track it opens or closes the mic at once. The device is read when
+            // the next stream starts; the balance and mode apply at once.
+            case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
+                    LiveMicHotkeys::setFromOptions), key + ".tip");
+            case MIC_DEVICE -> {
+                List<String> devices = new ArrayList<>();
+                devices.add("");
+                devices.addAll(MicCapture.devices());
+                String current = LiveFeedClientConfig.micDevice();
+                if (!devices.contains(current)) current = "";
+                yield Setting.of(
+                        CycleButton.<String>builder(DungeonTrainClientOptionsScreen::micDeviceLabel)
+                                .withValues(devices)
+                                .withInitialValue(current)
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                        (btn, v) -> LiveFeedClientConfig.setMicDevice(v)),
+                        key + ".tip");
+            }
+            // One slider for game sound against voice in the mix; applies at once.
+            case MIC_MIX -> Setting.of(slider(MicBalanceOption.forModScreen()), key + ".tip");
+            // How loud streams play from TVs; the speakers read it every tick, so a drag is heard at once.
+            case STREAM_VOLUME -> Setting.of(slider(StreamVolumeOption.valueOnly()), key + ".tip");
+            case MIC_MODE -> Setting.of(
+                    CycleButton.<Boolean>builder(ptt -> Component.translatable(ptt ? key + ".push_to_talk" : key + ".always_on"))
+                            .withValues(false, true)
+                            .withInitialValue(LiveFeedClientConfig.micPushToTalk())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, v) -> LiveFeedClientConfig.setMicPushToTalk(v)),
+                    key + ".tip");
 
             // Slower x264 at a lower bitrate; read when the next stream starts. On Performance too, as a frame-rate cost.
             case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
@@ -730,6 +835,26 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 nameTag.active = !kid;
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
+
+            // Whether TVs play stream sound, and the streamers muted on them (LiveTvSpeakers, LiveViewerMutes).
+            // TVs on the train follows this switch (greyed while it is off), so the rows are rebuilt.
+            case TV_STREAM_SOUND -> Setting.of(onOff(Component.translatable(key),
+                    games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound(),
+                    on -> { games.brennan.dungeontrain.config.LiveViewerClientConfig.setTvStreamSound(on); rebuildIfShown(); }),
+                    key + ".tip");
+            // Placed TVs only; a worn or held TV plays regardless. Inert and greyed while TV stream sound is off.
+            case TV_SOUND_ON_TRAIN -> {
+                boolean soundOff = !games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound();
+                CycleButton<Boolean> onTrain = onOff(Component.translatable(key),
+                        !soundOff && games.brennan.dungeontrain.config.LiveViewerClientConfig.tvSoundOnTrain(),
+                        games.brennan.dungeontrain.config.LiveViewerClientConfig::setTvSoundOnTrain);
+                onTrain.active = !soundOff;
+                yield Setting.of(onTrain, key + ".tip");
+            }
+            case MUTED_STREAMERS -> Setting.of(Button.builder(Component.translatable(key + ".button",
+                            games.brennan.dungeontrain.config.LiveViewerClientConfig.mutedStreamers().size()),
+                            b -> this.minecraft.setScreen(new MutedStreamersScreen(this)))
+                    .bounds(0, 0, CONTROL_W, ROW_H).build(), key + ".tip");
 
             // Two streams live: what a worn TV shows by default (a TV that remembers a stream wins).
             case WORN_TV_STREAMS -> Setting.of(
@@ -813,6 +938,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // preview outlines the streaming one).
             case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
             case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
+            // Who is live, under each pane of the pinned feed (HeadViewerCaption).
+            case HEAD_VIEWER_NAMES -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.headViewerNames(),
+                    LiveFeedClientConfig::setHeadViewerNames), key + ".tip");
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
@@ -824,6 +952,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 devChat.active = !ClientDisplayConfig.isKidMode();
                 yield Setting.of(devChat, key + ".tip");
             }
+
+            // The consent card's Public posts switch: the server's Discord gates and the relay both
+            // follow it, so a flip re-syncs both.
+            case PUBLIC_POSTS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isPublicPosts(), on -> {
+                    ClientDisplayConfig.setPublicPosts(on);
+                    ContentModeSyncClient.syncNow();
+                    PublicPostsRelay.syncNow();
+                }), key + ".tip");
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.
@@ -867,6 +1003,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                             .displayOnlyValue()
                             .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                     (btn, mode) -> DungeonTrainCommonConfig.setCatchUpBurstMode(mode)),
+                    key + ".tip");
+
+            // Smaller saves: one global value like CATCH_UP_BURST; the next chunk saved reads it.
+            case DROP_UNTOUCHED_WORLD_GEN -> Setting.of(onOff(Component.translatable(key),
+                    DungeonTrainCommonConfig.isDropUntouchedWorldGen(), DungeonTrainCommonConfig::setDropUntouchedWorldGen),
                     key + ".tip");
 
             // The binding itself lives in vanilla Controls (Dungeon Train category); this only decides
@@ -926,6 +1067,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // OFF, then six tiers of the edge streaks (3 = the default look).
             case WIND_EFFECTS -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindEffectsOption.valueOnly()),
                     key + ".tip");
+
+            // What the main menu shows behind its buttons (MenuClientConfig): the change shows the next
+            // time the menu draws.
+            case MENU_BACKDROP -> new Setting(
+                    CycleButton.<MenuClientConfig.Backdrop>builder(DungeonTrainClientOptionsScreen::menuBackdropLabel)
+                            .withValues(MenuClientConfig.Backdrop.values())
+                            .withInitialValue(MenuClientConfig.backdrop())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, backdrop) -> MenuClientConfig.setBackdrop(backdrop)),
+                    Component.translatable(key + ".tip"));
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that
@@ -1049,6 +1201,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Expanded by addRow() into several rows; there is no single control for them.
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
             case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
+            case STREAM_SECTION_BROADCAST, STREAM_SECTION_SOUND, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
+                 STREAM_SECTION_WATCHING -> throw new IllegalStateException(row + " is a heading, not built");
             case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
         };
     }
@@ -1197,6 +1351,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return Component.translatable("gui.dungeontrain.options.live_chat_translation." + mode.name().toLowerCase(java.util.Locale.ROOT));
     }
 
+    /** "" is the system default; a device name can be long, so it is cut to the button, measured with the font. */
+    private static Component micDeviceLabel(String device) {
+        if (device.isEmpty()) return Component.translatable("gui.dungeontrain.options.mic_device.default");
+        Font font = Minecraft.getInstance().font;
+        return Component.literal(LabelCut.fit(device, font::width, MIC_DEVICE_LABEL_W));
+    }
+
+    /** A value button's text inset on each side (vanilla's 2 px plus the bevel), so a cut label clears the edges. */
+    private static final int MIC_DEVICE_PAD = 4;
+    /** The pixels a mic device name may take on its {@link #CONTROL_W} button. */
+    static final int MIC_DEVICE_LABEL_W = CONTROL_W - 2 * MIC_DEVICE_PAD;
+
     private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
         return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
     }
@@ -1243,6 +1409,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static Component autoCollectLabel(AutoCollectMode mode) {
         return Component.translatable("gui.dungeontrain.options.backpack_auto_collect."
                 + mode.name().toLowerCase(Locale.ROOT));
+    }
+
+    private static Component menuBackdropLabel(MenuClientConfig.Backdrop backdrop) {
+        return Component.translatable("gui.dungeontrain.options.menu_backdrop." + backdrop.name().toLowerCase(Locale.ROOT));
     }
 
     private static Component customContentLabel(CustomContentPreference preference) {

@@ -5,7 +5,7 @@
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -64,14 +64,15 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "16,0,3": {
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -130,14 +131,15 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "16,0,1": {
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -196,14 +198,15 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "14,0,1": {
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -262,14 +265,15 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "23,0,4": {
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -335,7 +339,7 @@
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -401,7 +405,7 @@
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -467,7 +471,7 @@
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -533,7 +537,7 @@
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -599,7 +603,7 @@
       "fillMin": 1,
       "entries": [
         { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_totem", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -658,7 +662,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     }
   }

@@ -18,6 +18,7 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
+import games.brennan.dungeontrain.worldgen.feature.EndBandFeatureFallback;
 import games.brennan.dungeontrain.worldgen.feature.OverworldDecorationGuard;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
@@ -120,6 +121,17 @@ public abstract class ChunkGeneratorDecorationMixin {
     private static final ThreadLocal<RegistryAccess> dungeontrain$superflatVillages = new ThreadLocal<>();
 
     /**
+     * Per-decoration-call record of whether the loop placed the End band's two features — {@code [0]} the
+     * island stamp, {@code [1]} the track bed. Vanilla keeps only biomes its source lists, and an End-band
+     * chunk labelled End at every height has none left, so the loop never reaches them there — or reaches
+     * them off a neighbour's overworld biome and then fails its own biome check at the chunk's End-labelled
+     * origin. The tail runs what was not placed ({@link EndBandFeatureFallback}). Same lifecycle as the
+     * flags above.
+     */
+    @Unique
+    private static final ThreadLocal<boolean[]> dungeontrain$endBandFeaturesRan = ThreadLocal.withInitial(() -> new boolean[2]);
+
+    /**
      * Per-decoration-call registry access while decorating an upside-down band chunk, else {@code null} —
      * the {@link UpsideDownSpawnerStructures} veto reads feature / structure ids through it. Same lifecycle
      * as the flags above.
@@ -142,6 +154,9 @@ public abstract class ChunkGeneratorDecorationMixin {
                 ? level.registryAccess() : null);
         WwooDecorationPass.begin(level, chunk, skip);
         OverworldDecorationGuard.beginChunk(level, chunk.getPos());
+        boolean[] ran = dungeontrain$endBandFeaturesRan.get();
+        ran[0] = false;
+        ran[1] = false;
     }
 
     /**
@@ -158,12 +173,15 @@ public abstract class ChunkGeneratorDecorationMixin {
     }
 
     /**
-     * After the last step — and after every feature, the track bed included — a sampled End-band chunk
-     * gets its real End terrain written in ({@link EndBandInlineTerrain}), so it never exists bare.
+     * After the last step: the End band's own features go in wherever the loop's biome filter dropped them
+     * ({@link EndBandFeatureFallback}), then — after every feature, the track bed included — a sampled
+     * End-band chunk gets its real End terrain written in ({@link EndBandInlineTerrain}), so it never exists bare.
      */
     @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
     private void dungeontrain$vanillaFeaturesLastStep(WorldGenLevel level, ChunkAccess chunk,
                                                       StructureManager structureManager, CallbackInfo ci) {
+        boolean[] ran = dungeontrain$endBandFeaturesRan.get();
+        EndBandFeatureFallback.run(level, (ChunkGenerator) (Object) this, chunk, ran[0], ran[1]);
         WwooDecorationPass.finish(level, (ChunkGenerator) (Object) this);
         EndBandInlineTerrain.write(level, chunk);
     }
@@ -203,7 +221,9 @@ public abstract class ChunkGeneratorDecorationMixin {
             return false; // upside-down band: no dungeon spawners hanging in the mirrored ceiling
         }
         if (dungeontrain$isDtNamespaceFeature(feature)) {
-            return feature.placeWithBiomeCheck(level, generator, random, origin);  // DT's own: the core's decoration
+            boolean placed = feature.placeWithBiomeCheck(level, generator, random, origin);  // DT's own: the core's decoration
+            if (placed) dungeontrain$noteEndBandFeature(feature);
+            return placed;
         }
         OverworldDecorationGuard.enter();   // overworld decoration: its writes into the Nether core are refused
         try {
@@ -405,6 +425,19 @@ public abstract class ChunkGeneratorDecorationMixin {
         games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind kind =
                 LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z);
         return kind != null && kind.usesOldGenerator();
+    }
+
+    /** Record that the loop placed the island stamp / the track bed on this chunk (see the tail fallback). */
+    @Unique
+    private static void dungeontrain$noteEndBandFeature(PlacedFeature feature) {
+        try {
+            Feature<?> f = feature.feature().value().feature();
+            boolean[] ran = dungeontrain$endBandFeaturesRan.get();
+            if (f == ModFeatures.DISINTEGRATION.get()) ran[0] = true;
+            else if (f == ModFeatures.TRACK_BED.get()) ran[1] = true;
+        } catch (Throwable t) {
+            // unclassifiable → not noted; the fallback may run it again, which places nothing new
+        }
     }
 
     /** The track bed + End-island features are the only ones kept in the eroded core. */

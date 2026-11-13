@@ -35,6 +35,9 @@ import java.util.Map;
  *   <li><b>Never into Free Play.</b> A run that {@link RunIntegrity#isCheated} gets nothing and the
  *       restore stays pending on the relay. Restoring never reads or clears {@code RUN_CHEATED}, so
  *       it can't launder a cheated run.</li>
+ *   <li><b>A {@code run} block waits for a lone player.</b> Returning someone to their depth
+ *       replaces the world's train, so with anyone else online the whole restore stays pending
+ *       ({@link RunRestore}).</li>
  *   <li><b>Once per install.</b> The id is written to {@value #APPLIED_FILE} before any item moves,
  *       so a lost ack can't make it apply twice here.</li>
  *   <li><b>Nothing is deleted.</b> Each restored stack takes its snapshot slot; whatever the
@@ -59,6 +62,17 @@ public final class InventoryRestore {
                 .withStyle(ChatFormatting.GRAY));
             return;
         }
+        PlayerRunState runState = null;
+        if (restore.run() != null) {
+            String blocked = RunRestore.blockedReason(player);
+            if (blocked != null) {
+                // Admin-only and never advertised, so no chat line: it stays pending for the next login.
+                LOGGER.warn("[DungeonTrain] Inventory restore {} for {} held: its run can't apply ({})",
+                    restore.id(), name, blocked);
+                return;
+            }
+            runState = RunRestore.decode(restore.run());
+        }
         Path dir = PlayerDataPaths.dir(PlayerDataPaths.OUTBOX);
         if (isApplied(dir, restore.id())) {
             LOGGER.info("[DungeonTrain] Inventory restore {} already applied on this install; re-acking", restore.id());
@@ -72,6 +86,9 @@ public final class InventoryRestore {
             return;
         }
         Outcome outcome = place(player, restore);
+        if (runState != null && RunRestore.apply(player, restore.run(), runState)) {
+            outcome = outcome.withRelocatedX(restore.run().x());
+        }
         LOGGER.info("[DungeonTrain] Inventory restore {} applied for {} ({}): placed={} displaced={} skipped={} xpLevels={}",
             restore.id(), name, player.getUUID(), outcome.placed(), outcome.displaced(), outcome.skipped(),
             restore.xpLevels());

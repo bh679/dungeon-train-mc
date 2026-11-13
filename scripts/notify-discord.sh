@@ -56,7 +56,7 @@ LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.p
 # and Modrinth, the standalone mod, and what changed. Same URL as the in-game notifier
 # (client/version/compare/UpdatePage#BASE_URL). Deliberately no per-platform download fields — one
 # place to go, and it is never stale while a pack awaits CurseForge approval.
-UPDATE_PAGE_URL="https://brennan.games/dungeontrain/update/"
+UPDATE_PAGE_URL="https://dungeon.training/update/"
 
 PAYLOAD=$(jq -n \
   --arg title "Dungeon Train $RELEASE_TAG" \

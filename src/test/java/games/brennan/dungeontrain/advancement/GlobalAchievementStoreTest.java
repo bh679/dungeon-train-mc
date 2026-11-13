@@ -1,11 +1,14 @@
 package games.brennan.dungeontrain.advancement;
 
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
+import games.brennan.dungeontrain.data.InstallKey;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -67,14 +70,125 @@ class GlobalAchievementStoreTest {
     @Test
     @DisplayName("partition files round-trip independently")
     void partitionFilesAreIndependent(@TempDir Path dir) {
-        Path normal = dir.resolve(GlobalAchievementStore.fileName(PLAYER, "normal"));
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Path normal = normalFile(dir);
         Path hard = dir.resolve(GlobalAchievementStore.fileName(PLAYER, "hard"));
-        GlobalAchievementStore.writeAtomic(normal, new LinkedHashSet<>(List.of(GAMEPLAY, VANILLA)));
-        GlobalAchievementStore.writeAtomic(hard, new LinkedHashSet<>(List.of(VANILLA)));
+        write(normal, "normal", GAMEPLAY, VANILLA);
+        write(hard, "hard", VANILLA);
 
-        assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.readFile(normal));
-        assertEquals(Set.of(VANILLA), GlobalAchievementStore.readFile(hard));
-        assertTrue(GlobalAchievementStore.readFile(dir.resolve("missing.json")).isEmpty());
+        assertEquals(Set.of(GAMEPLAY, VANILLA), read(normal, "normal"));
+        assertEquals(Set.of(VANILLA), read(hard, "hard"));
+        assertTrue(read(dir.resolve("missing.json"), "normal").isEmpty());
+    }
+
+    // ---------------- Seal ----------------
+
+    @Test
+    @DisplayName("A written profile carries a seal, and reads back as earned")
+    void writtenProfileIsSealed(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        write(normalFile(dir), "normal", GAMEPLAY);
+        assertTrue(Files.readString(normalFile(dir)).contains("\"seal\""));
+        GlobalAchievementStore.Profile profile = GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal");
+        assertEquals(Set.of(GAMEPLAY), profile.granted());
+        assertTrue(profile.absorbed().isEmpty());
+        assertFalse(profile.tainted());
+    }
+
+    @Test
+    @DisplayName("An id added by hand under an existing seal taints the profile and marks the player")
+    void handEditIsTampered(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        write(normalFile(dir), "normal", GAMEPLAY);
+        String edited = Files.readString(normalFile(dir)).replace("\"granted\":[", "\"granted\":[\"" + VANILLA + "\",");
+        Files.writeString(normalFile(dir), edited);
+
+        GlobalAchievementStore.Profile profile = GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal");
+        assertTrue(profile.tainted());
+        assertEquals(Set.of(VANILLA, GAMEPLAY), profile.all(), "the contents are kept, not deleted");
+        assertTrue(ProfileIntegrity.isTainted(PLAYER));
+    }
+
+    @Test
+    @DisplayName("A tainted profile is written straight back with the taint under the seal, so it holds")
+    void taintIsPersisted(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        write(normalFile(dir), "normal", GAMEPLAY);
+        Files.writeString(normalFile(dir), Files.readString(normalFile(dir)).replace("carts_100", "carts_999"));
+        GlobalAchievementStore.read(PLAYER, "normal");  // the cache load catches it
+        GlobalAchievementStore.flushAndClearAll();
+        ProfileIntegrity.clear(PLAYER);
+
+        assertTrue(Files.readString(normalFile(dir)).contains("\"tainted\":true"));
+        GlobalAchievementStore.read(PLAYER, "normal");
+        assertTrue(ProfileIntegrity.isTainted(PLAYER), "re-read from a fresh session, the taint is back");
+    }
+
+    @Test
+    @DisplayName("A sealed file copied to another partition or player does not verify")
+    void sealIsScoped(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        write(normalFile(dir), "normal", GAMEPLAY);
+        assertTrue(GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "hard").tainted());
+        assertTrue(GlobalAchievementStore.readFile(normalFile(dir), UUID.randomUUID(), "normal").tainted());
+    }
+
+    @Test
+    @DisplayName("An unsealed file on an install that never sealed is this install's own history")
+    void unsealedBeforeFirstSealIsGrandfathered(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Files.writeString(normalFile(dir), "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        GlobalAchievementStore.Profile profile = GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal");
+        assertEquals(Set.of(GAMEPLAY), profile.granted());
+        assertFalse(profile.tainted());
+        assertFalse(ProfileIntegrity.isTainted(PLAYER));
+    }
+
+    @Test
+    @DisplayName("An unsealed file on an install that had sealed before is kept, but not vouched for")
+    void unsealedAfterKeyIsAbsorbed(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        write(normalFile(dir), "normal", GAMEPLAY);          // creates the key
+        InstallKey.useDirectoryForTests(dir);                 // a new session: the key already exists
+        Files.writeString(normalFile(dir), "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        GlobalAchievementStore.Profile profile = GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal");
+        assertTrue(profile.granted().isEmpty());
+        assertEquals(Set.of(GAMEPLAY), profile.absorbed());
+        assertFalse(profile.tainted());
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.read(PLAYER, "normal"), "still replayed");
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.unverified(PLAYER, "normal"));
+    }
+
+    @Test
+    @DisplayName("Absorbed ids stay apart from earned ones and never upgrade by a repeat append")
+    void absorbedStaysAbsorbed(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        assertEquals(1, GlobalAchievementStore.appendAllAbsorbed(PLAYER, "normal", List.of(GAMEPLAY)));
+        assertEquals(0, GlobalAchievementStore.appendAll(PLAYER, "normal", List.of(GAMEPLAY)));
+        assertTrue(GlobalAchievementStore.append(PLAYER, "normal", VANILLA));
+        assertEquals(0, GlobalAchievementStore.appendAllAbsorbed(PLAYER, "normal", List.of(VANILLA)));
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.unverified(PLAYER, "normal"));
+        assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.read(PLAYER, "normal"));
+        assertTrue(GlobalAchievementStore.removeEverywhere(PLAYER, GAMEPLAY));
+        assertTrue(GlobalAchievementStore.unverified(PLAYER, "normal").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Malformed JSON is an empty profile, not a tamper")
+    void malformedIsNotTamper(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Files.writeString(normalFile(dir), "{\"granted\": [");
+        assertTrue(GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal").all().isEmpty());
+        assertFalse(ProfileIntegrity.isTainted(PLAYER));
+    }
+
+    private static void write(Path file, String partition, ResourceLocation... ids) {
+        GlobalAchievementStore.writeAtomic(file, PLAYER, partition,
+            new GlobalAchievementStore.Profile(new LinkedHashSet<>(List.of(ids)), Set.of(), false));
+    }
+
+    private static Set<ResourceLocation> read(Path file, String partition) {
+        return GlobalAchievementStore.readFile(file, PLAYER, partition).all();
     }
 
     // ---------------- Cache + background writer ----------------
@@ -82,6 +196,7 @@ class GlobalAchievementStoreTest {
     @AfterEach
     void restoreStore() {
         GlobalAchievementStore.resetForTests();
+        ProfileIntegrity.clear(PLAYER);
     }
 
     private static Path normalFile(Path dir) {
@@ -94,7 +209,7 @@ class GlobalAchievementStoreTest {
         GlobalAchievementStore.useDirectoryForTests(dir);
         assertTrue(GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY));
         GlobalAchievementStore.flush();
-        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(normalFile(dir)));
+        assertEquals(Set.of(GAMEPLAY), read(normalFile(dir), "normal"));
         assertFalse(GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY));
     }
 
@@ -117,7 +232,7 @@ class GlobalAchievementStoreTest {
             GlobalAchievementStore.append(PLAYER, "normal", id);
         }
         GlobalAchievementStore.flush();
-        assertEquals(ids, List.copyOf(GlobalAchievementStore.readFile(normalFile(dir))));
+        assertEquals(ids, List.copyOf(read(normalFile(dir), "normal")));
     }
 
     @Test
@@ -130,9 +245,9 @@ class GlobalAchievementStoreTest {
         assertTrue(GlobalAchievementStore.removeEverywhere(PLAYER, GAMEPLAY));
         assertFalse(GlobalAchievementStore.read(PLAYER, "hard").contains(GAMEPLAY));
         GlobalAchievementStore.flush();
-        assertTrue(GlobalAchievementStore.readFile(normalFile(dir)).isEmpty());
+        assertTrue(read(normalFile(dir), "normal").isEmpty());
         assertEquals(Set.of(VANILLA),
-            GlobalAchievementStore.readFile(dir.resolve(GlobalAchievementStore.fileName(PLAYER, "hard"))));
+            read(dir.resolve(GlobalAchievementStore.fileName(PLAYER, "hard")), "hard"));
     }
 
     @Test
@@ -142,7 +257,7 @@ class GlobalAchievementStoreTest {
         GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY);
         GlobalAchievementStore.flushAndClearAll();
         // What AdvancementPromotion does at the title screen: edit the file directly.
-        GlobalAchievementStore.writeAtomic(normalFile(dir), new LinkedHashSet<>(List.of(GAMEPLAY, VANILLA)));
+        write(normalFile(dir), "normal", GAMEPLAY, VANILLA);
         assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.read(PLAYER, "normal"));
     }
 
@@ -152,8 +267,8 @@ class GlobalAchievementStoreTest {
         GlobalAchievementStore.useDirectoryForTests(dir);
         GlobalAchievementStore.append(PLAYER, GlobalAchievementStore.SHARED, EDITOR);
         GlobalAchievementStore.flush();
-        assertEquals(Set.of(EDITOR), GlobalAchievementStore.readFile(
-            dir.resolve(GlobalAchievementStore.fileName(PLAYER, GlobalAchievementStore.SHARED))));
+        assertEquals(Set.of(EDITOR), read(
+            dir.resolve(GlobalAchievementStore.fileName(PLAYER, GlobalAchievementStore.SHARED)), GlobalAchievementStore.SHARED));
         assertFalse(java.nio.file.Files.exists(normalFile(dir)));
     }
 
@@ -171,6 +286,6 @@ class GlobalAchievementStoreTest {
         assertTrue(GlobalAchievementStore.read(PLAYER, "normal").contains(GAMEPLAY));
         slowDisk.countDown();
         GlobalAchievementStore.flush();
-        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(normalFile(dir)));
+        assertEquals(Set.of(GAMEPLAY), read(normalFile(dir), "normal"));
     }
 }

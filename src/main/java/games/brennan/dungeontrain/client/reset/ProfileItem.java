@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalCriteriaProgress;
 import games.brennan.dungeontrain.compat.photo.GlobalPhotoProgress;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
+import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.compat.EnderChestResetBridge;
@@ -61,7 +62,8 @@ public enum ProfileItem {
     public boolean present(UUID uuid) {
         return switch (this) {
             case ADVANCEMENTS -> GlobalAchievementStore.hasAny(uuid) || GlobalCriteriaProgress.hasAny(uuid);
-            case STATS -> Files.isRegularFile(GlobalPlayerStats.file(uuid)) || GlobalPhotoProgress.hasAny(uuid);
+            case STATS -> Files.isRegularFile(GlobalPlayerStats.file(uuid)) || GlobalPhotoProgress.hasAny(uuid)
+                || Files.isRegularFile(GlobalLivestreamStats.file(uuid));
             case BOOKS_BURNED -> Files.isRegularFile(GlobalBookBurnStats.file(uuid));
             case NARRATIVE -> Files.isRegularFile(GlobalNarrativeProgress.file());
             case PLAYER_MARKER -> PlayerPlayedMarker.hasPlayed(uuid);
@@ -85,7 +87,7 @@ public enum ProfileItem {
                 yield GlobalAchievementStore.deleteFor(uuid) | GlobalCriteriaProgress.deleteFor(uuid);
             }
             case STATS -> GlobalPlayerStats.deleteFor(uuid) | BurritoClock.deleteFor(uuid)
-                | GlobalPhotoProgress.deleteFor(uuid);
+                | GlobalPhotoProgress.deleteFor(uuid) | GlobalLivestreamStats.deleteFor(uuid);
             case BOOKS_BURNED -> GlobalBookBurnStats.deleteFor(uuid);
             case NARRATIVE -> GlobalNarrativeProgress.deleteAll();
             case PLAYER_MARKER -> PlayerPlayedMarker.deleteFor(uuid);

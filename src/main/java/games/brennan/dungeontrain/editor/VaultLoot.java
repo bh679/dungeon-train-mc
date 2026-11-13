@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.provenance.ItemProvenance;
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
+import games.brennan.dungeontrain.block.VaultGreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,6 +24,7 @@ import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,7 +32,8 @@ import java.util.UUID;
  * Vaults as loot containers. A vanilla vault rewards each player once, from a loot table, when
  * they use its key. Here the reward comes from a pool authored in the loot (C) menu instead, and
  * the pool's {@link ContainerContentsPool#vaultKey()} picks the key, which also picks the vault's
- * type: the ominous trial key makes an ominous vault.
+ * type: the ominous trial key makes an ominous vault, and DT's Dungeon Trial Key a green one
+ * ({@link VaultGreen}).
  *
  * <p><b>Rolled per player, not at placement.</b> Placement ({@link #writeVault}) stores the pool
  * and its roll frame in the block entity's NeoForge data; {@code VaultServerMixin} rolls it when a
@@ -38,6 +43,7 @@ import java.util.UUID;
  *
  * <p>A vault with no authored pool takes the bundled {@link #DEFAULT_PREFAB} (or
  * {@link #OMINOUS_PREFAB}), hand-copied from vanilla's trial-chamber reward tables, every time.
+ * {@link #GREEN_PREFAB} starts as a copy of the ominous one.
  * A vault is never empty the way a 20%-default chest can be.</p>
  */
 public final class VaultLoot {
@@ -46,12 +52,21 @@ public final class VaultLoot {
     public static final int VAULT_SLOTS = 9;
 
     public static final String OMINOUS_KEY = "minecraft:ominous_trial_key";
+    public static final String GREEN_KEY = "dungeontrain:dungeon_trial_key";
 
     /** Keys the menu's Key row cycles through, in order. Append to offer another. */
-    static final List<String> KEY_CYCLE = List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, OMINOUS_KEY);
+    static final List<String> KEY_CYCLE = List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, OMINOUS_KEY, GREEN_KEY);
 
     public static final String DEFAULT_PREFAB = "trial_vault";
     public static final String OMINOUS_PREFAB = "ominous_trial_vault";
+    public static final String GREEN_PREFAB = "green_trial_vault";
+
+    /**
+     * How many carriages further along the train a Dungeon Trial (green) vault's reward is rolled: its
+     * stats, enchantment cap and potion strength come out as if found that much deeper. Its
+     * {@code VaultStatBoost} multiplier then applies on top.
+     */
+    public static final int GREEN_CARRIAGE_BONUS = 2000;
 
     /** Sub-compound of the block entity's {@code NeoForgeData} holding the pool and its roll frame. */
     static final String TAG_VAULT = "dungeontrain_vault";
@@ -59,6 +74,8 @@ public final class VaultLoot {
     private static final String TAG_POOL = "pool";
     private static final String TAG_SEED = "seed";
     private static final String TAG_CARRIAGE = "carriage";
+    /** The train carriage the vault stands in, when it was stamped in one ({@link ProvenanceScope}). */
+    private static final String TAG_TRAIN_CARRIAGE = "train_carriage";
     private static final String TAG_DIFF = "diff";
     private static final String TAG_POS = "pos";
 
@@ -70,6 +87,8 @@ public final class VaultLoot {
 
     private static final long PLAYER_MIX_HI = 0x9E3779B97F4A7C15L;
     private static final long PLAYER_MIX_LO = 0xC2B2AE3D27D4EB4FL;
+    /** Seed salt per extra roll, so a lucky player's second roll ({@code pass} 1) differs from the first. */
+    private static final long PASS_MIX = 0xD6E8FEB86659FD93L;
 
     /** Parsed pools by their text: the display item re-reads the pool every couple of seconds. */
     private static final int POOL_CACHE_SIZE = 64;
@@ -91,6 +110,18 @@ public final class VaultLoot {
         return OMINOUS_KEY.equals(key);
     }
 
+    public static boolean isGreenKey(String key) {
+        return GREEN_KEY.equals(key);
+    }
+
+    /**
+     * {@code diff} moved {@link #GREEN_CARRIAGE_BONUS} carriages further from spawn. The difficulty
+     * tier reads the distance either side of spawn, so a negative index moves down, not up. Pure.
+     */
+    static int greenDiff(int diff) {
+        return diff >= 0 ? diff + GREEN_CARRIAGE_BONUS : diff - GREEN_CARRIAGE_BONUS;
+    }
+
     /** The key after {@code key} in {@link #KEY_CYCLE}; an unknown key starts the cycle over. */
     public static String nextKey(String key) {
         int i = KEY_CYCLE.indexOf(key);
@@ -98,14 +129,20 @@ public final class VaultLoot {
     }
 
     public static String defaultPrefabFor(String key) {
-        return isOminousKey(key) ? OMINOUS_PREFAB : DEFAULT_PREFAB;
+        if (isOminousKey(key)) return OMINOUS_PREFAB;
+        if (isGreenKey(key)) return GREEN_PREFAB;
+        return DEFAULT_PREFAB;
     }
 
-    /** The other default vault prefab for one of the two, or null for any other prefab id. */
+    /**
+     * The default vault prefab for the key after the one {@code prefabId} defaults, following
+     * {@link #KEY_CYCLE}; null for any prefab that is not one of the defaults.
+     */
     @Nullable
     public static String otherDefaultPrefab(String prefabId) {
-        if (DEFAULT_PREFAB.equals(prefabId)) return OMINOUS_PREFAB;
-        if (OMINOUS_PREFAB.equals(prefabId)) return DEFAULT_PREFAB;
+        for (String key : KEY_CYCLE) {
+            if (defaultPrefabFor(key).equals(prefabId)) return defaultPrefabFor(nextKey(key));
+        }
         return null;
     }
 
@@ -130,21 +167,26 @@ public final class VaultLoot {
         return a.fillMin() == b.fillMin() && a.fillMax() == b.fillMax() && a.entries().equals(b.entries());
     }
 
-    /** {@code state} as the vault type {@code pool}'s key makes: ominous for the ominous key. */
+    /** {@code state} as the vault type {@code pool}'s key makes: ominous or green for those keys. */
     public static BlockState stateFor(BlockState state, ContainerContentsPool pool) {
         if (!isVault(state)) return state;
-        return state.setValue(VaultBlock.OMINOUS, isOminousKey(pool.vaultKey()));
+        return typed(state, pool.vaultKey());
+    }
+
+    /** A vault state typed for {@code key}: at most one of ominous and green is set. */
+    private static BlockState typed(BlockState state, String key) {
+        return VaultGreen.withGreen(state.setValue(VaultBlock.OMINOUS, isOminousKey(key)), isGreenKey(key));
     }
 
     /**
-     * {@code state} as the vault type its rolled NBT says: ominous when {@link #writeVault} gave it
-     * the ominous key. Anything else, or a vault NBT this class never wrote, comes back unchanged.
+     * {@code state} as the vault type its rolled NBT says: ominous or green when {@link #writeVault}
+     * gave it that key. Anything else, or a vault NBT this class never wrote, comes back unchanged.
      */
     public static BlockState stateForNbt(BlockState state, @Nullable CompoundTag nbt) {
         if (!isVault(state) || nbt == null) return state;
         if (!nbt.getCompound(NBT_NEOFORGE_DATA).contains(TAG_VAULT, Tag.TAG_COMPOUND)) return state;
         String key = nbt.getCompound(NBT_CONFIG).getCompound(NBT_KEY_ITEM).getString("id");
-        return state.setValue(VaultBlock.OMINOUS, isOminousKey(key));
+        return typed(state, key);
     }
 
     /**
@@ -171,7 +213,9 @@ public final class VaultLoot {
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         CompoundTag config = out.getCompound(NBT_CONFIG).copy();
         config.put(NBT_KEY_ITEM, new ItemStack(keyItem(pool.vaultKey())).save(registries));
-        config.putString(NBT_LOOT_TABLE, isOminousKey(pool.vaultKey()) ? REWARD_TABLE_OMINOUS : REWARD_TABLE);
+        // The green vault's default loot is the ominous loot, so it falls back to the same table.
+        boolean ominousTable = isOminousKey(pool.vaultKey()) || isGreenKey(pool.vaultKey());
+        config.putString(NBT_LOOT_TABLE, ominousTable ? REWARD_TABLE_OMINOUS : REWARD_TABLE);
         out.put(NBT_CONFIG, config);
 
         CompoundTag vault = new CompoundTag();
@@ -179,6 +223,9 @@ public final class VaultLoot {
         vault.putLong(TAG_SEED, worldSeed);
         vault.putInt(TAG_CARRIAGE, carriageIndex);
         vault.putInt(TAG_DIFF, diffIndex);
+        // Only a train carriage's stamp names a carriage; tunnels and dimensional carriages pass other
+        // indices in carriageIndex. Rewards are marked with it at unlock (ItemProvenance).
+        ProvenanceScope.current().ifPresent(pIdx -> vault.putInt(TAG_TRAIN_CARRIAGE, pIdx));
         vault.putIntArray(TAG_POS, new int[] {localPos.getX(), localPos.getY(), localPos.getZ()});
         CompoundTag neo = out.getCompound(NBT_NEOFORGE_DATA).copy();
         neo.put(TAG_VAULT, vault);
@@ -199,25 +246,51 @@ public final class VaultLoot {
      */
     public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
                                                           HolderLookup.Provider registries) {
+        return rollForPlayer(be, player, registries, 0);
+    }
+
+    /**
+     * Roll number {@code pass} of {@code player}'s reward: pass 0 is the reward itself, a later pass
+     * is a Luck extra ({@link LuckyBonusRoller#vaultExtraCount}). Each pass is its own fixed roll.
+     */
+    public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
+                                                          HolderLookup.Provider registries, int pass) {
         CompoundTag vault = vaultTag(be);
         if (vault == null) return Optional.empty();
         ContainerContentsPool pool = poolOf(vault);
         if (pool == null) return Optional.empty();
         int[] p = vault.getIntArray(TAG_POS);
         BlockPos localPos = p.length == 3 ? new BlockPos(p[0], p[1], p[2]) : BlockPos.ZERO;
-        long seed = vault.getLong(TAG_SEED) ^ playerSalt(player);
+        long seed = rollSeed(vault.getLong(TAG_SEED), player, pass);
         int carriage = vault.getInt(TAG_CARRIAGE);
-        int diff = vault.getInt(TAG_DIFF);
+        int stored = vault.getInt(TAG_DIFF);
+        int diff = isGreenKey(pool.vaultKey()) ? greenDiff(stored) : stored;
         // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
         // for this player every time, so an empty one would lock them out of this vault for good.
         ContainerContentsPool atLeastOne = pool.withFillMin(Math.max(1, pool.fillMin()));
+        // Split: a reward rolled above the item's stack size ("totem 3-7") pays out as several items.
         List<ItemStack> rolled = ContainerContentsRoller.rollStacks(atLeastOne, VAULT_SLOTS, localPos, seed,
-            carriage, diff, registries);
+            carriage, diff, true, registries);
         if (rolled.isEmpty()) {
             rolled = ContainerContentsRoller.rollStacks(defaultPool(pool.vaultKey()), VAULT_SLOTS, localPos, seed,
-                carriage, diff, registries);
+                carriage, diff, true, registries);
+        }
+        if (vault.contains(TAG_TRAIN_CARRIAGE)) {
+            OptionalInt pIdx = OptionalInt.of(vault.getInt(TAG_TRAIN_CARRIAGE));
+            for (ItemStack stack : rolled) ItemProvenance.markFresh(stack, pIdx);
         }
         return Optional.of(rolled);
+    }
+
+    /** Does {@code be} carry a DT pool? False for a vanilla vault, which keeps its loot table. */
+    public static boolean hasPool(BlockEntity be) {
+        CompoundTag vault = vaultTag(be);
+        return vault != null && poolOf(vault) != null;
+    }
+
+    /** The roll seed for {@code player}'s pass {@code pass}; pass 0 keeps the original per-player seed. */
+    static long rollSeed(long worldSeed, UUID player, int pass) {
+        return worldSeed ^ playerSalt(player) ^ (pass * PASS_MIX);
     }
 
     /** Seed salt for one player: distinct per UUID, stable across sessions. */

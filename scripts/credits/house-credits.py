@@ -46,6 +46,14 @@ def _load(path: Path):
         return json.load(f)
 
 
+def _pooled_ids(folder: Path) -> set[str]:
+    """Group parents in a contents pool (pools.json): ways of sorting rooms, not builds."""
+    path = folder / "pools.json"
+    if not path.exists():
+        return set()
+    return {m for k, pool in _load(path).items() if not k.startswith("_") for m in pool.get("members", [])}
+
+
 def count_uncredited_builds() -> int:
     """Bundled template entries (every kind's weights.json) that credit no builder."""
     total = 0
@@ -53,9 +61,10 @@ def count_uncredited_builds() -> int:
         entries = _load(path)
         if not isinstance(entries, dict):
             continue
-        for entry in entries.values():
+        pooled = _pooled_ids(path.parent)
+        for entry_id, entry in entries.items():
             credited = isinstance(entry, dict) and isinstance(entry.get("builder"), dict)
-            if not credited:
+            if not credited and entry_id not in pooled:
                 total += 1
     return total
 

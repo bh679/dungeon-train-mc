@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +35,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.event.EventHooks;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
@@ -42,17 +44,25 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A tool-carrying mob ({@link DifficultyApplier#DIG_TIER_KEY}) digging through to a target it has
  * seen. Runs when the mob has seen its target recently, has stopped closing the distance, and the
  * cells in front of it (head height, then feet, plus overhead when the target is above) are all
- * blocks it may break: {@link ToolTiers#mayBreak} at its break tier, never below its feet. With no
+ * blocks it may break: {@link ToolTiers#mayBreak} at its break tier, never the floor. Floor is judged
+ * by height, not block row: anything whose top is no higher than the mob could step ({@link #isFloor})
+ * is ground it stands on or steps over, so carpet, slabs and paths at its feet are never in the way.
+ * With no
  * path the navigator leaves a mob standing where it gave up, so when the way ahead is open ground
  * the goal first walks it straight at the target until there is something to dig.
  *
  * <p>PlayerMobs always have this goal at {@link ToolTiers#MAX_TIER} (anything but floors), tool or
  * not: with no digging tool they mine at the speed of what is in their main hand, as a player would.</p>
+ *
+ * <p>Luminous Monsters' Miners always have this goal too, and may also break what their held tool can
+ * harvest ({@link ToolTiers#minerMayBreak}). {@link #bestHand} still needs a digging tool, so a bow or an
+ * empty hand digs nothing.</p>
  *
  * <p>Breaks one block at a time, taking as long as a player would with the same tool (tool speed,
  * Efficiency, Haste / Mining Fatigue, water and airborne penalties, right-tool 1/30 vs 1/100). A
@@ -87,13 +97,17 @@ public final class MobDigGoal extends Goal {
     private static final double CRACK_RANGE_SQR = 32.0 * 32.0;
     /** Padding around a carriage's box when looking for the carriage a cell belongs to. */
     private static final double CARRIAGE_PAD = 2.0;
+    /** Luminous Monsters' Miners. They dig with a tool they hold, from any level, and can't without one. */
+    private static final Set<String> MINER_IDS =
+        Set.of("luminous_monsters:miner_zombie", "luminous_monsters:miner_skeleton");
 
     /**
      * One cell to break. A carriage cell keeps its ship and plot position (the world cell moves with
-     * the train); a world cell has {@code ship == null}.
+     * the train); a world cell has {@code ship == null}. A {@code floor} cell is ground the mob stands
+     * on or can step over: never broken, and never in its way.
      */
     private record DigCell(BlockPos worldPos, ManagedShip ship, ServerSubLevel subLevel, BlockPos plotPos,
-                           BlockState state, InteractionHand hand, int ticks) {
+                           BlockState state, InteractionHand hand, int ticks, boolean floor) {
         boolean onCarriage() { return ship != null; }
         BlockPos levelPos() { return onCarriage() ? plotPos : worldPos; }
         Vec3 worldCentre() {
@@ -104,9 +118,10 @@ public final class MobDigGoal extends Goal {
     }
 
     private final Mob mob;
-    private final int tier;
     /** Digs with whatever is in the main hand when it holds no digging tool, at that item's speed. */
     private final boolean bareHanded;
+    /** May also break what its held tool can harvest ({@link ToolTiers#minerMayBreak}), whatever its tier. */
+    private final boolean miner;
 
     private int lastSeenTick = -SEEN_MEMORY_TICKS * 2;
     private LivingEntity trackedTarget;
@@ -121,27 +136,36 @@ public final class MobDigGoal extends Goal {
     private int progressTicks;
     private int lastStage;
 
-    private MobDigGoal(Mob mob, int tier, boolean bareHanded) {
+    private MobDigGoal(Mob mob, boolean bareHanded, boolean miner) {
         this.mob = mob;
-        this.tier = tier;
         this.bareHanded = bareHanded;
+        this.miner = miner;
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
     /**
-     * Give {@code mob} its dig goal if it carries a break tier and doesn't have one yet. Safe to call
-     * from both the spawn roll and a load from disk.
+     * Give {@code mob} its dig goal if it carries a break tier or is a Miner, and doesn't have one yet.
+     * Safe to call from both the spawn roll and a load from disk.
      */
     public static void attach(Mob mob) {
         if (mob.level().isClientSide()) return;
         // PlayerMobs dig like players: always at the top tier, with whatever they hold.
         boolean playerMob = mob instanceof PlayerMobEntity;
-        int tier = playerMob ? ToolTiers.MAX_TIER : mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY);
-        if (tier <= ToolTiers.NO_TIER) return;
+        boolean miner = isMiner(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString());
+        if (!playerMob && !miner && mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY) <= ToolTiers.NO_TIER) return;
         for (WrappedGoal wrapped : mob.goalSelector.getAvailableGoals()) {
             if (wrapped.getGoal() instanceof MobDigGoal) return;
         }
-        mob.goalSelector.addGoal(PRIORITY, new MobDigGoal(mob, tier, playerMob));
+        mob.goalSelector.addGoal(PRIORITY, new MobDigGoal(mob, playerMob, miner));
+    }
+
+    static boolean isMiner(String entityId) {
+        return MINER_IDS.contains(entityId);
+    }
+
+    /** Read live: a Miner's goal attaches at spawn, and its difficulty roll may give it a tier after that. */
+    private int tier() {
+        return bareHanded ? ToolTiers.MAX_TIER : mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY);
     }
 
     @Override
@@ -212,7 +236,7 @@ public final class MobDigGoal extends Goal {
         progressTicks = 0;
         lastStage = -1;
         LOGGER.debug("[DungeonTrain] MobDigGoal start: mob={} tier={} block={} at={} carriage={} ticks={}",
-                mob.getUUID(), tier, cell.state, cell.worldPos, cell.onCarriage(), cell.ticks);
+                mob.getUUID(), tier(), cell.state, cell.worldPos, cell.onCarriage(), cell.ticks);
     }
 
     @Override
@@ -278,9 +302,14 @@ public final class MobDigGoal extends Goal {
         BlockPos feet = mob.blockPosition();
         BlockPos front = frontOf(feet, target);
         List<ManagedShip> ships = shipsNear(level);
-        return resolve(level, ships, front, feet.getY()) == null
-                && resolve(level, ships, front.above(), feet.getY()) == null
-                && resolve(level, ships, front.below(), feet.getY()) != null;
+        return isOpen(resolve(level, ships, front))
+                && isOpen(resolve(level, ships, front.above()))
+                && resolve(level, ships, front.below()) != null;
+    }
+
+    /** Nothing in the way: no collision, or ground the mob can stand on or step over. */
+    private static boolean isOpen(DigCell c) {
+        return c == null || c.floor;
     }
 
     /** The cell beside {@code feet} in the target's direction. */
@@ -327,8 +356,8 @@ public final class MobDigGoal extends Goal {
         List<ManagedShip> ships = shipsNear(level);
         DigCell first = null;
         for (BlockPos pos : candidates) {
-            DigCell c = resolve(level, ships, pos, feet.getY());
-            if (c == null) continue;           // open: nothing to break here
+            DigCell c = resolve(level, ships, pos);
+            if (isOpen(c)) continue;           // open, or floor: nothing to break here
             if (c.ticks < 0) return null;      // blocking and not ours to break
             if (first == null) first = c;
         }
@@ -337,9 +366,10 @@ public final class MobDigGoal extends Goal {
 
     /**
      * The cell at world {@code pos}: null when open, a cell with {@code ticks < 0} when it blocks but
-     * may not be broken, otherwise the cell with its hand and dig time.
+     * may not be broken (always so for {@link DigCell#floor floor}), otherwise the cell with its hand
+     * and dig time.
      */
-    private DigCell resolve(ServerLevel level, List<ManagedShip> ships, BlockPos pos, int feetY) {
+    private DigCell resolve(ServerLevel level, List<ManagedShip> ships, BlockPos pos) {
         ManagedShip ship = null;
         ServerSubLevel subLevel = null;
         BlockPos plotPos = null;
@@ -358,9 +388,12 @@ public final class MobDigGoal extends Goal {
             if (!level.isLoaded(pos)) return null;
             state = level.getBlockState(pos);
         }
-        if (state.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).isEmpty()) return null;
+        VoxelShape shape = state.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+        if (shape.isEmpty()) return null;
 
-        DigCell blocked = new DigCell(pos, ship, subLevel, plotPos, state, InteractionHand.MAIN_HAND, -1);
+        boolean floor = isFloor(cellTopY(pos, ship, plotPos, shape), mob.getY(), mob.maxUpStep());
+        DigCell blocked = new DigCell(pos, ship, subLevel, plotPos, state, InteractionHand.MAIN_HAND, -1, floor);
+        if (floor) return blocked;
         float hardness = state.getDestroySpeed(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
         if (hardness < 0 || state.hasBlockEntity()) return blocked;
 
@@ -368,15 +401,34 @@ public final class MobDigGoal extends Goal {
         if (hand == null) return blocked;
         ItemStack tool = mob.getItemInHand(hand);
         boolean playerPlaced = subLevel != null && PlayerPlacedTrainBlocks.isPlayerPlaced(subLevel, plotPos);
-        boolean floor = pos.getY() < feetY;
-        if (!ToolTiers.mayBreak(tier, playerPlaced, tool.isCorrectToolForDrops(state), floor)) return blocked;
+        boolean correctTool = tool.isCorrectToolForDrops(state);
+        if (!ToolTiers.mayBreak(tier(), playerPlaced, correctTool, floor)
+                && !(miner && ToolTiers.minerMayBreak(correctTool, floor))) return blocked;
 
         BlockPos levelPos = plotPos != null ? plotPos : pos;
         if (!EventHooks.onEntityDestroyBlock(mob, levelPos, state)) return blocked;
 
         int ticks = digTicks(level, tool, state, hardness);
         if (ticks > MAX_DIG_TICKS) return blocked;
-        return new DigCell(pos, ship, subLevel, plotPos, state, hand, ticks);
+        return new DigCell(pos, ship, subLevel, plotPos, state, hand, ticks, false);
+    }
+
+    /**
+     * Whether a cell whose collision top is at world height {@code cellTopY} is floor to a mob whose
+     * feet are at {@code mobY}: no higher than it could step, so it stands on it or walks over it.
+     * Judged by height rather than block row, since carpet, a bottom slab or a path shares the row of
+     * the feet standing on it, and a carriage deck sits at whatever height the train does.
+     */
+    static boolean isFloor(double cellTopY, double mobY, double stepHeight) {
+        return cellTopY <= mobY + stepHeight;
+    }
+
+    /** World height of the top of {@code shape} at the cell: in the carriage plot for a carriage cell. */
+    private static double cellTopY(BlockPos pos, ManagedShip ship, BlockPos plotPos, VoxelShape shape) {
+        double top = shape.max(Direction.Axis.Y);
+        if (ship == null) return pos.getY() + top;
+        Vector3d world = ship.shipToWorld(new Vector3d(plotPos.getX() + 0.5, plotPos.getY() + top, plotPos.getZ() + 0.5));
+        return world.y;
     }
 
     /**

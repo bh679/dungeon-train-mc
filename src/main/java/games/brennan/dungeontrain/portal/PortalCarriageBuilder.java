@@ -28,11 +28,15 @@ import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.StagePlacementScope;
+import games.brennan.dungeontrain.util.AsyncPerfLog;
+import games.brennan.dungeontrain.util.DtLogging;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -51,6 +55,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +107,11 @@ import java.util.Set;
 public final class PortalCarriageBuilder {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+    private static final org.slf4j.Logger PERF_LOGGER = org.slf4j.LoggerFactory.getLogger(DtLogging.PERF);
+
+    /** Asks for a column {@link #footprintReady} is waiting on; restated each tick it still waits. */
+    private static final TicketType<ChunkPos> STAMP_WAIT_TICKET =
+        TicketType.create("dungeontrain_portal_stamp_wait", Comparator.comparingLong(ChunkPos::toLong), 60);
 
     /**
      * Size mismatches already reported, so the editor's size steppers do not fill a log.
@@ -998,6 +1008,7 @@ public final class PortalCarriageBuilder {
         PortalCarriageLayout layout = layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
+        long startedAt = System.nanoTime();
 
         if (structure.stampsFromBlob()) {
             // A drifted copy, or this world's own room carried across a relocation: laid as
@@ -1024,15 +1035,7 @@ public final class PortalCarriageBuilder {
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Void writes nothing around the room at all and sweeps the space instead.
-        // A generated room fills the box the template just laid before anything is wrapped around
-        // it: the skin is written one column outside the room, so the two never touch, but the order
-        // keeps "what the room turned out to be" true for the mode branch below.
-        // Not over a captured room: the blob already holds the terrain as it was left, and re-laying
-        // the sample would put back every ore a player mined out of it.
-        if (structure.mode().generatesTerrain() && !structure.stampsFromBlob()) {
-            PortalChunkDimension.fill(level, structure, dims, pairKey);
-        }
-
+        long roomAt = System.nanoTime();
         if (structure.mode().sealsRoomBox()) {
             bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
         } else if (structure.mode().clearsSurroundings()) {
@@ -1041,6 +1044,7 @@ public final class PortalCarriageBuilder {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
 
+        long skinAt = System.nanoTime();
         stampCorridors(level, structure, dims, pairKey);
 
         // After the corridors, unlike the room's own skin, and necessarily so: this shell sits one
@@ -1055,11 +1059,27 @@ public final class PortalCarriageBuilder {
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
 
-        // Last of all: a chunk dimension's frame stands where the skin, the mouth seals and the
-        // corridor rings were just laid, and dresses them — see ChunkFramePlacer.
-        if (structure.mode().generatesTerrain()) {
+        long corridorsAt = System.nanoTime();
+
+        // A generated room's terrain, then its frame, which dresses the skin, the mouth seals and the
+        // corridor rings just laid (see ChunkFramePlacer). Poured over the next few ticks, so the
+        // frame comes after the terrain's last row. Not over a captured room: the blob already holds
+        // the terrain as it was left, and re-laying the sample would put back every ore a player mined
+        // out of it. It and a room with no sample only want the frame, which they get now.
+        boolean poured = structure.mode().generatesTerrain() && !structure.stampsFromBlob()
+            && PortalChunkDimension.beginPour(level, structure, pairKey);
+        if (structure.mode().generatesTerrain() && !poured) {
             PortalChunkDimension.frame(level, structure, dims, pairKey);
         }
+
+        long endedAt = System.nanoTime();
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.stamp] pair={} room={} mode={} roomMs={} skinMs={} corridorsMs={} restMs={} totalMs={} poured={}",
+            pairKey, structure.roomName(), structure.mode().name(), stampMillis(roomAt - startedAt), stampMillis(skinAt - roomAt),
+            stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured);
+    }
+
+    private static String stampMillis(long nanos) {
+        return String.format(java.util.Locale.ROOT, "%.1f", nanos / 1_000_000.0);
     }
 
     /**
@@ -1654,14 +1674,39 @@ public final class PortalCarriageBuilder {
      * clean up. The one consequence worth knowing is that another pair's room may later be stamped
      * inside a void this one swept; that is no worse than the two structures being neighbours
      * anywhere else, which the Y lanes already make rare.</p>
+     *
+     * <p><b>Never waits for a column.</b> The halo reaches 50 blocks past the room, often into chunks
+     * still generating, and reading one blocks the server until it is done. Nothing is stamped in the
+     * halo, so a column that is not ready is cleared when it is; a client is not sent a chunk before it
+     * is ready, so at most it sees the rock for a tick.</p>
      */
     private static void clearVoidAround(ServerLevel level, PortalStructure structure,
                                         CarriageDims dims) {
         BoundingBox halo = voidHaloOf(level, structure, dims);
         BoundingBox footprint = footprintOf(level, structure, dims);
         for (BoundingBox slab : voidSlabs(halo, footprint)) {
-            PortalClear.clearBox(level, slab, PortalCorridorMask.NONE);
+            PortalClear.clearBoxDeferring(level, slab, PortalCorridorMask.NONE);
         }
+    }
+
+    /**
+     * Whether every chunk column of a structure's footprint has finished generating, asked before it
+     * is stamped so the stamp cannot block the server on one. Asks for the missing ones as it goes: the
+     * blocking read this replaces was also what got a column nobody held loaded at all. The ticket is
+     * timed, so it lapses by itself once the caller stops asking.
+     */
+    public static boolean footprintReady(ServerLevel level, PortalStructure structure, CarriageDims dims) {
+        BoundingBox footprint = footprintOf(level, structure, dims);
+        boolean ready = true;
+        for (int cx = footprint.minX() >> 4; cx <= footprint.maxX() >> 4; cx++) {
+            for (int cz = footprint.minZ() >> 4; cz <= footprint.maxZ() >> 4; cz++) {
+                if (level.getChunkSource().getChunkNow(cx, cz) != null) continue;
+                ChunkPos pos = new ChunkPos(cx, cz);
+                level.getChunkSource().addRegionTicket(STAMP_WAIT_TICKET, pos, 0, pos);
+                ready = false;
+            }
+        }
+        return ready;
     }
 
     /**
@@ -1859,6 +1904,7 @@ public final class PortalCarriageBuilder {
                                               PortalRoomBooks books,
                                               java.util.function.Predicate<BlockPos> keepFluid) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask, keepFluid);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.TEMPLATE);
         // Claim the pictures that stamp just hung, before anything else can walk in and be mistaken
         // for one. A dimensional carriage REPEATS — the tiling window is 121 copies and it has no
         // memory, so walking back over ground you left re-stamps it — and an item frame is a
@@ -1876,6 +1922,11 @@ public final class PortalCarriageBuilder {
         PortalRoomPools.apply(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
             pairKey, tile, liveMobCount);
+        // Gear baked into the room's storage is a new find, not an old one. Before the fingerprint, which
+        // hashes the items' data: marking after it would make every baked chest look touched. No carriage
+        // index — a room has no ProvenanceScope, so it reads as gear rolled here does.
+        games.brennan.dungeontrain.provenance.BakedGear.markStorage(level, roomOrigin, size,
+            java.util.OptionalInt.empty());
         // Template-baked chest contents were never rolled: fingerprint them as stamped (difficulty swap).
         games.brennan.dungeontrain.event.DifficultyWorldLootEvents.fingerprintRoom(level, roomOrigin, size);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
@@ -2185,6 +2236,7 @@ public final class PortalCarriageBuilder {
         clearRoomBox(level, roomOrigin, size, clearMask, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size, keepFluid);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
         if (stored.isEmpty()) {
@@ -2277,6 +2329,7 @@ public final class PortalCarriageBuilder {
             clearRoomBox(level, origin, size, clearMask, /*relight*/ true);
             clearIntruders(level, origin, size);
             plugFluidsAround(level, origin, size, keepFluid);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
             StructureTemplate template = games.brennan.dungeontrain.train.CarriageSnapshotTemplate.toTemplate(
                 blob.snapshot(), level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK));
             if (!template.getSize().equals(size)) {
@@ -2284,6 +2337,7 @@ public final class PortalCarriageBuilder {
             }
             CarriagePlacer.stampTemplateAt(level, origin, template, clipTo(origin, size, writeMask),
                 /*relight*/ true, boxOf(origin, size), TemplateDecor.Rule.ROOM);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.TEMPLATE);
             PortalRoomMobs.markDecor(level, origin, size, pairKey, tile, 0);
         });
     }

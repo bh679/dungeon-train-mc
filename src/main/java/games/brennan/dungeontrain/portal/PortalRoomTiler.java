@@ -197,8 +197,10 @@ public final class PortalRoomTiler {
             Tile farthest = current.tiling().farthestFrom(Tile.BASE,
                 candidate -> !standingIn.contains(candidate));
             if (farthest == null) break;
-            // A copy a player was in is captured before it goes (rememberTile), and a capture is a
-            // few milliseconds — so it ends the tick's draining rather than being paid four times over.
+            // A copy a player was in is captured before it goes (rememberTile). Its server-thread part
+            // is a copy of the block palettes plus its block entities and entities: usually well under
+            // a millisecond, about 10 for the largest room (saving is PortalRoomMemoryWriter's). That
+            // is still enough to end the tick's draining rather than be paid four times over.
             boolean captures = PortalRoomMemory.isTileTouched(pairKey, farthest);
             current = eraseTile(level, dims, current, farthest, pairKey);
             if (captures) break;
@@ -216,13 +218,13 @@ public final class PortalRoomTiler {
      * floor and above the roof are still dammed.
      */
     private static java.util.function.Predicate<BlockPos> liquidPlaneKeep(
-            PortalRoomCopiesVariant single, BlockPos origin, Vec3i size) {
+            PortalRoomCopiesVariant single, BlockPos origin, Vec3i size, PortalRoomGround.Rows ground) {
         boolean floor = single.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
         boolean roof = single.hasLiquid(PortalRoomCopiesVariant.Plane.ROOF);
         if (!floor && !roof) return pos -> false;
-        int floorY = origin.getY();
-        int floorTop = floorY + PortalRoomSinglePlanes.floorHeightFor(single, size) - 1;
-        int ceilingY = floorY + size.getY() - 1;
+        int floorY = origin.getY() + ground.bottom();
+        int floorTop = origin.getY() + PortalRoomSinglePlanes.floorTopRow(single, size, ground);
+        int ceilingY = origin.getY() + size.getY() - 1;
         return pos -> (floor && pos.getY() >= floorY && pos.getY() <= floorTop)
             || (roof && pos.getY() == ceilingY);
     }
@@ -244,6 +246,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure stampTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
+        PortalCopyTiming.begin();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
@@ -257,22 +260,35 @@ public final class PortalRoomTiler {
         // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
         // falls through to stamping the room as it always did, rather than to a floorless tile.
         PortalRoomCopiesVariant single = singlePalette(structure);
+        PortalRoomGround.Rows ground = structure.settings().groundRows(dims, size.getY());
         PortalCorridorMask writeMask =
-            writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
+            writeMaskFor(structure, clearMask, origin, size, !single.isEmpty(), ground);
 
         // A copy a player has already been in comes back as they left it, not from the template —
         // otherwise walking out of the window (or the carriage) and back re-lays every block they
         // mined and refills every chest. See PortalRoomMemory.
-        net.minecraft.nbt.CompoundTag remembered = PortalTestSession.isTestStamp(pairKey) ? null
+        long started = System.nanoTime();
+        PortalRoomMemory.Recalled recalled = PortalTestSession.isTestStamp(pairKey) ? PortalRoomMemory.Recalled.NOTHING
             : PortalRoomMemory.recallTile(level, pairKey, tile, structure.roomName(), size);
-        if (remembered != null) {
-            PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(remembered),
-                clearMask, writeMask, liquidPlaneKeep(single, origin, size), pairKey, tile);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.READ);
+        if (recalled.snapshot() != null) {
+            long stampStarted = System.nanoTime();
+            PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(recalled.snapshot()),
+                clearMask, writeMask, liquidPlaneKeep(single, origin, size, ground), pairKey, tile);
             PortalRoomMemory.markTileTouched(pairKey, tile);
-            LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} restored as it was left",
-                pairKey, tile.x(), tile.z());
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.PASSES);
+            long facesStarted = System.nanoTime();
             PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
             refreshFacesAround(level, dims, grown, tile);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.FACES);
+            PortalCopyTiming.finish(PortalCopyTiming.Kind.RESTORED, structure.roomName(), pairKey, tile);
+            long ended = System.nanoTime();
+            // Server-thread time, split so a player's log can say whether their disk is what hurt.
+            LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} restored as it was left in {} ms "
+                    + "(check {}, read {}, stamp {}, faces {})",
+                pairKey, tile.x(), tile.z(), PortalRoomMemory.ms(ended - started),
+                PortalRoomMemory.ms(recalled.checkNanos()), PortalRoomMemory.ms(recalled.readNanos()),
+                PortalRoomMemory.ms(facesStarted - stampStarted), PortalRoomMemory.ms(ended - facesStarted));
             return grown;
         }
 
@@ -286,13 +302,14 @@ public final class PortalRoomTiler {
             // The structure's own setting, not a fresh read of the variant: a portal already standing
             // keeps what it was built with, the same promise planStructure makes about the room.
             structure.settings().contents(), structure.settings().books(),
-            liquidPlaneKeep(single, origin, size));
+            liquidPlaneKeep(single, origin, size, ground));
 
         // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
         // and under Single its write half put nothing back. These two planes are the whole of what
         // an appended tile is in that case.
         PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
-            level.getSeed(), structure.variantIndexFor(tile, pairKey));
+            level.getSeed(), structure.variantIndexFor(tile, pairKey), ground);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.PASSES);
 
         // Nothing closes what the copy's own wall left open in a mouth's seal plane. Under Kept
         // (the default) the plane is that copy's end column, stamped as the author drew it — air
@@ -303,13 +320,14 @@ public final class PortalRoomTiler {
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.FACES);
+        PortalCopyTiming.finish(PortalCopyTiming.Kind.FRESH, structure.roomName(), pairKey, tile);
         return grown;
     }
 
     /**
      * What this copy must not write into: whatever the clear mask already protects, plus — for
-     * {@link PortalRoomMode#ENDLESS_OPEN} — everything strictly between the tile's floor and its
-     * ceiling.
+     * {@link PortalRoomMode#ENDLESS_OPEN} — every row of the tile but its ground and its ceiling.
      *
      * <p>Under {@link PortalRoomCopies.Kind#SINGLE} it is the <b>whole</b> tile instead, planes
      * included: those are written afterwards from one block, so the stamp has nothing to contribute
@@ -329,7 +347,7 @@ public final class PortalRoomTiler {
     static PortalCorridorMask writeMaskFor(PortalStructure structure,
                                            PortalCorridorMask clearMask,
                                            BlockPos origin, Vec3i size,
-                                           boolean singlePlanes) {
+                                           boolean singlePlanes, PortalRoomGround.Rows ground) {
         if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return clearMask;
         if (singlePlanes) {
             // The whole box, floor and roof included. Under Single the two planes are written
@@ -342,10 +360,17 @@ public final class PortalRoomTiler {
                 origin.getY() + size.getY() - 1,
                 origin.getZ() + size.getZ() - 1));
         }
-        return clearMask.plus(new BoundingBox(
-            origin.getX(), origin.getY() + 1, origin.getZ(),
+        PortalCorridorMask above = clearMask.plus(new BoundingBox(
+            origin.getX(), origin.getY() + ground.top() + 1, origin.getZ(),
             origin.getX() + size.getX() - 1,
             origin.getY() + size.getY() - 2,
+            origin.getZ() + size.getZ() - 1));
+        if (ground.bottom() == 0) return above;
+        // A raised ground with open air under it: those rows are as empty as the ones above it.
+        return above.plus(new BoundingBox(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + ground.bottom() - 1,
             origin.getZ() + size.getZ() - 1));
     }
 
@@ -428,6 +453,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure eraseTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
+        PortalCopyTiming.begin();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
@@ -441,6 +467,7 @@ public final class PortalRoomTiler {
         // While its blocks are still there to read, and before the mob sweep: the next stamp of this
         // tile lays the copy as it was left (stampTile).
         rememberTile(level, dims, structure, tile, pairKey);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.SAVE);
 
         // Before the blocks go, and separately from PortalClear: `isLoose` spares mobs on purpose,
         // because a structure that RELOCATES should carry its occupants. A copy falling out of the
@@ -451,9 +478,11 @@ public final class PortalRoomTiler {
         // The whole volume, not only what this copy placed: a mob that had walked one tile over used
         // to be matched by no copy's reap at all. See PortalRoomMobs#sweepVolume.
         PortalRoomMobs.sweepVolume(level, box, pairKey, "copy " + tile.x() + "," + tile.z());
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.SWEEP);
 
         PortalCorridorMask mask = maskFor(structure, dims, tile);
         PortalClear.clearBox(level, box, mask);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
 
         PortalStructure shrunk = structure.withTiling(structure.tiling().without(tile));
         // The neighbours that were open onto this copy now face nothing, so they close again — which
@@ -462,6 +491,8 @@ public final class PortalRoomTiler {
             Tile neighbour = tile.offset(d[0], d[1]);
             if (shrunk.tiling().has(neighbour)) refreshFace(level, dims, shrunk, neighbour, -d[0], -d[1]);
         }
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.FACES);
+        PortalCopyTiming.finish(PortalCopyTiming.Kind.ERASED, structure.roomName(), pairKey, tile);
         return shrunk;
     }
 
@@ -481,9 +512,8 @@ public final class PortalRoomTiler {
         if (!PortalRoomMemory.ensureLoaded(level, origin, size,
                 "portal pair " + pairKey + "'s copy " + tile.x() + "," + tile.z())) return false;
         long started = System.nanoTime();
-        net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, origin, size);
-        if (snapshot == null) return false;
-        PortalRoomMemory.rememberTile(level, pairKey, tile, structure.roomName(), snapshot);
+        if (!PortalRoomMemory.rememberTile(level, pairKey, tile, structure.roomName(), origin, size)) return false;
+        // Server-thread time only. The writer logs what the save itself took.
         LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} remembered as it was left ({} ms)",
             pairKey, tile.x(), tile.z(), String.format("%.2f", (System.nanoTime() - started) / 1_000_000.0));
         return true;
@@ -725,6 +755,9 @@ public final class PortalRoomTiler {
         // they are the only thing that repeats.
         int yLow = origin.getY() + 1;
         int yHigh = origin.getY() + size.getY() - 2;
+        // A raised Endless Open ground is floor too. Its row is mostly air behind the edge column
+        // when the room's own floor is lower, so a face would otherwise cut the plain's edge away.
+        PortalRoomGround.Rows ground = structure.settings().groundRows(dims, size.getY());
 
         int inset = interiorOnly ? 1 : 0;
 
@@ -732,6 +765,7 @@ public final class PortalRoomTiler {
             int wallZ = dz > 0 ? z1 : z0;
             for (int x = x0 + inset; x <= x1 - inset; x++) {
                 for (int y = yLow; y <= yHigh; y++) {
+                    if (ground.contains(y - origin.getY())) continue;
                     BlockPos wall = new BlockPos(x, y, wallZ);
                     if (mask.covers(wall) || mask.facedBy(wall, 0, dz)) continue;
                     body.accept(wall, wall.offset(0, 0, -dz));
@@ -742,6 +776,7 @@ public final class PortalRoomTiler {
         int wallX = dx > 0 ? x1 : x0;
         for (int z = z0 + inset; z <= z1 - inset; z++) {
             for (int y = yLow; y <= yHigh; y++) {
+                if (ground.contains(y - origin.getY())) continue;
                 BlockPos wall = new BlockPos(wallX, y, z);
                 // The room's own end column is not masked — the mask stops at the door plane — but
                 // the door is what stands in front of it, so it is the corridor's all the same.
@@ -799,7 +834,8 @@ public final class PortalRoomTiler {
         int maxChunkZ = SectionPos.blockToSectionCoord(box.maxZ());
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
-                if (!level.hasChunk(cx, cz)) return false;
+                // Not hasChunk: that is true while the chunk is still generating. See ChunkColumnCache.
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) return false;
             }
         }
         return true;

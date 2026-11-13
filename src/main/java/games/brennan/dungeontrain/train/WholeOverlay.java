@@ -49,7 +49,7 @@ public final class WholeOverlay {
                 int lockId = sidecar.lockIdAt(e.localPos());
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
                         seed, carriageIndex, v -> RotationApplier.apply(
-                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            StagePlacementScope.resolve(v.state()), v,
                             e.localPos(), seed, carriageIndex, lockId))) {
                     BlockPos world = origin.offset(w.localPos());
                     if (w.isAir()) {

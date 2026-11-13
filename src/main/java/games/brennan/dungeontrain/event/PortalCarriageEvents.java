@@ -51,6 +51,7 @@ import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalRoomOccupancy;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
@@ -657,6 +658,8 @@ public final class PortalCarriageEvents {
         EVICTED.clear();
         games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
         OVERLAP_WARNED_AT.clear();
+        // The ServerStopping captures are all queued by now. Nobody is left to feel the wait.
+        PortalRoomMemory.flushSaves();
         PortalRoomMemory.clearSession();
         games.brennan.dungeontrain.portal.PortalCorridorResync.clear();
         // Each pairing holds its carriage's plot; a pair key names a different carriage next world.
@@ -728,6 +731,14 @@ public final class PortalCarriageEvents {
      * not in {@link #STRUCTURES} — {@code PortalTestCommand} builds its structure itself — so its
      * one pair key falls back to the live session's own.</p>
      */
+    /**
+     * Every live pair's structure, read-only. Test rooms are not in it — see {@link #liveStructure}.
+     * Server thread only, like everything else that reads {@link #STRUCTURES}.
+     */
+    public static java.util.Collection<PortalStructure> liveStructures() {
+        return java.util.Collections.unmodifiableCollection(STRUCTURES.values());
+    }
+
     private static PortalStructure liveStructure(int pairKey) {
         PortalStructure live = STRUCTURES.get(pairKey);
         if (live != null) return live;
@@ -1297,7 +1308,14 @@ public final class PortalCarriageEvents {
      * here also keeps {@link #STRUCTURES} private.</p>
      */
     private static boolean isInRoom(CarriageDims dims, ServerPlayer player) {
-        return isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ());
+        if (isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ())) return true;
+        // Over a room's roof or under its floor is still in it, for the freeze as for the drain —
+        // see PortalRoomOccupancy. Otherwise a player on the roof thawed the train while the room
+        // under them was being held for them.
+        for (PortalStructure structure : STRUCTURES.values()) {
+            if (occupies(player, dims, structure)) return true;
+        }
+        return false;
     }
 
     /**
@@ -1787,10 +1805,9 @@ public final class PortalCarriageEvents {
     /** Each player inside {@code structure}'s box gets its chunk-hold radius, the widest if two rooms claim them. */
     private static void recordRoomRadii(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                         List<ServerPlayer> players, Map<UUID, Integer> radii) {
-        AABB box = structureBox(dims, structure);
         int radius = -1;
         for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (!occupies(player, dims, structure)) continue;
             if (radius < 0) {
                 radius = games.brennan.dungeontrain.portal.PortalTwinChunkHold.roomRadius(level, dims, structure);
             }
@@ -1831,10 +1848,9 @@ public final class PortalCarriageEvents {
                                                             CarriageDims dims,
                                                             PortalCarriageLayout layout,
                                                             PortalStructure structure) {
-        AABB box = structureBox(dims, structure);
         Set<PortalRoomTiling.Tile> occupied = new LinkedHashSet<>();
         for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (!occupies(player, dims, structure)) continue;
             occupied.add(structure.tileAt(dims, layout, player.getX(), player.getZ()));
         }
         return occupied;
@@ -2307,6 +2323,12 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
+            // Nobody stands in a room that is still being written: what is left lands now, in the
+            // tick they cross.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN) {
+                games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, structure);
+            }
+
             // Coming out: remember which copy of the room they left from. BASE clears the binding,
             // so a trip back through the original twin puts them at the start again — which is what
             // a player who deliberately walked back to it has asked for.
@@ -2661,6 +2683,12 @@ public final class PortalCarriageEvents {
             return existing;
         }
 
+        // Not into a chunk still generating: the stamp's first read would block the whole server until
+        // it was done. Up here, ahead of the erase, so a wait leaves the old structure standing.
+        if (!PortalCarriageBuilder.footprintReady(level, planned, dims)) {
+            return existing;
+        }
+
         // Far enough to want a new one, but not while copies of the room are still standing: the
         // erase below would have to sweep all of them in a single tick. The tiler is shedding them a
         // few per tick, faster than the train can travel the drift distance, so this waits rather
@@ -2683,6 +2711,10 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
+            // A whole room to capture and erase, not one still being written. Whatever could not be
+            // written now never will be: the erase is about to take the room.
+            games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, existing);
+            games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
             // A drifting room somebody has built in — or one lent by another world — is re-laid as
             // it stands, not re-rolled from the template. Captured while the old blocks are still
             // there, before the erase below; null means the template will do.
@@ -2804,6 +2836,7 @@ public final class PortalCarriageEvents {
     private static void evictStructure(ServerLevel level, CarriageDims dims, int pairKey, int byPair) {
         PortalStructure structure = STRUCTURES.remove(pairKey);
         if (structure == null) return;
+        games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
         // Its drifting room goes back to the relay with whatever was last built in it — before the
         // erase, while the blocks can still be read. The evicted record keeps the room it rolled but
         // not the copy: a pair that comes back is stamped afresh, as a culled carriage is.
@@ -2944,14 +2977,43 @@ public final class PortalCarriageEvents {
             : PortalCarriageSelection.corridorKindFor(level, pairKey);
     }
 
-    /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
+    /**
+     * True if any player is anywhere inside a pair structure — either corridor, or the room between,
+     * or just over its roof or under its floor ({@link #occupies}).
+     */
     private static boolean anyPlayerInStructure(List<ServerPlayer> players, CarriageDims dims,
                                                 PortalStructure structure) {
-        AABB box = structureBox(dims, structure);
         for (ServerPlayer player : players) {
-            if (box.contains(player.getX(), player.getY(), player.getZ())) return true;
+            if (occupies(player, dims, structure)) return true;
         }
         return false;
+    }
+
+    /**
+     * Whether {@code player} counts as inside {@code structure} for the questions that would take the
+     * room away from them — drain it, release its chunks, move it, evict it, thaw its train. The
+     * structure's own box, plus a few rows over its roof and under its floor in twin space that no
+     * other room claims; see {@link PortalRoomOccupancy} for why each part is there.
+     *
+     * <p>Only those questions. Fog, sky, spawning and the despawn spare keep the plain box.</p>
+     */
+    private static boolean occupies(ServerPlayer player, CarriageDims dims, PortalStructure structure) {
+        AABB own = structureBox(dims, structure);
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+        if (own.contains(x, y, z)) return true;
+        // Most players are nowhere near the room; only build the other boxes for those who are.
+        if (!PortalRoomOccupancy.grown(own).contains(x, y, z)) return false;
+        List<AABB> others = new ArrayList<>();
+        for (PortalStructure other : STRUCTURES.values()) {
+            // By origin as well as identity: the tiler swaps a pair's record for a new one mid-tick,
+            // and a caller holding the old one must not have its own room count as "another".
+            if (other == structure || other.origin().equals(structure.origin())) continue;
+            others.add(structureBox(dims, other));
+        }
+        boolean inTwinSpace = PortalTwinSpace.isInside(player.serverLevel(), player.getBlockX(), y);
+        return PortalRoomOccupancy.counts(x, y, z, own, inTwinSpace, others);
     }
 
     /**

@@ -431,12 +431,17 @@
   "singlepillar": {
     "weight": 4,
     "minLevel": 2,
-    "maxLevel": 40,
     "mode": "endless_open"
   },
   "singlepillar2": {
     "weight": 1,
     "mode": "endless_open"
+  },
+  "singlepillar_trapped": {
+    "weight": 4,
+    "minLevel": 2,
+    "maxLevel": 40,
+    "mode": "endless_open/exact/off/off/off/none/sealed/0/2/0/2/minecraft:bedrock/auto/on/door"
   },
   "singlesomething": {
     "weight": 1,
@@ -452,7 +457,7 @@
   },
   "sloped": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on:12/off/nether"
+    "mode": "endless_repetition/dynamic/off/on:12/off/nether/repeated/0/1"
   },
   "smalllibrary": {
     "weight": 1,
@@ -545,6 +550,10 @@
     "weight": 1,
     "minLevel": 10,
     "mode": "bedrock"
+  },
+  "trapped_default2": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/1"
   },
   "upsidedown": {
     "weight": 1,

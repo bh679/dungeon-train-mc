@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.block.VaultGreen;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
@@ -8,6 +9,8 @@ import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VaultBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +51,39 @@ final class VaultLootTest {
 
     private static ContainerContentsPool diamondPool(String key) {
         return new ContainerContentsPool(List.of(new ContainerContentsEntry(DIAMOND, 2, 1)), 1, 3, key);
+    }
+
+    private static final ResourceLocation TOTEM = ResourceLocation.withDefaultNamespace("totem_of_undying");
+
+    @Test
+    @DisplayName("a vault reward rolled above the item's stack size pays out as several items; a chest roll cuts it to one")
+    void vaultSplitsOverflow() {
+        ContainerContentsPool totems = new ContainerContentsPool(
+            List.of(new ContainerContentsEntry(TOTEM, 7, 1).withMinCount(3)), 1, 1);
+        for (long seed = 1; seed <= 40; seed++) {
+            List<ItemStack> vault = ContainerContentsRoller.rollStacks(totems, VaultLoot.VAULT_SLOTS, CELL, seed,
+                0, 0, true, registries);
+            int total = vault.stream().mapToInt(ItemStack::getCount).sum();
+            assertTrue(total >= 3 && total <= 7, "vault totems " + total);
+            assertTrue(vault.stream().allMatch(st -> st.getCount() == 1), "every totem is its own stack");
+
+            List<ItemStack> chest = ContainerContentsRoller.rollStacks(totems, VaultLoot.VAULT_SLOTS, CELL, seed,
+                0, 0, registries);
+            assertEquals(1, chest.size());
+            assertEquals(1, chest.get(0).getCount());
+        }
+    }
+
+    @Test
+    @DisplayName("overflow splits into full stacks, and nothing is added when the roll fit")
+    void overflowStacks() {
+        ItemStack apples = new ItemStack(Items.GOLDEN_APPLE, 64);
+        List<ItemStack> extra = ContainerContentsRoller.overflowStacks(apples, 150);
+        assertEquals(2, extra.size());
+        assertEquals(64, extra.get(0).getCount());
+        assertEquals(22, extra.get(1).getCount());
+        assertTrue(ContainerContentsRoller.overflowStacks(new ItemStack(Items.GOLDEN_APPLE, 5), 5).isEmpty());
+        assertTrue(ContainerContentsRoller.overflowStacks(new ItemStack(Items.TOTEM_OF_UNDYING), 1).isEmpty());
     }
 
     @Test
@@ -91,6 +128,33 @@ final class VaultLootTest {
     }
 
     @Test
+    @DisplayName("the green key takes the ominous table, and a green vault is never ominous")
+    void greenKeyConfig() {
+        BlockState wasOminous = Blocks.VAULT.defaultBlockState().setValue(VaultBlock.OMINOUS, true);
+        CompoundTag green = ContainerContentsRoller.roll(diamondPool(VaultLoot.GREEN_KEY),
+            wasOminous, CELL, SEED, 0, null, registries, null);
+        assertEquals(VaultLoot.GREEN_KEY, green.getCompound("config").getCompound("key_item").getString("id"));
+        assertEquals("minecraft:chests/trial_chambers/reward_ominous", green.getCompound("config").getString("loot_table"));
+        BlockState typed = VaultLoot.stateForNbt(wasOminous, green);
+        assertFalse(typed.getValue(VaultBlock.OMINOUS));
+        assertTrue(VaultGreen.isGreen(typed));
+    }
+
+    @Test
+    @DisplayName("the vault has a green property, off by default, that follows the key")
+    void greenPropertyFollowsKey() {
+        BlockState vault = Blocks.VAULT.defaultBlockState();
+        assertTrue(vault.hasProperty(VaultGreen.GREEN));
+        assertFalse(VaultGreen.isGreen(vault));
+        BlockState green = VaultLoot.stateFor(vault.setValue(VaultBlock.OMINOUS, true), diamondPool(VaultLoot.GREEN_KEY));
+        assertTrue(VaultGreen.isGreen(green));
+        assertFalse(green.getValue(VaultBlock.OMINOUS));
+        BlockState ominous = VaultLoot.stateFor(green, diamondPool(VaultLoot.OMINOUS_KEY));
+        assertFalse(VaultGreen.isGreen(ominous));
+        assertTrue(ominous.getValue(VaultBlock.OMINOUS));
+    }
+
+    @Test
     @DisplayName("vault NBT that DT never wrote keeps its block state")
     void foreignVaultNbtUntouched() {
         BlockState ominous = Blocks.VAULT.defaultBlockState().setValue(VaultBlock.OMINOUS, true);
@@ -99,10 +163,11 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("the Key row cycles trial -> ominous -> trial")
+    @DisplayName("the Key row cycles trial -> ominous -> green -> trial")
     void keyCycle() {
         assertEquals(VaultLoot.OMINOUS_KEY, VaultLoot.nextKey(ContainerContentsPool.DEFAULT_VAULT_KEY));
-        assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.nextKey(VaultLoot.OMINOUS_KEY));
+        assertEquals(VaultLoot.GREEN_KEY, VaultLoot.nextKey(VaultLoot.OMINOUS_KEY));
+        assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.nextKey(VaultLoot.GREEN_KEY));
         assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.nextKey("minecraft:stick"));
     }
 
@@ -114,6 +179,15 @@ final class VaultLootTest {
         assertFalse(trialDefault.isEmpty());
         assertFalse(ominousDefault.isEmpty());
         assertFalse(VaultLoot.sameLoot(trialDefault, ominousDefault));
+
+        ContainerContentsPool greenDefault = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        assertEquals(VaultLoot.GREEN_KEY, greenDefault.vaultKey());
+        assertFalse(greenDefault.isEmpty());
+        assertFalse(VaultLoot.sameLoot(ominousDefault, greenDefault), "the green vault has its own loot");
+        ContainerContentsPool toGreen = VaultLoot.withKey(ominousDefault, VaultLoot.GREEN_KEY);
+        assertEquals(VaultLoot.GREEN_KEY, toGreen.vaultKey());
+        assertTrue(VaultLoot.sameLoot(greenDefault, toGreen));
+        assertTrue(VaultLoot.sameLoot(trialDefault, VaultLoot.withKey(toGreen, ContainerContentsPool.DEFAULT_VAULT_KEY)));
 
         ContainerContentsPool switched = VaultLoot.withKey(trialDefault, VaultLoot.OMINOUS_KEY);
         assertEquals(VaultLoot.OMINOUS_KEY, switched.vaultKey());
@@ -127,10 +201,137 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("a vault linked to a default prefab relinks to the other default; other prefabs never swap")
+    @DisplayName("the trial and ominous vaults can drop the Dungeon Trial Key")
+    void defaultVaultsDropTheGreenKey() {
+        for (String key : List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.OMINOUS_KEY)) {
+            assertTrue(VaultLoot.defaultPool(key).entries().stream()
+                    .anyMatch(e -> e.itemId().toString().equals(VaultLoot.GREEN_KEY)),
+                key + " vault has no Dungeon Trial Key");
+        }
+    }
+
+    @Test
+    @DisplayName("the green vault rolls 3-5 items, with no low-tier items and the agreed Mace and Heavy Core odds")
+    void greenVaultRewardBalance() {
+        ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        assertEquals(3, green.fillMin());
+        assertEquals(5, green.fillMax());
+
+        Set<ResourceLocation> lowTier = Set.of(
+            ResourceLocation.withDefaultNamespace("diamond"),
+            ResourceLocation.withDefaultNamespace("emerald"),
+            ResourceLocation.withDefaultNamespace("tipped_arrow"),
+            ResourceLocation.withDefaultNamespace("wind_charge"));
+        assertTrue(green.entries().stream().noneMatch(e -> lowTier.contains(e.itemId())));
+
+        // Expected items per unlock: average fill (4) x weight / total weight.
+        // Raised from 0.5% / 1.0% when the 2026-11-10 rebalance removed four items and kept the rest's weights.
+        assertEquals(0.0058, expectedPerUnlock(green, "mace"), 0.0005);
+        assertEquals(0.0117, expectedPerUnlock(green, "heavy_core"), 0.0005);
+    }
+
+    @Test
+    @DisplayName("the ominous vault has no Wind Charges or Emeralds, rolls 2-4 items, and has all diamond gear")
+    void ominousVaultRewardBalance() {
+        ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
+        assertEquals(2, ominous.fillMin());
+        assertEquals(4, ominous.fillMax());
+        assertEquals(2344, ominous.totalWeight()); // 2345 less the Mirror (weight 1), removed 2026-11-12
+        assertEquals(0.004, expectedPerUnlock(ominous, "heavy_core"), 0.0005);
+
+        Set<ResourceLocation> removed = Set.of(
+            ResourceLocation.withDefaultNamespace("emerald"),
+            ResourceLocation.withDefaultNamespace("wind_charge"));
+        assertTrue(ominous.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
+
+        for (String piece : List.of("helmet", "chestplate", "leggings", "boots", "sword", "axe", "pickaxe", "shovel", "hoe")) {
+            ResourceLocation id = ResourceLocation.withDefaultNamespace("diamond_" + piece);
+            assertTrue(ominous.entries().stream().anyMatch(e -> e.itemId().equals(id)), id + " missing");
+        }
+    }
+
+    @Test
+    @DisplayName("Ender Blocks drop 1 to 3 from the ominous vault, rarer than Golden Apples; the green vault has none")
+    void enderBlockRewards() {
+        ContainerContentsEntry ominous = entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "betterend", "ender_block");
+        assertEquals(1, ominous.minCount());
+        assertEquals(3, ominous.count());
+        assertEquals(100, ominous.weight());
+        assertTrue(ominous.weight() < entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "golden_apple").weight());
+
+        ResourceLocation ender = ResourceLocation.fromNamespaceAndPath("betterend", "ender_block");
+        assertTrue(VaultLoot.defaultPool(VaultLoot.GREEN_KEY).entries().stream().noneMatch(e -> e.itemId().equals(ender)));
+    }
+
+    @Test
+    @DisplayName("Golden Apples drop 10 to 30 from the green vault")
+    void greenVaultGoldenApples() {
+        ContainerContentsEntry apples = entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "minecraft", "golden_apple");
+        assertEquals(10, apples.minCount());
+        assertEquals(30, apples.count());
+    }
+
+    @Test
+    @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
+    void greenVaultRaritiesKeepTheirOdds() {
+        ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        assertEquals(13687, green.totalWeight());
+        assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
+        assertEquals(20, entry(green, "minecraft", "mace").weight());
+        assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))
+            .mapToInt(ContainerContentsEntry::weight).sum());
+    }
+
+    @Test
+    @DisplayName("the 2026-11-10 rebalance: green drops five items, gains a bow, fewer cameras, more enchanted apples")
+    void greenVaultRebalance() {
+        ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        Set<ResourceLocation> removed = Set.of(
+            ResourceLocation.fromNamespaceAndPath("dungeontrain", "live_headpiece"),
+            ResourceLocation.withDefaultNamespace("emerald_block"),
+            ResourceLocation.withDefaultNamespace("flow_armor_trim_smithing_template"),
+            ResourceLocation.withDefaultNamespace("music_disc_creator"),
+            ResourceLocation.fromNamespaceAndPath("vista", "mirror"));
+        assertTrue(green.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
+        assertEquals(entry(green, "minecraft", "crossbow").weight(), entry(green, "minecraft", "bow").weight());
+        assertEquals(195, entry(green, "exposure_polaroid", "instant_camera").weight());
+        ContainerContentsEntry gapples = entry(green, "minecraft", "enchanted_golden_apple");
+        assertEquals(10, gapples.minCount());
+        assertEquals(20, gapples.count());
+        // The Creator disc lives on in the ominous vault.
+        entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "music_disc_creator");
+    }
+
+    @Test
+    @DisplayName("the ominous vault's staples drop in their 2026-11-10 ranges")
+    void ominousVaultCounts() {
+        ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
+        int[][] ranges = {{12, 32}, {4, 15}, {3, 8}};
+        String[] items = {"golden_carrot", "experience_bottle", "diamond"};
+        for (int i = 0; i < items.length; i++) {
+            ContainerContentsEntry e = entry(ominous, "minecraft", items[i]);
+            assertEquals(ranges[i][0], e.minCount(), items[i]);
+            assertEquals(ranges[i][1], e.count(), items[i]);
+        }
+    }
+
+    private static ContainerContentsEntry entry(ContainerContentsPool pool, String namespace, String path) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(namespace, path);
+        return pool.entries().stream().filter(e -> e.itemId().equals(id)).findFirst().orElseThrow();
+    }
+
+    private static double expectedPerUnlock(ContainerContentsPool pool, String item) {
+        ResourceLocation id = ResourceLocation.withDefaultNamespace(item);
+        int weight = pool.entries().stream().filter(e -> e.itemId().equals(id)).mapToInt(ContainerContentsEntry::weight).sum();
+        return (pool.fillMin() + pool.fillMax()) / 2.0 * weight / pool.totalWeight();
+    }
+
+    @Test
+    @DisplayName("a vault linked to a default prefab relinks to the next key's default; other prefabs never swap")
     void linkedDefaultsRelink() {
         assertEquals(VaultLoot.OMINOUS_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.DEFAULT_PREFAB));
-        assertEquals(VaultLoot.DEFAULT_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.OMINOUS_PREFAB));
+        assertEquals(VaultLoot.GREEN_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.OMINOUS_PREFAB));
+        assertEquals(VaultLoot.DEFAULT_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.GREEN_PREFAB));
         assertEquals(null, VaultLoot.otherDefaultPrefab("pot"));
     }
 
@@ -141,6 +342,15 @@ final class VaultLootTest {
         UUID b = UUID.fromString("00000000-0000-0000-0000-000000000002");
         assertEquals(VaultLoot.playerSalt(a), VaultLoot.playerSalt(a));
         assertNotEquals(VaultLoot.playerSalt(a), VaultLoot.playerSalt(b));
+    }
+
+    @Test
+    @DisplayName("pass 0 keeps the original per-player seed; a lucky pass rolls on a seed of its own")
+    void luckyPassSeed() {
+        UUID a = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        assertEquals(SEED ^ VaultLoot.playerSalt(a), VaultLoot.rollSeed(SEED, a, 0));
+        assertNotEquals(VaultLoot.rollSeed(SEED, a, 0), VaultLoot.rollSeed(SEED, a, 1));
+        assertEquals(VaultLoot.rollSeed(SEED, a, 1), VaultLoot.rollSeed(SEED, a, 1));
     }
 
     @Test
@@ -176,5 +386,13 @@ final class VaultLootTest {
         assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY,
             new ContainerContentsPool(List.of(), 0, ContainerContentsPool.FILL_ALL, " ").vaultKey());
         assertTrue(diamondPool(null).isDefaultVaultKey());
+    }
+
+    @Test
+    @DisplayName("a green vault rolls 2000 carriages further from spawn, either side of it")
+    void greenDiffMovesAwayFromSpawn() {
+        assertEquals(2000, VaultLoot.greenDiff(0));
+        assertEquals(2150, VaultLoot.greenDiff(150));
+        assertEquals(-2150, VaultLoot.greenDiff(-150));
     }
 }

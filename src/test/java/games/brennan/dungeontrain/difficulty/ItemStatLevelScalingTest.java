@@ -40,6 +40,19 @@ final class ItemStatLevelScalingTest {
         assertEquals(0.0, ItemStatLevelScaling.bonusFor(true, -5), EPS);
     }
 
+    @Test
+    @DisplayName("a mob's held bow scales from tier 1, not past the material cap")
+    void heldBow_scalesOffFullTier() {
+        assertEquals(10, ItemStatLevelScaling.heldBowTier(true, 10));
+        assertEquals(100, ItemStatLevelScaling.heldBowTier(true, 100));
+    }
+
+    @Test
+    @DisplayName("a mob's held bow gets no bonus with stat scaling off")
+    void heldBow_noBonusWhenScalingOff() {
+        assertEquals(0, ItemStatLevelScaling.heldBowTier(false, 100));
+    }
+
     // --- pastCapTier: the post-material-cap tier that keeps regular hostile gear scaling
     //     once its material has ceilinged at netherite (MATERIAL_CAP_LEVEL). 0 at/below the
     //     cap (tiers ≤ cap stay a plain roll), then climbs one-for-one. ---

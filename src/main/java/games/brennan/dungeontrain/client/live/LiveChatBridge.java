@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.live.life.LiveLifeChat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.chat.ChatReactionTracker;
@@ -26,6 +27,7 @@ import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -34,6 +36,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -77,6 +80,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * death lines name it, and moving to the other room starts its chat from the head, with one short line
  * saying which. With one stream up no room is named, exactly as before.</p>
  *
+ * <p>A streamer's Twitch is linked in chat ({@link LiveChannelLink}): the relay's line when they come on air,
+ * and this reader's own line on joining their room.</p>
+ *
  * <p>Failures are quiet: a bad poll is retried next interval, a failed send is logged once per session.
  * Nothing here touches the stream itself.</p>
  */
@@ -104,6 +110,9 @@ public final class LiveChatBridge {
     private static long lastRestartTs;
     private static long lastRestartPrintedMs;
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
+    private static final LiveChatFlagHover flagHover = new LiveChatFlagHover();
+    private static final int FLAG_TOOLTIP_LIFT = 12;
+    private static final LiveChannelLink channelLink = new LiveChannelLink();
     /** Lines printed this session, by seq, waiting on a translation; bounded like the signatures. */
     private static final Map<Long, Printed> printed = new LinkedHashMap<>(16, 0.75f, false) {
         @Override
@@ -115,7 +124,7 @@ public final class LiveChatBridge {
     private static boolean translationNoticeShown;
 
     /** A printed live line, whether its translation has been shown, and whether the reader wrote it (never translated). */
-    private record Printed(ChatLine line, boolean translated, boolean mine) {}
+    private record Printed(ChatLine line, boolean translated, boolean mine, int printedTick) {}
 
     private LiveChatBridge() {}
 
@@ -137,6 +146,12 @@ public final class LiveChatBridge {
         return c.watchingWithEye() ? LiveChatRoom.Role.EYE : LiveChatRoom.Role.TV;
     }
 
+    /** A hovered flag's tooltip sits above its line: its usual place would cover the original text it just brought up. */
+    @SubscribeEvent
+    public static void onTooltip(RenderTooltipEvent.Pre event) {
+        if (flagHover.hovering()) event.setY(event.getY() - FLAG_TOOLTIP_LIFT);
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -144,6 +159,7 @@ public final class LiveChatBridge {
             if (connected) reset();
             return;
         }
+        flagHover.tick(mc);
         boolean streaming = LiveStreamController.get().streaming();
         // A Live Eye waiting on a takeover works as a TV: its wearer reads the room, and sees the vote.
         boolean wearingTv = !streaming && (TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD))
@@ -168,7 +184,10 @@ public final class LiveChatBridge {
             switchRoom(mc, pick);
         }
         long now = System.currentTimeMillis();
+        LiveChatSources.refresh(base(streaming), now); // the relay's look for sources this build doesn't know
         printRestartLines(mc, now);
+        Component channelLine = channelLink.joinLine(pick != null && pick.stream() == 2 ? status.second() : status, now);
+        if (channelLine != null) mc.gui.getChat().addMessage(channelLine);
         if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         String asked = room;
@@ -253,10 +272,16 @@ public final class LiveChatBridge {
         lastPollMs = 0;
         room = LiveChatRoom.roomOf(pick);
         signatures.clear();
-        mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
-            LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
-        if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
-        if (viaTv) join(mc);
+        Component connectedLine = Component.translatable(LiveChatRules.CONNECTED_KEY,
+            LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY, ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVE_CHAT)).withStyle(ChatFormatting.GRAY);
+        // [Report streamer] rides on the last line: the room line when there is one.
+        mc.gui.getChat().addMessage(pick == null ? withReport(connectedLine, pick) : connectedLine);
+        if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
+        channelLink.reset();
+        if (viaTv) {
+            join(mc);
+            channelLink.onJoined(System.currentTimeMillis());
+        }
     }
 
     /**
@@ -272,8 +297,13 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
-        if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
-        if (joinedViaTv) join(mc);
+        LiveChatFlip.forget();
+        if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
+        channelLink.reset();
+        if (joinedViaTv) {
+            join(mc);
+            channelLink.onJoined(System.currentTimeMillis());
+        }
     }
 
     /** "Now chatting in Stream 2 (Bo)": which room this client just entered. */
@@ -282,6 +312,11 @@ public final class LiveChatBridge {
             ? Component.translatable(ROOM_UNNAMED_KEY, pick.stream())
             : Component.translatable(ROOM_KEY, pick.stream(), pick.streamer());
         return line.copy().withStyle(ChatFormatting.GRAY);
+    }
+
+    /** {@code line} with {@link LiveReportButton}'s [Report streamer] while someone else is on air. */
+    private static Component withReport(Component line, @Nullable LiveChatRoom.Pick pick) {
+        return LiveReportButton.append(line, LiveStatusPoller.current(), role(), pick);
     }
 
     static final String ROOM_KEY = "chat.dungeontrain.live_room.now";
@@ -313,6 +348,7 @@ public final class LiveChatBridge {
 
     private static void disconnect() {
         connected = false;
+        channelLink.reset();
         room = null;
         restartLines.clear();
         LiveTakeoverChat.reset();
@@ -320,6 +356,8 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
+        LiveChatFlip.forget();
+        LiveChatTranslatedPill.reset();
     }
 
     /** Logout / world change: forget the cursor and the connected line. */
@@ -338,6 +376,7 @@ public final class LiveChatBridge {
 
     private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
         if (page.seq() < 0) return; // a failed poll leaves the cursor alone
+        LiveChatTranslatedPill.setTranslator(page.translatedBy()); // first: this page's lines are credited to it
         if (cursor < 0) {
             cursor = page.seq(); // joined: start from now
             return;
@@ -348,6 +387,7 @@ public final class LiveChatBridge {
             signatures.clear();
             printed.clear();
             ChatReactionTracker.forgetLive();
+            LiveChatFlip.forget();
             if (joinedViaTv) join(mc); // the restart forgot this viewer was in the room
             if (LiveRelayRestart.inWindow(System.currentTimeMillis())) {
                 // An announced restart: the new ring holds only what was said since the boot (the "back"
@@ -393,11 +433,25 @@ public final class LiveChatBridge {
                 }
                 continue;
             }
+            if (line.channel() != null) {
+                // A streamer's Twitch: a link here, in this reader's language.
+                long at = System.currentTimeMillis();
+                if (channelLink.showRelayLine(line.channel(), at)) {
+                    chat.addMessage(LiveChannelLink.goLiveLine(line.channel()), signatures.sign(line.seq()), tag);
+                }
+                continue;
+            }
+            // A player's own line names their uuid: what a streamer mute keys on once they rename.
+            if (line.source() == LiveFeedClient.Source.GAME) LiveViewerMutes.learn(line.author(), line.uuid());
+            boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
             if (LiveChatRules.shouldShow(line, me, here, names)) {
-                boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
                 // The reader's own words are shown as typed, never translated back at them.
                 printLine(mc, chat, tag, line, mine, mine ? null : LiveChatTranslations.pick(line.tr(), readerLang));
+            } else if (mine && line.fromGame()) {
+                // Vanilla chat already printed it: remembered only for the flags of where it was translated to.
+                printed.put(line.seq(), new Printed(line, false, true, mc.gui.getGuiTicks()));
             }
+            if (mine) showReach(line, line.tr(), line.src(), readerLang);
             if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
                 LogRequestClient.onLiveRequest(line.logRequest().id());
             }
@@ -415,16 +469,30 @@ public final class LiveChatBridge {
         }
         for (LineTranslations t : page.translations()) {
             Printed p = printed.get(t.line());
+            if (p != null && p.mine()) showReach(p.line(), t.tr(), t.src() != null ? t.src() : p.line().src(), readerLang);
             if (p == null || p.translated() || p.mine()) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
-            applyLate(mc, chat, tag, p.line(), mine);
+            applyLate(mc, chat, tag, p.line(), mine, LanguageFlags.flag(t.src() != null ? t.src() : p.line().src(), p.line().content()), p.printedTick());
         }
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
         }
         if (streaming) LiveLifeChat.onReactions(page.reactions());
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
+    }
+
+    /** The reader's own line shows the flags of the languages it was translated into, once there are any; hovering one shows that translation. */
+    private static void showReach(ChatLine line, @Nullable Map<String, String> tr, @Nullable String src, @Nullable String readerLang) {
+        MutableComponent flags = LanguageFlags.reach(tr, src, readerLang);
+        if (flags == null || !ChatReactionTracker.flagOwn(line.seq(), line.content(), flags)) return;
+        for (Component part : flags.getSiblings()) {
+            Component translation = LiveChatFlagHover.keyOf(part.getStyle());
+            if (translation == null) continue;
+            flagHover.watch(part,
+                () -> ChatReactionTracker.showOwn(line.seq(), line.content(), translation.getString()),
+                () -> ChatReactionTracker.showOwn(line.seq(), line.content(), line.content()));
+        }
     }
 
     /**
@@ -436,25 +504,31 @@ public final class LiveChatBridge {
         long seq = line.seq();
         if (translation == null) {
             chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
-            printed.put(seq, new Printed(line, false, mine));
+            printed.put(seq, new Printed(line, false, mine, mc.gui.getGuiTicks()));
             return;
         }
+        MutableComponent flag = LanguageFlags.flag(line.src(), line.content());
         switch (LiveFeedClientConfig.liveChatTranslation()) {
             case UNDER -> {
                 chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
-                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, true)),
-                    signatures.signPart(seq, 1), tag);
+                printUnder(chat, tag, line, translation, true, flag);
             }
-            case REPLACE -> chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
-                signatures.sign(seq), tag);
-            case FIRST -> {
-                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
+            case REPLACE -> {
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.flippableLine(line, translation, flag), mine, line.content()),
                     signatures.sign(seq), tag);
+                flagHover.watchFlippable(flag, line, translation);
+                LiveChatFlip.track(line, translation, flag);
+            }
+            case FIRST -> {
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
+                    signatures.sign(seq), tag);
+                flagHover.watchReplaced(flag, line, translation);
                 chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), true)),
                     signatures.signPart(seq, 1), tag);
             }
         }
-        printed.put(seq, new Printed(line, true, mine));
+        printed.put(seq, new Printed(line, true, mine, mc.gui.getGuiTicks()));
+        LiveChatTranslatedPill.noteTranslatedLine(mc.gui.getGuiTicks());
         noteTranslating(mc, chat);
     }
 
@@ -463,23 +537,36 @@ public final class LiveChatBridge {
      * A line added under it reads {@code ↳ text} only while the original is still the newest line in chat;
      * after anything else, live or not, it carries the author's name.
      */
-    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation) {
+    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation,
+                                  @Nullable MutableComponent flag, int printedTick) {
         long seq = line.seq();
         boolean adjacent = signatures.isNewest(seq, newestSignature(chat));
         switch (LiveFeedClientConfig.liveChatTranslation()) {
-            case UNDER -> chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent)),
-                signatures.signPart(seq, 1), tag);
+            case UNDER -> printUnder(chat, tag, line, translation, adjacent, flag);
             case REPLACE -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.flippableLine(line, translation, flag))) return;
+                flagHover.watchFlippable(flag, line, translation);
+                LiveChatFlip.track(line, translation, flag);
             }
             case FIRST -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;
+                flagHover.watchReplaced(flag, line, translation);
                 chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), adjacent)),
                     signatures.signPart(seq, 1), tag);
             }
         }
-        printed.put(seq, new Printed(line, true, false));
+        printed.put(seq, new Printed(line, true, false, printedTick));
+        // A line swapped in place keeps the tick it was printed at; one added under it is new.
+        LiveChatTranslatedPill.noteTranslatedLine(LiveFeedClientConfig.liveChatTranslation() == LiveFeedClientConfig.LiveChatTranslation.UNDER ? mc.gui.getGuiTicks() : printedTick);
         noteTranslating(mc, chat);
+    }
+
+    /** A translation added under its line, its flag watched so hovering it shows the original. */
+    private static void printUnder(ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation, boolean adjacent,
+                                   @Nullable MutableComponent flag) {
+        Component shown = ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent, flag));
+        chat.addMessage(shown, signatures.signPart(line.seq(), 1), tag);
+        flagHover.watchUnder(flag, line, adjacent, shown);
     }
 
     /** The signature of the newest line in chat (null when it has none, or chat is empty). */
@@ -496,7 +583,7 @@ public final class LiveChatBridge {
         String lang = LiveChatTranslations.readerLang(mc.options.languageCode);
         chat.addMessage(Component.translatable(LiveChatTranslations.ON_KEY,
             LiveChatTranslations.langName(lang == null ? "en_us" : lang),
-            LiveOptionsCommand.pathLink(LiveChatTranslations.PATH_KEY)).withStyle(ChatFormatting.GRAY));
+            LiveOptionsCommand.pathLink(LiveChatTranslations.PATH_KEY, ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION)).withStyle(ChatFormatting.GRAY));
     }
 
     static String base(boolean streaming) {

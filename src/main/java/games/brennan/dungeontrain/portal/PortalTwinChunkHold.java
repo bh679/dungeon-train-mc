@@ -72,6 +72,12 @@ public final class PortalTwinChunkHold {
     /** How often a standing ticket is restated, well inside {@link #TICKET_LIFETIME}. */
     private static final int REFRESH_TICKS = 20;
 
+    /**
+     * How long copies stay held after the last player left twin space, in ticks. Well past the drain
+     * measured from a 2,200-block walk, about 14 s even with the machine under load.
+     */
+    static final long DRAIN_HOLD_TICKS = 1200L;
+
     /** Around a held player. Keyed by chunk, so a refresh restates the same ticket. */
     private static final TicketType<ChunkPos> ROOM_TICKET =
         TicketType.create("dungeontrain_twin_room", Comparator.comparingLong(ChunkPos::toLong), TICKET_LIFETIME);
@@ -90,6 +96,9 @@ public final class PortalTwinChunkHold {
 
     /** Game time the resident tickets were last restated, per dimension. */
     private static final Map<ResourceKey<Level>, Long> RESIDENT_AT = new HashMap<>();
+
+    /** Per level, the last tick anybody was held. Absent = nobody since the cap last ran out. */
+    private static final Map<ResourceKey<Level>, Long> LAST_HELD_AT = new HashMap<>();
 
     private PortalTwinChunkHold() {}
 
@@ -134,13 +143,46 @@ public final class PortalTwinChunkHold {
             hold(level, player, radiusFor(id, roomRadii.get(id)), now);
         }
         releaseUnseen(level, dim, seen);
-        // Only while somebody here is held: with nobody held, every copy is under some player's own
-        // view distance exactly as it always was, and holding them anyway would change what a world
-        // with nobody in a room keeps loaded.
-        if (!seen.isEmpty() && now - lastResidentRefresh(dim) >= REFRESH_TICKS) {
-            holdResidents(level, dims, structures, occupied);
-            RESIDENT_AT.put(dim, now);
+        if (!seen.isEmpty()) LAST_HELD_AT.put(dim, now);
+        // While somebody here is held, and for a while after: a player who has just left by a far exit
+        // copy is thousands of blocks from the copies still standing, so no view distance covers them,
+        // and the tiler erasing them from unloaded chunks is a synchronous load on the server tick.
+        // A while, not "until they are gone": a room keeps a ring of copies and a bound exit copy for
+        // as long as somebody stays near its carriage, so it may never finish. Past the cap this adds
+        // nothing, and a world nobody has been in a room of keeps exactly what it always did.
+        if (now - lastResidentRefresh(dim) >= REFRESH_TICKS) {
+            long sinceHeld = ticksSinceHeld(dim, now);
+            boolean anySpread = anySpread(structures);
+            if (holdsResidents(!seen.isEmpty(), anySpread, sinceHeld)) {
+                holdResidents(level, dims, structures, occupied);
+                RESIDENT_AT.put(dim, now);
+            } else if (anySpread && LAST_HELD_AT.remove(dim) != null) {
+                LOGGER.debug("[DT-TwinChunks] {} copies still standing {} ticks after the last player left; letting their tickets lapse",
+                    dim.location(), sinceHeld);
+            }
         }
+    }
+
+    /** Pure core: whether standing copies need their chunks held this refresh. */
+    static boolean holdsResidents(boolean anyoneHeld, boolean anySpread, long ticksSinceHeld) {
+        return anyoneHeld || (anySpread && ticksSinceHeld <= DRAIN_HOLD_TICKS);
+    }
+
+    private static long ticksSinceHeld(ResourceKey<Level> dim, long now) {
+        Long at = LAST_HELD_AT.get(dim);
+        return at == null ? Long.MAX_VALUE : now - at;
+    }
+
+    private static boolean anySpread(Collection<PortalStructure> structures) {
+        for (PortalStructure structure : structures) {
+            if (isSpread(structure)) return true;
+        }
+        return false;
+    }
+
+    /** True when something of this structure stands beyond its base room. */
+    private static boolean isSpread(PortalStructure structure) {
+        return !structure.tiling().isBaseOnly() || !structure.exitCopies().isEmpty();
     }
 
     /**
@@ -202,11 +244,13 @@ public final class PortalTwinChunkHold {
         HELD.clear();
         PLACED.clear();
         RESIDENT_AT.clear();
+        LAST_HELD_AT.clear();
     }
 
     private static void releaseAll(ServerLevel level, ResourceKey<Level> dim) {
         if (!HELD.isEmpty()) releaseUnseen(level, dim, Set.of());
         RESIDENT_AT.remove(dim);
+        LAST_HELD_AT.remove(dim);
     }
 
     private static long lastResidentRefresh(ResourceKey<Level> dim) {
@@ -217,17 +261,17 @@ public final class PortalTwinChunkHold {
     /**
      * A radius-0 ticket on every chunk a standing copy, extra corridor or occupied base structure
      * touches. Structures with nothing standing beyond their base and nobody in them are left to
-     * whatever else loads them, as before. A held player who walked on keeps the copies behind
-     * them loaded until the tiler has taken them down; another room's copies are held too while
-     * anybody is, which costs a few chunks and is simpler than telling the rooms apart.
+     * whatever else loads them, as before. Copies stay loaded for the tiler to take down, whether the
+     * player who left them walked on or has gone back to the train (up to {@link #DRAIN_HOLD_TICKS});
+     * another room's copies are held too, which costs a few chunks and is simpler than telling the
+     * rooms apart. Radius 0 is level 33, {@code FULL}: loaded, but its mobs and blocks do not tick.
      */
     private static void holdResidents(ServerLevel level, CarriageDims dims,
                                       Collection<PortalStructure> structures,
                                       Collection<PortalStructure> occupied) {
         LongSet chunks = new LongOpenHashSet();
         for (PortalStructure structure : structures) {
-            boolean spread = !structure.tiling().isBaseOnly() || !structure.exitCopies().isEmpty();
-            if (!spread && !occupied.contains(structure)) continue;
+            if (!isSpread(structure) && !occupied.contains(structure)) continue;
             addResidentChunks(dims, structure, chunks);
         }
         for (long packed : chunks) {

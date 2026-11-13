@@ -30,6 +30,29 @@
     "_doc": "Ids in the minecraft namespace that VanillaBackport adds; Minecraft 1.21.1 itself has no such entity, so MobPhotoCategoriesTest cannot check them against the vanilla registry.",
     "ids": ["minecraft:creaking", "minecraft:happy_ghast", "minecraft:sulfur_cube"]
   },
+  "families": {
+    "_doc": "Advancement -> the mobs it asks for. A member joins once the train can spawn it, so an unplaced mob here is fine. A spawnable hostile with zombie, skeleton or creeper in its id must be in a family, or the build stops.",
+    "family_photo": [
+      "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager",
+      "luminous_monsters:cherry_zombie", "luminous_monsters:crimson_walker", "luminous_monsters:dark_oak_zombie",
+      "luminous_monsters:icy_zombie", "luminous_monsters:miner_zombie", "luminous_monsters:savanna_zombie",
+      "luminous_monsters:swamp_zombie"
+    ],
+    "skeleton_crew": [
+      "minecraft:skeleton", "minecraft:stray", "minecraft:bogged", "minecraft:wither_skeleton", "betternether:jungle_skeleton",
+      "luminous_monsters:cherry_skeleton", "luminous_monsters:dark_oak_skeleton", "luminous_monsters:hollow_skeleton",
+      "luminous_monsters:icy_skeleton", "luminous_monsters:miner_skeleton", "luminous_monsters:revenant_skeleton",
+      "luminous_monsters:savanna_skeleton", "luminous_monsters:sunken_skeleton", "luminous_monsters:swamp_skeleton"
+    ],
+    "photobomb": [
+      "minecraft:creeper", "creeperoverhaul:badlands_creeper", "creeperoverhaul:bamboo_creeper", "creeperoverhaul:beach_creeper",
+      "creeperoverhaul:birch_creeper", "creeperoverhaul:cave_creeper", "creeperoverhaul:dark_oak_creeper",
+      "creeperoverhaul:desert_creeper", "creeperoverhaul:dripstone_creeper", "creeperoverhaul:hills_creeper",
+      "creeperoverhaul:jungle_creeper", "creeperoverhaul:mushroom_creeper", "creeperoverhaul:ocean_creeper",
+      "creeperoverhaul:savannah_creeper", "creeperoverhaul:snowy_creeper", "creeperoverhaul:spruce_creeper",
+      "creeperoverhaul:swamp_creeper"
+    ]
+  },
   "categories": {
     "minecraft:blaze": "hostile",
     "minecraft:bogged": "hostile",
@@ -72,6 +95,38 @@
     "minecraft:zombie_villager": "hostile",
     "minecraft:zombified_piglin": "hostile",
 
+    "luminous_monsters:cherry_skeleton": "hostile",
+    "luminous_monsters:cherry_zombie": "hostile",
+    "luminous_monsters:crimson_walker": "hostile",
+    "luminous_monsters:dark_oak_skeleton": "hostile",
+    "luminous_monsters:dark_oak_zombie": "hostile",
+    "luminous_monsters:hollow_skeleton": "hostile",
+    "luminous_monsters:icy_skeleton": "hostile",
+    "luminous_monsters:icy_zombie": "hostile",
+    "luminous_monsters:miner_skeleton": "hostile",
+    "luminous_monsters:miner_zombie": "hostile",
+    "luminous_monsters:revenant_skeleton": "hostile",
+    "luminous_monsters:savanna_skeleton": "hostile",
+    "luminous_monsters:savanna_zombie": "hostile",
+    "luminous_monsters:sunken_skeleton": "hostile",
+    "luminous_monsters:swamp_skeleton": "hostile",
+    "luminous_monsters:swamp_zombie": "hostile",
+    "creeperoverhaul:badlands_creeper": "hostile",
+    "creeperoverhaul:bamboo_creeper": "hostile",
+    "creeperoverhaul:beach_creeper": "hostile",
+    "creeperoverhaul:birch_creeper": "hostile",
+    "creeperoverhaul:cave_creeper": "hostile",
+    "creeperoverhaul:dark_oak_creeper": "hostile",
+    "creeperoverhaul:desert_creeper": "hostile",
+    "creeperoverhaul:dripstone_creeper": "hostile",
+    "creeperoverhaul:hills_creeper": "hostile",
+    "creeperoverhaul:jungle_creeper": "hostile",
+    "creeperoverhaul:mushroom_creeper": "hostile",
+    "creeperoverhaul:ocean_creeper": "hostile",
+    "creeperoverhaul:savannah_creeper": "hostile",
+    "creeperoverhaul:snowy_creeper": "hostile",
+    "creeperoverhaul:spruce_creeper": "hostile",
+    "creeperoverhaul:swamp_creeper": "hostile",
     "minecraft:allay": "animal",
     "minecraft:armadillo": "animal",
     "minecraft:axolotl": "animal",

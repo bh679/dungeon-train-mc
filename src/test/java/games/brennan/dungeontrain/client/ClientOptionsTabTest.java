@@ -43,6 +43,34 @@ final class ClientOptionsTabTest {
         return rows;
     }
 
+    // ---- Chat links' tab and row names ----
+
+    @Test
+    @DisplayName("A chat link's tab and row names resolve, and unknown ones are null rather than a throw")
+    void linkNamesResolve() {
+        assertEquals(ClientOptionsTab.STREAM, ClientOptionsTab.tabNamed("STREAM"));
+        assertEquals(ClientOptionsTab.Row.TV_STREAM_SOUND, ClientOptionsTab.rowNamed("TV_STREAM_SOUND"));
+        assertNull(ClientOptionsTab.tabNamed("NOT_A_TAB"));
+        assertNull(ClientOptionsTab.rowNamed("NOT_A_ROW"));
+    }
+
+    @Test
+    @DisplayName("Every row a chat link points at is a setting row on the Stream tab, in every combination")
+    void chatLinkRowsAreOnStreamTab() {
+        Set<ClientOptionsTab.Row> linked = EnumSet.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.LIVE_CHAT,
+                ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.TV_STREAM_SOUND,
+                ClientOptionsTab.Row.MUTED_STREAMERS);
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                for (boolean writable : BOOLS) {
+                    List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, chinese, translate, writable);
+                    assertTrue(rows.containsAll(linked));
+                    assertTrue(linked.stream().noneMatch(ClientOptionsTab::isHeading));
+                }
+            }
+        }
+    }
+
     // ---- Tab integrity across every visibility combination ----
 
     @Test
@@ -95,11 +123,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: sixty-three rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: eighty-one rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(63, rows.size());
+        assertEquals(81, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -121,11 +149,13 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.CONTENT_MODE,
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.DEV_CHAT,
+                        ClientOptionsTab.Row.PUBLIC_POSTS,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.UPDATE_NOTICE_CHAT,
                         ClientOptionsTab.Row.OTHER_ADVANCEMENT_TABS,
                         ClientOptionsTab.Row.OTHER_ADVANCEMENT_CARDS,
                         ClientOptionsTab.Row.PROTECT_OWN_PETS,
+                        ClientOptionsTab.Row.MENU_BACKDROP,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
                         ClientOptionsTab.Row.BACKPACK_AUTO_COLLECT,
@@ -161,7 +191,8 @@ final class ClientOptionsTabTest {
         assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
                         ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.LIVESTREAM,
                         ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
-                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.PERFORMANCE_TIPS),
+                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.DROP_UNTOUCHED_WORLD_GEN,
+                        ClientOptionsTab.Row.PERFORMANCE_TIPS),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
                 .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
@@ -218,25 +249,59 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 63 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(67, rows.size());
+        // 82 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // Performance as well as Stream.
+        assertEquals(86, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
 
     @Test
-    @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows; General no longer does")
+    @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows in titled sections; General no longer does")
     void streamTabRows() {
-        assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
-                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG,
-                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.LIVE_CHAT,
-                        ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
-                        ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAMER_BOX_STREAMS, ClientOptionsTab.Row.STREAM_SIZE,
+        assertEquals(List.of(ClientOptionsTab.Row.STREAM_SECTION_BROADCAST, ClientOptionsTab.Row.LIVESTREAM,
+                        ClientOptionsTab.Row.STREAM_GUI, ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_NAME_TAG,
+                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.STREAM_AUDIO,
+                        ClientOptionsTab.Row.STREAM_SECTION_SOUND, ClientOptionsTab.Row.STREAM_VOLUME, ClientOptionsTab.Row.MIC_MIX,
+                        ClientOptionsTab.Row.STREAM_SECTION_MIC, ClientOptionsTab.Row.MIC_SUPPORT, ClientOptionsTab.Row.MIC_DEVICE,
+                        ClientOptionsTab.Row.MIC_MODE,
+                        ClientOptionsTab.Row.STREAM_SECTION_PICTURE, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
-                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING),
+                        ClientOptionsTab.Row.STREAM_SECTION_CHAT, ClientOptionsTab.Row.LIVE_CHAT,
+                        ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
+                        ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT,
+                        ClientOptionsTab.Row.STREAM_SECTION_WATCHING, ClientOptionsTab.Row.LIVE_FEED_VIEWING,
+                        ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAMER_BOX_STREAMS,
+                        ClientOptionsTab.Row.TV_STREAM_SOUND, ClientOptionsTab.Row.TV_SOUND_ON_TRAIN,
+                        ClientOptionsTab.Row.MUTED_STREAMERS,
+                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_NAMES, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING,
+                        ClientOptionsTab.Row.FFMPEG),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
+        // Every section title is a heading, and every heading opens a section that has rows under it.
+        List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
+        assertTrue(ClientOptionsTab.isHeading(stream.get(0)));
+        for (int i = 0; i < stream.size(); i++) {
+            if (!ClientOptionsTab.isHeading(stream.get(i))) continue;
+            assertTrue(i + 1 < stream.size() && !ClientOptionsTab.isHeading(stream.get(i + 1)),
+                    stream.get(i) + " has no rows under it");
+        }
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
                 .contains(ClientOptionsTab.Row.LIVESTREAM));
+    }
+
+    @Test
+    @DisplayName("A missing FFmpeg leads the Stream tab, above its first heading; the rest keep their order")
+    void ffmpegFirstLiftsOnlyThatRow() {
+        List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
+        List<ClientOptionsTab.Row> lifted = ClientOptionsTab.ffmpegFirst(stream);
+        assertEquals(ClientOptionsTab.Row.FFMPEG, lifted.get(0));
+        assertEquals(stream.size(), lifted.size());
+        List<ClientOptionsTab.Row> rest = new java.util.ArrayList<>(stream);
+        rest.remove(ClientOptionsTab.Row.FFMPEG);
+        assertEquals(rest, lifted.subList(1, lifted.size()));
+        // A tab without the row is returned as it was.
+        List<ClientOptionsTab.Row> general = ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true);
+        assertEquals(general, ClientOptionsTab.ffmpegFirst(general));
     }
 
     @Test
@@ -301,6 +366,16 @@ final class ClientOptionsTabTest {
                 assertEquals(editor, ClientOptionsTab.rowsFor(ClientOptionsTab.EDITOR, chinese, translate, true));
             }
         }
+    }
+
+    @Test
+    @DisplayName("Smaller saves is absent on a multiplayer client, and only the unpaired tips follow it")
+    void dropUntouchedWorldGen_absentWhenNotWritable() {
+        List<ClientOptionsTab.Row> remote = ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, false);
+        assertFalse(remote.contains(ClientOptionsTab.Row.DROP_UNTOUCHED_WORLD_GEN));
+        List<ClientOptionsTab.Row> local = ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true);
+        assertEquals(ClientOptionsTab.Row.PERFORMANCE_TIPS,
+                local.get(local.indexOf(ClientOptionsTab.Row.DROP_UNTOUCHED_WORLD_GEN) + 1));
     }
 
     @Test
@@ -399,6 +474,8 @@ final class ClientOptionsTabTest {
             String key = row.captionKey();
             assertNotNull(key, row + " has no caption key");
             assertTrue(en.has(key), row + ": en_us lacks its name " + key);
+            // A section title is a caption alone: no hint.
+            if (ClientOptionsTab.isHeading(row)) continue;
             assertTrue(en.has(key + ".hint"), row + ": en_us lacks its hint " + key + ".hint");
         }
     }
@@ -409,7 +486,7 @@ final class ClientOptionsTabTest {
         JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
                 .getAsJsonObject();
         for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
-            if (row.captionKey() == null) continue;
+            if (row.captionKey() == null || ClientOptionsTab.isHeading(row)) continue;
             String hint = en.get(row.captionKey() + ".hint").getAsString();
             // ~180px of 5-6px glyphs at GUI scale 1 beside a 100px control; longer reads as cut.
             assertTrue(hint.length() <= 44, row + ": hint too long to fit the row: \"" + hint + "\"");

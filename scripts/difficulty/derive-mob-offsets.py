@@ -40,6 +40,9 @@ VASE_PREFAB = "ancient_vase"
 HEART_BLOCK = "minecraft:creaking_heart"
 HEART_MOB = "minecraft:creaking"
 
+# Kept in step with NaturalSpawnLevelGate.GATED_NAMESPACES.
+GATED_NAMESPACES = ("luminous_monsters", "creeperoverhaul")
+
 TABLE_START = "private static final Map<String, Integer> OFFSETS = Map.ofEntries("
 TABLE_RE = re.compile(re.escape(TABLE_START) + r"(.*?)\n(\s*)\);", re.S)
 ENTRY_RE = re.compile(r'Map\.entry\("([^"]+)",\s*(\d+)\)')
@@ -140,8 +143,12 @@ class Derivation:
 
 
 def derive(categories: dict[str, str], derivation: Derivation) -> dict[str, int]:
-    """Hostile ids with a non-zero first level; ids missing from the table read as 0."""
-    return {e: lvl for e, lvl in derivation.level.items() if categories.get(e) == "hostile" and lvl > 0}
+    """Hostile ids with a non-zero first level; ids missing from the table read as 0.
+
+    A gated mod keeps its level-0 mobs too: NaturalSpawnLevelGate reads a missing id as "in no room".
+    """
+    return {e: lvl for e, lvl in derivation.level.items() if categories.get(e) == "hostile"
+            and (lvl > 0 or e.split(":")[0] in GATED_NAMESPACES)}
 
 
 def render(table: dict[str, int], indent: str) -> str:

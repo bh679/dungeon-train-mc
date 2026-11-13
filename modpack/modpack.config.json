@@ -31,18 +31,18 @@
       "mod_ids": [
         "adventureitemnames"
       ],
-      "sha1": "ac6a68676ea9bd451a4b72b004bf86222878f88c",
+      "sha1": "c4dae21ed036d4dc6dbaea91ef6499e1e735b8f3",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1546573,
-      "file_id": 8760632,
+      "file_id": 9360419,
       "required": true,
       "dependency_type": "required",
-      "version": "0.52.0",
+      "version": "0.53.0",
       "gradle_property": "adventureitemnames_min_version",
       "modrinth_project": "adventureitemnames",
-      "modrinth_version": "l1CNqiqZ"
+      "modrinth_version": "fQM248rr"
     },
     {
       "name": "Adventure Item Stats",
@@ -50,18 +50,18 @@
       "mod_ids": [
         "adventureitemstats"
       ],
-      "sha1": "3ddee34e3ecc92e81283d2caefafc193b38c0b03",
+      "sha1": "356433563b685b7f7c1f88b9617c7be3b75faea0",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1554362,
-      "file_id": 8465206,
+      "file_id": 9487608,
       "required": true,
       "dependency_type": "required",
-      "version": "0.7.0",
+      "version": "0.8.0",
       "gradle_property": "adventureitemstats_min_version",
       "modrinth_project": "adventure-items-stats",
-      "modrinth_version": "kZyMXeU3"
+      "modrinth_version": "6UtblTX7"
     },
     {
       "name": "Interactive Player Mobs",
@@ -69,18 +69,18 @@
       "mod_ids": [
         "playermob"
       ],
-      "sha1": "397cc52f483464e09c5fcedf0c9ae35dbc8008cd",
+      "sha1": "9264be437cb791fee939e3291f7b6d61300e2925",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1559379,
-      "file_id": 9317322,
+      "file_id": 9415170,
       "required": true,
       "dependency_type": "required",
-      "version": "0.116.0",
+      "version": "0.119.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "mJh3PVIr"
+      "modrinth_version": "Bo4sN5qX"
     },
     {
       "name": "Ender Chest Persistence",
@@ -479,6 +479,101 @@
       "modrinth_version": "TuD0Zvi3"
     },
     {
+      "name": "Luminous Monsters",
+      "slug": "luminous-monsters",
+      "mod_ids": [
+        "luminous_monsters"
+      ],
+      "sha1": "9ca7084ccee2ac875da37815fb10cd94359659ff",
+      "packages": [
+        "net.mcreator"
+      ],
+      "project_id": 1066090,
+      "file_id": 9388896,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "luminous_monsters_min_version",
+      "version": "1.3.1",
+      "modrinth_project": "luminous-monsters",
+      "modrinth_version": "eRQ6VuD1"
+    },
+    {
+      "name": "Creeper Overhaul",
+      "slug": "creeper-overhaul",
+      "mod_ids": [
+        "creeperoverhaul"
+      ],
+      "sha1": "5a07cc032df790e7d110ad3dedb7a76253ffd565",
+      "packages": [
+        "tech.thatgravyboat"
+      ],
+      "project_id": 561625,
+      "file_id": 6051279,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "creeperoverhaul_min_version",
+      "version": "4.0.6",
+      "modrinth_project": "creeper-overhaul",
+      "modrinth_version": "HNrAYCLH"
+    },
+    {
+      "name": "GeckoLib",
+      "slug": "geckolib",
+      "mod_ids": [
+        "geckolib"
+      ],
+      "sha1": "5cfe835472a5c5457ae9ac192d9d7b317454d5ac",
+      "packages": [
+        "software.bernie"
+      ],
+      "project_id": 388172,
+      "file_id": 8893490,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "geckolib_min_version",
+      "version": "4.9.3",
+      "modrinth_project": "geckolib",
+      "modrinth_version": "Grwn5rUB"
+    },
+    {
+      "name": "Resourceful Lib",
+      "slug": "resourceful-lib",
+      "mod_ids": [
+        "resourcefullib"
+      ],
+      "sha1": "24389c8e48ff0e8594e4686b750c494c66a5f8df",
+      "packages": [
+        "com.teamresourceful"
+      ],
+      "project_id": 570073,
+      "file_id": 5973188,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "resourcefullib_min_version",
+      "version": "3.0.12",
+      "modrinth_project": "resourceful-lib",
+      "modrinth_version": "x99nCLTm"
+    },
+    {
+      "name": "Resourceful Config",
+      "slug": "resourceful-config",
+      "mod_ids": [
+        "resourcefulconfig"
+      ],
+      "sha1": "6bf2b6ea9c071c00a2abcdc552667fb6f7d21031",
+      "packages": [
+        "com.teamresourceful"
+      ],
+      "project_id": 714059,
+      "file_id": 6467772,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "resourcefulconfig_min_version",
+      "version": "3.0.11",
+      "modrinth_project": "resourceful-config",
+      "modrinth_version": "lSbyRD6v"
+    },
+    {
       "name": "Piglin Proliferation",
       "slug": "piglin-proliferation",
       "mod_ids": [
@@ -635,15 +730,15 @@
       "mod_ids": [
         "dtmodverify"
       ],
-      "sha1": "72d635d59c1965269f4f7d2c822ecd2b5accb11a",
+      "sha1": "f28a569b045aee383ceccec2321c5275863e3d26",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1738856,
-      "file_id": 9128034,
+      "file_id": 9434611,
       "required": true,
       "dependency_type": "required",
-      "version": "0.1.1",
+      "version": "0.2.1",
       "gradle_property": "dtmodverify_min_version",
       "curseforge_only": true
     },
@@ -653,15 +748,15 @@
       "mod_ids": [
         "discordpresence"
       ],
-      "sha1": "691f3279da9d78f6ee9a99b5f6aef16551381c60",
+      "sha1": "2be6215a65d978c9a35bb8f836621afdfe1d62e8",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1573749,
-      "file_id": 9255422,
+      "file_id": 9550986,
       "required": true,
       "dependency_type": "required",
-      "version": "0.70.0",
+      "version": "0.75.0",
       "gradle_property": "discordpresence_min_version",
       "curseforge_only": true
     },
@@ -689,16 +784,34 @@
       "mod_ids": [
         "lostcityterrainfit"
       ],
-      "sha1": "f555d8e35311f5fe9058ce7cb8cb6e53bc43f5d0",
+      "sha1": "04153a9ec513d4faf8e30c99c6fba2248ce64956",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1717775,
-      "file_id": 9009664,
+      "file_id": 9474603,
       "required": true,
       "dependency_type": "required",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "gradle_property": "lostcityterrainfit_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "Dungeon Totems",
+      "slug": "dungeon-totems",
+      "mod_ids": [
+        "dungeontotems"
+      ],
+      "sha1": "b5d3055477ccf85f64b0a0e5cd3c25bb2a7ba428",
+      "packages": [
+        "games.brennan"
+      ],
+      "project_id": 1800270,
+      "file_id": 9591352,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.14.0",
+      "gradle_property": "dungeontotems_min_version",
       "curseforge_only": true
     },
     {
@@ -842,6 +955,22 @@
       "required": true,
       "modrinth_project": "advancement-plaques",
       "modrinth_version": "OWylG33I"
+    },
+    {
+      "name": "YDM's Weapon Master",
+      "slug": "ydms-weapon-master",
+      "mod_ids": [
+        "weaponmaster_ydm"
+      ],
+      "sha1": "4cfceaf50678186c8c8de2eedc1f47f46a624782",
+      "packages": [
+        "com.minecraftserverzone"
+      ],
+      "project_id": 608235,
+      "file_id": 6476374,
+      "required": true,
+      "modrinth_project": "weaponmaster",
+      "modrinth_version": "j4CtkXVs"
     },
     {
       "name": "Better Advancements",
@@ -1327,6 +1456,22 @@
       "required": true,
       "modrinth_project": "durability-tooltip",
       "modrinth_version": "mmYe9e5V"
+    },
+    {
+      "name": "PotionLevelFix",
+      "slug": "potionlevelfix",
+      "mod_ids": [
+        "potion_level_fix"
+      ],
+      "sha1": "7a43beee75a6f99bda02c837e4f0d3095c13df1c",
+      "packages": [
+        "com.teampotato"
+      ],
+      "project_id": 1070801,
+      "file_id": 7458327,
+      "required": true,
+      "modrinth_project": "potionlevelfix",
+      "modrinth_version": "xKtSzP4U"
     },
     {
       "name": "SuperMartijn642's Config Lib",

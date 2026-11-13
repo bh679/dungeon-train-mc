@@ -17,6 +17,14 @@ final class ToolTiersTest {
     private static final double EPS = 1e-9;
 
     @Test
+    @DisplayName("a Miner breaks what its tool can harvest, and never floors")
+    void minerRule() {
+        assertTrue(ToolTiers.minerMayBreak(true, false));
+        assertFalse(ToolTiers.minerMayBreak(false, false));
+        assertFalse(ToolTiers.minerMayBreak(true, true));
+    }
+
+    @Test
     @DisplayName("no tools below level 50")
     void noneBelowStart() {
         assertEquals(0.0, ToolTiers.toolChance(0));

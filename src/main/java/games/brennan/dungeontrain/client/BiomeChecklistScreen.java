@@ -19,7 +19,8 @@ import java.util.Set;
 /**
  * Terra Omnia's checklist: every biome the game has, by its own name, ridden ones ticked and the rest
  * greyed out. Grouped as {@link TerraOmnia#ordered} lists them (the vanilla Overworld, Nether, End, then each
- * mod), ridden first within a group. Opened by clicking the advancement ({@link AdvancementTrackClick}),
+ * mod), ridden first within a group; the rare biomes it asks only some of ({@link TerraOmnia#RARE}) come last,
+ * under their own heading. Opened by clicking the advancement ({@link AdvancementTrackClick}),
  * earned or not, drawn over the advancements screen the way a photo album is ({@link EarnedPhotoAlbumScreen}).
  * Scroll with the wheel, the scrollbar (drag its thumb or click its track) or the arrow, page, Home and End
  * keys; a click anywhere else, or Esc, puts it away.
@@ -36,7 +37,10 @@ public final class BiomeChecklistScreen extends Screen {
     private static final int SCROLL_STEP = 24;
     private static final int RIDDEN_COLOUR = 0xFFFFFFFF;
     private static final int MISSING_COLOUR = 0xFF6E6E6E;
+    /** A rare biome no longer needed, because enough of the others are ridden ({@link TerraOmnia#isSpareRare}). */
+    private static final int SPARE_COLOUR = 0xFF3A3A3A;
     private static final int TICK_COLOUR = 0xFF55FF55;
+    private static final int HEADING_COLOUR = 0xFFFFD866;
     private static final int BAR_WIDTH = 6;
     private static final int BAR_MIN_THUMB = 16;
     private static final int TRACK_COLOUR = 0xFF2A2A2A;
@@ -44,12 +48,20 @@ public final class BiomeChecklistScreen extends Screen {
     private static final int THUMB_HOVER_COLOUR = 0xFFC8C8C8;
     private static final int FADE_HEIGHT = 16;
 
-    /** One line of the checklist: a biome, whether it has been ridden, and whether a new group starts with it. */
-    private record Line(ResourceLocation biome, boolean ridden, boolean groupStart) {}
+    /**
+     * One line of the checklist: a biome, whether it has been ridden, whether it is a spare rare one, and whether a
+     * new group starts with it. A heading line has a {@code heading} and no biome, starts its group, and counts as
+     * ridden once its section is earned.
+     */
+    private record Line(ResourceLocation biome, boolean ridden, boolean spare, boolean groupStart, Component heading) {
+        static Line heading(Component text, boolean earned, boolean groupStart) {
+            return new Line(null, earned, false, groupStart, text);
+        }
+    }
 
     private final Screen parent;
     private List<Line> lines = List.of();
-    private long riddenCount;
+    private TerraOmnia.Progress progress = new TerraOmnia.Progress(0, 0);
     private int scroll;
     private int maxScroll;
     private int[] column = new int[0];
@@ -68,24 +80,39 @@ public final class BiomeChecklistScreen extends Screen {
             parent.resize(minecraft, width, height);
         }
         lines = buildLines();
-        riddenCount = lines.stream().filter(Line::ridden).count();
+        progress = TerraOmnia.progress(RiddenBiomes.get(),
+                lines.stream().map(Line::biome).filter(java.util.Objects::nonNull).toList());
         layout();
         setScroll(scroll);
     }
 
-    /** Every biome in this world's registry, in checklist order: by group, ridden first within each. */
+    /**
+     * Every biome in this world's registry, in checklist order: by group, ridden first within each, then the rare
+     * section under its heading.
+     */
     private List<Line> buildLines() {
         if (minecraft == null || minecraft.level == null) return List.of();
+        List<ResourceLocation> rare = new ArrayList<>();
         Map<Integer, List<ResourceLocation>> groups = new LinkedHashMap<>();
-        TerraOmnia.ordered(minecraft.level.registryAccess().registryOrThrow(Registries.BIOME))
-            .forEach((id, group) -> groups.computeIfAbsent(group, k -> new ArrayList<>()).add(id));
+        TerraOmnia.ordered(minecraft.level.registryAccess().registryOrThrow(Registries.BIOME)).forEach((id, group) -> {
+            if (TerraOmnia.RARE.contains(id)) rare.add(id);
+            else groups.computeIfAbsent(group, k -> new ArrayList<>()).add(id);
+        });
         Set<ResourceLocation> ridden = RiddenBiomes.get();
         List<Line> out = new ArrayList<>();
-        for (List<ResourceLocation> group : groups.values()) {
+        List<List<ResourceLocation>> sections = new ArrayList<>(groups.values());
+        if (!rare.isEmpty()) sections.add(rare);
+        for (List<ResourceLocation> group : sections) {
+            if (group == rare) {
+                out.add(Line.heading(Component.translatable("gui.dungeontrain.biome_checklist.rare"),
+                        TerraOmnia.hasEnoughRare(ridden, rare), !out.isEmpty()));
+            }
             List<ResourceLocation> sorted = new ArrayList<>(group);
             sorted.sort(Comparator.comparing((ResourceLocation id) -> !ridden.contains(id)));   // stable: ids stay in order
             for (int i = 0; i < sorted.size(); i++) {
-                out.add(new Line(sorted.get(i), ridden.contains(sorted.get(i)), i == 0 && !out.isEmpty()));
+                ResourceLocation id = sorted.get(i);
+                boolean first = i == 0 && !out.isEmpty() && out.get(out.size() - 1).heading() == null;
+                out.add(new Line(id, ridden.contains(id), TerraOmnia.isSpareRare(id, ridden), first, null));
             }
         }
         return List.copyOf(out);
@@ -135,7 +162,7 @@ public final class BiomeChecklistScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(0, 0, OVERLAY_Z);
         g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
-        g.drawCenteredString(font, riddenCount + "/" + lines.size(), width / 2, 24, 0xFFAAAAAA);
+        g.drawCenteredString(font, progress.counted() + "/" + progress.needed(), width / 2, 24, 0xFFAAAAAA);
         g.enableScissor(0, TOP - 2, width, height);
         int cols = columns();
         int left = (width - cols * COLUMN_WIDTH) / 2;
@@ -143,7 +170,7 @@ public final class BiomeChecklistScreen extends Screen {
             int x = left + column[i] * COLUMN_WIDTH;
             int y = TOP + offset[i] - scroll;
             if (y + ROW < TOP || y > height) continue;
-            drawLine(g, lines.get(i), x, y);
+            drawLine(g, lines.get(i), x, y, column[i] == column[column.length - 1]);
         }
         g.disableScissor();
         if (maxScroll > 0) {
@@ -198,10 +225,16 @@ public final class BiomeChecklistScreen extends Screen {
         scroll = Math.max(0, Math.min(maxScroll, value));
     }
 
-    private void drawLine(GuiGraphics g, Line line, int x, int y) {
+    private void drawLine(GuiGraphics g, Line line, int x, int y, boolean lastColumn) {
         if (line.ridden()) g.drawString(font, "✔", x, y, TICK_COLOUR, true);
+        if (line.heading() != null) {
+            // A heading runs longer than a biome's name; with no column to its right it may use the room up to the scrollbar.
+            int room = lastColumn ? Math.max(COLUMN_WIDTH - 14, barLeft() - 2 - (x + 10)) : COLUMN_WIDTH - 14;
+            g.drawString(font, font.plainSubstrByWidth(line.heading().getString(), room), x + 10, y, HEADING_COLOUR, true);
+            return;
+        }
         String name = font.plainSubstrByWidth(nameOf(line.biome()).getString(), COLUMN_WIDTH - 14);
-        g.drawString(font, name, x + 10, y, line.ridden() ? RIDDEN_COLOUR : MISSING_COLOUR, line.ridden());
+        g.drawString(font, name, x + 10, y, line.ridden() ? RIDDEN_COLOUR : line.spare() ? SPARE_COLOUR : MISSING_COLOUR, line.ridden());
     }
 
     /** The game's own name for a biome; its id, tidied, when no language names it ({@code waterfall_ponds} → Waterfall Ponds). */

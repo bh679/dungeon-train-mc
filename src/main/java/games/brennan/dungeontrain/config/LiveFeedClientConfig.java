@@ -17,6 +17,12 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_GUI;
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
+    // Microphone (Live Eye mic): grouped here so other live settings merge around them.
+    public static final ModConfigSpec.BooleanValue MIC_SUPPORT;
+    public static final ModConfigSpec.ConfigValue<String> MIC_DEVICE;
+    public static final ModConfigSpec.IntValue MIC_MIX_PERCENT;
+    public static final ModConfigSpec.BooleanValue MIC_PUSH_TO_TALK;
+    public static final ModConfigSpec.BooleanValue MIC_NOISE_GATE;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
     public static final ModConfigSpec.EnumValue<WornTvStreams> WORN_TV_STREAMS;
     public static final ModConfigSpec.EnumValue<StreamerBoxStreams> STREAMER_BOX_STREAMS;
@@ -41,6 +47,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue TVS_SPAWN_ON;
     public static final ModConfigSpec.IntValue VIEWER_WIDTH;
     public static final ModConfigSpec.BooleanValue HEAD_VIEWER_ENABLED;
+    public static final ModConfigSpec.BooleanValue HEAD_VIEWER_NAMES;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_WIDTH;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_SIZE_WATCHING;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_SIZE_STREAMING;
@@ -62,6 +69,10 @@ public final class LiveFeedClientConfig {
     static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
     static final int CAPTURE_WIDTH_MIN = 320;
     static final int CAPTURE_WIDTH_MAX = 1920;
+    /** The game/mic balance's default: the voice at full, the game at half, so a voice is heard over the game. */
+    static final int MIC_MIX_DEFAULT = 75;
+    /** The Microphone option starts off: a streamer opts in before their mic can join a stream. */
+    static final boolean MIC_SUPPORT_DEFAULT = false;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -76,8 +87,23 @@ public final class LiveFeedClientConfig {
             .comment("Show the chat lines on your screen to viewers, whispers included. What you type is never shown. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
         STREAM_AUDIO = b
-            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never your microphone, voice chat or other apps. On by default; takes effect from your next stream.")
+            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is its own switch (micSupport). On by default; takes effect from your next stream.")
             .define("streamAudio", true);
+        MIC_SUPPORT = b
+            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the voice joins from your next stream. Off by default.")
+            .define("micSupport", MIC_SUPPORT_DEFAULT);
+        MIC_DEVICE = b
+            .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
+            .define("micDevice", "");
+        MIC_MIX_PERCENT = b
+            .comment("Game sound versus your voice on the stream, while the mic is on. 0 = game only, 50 = both at full volume, 100 = your voice only. Moving off 50 turns the other one down. 75 by default (voice at full, game at half). Applies at once.")
+            .defineInRange("micMixPercent", MIC_MIX_DEFAULT, 0, 100);
+        MIC_PUSH_TO_TALK = b
+            .comment("Push to talk: with the mic switched on, you are only heard while the Push to Talk key is held. Off = heard whenever the mic is on.")
+            .define("micPushToTalk", false);
+        MIC_NOISE_GATE = b
+            .comment("Silence the microphone between words, so fans and breathing stay off the stream.")
+            .define("micNoiseGate", true);
         STREAM_NAME_TAG = b
             .comment("Your name on the stream, bottom-middle above the hotbar: MINECRAFT, DISCORD (your linked Discord name; nothing if not linked) or NONE. Always NONE in Kid mode.")
             .defineEnum("streamNameTag", NameTag.MINECRAFT);
@@ -94,8 +120,9 @@ public final class LiveFeedClientConfig {
             .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
         LIVE_CHAT_TRANSLATION = b
-            .comment("While the Live Translations community reward is on, how a Live chat line translated into your language shows: UNDER the original in grey, REPLACE it (the original on hover), or FIRST with the original under it.")
-            .defineEnum("liveChatTranslation", LiveChatTranslation.UNDER);
+            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original, click it to flip), UNDER the original in grey, or FIRST with the original under it.")
+            // Renamed from liveChatTranslation: the old default, UNDER, was saved in every player's file, so a new default never reached them.
+            .defineEnum("liveChatTranslationMode", LiveChatTranslation.REPLACE);
         LIVE_MOMENT_ADVANCEMENTS = b
             .comment("While you stream with the Live Eye, say in the stream's Live chat (Discord, Twitch, the website and TV wearers) when you earn an advancement. Always off in Kid mode.")
             .define("liveMomentAdvancements", true);
@@ -141,6 +168,9 @@ public final class LiveFeedClientConfig {
         HEAD_VIEWER_ENABLED = b
             .comment("Pin the live feed to the top-right of your screen while you wear the camcorder or a TV. The Live Viewer hotkey flips this.")
             .define("headViewerEnabled", true);
+        HEAD_VIEWER_NAMES = b
+            .comment("Show who is live in a line under the pinned live feed while you watch (wearing a TV). Off = the feed alone.")
+            .define("headViewerNames", true);
         HEAD_VIEWER_WIDTH = b
             .comment("Width of the pinned live feed at its normal size, in GUI pixels (16:9). Clicking the feed in the inventory or chat cycles half, three-quarter, normal and one-and-a-half of this.")
             .defineInRange("headViewerWidth", 160, 80, 480);
@@ -171,6 +201,13 @@ public final class LiveFeedClientConfig {
     public static boolean tvsSpawnOn() { return viewingEnabled() && (!loaded() || TVS_SPAWN_ON.get()); }
     public static int viewerWidth() { return loaded() ? VIEWER_WIDTH.get() : 640; }
     public static boolean headViewerEnabled() { return !loaded() || HEAD_VIEWER_ENABLED.get(); }
+    public static boolean headViewerNames() { return !loaded() || HEAD_VIEWER_NAMES.get(); }
+
+    public static void setHeadViewerNames(boolean value) {
+        if (!loaded() || HEAD_VIEWER_NAMES.get() == value) return;
+        HEAD_VIEWER_NAMES.set(value);
+        HEAD_VIEWER_NAMES.save();
+    }
     public static int headViewerWidth() { return loaded() ? HEAD_VIEWER_WIDTH.get() : 160; }
 
     /**
@@ -210,7 +247,7 @@ public final class LiveFeedClientConfig {
     /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
     public static boolean streamChat() { return !loaded() || STREAM_CHAT.get(); }
 
-    /** Whether the stream carries in-game sounds (never the microphone). On unless the player turns it off. */
+    /** Whether the stream carries in-game sounds (the microphone is {@link #micSupport}). On unless the player turns it off. */
     public static boolean streamAudio() { return !loaded() || STREAM_AUDIO.get(); }
 
     /** Whether the encoder trades CPU for upload (slower preset, lower bitrate). Off unless the player turns it on. */
@@ -239,6 +276,50 @@ public final class LiveFeedClientConfig {
         STREAM_AUDIO.set(value);
         STREAM_AUDIO.save();
     }
+
+    // ---- microphone ----
+
+    /**
+     * The one mic switch: the Microphone option, which the mic button by LIVE and the Toggle Mic key
+     * flip too ({@code LiveMic.set}). Off unless the player turns it on.
+     */
+    public static boolean micSupport() { return loaded() ? MIC_SUPPORT.get() : MIC_SUPPORT_DEFAULT; }
+
+    public static void setMicSupport(boolean value) {
+        if (!loaded() || MIC_SUPPORT.get() == value) return;
+        MIC_SUPPORT.set(value);
+        MIC_SUPPORT.save();
+    }
+
+    /** The chosen capture device's name; empty = the system default. */
+    public static String micDevice() { return loaded() ? MIC_DEVICE.get() : ""; }
+
+    public static void setMicDevice(String value) {
+        String v = value == null ? "" : value;
+        if (!loaded() || MIC_DEVICE.get().equals(v)) return;
+        MIC_DEVICE.set(v);
+        MIC_DEVICE.save();
+    }
+
+    /** The game-versus-mic balance on the stream: 0 = game only, 50 = both at full, 100 = mic only; 75 by default. */
+    public static int micMixPercent() { return loaded() ? MIC_MIX_PERCENT.get() : MIC_MIX_DEFAULT; }
+
+    public static void setMicMixPercent(int value) {
+        int v = Math.max(0, Math.min(100, value));
+        if (!loaded() || MIC_MIX_PERCENT.get() == v) return;
+        MIC_MIX_PERCENT.set(v);
+        MIC_MIX_PERCENT.save();
+    }
+
+    public static boolean micPushToTalk() { return loaded() && MIC_PUSH_TO_TALK.get(); }
+
+    public static void setMicPushToTalk(boolean value) {
+        if (!loaded() || MIC_PUSH_TO_TALK.get() == value) return;
+        MIC_PUSH_TO_TALK.set(value);
+        MIC_PUSH_TO_TALK.save();
+    }
+
+    public static boolean micNoiseGate() { return !loaded() || MIC_NOISE_GATE.get(); }
 
     /** The name tag as set; {@code StreamNameTag} still forces it off in Kid mode. */
     public static NameTag streamNameTag() { return loaded() ? STREAM_NAME_TAG.get() : NameTag.MINECRAFT; }
@@ -307,7 +388,7 @@ public final class LiveFeedClientConfig {
     }
 
     /** Where a translated Live chat line goes; UNDER until the config loads. */
-    public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.UNDER; }
+    public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.REPLACE; }
 
     public static void setLiveChatTranslation(LiveChatTranslation value) {
         if (!loaded() || LIVE_CHAT_TRANSLATION.get() == value) return;

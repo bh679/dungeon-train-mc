@@ -45,6 +45,7 @@ public final class DiscordEmojiCache {
     static final int KEEPALIVE_SLOT = FIRST_SLOT;
     static final int SIZE = 32;
     private static final int MAX_BYTES = 256 * 1024;
+    private static final int MAX_ICON_BYTES = 32 * 1024;
     private static final Pattern ID = Pattern.compile("\\d{5,25}");
     private static final String CDN = "https://cdn.discordapp.com/emojis/";
     /** Test seam, like {@code DUNGEONTRAIN_RELAY_BASE_URL}: a local stub serving {@code <id>.png}. */
@@ -91,7 +92,7 @@ public final class DiscordEmojiCache {
             }
             NativeImage square;
             try (NativeImage raw = NativeImage.read(NativeImage.Format.RGBA, new ByteArrayInputStream(resp.body()))) {
-                square = toSquare(raw);
+                square = toSquare(raw, false);
             } catch (Exception e) {
                 LOGGER.debug("[DungeonTrain] custom emoji {} unreadable", id, e);
                 return;
@@ -99,6 +100,39 @@ public final class DiscordEmojiCache {
             Minecraft.getInstance().execute(() -> install(id, square));
         }).exceptionally(t -> {
             LOGGER.debug("[DungeonTrain] custom emoji {} fetch failed: {}", id, t.toString());
+            return null;
+        });
+    }
+
+    /**
+     * Start fetching the image at {@code uri} under {@code key} (anything but an emoji id: the Live chat source icons,
+     * {@code LiveChatSources}, use {@code src:<path>}). Same slots, consent, size cap and one try per key as an emoji;
+     * a small icon is scaled UP to fill the glyph (nearest), so pixel art stays sharp. The caller picks {@code uri}:
+     * only http(s) is fetched. Any thread.
+     */
+    public static void requestUrl(String key, URI uri) {
+        if (key == null || key.isEmpty() || ID.matcher(key).matches() || SLOT_BY_ID.containsKey(key)) return;
+        String scheme = uri.getScheme();
+        if (!"https".equals(scheme) && !"http".equals(scheme)) return;
+        if (!DiscordPresenceClientConfig.isGranted()) return;
+        if (REQUESTED.size() >= MAX_SLOTS || !REQUESTED.add(key)) return;
+        // HTTP/1.1 like the relay client: over plain http (a dev relay) Java offers an h2c upgrade, which Node drops.
+        HttpRequest req = HttpRequest.newBuilder(uri).version(HttpClient.Version.HTTP_1_1).timeout(Duration.ofSeconds(10)).GET().build();
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofByteArray()).thenAccept(resp -> {
+            if (resp.statusCode() != 200 || resp.body().length == 0 || resp.body().length > MAX_ICON_BYTES) {
+                LOGGER.debug("[DungeonTrain] chat icon {} not loaded (HTTP {})", key, resp.statusCode());
+                return;
+            }
+            NativeImage square;
+            try (NativeImage raw = NativeImage.read(NativeImage.Format.RGBA, new ByteArrayInputStream(resp.body()))) {
+                square = toSquare(raw, true);
+            } catch (Exception e) {
+                LOGGER.debug("[DungeonTrain] chat icon {} unreadable", key, e);
+                return;
+            }
+            Minecraft.getInstance().execute(() -> install(key, square));
+        }).exceptionally(t -> {
+            LOGGER.debug("[DungeonTrain] chat icon {} fetch failed: {}", key, t.toString());
             return null;
         });
     }
@@ -125,12 +159,13 @@ public final class DiscordEmojiCache {
         }
     }
 
-    /** {@code raw} fitted into a {@link #SIZE}² transparent square, centred, scaled down (nearest) if larger. */
-    private static NativeImage toSquare(NativeImage raw) {
+    /** {@code raw} fitted into a {@link #SIZE}² transparent square, centred, scaled down (nearest) if larger; up too with {@code grow}. */
+    private static NativeImage toSquare(NativeImage raw, boolean grow) {
         NativeImage out = new NativeImage(NativeImage.Format.RGBA, SIZE, SIZE, true);
         int w = raw.getWidth();
         int h = raw.getHeight();
-        float scale = Math.min(1f, Math.min((float) SIZE / w, (float) SIZE / h));
+        float fit = Math.min((float) SIZE / w, (float) SIZE / h);
+        float scale = grow ? fit : Math.min(1f, fit);
         int dw = Math.max(1, Math.round(w * scale));
         int dh = Math.max(1, Math.round(h * scale));
         int ox = (SIZE - dw) / 2;

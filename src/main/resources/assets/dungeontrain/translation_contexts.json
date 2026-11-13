@@ -9505,6 +9505,21 @@
  "gui.dungeontrain.editor_menu.plot.sky": [
   "world"
  ],
+ "gui.dungeontrain.editor_menu.plot.ground": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.plot.ground_below": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.portal.ground.bottom": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.portal.ground.enter": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.portal.ground.door": [
+  "world"
+ ],
  "gui.dungeontrain.editor_menu.plot.fog": [
   "world"
  ],
@@ -10453,6 +10468,16 @@
   "world"
  ],
  "gui.dungeontrain.editor_menu.container.scale_off": [
+  "button",
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.container.luck_on": [
+  "button",
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.container.luck_off": [
   "button",
   "screen",
   "world"
@@ -11765,6 +11790,9 @@
   "chat"
  ],
  "chat.dungeontrain.editor.unknown_door_wall_option": [
+  "chat"
+ ],
+ "chat.dungeontrain.editor.unknown_ground_option_try": [
   "chat"
  ],
  "chat.dungeontrain.editor.unknown_fog_option_try": [

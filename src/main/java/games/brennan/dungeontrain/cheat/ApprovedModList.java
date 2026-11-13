@@ -100,7 +100,18 @@ public final class ApprovedModList {
      * the relay.
      */
     private static volatile java.util.Map<String, Set<String>> bakedPackages = java.util.Map.of();
+    /** SHA-1 + version of the dtmodverify jar DT embeds ("" when not baked). Baked only, never relay-set. */
+    private static volatile String bakedEngineSha1 = "";
+    private static volatile String bakedEngineVersion = "";
     private static volatile java.util.Map<String, Set<String>> relayPackages = java.util.Map.of();
+    /**
+     * Ids whose mod file may be verified by its CARRIER — the {@code mods/} jar that generated it
+     * (CustomSkinLoader's bootstrap rewrites {@code CustomSkinLoader-Common.jar} every launch, so
+     * that file's hash differs per install while the bootstrap's does not). Baked from the curated
+     * resource; the relay may add ids (never remove). See the resource's {@code carrierApprovedWhy}.
+     */
+    private static volatile Set<String> bakedCarrierApproved = Set.of();
+    private static volatile Set<String> relayCarrierApproved = Set.of();
     /** A lowercase 40-hex SHA-1, as the relay serves and the scanner computes them. */
     private static final java.util.regex.Pattern SHA1 = java.util.regex.Pattern.compile("[0-9a-f]{40}");
     private static final int MAX_HASHES = 200000;
@@ -177,6 +188,16 @@ public final class ApprovedModList {
     }
 
     /** The known package fingerprint per approved id: relay knowledge over baked. */
+    /** Ids a carrier may verify: baked ∪ relay. See {@link #bakedCarrierApproved}. */
+    public static Set<String> carrierApproved() {
+        loadBakedOnce();
+        loadDiskCacheOnce();
+        if (relayCarrierApproved.isEmpty()) return bakedCarrierApproved;
+        Set<String> out = new HashSet<>(bakedCarrierApproved);
+        out.addAll(relayCarrierApproved);
+        return Set.copyOf(out);
+    }
+
     public static java.util.Map<String, Set<String>> knownPackages() {
         loadBakedOnce();
         loadDiskCacheOnce();
@@ -242,6 +263,7 @@ public final class ApprovedModList {
         relayHashes = payload.hashes();
         if (payload.enforceHashes() != null) enforceHashes = payload.enforceHashes();
         if (!payload.knownPackages().isEmpty()) relayPackages = payload.knownPackages();
+        if (!payload.carrierApproved().isEmpty()) relayCarrierApproved = payload.carrierApproved();
         saveDiskCache(payload);
         // A payload landing while a server runs re-judges the session — the "never a session
         // late" rule: a mod updated this launch must not cost its player this run.
@@ -257,19 +279,27 @@ public final class ApprovedModList {
      */
     record Payload(Set<String> approved, Set<String> revoked, Boolean enforce,
                    Set<String> hashes, Boolean enforceHashes,
-                   java.util.Map<String, Set<String>> knownPackages) {
+                   java.util.Map<String, Set<String>> knownPackages,
+                   Set<String> carrierApproved) {
         Payload {
             hashes = hashes == null ? Set.of() : Set.copyOf(hashes);
             knownPackages = knownPackages == null ? java.util.Map.of() : java.util.Map.copyOf(knownPackages);
+            carrierApproved = carrierApproved == null ? Set.of() : Set.copyOf(carrierApproved);
+        }
+
+        /** The pre-carrier shape: no carrier allowlist from the relay. */
+        Payload(Set<String> approved, Set<String> revoked, Boolean enforce, Set<String> hashes, Boolean enforceHashes,
+                java.util.Map<String, Set<String>> knownPackages) {
+            this(approved, revoked, enforce, hashes, enforceHashes, knownPackages, Set.of());
         }
 
         Payload(Set<String> approved, Set<String> revoked, Boolean enforce, Set<String> hashes, Boolean enforceHashes) {
-            this(approved, revoked, enforce, hashes, enforceHashes, java.util.Map.of());
+            this(approved, revoked, enforce, hashes, enforceHashes, java.util.Map.of(), Set.of());
         }
 
         /** The pre-hash shape: no file hashes, hash enforcement unsaid. */
         Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {
-            this(approved, revoked, enforce, Set.of(), null, java.util.Map.of());
+            this(approved, revoked, enforce, Set.of(), null, java.util.Map.of(), Set.of());
         }
     }
 
@@ -289,6 +319,9 @@ public final class ApprovedModList {
             prefixes = parsePrefixes(root);
             bakedHashes = parseHashes(root);
             bakedPackages = parseKnownPackages(root);
+            bakedCarrierApproved = parseCarrierApproved(root);
+            bakedEngineSha1 = stringAt(root, "engineSha1");
+            bakedEngineVersion = stringAt(root, "engineVersion");
             LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es), {} file hash(es), "
                 + "packages for {} id(s)", baked.size(), prefixes.size(), bakedHashes.size(), bakedPackages.size());
         } catch (Exception e) {
@@ -355,6 +388,11 @@ public final class ApprovedModList {
         return java.util.Map.copyOf(out);
     }
 
+    /** The {@code carrierApproved} id list of a resource or payload, sanitized; empty when absent. */
+    static Set<String> parseCarrierApproved(JsonObject root) {
+        return ModIds.sanitize(stringsAt(root, "carrierApproved"), MAX_IDS);
+    }
+
     /** The resource's raw-ID prefixes, lowercased and validated as ID fragments. */
     static List<String> parsePrefixes(JsonObject root) {
         if (!root.has("prefixes") || !root.get("prefixes").isJsonArray()) return List.of();
@@ -384,6 +422,7 @@ public final class ApprovedModList {
             relayHashes = p.hashes();
             if (p.enforceHashes() != null) enforceHashes = p.enforceHashes();
             if (!p.knownPackages().isEmpty()) relayPackages = p.knownPackages();
+            if (!p.carrierApproved().isEmpty()) relayCarrierApproved = p.carrierApproved();
             LOGGER.debug("[DungeonTrain] approved-mod list: loaded {} approval(s), {} revocation(s), "
                 + "enforce={}, {} file hash(es), enforceHashes={} from {}", relayApproved.size(),
                 relayRevoked.size(), enforce, relayHashes.size(), enforceHashes, file);
@@ -409,13 +448,29 @@ public final class ApprovedModList {
             Set<String> revokedIds = ModIds.sanitize(stringsAt(o, "revoked"), MAX_IDS);
             Boolean on = boolAt(o, "enforce");
             return new Payload(approvedIds, revokedIds, on, parseHashes(o), boolAt(o, "enforceHashes"),
-                parseKnownPackages(o));
+                parseKnownPackages(o), parseCarrierApproved(o));
         } catch (Exception e) {
             return null;
         }
     }
 
     /** A boolean field, or {@code null} when missing or not a boolean — "the relay did not say". */
+    /** The baked SHA-1 of the embedded verification engine jar; "" when the build baked none. */
+    public static String bakedEngineSha1() {
+        loadBakedOnce();
+        return bakedEngineSha1;
+    }
+
+    /** The baked version of the embedded verification engine; "" when the build baked none. */
+    public static String bakedEngineVersion() {
+        loadBakedOnce();
+        return bakedEngineVersion;
+    }
+
+    private static String stringAt(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : "";
+    }
+
     private static Boolean boolAt(JsonObject o, String key) {
         return o.has(key) && o.get(key).isJsonPrimitive() && o.getAsJsonPrimitive(key).isBoolean()
             ? o.get(key).getAsBoolean() : null;
@@ -446,6 +501,9 @@ public final class ApprovedModList {
                 kp.add(id, arrayOf(new java.util.TreeSet<>(payload.knownPackages().get(id))));
             }
             obj.add("knownPackages", kp);
+        }
+        if (!payload.carrierApproved().isEmpty()) {
+            obj.add("carrierApproved", arrayOf(new java.util.TreeSet<>(payload.carrierApproved())));
         }
         return obj.toString();
     }
@@ -491,6 +549,7 @@ public final class ApprovedModList {
             relayHashes = Set.of();
             enforceHashes = BAKED_ENFORCE_HASHES;
             relayPackages = java.util.Map.of();
+            relayCarrierApproved = Set.of();
             loaded = false;
         } else {
             relayApproved = payload.approved();
@@ -499,6 +558,7 @@ public final class ApprovedModList {
             relayHashes = payload.hashes();
             enforceHashes = payload.enforceHashes() != null ? payload.enforceHashes() : BAKED_ENFORCE_HASHES;
             relayPackages = payload.knownPackages();
+            relayCarrierApproved = payload.carrierApproved();
             loaded = true;
         }
     }

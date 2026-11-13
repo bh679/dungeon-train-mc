@@ -105,7 +105,6 @@
     "dungeontrain:dungeon_train/reached_void": true,
     "dungeontrain:dungeon_train/reached_wwoo": true,
     "dungeontrain:dungeon_train/read_all_nether_starting_books": true,
-    "dungeontrain:dungeon_train/read_all_rules": true,
     "dungeontrain:dungeon_train/read_all_stories": true,
     "dungeontrain:dungeon_train/read_shared_book": true,
     "dungeontrain:dungeon_train/reassembly_required": true,
@@ -207,7 +206,10 @@
     "dungeontrain:enchiridion/wildlife_photographer": true,
     "dungeontrain:enchiridion/wither_watcher": true,
     "dungeontrain:dungeon_train/three_melons": true,
-    "dungeontrain:dungeon_train/the_challenge": true
+    "dungeontrain:dungeon_train/the_challenge": true,
+    "dungeontrain:enchiridion/family_photo": true,
+    "dungeontrain:enchiridion/skeleton_crew": true,
+    "dungeontrain:enchiridion/photobomb": true
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",
@@ -215,10 +217,13 @@
     "dungeontrain:enchiridion/run_away": "always",
     "dungeontrain:enchiridion/shh": "always",
     "dungeontrain:enchiridion/wither_watcher": "always",
+    "dungeontrain:enchiridion/skeleton_crew": "always",
+    "dungeontrain:enchiridion/most_wanted": "always",
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",
-    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned"
+    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned",
+    "dungeontrain:enchiridion/photobomb": "always"
   },
   "complete": {
     "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",

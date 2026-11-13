@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.OthersideCore;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
@@ -83,6 +84,17 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                          CallbackInfoReturnable<Holder<Biome>> cir) {
         long genT0 = GenProfiler.t0();
         try {
+            // A BetterNether structure siting in a BetterNether band core: its core biome, at any height. Marked
+            // overworld source only — the core's own biome sampler asks the real Nether's source in here too.
+            if (dungeontrain$overworld
+                    && games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures.inScope()) {
+                Holder<Biome> scoped = games.brennan.dungeontrain.worldgen.structure.BandBetterNetherStructures
+                        .scopedBiome(x << 2, z << 2);
+                if (scoped != null) {
+                    cir.setReturnValue(scoped);
+                    return;
+                }
+            }
             NetherBandContext ctx = NetherBandContext.current();
             // Overworld-only: the Nether also uses a MultiNoiseBiomeSource. The mark (not identity)
             // also covers TerraBlender's per-chunk clones of the overworld source, and outlives the
@@ -142,6 +154,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 ctx, stretchBiomes, WorldGenCycle.fromConfig(), LegacyBiomes.token(), WorldGenCycle.reverseSlide(),
                 LiveColumnProviders.forContext(ctx));
         if (column.legacy() != null) return column.legacy();
+        // An End-void column is End at every height (BandBiomeDecision decides it ahead of the sea-level gate).
+        if (column.aboveSea() == BandBiomeDecision.Result.END_CORE && column.core() != null) return column.core();
         int blockY = y << 2;
         // A Deeper Dark core is the Otherside all the way down its slab, under sea level too (its mobs spawn there);
         // below the slab the column keeps its overworld biome, or the chunk would lose DT's overworld features.
@@ -152,7 +166,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         }
         if (blockY >= ctx.seaLevel()) {
             switch (column.aboveSea()) {
-                case NETHER_CORE, END_CORE -> {
+                case NETHER_CORE -> {
                     if (column.core() != null) return column.core();
                 }
                 case HIGHLAND -> {
@@ -185,12 +199,14 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         return OverworldStretchBiomes.vanillaFallback(source, x, y, z, sampler);
     }
 
-    /** The second-lap stretch biome (BoP or vanilla), or {@code null} to leave the live source's pick. */
+    /** The stretch biome (BoP, WWOO or vanilla), or {@code null} to leave the live source's pick. */
     private static Holder<Biome> dungeontrain$stretchBiome(NetherBandContext ctx, MultiNoiseBiomeSource source,
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        WorldGenCycle cycle = ctx.cycle();   // base cycle even in the mix zone: see dungeontrain$bandBiome
+        // In the mix zone an overworld or Lost City pick wears its own stretch's biomes; any other pick keeps
+        // the base cycle's (see dungeontrain$bandBiome).
+        WorldGenCycle cycle = MixBand.biomeCycleFor(ctx.cycle(), ctx.generationSeed(), x >> 2, z >> 2);
         return dungeontrain$pick(stretchBiomes, SecondLapOverworld.lookAt(cycle, x << 2), source, x, y, z, sampler);
     }
 
@@ -219,6 +235,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         // band they picked: vanilla takes sky, fog and water colour from the biome, so a forced Nether / End
         // biome would re-tint the air chunk by chunk. The zone swaps blocks, never the atmosphere.
         WorldGenCycle cycle = ctx.cycle();
+        // The End void is End at every height — no ground there, so nothing below sea level to keep.
+        if (ctx.endCoreBiomes() != null && cycle.endSegmentInfluence(blockX) && cycle.isEndVoid(blockX)) {
+            return dungeontrain$endBiome(ctx, cycle, blockX, blockZ);
+        }
         if (blockY < ctx.seaLevel()) {
             // A Deeper Dark core keeps its Otherside biome below sea level too, down to its bedrock floor:
             // decide the column at sea level. The netherInfluence gate first — it is the cheap part of
@@ -244,11 +264,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 // pass so they place in NetherTransitionFeature. The order's :better passes are BetterNether.
                 return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, cycle.netherLookAt(blockX, blockZ, ctx.netherCoreBiomes().seed()));
             case END_CORE:
-                // Sample the real End's biome source (all five End biomes, swept across successive
-                // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
-                // across a joined End band's seam, the look that owns the column (islands and biome agree)
-                long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
-                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
+                return dungeontrain$endBiome(ctx, cycle, blockX, blockZ);
             case HIGHLAND:
                 // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the way
                 // in, mostly deep dark after the core). Un-waved X for the pre/post split — core columns are
@@ -264,5 +280,17 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
             default:
                 return null;
         }
+    }
+
+    /**
+     * The End band's biome for an End-void column: the real End's biome source sampled per pass (all five
+     * End biomes swept across successive passes — see EndCoreBiomes) so world label, surface skin and
+     * decoration agree; across a joined band's seam, the look that owns the column. A void column off the
+     * islands reads the same as vanilla's gaps between outer islands (Small End Islands or End Barrens).
+     */
+    private static Holder<Biome> dungeontrain$endBiome(NetherBandContext ctx, WorldGenCycle cycle, int blockX, int blockZ) {
+        long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
+        return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass),
+                cycle.endPieceProgress(blockX, endPass));
     }
 }

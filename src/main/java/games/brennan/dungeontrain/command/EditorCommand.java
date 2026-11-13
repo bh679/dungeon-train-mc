@@ -229,6 +229,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_GROUND_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomGround.Level level
+                    : games.brennan.dungeontrain.portal.PortalRoomGround.Level.values()) {
+                builder.suggest(level.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_FOG_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomFog fog
@@ -6453,6 +6462,41 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withFog(wanted));
     }
 
+    /** {@code /dt editor portals ground next} — step Bottom → Enter → Door. */
+    private static int runPortalRoomGroundCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextGroundLevel());
+    }
+
+    /** {@code /dt editor portals ground below} — flip Everything Below. */
+    private static int runPortalRoomGroundBelow(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).toggleGroundBelow());
+    }
+
+    /** {@code /dt editor portals ground <bottom|enter|door>} — set it outright. Rejects a misspelling rather than falling back to Bottom. */
+    private static int runPortalRoomGround(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomGround.Level wanted =
+            games.brennan.dungeontrain.portal.PortalRoomGround.Level.byId(raw);
+        if (wanted == null) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_ground_option_try", raw));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withGround(current.ground().withLevel(wanted)));
+    }
+
     /** {@code /dt editor portals drift next} — step On → Off. */
     private static int runPortalRoomDriftCycle(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
@@ -6730,6 +6774,17 @@ public final class EditorCommand {
                     .suggests(PORTAL_ROOM_SKY_SUGGESTIONS)
                     .executes(ctx -> runPortalRoomSky(ctx,
                         StringArgumentType.getString(ctx, "sky")))))
+            // Which rows an Endless Open copy repeats as its ground. The bottom row by default, and
+            // means nothing under the modes that do not lay copies that way.
+            .then(Commands.literal("ground")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomGroundCycle(ctx)))
+                .then(Commands.literal("below")
+                    .executes(ctx -> runPortalRoomGroundBelow(ctx)))
+                .then(Commands.argument("ground", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_GROUND_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomGround(ctx,
+                        StringArgumentType.getString(ctx, "ground")))))
             // Whether the room is fogged. Auto by default — whatever the walls mode says — with
             // On and Off as the author's override either way.
             .then(Commands.literal("fog")
@@ -7256,7 +7311,12 @@ public final class EditorCommand {
             && !games.brennan.dungeontrain.portal.PortalRoomLock.DEFAULT.equals(settings.lock())
             ? ", sealed in: " + (settings.lock().isAir() ? "nothing" : settings.lock().blockId())
             : "";
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
+        // Same rule again: the bottom row is what every copy did before this could be chosen.
+        String ground = !games.brennan.dungeontrain.portal.PortalRoomGround.DEFAULT.equals(settings.effectiveGround())
+            ? ", ground: " + settings.ground().level().displayName()
+                + (settings.ground().below() ? " and everything below" : "")
+            : "";
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock + ground, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

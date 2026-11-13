@@ -501,7 +501,7 @@ public final class TrackGenerator {
                 return Blocks.AIR.defaultBlockState();
             }
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
-                picked.state(), picked.rotation(), picked.half(), picked.active(),
+                picked.state(), picked,
                 local, worldSeed, (int) tileIndex,
                 sc.lockIdAt(local));
         }
@@ -811,7 +811,7 @@ public final class TrackGenerator {
                 return Blocks.AIR.defaultBlockState();
             }
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
-                picked.state(), picked.rotation(), picked.half(), picked.active(),
+                picked.state(), picked,
                 local, worldSeed, pillarIndex,
                 sidecar.lockIdAt(local));
         }
@@ -1742,7 +1742,7 @@ public final class TrackGenerator {
                             continue;
                         }
                         BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                            picked.state(), picked.rotation(), picked.half(), picked.active(),
+                            picked.state(), picked,
                             entry.localPos(), worldSeed, centerX,
                             stairsSidecar.lockIdAt(entry.localPos()));
                         level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
@@ -2221,7 +2221,7 @@ public final class TrackGenerator {
                             continue;
                         }
                         BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                            picked.state(), picked.rotation(), picked.half(), picked.active(),
+                            picked.state(), picked,
                             entry.localPos(), worldSeed, centerX,
                             sidecar.lockIdAt(entry.localPos()));
                         level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);

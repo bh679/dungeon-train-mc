@@ -51,6 +51,7 @@ final class ClientOptionsIcons {
             case DIFFICULTY -> Icon.item(Items.IRON_SWORD);
             case CONTENT_MODE -> Icon.item(Items.CAKE);
             case DEV_CHAT -> Icon.item(Items.WRITABLE_BOOK);
+            case PUBLIC_POSTS -> Icon.item(Items.PAINTING);
             case POLITICAL_FILTER -> Icon.item(Items.BARRIER);
             case BOOK_AUTHOR_CHAT -> Icon.item(Items.BOOK);
             case PROTECT_OWN_PETS -> Icon.item(Items.BONE);
@@ -58,6 +59,7 @@ final class ClientOptionsIcons {
             case LOW_MEMORY_NOTICE_CHAT -> Icon.item(Items.REDSTONE);
             case OTHER_ADVANCEMENT_TABS -> Icon.item(Items.EXPERIENCE_BOTTLE);
             case OTHER_ADVANCEMENT_CARDS -> Icon.item(Items.PAPER);
+            case MENU_BACKDROP -> Icon.item(Items.ITEM_FRAME);
             case CINEMATIC_HOTKEY -> Icon.item(Items.SPYGLASS);
             case DEV_HUD -> Icon.item(Items.CLOCK);
             case BACKPACK_BUTTON -> Icon.item(games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());
@@ -81,11 +83,18 @@ final class ClientOptionsIcons {
             case SNAPSHOT_MAX_RES -> Icon.item(Items.PAINTING);
             case SNAPSHOT_CHAT_LOG -> Icon.item(Items.PAPER);
             case CATCH_UP_BURST -> Icon.item(Items.MINECART);
+            case DROP_UNTOUCHED_WORLD_GEN -> Icon.item(Items.GRASS_BLOCK);
 
             case LIVESTREAM -> Icon.item(ModItems.LIVE_HEADPIECE.get());
+            case FFMPEG -> Icon.item(Items.HOPPER);
             case STREAM_GUI -> Icon.item(Items.ITEM_FRAME);
             case STREAM_CHAT -> Icon.item(Items.OAK_SIGN);
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);
+            case MIC_SUPPORT -> Icon.item(Items.LIGHTNING_ROD);
+            case MIC_DEVICE -> Icon.item(Items.NOTE_BLOCK);
+            case STREAM_VOLUME -> Icon.item(Items.MUSIC_DISC_13);
+            case MIC_MIX -> Icon.item(Items.GOAT_HORN);
+            case MIC_MODE -> Icon.item(Items.STONE_BUTTON);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
             case LIVE_CHAT -> Icon.item(Items.BELL);
@@ -97,10 +106,17 @@ final class ClientOptionsIcons {
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
             case WORN_TV_STREAMS -> Icon.item(Items.SPYGLASS);
             case STREAMER_BOX_STREAMS -> Icon.item(Items.ITEM_FRAME);
+            case TV_STREAM_SOUND -> Icon.item(Items.JUKEBOX);
+            case TV_SOUND_ON_TRAIN -> Icon.item(Items.RAIL);
+            case MUTED_STREAMERS -> Icon.item(Items.NOTE_BLOCK);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
+            case HEAD_VIEWER_NAMES -> Icon.item(Items.NAME_TAG);
             case HEAD_VIEWER_SIZE_STREAMING -> Icon.item(Items.TINTED_GLASS);
+            // Section titles are drawn as captions; they have no icon.
+            case STREAM_SECTION_BROADCAST, STREAM_SECTION_SOUND, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
+                 STREAM_SECTION_WATCHING -> throw new IllegalArgumentException(row + " is a heading");
 
             case SCALE_ALL -> ACCESSIBILITY;
             case SCALE_WORLDSPACE -> Icon.item(Items.FILLED_MAP);
