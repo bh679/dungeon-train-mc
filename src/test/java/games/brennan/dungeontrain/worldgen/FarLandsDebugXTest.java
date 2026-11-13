@@ -116,21 +116,15 @@ final class FarLandsDebugXTest {
     }
 
     @Test
-    @DisplayName("the Void builds down to the negative edge on its last block, then the overworld tells the truth")
+    @DisplayName("the Void counts up at normal speed to the negative edge on its last block, then the truth")
     void voidThenTruth() {
         WorldGenCycle.LegacyRun run = run(0);
         WorldGenCycle.LegacyRunEra v = era(run, LegacyBandKind.VOID);
         long from = switchX(v);
         long exit = v.coreEndX() + (run.endX() - v.coreEndX()) / 2L;
-        assertEquals(0L, shown(from));
-        long prev = Long.MAX_VALUE;
         for (long x = from; x < exit; x++) {
-            long s = shown(x);
-            assertTrue(s < prev, "did not build down at " + x);
-            assertTrue(s > -FarLandsShift.EDGE || x == exit - 1, "hit the edge early at " + x);
-            prev = s;
+            assertEquals(-FarLandsShift.EDGE - (exit - 1 - x), shown(x), "x=" + x);
         }
-        assertEquals(-FarLandsShift.EDGE, shown(exit - 1));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) exit));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) run.endX() + 5));
     }
