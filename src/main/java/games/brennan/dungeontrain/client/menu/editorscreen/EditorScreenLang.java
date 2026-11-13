@@ -325,6 +325,13 @@ public final class EditorScreenLang {
     public static final String OFFSET_TIP = PREFIX + "offset.tip";
     public static final String OFFSET_DISTANCE = PREFIX + "offset.distance";
     public static final String OFFSET_DISTANCE_TIP = PREFIX + "offset.distance.tip";
+    // The toolbar's Flip button and the axis row it opens — see FlipControls.
+    public static final String ICON_FLIP = PREFIX + "icon.flip";
+    public static final String ICON_FLIP_TIP = PREFIX + "icon.flip.tip";
+    public static final String FLIP_X = PREFIX + "flip.x";
+    public static final String FLIP_Y = PREFIX + "flip.y";
+    public static final String FLIP_Z = PREFIX + "flip.z";
+    public static final String FLIP_TIP = PREFIX + "flip.tip";
     // The test toolbar and the test settings rows — see TestModeControls.
     public static final String TEST_RELOAD = PREFIX + "test.reload";
     public static final String TEST_RELOAD_TIP = PREFIX + "test.reload.tip";

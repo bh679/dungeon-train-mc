@@ -156,16 +156,21 @@ public final class EditorDetailPane {
         // The offset row gives way to a test: the author stands in the test copy, not the plot, and
         // the floor-size pane has no room for both rows above the sheet.
         boolean offsetOpen = EditorScreenState.offsetRowOpen() && ctx.hasSelection() && !testing;
-        // The editing row first: the offset row under it takes the size its buttons came out at.
+        // The Flip button's axis row takes the same slot, and gives way the same way.
+        boolean flipOpen = EditorScreenState.flipRowOpen() && ctx.hasSelection() && !testing;
+        // The editing row first: the row under it takes the size its buttons came out at.
         icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
         IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
         iconX = row.x();
         iconCell = row.cell();
-        this.layout = testing ? layout.withTestRow() : offsetOpen ? layout.withOffsetRow(iconCell) : layout;
+        this.layout = testing ? layout.withTestRow()
+            : offsetOpen || flipOpen ? layout.withOffsetRow(iconCell) : layout;
         layout = this.layout;
         offsetIcons = offsetOpen
-            ? OffsetControls.icons(ctx.standingInSelection(), EditorScreenState.offsetDistance()) : List.of();
-        int[] offsetX = layoutOffsetIcons(offsetIcons.size(), layout.offsetIcons().x(), iconCell);
+            ? OffsetControls.icons(ctx.standingInSelection(), EditorScreenState.offsetDistance())
+            : flipOpen ? FlipControls.icons(ctx.standingInSelection()) : List.of();
+        int[] offsetX = flipOpen ? layoutFlipIcons(offsetIcons.size(), layout.offsetIcons().x(), iconCell)
+            : layoutOffsetIcons(offsetIcons.size(), layout.offsetIcons().x(), iconCell);
         offsetIconX = java.util.Arrays.copyOf(offsetX, offsetIcons.size());
         offsetDistanceRect = offsetOpen ? new InventoryEditorLayout.Rect(offsetX[offsetIcons.size()],
             layout.offsetIcons().y(), offsetDistanceWidth(iconCell), iconCell) : null;
@@ -266,6 +271,13 @@ public final class EditorDetailPane {
             xs[i] = x;
             x += cell + ICON_GAP;
         }
+        return xs;
+    }
+
+    /** Where each axis button of the Flip row starts: side by side, one group, no distance box. */
+    static int[] layoutFlipIcons(int count, int x0, int cell) {
+        int[] xs = new int[count];
+        for (int i = 0; i < count; i++) xs[i] = x0 + i * (cell + ICON_GAP);
         return xs;
     }
 
@@ -496,8 +508,9 @@ public final class EditorDetailPane {
         DetailPainters.drawIconStrip(g, offsetIcons, offsetIconX, iconCell, layout.offsetIcons().y(), hov,
             i -> false,
             i -> !offsetIcons.get(i).enabled() ? DISABLED_ICON : i == hov ? DetailPainters.HOVER_INK : 0);
-        // The distance box: the step each button moves, typed over by clicking it.
+        // The distance box: the step each button moves, typed over by clicking it. Offset only.
         InventoryEditorLayout.Rect d = offsetDistanceRect;
+        if (d == null) return;
         boolean dHov = hovered.kind() == HitKind.OFFSET_DISTANCE;
         g.fill(d.x(), d.y(), d.right(), d.bottom(), dHov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
         String step = String.valueOf(EditorScreenState.offsetDistance());
@@ -648,7 +661,10 @@ public final class EditorDetailPane {
         if (!icon.enabled()) return DISABLED_ICON;
         if ("save".equals(icon.id())) return EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis());
         // Lit while its row is open, so the arrow says what pressing it again will do.
-        if (OffsetControls.TOGGLE.equals(icon.id()) && !offsetIcons.isEmpty()) return OFFSET_OPEN_TINT;
+        if (OffsetControls.TOGGLE.equals(icon.id()) && offsetDistanceRect != null) return OFFSET_OPEN_TINT;
+        if (FlipControls.TOGGLE.equals(icon.id()) && !offsetIcons.isEmpty() && offsetDistanceRect == null) {
+            return OFFSET_OPEN_TINT;
+        }
         if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
             return SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis());
         }
@@ -785,7 +801,9 @@ public final class EditorDetailPane {
             for (int i = 0; i < offsetIconX.length; i++) {
                 if (mx >= offsetIconX[i] && mx < offsetIconX[i] + iconCell) return new Hit(HitKind.OFFSET_ICON, i, 0);
             }
-            if (offsetDistanceRect.contains(mx, my)) return new Hit(HitKind.OFFSET_DISTANCE, 0, 0);
+            if (offsetDistanceRect != null && offsetDistanceRect.contains(mx, my)) {
+                return new Hit(HitKind.OFFSET_DISTANCE, 0, 0);
+            }
         }
         InventoryEditorLayout.Rect tr = layout.testIcons();
         if (testing && my >= tr.y() && my < tr.y() + ICON_CELL) {

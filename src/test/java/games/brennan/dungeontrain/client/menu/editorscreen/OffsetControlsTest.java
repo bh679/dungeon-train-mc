@@ -103,7 +103,7 @@ final class OffsetControlsTest {
         for (int[] s : new int[][] {{427, 240}, {640, 360}, {1920, 1080}}) {
             InventoryEditorLayout base = InventoryEditorLayout.of(s[0], s[1]);
             assertEquals(0, base.offsetIcons().h(), "no offset row until it is opened");
-            int cell = EditorDetailPane.layoutIcons(11, base.icons().x(), base.icons().w()).cell();
+            int cell = EditorDetailPane.layoutIcons(12, base.icons().x(), base.icons().w()).cell();
 
             InventoryEditorLayout l = base.withOffsetRow(cell);
             assertEquals(base.icons().y() + cell + 1, l.offsetIcons().y(), "straight under the buttons as drawn");
