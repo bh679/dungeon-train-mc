@@ -23,12 +23,12 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import java.util.function.Supplier;
 
 /**
- * An evoker's totem is a Balanced Totem picked by the same weights as DT's {@code random_totem} loot
+ * An evoker's totem is a Dungeon Totem picked by the same weights as DT's {@code random_totem} loot
  * ({@link RandomTotemTable}), with no Void Totem before the train reaches the void ({@link VoidTotemGate}).
  *
- * <p>Balanced Totems swaps the evoker's vanilla totem for one of its own, uniformly. This runs after it
- * (DT loads after {@code balancedtotems}, so its {@code global_loot_modifiers.json} entry comes later) and
- * re-picks whatever totem is there, vanilla or Balanced. Scoped to {@code minecraft:entities/evoker} by
+ * <p>Dungeon Totems swaps the evoker's vanilla totem for one of its own, uniformly. This runs after it
+ * (DT loads after {@code dungeontotems}, so its {@code global_loot_modifiers.json} entry comes later) and
+ * re-picks whatever totem is there, vanilla or not. Scoped to {@code minecraft:entities/evoker} by
  * {@code data/dungeontrain/loot_modifiers/evoker_totem.json}.</p>
  */
 public final class EvokerTotemLootModifier extends LootModifier {
@@ -66,7 +66,7 @@ public final class EvokerTotemLootModifier extends LootModifier {
             || RandomTotemTable.contains(BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
-    /** The weighted pick, or {@code stack} unchanged when no Balanced Totem is registered. */
+    /** The weighted pick, or {@code stack} unchanged when no Dungeon Totem is registered. */
     private static ItemStack repick(ItemStack stack, long seed, boolean voidReached) {
         return RandomTotemTable.pick(seed, BuiltInRegistries.ITEM::containsKey, voidReached)
             .map(BuiltInRegistries.ITEM::get)

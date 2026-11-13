@@ -114,7 +114,7 @@ public final class ContainerContentsRoller {
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
-    /** Salt for which Balanced Totem a {@code dungeontrain:random_totem} slot becomes. */
+    /** Salt for which Dungeon Totem a {@code dungeontrain:random_totem} slot becomes. */
     private static final long SALT_RANDOM_TOTEM = 0x7073E3C0FFEE1D01L;
 
     /**
@@ -1215,7 +1215,7 @@ public final class ContainerContentsRoller {
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
-        // dungeontrain:random_totem — one Balanced Totem by RandomTotemTable's weights, with no Void
+        // dungeontrain:random_totem — one Dungeon Totem by RandomTotemTable's weights, with no Void
         // Totem before the void (VoidTotemGate). A vault's several totems each roll on their own
         // (rollsEachBook). None registered: the vanilla totem.
         if (item == ModItems.RANDOM_TOTEM.get()) {

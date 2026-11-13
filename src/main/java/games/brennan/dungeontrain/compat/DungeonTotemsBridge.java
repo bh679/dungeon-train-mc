@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.compat;
 
-import games.brennan.balancedtotems.api.BalancedTotemsApi;
+import games.brennan.dungeontotems.api.DungeonTotemsApi;
 import games.brennan.dungeontrain.event.PlayerJoinEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
@@ -14,7 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 /**
- * Lands a Void Totem's save back on the train. Balanced Totems asks {@link BalancedTotemsApi}'s rescue
+ * Lands a Void Totem's save back on the train. Dungeon Totems asks {@link DungeonTotemsApi}'s rescue
  * target where to put a player falling out of the world, and teleports them there itself.
  *
  * <p>The spot is the front pad nearest the player's X, found by
@@ -22,23 +22,23 @@ import java.util.Optional;
  * lands a player ({@code DtpPlacementService#placeOnDeck}). Off a front pad the train carries you onto
  * the group's own carriages rather than into the gap behind it.</p>
  *
- * <p>Balanced Totems does the teleport, {@code stopRiding} and the fall-distance reset. What it cannot
+ * <p>Dungeon Totems does the teleport, {@code stopRiding} and the fall-distance reset. What it cannot
  * know is that the deck is a Sable sub-level the client may not have yet, so on a hit this also sends
  * the {@link SpawnDeckHoldPacket} and the short harmless window every other deck placement gives
  * ({@link PortalRoomRescue#holdHarmless}). The callback runs just before that teleport.</p>
  *
  * <p>No settled train in the player's dimension (culled, or a world with none) answers empty, and
- * Balanced Totems falls back to the player's last safe ground.</p>
+ * Dungeon Totems falls back to the player's last safe ground.</p>
  *
- * <p>The hard reference to {@code BalancedTotemsApi} lives only in {@link #install()}; the caller
+ * <p>The hard reference to {@code DungeonTotemsApi} lives only in {@link #install()}; the caller
  * ({@code DungeonTrain.commonSetup}) gates on {@code ModList.isLoaded} and catches {@link Throwable}.</p>
  */
-public final class BalancedTotemsBridge {
+public final class DungeonTotemsBridge {
 
-    private BalancedTotemsBridge() {}
+    private DungeonTotemsBridge() {}
 
     public static void install() {
-        BalancedTotemsApi.setRescueTarget(BalancedTotemsBridge::deckSpot);
+        DungeonTotemsApi.setRescueTarget(DungeonTotemsBridge::deckSpot);
     }
 
     private static Optional<Vec3> deckSpot(ServerPlayer player) {

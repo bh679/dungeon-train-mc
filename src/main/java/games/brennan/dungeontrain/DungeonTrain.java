@@ -12,7 +12,7 @@ import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobCameraBridge;
-import games.brennan.dungeontrain.compat.BalancedTotemsBridge;
+import games.brennan.dungeontrain.compat.DungeonTotemsBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
@@ -692,13 +692,13 @@ public class DungeonTrain {
         LOGGER.info("Dungeon Train Discord relay -> {} (build branch '{}')",
                 isDevBuild() ? "DEV channel" : "LIVE community feed", VersionInfo.BRANCH);
 
-        // Void Totem (Balanced Totems, jarJar'd) lands its save on the nearest front pad of the
+        // Void Totem (Dungeon Totems, jarJar'd) lands its save on the nearest front pad of the
         // train instead of the player's last safe ground, which on a moving train is empty air.
-        if (ModList.get().isLoaded("balancedtotems")) {
+        if (ModList.get().isLoaded("dungeontotems")) {
             try {
-                BalancedTotemsBridge.install();
+                DungeonTotemsBridge.install();
             } catch (Throwable t) {
-                LOGGER.warn("Balanced Totems present but its rescue seam is unavailable ({}); "
+                LOGGER.warn("Dungeon Totems present but its rescue seam is unavailable ({}); "
                         + "Void Totems will land on last safe ground.", t.toString());
             }
         }

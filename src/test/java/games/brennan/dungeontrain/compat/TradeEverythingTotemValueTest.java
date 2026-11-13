@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** {@link TradeEverythingBridge#totemValue}: Balanced Totem prices follow their loot weight. */
+/** {@link TradeEverythingBridge#totemValue}: Dungeon Totem prices follow their loot weight. */
 final class TradeEverythingTotemValueTest {
 
     private static final int VANILLA = 432; // TE 0.17.0's Totem of Undying, in sixteenths

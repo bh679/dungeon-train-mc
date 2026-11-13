@@ -234,11 +234,11 @@ public final class ModItems {
     );
 
     /**
-     * Loot placeholder for "a random Balanced Totem". Substituted at chest spawn time by
+     * Loot placeholder for "a random Dungeon Totem". Substituted at chest spawn time by
      * {@code ContainerContentsRoller} for one totem drawn from {@code editor.RandomTotemTable}'s
      * weights; each totem in a multi-count roll is picked on its own. DT's loot carries this wherever
      * it used to carry the vanilla Totem of Undying, except ominous vaults, which keep the vanilla one.
-     * Falls back to the vanilla totem when no Balanced Totem is registered.
+     * Falls back to the vanilla totem when no Dungeon Totem is registered.
      */
     public static final DeferredItem<Item> RANDOM_TOTEM = ITEMS.register(
         "random_totem",
