@@ -249,14 +249,14 @@ final class DisabledModContentTest {
         "betterend:end_stone_smelter");
 
     @Test
-    @DisplayName("respawn statues, the infusion pedestal, BetterEnd's anvils and smelter are off as blocks and items")
+    @DisplayName("respawn statues, the infusion pedestal, the mods' anvils and BetterEnd's smelter are off as blocks and items")
     void disabledBlocks() {
         for (String b : DISABLED_BLOCKS) {
             assertTrue(DisabledModContent.isDisabledBlock(id(b)), b);
             assertTrue(DisabledModContent.isDisabledItem(id(b), false), b);
         }
         for (String kept : List.of("betterend:purpur_pedestal", "betterend:flavolite_pedestal",
-                "betternether:cincinnasite_anvil", "betternether:cincinnasite_forge", "minecraft:anvil",
+                "betternether:cincinnasite_forge", "minecraft:anvil",
                 "minecraft:respawn_anchor")) {
             assertFalse(DisabledModContent.isDisabledBlock(id(kept)), kept);
             assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
