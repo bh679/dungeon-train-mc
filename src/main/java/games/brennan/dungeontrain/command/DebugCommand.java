@@ -685,10 +685,10 @@ public final class DebugCommand {
     private static int chunkSavesStatus(CommandSourceStack source) {
         long dropped = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.dropped();
         long kept = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.kept();
-        boolean off = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isSaveUntouchedWorldGen();
+        boolean off = !games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDropUntouchedWorldGen();
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Chunk saves: dropped=" + dropped + " chunks, kept=" + kept + " saves"
-                + (off ? " (saveUntouchedWorldGen=true: nothing is dropped)" : "")
+                + (off ? " (dropUntouchedWorldGen is off: nothing is dropped)" : "")
         ), false);
         return 1;
     }

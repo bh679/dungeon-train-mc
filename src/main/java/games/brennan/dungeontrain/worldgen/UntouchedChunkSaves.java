@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * Which overworld chunks are not written to disk.
  *
  * <h2>Why</h2>
+ * <p>Off by default: {@code dropUntouchedWorldGen}, the Performance tab's "Smaller saves".</p>
+ *
  * <p>The train drives a long strip of fresh terrain through the world, and vanilla writes all of it:
  * up to 20 chunks a tick while a player is near them, and again when they unload behind the player.
  * Players almost never ride back, so most of a save is terrain nobody will see again. An overworld chunk
@@ -86,7 +88,7 @@ public final class UntouchedChunkSaves {
     }
 
     public static Verdict verdict(ServerLevel level, ChunkPos pos, boolean touched) {
-        if (DungeonTrainCommonConfig.isSaveUntouchedWorldGen()) return Verdict.OFF;
+        if (!DungeonTrainCommonConfig.isDropUntouchedWorldGen()) return Verdict.OFF;
         if (!level.dimension().equals(Level.OVERWORLD)) return Verdict.NOT_OVERWORLD;
         if (touched) return Verdict.TOUCHED;
         int keep = level.getServer().getPlayerList().getViewDistance() + KEEP_MARGIN_CHUNKS;

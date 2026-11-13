@@ -182,6 +182,12 @@ public enum ClientOptionsTab {
          * player can see — the row is absent rather than a control that lies about what it did.
          */
         CATCH_UP_BURST("gui.dungeontrain.options.catch_up_burst"),
+        /**
+         * Smaller saves: terrain no player changed is left off the disk ({@code UntouchedChunkSaves}). A
+         * common-config value like {@link #CATCH_UP_BURST}, so absent on a multiplayer client for the same
+         * reason. Off by default.
+         */
+        DROP_UNTOUCHED_WORLD_GEN("gui.dungeontrain.options.drop_untouched_world_gen"),
 
         // --- Stream (the screen adds the viewer preview under these rows) ---
         /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
@@ -483,6 +489,11 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
+                // Conditional (absent on a multiplayer client), so it comes after every paired row:
+                // only the tips, which are not paired, follow it.
+                if (trainSettingsWritable) {
+                    rows.add(Row.DROP_UNTOUCHED_WORLD_GEN);
+                }
                 rows.add(Row.PERFORMANCE_TIPS);
             }
         }

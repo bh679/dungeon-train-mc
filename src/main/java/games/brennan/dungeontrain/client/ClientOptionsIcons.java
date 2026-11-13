@@ -83,6 +83,7 @@ final class ClientOptionsIcons {
             case SNAPSHOT_MAX_RES -> Icon.item(Items.PAINTING);
             case SNAPSHOT_CHAT_LOG -> Icon.item(Items.PAPER);
             case CATCH_UP_BURST -> Icon.item(Items.MINECART);
+            case DROP_UNTOUCHED_WORLD_GEN -> Icon.item(Items.GRASS_BLOCK);
 
             case LIVESTREAM -> Icon.item(ModItems.LIVE_HEADPIECE.get());
             case FFMPEG -> Icon.item(Items.HOPPER);
