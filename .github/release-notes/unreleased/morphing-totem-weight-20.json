@@ -1,0 +1,18 @@
+{
+  "id": "morphing-totem-weight-20",
+  "version": "0.1800.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Totem loot tweak",
+  "summary": "One kind of totem now turns up a little more often in chests, vaults and evoker drops.",
+  "highlights": [],
+  "pr": 2636,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
