@@ -328,7 +328,7 @@ jobs:
             # cannot resolve a non-public slug — which is why it was re-bundled in 0.909.x.)
           # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix (+ stream-detect, dpi-bypass-detect,
           # pigman-villagers, lost-city-terrain-fit-wwoo-and-vanilla, edible-backpacks, discord-presence,
-          # dungeon-train-mod-verification) are hybrid siblings: also jarJar'd in
+          # dungeon-train-mod-verification, dungeon-totems) are hybrid siblings: also jarJar'd in
           # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
           # app installs them from their own pages. NeoForge drops the nested copy when the
           # top-level one is present. Exception: the CurseForge jar does NOT nest stream-detect or
@@ -351,6 +351,7 @@ jobs:
             dpi-bypass-detect(required)
             pigman-villagers(required)
             lost-city-terrain-fit-wwoo-and-vanilla(required)
+            dungeon-totems(required)
             fast-paintings(required)
             selene(required)
             betterend-neoforge(required)
