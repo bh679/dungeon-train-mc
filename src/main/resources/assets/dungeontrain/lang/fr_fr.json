@@ -5763,6 +5763,7 @@
   "item.dungeontrain.random_potion": "Potion aléatoire",
   "item.dungeontrain.random_good_potion": "Potion bénéfique aléatoire",
   "item.dungeontrain.random_bad_potion": "Potion néfaste aléatoire",
+  "item.dungeontrain.random_totem": "Totem aléatoire",
   "item.dungeontrain.disposable_camera": "Appareil photo jetable",
   "gui.dungeontrain.options.book_author_chat": "Auteur du livre dans le chat",
   "gui.dungeontrain.options.book_author_chat.hint": "Créditer les auteurs des livres qui brûlent",

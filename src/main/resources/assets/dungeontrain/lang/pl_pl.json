@@ -5830,6 +5830,7 @@
   "item.dungeontrain.random_potion": "Losowa mikstura",
   "item.dungeontrain.random_good_potion": "Losowa dobra mikstura",
   "item.dungeontrain.random_bad_potion": "Losowa zła mikstura",
+  "item.dungeontrain.random_totem": "Losowy totem",
   "item.dungeontrain.disposable_camera": "Aparat jednorazowy",
   "gui.dungeontrain.options.book_author_chat": "Autor książki na czacie",
   "gui.dungeontrain.options.book_author_chat.hint": "Podpisuj autorów płonących książek",

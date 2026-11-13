@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobCameraBridge;
+import games.brennan.dungeontrain.compat.BalancedTotemsBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
@@ -358,6 +359,7 @@ public class DungeonTrain {
         games.brennan.dungeontrain.registry.ModIngredientTypes.register(modBus);
         // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
         games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
+        games.brennan.dungeontrain.compat.EvokerTotemLootModifier.register(modBus);
         games.brennan.dungeontrain.provenance.FreshLootModifier.register(modBus);
 
         // Global achievements (advancements) — custom criterion triggers
@@ -689,6 +691,17 @@ public class DungeonTrain {
         // reports to (the cap itself is non-secret). Complements DP 0.29.0's "routing" log.
         LOGGER.info("Dungeon Train Discord relay -> {} (build branch '{}')",
                 isDevBuild() ? "DEV channel" : "LIVE community feed", VersionInfo.BRANCH);
+
+        // Void Totem (Balanced Totems, jarJar'd) lands its save on the nearest front pad of the
+        // train instead of the player's last safe ground, which on a moving train is empty air.
+        if (ModList.get().isLoaded("balancedtotems")) {
+            try {
+                BalancedTotemsBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("Balanced Totems present but its rescue seam is unavailable ({}); "
+                        + "Void Totems will land on last safe ground.", t.toString());
+            }
+        }
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
         // item gifts. PlayerMob's feeling-tiered gift rewrite removed the

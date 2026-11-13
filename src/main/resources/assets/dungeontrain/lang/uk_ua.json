@@ -2816,6 +2816,7 @@
   "item.dungeontrain.random_potion": "Випадкове зілля",
   "item.dungeontrain.random_good_potion": "Випадкове добре зілля",
   "item.dungeontrain.random_bad_potion": "Випадкове погане зілля",
+  "item.dungeontrain.random_totem": "Випадковий тотем",
   "item.dungeontrain.disposable_camera": "Одноразова камера",
   "gui.dungeontrain.prefab_tab.variants": "Варіанти блоків",
   "gui.dungeontrain.prefab_tab.loot": "Контейнери / здобич",

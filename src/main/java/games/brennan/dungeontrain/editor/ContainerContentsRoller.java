@@ -114,6 +114,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
+    /** Salt for which Balanced Totem a {@code dungeontrain:random_totem} slot becomes. */
+    private static final long SALT_RANDOM_TOTEM = 0x7073E3C0FFEE1D01L;
 
     /**
      * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
@@ -558,11 +560,16 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * True for an entry whose items each roll on their own: books with random enchantments, and packed
-     * shulker boxes, so two from one vault are not copies of each other.
+     * True for an entry whose items each roll on their own: books with random enchantments, packed
+     * shulker boxes and random totems, so two from one vault are not copies of each other.
      */
     static boolean rollsEachBook(ContainerContentsEntry picked) {
-        return (picked.hasEnchants() && picked.enchants().hasRandom()) || picked.hasContents();
+        return (picked.hasEnchants() && picked.enchants().hasRandom()) || picked.hasContents()
+            || isRandomTotem(picked);
+    }
+
+    private static boolean isRandomTotem(ContainerContentsEntry picked) {
+        return resolveItem(picked.itemId()) == ModItems.RANDOM_TOTEM.get();
     }
 
     /**
@@ -1206,6 +1213,17 @@ public final class ContainerContentsRoller {
         if (item == ModItems.RANDOM_BAD_POTION.get()) {
             return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
+
+        // dungeontrain:random_totem — one Balanced Totem by RandomTotemTable's weights, with no Void
+        // Totem before the void (VoidTotemGate). A vault's several totems each roll on their own
+        // (rollsEachBook). None registered: the vanilla totem.
+        if (item == ModItems.RANDOM_TOTEM.get()) {
+            long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_TOTEM);
+            return RandomTotemTable.pick(seed, net.minecraft.core.registries.BuiltInRegistries.ITEM::containsKey,
+                    VoidTotemGate.reachedAtCarriage(diffIndex))
+                .map(id -> new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)))
+                .orElseGet(() -> new ItemStack(net.minecraft.world.item.Items.TOTEM_OF_UNDYING));
         }
 
         // A community photo; when the relay has none left to hand out, sometimes a disposable camera

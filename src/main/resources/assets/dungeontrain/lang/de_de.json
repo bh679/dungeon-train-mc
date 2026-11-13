@@ -5763,6 +5763,7 @@
   "item.dungeontrain.random_potion": "Zufälliger Trank",
   "item.dungeontrain.random_good_potion": "Zufälliger guter Trank",
   "item.dungeontrain.random_bad_potion": "Zufälliger schlechter Trank",
+  "item.dungeontrain.random_totem": "Zufälliges Totem",
   "item.dungeontrain.disposable_camera": "Einwegkamera",
   "gui.dungeontrain.options.book_author_chat": "Autorenhinweis im Chat",
   "gui.dungeontrain.options.book_author_chat.hint": "Autoren brennender Bücher nennen",

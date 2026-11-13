@@ -157,6 +157,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_POTION.get());
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
+                output.accept(ModItems.RANDOM_TOTEM.get());
                 acceptIfPresent(output, EDIBLE_BACKPACK);
                 acceptIfPresent(output, GOLDEN_EDIBLE_BACKPACK);
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());

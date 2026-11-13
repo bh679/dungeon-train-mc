@@ -281,6 +281,9 @@ def approved_ids():
     if GENERATED.exists():
         for group in json.loads(GENERATED.read_text(encoding="utf-8")).get("groups", {}).values():
             ids += [i.lower() for i in group.get("ids", [])]
+    # Ids we jarJar are approved by shipping inside DT, but reach GENERATED only through a build that
+    # refuses to run while a newly embedded one has no record. The hint list breaks that loop.
+    ids += sorted(EMBEDDED_IDS_HINT)
     if not ids:
         sys.exit("no approved ids found — expected src/main/whitelist/approved_mods.curated.json")
     return sorted(set(i for i in ids if i not in SKIP_IDS and not i.startswith(SKIP_PREFIXES)))
@@ -303,7 +306,7 @@ def pinned_ids(packages=False):
 # build time (gradle/approved-mods.gradle), so --check does not call them blind.
 EMBEDDED_IDS_HINT = {"keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix", "streamdetect", "dpibypassdetect",
                      "pigmanvillagers", "lostcityterrainfit", "discordpresence", "ediblebackpacks", "dtmodverify",
-                     "sablemobpaths"}
+                     "sablemobpaths", "balancedtotems"}
 
 
 def load_output():
