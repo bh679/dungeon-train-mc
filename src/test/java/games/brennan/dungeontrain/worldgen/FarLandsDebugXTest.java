@@ -37,7 +37,7 @@ final class FarLandsDebugXTest {
 
     /** A point inside the legacy run on run {@code k}, for reading its layout. */
     private static WorldGenCycle.LegacyRun run(int k) {
-        WorldGenCycle.LegacyRun run = C.legacyRunAt(x(LAYOUT.start(SLOT) + 1, k));
+        WorldGenCycle.LegacyRun run = C.legacyRunOf(LegacyBandKind.FAR_LANDS, x(LAYOUT.start(SLOT) + 1, k));
         assertNotNull(run);
         return run;
     }
@@ -68,7 +68,7 @@ final class FarLandsDebugXTest {
     @DisplayName("the truth outside the legacy run and before the Beta core")
     void trueBeforeTheApproach() {
         WorldGenCycle.LegacyRun run = run(0);
-        assertNull(C.legacyRunAt(x(0, 0)));
+        assertNull(C.legacyRunOf(LegacyBandKind.FAR_LANDS, (int) START - 1));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, x(0, 0)));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) era(run, LegacyBandKind.AMPLIFIED).coreStartX() + 10));
         assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) era(run, LegacyBandKind.BETA).coreStartX() - 1));
@@ -116,17 +116,19 @@ final class FarLandsDebugXTest {
     }
 
     @Test
-    @DisplayName("the Void counts up at normal speed to the negative edge on the last block before the overworld")
-    void voidThenTruth() {
+    @DisplayName("from the Void to the end of the lap it counts up at normal speed to the negative edge, then the truth")
+    void voidToLapEnd() {
         WorldGenCycle.LegacyRun run = run(0);
         WorldGenCycle.LegacyRunEra v = era(run, LegacyBandKind.VOID);
         long from = switchX(v);
-        long exit = run.endX();
-        for (long x = from; x < exit; x++) {
-            assertEquals(-FarLandsShift.EDGE - (exit - 1 - x), shown(x), "x=" + x);
+        long lapEnd = run.lapEndX();
+        assertEquals(x(P, 0), lapEnd);
+        assertTrue(lapEnd > run.endX(), "the lap carries on past the run");
+        for (long x = from; x < lapEnd; x++) {
+            assertEquals(-FarLandsShift.EDGE - (lapEnd - 1 - x), shown(x), "x=" + x);
         }
-        assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) exit));
-        assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) run.endX() + 5));
+        assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) lapEnd));
+        assertEquals(0L, FarLandsDebugX.offsetAt(C, (int) lapEnd + 5));
     }
 
     @Test
@@ -135,7 +137,7 @@ final class FarLandsDebugXTest {
         WorldGenCycle.LegacyRun run = run(1);
         assertEquals(FarLandsShift.EDGE, shown(wall(run)));
         assertEquals(0L, shown(mid(era(run, LegacyBandKind.CLASSIC))));
-        assertEquals(-FarLandsShift.EDGE, shown(run.endX() - 1));
+        assertEquals(-FarLandsShift.EDGE, shown(run.lapEndX() - 1));
     }
 
     @Test

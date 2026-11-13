@@ -20,9 +20,10 @@ import java.util.Set;
  *       up from the edge with the train.</li>
  *   <li><b>Each old era after the islands</b> ({@link #CENTRED}) — its own small world: X 0 at its core's
  *       centre.</li>
- *   <li><b>Void</b> — the negative Far Lands, counting up a block per block like any real coordinate, so it
- *       reads exactly {@code −EDGE} on the last block before the overworld takes over.</li>
- *   <li><b>The overworld after the run</b> — the truth.</li>
+ *   <li><b>Void, and the rest of the lap after it</b> (the overworld gap, Chuncks, Mix, Stacks) — the negative
+ *       Far Lands, counting up a block per block like any real coordinate, so it reads exactly {@code −EDGE}
+ *       on the lap's last block. A run whose last era is not the Void tells the truth after its exit fade.</li>
+ *   <li><b>The next lap</b> — the truth, until its own approach.</li>
  * </ol>
  *
  * <p>Each era takes over halfway through the fade into it, the switch point the clocks and compasses use
@@ -48,7 +49,7 @@ public final class FarLandsDebugX {
     /** Blocks to add to the printed X at {@code worldX}; 0 to tell the truth. */
     public static long offsetAt(WorldGenCycle cycle, int worldX) {
         if (cycle == null) return 0L;
-        WorldGenCycle.LegacyRun run = cycle.legacyRunAt(worldX);
+        WorldGenCycle.LegacyRun run = cycle.legacyRunOf(LegacyBandKind.FAR_LANDS, worldX);
         return run == null ? 0L : offsetIn(run, worldX);
     }
 
@@ -65,15 +66,17 @@ public final class FarLandsDebugX {
 
         int after = far + 1;
         while (after < eras.size() && ISLANDS.contains(eras.get(after).kind())) after++;
-        long islandsEnd = switchX(eras, after, run.endX());
+        // A closing Void carries on to the end of the lap; any other last era hands over after the exit fade.
+        long end = eras.get(eras.size() - 1).kind() == LegacyBandKind.VOID ? run.lapEndX() : run.endX();
+        long islandsEnd = switchX(eras, after, end);
 
         if (worldX < approachFrom) return 0L;
         if (worldX < wall) return reach > 0L ? approach(reach, worldX - approachFrom, wall - approachFrom) : 0L;
         if (worldX < islandsEnd) return Math.max(0L, reach);
 
         for (int e = after; e < eras.size(); e++) {
-            long from = switchX(eras, e, run.endX());
-            long to = switchX(eras, e + 1, run.endX());
+            long from = switchX(eras, e, end);
+            long to = switchX(eras, e + 1, end);
             if (worldX < from || worldX >= to) continue;
             WorldGenCycle.LegacyRunEra era = eras.get(e);
             if (CENTRED.contains(era.kind())) return -Math.floorDiv(era.coreStartX() + era.coreEndX(), 2L);
@@ -92,11 +95,11 @@ public final class FarLandsDebugX {
     }
 
     /**
-     * Where era {@code e} takes over: halfway through the fade into it. One past the last era is the end of
-     * the run's exit fade, the first block of plain overworld, so the last era keeps the whole fade.
+     * Where era {@code e} takes over: halfway through the fade into it. One past the last era is {@code endX},
+     * where the last era's readout stops.
      */
-    private static long switchX(List<WorldGenCycle.LegacyRunEra> eras, int e, long runEndX) {
-        if (e >= eras.size()) return runEndX;
+    private static long switchX(List<WorldGenCycle.LegacyRunEra> eras, int e, long endX) {
+        if (e >= eras.size()) return endX;
         WorldGenCycle.LegacyRunEra era = eras.get(e);
         return era.fadeStartX() + (era.coreStartX() - era.fadeStartX()) / 2L;
     }

@@ -2652,27 +2652,28 @@ public record WorldGenCycle(long startX, int owGap,
 
     /**
      * One era of a legacy run in world blocks: where the fade into it begins, and where its core begins and
-     * ends. See {@link #legacyRunAt}.
+     * ends. See {@link #legacyRunOf}.
      */
     public record LegacyRunEra(LegacyBandKind kind, long fadeStartX, long coreStartX, long coreEndX) {}
 
     /**
-     * The legacy run whose slot holds {@code worldX}, laid out in world blocks for that run's doubling.
+     * A legacy run laid out in world blocks for one lap's doubling.
      *
-     * @param eras  the run's eras in riding order
-     * @param endX  one past the run's exit fade, where the overworld after it begins
+     * @param eras     the run's eras in riding order
+     * @param endX     one past the run's exit fade, where the overworld after it begins
+     * @param lapEndX  one past the last block of that lap, where the next lap begins
      */
-    public record LegacyRun(java.util.List<LegacyRunEra> eras, long endX) {}
+    public record LegacyRun(java.util.List<LegacyRunEra> eras, long endX, long lapEndX) {}
 
     /**
-     * The legacy run whose slot holds {@code worldX}, from anywhere in that slot, so a caller can see the
-     * eras ahead of the one it is in. {@code null} outside a legacy-run slot, behind spawn, and with no
-     * layout. Pure.
+     * The legacy run holding era {@code kind} on the lap {@code worldX} is in, from anywhere on that lap, so a
+     * caller can see the eras ahead of where it stands and the stretch after them. {@code null} behind spawn,
+     * in the overworld buffer, with no layout, or when {@code kind} is not in the order. Pure.
      */
-    public LegacyRun legacyRunAt(int worldX) {
-        if (layout == null || isMirroredAt(worldX)) return null;
-        int i = slotAt(worldX);
-        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.LEGACY_RUN) return null;
+    public LegacyRun legacyRunOf(LegacyBandKind kind, int worldX) {
+        if (layout == null || isMirroredAt(worldX) || baseAt(worldX) < 0L) return null;
+        int i = layout.legacySlotOf(kind);
+        if (i < 0) return null;
         LegacySpan[] eras = layout.eras(i);
         java.util.List<LegacyRunEra> out = new java.util.ArrayList<>(eras.length);
         long at = layout.start(i);
@@ -2683,7 +2684,8 @@ public record WorldGenCycle(long startX, int owGap,
             out.add(new LegacyRunEra(eras[e].kind(),
                     worldOf(worldX, fadeStart), worldOf(worldX, coreStart), worldOf(worldX, at)));
         }
-        return new LegacyRun(java.util.List.copyOf(out), worldOf(worldX, layout.start(i) + layout.length(i)));
+        return new LegacyRun(java.util.List.copyOf(out), worldOf(worldX, layout.start(i) + layout.length(i)),
+                worldOf(worldX, layout.period()));
     }
 
     /**
