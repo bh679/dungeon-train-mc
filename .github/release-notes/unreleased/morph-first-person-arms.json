@@ -1,0 +1,16 @@
+{
+  "id": "morph-first-person-arms",
+  "version": "0.1802.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Totem fix",
+  "summary": "While a totem has transformed you, first person no longer shows human arms. Forms that have arms now see their own.",
+  "highlights": [],
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
