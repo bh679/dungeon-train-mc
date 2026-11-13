@@ -616,6 +616,17 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: python3 scripts/release-notes/notify-highlights.py --tag "$RELEASE_TAG"
 
+      # Keep the relay's copy of that webhook current (its number milestones post to #highlights
+      # too), so a rotated secret reaches it without anyone remembering. Same gate; never blocks.
+      # By hand: the sync-highlights-webhook workflow.
+      - name: Sync #highlights webhook to relay
+        if: ${{ always() && steps.gh_release.outcome == 'success' && inputs.notify_discord && inputs.auto == false && inputs.test_release == false }}
+        continue-on-error: true
+        env:
+          DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: python3 scripts/relay/sync-highlights-webhook.py
+
       # The same release, told to the live chat (relay: live-chat.js#announceRelease) — the website's
       # chat panel, the Discord live room, and Twitch while someone is on air. Never the game: in-game
       # players get the mod's own update notice (LiveUpdateNotice), so they see it once. The line is
