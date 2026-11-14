@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -18,10 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LiveMicTest {
 
     private final AtomicBoolean option = new AtomicBoolean();
+    private final AtomicLong now = new AtomicLong(1_000_000);
 
     @BeforeEach
     void standInForTheOption() {
         LiveMic.setOptionForTests(option::get, option::set);
+        LiveMic.setClockForTests(now::get);
     }
 
     @AfterEach
@@ -29,6 +32,7 @@ class LiveMicTest {
         LiveMic.endStream();
         LiveMic.setOptionForTests(null, null);
         LiveMic.setMidStreamJoin(() -> LiveMic.Toggle.NEXT_STREAM);
+        LiveMic.setClockForTests(null);
     }
 
     @Test
@@ -155,11 +159,25 @@ class LiveMicTest {
 
         assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.NO), "not counted yet: still held");
         assertTrue(LiveMic.held());
-        assertTrue(LiveMic.relayTrack(LiveMic.TrackWord.YES), "counted: the voice goes through");
-        assertFalse(LiveMic.held());
+        assertTrue(LiveMic.relayTrack(LiveMic.TrackWord.YES), "counted");
+        assertTrue(LiveMic.held(), "but Kid-mode TVs have not had time to switch tracks yet");
+        assertFalse(LiveMic.on());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.YES), "a later heartbeat does not restart the wait");
+
+        now.addAndGet(LiveMic.KID_SWITCH_GRACE_MS - 1);
+        assertTrue(LiveMic.held(), "a moment before the grace is over");
+        assertFalse(LiveMic.transmitting());
+        now.addAndGet(1);
+        assertFalse(LiveMic.held(), "the grace is over: the voice goes through");
         assertTrue(LiveMic.on());
-        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.YES), "once");
+        assertTrue(LiveMic.transmitting());
         assertFalse(LiveMic.takeHeldNotice(), "nothing to say on a relay that counts it");
+    }
+
+    @Test
+    void theGraceCoversOneViewerPollAndASessionSwitch() {
+        assertTrue(LiveMic.KID_SWITCH_GRACE_MS >= 15_000 + 10_000,
+            "a Kid-mode TV polls status every 15 s, then needs seconds to start its game-only session");
     }
 
     @Test
@@ -167,6 +185,7 @@ class LiveMicTest {
         option.set(true);
         LiveMic.startStream(false);
         LiveMic.joinMidStream();
+        now.addAndGet(10 * LiveMic.KID_SWITCH_GRACE_MS);
         assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID));
         assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID));
         assertTrue(LiveMic.held(), "never heard on this stream");

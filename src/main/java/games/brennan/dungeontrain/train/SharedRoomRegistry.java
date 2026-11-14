@@ -71,6 +71,8 @@ public final class SharedRoomRegistry {
         private volatile boolean culled;
         /** Coal in this build's Drifting Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
         private volatile int fuel = -1;
+        /** The name id; see {@link SharedBuild#nameId}. */
+        private volatile String nameId = "";
         private volatile boolean rebaseline;
         private volatile boolean callInFlight;
         private volatile long lastContactMs;
@@ -186,6 +188,8 @@ public final class SharedRoomRegistry {
         @Override public String stageId() { return stageId; }
         @Override public int fuel() { return fuel; }
         @Override public void setFuel(int fuel) { this.fuel = fuel; }
+        @Override public String nameId() { return nameId; }
+        @Override public void setNameId(String nameId) { this.nameId = nameId == null ? "" : nameId; }
         @Override public String describe() { return "pair=" + pairKey + " room=" + roomName; }
     }
 

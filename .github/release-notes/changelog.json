@@ -35683,6 +35683,40 @@
       "released": true,
       "released_in": "v0.1807.0",
       "released_at": "2026-11-13T16:50:40Z"
+    },
+    {
+      "id": "known-feature-notes",
+      "version": "0.1809.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Answers to your feedback",
+      "summary": "Ask in your feedback or in chat for something the game already has, like a trash slot, backpacks, inventory sorting or recipe lookup, and a short note now shows you how to find it. Asking for saving mid-run or multiplayer brings a note that both are coming, with a link to the roadmap.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1810.0",
+      "released_at": "2026-11-13T18:10:02Z"
+    },
+    {
+      "id": "livestream-mic-reminder",
+      "version": "0.1807.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Mic reminder when you go live",
+      "summary": "Going live with your mic off now shows a reminder in chat, with a link straight to the Microphone setting. Turning your mic on mid-stream now joins that stream within about half a minute, no need to wait for your next stream. Turn the reminder off from the message itself or in the Stream settings.",
+      "highlights": [],
+      "pr": 2644,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1810.0",
+      "released_at": "2026-11-13T18:10:02Z"
     }
   ]
 }

@@ -1,0 +1,22 @@
+{
+  "id": "drifting-carriage-name-id",
+  "version": "0.1811.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "train",
+    "ui"
+  ],
+  "title": "Drifting carriages have an ID",
+  "summary": "Open a Drifting Engine Block to see which drifting carriage it belongs to. The carriage keeps the same ID in every world it drifts into.",
+  "highlights": [
+    "The engine's screen shows the carriage's ID under its name",
+    "An engine that isn't in a drifting carriage says so"
+  ],
+  "pr": 2647,
+  "date": "2026-11-13",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
