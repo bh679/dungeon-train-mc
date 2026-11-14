@@ -51,6 +51,8 @@ crop the logo on upload: drag the crop box out to the whole image.
   (several loaders). Take `build.gradle`, `CLAUDE.md`, `.github/workflows/`.
 - Keep the release jar's file name fixed from the first release. DT and the release cascade find it
   by name, and a rename silently breaks them.
+- Add it to [`scripts/dev-hours/repos.json`](../../scripts/dev-hours/repos.json):
+  `{ "name": "<name>-mc", "repo": "bh679/<name>-mc" }`.
 
 ## 2. Write the page
 
