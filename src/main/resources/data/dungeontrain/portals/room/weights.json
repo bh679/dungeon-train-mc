@@ -337,8 +337,8 @@
     }
   },
   "outsidethebox": {
-    "weight": 0,
-    "mode": "endless_open/single:minecraft:stone"
+    "weight": 3,
+    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14"
   },
   "parkour": {
     "weight": 2,
@@ -538,6 +538,11 @@
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
     }
+  },
+  "waterparkour": {
+    "weight": 2,
+    "minLevel": 2,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/3/0/3/dungeontrain:skybox_surface"
   },
   "window": {
     "weight": 1,
