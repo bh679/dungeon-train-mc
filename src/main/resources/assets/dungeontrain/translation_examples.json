@@ -1,4 +1,16 @@
 {
+  "chat.dungeontrain.event.in_24h": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.in_1h": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.in_10m": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.now": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
   "chat.dungeontrain.public_posts.death.two": {
     "1": {
       "label": "the carriage number the player died at",

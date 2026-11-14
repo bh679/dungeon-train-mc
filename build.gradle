@@ -165,6 +165,11 @@ neoForge {
             if (project.hasProperty('jitterDebug')) {
                 systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
             }
+            // Event-countdown seam: read update-page events from a local file server instead of
+            // dungeon.training, e.g. ./gradlew runClient -PeventsUrl=http://127.0.0.1:8765/events.json
+            if (project.hasProperty('eventsUrl')) {
+                systemProperty 'dungeontrain.eventsUrl', project.property('eventsUrl').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>

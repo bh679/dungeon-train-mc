@@ -257,6 +257,10 @@ public final class DebugCommand {
             // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
             // census sampled from the overworld source. Also logged at INFO for RCON runs.
             .then(Commands.literal("overworld-laps").executes(ctx -> OverworldLapsDebug.report(ctx.getSource())))
+            // /dungeontrain debug event-countdown — all four upcoming-event chat lines (24 h, 1 h, 10 min,
+            // now) for the next update-page event, sent to you at once.
+            .then(Commands.literal("event-countdown").executes(ctx ->
+                games.brennan.dungeontrain.event.upcoming.EventCountdownDebug.preview(ctx.getSource())))
             // /dungeontrain debug sampler-pool — the shared End-band / sphere sampler pool: threads, jobs
             // waiting, and what the queue cap has evicted or refused since this world loaded.
             .then(Commands.literal("sampler-pool").executes(ctx -> {
