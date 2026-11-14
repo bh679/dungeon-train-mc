@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import games.brennan.dungeontrain.mixin.client.ChatComponentAccessor;
+import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -191,8 +192,10 @@ public final class LiveChatBridge {
         if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         String asked = room;
+        boolean translate = LiveFeedClientConfig.liveChatTranslationOn();
         LiveFeedClient.chat(base(streaming), cursor, asked,
-                LiveChatTranslations.pollLang(mc.options.languageCode, LiveFeedClientConfig.liveChatTranslationOn())).thenAcceptAsync(r -> {
+                LiveChatTranslations.pollLang(mc.options.languageCode, translate),
+                LiveChatTranslations.pollReads(ClientDisplayConfig.readingLanguages(mc.options.languageCode), translate)).thenAcceptAsync(r -> {
             inFlight.set(false);
             // A page from the room this client just left would move the new room's cursor: dropped.
             if (connected && Objects.equals(asked, room)) {
@@ -416,6 +419,8 @@ public final class LiveChatBridge {
         String readerLang = LiveChatTranslations.readerLang(mc.options.languageCode);
         // Translations off: every line as written, none swapped in late.
         boolean translate = LiveFeedClientConfig.liveChatTranslationOn();
+        // The reader's Book languages: a line written in one of them is shown as written.
+        List<ReadingLanguages.Entry> reads = ClientDisplayConfig.readingLanguages(mc.options.languageCode);
         boolean streaming = LiveStreamController.get().streaming();
         // This life's "the crowd" death page: who said what in the room while this player was on air.
         if (streaming) LiveLifeChat.onLines(page.lines(), me != null ? me.toString().replace("-", "") : null);
@@ -449,7 +454,8 @@ public final class LiveChatBridge {
             boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
             if (LiveChatRules.shouldShow(line, me, here, names)) {
                 // The reader's own words are shown as typed, never translated back at them.
-                printLine(mc, chat, tag, line, mine, mine || !translate ? null : LiveChatTranslations.pick(line.tr(), readerLang));
+                printLine(mc, chat, tag, line, mine, mine || !translate || LiveChatTranslations.readsSource(line.src(), reads)
+                    ? null : LiveChatTranslations.pick(line.tr(), readerLang));
             } else if (mine && line.fromGame()) {
                 // Vanilla chat already printed it: remembered only for the flags of where it was translated to.
                 printed.put(line.seq(), new Printed(line, false, true, mc.gui.getGuiTicks()));
@@ -474,6 +480,7 @@ public final class LiveChatBridge {
             Printed p = printed.get(t.line());
             if (p != null && p.mine()) showReach(p.line(), t.tr(), t.src() != null ? t.src() : p.line().src(), readerLang);
             if (p == null || p.translated() || p.mine() || !translate) continue;
+            if (LiveChatTranslations.readsSource(t.src() != null ? t.src() : p.line().src(), reads)) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
             applyLate(mc, chat, tag, p.line(), mine, LanguageFlags.flag(t.src() != null ? t.src() : p.line().src(), p.line().content()), p.printedTick());

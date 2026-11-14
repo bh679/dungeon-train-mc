@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.narrative.LanguageFamily;
+import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -8,15 +10,18 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The pure rules behind a Live chat line's translation: which language this reader reads, which of the
  * relay's translations is theirs, and how it reads in chat. No Minecraft state — everything comes in as
  * arguments. {@link LiveChatBridge} decides when; {@code LiveFeedClientConfig.liveChatTranslation()}
- * decides where (under the original, instead of it, or first), or that they are off.
+ * decides where (under the original, instead of it, or first), or that they are off. A line in one of
+ * the reader's Book languages is never translated for them.
  *
  * <p>The relay translates only while the Live Translations community reward is on, into the languages
  * its readers report on each poll ({@code lang=}), a poll or two after the line.</p>
@@ -55,6 +60,41 @@ public final class LiveChatTranslations {
     @Nullable
     public static String pollLang(@Nullable String languageCode, boolean translationsOn) {
         return translationsOn ? readerLang(languageCode) : null;
+    }
+
+    /** Most extra languages a poll names: the relay keeps no more. */
+    static final int MAX_READS = 4;
+
+    /**
+     * The other languages a chat poll names ({@code reads=}): the reader's Book languages as locale codes,
+     * at most {@link #MAX_READS}, comma-joined; null while translations are off or there are none.
+     */
+    @Nullable
+    public static String pollReads(List<ReadingLanguages.Entry> extras, boolean translationsOn) {
+        if (!translationsOn || extras.isEmpty()) return null;
+        String joined = extras.stream().map(ReadingLanguages.Entry::locale).distinct().limit(MAX_READS)
+            .collect(Collectors.joining(","));
+        return joined.isEmpty() ? null : joined;
+    }
+
+    /**
+     * The language family of a line's {@code src} (a language tag such as {@code pt-BR} or {@code zh-Hant}),
+     * matched the way Book languages are ({@link LanguageFamily}); null when there is none.
+     */
+    @Nullable
+    public static String srcFamily(@Nullable String src) {
+        if (src == null || src.isBlank()) return null;
+        return LanguageFamily.of(src.strip().replace('-', '_'));
+    }
+
+    /** Whether the reader reads a line written in {@code src} already: it is one of their Book languages. */
+    public static boolean readsSource(@Nullable String src, List<ReadingLanguages.Entry> extras) {
+        String family = srcFamily(src);
+        if (family == null) return false;
+        for (ReadingLanguages.Entry e : extras) {
+            if (family.equals(e.family())) return true;
+        }
+        return false;
     }
 
     /**

@@ -858,7 +858,16 @@ public final class LiveFeedClient {
      * Translations); null, or anything not a locale code, sends none.
      */
     public static CompletableFuture<Result> chat(String base, long since, @Nullable String room, @Nullable String lang) {
-        String path = chatPath(since, room, lang);
+        return chat(base, since, room, lang, null);
+    }
+
+    /**
+     * As {@link #chat(String, long, String, String)}, also naming the other languages this reader reads
+     * ({@code reads}, comma-separated locale codes) so the relay skips translating lines written in them.
+     */
+    public static CompletableFuture<Result> chat(String base, long since, @Nullable String room, @Nullable String lang,
+                                                 @Nullable String reads) {
+        String path = chatPath(since, room, lang, reads);
         HttpRequest req = HttpRequest.newBuilder(URI.create(base + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -881,6 +890,11 @@ public final class LiveFeedClient {
 
     /** {@link #chatPath(long, String)} plus {@code lang=} when {@code lang} is a locale code. Pure. */
     static String chatPath(long since, @Nullable String room, @Nullable String lang) {
+        return chatPath(since, room, lang, null);
+    }
+
+    /** {@link #chatPath(long, String, String)} plus {@code reads=}: only the locale codes in it, and only with a {@code lang}. Pure. */
+    static String chatPath(long since, @Nullable String room, @Nullable String lang, @Nullable String reads) {
         StringBuilder path = new StringBuilder("/live/chat");
         char sep = '?';
         if (since >= 0) {
@@ -893,6 +907,10 @@ public final class LiveFeedClient {
         }
         if (lang != null && LOCALE_KEY.matcher(lang).matches()) {
             path.append(sep).append("lang=").append(lang);
+            String codes = reads == null ? "" : java.util.Arrays.stream(reads.split(","))
+                .map(String::strip).filter(c -> LOCALE_KEY.matcher(c).matches()).distinct()
+                .collect(java.util.stream.Collectors.joining(","));
+            if (!codes.isEmpty()) path.append("&reads=").append(codes);
         }
         return path.toString();
     }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import net.minecraft.network.chat.HoverEvent;
@@ -7,6 +8,7 @@ import net.minecraft.network.chat.MutableComponent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +37,30 @@ class LiveChatTranslationsTest {
         assertEquals("fr_fr", LiveChatTranslations.pollLang("fr_fr", true));
         assertNull(LiveChatTranslations.pollLang("fr_fr", false), "off: the relay is asked for nothing");
         assertNull(LiveChatTranslations.pollLang("english", true));
+    }
+
+    @Test
+    @DisplayName("a poll names the reader's Book languages while translations are on, at most four")
+    void pollReads() {
+        List<ReadingLanguages.Entry> extras = List.of(new ReadingLanguages.Entry("fr_fr", 1), new ReadingLanguages.Entry("uk_ua", 3));
+        assertEquals("fr_fr,uk_ua", LiveChatTranslations.pollReads(extras, true));
+        assertNull(LiveChatTranslations.pollReads(extras, false));
+        assertNull(LiveChatTranslations.pollReads(List.of(), true));
+        List<ReadingLanguages.Entry> many = List.of(new ReadingLanguages.Entry("fr_fr", 1), new ReadingLanguages.Entry("de_de", 1),
+            new ReadingLanguages.Entry("it_it", 1), new ReadingLanguages.Entry("es_es", 1), new ReadingLanguages.Entry("nl_nl", 1));
+        assertEquals("fr_fr,de_de,it_it,es_es", LiveChatTranslations.pollReads(many, true));
+    }
+
+    @Test
+    @DisplayName("a line written in one of the reader's Book languages is theirs already, by language family")
+    void readsSource() {
+        List<ReadingLanguages.Entry> extras = List.of(new ReadingLanguages.Entry("fr_fr", 1), new ReadingLanguages.Entry("pt_br", 1));
+        assertTrue(LiveChatTranslations.readsSource("fr", extras));
+        assertTrue(LiveChatTranslations.readsSource("pt-PT", extras), "same language, other region");
+        assertFalse(LiveChatTranslations.readsSource("de", extras));
+        assertFalse(LiveChatTranslations.readsSource(null, extras), "unknown source: translated as before");
+        assertFalse(LiveChatTranslations.readsSource("fr", List.of()));
+        assertEquals("zh", LiveChatTranslations.srcFamily("zh-Hant"));
     }
 
     @Test
