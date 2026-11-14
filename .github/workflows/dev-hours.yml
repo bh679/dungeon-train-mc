@@ -1,4 +1,4 @@
-name: Weekly dev-hours refresh
+name: Daily dev-hours refresh
 
 # Re-runs scripts/dev-hours/collect.py against every repo in scripts/dev-hours/repos.json,
 # cloned (blobless) from GitHub, and commits docs/dev-hours/hour-index.json to main when the
@@ -14,7 +14,7 @@ name: Weekly dev-hours refresh
 
 on:
   schedule:
-    - cron: '0 3 * * 1'      # Mondays 03:00 UTC
+    - cron: '0 3 * * *'      # daily 03:00 UTC (free: public repo; ~1 min, 22 MB)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -63,7 +63,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$INDEX"
-          git commit -m "chore(dev-hours): weekly refresh, ${TOTAL} hours [skip ci]"
+          git commit -m "chore(dev-hours): daily refresh, ${TOTAL} hours [skip ci]"
           # main moves under us often (merges, version bumps); rebase and retry a few times.
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then

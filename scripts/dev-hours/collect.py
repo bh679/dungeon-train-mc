@@ -15,7 +15,7 @@ Why a committed snapshot instead of computing this at build time: the sibling re
 not present when Dungeon Train builds — not in CI, not on another machine. So this script
 commits its output, and that one file is the figure every surface reads: build.gradle unions
 it with the LIVE git history of the Dungeon Train checkout for the jar, and the website reads
-its `totalHours` straight off main. `.github/workflows/dev-hours.yml` re-runs it weekly with
+its `totalHours` straight off main. `.github/workflows/dev-hours.yml` re-runs it daily with
 `--clone-dir`, which reads every repo from GitHub instead of a local checkout.
 
 The total never shrinks: hours already worked cannot un-happen, so a lower total means a repo

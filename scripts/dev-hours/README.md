@@ -37,7 +37,7 @@ pass only ever adds hours it can see.
 
 ## Refreshing it
 
-**Automatic, weekly.** `.github/workflows/dev-hours.yml` runs Mondays 03:00 UTC: it clones every
+**Automatic, daily.** `.github/workflows/dev-hours.yml` runs every day at 03:00 UTC: it clones every
 repo in `repos.json` from GitHub (blobless, history only), re-runs `collect.py`, and commits
 `hour-index.json` to main when the figure moved. The private `dp-relay` is read with the
 `RELAY_REPO_TOKEN` secret. Run it now with `gh workflow run dev-hours.yml` (add `-f dry_run=true`

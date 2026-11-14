@@ -2,7 +2,7 @@
   "comment": [
     "Repos whose commit history counts toward the development-hours figure (the in-game",
     "Contribute screen and the website's Support and Update pages all read the result).",
-    "`repo` is the GitHub owner/name, read by the weekly workflow (collect.py --clone-dir).",
+    "`repo` is the GitHub owner/name, read by the daily workflow (collect.py --clone-dir).",
     "`path` is an optional local checkout for an offline run, expanded with ~. A repo that",
     "can't be read is skipped with a warning, never a hard failure. Hours are UNIONED across",
     "repos, so an hour spent committing to two of these counts once.",
