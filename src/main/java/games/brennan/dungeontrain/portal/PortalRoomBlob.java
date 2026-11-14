@@ -27,9 +27,17 @@ import java.util.Objects;
  * @param owner    dashless uuid of the relay-recorded author, "" when unknown
  * @param seqSeed  the delta floor the room's own edits must clear
  * @param fuel     coal in the room's Drifting Engine Block after this world's burn; -1 for a live capture
+ * @param nameId   the room's name id as the relay gave it, "" when it has none (see {@code SharedBuild#nameId})
  */
 public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token, String owner,
-                             Credits credits, Deaths deaths, int seqSeed, boolean authoredHere, int fuel) {
+                             Credits credits, Deaths deaths, int seqSeed, boolean authoredHere, int fuel,
+                             String nameId) {
+
+    /** A blob that says nothing about a name id. */
+    public PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token, String owner,
+                          Credits credits, Deaths deaths, int seqSeed, boolean authoredHere, int fuel) {
+        this(snapshot, relayId, token, owner, credits, deaths, seqSeed, authoredHere, fuel, "");
+    }
 
     /** A blob that says nothing about fuel. */
     public PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token, String owner,
@@ -42,6 +50,7 @@ public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token
         if (owner == null) owner = "";
         if (credits == null) credits = Credits.EMPTY;
         if (deaths == null) deaths = Deaths.EMPTY;
+        if (nameId == null) nameId = "";
     }
 
     /**
@@ -54,7 +63,8 @@ public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token
         // Joining this world costs the room one coal, burnt in the snapshot so its engine lands holding it.
         EngineLease.Fuelled fuelled = EngineLease.burnOnArrival(lease, LeaseSnapshots.fold(lease));
         return new PortalRoomBlob(fuelled.snap(), lease.id(), lease.token(), lease.owner(),
-            lease.credits(), lease.deaths(), LeaseSnapshots.seqSeed(lease), authoredHere, fuelled.coal());
+            lease.credits(), lease.deaths(), LeaseSnapshots.seqSeed(lease), authoredHere, fuelled.coal(),
+            lease.nameId());
     }
 
     /** A live capture of this world's own room, carried across a relocation. */

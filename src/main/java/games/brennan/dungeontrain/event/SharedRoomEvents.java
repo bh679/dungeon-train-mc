@@ -236,6 +236,9 @@ public final class SharedRoomEvents {
                     blob.relayId(), blob.token(), blob.seqSeed(), stageId, blob.credits(), blob.deaths());
             // The room burnt a coal joining this world (PortalRoomBlob.fromLease); tell the relay now.
             inst.setFuel(blob.fuel());
+            // The relay's name id, else this world's for the pair's entry carriage (the relay keeps it).
+            inst.setNameId(blob.nameId().isEmpty()
+                    ? games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, pairKey) : blob.nameId());
             inst.stampContact(System.currentTimeMillis());
             SharedUploadFlow.heartbeat(inst);
             return;
@@ -246,9 +249,11 @@ public final class SharedRoomEvents {
         // Every fresh drifting room gets an empty Drifting Engine Block (FRESH_COAL), set down before registering
         // so it is not mistaken for somebody's edit.
         int coal = EngineStamp.ensure(level, roomOrigin, structure.roomSize(), DriftEngine.FRESH_COAL);
-        SharedRoomRegistry.register(level, pairKey, structure.roomName(), roomOrigin, structure.roomSize(),
-                false, false, "", null, null, 0, stageId, SharedCarriageClient.Credits.EMPTY,
-                SharedCarriageClient.Deaths.EMPTY).setFuel(coal);
+        SharedRoomRegistry.Instance fresh = SharedRoomRegistry.register(level, pairKey, structure.roomName(),
+                roomOrigin, structure.roomSize(), false, false, "", null, null, 0, stageId,
+                SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY);
+        fresh.setFuel(coal);
+        fresh.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, pairKey));
         LOGGER.info("[DungeonTrain] drifting room pair={} '{}' registered fresh at {} — an edit inside it uploads",
                 pairKey, structure.roomName(), roomOrigin);
     }

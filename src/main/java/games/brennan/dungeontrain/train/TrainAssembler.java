@@ -267,13 +267,15 @@ public final class TrainAssembler {
             level, subLevelId, trainId, anchorPIdx, shipyardOrigin, box, shell.id(), true,
             pick.authoredHere(), lease.owner(), lease.id(), lease.token(), LeaseSnapshots.seqSeed(lease),
             stageId, lease.credits(), lease.deaths(), SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+        inst.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forLease(lease, level, anchorPIdx));
         reportArrival(inst, fuel);
     }
 
     /**
      * A leased build has joined this world and burnt a coal. The relay hears the new count straight
      * away rather than at the next idle heartbeat, so a world that closes in the next minute still
-     * paid for its visit.
+     * paid for its visit. The same heartbeat carries the name id, which a build stored before name ids
+     * takes from here.
      */
     private static void reportArrival(SharedCarriageRegistry.Instance inst, int fuel) {
         inst.setFuel(fuel);
@@ -876,6 +878,7 @@ public final class TrainAssembler {
                     lease.id(), lease.token(),
                     LeaseSnapshots.seqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits(), lease.deaths());
+                inst.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forLease(lease, level, carriagePIdx));
                 reportArrival(inst, relayFuelBySlot[slot]);
                 continue;
             }
@@ -908,10 +911,12 @@ public final class TrainAssembler {
                         // it, every contents block would count as an edit and upload an untouched build.
                         int coal = games.brennan.dungeontrain.train.engine.EngineStamp.ensure(level,
                             carriageShipyardOrigin, groupBox, games.brennan.dungeontrain.train.engine.DriftEngine.FRESH_COAL);
-                        SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
+                        SharedCarriageRegistry.Instance fresh = SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                             carriageShipyardOrigin, groupBox, fullPick.shell().id(), false, false, "", null, null, 0,
                             fullStage, SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY,
-                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP).setFuel(coal);
+                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+                        fresh.setFuel(coal);
+                        fresh.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, carriagePIdx));
                     }
                 }
                 continue;
@@ -984,10 +989,12 @@ public final class TrainAssembler {
                         dims, games.brennan.dungeontrain.train.engine.DriftEngine.FRESH_COAL);
                 // No credits and no deaths: nobody has contributed to — or died in — a brand-new local
                 // build yet.
-                SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
-                        carriageShipyardOrigin, dims, variant.id(), false, false, "", null, null, 0,
+                SharedCarriageRegistry.Instance fresh = SharedCarriageRegistry.register(level, ship.subLevelId(),
+                        trainId, carriagePIdx, carriageShipyardOrigin, dims, variant.id(), false, false, "", null, null, 0,
                         stageBySlot[slot], SharedCarriageClient.Credits.EMPTY,
-                        SharedCarriageClient.Deaths.EMPTY).setFuel(coal);
+                        SharedCarriageClient.Deaths.EMPTY);
+                fresh.setFuel(coal);
+                fresh.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, carriagePIdx));
             } else if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()

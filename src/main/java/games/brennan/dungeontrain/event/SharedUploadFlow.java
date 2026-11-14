@@ -71,7 +71,7 @@ public final class SharedUploadFlow {
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
         SharedCarriageClient.submit(ownerUuid, ownerName, blob.base64(), spec.l(), spec.h(), spec.w(),
-                        blob.text(), stage, mode, spec.kind(), spec.subKind())
+                        blob.text(), stage, mode, spec.kind(), spec.subKind(), build.nameId())
                 .whenComplete((result, err) -> {
                     try {
                         if (err == null && result != null && result.isPresent() && result.get().token() != null) {
@@ -174,7 +174,7 @@ public final class SharedUploadFlow {
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
         SharedCarriageClient.heartbeat(build.relayId(), build.leaseToken(),
-                        SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName(), build.fuel())
+                        SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName(), build.fuel(), build.nameId())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) build.stampContact(now);

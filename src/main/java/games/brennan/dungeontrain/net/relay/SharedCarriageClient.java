@@ -142,10 +142,15 @@ public final class SharedCarriageClient {
      * lease came from the ordinary unfiltered pool. {@code credits} is who built and changed it, by
      * display name, for the on-enter credit line, and {@code deaths} is who died aboard it, for the
      * line after that.</p>
+     *
+     * <p>{@code nameId} is the build's name id: its carriage id from the world it was first built in,
+     * the same in every world. Empty when the relay has none yet (a build stored before name ids, or a
+     * relay too old to keep one); the leasing world then sends its own.</p>
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
                             int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
-                            Deaths deaths, String kind, String subKind, int fuel, String originBlocks) {
+                            Deaths deaths, String kind, String subKind, int fuel, String originBlocks,
+                            String nameId) {
 
         /** The relay's name for a whole carriage — what every lease was before rooms could drift. */
         public static final String KIND_CARRIAGE = "carriage";
@@ -162,6 +167,15 @@ public final class SharedCarriageClient {
             // -1: the relay has no count (built before engines, or a relay too old to keep one).
             if (fuel < 0) fuel = -1;
             if (originBlocks == null) originBlocks = "";
+            if (nameId == null) nameId = "";
+        }
+
+        /** The shape this record had before the relay kept a name id. */
+        public PoolLease(int id, String token, String blocks, int l, int h, int w,
+                         int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
+                         Deaths deaths, String kind, String subKind, int fuel, String originBlocks) {
+            this(id, token, blocks, l, h, w, baseSeq, deltas, owner, credits, deaths, kind, subKind, fuel,
+                    originBlocks, "");
         }
 
         /** The shape this record had before the relay kept an engine's fuel. */
@@ -211,6 +225,15 @@ public final class SharedCarriageClient {
                                                                   String blocksBase64,
                                                                   int l, int h, int w, String text, String stage,
                                                                   String mode, String kind, String subKind) {
+        return submit(ownerUuid, ownerName, blocksBase64, l, h, w, text, stage, mode, kind, subKind, null);
+    }
+
+    /** As above, carrying the build's {@code nameId} (see {@link PoolLease#nameId}); null or empty sends nothing. */
+    public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String ownerName,
+                                                                  String blocksBase64,
+                                                                  int l, int h, int w, String text, String stage,
+                                                                  String mode, String kind, String subKind,
+                                                                  String nameId) {
         JsonObject body = new JsonObject();
         if (kind != null && !kind.isEmpty()) body.addProperty("kind", kind);
         if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
@@ -228,6 +251,7 @@ public final class SharedCarriageClient {
         // Which pool it joins. Free Play builds and normal builds never mix; the relay defaults an
         // absent mode to normal, so this is sent whenever we know it.
         if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
+        addNameId(body, nameId);
         return post("/carriages/submit", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) return Optional.empty();
@@ -1214,20 +1238,8 @@ public final class SharedCarriageClient {
             body.addProperty("kidSafe", true);
         }
         return post("/carriages/lease", body).thenApply(resp -> {
-            JsonObject o = okJson(resp);
-            if (o == null || (o.has("none") && o.get("none").getAsBoolean())) return Optional.empty();
-            if (!o.has("id") || !o.has("token") || !o.has("blocks")) return Optional.empty();
-            JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
-            int dl = d != null && d.has("l") ? d.get("l").getAsInt() : l;
-            int dh = d != null && d.has("h") ? d.get("h").getAsInt() : h;
-            int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
-            int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
-            String owner = o.has("owner") && !o.get("owner").isJsonNull() ? o.get("owner").getAsString() : "";
-            PoolLease lease = new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
-                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner,
-                    parseCredits(o), parseDeaths(o), str(o, "kind"), str(o, "subKind"),
-                    o.has("fuel") && !o.get("fuel").isJsonNull() ? o.get("fuel").getAsInt() : -1,
-                    str(o, "originBlocks"));
+            PoolLease lease = parseLease(okJson(resp), l, h, w);
+            if (lease == null) return Optional.empty();
             if (wantsRoom && (!lease.isRoom() || !lease.subKind().equals(subKind))) {
                 LOGGER.warn("[DungeonTrain] asked the relay for room '{}' and was served kind={} subKind='{}' "
                         + "(id={}) — an older relay ignores the kind; returning it unused. Update the relay.",
@@ -1298,6 +1310,31 @@ public final class SharedCarriageClient {
     }
 
     /** A string field, or {@code ""} when absent/null — tolerates a relay that predates the field. */
+    /**
+     * A {@code /carriages/lease} answer as a {@link PoolLease}, or null for none (no answer, the pool
+     * had nothing, or the answer lacks its id, token or blocks). Missing dims fall back to the ones asked
+     * for. Package-private for tests.
+     */
+    static PoolLease parseLease(JsonObject o, int l, int h, int w) {
+        if (o == null || (o.has("none") && o.get("none").getAsBoolean())) return null;
+        if (!o.has("id") || !o.has("token") || !o.has("blocks")) return null;
+        JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
+        int dl = d != null && d.has("l") ? d.get("l").getAsInt() : l;
+        int dh = d != null && d.has("h") ? d.get("h").getAsInt() : h;
+        int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
+        int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
+        return new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
+                o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), str(o, "owner"),
+                parseCredits(o), parseDeaths(o), str(o, "kind"), str(o, "subKind"),
+                o.has("fuel") && !o.get("fuel").isJsonNull() ? o.get("fuel").getAsInt() : -1,
+                str(o, "originBlocks"), str(o, "nameId"));
+    }
+
+    /** Adds a build's name id to {@code body}; null or empty says nothing, and the relay keeps what it has. */
+    private static void addNameId(JsonObject body, String nameId) {
+        if (nameId != null && !nameId.isEmpty()) body.addProperty("nameId", nameId);
+    }
+
     private static String str(JsonObject o, String k) {
         return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : "";
     }
@@ -1526,8 +1563,18 @@ public final class SharedCarriageClient {
     /** As above, carrying the build's Drifting Engine Block {@code fuel} (-1 says nothing). */
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName,
                                                           int fuel) {
+        return heartbeat(id, token, holderUuid, holderName, fuel, null);
+    }
+
+    /**
+     * As above, carrying the build's {@code nameId} too. The relay only keeps it when the build has none
+     * yet, so every heartbeat may send it: an older build gets this world's, and never more than one.
+     */
+    public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName,
+                                                          int fuel, String nameId) {
         JsonObject body = new JsonObject();
         addFuel(body, fuel);
+        addNameId(body, nameId);
         body.addProperty("id", id);
         body.addProperty("token", token);
         // Carries the host uuid so the relay can backfill a lease claimed before any player was in the
