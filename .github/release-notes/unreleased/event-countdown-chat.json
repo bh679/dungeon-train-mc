@@ -1,0 +1,17 @@
+{
+  "id": "event-countdown-chat",
+  "version": "0.1816.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "Event reminders in chat",
+  "summary": "Community events now show up in chat: a reminder a day before, an hour before, 10 minutes before and as they start, with a link to join.",
+  "highlights": [],
+  "pr": 2653,
+  "date": "2026-11-14",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
