@@ -84,6 +84,7 @@ After implementation is complete:
    - Unit test summary: total, passed, failed, skipped (if applicable)
    - Screenshots shown rendered in chat, plus their paths
    - Step-by-step in-game testing instructions (what world, what to do, what to look for)
+   - Table of all new or changed player-facing text lines (see `.claude/gates/gate-2-test.md`)
    - Compatibility notes: Sable interaction tested? multiplayer tested? dedicated server tested?
    - What passed / what failed
 6. Wait for user approval

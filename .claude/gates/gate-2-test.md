@@ -1,4 +1,4 @@
-<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.1.0 -->
+<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.2.0 -->
 # Gate 2 — Testing Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-2-test.md` first.** This file adds the Minecraft
@@ -23,4 +23,13 @@ steps: how to build, run and capture screenshots.
   ```
 - Build: result, jar path (`build/libs/dungeontrain-<version>.jar`), size
 - Step-by-step in-game test instructions: which world, what to do, what to look for
+- **New player-facing text table**: every line a player can see that the branch adds or
+  changes, one row each, with columns *Where it shows* (screen, chat, tooltip, toast, book,
+  sign, Discord, store page), *Text* (exact `en_us`, args shown as `%s`), *Lang key* (or
+  `hardcoded`), and *New / Changed* (for changed lines put the old text too). Build it from
+  `git diff origin/main...HEAD` over `assets/dungeontrain/lang/en_us.json`, `Component.literal`
+  / string literals in `src/main/java`, data-pack text (advancements, books, loot names) and
+  any relay- or Discord-bound strings. Flag long dashes (not allowed in player text). Under
+  the table, say whether the other locales are filled in. If the branch adds no player-facing
+  text, say so in one line instead of a table.
 - Compatibility: Sable tested? multiplayer? dedicated server?
