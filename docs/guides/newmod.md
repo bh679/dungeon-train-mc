@@ -51,6 +51,10 @@ crop the logo on upload: drag the crop box out to the whole image.
   (several loaders). Take `build.gradle`, `CLAUDE.md`, `.github/workflows/`.
 - Keep the release jar's file name fixed from the first release. DT and the release cascade find it
   by name, and a rename silently breaks them.
+- Add it to [`scripts/dev-hours/repos.json`](../../scripts/dev-hours/repos.json)
+  (`{ "name": "<name>-mc", "repo": "bh679/<name>-mc" }`) so its commits count toward the hours of
+  work figure (the in-game Contribute card and the website). The daily `dev-hours.yml` run picks it
+  up from then on, including the repo's earlier history.
 
 ## 2. Write the page
 
