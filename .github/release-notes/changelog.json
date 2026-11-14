@@ -35873,8 +35873,8 @@
       "released_in": "v0.1819.0",
       "released_at": "2026-11-14T14:00:58Z",
       "major": true,
-      "description": "dungeon.training has a brand new homepage. Scroll down and the whole train is there at a glance, and it's all live:\n\n- How many riders, books, shared carriages and photos the community has made\n- The Live Feed, with the Live Eye chat beside the stream whenever someone is on air\n- The latest updates, stacked up to flip through\n- Everyone who has helped build the train, wearing their own skin\n- What riders think, straight from the in-game survey\n\n[https://dungeon.training/](https://dungeon.training/)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage.jpg",
+      "description": "dungeon.training has a brand new homepage. Scroll down and the whole train is there at a glance, and it's all live:\n\n- How many riders, books, shared carriages and photos the community has made\n- The Live Feed, with the Live Eye chat beside the stream whenever someone is on air\n- The latest updates, stacked up to flip through\n- Everyone who has helped build the train, wearing their own skin\n- What riders think, straight from the in-game survey\n\n[Visit the new homepage](https://dungeon.training/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage.gif",
       "video_cover": 0.5,
       "videos": {
         "feed": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-feed.mp4",
