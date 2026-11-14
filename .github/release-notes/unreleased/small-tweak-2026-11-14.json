@@ -1,13 +1,12 @@
 {
-  "id": "debug-screen-tweak-2",
+  "id": "small-tweak-2026-11-14",
   "version": "0.1813.0",
   "type": "feat",
   "tags": [
-    "feature",
-    "ui"
+    "feature"
   ],
-  "title": "Debug screen tweak",
-  "summary": "A small tweak to the debug screen.",
+  "title": "Small tweak",
+  "summary": "A small tweak.",
   "highlights": [],
   "pr": 2649,
   "date": "2026-11-14",
