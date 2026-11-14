@@ -36020,6 +36020,54 @@
       "released": true,
       "released_in": "v0.1826.0",
       "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "dev-hours-daily-sync",
+      "version": "0.1827.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Hours of work figure stays current",
+      "summary": "The hours of work shown on the Contribute page now update every day, counting every Dungeon Train mod and the server behind them.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1831.0",
+      "released_at": "2026-11-14T18:20:02Z"
+    },
+    {
+      "id": "echo-mine-build-reach",
+      "version": "0.1828.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Echoes come and get you",
+      "summary": "Hiding out of reach no longer keeps you safe from an echo. They will dig and build their way to you.",
+      "highlights": [],
+      "pr": 2664,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1831.0",
+      "released_at": "2026-11-14T18:20:02Z"
+    },
+    {
+      "id": "tribute-live-affordability",
+      "version": "0.1830.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Tribute updates while a photo is open",
+      "summary": "If you receive emeralds while a photo is open, you can pay its Tribute straight away. You no longer have to close the photo and open it again.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1831.0",
+      "released_at": "2026-11-14T18:20:02Z"
     }
   ]
 }
