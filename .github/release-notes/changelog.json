@@ -35756,6 +35756,72 @@
       "released": true,
       "released_in": "v0.1812.0",
       "released_at": "2026-11-14T03:34:11Z"
+    },
+    {
+      "id": "bug-full-logs",
+      "version": "0.1816.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "pr": 2652,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "event-countdown-chat",
+      "version": "0.1817.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Event reminders in chat",
+      "summary": "Community events now show up in chat: a reminder a day before, an hour before, 10 minutes before and as they start, with a link to join.",
+      "highlights": [],
+      "pr": 2653,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "live-chat-skip-read-languages",
+      "version": "0.1813.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "No translations for languages you read",
+      "summary": "Live chat lines written in one of your Book languages now show as written, without a translation.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "small-tweak-2026-11-14",
+      "version": "0.1813.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Small tweak",
+      "summary": "A small tweak.",
+      "highlights": [],
+      "pr": 2649,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
     }
   ]
 }
