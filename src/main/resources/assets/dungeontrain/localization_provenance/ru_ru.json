@@ -1417,6 +1417,8 @@
       "gui.dungeontrain.options.account.pings.milestone.tip",
       "gui.dungeontrain.options.account.pings.translation_review",
       "gui.dungeontrain.options.account.pings.translation_review.tip",
+      "gui.dungeontrain.options.account.pings.echo",
+      "gui.dungeontrain.options.account.pings.echo.tip",
       "chat.dungeontrain.discord.options_hint",
       "gui.dungeontrain.ai_policy.not_ai.3",
       "gui.dungeontrain.video_tools.title",

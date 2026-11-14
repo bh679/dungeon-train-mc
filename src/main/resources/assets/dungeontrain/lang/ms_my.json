@@ -1714,6 +1714,8 @@
   "gui.dungeontrain.options.account.pings.milestone.tip": "Ping saya apabila salah satu kemajuan pencapaian saya disiarkan.",
   "gui.dungeontrain.options.account.pings.translation_review": "Semakan terjemahan",
   "gui.dungeontrain.options.account.pings.translation_review.tip": "Ping saya apabila terjemahan yang saya hantar perlu disemak dengan lebih teliti.",
+  "gui.dungeontrain.options.account.pings.echo": "Gema anda",
+  "gui.dungeontrain.options.account.pings.echo.tip": "Ping saya apabila seseorang bertemu gema saya.",
   "chat.dungeontrain.discord.options_hint": "Pilih siaran yang akan ping anda di Pilihan → Dungeon Train… → Akaun.",
   "gui.dungeontrain.ai_policy.title": "Dasar AI",
   "gui.dungeontrain.ai_policy.subtitle": "Apa dalam Dungeon Train yang dibuat oleh AI — dan yang tidak.",

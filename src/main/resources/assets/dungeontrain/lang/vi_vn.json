@@ -1714,6 +1714,8 @@
   "gui.dungeontrain.options.account.pings.milestone.tip": "Nhắc tên tôi khi một tiến trình cột mốc của tôi được đăng.",
   "gui.dungeontrain.options.account.pings.translation_review": "Duyệt bản dịch",
   "gui.dungeontrain.options.account.pings.translation_review.tip": "Nhắc tôi khi một bản dịch tôi gửi cần được xem xét kỹ hơn.",
+  "gui.dungeontrain.options.account.pings.echo": "Tàn dư của bạn",
+  "gui.dungeontrain.options.account.pings.echo.tip": "Nhắc tôi khi có người gặp tàn dư của tôi.",
   "chat.dungeontrain.discord.options_hint": "Chọn những bài đăng nhắc tên bạn trong Tùy chọn → Dungeon Train… → Tài khoản.",
   "gui.dungeontrain.ai_policy.title": "Chính sách AI",
   "gui.dungeontrain.ai_policy.subtitle": "Những gì trong Dungeon Train là — và không phải là — do AI làm ra.",

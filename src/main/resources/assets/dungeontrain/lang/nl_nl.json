@@ -1762,6 +1762,8 @@
   "gui.dungeontrain.options.account.pings.milestone.tip": "Noem me wanneer een van mijn mijlpalen wordt geplaatst.",
   "gui.dungeontrain.options.account.pings.translation_review": "Vertalingsbeoordelingen",
   "gui.dungeontrain.options.account.pings.translation_review.tip": "Vermeld me wanneer een vertaling die ik heb ingestuurd beter bekeken moet worden.",
+  "gui.dungeontrain.options.account.pings.echo": "Jouw echo",
+  "gui.dungeontrain.options.account.pings.echo.tip": "Ping me wanneer iemand mijn echo tegenkomt.",
   "chat.dungeontrain.discord.options_hint": "Kies bij welke berichten je genoemd wordt in Opties → Dungeon Train… → Account.",
   "gui.dungeontrain.ai_policy.title": "AI-beleid",
   "gui.dungeontrain.ai_policy.subtitle": "Wat er in Dungeon Train wel — en niet — door AI is gemaakt.",

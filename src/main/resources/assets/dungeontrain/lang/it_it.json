@@ -1762,6 +1762,8 @@
   "gui.dungeontrain.options.account.pings.milestone.tip": "Menzionami quando viene pubblicato uno dei miei progressi traguardo.",
   "gui.dungeontrain.options.account.pings.translation_review": "Revisioni delle traduzioni",
   "gui.dungeontrain.options.account.pings.translation_review.tip": "Menzionami quando una traduzione che ho inviato deve essere controllata meglio.",
+  "gui.dungeontrain.options.account.pings.echo": "La tua eco",
+  "gui.dungeontrain.options.account.pings.echo.tip": "Menzionami quando qualcuno incontra la mia eco.",
   "chat.dungeontrain.discord.options_hint": "Scegli quali post ti menzionano in Opzioni → Dungeon Train… → Account.",
   "gui.dungeontrain.ai_policy.title": "Politica sull'IA",
   "gui.dungeontrain.ai_policy.subtitle": "Che cosa in Dungeon Train è fatto dall'IA e che cosa no.",
