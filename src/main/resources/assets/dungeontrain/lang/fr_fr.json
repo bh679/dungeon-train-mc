@@ -2611,6 +2611,7 @@
   "chat.dungeontrain.known_feature.see_how": "Voir comment",
   "chat.dungeontrain.dev_message.consent_prompt": "Le développeur veut t'envoyer un message ; tape %s pour accepter.",
   "chat.dungeontrain.log_request.prompt": "Le développeur demande tes journaux de dev pour vérifier quelque chose.",
+  "chat.dungeontrain.log_request.prompt_full": "Le développeur demande tes journaux de jeu complets de cette session pour vérifier quelque chose.",
   "chat.dungeontrain.log_request.send": "Envoyer les journaux",
   "chat.dungeontrain.log_request.send.tip": "Envoyer tes journaux de jeu récents au développeur",
   "chat.dungeontrain.log_request.decline": "Non merci",

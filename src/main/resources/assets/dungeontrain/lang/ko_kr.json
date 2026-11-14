@@ -2562,6 +2562,7 @@
   "chat.dungeontrain.known_feature.see_how": "방법 보기",
   "chat.dungeontrain.dev_message.consent_prompt": "개발자가 메시지를 보내고 싶어 합니다. %s을(를) 입력해 수락하세요.",
   "chat.dungeontrain.log_request.prompt": "개발자가 무언가를 확인하려고 개발 로그를 요청하고 있습니다.",
+  "chat.dungeontrain.log_request.prompt_full": "개발자가 무언가를 확인하려고 이번 세션의 전체 게임 로그를 요청하고 있습니다.",
   "chat.dungeontrain.log_request.send": "로그 보내기",
   "chat.dungeontrain.log_request.send.tip": "최근 게임 로그를 개발자에게 보냅니다",
   "chat.dungeontrain.log_request.decline": "괜찮아요",

@@ -33,7 +33,8 @@ import java.util.function.Supplier;
 /**
  * Server side of the Developer log request: Brennan types {@code /bug} in a player's Discord thread
  * (or the livestream chat), the player is asked in game whether to send their logs, and on yes the
- * normal bug-report upload runs and Brennan is tagged.
+ * normal bug-report upload runs and Brennan is tagged. {@code /bug full} asks for the whole session's
+ * logs instead of their tails (see {@code LogCollector}); the flag rides the request end to end.
  *
  * <p>One request is pending per player at a time, identified by a server-issued id; the client
  * answers that id ({@link Answer}), and an upload labelled {@link #UPLOAD_LABEL} is only accepted
@@ -64,11 +65,14 @@ public final class LogRequestManager {
     /** The client's answer to a request. */
     public enum Answer { SEND, DECLINE, BLOCKED }
 
-    /** An outstanding request. {@code sending} = the player said yes and the logs are on their way. */
-    record Pending(int id, Origin origin, long deadlineMs, boolean sending,
+    /**
+     * An outstanding request. {@code sending} = the player said yes and the logs are on their way;
+     * {@code full} = it was a {@code /bug full}.
+     */
+    record Pending(int id, Origin origin, long deadlineMs, boolean sending, boolean full,
                    @Nullable DiscordCommandHooks.Reply reply) {
         Pending sendingUntil(long deadline) {
-            return new Pending(id, origin, deadline, true, reply);
+            return new Pending(id, origin, deadline, true, full, reply);
         }
     }
 
@@ -78,11 +82,15 @@ public final class LogRequestManager {
 
     private LogRequestManager() {}
 
-    /** Whether {@code content} is the log-request command ({@code /bug} or {@code !bug}). */
+    /** Whether {@code content} is the log-request command ({@code /bug} or {@code !bug}, optionally {@code full}). */
     public static boolean isCommand(@Nullable String content) {
         if (content == null) return false;
-        String c = content.trim().toLowerCase(Locale.ROOT);
-        return c.equals("/bug") || c.equals("!bug");
+        return content.trim().toLowerCase(Locale.ROOT).matches("[/!]bug(\\s+full)?");
+    }
+
+    /** Whether {@code content} is {@code /bug full}: the whole session's logs, not their tails. */
+    public static boolean isFullCommand(@Nullable String content) {
+        return isCommand(content) && content.trim().toLowerCase(Locale.ROOT).endsWith("full");
     }
 
     /**
@@ -99,7 +107,7 @@ public final class LogRequestManager {
      * Brennan typed {@code /bug} in the thread of {@code owner}. Called on the Discord network thread.
      * With no world loaded nothing is in game to ask, so Brennan is told so straight away.
      */
-    public static void onThreadCommand(@Nullable UUID owner, DiscordCommandHooks.Reply reply) {
+    public static void onThreadCommand(@Nullable UUID owner, boolean full, DiscordCommandHooks.Reply reply) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (owner == null || server == null) {
             DeliveryFailureReport.report(reply, null, null, Reason.NOT_IN_WORLD);
@@ -111,7 +119,7 @@ public final class LogRequestManager {
                 DeliveryFailureReport.report(reply, null, null, Reason.NOT_IN_WORLD);
                 return;
             }
-            request(player, Origin.THREAD, reply);
+            request(player, Origin.THREAD, full, reply);
         });
     }
 
@@ -120,7 +128,7 @@ public final class LogRequestManager {
      * player, and the Discord notice for a refused or blocked request is throttled too
      * ({@link LiveRequestThrottle}) — the packet comes from the client, so it cannot be trusted not to loop.
      */
-    public static void onLiveRequest(ServerPlayer player) {
+    public static void onLiveRequest(ServerPlayer player, boolean full) {
         UUID uuid = player.getUUID();
         LiveRequestThrottle.Decision d = LiveRequestThrottle.arrive(
                 LIVE.getOrDefault(uuid, LiveRequestThrottle.State.NONE), System.currentTimeMillis(), LIVE_GAP_MS);
@@ -129,10 +137,11 @@ public final class LogRequestManager {
             DeliveryFailureReport.report(null, player, name(player), Reason.TOO_SOON, d.post());
             return;
         }
-        request(player, Origin.LIVE, null);
+        request(player, Origin.LIVE, full, null);
     }
 
-    private static void request(ServerPlayer player, Origin origin, @Nullable DiscordCommandHooks.Reply reply) {
+    private static void request(ServerPlayer player, Origin origin, boolean full,
+                                @Nullable DiscordCommandHooks.Reply reply) {
         UUID uuid = player.getUUID();
         Pending pending = PENDING.get(uuid);
         Reason blocked = blockReason(ContentModeMirror.isKid(player),
@@ -143,9 +152,10 @@ public final class LogRequestManager {
         }
         int id = NEXT_ID.getAndIncrement();
         PENDING.put(player.getUUID(),
-                new Pending(id, origin, System.currentTimeMillis() + ANSWER_WINDOW_MS, false, reply));
-        DungeonTrainNet.sendTo(player, new LogRequestPromptPacket(id));
-        LOGGER.info("[DungeonTrain] Developer log request #{} ({}) sent to {}", id, origin, name(player));
+                new Pending(id, origin, System.currentTimeMillis() + ANSWER_WINDOW_MS, false, full, reply));
+        DungeonTrainNet.sendTo(player, new LogRequestPromptPacket(id, full));
+        LOGGER.info("[DungeonTrain] Developer log request #{} ({}{}) sent to {}", id, origin, full ? ", full" : "",
+                name(player));
     }
 
     /** Whether a blocked request's notice goes to Discord: always from a thread, throttled from the stream. */
@@ -204,7 +214,7 @@ public final class LogRequestManager {
         }
         outcome.whenComplete((ok, err) -> server.execute(() -> {
             if (Boolean.TRUE.equals(ok)) {
-                pingDeveloper(player);
+                pingDeveloper(player, p.full());
             } else {
                 pingDeveloperUploadFailed(player, p);
             }
@@ -219,8 +229,9 @@ public final class LogRequestManager {
     }
 
     /** After an approved upload is posted: tag Brennan in the player's thread. */
-    public static void pingDeveloper(ServerPlayer player) {
-        ping(player, "📎 Logs sent at your request — " + DiscordMarkdown.escape(name(player)),
+    public static void pingDeveloper(ServerPlayer player, boolean full) {
+        ping(player, (full ? "📎 Full logs sent at your request — " : "📎 Logs sent at your request — ")
+                        + DiscordMarkdown.escape(name(player)),
                 "They approved the developer log request; the files are in the bug report above.");
     }
 

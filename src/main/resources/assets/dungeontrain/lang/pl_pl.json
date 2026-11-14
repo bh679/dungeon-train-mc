@@ -2660,6 +2660,7 @@
   "chat.dungeontrain.known_feature.see_how": "Zobacz jak",
   "chat.dungeontrain.dev_message.consent_prompt": "Deweloper chce wysłać ci wiadomość, wpisz %s, aby zaakceptować.",
   "chat.dungeontrain.log_request.prompt": "Deweloper prosi o twoje logi deweloperskie, żeby coś sprawdzić.",
+  "chat.dungeontrain.log_request.prompt_full": "Deweloper prosi o pełne logi gry z tej sesji, żeby coś sprawdzić.",
   "chat.dungeontrain.log_request.send": "Wyślij logi",
   "chat.dungeontrain.log_request.send.tip": "Wyślij deweloperowi swoje ostatnie logi gry",
   "chat.dungeontrain.log_request.decline": "Nie, dzięki",

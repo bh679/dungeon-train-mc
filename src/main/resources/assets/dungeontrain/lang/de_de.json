@@ -2611,6 +2611,7 @@
   "chat.dungeontrain.known_feature.see_how": "So geht's",
   "chat.dungeontrain.dev_message.consent_prompt": "Der Entwickler möchte dir eine Nachricht senden; tippe %s zum Annehmen.",
   "chat.dungeontrain.log_request.prompt": "Der Entwickler bittet um deine Dev-Logs, um etwas zu prüfen.",
+  "chat.dungeontrain.log_request.prompt_full": "Der Entwickler bittet um deine vollständigen Spiel-Logs dieser Sitzung, um etwas zu prüfen.",
   "chat.dungeontrain.log_request.send": "Logs senden",
   "chat.dungeontrain.log_request.send.tip": "Deine letzten Spiel-Logs an den Entwickler senden",
   "chat.dungeontrain.log_request.decline": "Nein danke",

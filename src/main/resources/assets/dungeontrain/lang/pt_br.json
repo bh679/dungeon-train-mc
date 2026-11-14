@@ -2611,6 +2611,7 @@
   "chat.dungeontrain.known_feature.see_how": "Veja como",
   "chat.dungeontrain.dev_message.consent_prompt": "O Desenvolvedor quer te enviar uma mensagem, digite %s para aceitar.",
   "chat.dungeontrain.log_request.prompt": "O Desenvolvedor está pedindo seus logs de desenvolvimento para verificar algo.",
+  "chat.dungeontrain.log_request.prompt_full": "O Desenvolvedor está pedindo seus logs completos do jogo desta sessão para verificar algo.",
   "chat.dungeontrain.log_request.send": "Enviar logs",
   "chat.dungeontrain.log_request.send.tip": "Enviar seus logs recentes do jogo ao Desenvolvedor",
   "chat.dungeontrain.log_request.decline": "Não, obrigado",

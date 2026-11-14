@@ -2665,6 +2665,7 @@
   "chat.dungeontrain.known_feature.see_how": "Как это сделать",
   "chat.dungeontrain.dev_message.consent_prompt": "Разработчик хочет отправить вам сообщение. Введите %s, чтобы принять.",
   "chat.dungeontrain.log_request.prompt": "Разработчик просит ваши журналы разработки, чтобы кое-что проверить.",
+  "chat.dungeontrain.log_request.prompt_full": "Разработчик просит полные журналы игры за этот сеанс, чтобы кое-что проверить.",
   "chat.dungeontrain.log_request.send": "Отправить журналы",
   "chat.dungeontrain.log_request.send.tip": "Отправить разработчику недавние журналы игры",
   "chat.dungeontrain.log_request.decline": "Нет, спасибо",

@@ -2562,6 +2562,7 @@
   "chat.dungeontrain.known_feature.see_how": "Lihat caranya",
   "chat.dungeontrain.dev_message.consent_prompt": "Sang Pengembang ingin mengirimimu pesan, ketik %s untuk menerima.",
   "chat.dungeontrain.log_request.prompt": "Sang Pengembang meminta log dev-mu untuk memeriksa sesuatu.",
+  "chat.dungeontrain.log_request.prompt_full": "Sang Pengembang meminta log game lengkapmu dari sesi ini untuk memeriksa sesuatu.",
   "chat.dungeontrain.log_request.send": "Kirim log",
   "chat.dungeontrain.log_request.send.tip": "Kirim log game terbarumu ke Pengembang",
   "chat.dungeontrain.log_request.decline": "Tidak, terima kasih",

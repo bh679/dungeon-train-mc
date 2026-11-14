@@ -462,7 +462,7 @@ public final class LiveChatBridge {
             }
             if (mine) showReach(line, line.tr(), line.src(), readerLang);
             if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
-                LogRequestClient.onLiveRequest(line.logRequest().id());
+                LogRequestClient.onLiveRequest(line.logRequest().id(), line.logRequest().full());
             }
         }
         if (streaming) {
