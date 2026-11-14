@@ -90,6 +90,7 @@ final class PlayerMobConfigCheck {
         m.put("tntCombat", PlayerMobConfig.tntCombat());
         m.put("endCrystalCombat", PlayerMobConfig.endCrystalCombat());
         m.put("flintAndSteelCombat", PlayerMobConfig.flintAndSteelCombat());
+        m.put("combatReach", PlayerMobConfig.combatReach());
         m.put("extinguishWithBucket", PlayerMobConfig.extinguishWithBucket());
         m.put("douseFires", PlayerMobConfig.douseFires());
         m.put("huntForFood", PlayerMobConfig.huntForFood());
@@ -115,6 +116,7 @@ final class PlayerMobConfigCheck {
         m.put("tntCombat", PlayerMobConfig.DEFAULT_TNT_COMBAT);
         m.put("endCrystalCombat", PlayerMobConfig.DEFAULT_END_CRYSTAL_COMBAT);
         m.put("flintAndSteelCombat", PlayerMobConfig.DEFAULT_FLINT_AND_STEEL_COMBAT);
+        m.put("combatReach", PlayerMobConfig.DEFAULT_COMBAT_REACH);
         m.put("extinguishWithBucket", PlayerMobConfig.DEFAULT_EXTINGUISH_WITH_BUCKET);
         m.put("douseFires", PlayerMobConfig.DEFAULT_DOUSE_FIRES);
         m.put("huntForFood", PlayerMobConfig.DEFAULT_HUNT_FOR_FOOD);
