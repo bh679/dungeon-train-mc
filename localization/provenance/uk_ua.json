@@ -3199,6 +3199,7 @@
   "chat.dungeontrain.known_feature.see_how": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2d9780c9ce48b354"},
   "chat.dungeontrain.dev_message.consent_prompt": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a3f1b990bddb91da"},
   "chat.dungeontrain.log_request.prompt": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9ac116ed250637d7"},
+  "chat.dungeontrain.log_request.prompt_full": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c5adb518f31819d8"},
   "chat.dungeontrain.log_request.send": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a28aae60f1ccc992"},
   "chat.dungeontrain.log_request.send.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "de2cf6b0e4388a07"},
   "chat.dungeontrain.log_request.decline": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "49780701dc2d7cc6"},

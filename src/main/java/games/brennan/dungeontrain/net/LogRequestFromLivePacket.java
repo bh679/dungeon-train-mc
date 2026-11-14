@@ -12,15 +12,16 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /**
  * Client → server: this client saw a Developer log request in the livestream chat aimed at it (the
  * relay only issues those for verified Developer accounts). The server runs the usual request flow,
- * rate-limited per player — see {@link LogRequestManager#onLiveRequest}.
+ * rate-limited per player — see {@link LogRequestManager#onLiveRequest}. {@code full}: it was a
+ * {@code /bug full}, asking for the whole session's logs.
  */
-public record LogRequestFromLivePacket() implements CustomPacketPayload {
+public record LogRequestFromLivePacket(boolean full) implements CustomPacketPayload {
 
     public static final Type<LogRequestFromLivePacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "log_request_from_live"));
 
     public static final StreamCodec<FriendlyByteBuf, LogRequestFromLivePacket> STREAM_CODEC =
-        StreamCodec.unit(new LogRequestFromLivePacket());
+        StreamCodec.of((buf, p) -> buf.writeBoolean(p.full()), buf -> new LogRequestFromLivePacket(buf.readBoolean()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -30,7 +31,7 @@ public record LogRequestFromLivePacket() implements CustomPacketPayload {
     public static void handle(LogRequestFromLivePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            LogRequestManager.onLiveRequest(player);
+            LogRequestManager.onLiveRequest(player, packet.full());
         });
     }
 }

@@ -71,9 +71,11 @@ public final class DiscordInboundBridge {
         if (!DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
             return false;
         }
-        // "/bug" asks the thread's player for their logs instead of being shown as a message.
+        // "/bug" asks the thread's player for their logs instead of being shown as a message;
+        // "/bug full" for the whole session's.
         if (LogRequestManager.isCommand(content)) {
-            LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid), reply);
+            LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid),
+                    LogRequestManager.isFullCommand(content), reply);
             return true;
         }
         // "/version" is the relay's private lookup, answered from its own records: never a message.

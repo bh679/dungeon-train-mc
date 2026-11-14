@@ -3199,6 +3199,7 @@
   "chat.dungeontrain.known_feature.see_how": "Як це зробити",
   "chat.dungeontrain.dev_message.consent_prompt": "Розробник хоче надіслати тобі повідомлення. Введи %s, щоб прийняти.",
   "chat.dungeontrain.log_request.prompt": "Розробник просить твої журнали розробки, щоб дещо перевірити.",
+  "chat.dungeontrain.log_request.prompt_full": "Розробник просить повні журнали гри за цей сеанс, щоб дещо перевірити.",
   "chat.dungeontrain.log_request.send": "Надіслати журнали",
   "chat.dungeontrain.log_request.send.tip": "Надіслати розробнику нещодавні журнали гри",
   "chat.dungeontrain.log_request.decline": "Ні, дякую",

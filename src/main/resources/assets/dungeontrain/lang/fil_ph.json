@@ -2555,6 +2555,7 @@
   "chat.dungeontrain.known_feature.see_how": "Tingnan kung paano",
   "chat.dungeontrain.dev_message.consent_prompt": "Gustong magpadala sa iyo ng mensahe ng Developer, i-type ang %s para tanggapin.",
   "chat.dungeontrain.log_request.prompt": "Hinihingi ng Developer ang iyong dev logs para suriin ang isang bagay.",
+  "chat.dungeontrain.log_request.prompt_full": "Hinihingi ng Developer ang buong game logs mo mula sa session na ito para suriin ang isang bagay.",
   "chat.dungeontrain.log_request.send": "Ipadala ang logs",
   "chat.dungeontrain.log_request.send.tip": "Ipadala sa Developer ang mga kamakailang log ng laro",
   "chat.dungeontrain.log_request.decline": "Huwag na",

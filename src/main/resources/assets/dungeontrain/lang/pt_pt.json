@@ -2604,6 +2604,7 @@
   "chat.dungeontrain.known_feature.see_how": "Vê como",
   "chat.dungeontrain.dev_message.consent_prompt": "O programador quer enviar-te uma mensagem; escreve %s para aceitar.",
   "chat.dungeontrain.log_request.prompt": "O programador está a pedir os teus registos de desenvolvimento para verificar algo.",
+  "chat.dungeontrain.log_request.prompt_full": "O programador está a pedir os teus registos completos do jogo desta sessão para verificar algo.",
   "chat.dungeontrain.log_request.send": "Enviar registos",
   "chat.dungeontrain.log_request.send.tip": "Enviar os teus registos recentes do jogo ao programador",
   "chat.dungeontrain.log_request.decline": "Não, obrigado",
