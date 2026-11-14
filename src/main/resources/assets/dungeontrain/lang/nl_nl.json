@@ -2604,6 +2604,7 @@
   "chat.dungeontrain.known_feature.see_how": "Bekijk hoe",
   "chat.dungeontrain.dev_message.consent_prompt": "De ontwikkelaar wil je een bericht sturen; typ %s om te accepteren.",
   "chat.dungeontrain.log_request.prompt": "De ontwikkelaar vraagt om je dev-logs om iets te bekijken.",
+  "chat.dungeontrain.log_request.prompt_full": "De ontwikkelaar vraagt om je volledige spellogs van deze sessie om iets te bekijken.",
   "chat.dungeontrain.log_request.send": "Logs sturen",
   "chat.dungeontrain.log_request.send.tip": "Stuur je recente gamelogs naar de ontwikkelaar",
   "chat.dungeontrain.log_request.decline": "Nee, bedankt",

@@ -3202,6 +3202,7 @@
   "chat.dungeontrain.known_feature.see_how": "Vezi cum",
   "chat.dungeontrain.dev_message.consent_prompt": "Dezvoltatorul vrea să îți trimită un mesaj, scrie %s ca să accepți.",
   "chat.dungeontrain.log_request.prompt": "Dezvoltatorul îți cere jurnalele de dezvoltare ca să verifice ceva.",
+  "chat.dungeontrain.log_request.prompt_full": "Dezvoltatorul îți cere jurnalele complete de joc din această sesiune ca să verifice ceva.",
   "chat.dungeontrain.log_request.send": "Trimite jurnalele",
   "chat.dungeontrain.log_request.send.tip": "Trimite dezvoltatorului jurnalele recente ale jocului",
   "chat.dungeontrain.log_request.decline": "Nu, mulțumesc",

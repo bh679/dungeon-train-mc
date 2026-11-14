@@ -361,9 +361,14 @@ public final class LiveFeedClient {
     /**
      * A Developer log request the relay attached to a chat line ({@code cmd: "log_request"}). The relay
      * only issues one for a verified Developer account. {@code target} is the player name asked, or
-     * empty for "whoever is streaming"; {@code id} dedupes repeats across polls.
+     * empty for "whoever is streaming"; {@code id} dedupes repeats across polls. {@code full} asks for
+     * the whole session's logs ({@code /bug full}) rather than the usual tails.
      */
-    public record LogRequest(String target, String id) {
+    public record LogRequest(String target, String id, boolean full) {
+        public LogRequest(String target, String id) {
+            this(target, id, false);
+        }
+
         /** Whether this request is for the player {@code myName}, who is {@code streaming} or not. */
         public boolean isFor(String myName, boolean streaming) {
             if (target.isBlank()) return streaming;
@@ -378,7 +383,9 @@ public final class LiveFeedClient {
         String id = m.has("reqId") && !m.get("reqId").isJsonNull() ? m.get("reqId").getAsString() : "";
         if (id.isBlank()) return null;
         String target = m.has("target") && !m.get("target").isJsonNull() ? m.get("target").getAsString().trim() : "";
-        return new LogRequest(target, id);
+        boolean full = m.has("full") && m.get("full").isJsonPrimitive() && m.get("full").getAsJsonPrimitive().isBoolean()
+                && m.get("full").getAsBoolean();
+        return new LogRequest(target, id, full);
     }
 
     /**

@@ -2555,6 +2555,7 @@
   "chat.dungeontrain.known_feature.see_how": "ดูวิธี",
   "chat.dungeontrain.dev_message.consent_prompt": "นักพัฒนาต้องการส่งข้อความถึงคุณ พิมพ์ %s เพื่อยอมรับ",
   "chat.dungeontrain.log_request.prompt": "นักพัฒนาขอบันทึกการพัฒนาของคุณเพื่อตรวจสอบบางอย่าง",
+  "chat.dungeontrain.log_request.prompt_full": "นักพัฒนาขอบันทึกเกมทั้งหมดของคุณจากเซสชันนี้เพื่อตรวจสอบบางอย่าง",
   "chat.dungeontrain.log_request.send": "ส่งบันทึก",
   "chat.dungeontrain.log_request.send.tip": "ส่งบันทึกเกมล่าสุดของคุณให้นักพัฒนา",
   "chat.dungeontrain.log_request.decline": "ไม่เป็นไร",
