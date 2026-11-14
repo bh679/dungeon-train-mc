@@ -1,0 +1,20 @@
+{
+  "id": "new-carriage-rooms-crafty-maze-zombie",
+  "version": "0.1826.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "train"
+  ],
+  "title": "New carriage rooms",
+  "summary": "Three new rooms can turn up in carriages: another crafting room, a new maze and a new undead room.",
+  "highlights": [
+    "A new crafting room",
+    "A new maze to find your way through",
+    "A new room of undead"
+  ],
+  "date": "2026-11-14",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
