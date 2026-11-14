@@ -945,6 +945,8 @@
       "gui.dungeontrain.options.account.pings.milestone",
       "gui.dungeontrain.options.account.pings.milestone.tip",
       "gui.dungeontrain.options.account.pings.translation_review",
+      "gui.dungeontrain.options.account.pings.echo",
+      "gui.dungeontrain.options.account.pings.echo.tip",
       "gui.dungeontrain.ai_policy.title",
       "gui.dungeontrain.ai_policy.subtitle",
       "gui.dungeontrain.ai_policy.intro.1",

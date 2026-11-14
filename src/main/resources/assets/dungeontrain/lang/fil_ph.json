@@ -1714,6 +1714,8 @@
   "gui.dungeontrain.options.account.pings.milestone.tip": "I-ping ako kapag na-post ang isa sa aking mga milestone na advancement.",
   "gui.dungeontrain.options.account.pings.translation_review": "Pagsusuri ng salin",
   "gui.dungeontrain.options.account.pings.translation_review.tip": "I-ping ako kapag kailangang suriing mabuti ang isang salin na ipinadala ko.",
+  "gui.dungeontrain.options.account.pings.echo": "Ang alingawngaw mo",
+  "gui.dungeontrain.options.account.pings.echo.tip": "I-ping ako kapag may nakakita sa alingawngaw ko.",
   "chat.dungeontrain.discord.options_hint": "Piliin kung aling mga post ang magpi-ping sa iyo sa Options → Dungeon Train… → Account.",
   "gui.dungeontrain.ai_policy.title": "Patakaran sa AI",
   "gui.dungeontrain.ai_policy.subtitle": "Ano sa Dungeon Train ang gawa ng AI — at ano ang hindi.",

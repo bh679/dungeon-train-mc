@@ -2006,6 +2006,8 @@
   "gui.dungeontrain.options.account.pings.milestone.tip": "Згадувати мене, коли публікується одне з моїх досягнень-віх.",
   "gui.dungeontrain.options.account.pings.translation_review": "Перевірка перекладів",
   "gui.dungeontrain.options.account.pings.translation_review.tip": "Згадувати мене, коли надісланий мною переклад треба уважніше перевірити.",
+  "gui.dungeontrain.options.account.pings.echo": "Твоє ехо",
+  "gui.dungeontrain.options.account.pings.echo.tip": "Згадувати мене, коли хтось зустрічає моє ехо.",
   "chat.dungeontrain.discord.options_hint": "Виберіть, які дописи вас згадують, у Налаштування → Dungeon Train… → Акаунт.",
   "gui.dungeontrain.ai_policy.title": "Політика щодо ШІ",
   "gui.dungeontrain.ai_policy.subtitle": "Що в Dungeon Train створено ШІ — а що ні.",

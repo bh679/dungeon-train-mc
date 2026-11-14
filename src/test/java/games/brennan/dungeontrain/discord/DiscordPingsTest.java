@@ -37,6 +37,8 @@ class DiscordPingsTest {
     void hintsCarryTheKind() {
         assertEquals("ping=069a79f444e94726a5befca90e38aaf5&ping_type=death",
                 DiscordPings.playerHint(UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5"), PingType.DEATH));
+        assertEquals("ping=069a79f444e94726a5befca90e38aaf5&ping_type=echo",
+                DiscordPings.playerHint(UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5"), PingType.ECHO));
         assertEquals("ping_photo=7&photo_cap=abc&ping_type=photo_tributed", DiscordPings.photoHint(7, "abc"));
     }
 
@@ -44,7 +46,7 @@ class DiscordPingsTest {
     @DisplayName("wire ids match the relay's PING_TYPES and round-trip")
     void wireIds() {
         assertEquals(java.util.List.of("death", "own_tribute", "photo_tributed", "milestone",
-                        "translation_review"),
+                        "translation_review", "echo"),
                 java.util.Arrays.stream(PingType.values()).map(PingType::wireId).toList());
         for (PingType t : PingType.values()) assertEquals(t, PingType.byWireId(t.wireId()).orElseThrow());
         assertEquals(java.util.Optional.empty(), PingType.byWireId("nope"));
