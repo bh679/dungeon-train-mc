@@ -37,6 +37,9 @@ public final class EventCountdownTicker {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         if (++ticks % CHECK_EVERY_TICKS != 0) return;
+        // Nobody to tell yet (a singleplayer world still loading): leave the stage unsaid, so the
+        // first player in still hears it while its grace window lasts.
+        if (event.getServer().getPlayerList().getPlayerCount() == 0) return;
         long nowMs = System.currentTimeMillis();
         UpcomingEventsClient.refreshIfStale(nowMs);
         List<EventCountdown.Due> due = EventCountdown.due(UpcomingEventsClient.events(), nowMs / 1000L, SENT);
