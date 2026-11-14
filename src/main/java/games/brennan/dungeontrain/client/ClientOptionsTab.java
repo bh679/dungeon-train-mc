@@ -115,6 +115,8 @@ public enum ClientOptionsTab {
         PROTECT_OWN_PETS("gui.dungeontrain.options.protect_own_pets"),
         /** "Dungeon Train X is out" chat line when a release lands mid-session. */
         UPDATE_NOTICE_CHAT("gui.dungeontrain.options.update_notice_chat"),
+        /** Chat countdown before community events — see {@code EventCountdownTicker}. Synced to the server. */
+        EVENT_REMINDERS("gui.dungeontrain.options.event_reminders"),
         /** Once-a-session "give Minecraft more memory" boot card + chat line — see {@code LowMemoryNotice}. */
         LOW_MEMORY_NOTICE_CHAT("gui.dungeontrain.options.low_memory_notice_chat"),
         /** Minecraft's and other mods' tabs on the advancements screen — hidden by default, see {@code AdvancementTabGate}. */
@@ -366,6 +368,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.PUBLIC_POSTS);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
+                rows.add(Row.EVENT_REMINDERS);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.OTHER_ADVANCEMENT_CARDS);
                 rows.add(Row.PROTECT_OWN_PETS);
