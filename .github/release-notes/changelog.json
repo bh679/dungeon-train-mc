@@ -1,6 +1,44 @@
 {
   "entries": [
     {
+      "id": "release-dungeon-train-mc-begins",
+      "version": "0.1.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Dungeon Train MC begins",
+      "summary": "Work starts on Dungeon Train as a Minecraft mod: the endless train from the VR game, rebuilt in Minecraft.",
+      "highlights": [],
+      "date": "2026-04-20",
+      "released": true,
+      "released_in": "v0.1.0",
+      "released_at": "2026-04-20T00:00:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Work starts on Dungeon Train as a Minecraft mod: the endless train from the VR game, rebuilt in Minecraft."
+    },
+    {
+      "id": "release-switch-to-sable-physics",
+      "version": "0.83.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Switched to the Sable physics engine",
+      "summary": "The train now runs on Sable, a new physics engine for moving ships, and Dungeon Train moved to Minecraft 1.21.1 on NeoForge.",
+      "highlights": [],
+      "pr": 120,
+      "date": "2026-05-01",
+      "released": true,
+      "released_in": "v0.83.0",
+      "released_at": "2026-05-01T06:55:53Z",
+      "major": true,
+      "notable": true,
+      "description": "The train now runs on Sable, a new physics engine for moving ships, in place of Valkyrien Skies. Dungeon Train moved to Minecraft 1.21.1 on NeoForge with it."
+    },
+    {
       "id": "release-launched-on-curseforge",
       "version": "0.95.0",
       "type": "docs",
