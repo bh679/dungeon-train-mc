@@ -1,0 +1,16 @@
+{
+  "id": "website-update-pictures-load-fast",
+  "version": "0.1825.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Faster update pictures on the website",
+  "summary": "Clicking through the updates on the website's homepage now shows each update's picture straight away. The moving pictures are a fraction of their old size.",
+  "highlights": [],
+  "pr": 2661,
+  "date": "2026-11-14",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
