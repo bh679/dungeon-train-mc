@@ -50,7 +50,7 @@ public final class ContentModeSyncClient {
             if (Minecraft.getInstance().getConnection() == null) return;
             DungeonTrainNet.sendToServer(new ContentModeSyncPacket(
                 ClientDisplayConfig.getContentMode(), LiveFeedClientConfig.streamingEnabled(),
-                ClientDisplayConfig.isPublicPosts()));
+                ClientDisplayConfig.isPublicPosts(), ClientDisplayConfig.isEventReminders()));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] content-mode sync to server failed: {}", t.toString());
         }
