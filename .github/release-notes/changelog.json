@@ -35822,6 +35822,24 @@
       "released": true,
       "released_in": "v0.1817.0",
       "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "event-reminders-switch",
+      "version": "0.1818.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Event reminders switch",
+      "summary": "A new Options switch turns the community event reminders in chat on or off.",
+      "highlights": [],
+      "pr": 2654,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1818.0",
+      "released_at": "2026-11-14T07:19:43Z"
     }
   ]
 }
