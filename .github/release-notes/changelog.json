@@ -17118,8 +17118,8 @@
       "pr": 1421,
       "date": "2026-09-15",
       "released": true,
-      "released_in": "v0.894.0",
-      "released_at": "2026-09-15T12:18:27Z"
+      "released_in": "v0.893.0",
+      "released_at": "2026-09-15T11:35:03Z"
     },
     {
       "id": "fast-paintings-required",
@@ -17142,8 +17142,8 @@
       "pr": 1425,
       "date": "2026-09-15",
       "released": true,
-      "released_in": "v0.894.0",
-      "released_at": "2026-09-15T12:18:27Z"
+      "released_in": "v0.893.0",
+      "released_at": "2026-09-15T11:35:03Z"
     },
     {
       "id": "ecp-crash-checkpoint-pin",
@@ -17162,8 +17162,8 @@
       "pr": 1424,
       "date": "2026-09-15",
       "released": true,
-      "released_in": "v0.894.0",
-      "released_at": "2026-09-15T12:18:27Z"
+      "released_in": "v0.893.0",
+      "released_at": "2026-09-15T11:35:03Z"
     },
     {
       "id": "eb-clipboard-bulk-paste",
@@ -17183,8 +17183,8 @@
       "pr": 1426,
       "date": "2026-09-15",
       "released": true,
-      "released_in": "v0.894.0",
-      "released_at": "2026-09-15T12:18:27Z"
+      "released_in": "v0.893.0",
+      "released_at": "2026-09-15T11:35:03Z"
     },
     {
       "id": "welcome-back-drop-joined-world",
