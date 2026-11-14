@@ -36022,21 +36022,6 @@
       "released_at": "2026-11-14T16:45:46Z"
     },
     {
-      "id": "dev-hours-daily-sync",
-      "version": "0.1827.0",
-      "type": "chore",
-      "tags": [
-        "internal"
-      ],
-      "title": "Hours of work figure stays current",
-      "summary": "The hours of work shown on the Contribute page now update every day, counting every Dungeon Train mod and the server behind them.",
-      "highlights": [],
-      "date": "2026-11-14",
-      "released": true,
-      "released_in": "v0.1831.0",
-      "released_at": "2026-11-14T18:20:02Z"
-    },
-    {
       "id": "echo-mine-build-reach",
       "version": "0.1828.0",
       "type": "feat",
