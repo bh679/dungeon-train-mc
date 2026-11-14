@@ -968,6 +968,34 @@ def test_set_major_attaches_and_clears_video() -> None:
     assert r.returncode == 0 and "video" not in e and "video_cover" not in e, (r.stderr, e)
 
 
+def test_videos_per_format_append_set_and_clear() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "site", "--major", "--image", "https://x.test/p.jpg",
+               "--video-feed", "https://x.test/feed.mp4", "--video-tiktok", "https://x.test/tt.mp4", "--video-cover", "0.5")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    # A cover time needs only a clip per format, not the single video.
+    assert e["videos"] == {"feed": "https://x.test/feed.mp4", "tiktok": "https://x.test/tt.mp4"} and "video" not in e, e
+    r = append(ws, "small", "--video-story", "https://x.test/s.mp4")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+    r = append(ws, "bad", "--major", "--video-story", "https://x.test/s.gif")
+    assert r.returncode == 1 and "story video" in r.stderr, r.stderr
+    # set-major merges a format in over the others, and --clear-video drops every clip.
+    r = run(SET_MAJOR, ws, "--id", "site", "--video-story", "https://x.test/st.mp4")
+    assert r.returncode == 0, r.stderr
+    assert set(read_changelog(ws)["entries"][0]["videos"]) == {"feed", "story", "tiktok"}
+    r = run(SET_MAJOR, ws, "--id", "site", "--clear-video")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "videos" not in e and "video_cover" not in e, (r.stderr, e)
+    try:
+        changelog_io.validate_major_fields(None, None, videos={"square": "https://x.test/q.mp4"})
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("accepted an unknown format")
+
+
 def test_mentions_merge_validate_and_clear() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")

@@ -80,13 +80,19 @@ function song(e) {
 /** An entry's own clip as the relay posts it: every video built from the clip, its frame the cover. */
 async function clipPosts(e, save, log) {
   if (!card.buildClipVideo) throw new Error(`${e.id}: this dp-relay ref can't build clip videos (no buildClipVideo); pass --relay-ref`);
-  const clip = fs.readFileSync(e.clipPath);
+  // A format's own clip (the entry's `videos`), else the one `video`, as the relay picks (socials-updates.js clipFor).
+  const clipOf = (format) => {
+    const file = (e.clipPaths && e.clipPaths[format]) || e.clipPath;
+    return file ? fs.readFileSync(file) : null;
+  };
   const tune = song(e);
   const got = await music.trackFile(tune.t, { log });
   if (!got) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
   const track = { id: tune.t.id, title: tune.t.title, composer: tune.t.composer };
   log(`clip, song ${track.title} by ${track.composer} (${tune.vibe}) under it, from ${got.start}s`);
   for (const [format, name] of [['feed', 'feed-video'], ['story', 'story-video'], ['tiktok', 'tiktok-video']]) {
+    const clip = clipOf(format);
+    if (!clip) { log(`no ${format} clip and no video: the relay posts the picture there`); continue; }
     const v = await card.buildClipVideo(e, clip, { format, isNew: format === 'story', music: { ...got, track }, cover: e.clipCover, log });
     if (!v) throw new Error(`${e.id}: the ${format} clip video did not render`);
     save(`${name}.mp4`, v.mp4);
@@ -108,7 +114,8 @@ async function clipPosts(e, save, log) {
     const save = (name, buf) => { if (buf) { fs.writeFileSync(path.join(dir, name), buf); files[name.split('.')[0]] = e.id + '/' + name; } };
     let tune = null;
     let track = null;
-    if (e.clipPath) {
+    const hasClip = !!(e.clipPath || e.clipPaths);
+    if (hasClip) {
       ({ tune, track } = await clipPosts(e, save, log));
     } else if (card.isAnimated(bytes)) {
       tune = song(e);
@@ -120,13 +127,13 @@ async function clipPosts(e, save, log) {
       if (v) save('feed-video.mp4', v.mp4);
       tune.start = got.start;
     }
-    if (!e.clipPath) {
+    if (!hasClip) {
       save('facebook.jpg', await card.pictureJpeg(bytes, { log }));
       save('instagram.jpg', await card.buildUpdateCard(e, bytes, { format: 'feed', log }));
       save('story.jpg', await card.buildUpdateCard(e, bytes, { format: 'story', isNew: true, log }));
     }
     done.push({ id: e.id, title: e.title, files,
-      music: tune && { clip: !!e.clipPath, id: tune.t.id, title: tune.t.title, composer: tune.t.composer, start: tune.start, vibe: tune.vibe,
+      music: tune && { clip: hasClip, id: tune.t.id, title: tune.t.title, composer: tune.t.composer, start: tune.start, vibe: tune.vibe,
         vibeFrom: tune.vibeFrom, chosen: tune.chosen, others: tune.others, credit: music.credit(track) },
       captions: Object.fromEntries(['facebook', 'instagram', 'tiktok'].map((p) => [p, updates.caption(e, p, track)])) });
   }
@@ -161,15 +168,24 @@ def local_file(url: str) -> str:
 
 
 def clip_fields(e: dict) -> dict:
-    """`clipPath` (and `clipCover`) for an entry with its own clip. A clip named but not in the images folder is an
-    error: previewing the picture instead would show posts the relay won't make."""
+    """`clipPath`, `clipPaths` (a clip per format, the entry's `videos`) and `clipCover` for an entry with its own
+    clip(s). A clip named but not in the images folder is an error: previewing the picture instead would show posts
+    the relay won't make."""
+    def local_clip(url: str) -> str:
+        local = local_file(url)
+        if not os.path.exists(local):
+            raise ValueError(f"{e['id']}: its video {url} is not in {IMAGES_DIR}/")
+        return os.path.abspath(local)
+
     video = e.get("video") or ""
-    if not video:
+    videos = e.get("videos") or {}
+    if not video and not videos:
         return {}
-    local = local_file(video)
-    if not os.path.exists(local):
-        raise ValueError(f"{e['id']}: its video {video} is not in {IMAGES_DIR}/")
-    out = {"clipPath": os.path.abspath(local)}
+    out: dict = {}
+    if video:
+        out["clipPath"] = local_clip(video)
+    if videos:
+        out["clipPaths"] = {fmt: local_clip(url) for fmt, url in videos.items()}
     if e.get("video_cover") is not None:
         out["clipCover"] = e["video_cover"]
     return out

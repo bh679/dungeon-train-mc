@@ -71,6 +71,17 @@
           "pattern": "^https://\\S+\\.[mM][pP]4$",
           "description": "Major release only: https:// URL of an MP4 clip with sound (at most 30 s). The relay builds the update's Facebook, Instagram (feed and story) and TikTok videos from it, keeping its sound, instead of looping the picture."
         },
+        "videos": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "feed": { "type": "string", "pattern": "^https://\\S+\\.[mM][pP]4$" },
+            "story": { "type": "string", "pattern": "^https://\\S+\\.[mM][pP]4$" },
+            "tiktok": { "type": "string", "pattern": "^https://\\S+\\.[mM][pP]4$" }
+          },
+          "description": "Major release only: a clip per social format, each recorded for that post's visible area (feed: Facebook and Instagram, 1080x994 above the title band; story: 1080x1494; tiktok: 1080x894). A format without one uses video."
+        },
         "mentions": {
           "type": "object",
           "description": "Major release only: per-platform handles for links in the description. Key: a link's text as written in the description (any case). Value: the handle that link shows as in the Instagram and TikTok captions, which can't hold links. Facebook keeps the text and the link.",
