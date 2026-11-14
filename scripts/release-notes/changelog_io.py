@@ -511,9 +511,10 @@ def validate_major_fields(
     video_cover: float | None = None,
     mentions: dict | None = None,
     videos: dict | None = None,
+    loop: str | None = None,
 ) -> None:
-    """Raise ValueError for a blank description, an image or video that is not a plain https URL (the video an
-    .mp4), a `videos` format other than feed / story / tiktok or a clip there that is not one, a negative video
+    """Raise ValueError for a blank description, an image, video or loop that is not a plain https URL (the video
+    and loop an .mp4), a `videos` format other than feed / story / tiktok or a clip there that is not one, a negative video
     cover time, or malformed mentions."""
     if description is not None and not description.strip():
         raise ValueError("major description must not be blank")
@@ -521,6 +522,8 @@ def validate_major_fields(
         raise ValueError(f"major image must be an https:// URL with no spaces, got {image!r}")
     if video is not None and not (_plain_https(video) and video.lower().endswith(".mp4")):
         raise ValueError(f"major video must be an https:// URL of an .mp4 with no spaces, got {video!r}")
+    if loop is not None and not (_plain_https(loop) and loop.lower().endswith(".mp4")):
+        raise ValueError(f"major loop must be an https:// URL of an .mp4 with no spaces, got {loop!r}")
     for fmt, url in (videos or {}).items():
         if fmt not in VIDEO_FORMATS:
             raise ValueError(f"videos format must be one of {', '.join(VIDEO_FORMATS)}, got {fmt!r}")
@@ -545,6 +548,8 @@ def with_major(
     mentions: dict | None = None,
     clear_mentions: bool = False,
     videos: dict | None = None,
+    loop: str | None = None,
+    clear_loop: bool = False,
 ) -> dict:
     """Return a copy of `entry` marked as a major release.
 
@@ -556,16 +561,19 @@ def with_major(
     milestone and notable. `video` (an .mp4 with sound) replaces the clip the
     social posts are built from and `video_cover` the second of its cover frame;
     `videos` ({feed|story|tiktok: .mp4}) sets a clip per format, merged over the
-    entry's own (a format without one uses `video`); `clear_video` drops them all. `mentions` ({link text: {platform: "@handle"}}) is
+    entry's own (a format without one uses `video`); `clear_video` drops them all. `loop` (a silent .mp4 of an
+    animated `image`, made by gif-to-loop.sh) is what the website shows in place of that GIF, many times lighter;
+    `clear_loop` drops it. `mentions` ({link text: {platform: "@handle"}}) is
     merged over the entry's own, per link text; `clear_mentions` drops them first.
     Raises ValueError (see validate_major_fields), and for a cover time with no video.
     """
-    validate_major_fields(description, image, video, video_cover, mentions, videos)
+    validate_major_fields(description, image, video, video_cover, mentions, videos, loop)
     out = {
         k: v for k, v in entry.items()
         if not (clear_image and k == "image")
         and not (clear_video and k in ("video", "videos", "video_cover"))
         and not (clear_mentions and k == "mentions")
+        and not (clear_loop and k == "loop")
         and not (milestone is False and k == "milestone")
         and not (notable is False and k == "notable")
     }
@@ -582,6 +590,8 @@ def with_major(
         out["image"] = image
     if video is not None:
         out["video"] = video
+    if loop is not None:
+        out["loop"] = loop
     if video_cover is not None:
         out["video_cover"] = video_cover
     if videos:

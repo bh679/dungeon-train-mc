@@ -23686,7 +23686,8 @@
       "major": true,
       "milestone": true,
       "description": "Dungeon Train now has a website, complete with roadmaps and update history.\n\n[https://brennan.games/dungeontrain/](https://brennan.games/dungeontrain/)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.loop.mp4"
     },
     {
       "id": "tribute-photos-own-channel",
@@ -24273,7 +24274,8 @@
       "released_at": "2026-10-09T05:31:06Z",
       "major": true,
       "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.loop.mp4"
     },
     {
       "id": "viewfinder-selfie-hint",
@@ -26396,7 +26398,8 @@
       "major": true,
       "notable": true,
       "description": "Dungeon Train TV keeps going. The Live Eye now passes from player to player instead of just cutting off.\n\nDie live and your stream carries on. Your viewers watch the death screens with you while your last few seconds loop behind them, and anyone watching on a TV can take the Live Eye and go live in your place. First click wins.\n\nPut on a Live Eye while someone else is streaming and you're asked whether to take over. Early in their stream the viewers vote in chat; after that it's your call. And if a newcomer tunes in on a TV while you're live, you can gift them yours.\n\n## Other significant updates\n\n- Lose a takeover, or choose to stay a viewer, and your Live Eye turns into a TV instead of burning\n- Live chat has emoji: react to messages from the Live page's new emoji button, see Discord reactions on chat lines in-game, and Discord emoji now show in colour\n- Developer pings stay out of Live chat\n- Move your old advancements to the difficulty you earned them on, when the developer sends you the offer\n- Settings tooltips show their current text\n- Bug fixes",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.loop.mp4"
     },
     {
       "id": "photo-album-from-disposable-camera",
@@ -31744,7 +31747,8 @@
       "major": true,
       "notable": true,
       "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.loop.mp4"
     },
     {
       "id": "editor-three-tier-store",
@@ -34534,7 +34538,8 @@
       "released_in": "v0.1747.0",
       "released_at": "2026-11-09T12:57:53Z",
       "major": true,
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.loop.mp4"
     },
     {
       "id": "contents-touch-sees-carriage",
@@ -35049,7 +35054,8 @@
       "major": true,
       "notable": true,
       "description": "It burns to keep your carriages alive. Taking them beyond your world, into the world of others. Let it extinguish, the train forgets it. Move it to a new carriage, and move which carriage drifts with the train.",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.loop.mp4"
     },
     {
       "id": "gear-shift-details",
@@ -35418,7 +35424,8 @@
           "instagram": "@ashyseven7",
           "tiktok": "@ashseventh"
         }
-      }
+      },
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.loop.mp4"
     },
     {
       "id": "fresh-room-gear",
