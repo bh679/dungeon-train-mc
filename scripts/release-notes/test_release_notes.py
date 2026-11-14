@@ -968,6 +968,58 @@ def test_set_major_attaches_and_clears_video() -> None:
     assert r.returncode == 0 and "video" not in e and "video_cover" not in e, (r.stderr, e)
 
 
+def test_set_major_attaches_and_clears_loop() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.gif", "--loop", "https://x.test/p.loop.mp4")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["loop"] == "https://x.test/p.loop.mp4" and e["image"] == "https://x.test/p.gif", e
+    for bad in ("http://x.test/p.mp4", "https://x.test/p.gif", "https://x.test/a b.mp4"):
+        r = run(SET_MAJOR, ws, "--id", "drop", "--loop", bad)
+        assert r.returncode == 1 and "loop" in r.stderr, (bad, r.stderr)
+    r = run(SET_MAJOR, ws, "--id", "drop", "--loop", "https://x.test/q.mp4", "--clear-loop")
+    assert r.returncode == 1 and "contradicts" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--clear-loop")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "loop" not in e and e["image"] == "https://x.test/p.gif", (r.stderr, e)
+
+
+def test_loop_never_rendered_into_notes() -> None:
+    entry = {"id": "x", "title": "T", "type": "feature", "major": True, "image": "https://x.test/p.gif",
+             "loop": "https://x.test/p.loop.mp4"}
+    assert "loop.mp4" not in changelog_io._render_major(entry)
+
+
+def test_videos_per_format_append_set_and_clear() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "site", "--major", "--image", "https://x.test/p.jpg",
+               "--video-feed", "https://x.test/feed.mp4", "--video-tiktok", "https://x.test/tt.mp4", "--video-cover", "0.5")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    # A cover time needs only a clip per format, not the single video.
+    assert e["videos"] == {"feed": "https://x.test/feed.mp4", "tiktok": "https://x.test/tt.mp4"} and "video" not in e, e
+    r = append(ws, "small", "--video-story", "https://x.test/s.mp4")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+    r = append(ws, "bad", "--major", "--video-story", "https://x.test/s.gif")
+    assert r.returncode == 1 and "story video" in r.stderr, r.stderr
+    # set-major merges a format in over the others, and --clear-video drops every clip.
+    r = run(SET_MAJOR, ws, "--id", "site", "--video-story", "https://x.test/st.mp4")
+    assert r.returncode == 0, r.stderr
+    assert set(read_changelog(ws)["entries"][0]["videos"]) == {"feed", "story", "tiktok"}
+    r = run(SET_MAJOR, ws, "--id", "site", "--clear-video")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "videos" not in e and "video_cover" not in e, (r.stderr, e)
+    try:
+        changelog_io.validate_major_fields(None, None, videos={"square": "https://x.test/q.mp4"})
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("accepted an unknown format")
+
+
 def test_mentions_merge_validate_and_clear() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")
@@ -1261,6 +1313,8 @@ def main() -> int:
         test_validate_major_fields_video_and_cover,
         test_append_major_with_video,
         test_set_major_attaches_and_clears_video,
+        test_set_major_attaches_and_clears_loop,
+        test_loop_never_rendered_into_notes,
         test_set_major_milestone_sets_keeps_and_drops,
         test_set_major_notable_sets_keeps_and_drops,
         test_append_notable_implies_major,

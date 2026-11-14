@@ -980,6 +980,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case UPDATE_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isUpdateNoticeChatEnabled(),
                     ClientDisplayConfig::setUpdateNoticeChat), key + ".tip");
 
+            // Community-event countdown lines. The server sends them, so a flip re-syncs it.
+            case EVENT_REMINDERS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isEventReminders(), on -> {
+                    ClientDisplayConfig.setEventReminders(on);
+                    ContentModeSyncClient.syncNow();
+                }), key + ".tip");
+
             // "Minecraft only has N GB of memory" — title-screen card + chat line, once a session each.
             case LOW_MEMORY_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isLowMemoryNoticeChatEnabled(),
                     ClientDisplayConfig::setLowMemoryNoticeChat), key + ".tip");

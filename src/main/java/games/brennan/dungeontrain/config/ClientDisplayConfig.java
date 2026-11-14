@@ -337,6 +337,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue PROTECT_OWN_PETS;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
+    public static final ModConfigSpec.BooleanValue EVENT_REMINDERS;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
     /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
@@ -499,6 +500,7 @@ public final class ClientDisplayConfig {
         BOOK_COPY_BUTTON = pair.getLeft().bookCopyButton;
         PROTECT_OWN_PETS = pair.getLeft().protectOwnPets;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
+        EVENT_REMINDERS = pair.getLeft().eventReminders;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
@@ -980,6 +982,11 @@ public final class ClientDisplayConfig {
                          "announced, never the small automatic patch releases. Checks update.json on GitHub",
                          "every 10 minutes while you are in a world; nothing about you is sent. On by default.")
                 .define("updateNoticeChat", true);
+        ModConfigSpec.BooleanValue eventReminders = b
+                .comment("Event reminders: chat lines 24 hours, 1 hour and 10 minutes before a community event on",
+                         "dungeon.training/update, and when it starts. Synced to the server, which skips you when",
+                         "this is off. On by default.")
+                .define("eventReminders", true);
         ModConfigSpec.BooleanValue lowMemoryNoticeChat = b
                 .comment("Once per game session, show a notice on the title screen and one chat line when Minecraft",
                          "has been given less than 5 GB of memory on a computer with 8 GB or more, suggesting you",
@@ -1041,7 +1048,7 @@ public final class ClientDisplayConfig {
                 npsRecommendedHigh, motyNominated, motyVoted, motyModNominated, motyModVoted,
                 politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat, eventReminders,
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
@@ -1555,6 +1562,22 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         UPDATE_NOTICE_CHAT.set(value);
         UPDATE_NOTICE_CHAT.save();
+    }
+
+    /**
+     * The Event reminders switch (Options row): whether the server sends this player the community-event
+     * countdown lines. Defaults on, including pre-load, so the countdown keeps reaching everyone who has
+     * not opted out.
+     */
+    public static boolean isEventReminders() {
+        return !isLoaded() || EVENT_REMINDERS.get();
+    }
+
+    /** Persist the Event reminders switch. Idempotent; no-op pre-load. */
+    public static void setEventReminders(boolean value) {
+        if (!isLoaded() || EVENT_REMINDERS.get() == value) return;
+        EVENT_REMINDERS.set(value);
+        EVENT_REMINDERS.save();
     }
 
     /**
@@ -2482,6 +2505,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue bookCopyButton,
             ModConfigSpec.BooleanValue protectOwnPets,
             ModConfigSpec.BooleanValue updateNoticeChat,
+            ModConfigSpec.BooleanValue eventReminders,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,

@@ -19,8 +19,8 @@ import java.util.Set;
 /**
  * Tells every player online when an update-page event is 24 hours, 1 hour and 10 minutes away, and
  * when it starts ({@link EventCountdown}). Checks once a second; the event list refreshes itself
- * every 15 minutes ({@link UpcomingEventsClient}). Kid-mode players are left out: events are
- * external livestreams.
+ * every 15 minutes ({@link UpcomingEventsClient}). Kid-mode players are left out (events are
+ * external livestreams), and so is anyone with the Event reminders switch off.
  *
  * <p>What has been said is remembered for the server's life only, so a restart inside a stage's
  * short grace window may repeat that one line.</p>
@@ -65,7 +65,7 @@ public final class EventCountdownTicker {
     }
 
     static void send(ServerPlayer player, Component line, EventCountdown.Stage stage) {
-        if (ContentModeMirror.isKid(player)) return;
+        if (ContentModeMirror.isKid(player) || !ContentModeMirror.isEventRemindersOn(player.getUUID())) return;
         player.sendSystemMessage(line);
         if (stage == EventCountdown.Stage.TEN_MIN || stage == EventCountdown.Stage.NOW) {
             player.playNotifySound(SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.MASTER, 0.6f, 1.0f);

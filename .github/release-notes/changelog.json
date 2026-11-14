@@ -23686,7 +23686,8 @@
       "major": true,
       "milestone": true,
       "description": "Dungeon Train now has a website, complete with roadmaps and update history.\n\n[https://brennan.games/dungeontrain/](https://brennan.games/dungeontrain/)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.loop.mp4"
     },
     {
       "id": "tribute-photos-own-channel",
@@ -24273,7 +24274,8 @@
       "released_at": "2026-10-09T05:31:06Z",
       "major": true,
       "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.loop.mp4"
     },
     {
       "id": "viewfinder-selfie-hint",
@@ -26396,7 +26398,8 @@
       "major": true,
       "notable": true,
       "description": "Dungeon Train TV keeps going. The Live Eye now passes from player to player instead of just cutting off.\n\nDie live and your stream carries on. Your viewers watch the death screens with you while your last few seconds loop behind them, and anyone watching on a TV can take the Live Eye and go live in your place. First click wins.\n\nPut on a Live Eye while someone else is streaming and you're asked whether to take over. Early in their stream the viewers vote in chat; after that it's your call. And if a newcomer tunes in on a TV while you're live, you can gift them yours.\n\n## Other significant updates\n\n- Lose a takeover, or choose to stay a viewer, and your Live Eye turns into a TV instead of burning\n- Live chat has emoji: react to messages from the Live page's new emoji button, see Discord reactions on chat lines in-game, and Discord emoji now show in colour\n- Developer pings stay out of Live chat\n- Move your old advancements to the difficulty you earned them on, when the developer sends you the offer\n- Settings tooltips show their current text\n- Bug fixes",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.loop.mp4"
     },
     {
       "id": "photo-album-from-disposable-camera",
@@ -31744,7 +31747,8 @@
       "major": true,
       "notable": true,
       "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.loop.mp4"
     },
     {
       "id": "editor-three-tier-store",
@@ -34534,7 +34538,8 @@
       "released_in": "v0.1747.0",
       "released_at": "2026-11-09T12:57:53Z",
       "major": true,
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.loop.mp4"
     },
     {
       "id": "contents-touch-sees-carriage",
@@ -35049,7 +35054,8 @@
       "major": true,
       "notable": true,
       "description": "It burns to keep your carriages alive. Taking them beyond your world, into the world of others. Let it extinguish, the train forgets it. Move it to a new carriage, and move which carriage drifts with the train.",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.loop.mp4"
     },
     {
       "id": "gear-shift-details",
@@ -35418,7 +35424,8 @@
           "instagram": "@ashyseven7",
           "tiktok": "@ashseventh"
         }
-      }
+      },
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.loop.mp4"
     },
     {
       "id": "fresh-room-gear",
@@ -35756,6 +35763,225 @@
       "released": true,
       "released_in": "v0.1812.0",
       "released_at": "2026-11-14T03:34:11Z"
+    },
+    {
+      "id": "bug-full-logs",
+      "version": "0.1816.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "pr": 2652,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "event-countdown-chat",
+      "version": "0.1817.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Event reminders in chat",
+      "summary": "Community events now show up in chat: a reminder a day before, an hour before, 10 minutes before and as they start, with a link to join.",
+      "highlights": [],
+      "pr": 2653,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "live-chat-skip-read-languages",
+      "version": "0.1813.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "No translations for languages you read",
+      "summary": "Live chat lines written in one of your Book languages now show as written, without a translation.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "small-tweak-2026-11-14",
+      "version": "0.1813.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Small tweak",
+      "summary": "A small tweak.",
+      "highlights": [],
+      "pr": 2649,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "event-reminders-switch",
+      "version": "0.1818.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Event reminders switch",
+      "summary": "A new Options switch turns the community event reminders in chat on or off.",
+      "highlights": [],
+      "pr": 2654,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1818.0",
+      "released_at": "2026-11-14T07:19:43Z"
+    },
+    {
+      "id": "repair-keeps-item-name",
+      "version": "0.1819.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Repaired items keep their name",
+      "summary": "Combining two worn items in a crafting grid now keeps the name and description of the left item (or the top one, if they share a column), the same item whose stats are kept. A repair no longer adds a new crafted by line.",
+      "highlights": [],
+      "pr": 2655,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1819.0",
+      "released_at": "2026-11-14T09:42:51Z"
+    },
+    {
+      "id": "release-new-homepage",
+      "version": "0.1819.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "A Brand New Homepage",
+      "summary": "dungeon.training has a brand new homepage: the whole train at a glance, live, from the books written to who is streaming right now.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1819.0",
+      "released_at": "2026-11-14T14:00:58Z",
+      "major": true,
+      "description": "dungeon.training has a brand new homepage. Scroll down and the whole train is there at a glance, and it's all live:\n\n- How many riders, books, shared carriages and photos the community has made\n- The Live Feed, with the Live Eye chat beside the stream whenever someone is on air\n- The latest updates, stacked up to flip through\n- Everyone who has helped build the train, wearing their own skin\n- What riders think, straight from the in-game survey\n\n[Visit the new homepage](https://dungeon.training/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage.gif",
+      "video_cover": 0.5,
+      "videos": {
+        "feed": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-feed.mp4",
+        "story": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-story.mp4",
+        "tiktok": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-tiktok.mp4"
+      },
+      "milestone": true
+    },
+    {
+      "id": "echo-discord-pings",
+      "version": "0.1822.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Echo pings",
+      "summary": "Linked your Discord? You can now get tagged whenever another player meets your echo and their story is posted.",
+      "highlights": [
+        "New \"Your echo\" switch in Options, Account tab"
+      ],
+      "pr": 2659,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "new-carriage-rooms-crafty-maze-zombie",
+      "version": "0.1826.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New carriage rooms",
+      "summary": "Three new rooms can turn up in carriages: another crafting room, a new maze and a new undead room.",
+      "highlights": [
+        "A new crafting room",
+        "A new maze to find your way through",
+        "A new room of undead"
+      ],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "new-dimensional-carriage-water",
+      "version": "0.1821.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "A new dimensional carriage",
+      "summary": "A new dimensional carriage to find, and fresh looks and better loot in a few others.",
+      "highlights": [
+        "A new dimensional carriage, with water to cross",
+        "New variations of an existing dimensional carriage",
+        "Richer loot tucked away in another"
+      ],
+      "pr": 2657,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "release-notes-video-per-format",
+      "version": "0.1820.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Social clips per format",
+      "summary": "A major update can carry its own clip for each social post shape (feed, story, TikTok).",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "website-update-pictures-load-fast",
+      "version": "0.1825.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Faster update pictures on the website",
+      "summary": "Clicking through the updates on the website's homepage now shows each update's picture straight away. The moving pictures are a fraction of their old size.",
+      "highlights": [],
+      "pr": 2661,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
     }
   ]
 }

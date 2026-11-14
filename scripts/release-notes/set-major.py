@@ -7,6 +7,8 @@ page (dungeon.training/update/). Works on released entries too, so a
 photo can be attached after the release has shipped.
 
 Usage:
+  python3 scripts/release-notes/set-major.py --id totems-with-a-catch \
+    --loop https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/totems.loop.mp4
   python3 scripts/release-notes/set-major.py --id release-capture-the-view \
     --image https://example.com/capture-the-view.png
   python3 scripts/release-notes/set-major.py --id release-capture-the-view \
@@ -39,7 +41,15 @@ def main(argv: list[str] | None = None) -> int:
                    help="https:// URL of an .mp4 clip with sound: the social posts' videos are built from it.")
     p.add_argument("--video-cover", type=float, default=None,
                    help="The second of the clip whose frame is the social posts' cover (default 0.5).")
-    p.add_argument("--clear-video", action="store_true", help="Remove the clip and its cover time.")
+    for fmt in changelog_io.VIDEO_FORMATS:
+        p.add_argument(f"--video-{fmt}", default=None,
+                       help=f"https:// URL of an .mp4 clip recorded for the {fmt} post's visible area (a format "
+                            "without one uses --video).")
+    p.add_argument("--clear-video", action="store_true", help="Remove every clip and the cover time.")
+    p.add_argument("--loop", default=None,
+                   help="https:// URL of a silent .mp4 of an animated image (scripts/release-notes/gif-to-loop.sh): "
+                        "the website plays it in place of the GIF.")
+    p.add_argument("--clear-loop", action="store_true", help="Remove the loop.")
     p.add_argument("--mention", nargs=3, action="append", default=None, metavar=("TEXT", "PLATFORM", "HANDLE"),
                    help="A description link whose text is TEXT shows as HANDLE (@name) in that PLATFORM's caption "
                         "(instagram or tiktok, which can't hold links). Repeat for each.")
@@ -57,8 +67,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.image and args.clear_image:
         print("::error::--image contradicts --clear-image", file=sys.stderr)
         return 1
-    if (args.video or args.video_cover is not None) and args.clear_video:
-        print("::error::--video / --video-cover contradict --clear-video", file=sys.stderr)
+    videos = {f: getattr(args, f"video_{f}") for f in changelog_io.VIDEO_FORMATS if getattr(args, f"video_{f}")}
+    if (args.video or videos or args.video_cover is not None) and args.clear_video:
+        print("::error::--video / --video-<format> / --video-cover contradict --clear-video", file=sys.stderr)
+        return 1
+
+    if args.loop and args.clear_loop:
+        print("::error::--loop contradicts --clear-loop", file=sys.stderr)
         return 1
 
     data = changelog_io.load_changelog()
@@ -75,9 +90,10 @@ def main(argv: list[str] | None = None) -> int:
             changelog_io.with_major(e, description=description, image=args.image,
                                     clear_image=args.clear_image, milestone=args.milestone,
                                     notable=args.notable, video=args.video, clear_video=args.clear_video,
-                                    video_cover=args.video_cover,
+                                    video_cover=args.video_cover, videos=videos or None,
                                     mentions=changelog_io.mentions_from_args(args.mention),
-                                    clear_mentions=args.clear_mentions)
+                                    clear_mentions=args.clear_mentions,
+                                    loop=args.loop, clear_loop=args.clear_loop)
             if e["id"] == args.id else e
             for e in entries
         ]

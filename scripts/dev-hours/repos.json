@@ -1,20 +1,35 @@
 {
   "comment": [
-    "Repos whose commit history counts toward the development-hours figure on the",
-    "Contribute screen. Paths are local to the maintainer's machine and are expanded",
-    "with ~; a repo that isn't checked out here is skipped with a warning, never a",
-    "hard failure. Hours are UNIONED across repos, so an hour spent committing to two",
-    "of these counts once.",
+    "Repos whose commit history counts toward the development-hours figure (the in-game",
+    "Contribute screen and the website's Support and Update pages all read the result).",
+    "`repo` is the GitHub owner/name, read by the daily workflow (collect.py --clone-dir).",
+    "`path` is an optional local checkout for an offline run, expanded with ~. A repo that",
+    "can't be read is skipped with a warning, never a hard failure. Hours are UNIONED across",
+    "repos, so an hour spent committing to two of these counts once.",
     "MortalMe is deliberately absent: different game, not Dungeon Train work."
   ],
   "repos": [
-    { "name": "dungeon-train-mc",          "path": "~/Public/Dungeon Train" },
-    { "name": "adventureitemnames-mc",     "path": "~/Projects/adventureitemnames-mc" },
-    { "name": "adventureitemstats-mc",     "path": "~/Projects/adventureitemstats-mc" },
-    { "name": "playermob-mc",              "path": "~/Projects/playermob-mc" },
-    { "name": "enderchestpersistence-mc",  "path": "~/Projects/enderchestpersistence-mc" },
-    { "name": "TradeEverything",           "path": "~/Projects/TradeEverything" },
-    { "name": "discordpresence-mc",        "path": "~/Projects/discordpresence-mc" },
-    { "name": "dp-relay",                  "path": "~/Projects/dp-relay" }
+    { "name": "dungeon-train-mc",            "repo": "bh679/dungeon-train-mc" },
+    { "name": "adventureitemnames-mc",       "repo": "bh679/adventureitemnames-mc" },
+    { "name": "adventureitemstats-mc",       "repo": "bh679/adventureitemstats-mc" },
+    { "name": "playermob-mc",                "repo": "bh679/playermob-mc",        "path": "~/Projects/playermob-mc" },
+    { "name": "enderchestpersistence-mc",    "repo": "bh679/enderchestpersistence-mc" },
+    { "name": "TradeEverything",             "repo": "bh679/tradeeverything-mc",  "path": "~/Projects/TradeEverything" },
+    { "name": "discordpresence-mc",          "repo": "bh679/discordpresence-mc" },
+    { "name": "dp-relay",                    "repo": "bh679/dp-relay",            "path": "~/Projects/dp-relay" },
+    { "name": "dungeontotems-mc",            "repo": "bh679/dungeontotems-mc" },
+    { "name": "sablemobpaths-mc",            "repo": "bh679/sablemobpaths-mc" },
+    { "name": "ediblebackpacks-mc",          "repo": "bh679/ediblebackpacks-mc" },
+    { "name": "lostcityterrainfit-mc",       "repo": "bh679/lostcityterrainfit-mc" },
+    { "name": "dtmodverify-mc",              "repo": "bh679/dtmodverify-mc" },
+    { "name": "dungeonbackup-mc",            "repo": "bh679/dungeonbackup-mc" },
+    { "name": "keeptrim-mc",                 "repo": "bh679/keeptrim-mc" },
+    { "name": "pigmanvillagers-mc",          "repo": "bh679/pigmanvillagers-mc" },
+    { "name": "dpibypassdetect-mc",          "repo": "bh679/dpibypassdetect-mc" },
+    { "name": "streamdetect-mc",             "repo": "bh679/streamdetect-mc" },
+    { "name": "sable-fence-trapdoor-fix-mc", "repo": "bh679/sable-fence-trapdoor-fix-mc" },
+    { "name": "sableportals-mc",             "repo": "bh679/sableportals-mc" },
+    { "name": "compressedemeralds-mc",       "repo": "bh679/compressedemeralds-mc" },
+    { "name": "quickgif-mc",                 "repo": "bh679/quickgif-mc" }
   ]
 }
