@@ -1,0 +1,16 @@
+{
+  "id": "live-chat-skip-read-languages",
+  "version": "0.1813.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "No translations for languages you read",
+  "summary": "Live chat lines written in one of your Book languages now show as written, without a translation.",
+  "highlights": [],
+  "date": "2026-11-14",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
