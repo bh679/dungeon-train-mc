@@ -191,6 +191,13 @@
     {
       "id": "bed3",
       "weight": 1
+    },
+    {
+      "id": "respawnoblisk",
+      "weight": 1,
+      "phases": [
+        "END"
+      ]
     }
   ]
 }
