@@ -1,0 +1,17 @@
+{
+  "id": "sprint-fly-boost-fix",
+  "version": "0.1841.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Faster creative sprint-flying is back",
+  "summary": "Sprint-flying in creative is 3\u00d7 faster again, and /dt flyspeed changes its speed again. Normal flight and flying up or down are unchanged.",
+  "highlights": [],
+  "pr": 2677,
+  "date": "2026-11-15",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
