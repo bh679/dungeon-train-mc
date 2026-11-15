@@ -54,6 +54,8 @@ public final class NapWake {
     private static Plan planned;
     /** Naps loaded this session, waiting for {@link NapWakeEvents} to turn the player. Server thread. */
     private static final Map<UUID, NapSnapshot> WOKEN = new HashMap<>();
+    /** World-X a woken player is put on the train at, for the join placement. Server thread. */
+    private static final Map<UUID, Double> PLACE_AT = new HashMap<>();
 
     private NapWake() {}
 
@@ -95,8 +97,14 @@ public final class NapWake {
             return Optional.empty();
         }
         WOKEN.put(player.getUUID(), plan.nap());
+        PLACE_AT.put(player.getUUID(), plan.nap().x());
         LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
         return Optional.of(loadableTag(plan.nap().player(), server));
+    }
+
+    /** Where the join placement should put {@code player} on the train, once: a woken nap's X, else null. */
+    public static Double takePlacementX(UUID player) {
+        return PLACE_AT.remove(player);
     }
 
     static Optional<NapSnapshot> takeWoken(UUID player) {
@@ -106,6 +114,7 @@ public final class NapWake {
     static void clear() {
         planned = null;
         WOKEN.clear();
+        PLACE_AT.clear();
     }
 
     /** The nap's player tag with the old world's whereabouts removed, standing at this world's spawn. */

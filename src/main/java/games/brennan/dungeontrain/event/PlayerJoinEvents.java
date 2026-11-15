@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
+import games.brennan.dungeontrain.nap.NapWake;
 import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
 import games.brennan.dungeontrain.net.BookSuspensionSyncPacket;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
@@ -491,7 +492,11 @@ public final class PlayerJoinEvents {
         SpawnPlacement groundPose = new SpawnPlacement(
             target.px, target.py, target.pz, yaw, pitch,
             new BlockPos(Mth.floor(target.px), target.py, Mth.floor(target.pz)));
-        FlatbedTarget flat = computeFlatbedTarget(provider, data, trainCenter);
+        // A player woken from a nap lands on the pad nearest where they napped (the seed train was
+        // spawned there, NapWake), not on the train's front.
+        Double napX = NapWake.takePlacementX(player.getUUID());
+        FlatbedTarget flat = napX == null ? null : findNearestFlatbedTarget(trainLevel, data, napX);
+        if (flat == null) flat = computeFlatbedTarget(provider, data, trainCenter);
 
         // Face along travel (+X) — this is the view restored when the cinematic
         // releases control.
