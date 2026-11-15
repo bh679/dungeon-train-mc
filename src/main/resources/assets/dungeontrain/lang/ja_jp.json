@@ -1850,6 +1850,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "破棄して続行",
   "gui.dungeontrain.builder.unsaved.back": "戻る",
   "gui.dungeontrain.new_world": "新規ワールド",
+  "gui.dungeontrain.new_world.reboard": "再乗車",
   "gui.dungeontrain.localization_credits.prefix": "翻訳",
   "gui.dungeontrain.editor_help.title": "Dungeon Train エディター",
   "gui.dungeontrain.editor_help.welcome_1": "Dungeon Train エディター。",

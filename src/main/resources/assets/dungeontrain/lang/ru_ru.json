@@ -1953,6 +1953,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Отменить и продолжить",
   "gui.dungeontrain.builder.unsaved.back": "Назад",
   "gui.dungeontrain.new_world": "Новый мир",
+  "gui.dungeontrain.new_world.reboard": "Снова в путь",
   "gui.dungeontrain.localization_credits.prefix": "Локализация:",
   "gui.dungeontrain.editor_help.title": "Редактор Dungeon Train",
   "gui.dungeontrain.editor_help.welcome_1": "Редактор Dungeon Train.",

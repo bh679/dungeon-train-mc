@@ -1850,6 +1850,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "I-discard at magpatuloy",
   "gui.dungeontrain.builder.unsaved.back": "Bumalik",
   "gui.dungeontrain.new_world": "Bagong Mundo",
+  "gui.dungeontrain.new_world.reboard": "Muling sumakay",
   "gui.dungeontrain.localization_credits.prefix": "Isinalin ni",
   "gui.dungeontrain.editor_help.title": "Dungeon Train Editor",
   "gui.dungeontrain.editor_help.welcome_1": "Dungeon Train Editor.",

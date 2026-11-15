@@ -2479,6 +2479,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Renunță și continuă",
   "gui.dungeontrain.builder.unsaved.back": "Înapoi",
   "gui.dungeontrain.new_world": "Lume nouă",
+  "gui.dungeontrain.new_world.reboard": "Urcă din nou",
   "gui.dungeontrain.localization_credits.prefix": "Tradus de",
   "gui.dungeontrain.editor_help.title": "Editorul Dungeon Train",
   "gui.dungeontrain.editor_help.welcome_1": "Editorul Dungeon Train.",

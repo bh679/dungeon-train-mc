@@ -1850,6 +1850,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "버리고 계속",
   "gui.dungeontrain.builder.unsaved.back": "돌아가기",
   "gui.dungeontrain.new_world": "새 세계",
+  "gui.dungeontrain.new_world.reboard": "다시 탑승",
   "gui.dungeontrain.localization_credits.prefix": "현지화:",
   "gui.dungeontrain.editor_help.title": "Dungeon Train 편집기",
   "gui.dungeontrain.editor_help.welcome_1": "Dungeon Train 에디터.",

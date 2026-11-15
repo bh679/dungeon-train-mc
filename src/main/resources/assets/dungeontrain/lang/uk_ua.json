@@ -2476,6 +2476,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Відкинути й продовжити",
   "gui.dungeontrain.builder.unsaved.back": "Назад",
   "gui.dungeontrain.new_world": "Новий світ",
+  "gui.dungeontrain.new_world.reboard": "Сісти знову",
   "gui.dungeontrain.localization_credits.prefix": "Переклад:",
   "gui.dungeontrain.editor_help.title": "Редактор Dungeon Train",
   "gui.dungeontrain.editor_help.welcome_1": "Редактор Dungeon Train.",

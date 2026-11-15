@@ -1850,6 +1850,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Buang dan lanjutkan",
   "gui.dungeontrain.builder.unsaved.back": "Kembali",
   "gui.dungeontrain.new_world": "Dunia Baru",
+  "gui.dungeontrain.new_world.reboard": "Naik kembali",
   "gui.dungeontrain.localization_credits.prefix": "Dilokalkan oleh",
   "gui.dungeontrain.editor_help.title": "Editor Dungeon Train",
   "gui.dungeontrain.editor_help.welcome_1": "Editor Dungeon Train.",

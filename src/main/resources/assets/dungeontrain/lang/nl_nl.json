@@ -1899,6 +1899,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Verwerpen en doorgaan",
   "gui.dungeontrain.builder.unsaved.back": "Terug",
   "gui.dungeontrain.new_world": "Nieuwe wereld",
+  "gui.dungeontrain.new_world.reboard": "Opnieuw instappen",
   "gui.dungeontrain.localization_credits.prefix": "Vertaald door",
   "gui.dungeontrain.editor_help.title": "Dungeon Train-editor",
   "gui.dungeontrain.editor_help.welcome_1": "Dungeon Train Editor.",

@@ -1840,6 +1840,7 @@
       "gui.dungeontrain.builder.unsaved.discard",
       "gui.dungeontrain.builder.unsaved.back",
       "gui.dungeontrain.new_world",
+      "gui.dungeontrain.new_world.reboard",
       "gui.dungeontrain.localization_credits.prefix",
       "gui.dungeontrain.editor_help.title",
       "gui.dungeontrain.editor_help.welcome_1",

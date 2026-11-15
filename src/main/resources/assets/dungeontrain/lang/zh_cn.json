@@ -1850,6 +1850,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "放弃并继续",
   "gui.dungeontrain.builder.unsaved.back": "返回",
   "gui.dungeontrain.new_world": "发车",
+  "gui.dungeontrain.new_world.reboard": "重新登车",
   "gui.dungeontrain.localization_credits.prefix": "汉化",
   "gui.dungeontrain.editor_help.title": "地牢列车编辑器",
   "gui.dungeontrain.editor_help.welcome_1": "欢迎使用地牢列车编辑器。",

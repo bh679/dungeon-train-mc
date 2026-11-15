@@ -1948,6 +1948,7 @@
   "gui.dungeontrain.builder.unsaved.discard": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "43c9d079f26ed82f"},
   "gui.dungeontrain.builder.unsaved.back": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6aadac2f2b7a6b8e"},
   "gui.dungeontrain.new_world": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "411b5590ae9bc2b5"},
+  "gui.dungeontrain.new_world.reboard": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "00416451afd4add1"},
   "gui.dungeontrain.localization_credits.prefix": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "5eecc6d0a157bf49"},
   "gui.dungeontrain.editor_help.title": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "a89c3895ef0bc843"},
   "gui.dungeontrain.editor_help.welcome_1": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "516e71fea14f5586"},

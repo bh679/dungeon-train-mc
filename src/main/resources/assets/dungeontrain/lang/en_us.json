@@ -2421,6 +2421,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Discard and continue",
   "gui.dungeontrain.builder.unsaved.back": "Go back",
   "gui.dungeontrain.new_world": "New World",
+  "gui.dungeontrain.new_world.reboard": "Reboard",
   "gui.dungeontrain.localization_credits.prefix": "Localized by",
   "gui.dungeontrain.editor_help.title": "Dungeon Train Editor",
   "gui.dungeontrain.editor_help.welcome_1": "Dungeon Train Editor.",

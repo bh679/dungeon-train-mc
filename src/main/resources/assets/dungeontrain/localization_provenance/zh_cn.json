@@ -1062,6 +1062,7 @@
       "gui.dungeontrain.builder.unsaved.save",
       "gui.dungeontrain.builder.unsaved.discard",
       "gui.dungeontrain.builder.unsaved.back",
+      "gui.dungeontrain.new_world.reboard",
       "gui.dungeontrain.editor_screen.tab.carriages",
       "gui.dungeontrain.editor_screen.tab.whole",
       "gui.dungeontrain.editor_screen.tab.contents",

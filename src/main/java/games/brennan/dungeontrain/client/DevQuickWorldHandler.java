@@ -88,6 +88,7 @@ public final class DevQuickWorldHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Component SINGLEPLAYER_KEY = Component.translatable("menu.singleplayer");
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.new_world");
+    private static final Component REBOARD_LABEL = Component.translatable("gui.dungeontrain.new_world.reboard");
     private static final Component SETTINGS_ICON_LABEL =
             Component.literal("⚙").withStyle(ChatFormatting.BOLD);
     /**
@@ -176,7 +177,7 @@ public final class DevQuickWorldHandler {
 
         // Dev row uses the SAME wide+square split as the survival row, so the two rows line up
         // whichever is showing — only the square's occupant differs (perf world vs settings).
-        Button creativeNewWorld = Button.builder(NEW_WORLD_LABEL,
+        Button creativeNewWorld = Button.builder(newWorldLabel(true),
                         b -> launchCreativeWorld(titleScreen))
                 .bounds(spX, spY, wideW, spH)
                 .build();
@@ -186,7 +187,7 @@ public final class DevQuickWorldHandler {
                 .bounds(spX + wideW + GAP, spY, iconW, spH)
                 .build();
 
-        Button survivalNewWorld = Button.builder(NEW_WORLD_LABEL,
+        Button survivalNewWorld = Button.builder(newWorldLabel(false),
                         b -> launchSurvivalWorld(titleScreen))
                 .bounds(survivalX, spY, survivalW, spH)
                 .build();
@@ -433,6 +434,23 @@ public final class DevQuickWorldHandler {
             i++;
         }
         return prefix + i;
+    }
+
+    /**
+     * "Reboard" when a nap is waiting for the run this button starts (its Free Play or Survival slot,
+     * at the next run's difficulty), since that run wakes the nap; otherwise "New World".
+     */
+    private static Component newWorldLabel(boolean freePlay) {
+        try {
+            java.util.UUID player = Minecraft.getInstance().getUser().getProfileId();
+            String slot = games.brennan.dungeontrain.nap.NapSlot.key(freePlay, ClientDisplayConfig.getNewRunDifficulty());
+            if (player != null && games.brennan.dungeontrain.nap.NapStore.local().load(player, slot).isPresent()) {
+                return REBOARD_LABEL;
+            }
+        } catch (RuntimeException e) {
+            LOGGER.debug("DevQuickWorld: nap check for the New World label failed", e);
+        }
+        return NEW_WORLD_LABEL;
     }
 
     private static void launchCreativeWorld(Screen lastScreen) {

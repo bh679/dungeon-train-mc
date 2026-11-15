@@ -39,8 +39,9 @@ import java.util.UUID;
  *       exactly as on a normal rejoin, and the normal first-join placement puts them on the deck.</li>
  * </ol>
  *
- * <p>The nap is used up at that login, before the player is in the world, so no crash can wake it
- * twice. {@link NapWakeEvents} turns the woken player to face the way they were heading.</p>
+ * <p>The nap is used up once the player has finished loading in ({@link #finishLoading}): placed on
+ * the train, or gone mid-load with its gear already in this world. A load that crashes part way
+ * keeps it for the next run. {@link NapWakeEvents} turns the woken player to face the way they were heading.</p>
  */
 public final class NapWake {
 
@@ -58,6 +59,8 @@ public final class NapWake {
     private static Plan planned;
     /** Naps loaded this session, waiting for {@link NapWakeEvents} to turn the player. Server thread. */
     private static final Map<UUID, NapSnapshot> WOKEN = new HashMap<>();
+    /** Naps loaded into this world but not yet used up (the player is still loading in). Server thread. */
+    private static final Map<UUID, Plan> LOADING = new HashMap<>();
     /** World-X a woken player is put on the train at, for the join placement. Server thread. */
     private static final Map<UUID, Double> PLACE_AT = new HashMap<>();
 
@@ -95,12 +98,9 @@ public final class NapWake {
         Plan plan = planned;
         if (plan == null || !plan.owner().equals(player.getUUID())) return Optional.empty();
         planned = null;
-        try {
-            NapStore.local().consume(plan.owner(), plan.slot(), plan.nap());
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Nap {} could not be marked used; not waking it.", plan.nap().napId(), e);
-            return Optional.empty();
-        }
+        // Used up once the player has finished loading in (finishLoading), not here: a load that dies
+        // part way keeps the nap for the next run.
+        LOADING.put(player.getUUID(), plan);
         // Not a new player: no welcome book and lightning. Marked before the login event, which reads it.
         NarrativeProgressData.get(server.overworld()).markStartingBookReceived(player.getUUID());
         // No advancement can be earned by the wake itself (landing on the train, the first tick in a biome).
@@ -109,6 +109,26 @@ public final class NapWake {
         PLACE_AT.put(player.getUUID(), plan.nap().x());
         LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
         return Optional.of(loadableTag(plan.nap().player(), server));
+    }
+
+    /**
+     * The woken player has finished loading in (placed on the train, or left mid-load with the nap's
+     * gear now in this world): the nap is used up, its file removed and its id recorded so a copy
+     * can't wake again. Safe to call more than once.
+     */
+    public static void finishLoading(UUID player) {
+        Plan plan = LOADING.remove(player);
+        if (plan == null) return;
+        try {
+            NapStore.local().consume(plan.owner(), plan.slot(), plan.nap());
+            LOGGER.info("[DungeonTrain] Nap {} loaded in and used up", plan.nap().napId());
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Nap {} could not be marked used", plan.nap().napId(), e);
+        }
+    }
+
+    static boolean isLoading(UUID player) {
+        return LOADING.containsKey(player);
     }
 
     /** Where the join placement should put {@code player} on the train, once: a woken nap's X, else null. */
@@ -122,6 +142,7 @@ public final class NapWake {
 
     static void clear() {
         planned = null;
+        LOADING.clear();
         WOKEN.clear();
         PLACE_AT.clear();
     }

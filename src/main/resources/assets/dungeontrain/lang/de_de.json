@@ -1899,6 +1899,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Verwerfen und fortfahren",
   "gui.dungeontrain.builder.unsaved.back": "Zurück",
   "gui.dungeontrain.new_world": "Neue Welt",
+  "gui.dungeontrain.new_world.reboard": "Wieder einsteigen",
   "gui.dungeontrain.localization_credits.prefix": "Lokalisiert von",
   "gui.dungeontrain.editor_help.title": "Dungeon-Train-Editor",
   "gui.dungeontrain.editor_help.welcome_1": "Dungeon-Train-Editor.",

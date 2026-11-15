@@ -54,6 +54,8 @@ public final class NapWakeEvents {
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        // Left before finishing: the nap's gear is in this world now, so it can't stay to wake again.
+        NapWake.finishLoading(event.getEntity().getUUID());
         TURNING.remove(event.getEntity().getUUID());
         NapWakeGrace.close(event.getEntity().getUUID());
     }
@@ -68,8 +70,14 @@ public final class NapWakeEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         NapWakeGrace.tick(PlayerJoinEvents::isPlacementPending);
-        if (TURNING.isEmpty()) return;
         MinecraftServer server = event.getServer();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (NapWake.isLoading(player.getUUID()) && player.tickCount >= 20
+                    && !PlayerJoinEvents.isPlacementPending(player.getUUID())) {
+                NapWake.finishLoading(player.getUUID());
+            }
+        }
+        if (TURNING.isEmpty()) return;
         Iterator<UUID> it = TURNING.iterator();
         while (it.hasNext()) {
             ServerPlayer player = server.getPlayerList().getPlayer(it.next());

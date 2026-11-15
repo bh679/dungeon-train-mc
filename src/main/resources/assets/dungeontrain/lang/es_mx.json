@@ -1899,6 +1899,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Descartar y continuar",
   "gui.dungeontrain.builder.unsaved.back": "Volver",
   "gui.dungeontrain.new_world": "Mundo nuevo",
+  "gui.dungeontrain.new_world.reboard": "Volver a subir",
   "gui.dungeontrain.localization_credits.prefix": "Traducido por",
   "gui.dungeontrain.editor_help.title": "Editor del Dungeon Train",
   "gui.dungeontrain.editor_help.welcome_1": "Editor de Dungeon Train.",

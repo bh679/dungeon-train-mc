@@ -1948,6 +1948,7 @@
   "gui.dungeontrain.builder.unsaved.discard": "Odrzuć i kontynuuj",
   "gui.dungeontrain.builder.unsaved.back": "Wróć",
   "gui.dungeontrain.new_world": "Nowy świat",
+  "gui.dungeontrain.new_world.reboard": "Wsiądź ponownie",
   "gui.dungeontrain.localization_credits.prefix": "Zlokalizował",
   "gui.dungeontrain.editor_help.title": "Edytor Dungeon Train",
   "gui.dungeontrain.editor_help.welcome_1": "Edytor Dungeon Train.",
