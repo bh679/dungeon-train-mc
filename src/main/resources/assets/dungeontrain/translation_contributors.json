@@ -8,7 +8,7 @@
         {
           "locale": "zh_cn",
           "contributed": 1530,
-          "total": 3864
+          "total": 3882
         }
       ]
     },
@@ -18,7 +18,7 @@
         {
           "locale": "ru_ru",
           "contributed": 976,
-          "total": 3974
+          "total": 3992
         }
       ]
     },
@@ -28,7 +28,7 @@
         {
           "locale": "uk_ua",
           "contributed": 146,
-          "total": 3974
+          "total": 3992
         }
       ]
     },
@@ -38,7 +38,7 @@
         {
           "locale": "ru_ru",
           "contributed": 41,
-          "total": 3974
+          "total": 3992
         }
       ]
     },
@@ -48,7 +48,7 @@
         {
           "locale": "vi_vn",
           "contributed": 30,
-          "total": 3850
+          "total": 3868
         }
       ]
     },
@@ -58,12 +58,12 @@
         {
           "locale": "zh_tw",
           "contributed": 14,
-          "total": 3864
+          "total": 3882
         },
         {
           "locale": "zh_cn",
           "contributed": 12,
-          "total": 3864
+          "total": 3882
         }
       ]
     },
@@ -73,7 +73,7 @@
         {
           "locale": "ru_ru",
           "contributed": 3,
-          "total": 3974
+          "total": 3992
         }
       ]
     },
@@ -83,7 +83,7 @@
         {
           "locale": "ko_kr",
           "contributed": 1,
-          "total": 3850
+          "total": 3868
         }
       ]
     },
@@ -93,7 +93,7 @@
         {
           "locale": "zh_cn",
           "contributed": 1,
-          "total": 3864
+          "total": 3882
         }
       ]
     },
@@ -103,7 +103,7 @@
         {
           "locale": "zh_cn",
           "contributed": 1,
-          "total": 3864
+          "total": 3882
         }
       ]
     },
@@ -113,7 +113,7 @@
         {
           "locale": "ru_ru",
           "contributed": 1,
-          "total": 3974
+          "total": 3992
         }
       ]
     }

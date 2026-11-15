@@ -6626,6 +6626,42 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.undead_commuter.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.heart_of_stone.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.seeing_red.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.party_of_one.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.no_container_100.description": {
     "1": {
       "label": "carriages to travel, from the requirement",

@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:loneliness_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.party_of_one.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.party_of_one.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "held": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "full_stack_loneliness_totem",
+        "threshold": 500
+      }
+    }
+  },
+  "requirements": [
+    [
+      "held"
+    ]
+  ]
+}

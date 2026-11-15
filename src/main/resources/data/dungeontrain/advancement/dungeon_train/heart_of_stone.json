@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:heartbreak_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.heart_of_stone.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.heart_of_stone.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "held": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "full_stack_heartbreak_totem",
+        "threshold": 500
+      }
+    }
+  },
+  "requirements": [
+    [
+      "held"
+    ]
+  ]
+}

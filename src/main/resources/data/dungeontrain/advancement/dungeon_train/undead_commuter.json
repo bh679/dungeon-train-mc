@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:zombification_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.undead_commuter.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.undead_commuter.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "commuted": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "undead_commuter",
+        "threshold": 1000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "commuted"
+    ]
+  ]
+}
