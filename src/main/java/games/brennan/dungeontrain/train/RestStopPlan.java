@@ -6,8 +6,8 @@ import java.util.function.IntPredicate;
 
 /**
  * Where the train's guaranteed <b>rest stops</b> sit: carriages whose contents are forced to the bed
- * room (the respawn-anchor room in the Nether, {@link #kindFor}), so a natural nap spot
- * ({@code nap/NapEligibility}) is never more than {@link #MAX_GAP} carriages away outside the End.
+ * room (the respawn-anchor room in the Nether, the obelisk room in the End, {@link #kindFor}), so a
+ * natural nap spot ({@code nap/NapEligibility}) is never more than {@link #MAX_GAP} carriages away.
  * Today's randomly rolled bed rooms stay on top of these and only shorten the gap.
  *
  * <p>Rest stop {@code k} opens a window at {@code k * SPACING + jitter(seed, k)}, jitter in
@@ -38,6 +38,8 @@ public final class RestStopPlan {
      * are never turned into anchors, nor anchors into beds.
      */
     public static final String NETHER_REST_STOP_CONTENTS = "respawnanchor";
+    /** The Respawn Obelisk room an End rest stop gets; none until a template with this id exists. */
+    public static final String END_REST_STOP_CONTENTS = "respawnoblisk";
 
     /** Decorrelates the jitter from every other {@code (seed, index)} roll. */
     private static final long SALT = 0x5EB7_57A9_D00DL;
@@ -73,12 +75,14 @@ public final class RestStopPlan {
 
     /** What a rest stop holds, by the phase it is generated in. */
     public enum Kind {
-        /** No rest stop: beds and anchors both explode here (the End core). */
+        /** No rest stop. */
         NONE,
         /** The bed room. */
         BEDS,
         /** The respawn-anchor room ({@link #NETHER_REST_STOP_CONTENTS}). */
-        ANCHORS;
+        ANCHORS,
+        /** The Respawn Obelisk room ({@link #END_REST_STOP_CONTENTS}). */
+        OBELISK;
 
         /** The contents id this kind of rest stop is forced to, or null for none. */
         public String contentsId() {
@@ -86,20 +90,22 @@ public final class RestStopPlan {
                 case NONE -> null;
                 case BEDS -> REST_STOP_CONTENTS;
                 case ANCHORS -> NETHER_REST_STOP_CONTENTS;
+                case OBELISK -> END_REST_STOP_CONTENTS;
             };
         }
     }
 
     /**
-     * Beds explode in the Nether and End cores ({@code BedBlockMixin}); respawn anchors work in the
-     * Nether and explode everywhere else ({@code RespawnAnchorBlockMixin}). So the Nether gets anchors,
-     * the End nothing yet, and every other stretch beds. The Deeper Dark's Otherside biomes are not
+     * Beds explode in the Nether and End cores ({@code BedBlockMixin}); respawn anchors work only in the
+     * Nether ({@code RespawnAnchorBlockMixin}) and Respawn Obelisks only in the End
+     * ({@code nap/RespawnObelisks}). So the Nether gets anchors, the End an obelisk, and every other
+     * stretch beds. The Deeper Dark's Otherside biomes are not
      * Nether biomes, so beds sleep there.
      */
     public static Kind kindFor(TrainPhase phase) {
         return switch (phase) {
             case NETHER -> Kind.ANCHORS;
-            case END -> Kind.NONE;
+            case END -> Kind.OBELISK;
             default -> Kind.BEDS;
         };
     }

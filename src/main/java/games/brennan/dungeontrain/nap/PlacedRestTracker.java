@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * The beds (both halves) and respawn anchors a <b>player placed</b> in one level, by packed block
+ * The beds (both halves), respawn anchors and Respawn Obelisks (all three parts) a <b>player placed</b> in one level, by packed block
  * position. A bed or anchor is a natural nap spot exactly when it is not in here ({@link NapEligibility}):
  * world generation, carriage and room stamping never pass through {@code BlockEvent.EntityPlaceEvent},
  * players always do.
@@ -98,9 +98,9 @@ public final class PlacedRestTracker extends SavedData {
     }
 
     private static BlockPos[] spots(BlockPos pos, BlockState state) {
-        return state.getBlock() instanceof BedBlock
-            ? new BlockPos[] {pos, otherHalf(pos, state)}
-            : new BlockPos[] {pos};
+        if (state.getBlock() instanceof BedBlock) return new BlockPos[] {pos, otherHalf(pos, state)};
+        if (RespawnObelisks.isObelisk(state)) return RespawnObelisks.parts(pos, state).toArray(BlockPos[]::new);
+        return new BlockPos[] {pos};
     }
 
     static BlockPos otherHalf(BlockPos pos, BlockState state) {

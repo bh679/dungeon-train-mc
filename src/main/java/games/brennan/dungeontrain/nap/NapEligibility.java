@@ -66,6 +66,10 @@ public final class NapEligibility {
             if (!HostileBandBeds.anchorWorks(level, pos)) return Spot.NONE;
             return placed.isPlayerPlaced(pos) ? Spot.MADE : Spot.NATURAL;
         }
+        if (RespawnObelisks.isObelisk(state)) {
+            if (!HostileBandBeds.obeliskWorks(level, pos)) return Spot.NONE;
+            return placed.isPlayerPlaced(RespawnObelisks.bottom(pos, state)) ? Spot.MADE : Spot.NATURAL;
+        }
         return Spot.NONE;
     }
 

@@ -61,10 +61,11 @@ final class RestStopPlanTest {
     }
 
     @Test
-    @DisplayName("Nether stops hold anchors, the End none, every other stretch beds")
+    @DisplayName("Nether stops hold anchors, the End an obelisk, every other stretch beds")
     void kindPerPhase() {
         assertEquals(RestStopPlan.Kind.ANCHORS, RestStopPlan.kindFor(TrainPhase.NETHER));
-        assertEquals(RestStopPlan.Kind.NONE, RestStopPlan.kindFor(TrainPhase.END));
+        assertEquals(RestStopPlan.Kind.OBELISK, RestStopPlan.kindFor(TrainPhase.END));
+        assertEquals("respawnoblisk", RestStopPlan.Kind.OBELISK.contentsId());
         assertEquals(RestStopPlan.Kind.BEDS, RestStopPlan.kindFor(TrainPhase.DEEPER_DARK));
         assertEquals(RestStopPlan.Kind.BEDS, RestStopPlan.kindFor(TrainPhase.OVERWORLD));
         assertEquals(RestStopPlan.Kind.BEDS, RestStopPlan.kindFor(TrainPhase.LOST_CITY));

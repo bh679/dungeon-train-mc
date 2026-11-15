@@ -41,6 +41,11 @@ public final class HostileBandBeds {
         return !level.dimensionType().bedWorks() || coreAt(level, pos) != Core.NONE;
     }
 
+    /** A Respawn Obelisk here works (it offers a nap) only in an End core; anywhere else it explodes. */
+    public static boolean obeliskWorks(ServerLevel level, BlockPos pos) {
+        return coreAt(level, pos) == Core.END;
+    }
+
     /** A respawn anchor here works as in the Nether; anywhere else a charged one explodes. */
     public static boolean anchorWorks(ServerLevel level, BlockPos pos) {
         return coreAt(level, pos) == Core.NETHER;

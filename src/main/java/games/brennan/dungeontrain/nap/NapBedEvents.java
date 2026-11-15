@@ -2,28 +2,31 @@ package games.brennan.dungeontrain.nap;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,7 +76,8 @@ public final class NapBedEvents {
         if (!(event.getEntity() instanceof Player player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockState state = event.getPlacedBlock();
-        if (state.getBlock() instanceof BedBlock || state.getBlock() instanceof RespawnAnchorBlock) {
+        if (state.getBlock() instanceof BedBlock || state.getBlock() instanceof RespawnAnchorBlock
+                || RespawnObelisks.isObelisk(state)) {
             Long used = TRAIN_BED_USE.remove(player.getUUID());
             boolean moved = state.getBlock() instanceof BedBlock && used != null && used == level.getGameTime();
             PlacedRestTracker.get(level).markPlaced(event.getPos(), state,
@@ -85,7 +89,8 @@ public final class NapBedEvents {
     public static void onBedBroken(BlockEvent.BreakEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockState state = event.getState();
-        if (state.getBlock() instanceof BedBlock || state.getBlock() instanceof RespawnAnchorBlock) {
+        if (state.getBlock() instanceof BedBlock || state.getBlock() instanceof RespawnAnchorBlock
+                || RespawnObelisks.isObelisk(state)) {
             PlacedRestTracker placed = PlacedRestTracker.get(level);
             if (state.getBlock() instanceof BedBlock && !placed.isPlayerPlaced(event.getPos())) {
                 // Natural: the bed item it drops (from whichever half drops) is the train's own.
@@ -94,6 +99,35 @@ public final class NapBedEvents {
             }
             placed.forget(event.getPos(), state);
         }
+    }
+
+    /**
+     * A Respawn Obelisk clicked in survival, decided here on the server before DT's disabled-block veto
+     * (which lets obelisks through so the click reaches the server). A natural one offers a nap in an End
+     * core (or says monsters are nearby) and explodes anywhere else. It never sets a spawn point, so the
+     * click is always consumed: what isn't a nap or an explosion stays as blocked as before.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onObeliskUse(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getLevel().isClientSide() || event.getEntity().isCreative()) return;
+        if (!(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
+        BlockPos pos = event.getPos();
+        BlockState state = level.getBlockState(pos);
+        if (!RespawnObelisks.isObelisk(state)) return;
+        boolean natural = !PlacedRestTracker.get(level).isPlayerPlaced(RespawnObelisks.bottom(pos, state));
+        InteractionResult result = InteractionResult.FAIL;
+        if (natural && !HostileBandBeds.obeliskWorks(level, pos)) {
+            RespawnObelisks.explode(level, pos, state);
+            result = InteractionResult.SUCCESS;
+        } else if (natural) {
+            NapService.Outcome outcome = NapService.offer(player, pos, false);
+            if (outcome == NapService.Outcome.OFFERED) result = InteractionResult.SUCCESS;
+            if (outcome == NapService.Outcome.MONSTERS) {
+                player.displayClientMessage(Component.translatable("block.minecraft.bed.not_safe"), true);
+            }
+        }
+        event.setCanceled(true);
+        event.setCancellationResult(result);
     }
 
     /** Marks the bed item a natural bed drops, so placing it again reads as "moved", not "made". */
