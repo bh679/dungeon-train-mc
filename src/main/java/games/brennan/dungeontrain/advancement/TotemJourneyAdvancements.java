@@ -20,10 +20,10 @@ import java.util.Optional;
 
 /**
  * The carriage-counted Dungeon Totems advancements: "Undead Commuter" (ride {@link #COMMUTE_CARTS} carriages
- * as a zombie, then be cured) and the "hold a full stack for {@link #STACK_CARTS} carriages" set
- * (Heart of Stone, Seeing Red, Party of One). Both are streaks on the effective travelled-carriage counter
- * ({@link AchievementEvents#effectiveTravelled}), shaped like the "no container" streak: remember the count
- * when the streak starts, award on the gap.
+ * as a zombie, then be cured) and the "hold a full stack for N carriages" set, which sits with it in one
+ * Challenges chain: Party of One (250) → Seeing Red (500) → Undead Commuter (1000) → Heart of Stone (1500).
+ * Both are streaks on the effective travelled-carriage counter ({@link AchievementEvents#effectiveTravelled}),
+ * shaped like the "no container" streak: remember the count when the streak starts, award on the gap.
  *
  * <p>Dungeon Totems is reached by id only (its {@code zombified} effect, its totem items), never by class, so
  * this loads without it and simply never fires.</p>
@@ -37,7 +37,11 @@ public final class TotemJourneyAdvancements {
     public static final int COMMUTE_CARTS = 1000;
     public static final String COMMUTE_ACTION = "undead_commuter";
 
-    public static final int STACK_CARTS = 500;
+    /** Totem advancement → its carriages when the datapack sets none (the JSON's {@code threshold} wins). */
+    static final Map<ResourceLocation, Integer> STACK_CARTS = Map.of(
+        dt("party_of_one"), 250,
+        dt("seeing_red"), 500,
+        dt("heart_of_stone"), 1500);
 
     /** Totem item → its advancement. Only totems that stack; a full stack is the item's own max stack size. */
     static final Map<ResourceLocation, ResourceLocation> STACK_ADVANCEMENTS = Map.of(
@@ -98,7 +102,7 @@ public final class TotemJourneyAdvancements {
             return;
         }
         ResourceLocation advancement = STACK_ADVANCEMENTS.get(streak.totem());
-        if (now - streak.startCarts() >= AdvancementRequirements.intValue(advancement, STACK_CARTS)) {
+        if (now - streak.startCarts() >= AdvancementRequirements.intValue(advancement, STACK_CARTS.get(advancement))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, stackAction(streak.totem()));
         }
     }

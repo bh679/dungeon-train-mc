@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "parent": "dungeontrain:dungeon_train/undead_commuter",
   "display": {
     "icon": {
       "id": "dungeontotems:heartbreak_totem"
@@ -20,7 +20,7 @@
       "trigger": "dungeontrain:gameplay_action",
       "conditions": {
         "actionId": "full_stack_heartbreak_totem",
-        "threshold": 500
+        "threshold": 1500
       }
     }
   },

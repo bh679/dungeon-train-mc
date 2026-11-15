@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "parent": "dungeontrain:dungeon_train/party_of_one",
   "display": {
     "icon": {
       "id": "dungeontotems:rage_totem"

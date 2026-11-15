@@ -69,6 +69,21 @@ class TotemJourneyAdvancementsTest {
         assertEquals(new TreeSet<>(totems), needed);
     }
 
+    @Test
+    @DisplayName("The code's fallback carriage counts match the shipped thresholds")
+    void fallbacksMatchJson() throws Exception {
+        for (Map.Entry<ResourceLocation, Integer> e : TotemJourneyAdvancements.STACK_CARTS.entrySet()) {
+            assertEquals(e.getValue(), thresholdOf(e.getKey()), e.getKey().toString());
+        }
+        assertEquals(TotemJourneyAdvancements.COMMUTE_CARTS, thresholdOf(TotemJourneyAdvancements.UNDEAD_COMMUTER));
+        assertEquals(TotemJourneyAdvancements.STACK_ADVANCEMENTS.size(), TotemJourneyAdvancements.STACK_CARTS.size());
+    }
+
+    private static int thresholdOf(ResourceLocation advancement) throws Exception {
+        return criteria(advancement.getPath()).entrySet().iterator().next().getValue().getAsJsonObject()
+            .getAsJsonObject("conditions").get("threshold").getAsInt();
+    }
+
     private static String actionOf(ResourceLocation advancement) throws Exception {
         return criteria(advancement.getPath()).entrySet().iterator().next().getValue().getAsJsonObject()
             .getAsJsonObject("conditions").get("actionId").getAsString();

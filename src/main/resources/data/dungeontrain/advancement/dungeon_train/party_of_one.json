@@ -20,7 +20,7 @@
       "trigger": "dungeontrain:gameplay_action",
       "conditions": {
         "actionId": "full_stack_loneliness_totem",
-        "threshold": 500
+        "threshold": 250
       }
     }
   },
