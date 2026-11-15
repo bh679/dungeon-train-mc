@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -81,13 +82,16 @@ public final class NapEligibility {
     /**
      * Vanilla's "monsters nearby" test for resting at {@code pos}: any monster within 8 blocks across
      * and 5 up or down that would keep the player awake. Creative players are never kept awake.
+     *
+     * <p>One change from vanilla: an enderman only counts while it is after this player. The End is full
+     * of calm ones, and counting them would rule out every nap at an obelisk there.</p>
      */
     public static boolean monstersNearby(ServerPlayer player, BlockPos pos) {
         if (player.isCreative()) return false;
         Vec3 c = Vec3.atBottomCenterOf(pos);
         return !player.level().getEntitiesOfClass(Monster.class,
             new AABB(c.x - 8.0, c.y - 5.0, c.z - 8.0, c.x + 8.0, c.y + 5.0, c.z + 8.0),
-            m -> m.isPreventingPlayerRest(player)).isEmpty();
+            m -> m.isPreventingPlayerRest(player) && (!(m instanceof EnderMan e) || e.getTarget() == player)).isEmpty();
     }
 
     private static boolean isBuilderWorld(ServerLevel level) {
