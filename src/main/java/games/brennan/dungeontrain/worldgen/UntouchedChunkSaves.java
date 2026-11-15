@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.portal.PortalRoomSaveHold;
 import games.brennan.dungeontrain.world.TouchedChunks;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.MinecraftServer;
@@ -11,6 +12,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ImposterProtoChunk;
 
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMaps;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -33,6 +37,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * <h2>When a chunk is still written</h2>
  * <ul>
  *   <li>A player changed it: it is kept as they left it, forever.</li>
+ *   <li>A dimensional carriage stands in it ({@link PortalRoomSaveHold}). Each relocation stamps the
+ *       room into new chunks that no player has changed; dropped, they came back as empty basement and
+ *       the next relocation carried the empty room on.</li>
  *   <li>The server is shutting down and a player was within view distance + {@link #KEEP_MARGIN_CHUNKS}
  *       when it began to ({@link #onServerStopping}; the players are gone by the time the worlds save), so
  *       reopening a world loads where you stood instead of generating it. Measured at the player's real
@@ -58,17 +65,19 @@ public final class UntouchedChunkSaves {
     private static volatile long[] stopSpots = new long[0];
     /** Chunks dropped this session, so a regenerated one can tell it lost what was done to the old copy. */
     private static final LongSet DROPPED_KEYS = LongSets.synchronize(new LongOpenHashSet());
+    /** Game time of each chunk's latest drop, so a room can tell its own blocks were lost after it was stamped. */
+    private static final Long2LongMap DROPPED_AT = Long2LongMaps.synchronize(new Long2LongOpenHashMap());
 
     private UntouchedChunkSaves() {}
 
     /** Why a chunk is written, or {@link #DROP}. */
-    public enum Verdict { DROP, OFF, NOT_OVERWORLD, TOUCHED, NEAR_PLAYER, MIRRORED, END_ISLANDS }
+    public enum Verdict { DROP, OFF, NOT_OVERWORLD, TOUCHED, PORTAL_ROOM, NEAR_PLAYER, MIRRORED, END_ISLANDS }
 
     /** Whether {@code ChunkMap#save} should skip {@code chunk}. Counts the verdict. Main thread. */
     public static boolean shouldSkipSave(ServerLevel level, ChunkAccess chunk) {
         ChunkAccess live = chunk instanceof ImposterProtoChunk imposter ? imposter.getWrapped() : chunk;
         boolean drop = verdict(level, live.getPos(), TouchedChunks.isTouched(level, live)) == Verdict.DROP;
-        if (drop) DROPPED_KEYS.add(live.getPos().toLong());
+        if (drop) recordDrop(live.getPos().toLong(), level.getGameTime());
         else KEPT.incrementAndGet();
         return drop;
     }
@@ -76,6 +85,18 @@ public final class UntouchedChunkSaves {
     /** Whether chunk {@code key} was dropped earlier this session. */
     public static boolean wasDropped(long key) {
         return DROPPED_KEYS.contains(key);
+    }
+
+    static void recordDrop(long key, long gameTime) {
+        DROPPED_KEYS.add(key);
+        DROPPED_AT.put(key, gameTime);
+    }
+
+    /** Whether chunk {@code key} was dropped at or after game time {@code sinceGameTime}. */
+    public static boolean droppedSince(long key, long sinceGameTime) {
+        synchronized (DROPPED_AT) {
+            return DROPPED_AT.containsKey(key) && DROPPED_AT.get(key) >= sinceGameTime;
+        }
     }
 
     /**
@@ -91,6 +112,7 @@ public final class UntouchedChunkSaves {
         if (!DungeonTrainCommonConfig.isDropUntouchedWorldGen()) return Verdict.OFF;
         if (!level.dimension().equals(Level.OVERWORLD)) return Verdict.NOT_OVERWORLD;
         if (touched) return Verdict.TOUCHED;
+        if (PortalRoomSaveHold.isHeld(pos.toLong())) return Verdict.PORTAL_ROOM;
         int keep = level.getServer().getPlayerList().getViewDistance() + KEEP_MARGIN_CHUNKS;
         if (!level.getServer().isRunning() && nearAnySpot(stopSpots, pos, keep)) return Verdict.NEAR_PLAYER;
         WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);
@@ -139,5 +161,6 @@ public final class UntouchedChunkSaves {
         KEPT.set(0L);
         stopSpots = new long[0];
         DROPPED_KEYS.clear();
+        DROPPED_AT.clear();
     }
 }

@@ -372,6 +372,19 @@ public final class PortalRoomMemory {
     }
 
     /** The chunk columns a room box at {@code origin} of {@code size} touches, each once. */
+    /**
+     * Whether a chunk of the room box at {@code roomOrigin} was dropped unsaved at or after
+     * {@code sinceGameTime}: what stands there now is regenerated basement, not the room.
+     */
+    public static boolean regeneratedSince(BlockPos roomOrigin, Vec3i size, long sinceGameTime) {
+        for (ChunkPos chunk : chunkSpan(roomOrigin, size)) {
+            if (games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.droppedSince(chunk.toLong(), sinceGameTime)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static List<ChunkPos> chunkSpan(BlockPos origin, Vec3i size) {
         int minCx = origin.getX() >> 4;
         int minCz = origin.getZ() >> 4;

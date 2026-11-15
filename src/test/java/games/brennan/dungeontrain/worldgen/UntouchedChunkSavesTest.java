@@ -26,6 +26,21 @@ class UntouchedChunkSavesTest {
     }
 
     @Test
+    void droppedSinceSeesOnlyDropsAtOrAfterTheGivenTime() {
+        UntouchedChunkSaves.resetCounts();
+        long key = ChunkPos.asLong(596, 0);
+        assertFalse(UntouchedChunkSaves.droppedSince(key, 0L));
+        UntouchedChunkSaves.recordDrop(key, 500L);
+        assertTrue(UntouchedChunkSaves.droppedSince(key, 400L));
+        assertTrue(UntouchedChunkSaves.droppedSince(key, 500L));
+        // Stamped after the drop: what stands there now is the room, written since.
+        assertFalse(UntouchedChunkSaves.droppedSince(key, 501L));
+        assertFalse(UntouchedChunkSaves.droppedSince(ChunkPos.asLong(597, 0), 0L));
+        UntouchedChunkSaves.resetCounts();
+        assertFalse(UntouchedChunkSaves.droppedSince(key, 0L));
+    }
+
+    @Test
     void nearIsASquareOfKeepChunksAroundThePlayer() {
         ChunkPos pos = new ChunkPos(100, -20);
         assertTrue(UntouchedChunkSaves.isNear(100, -20, pos, 14));

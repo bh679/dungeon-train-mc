@@ -654,6 +654,7 @@ public final class PortalCarriageEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         STRUCTURES.clear();
+        games.brennan.dungeontrain.portal.PortalRoomSaveHold.clear();
         STAMPED_AT.clear();
         EVICTED.clear();
         games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
@@ -1272,7 +1273,10 @@ public final class PortalCarriageEvents {
 
             PortalStructure next =
                 PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others, pair.getKey());
-            if (next != structure) STRUCTURES.put(pair.getKey(), next);
+            if (next != structure) {
+                STRUCTURES.put(pair.getKey(), next);
+                games.brennan.dungeontrain.portal.PortalRoomSaveHold.hold(pair.getKey(), structureBox(dims, next));
+            }
             if (occupiedPairs.contains(pair.getKey())) occupiedStructures.add(next);
 
             sendFogFor(players, dims, layout, next, fogged);
@@ -2718,13 +2722,23 @@ public final class PortalCarriageEvents {
             // A drifting room somebody has built in — or one lent by another world — is re-laid as
             // it stands, not re-rolled from the template. Captured while the old blocks are still
             // there, before the erase below; null means the template will do.
-            games.brennan.dungeontrain.portal.PortalRoomBlob carried =
-                SharedRoomEvents.captureForRelocation(pairKey);
-            // Any other room a player has been in is carried the same way, from this world's own
-            // memory — otherwise the template re-lays every block they mined and refills every chest.
-            if (carried == null) carried = rememberIfTouched(level, dims, pairKey, existing);
-            else if (PortalRoomMemory.isTouched(pairKey)) {
-                PortalRoomMemory.remember(level, pairKey, existing.roomName(), carried.snapshot());
+            games.brennan.dungeontrain.portal.PortalRoomBlob carried;
+            if (regeneratedSinceStamp(level, dims, pairKey, existing)) {
+                // Its chunks were dropped unsaved after it was stamped and came back as empty
+                // basement: a capture now would carry an empty room on and overwrite the good copy in
+                // memory. The last copy remembered is the room as it was left.
+                carried = recallRemembered(level, pairKey, planned);
+                LOGGER.warn("[DungeonTrain] Portal pair {} room '{}' was regenerated since it was stamped — "
+                        + "not captured; laying {}", pairKey, existing.roomName(),
+                    carried == null ? "the template" : "its remembered copy");
+            } else {
+                carried = SharedRoomEvents.captureForRelocation(pairKey);
+                // Any other room a player has been in is carried the same way, from this world's own
+                // memory — otherwise the template re-lays every block they mined and refills every chest.
+                if (carried == null) carried = rememberIfTouched(level, dims, pairKey, existing);
+                else if (PortalRoomMemory.isTouched(pairKey)) {
+                    PortalRoomMemory.remember(level, pairKey, existing.roomName(), carried.snapshot());
+                }
             }
             if (carried != null) planned = planned.withBlob(carried);
             // The room's OWN mobs go with the room, before anything is carried: the stamp below rolls
@@ -2776,6 +2790,9 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
+        // Smaller saves must write where the room now stands: DT's stamp is not a player change, and
+        // a dropped site comes back as empty basement for the next relocation to carry on.
+        games.brennan.dungeontrain.portal.PortalRoomSaveHold.hold(pairKey, structureBox(dims, planned));
         EVICTED.remove(pairKey);
         // Only once the room is standing: a plan abandoned above must not leave a pair marked.
         if (ownShelfBoost) DungeonTrainWorldData.get(level).markOwnShelfPair(pairKey);
@@ -2836,6 +2853,7 @@ public final class PortalCarriageEvents {
     private static void evictStructure(ServerLevel level, CarriageDims dims, int pairKey, int byPair) {
         PortalStructure structure = STRUCTURES.remove(pairKey);
         if (structure == null) return;
+        games.brennan.dungeontrain.portal.PortalRoomSaveHold.release(pairKey);
         games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
         // Its drifting room goes back to the relay with whatever was last built in it — before the
         // erase, while the blocks can still be read. The evicted record keeps the room it rolled but
@@ -2892,6 +2910,20 @@ public final class PortalCarriageEvents {
         for (PortalRoomTiling.Tile tile : structure.tiling().tiles()) {
             games.brennan.dungeontrain.portal.PortalRoomTiler.rememberTile(level, dims, structure, tile, pairKey);
         }
+    }
+
+    /**
+     * Whether any chunk of {@code structure}'s room was dropped unsaved (Smaller saves) since the pair
+     * was last stamped. {@code PortalRoomSaveHold} keeps that from happening; this is the backstop, so a
+     * room that slips through is restored from memory rather than carried on empty.
+     */
+    private static boolean regeneratedSinceStamp(ServerLevel level, CarriageDims dims, int pairKey,
+                                                 PortalStructure structure) {
+        Long stampedAt = STAMPED_AT.get(pairKey);
+        if (stampedAt == null) return false;
+        BlockPos roomOrigin = structure.roomOrigin(dims,
+            PortalCarriageBuilder.layoutFor(dims, structure.kind()));
+        return PortalRoomMemory.regeneratedSince(roomOrigin, structure.roomSize(), stampedAt);
     }
 
     /** Pair {@code pairKey}'s remembered room as a blob for {@code planned}, or null to use the template. */
