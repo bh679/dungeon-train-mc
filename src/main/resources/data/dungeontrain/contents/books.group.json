@@ -175,6 +175,17 @@
         "LOST_CITY",
         "DEEPER_DARK"
       ]
+    },
+    {
+      "id": "respawnanchor",
+      "weight": 4,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "id": "bed2",
+      "weight": 1
     }
   ]
 }
