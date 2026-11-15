@@ -151,6 +151,9 @@ class GlobalAchievementStoreTest {
         write(normalFile(dir), "normal", GAMEPLAY);          // creates the key
         InstallKey.useDirectoryForTests(dir);                 // a new session: the key already exists
         Files.writeString(normalFile(dir), "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        // Written after the key: pinned, since a coarse file clock can give both the same date.
+        Files.setLastModifiedTime(normalFile(dir), java.nio.file.attribute.FileTime.from(
+            Files.getLastModifiedTime(dir.resolve(".install-key")).toInstant().plusSeconds(60)));
         GlobalAchievementStore.Profile profile = GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal");
         assertTrue(profile.granted().isEmpty());
         assertEquals(Set.of(GAMEPLAY), profile.absorbed());
