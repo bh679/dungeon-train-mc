@@ -1886,7 +1886,7 @@ public final class ContainerContentsRoller {
     }
 
     /** Splittable-mix of the deterministic-roll inputs. */
-    static long mix(BlockPos localPos, long worldSeed, int carriageIndex, int slot, long salt) {
+    private static long mix(BlockPos localPos, long worldSeed, int carriageIndex, int slot, long salt) {
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
             ^ ((long) localPos.getY() * MIX_Y)
@@ -1978,7 +1978,7 @@ public final class ContainerContentsRoller {
     static ContainerContentsPool withoutContents(ContainerContentsPool pool) {
         List<ContainerContentsEntry> out = new ArrayList<>(pool.size());
         for (ContainerContentsEntry e : pool.entries()) out.add(e.contents() == null ? e : e.withContents(null));
-        return new ContainerContentsPool(out, pool.fillMin(), pool.fillMax(), pool.vaultKey(), pool.trappedChance());
+        return new ContainerContentsPool(out, pool.fillMin(), pool.fillMax(), pool.vaultKey());
     }
 
     /** Swap where {@code contents} prefab ids resolve; tests only. Returns the lookup it replaced. */

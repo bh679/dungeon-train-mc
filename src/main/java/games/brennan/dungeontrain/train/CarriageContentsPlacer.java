@@ -765,15 +765,10 @@ public final class CarriageContentsPlacer {
             // Single read-through — store.poolAt resolves a link if present,
             // else returns the local pool, else empty. Empty → skip.
             games.brennan.dungeontrain.editor.ContainerContentsPool pool = store.poolAt(localPos);
-            if (pool.isEmpty() && pool.isDefaultTrapped()) continue;
+            if (pool.isEmpty()) continue;
             BlockPos world = origin.offset(ContentsFlip.mapLocal(localPos, size, flip));
             if (mask.covers(world)) continue;
-            if (!pool.isEmpty()) rollAndApplyPool(level, world, localPos, pool, seed, carriageIndex);
-            // After the roll, so the trapped chest takes the rolled loot with it.
-            if (!pool.isDefaultTrapped()) {
-                games.brennan.dungeontrain.editor.TrappedChestRoll.swapPlaced(
-                    level, world, localPos, pool, seed, carriageIndex);
-            }
+            rollAndApplyPool(level, world, localPos, pool, seed, carriageIndex);
         }
         // Second pass: cells with NEITHER a variant entry NOR a store pool/link
         // never reach the loop above at all — e.g. a bookshelf baked directly

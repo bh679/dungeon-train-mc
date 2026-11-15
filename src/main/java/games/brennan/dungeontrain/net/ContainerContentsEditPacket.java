@@ -84,11 +84,7 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
          * Pack a shulker box entry from the loot prefab the author holds, or empty it when they hold no
          * loot prefab. The prefab id comes from the server's view of the held item, never the packet.
          */
-        SET_CONTENTS,
-        /** Step a plain chest's trapped-chest chance by {@code delta} percent, wrapping 0 and 100. */
-        BUMP_TRAPPED_CHANCE,
-        /** Typed trapped-chest chance from the cmd-click number pad: {@code delta} is the percent. */
-        SET_TRAPPED_CHANCE
+        SET_CONTENTS
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =

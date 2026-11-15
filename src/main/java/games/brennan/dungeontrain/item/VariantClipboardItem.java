@@ -153,7 +153,6 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_FILL_MAX = "fmax";
     /** A vault's unlock key; absent means the default trial key. */
     private static final String NBT_POOL_VAULT_KEY = "vkey";
-    private static final String NBT_POOL_TRAPPED = "trap";
     private static final String NBT_POOL_ENTRIES = "e";
     private static final String NBT_POOL_ENTRY_ID = "id";
     private static final String NBT_POOL_ENTRY_COUNT = "c";
@@ -515,9 +514,6 @@ public final class VariantClipboardItem extends Item {
         if (!pool.isDefaultVaultKey()) {
             tag.putString(NBT_POOL_VAULT_KEY, pool.vaultKey());
         }
-        if (!pool.isDefaultTrapped()) {
-            tag.putInt(NBT_POOL_TRAPPED, pool.trappedChance());
-        }
         ListTag entries = new ListTag();
         for (ContainerContentsEntry e : pool.entries()) {
             CompoundTag et = new CompoundTag();
@@ -552,7 +548,6 @@ public final class VariantClipboardItem extends Item {
             ? pt.getInt(NBT_POOL_FILL_MAX) : ContainerContentsPool.FILL_ALL;
         String vaultKey = pt.contains(NBT_POOL_VAULT_KEY, Tag.TAG_STRING)
             ? pt.getString(NBT_POOL_VAULT_KEY) : ContainerContentsPool.DEFAULT_VAULT_KEY;
-        int trappedChance = pt.contains(NBT_POOL_TRAPPED, Tag.TAG_INT) ? pt.getInt(NBT_POOL_TRAPPED) : 0;
         List<ContainerContentsEntry> entries = new ArrayList<>();
         if (pt.contains(NBT_POOL_ENTRIES, Tag.TAG_LIST)) {
             ListTag list = pt.getList(NBT_POOL_ENTRIES, Tag.TAG_COMPOUND);
@@ -584,7 +579,7 @@ public final class VariantClipboardItem extends Item {
                         ? et.getString(NBT_POOL_ENTRY_CONTENTS) : null));
             }
         }
-        return new ContainerContentsPool(entries, fillMin, fillMax, vaultKey, trappedChance);
+        return new ContainerContentsPool(entries, fillMin, fillMax, vaultKey);
     }
 
     /** Decode the variant list from an ItemStack's NBT. Empty list when malformed. */

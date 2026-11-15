@@ -87,11 +87,7 @@ public final class ContainerContentsMenu {
         /** The 'X' on the link sub-row — click to unlink. */
         LINK_UNLINK,
         /** The Key row on a vault — click to step the key that unlocks it. */
-        VAULT_KEY,
-        /** Toolbar cell on a plain chest: show / hide the trapped-chest row. */
-        TRAP_TOGGLE,
-        /** The trapped-chest row: step (or type) the percent chance a spawned copy is trapped. */
-        TRAPPED_CHANCE
+        VAULT_KEY
     }
 
     public record Hit(CellKind kind, int index) {
@@ -120,10 +116,6 @@ public final class ContainerContentsMenu {
     @Nullable private static String linkedPrefabId;
     /** The vault's unlock key, or null when the target is not a vault. */
     @Nullable private static String vaultKey;
-    /** The plain chest's trapped-chest chance, or null when the target is not a plain chest. */
-    @Nullable private static Integer trappedChance;
-    /** The trapped-chest row is shown. Client-only, closed again on every new cell. */
-    private static boolean trapRowOpen;
 
     /**
      * Entry indices whose name is currently revealed beside the icon. Cleared
@@ -164,11 +156,6 @@ public final class ContainerContentsMenu {
     public static Vec3 anchorNormal() { return anchorNormal; }
     @Nullable public static String linkedPrefabId() { return linkedPrefabId; }
     @Nullable public static String vaultKey() { return vaultKey; }
-    @Nullable public static Integer trappedChance() { return trappedChance; }
-    public static boolean trapRowOpen() { return trapRowOpen && trappedChance != null; }
-
-    /** Show / hide the trapped-chest row. Purely client-side. */
-    public static void toggleTrapRow() { trapRowOpen = !trapRowOpen; }
     public static Screen screen() { return screen; }
     public static String searchBuffer() { return searchBuffer; }
     public static int bookRow() { return bookRow; }
@@ -192,8 +179,6 @@ public final class ContainerContentsMenu {
             entries = Collections.emptyList();
             linkedPrefabId = null;
             vaultKey = null;
-            trappedChance = null;
-            trapRowOpen = false;
             screen = Screen.ROOT;
             searchBuffer = "";
             hovered = Hit.NONE;
@@ -220,9 +205,7 @@ public final class ContainerContentsMenu {
         anchorNormal = anchorRight.cross(anchorUp).normalize();
         linkedPrefabId = packet.linkedPrefabId();
         vaultKey = packet.vaultKey();
-        trappedChance = packet.trappedChance();
         if (newCell) {
-            trapRowOpen = false;
             screen = Screen.ROOT;
             searchBuffer = "";
         }

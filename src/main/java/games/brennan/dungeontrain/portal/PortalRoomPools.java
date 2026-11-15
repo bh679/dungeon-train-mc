@@ -4,7 +4,6 @@ import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
-import games.brennan.dungeontrain.editor.TrappedChestRoll;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import net.minecraft.core.BlockPos;
@@ -59,12 +58,8 @@ final class PortalRoomPools {
         for (BlockPos local : cellsToRoll(poolCells, variantCells, size,
                 local -> mask.covers(roomOrigin.offset(local)))) {
             ContainerContentsPool pool = store.poolAt(local);
-            BlockPos world = roomOrigin.offset(local);
-            if (!pool.isEmpty()) rollInto(level, world, local, pool, worldSeed, variantIndex, pairKey);
-            // After the roll, so the trapped chest takes the rolled loot with it.
-            if (!pool.isDefaultTrapped()) {
-                TrappedChestRoll.swapPlaced(level, world, local, pool, worldSeed, variantIndex);
-            }
+            if (pool.isEmpty()) continue;
+            rollInto(level, roomOrigin.offset(local), local, pool, worldSeed, variantIndex, pairKey);
         }
     }
 

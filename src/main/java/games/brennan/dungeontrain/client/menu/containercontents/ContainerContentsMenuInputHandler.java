@@ -127,7 +127,7 @@ public final class ContainerContentsMenuInputHandler {
         if (ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ROOT) return false;
         return switch (hit.kind()) {
             case FILL_MIN, FILL_MAX, ENTRY_COUNT_PLUS, ENTRY_WEIGHT_PLUS, ENTRY_DUR_CHANCE, ENTRY_ENCH_CHANCE,
-                 ENTRY_BOOK_ENCH, ENTRY_BOOK_LEVEL, TRAPPED_CHANCE -> true;
+                 ENTRY_BOOK_ENCH, ENTRY_BOOK_LEVEL -> true;
             default -> false;
         };
     }
@@ -249,14 +249,6 @@ public final class ContainerContentsMenuInputHandler {
                 ContainerContentsEditPacket.Op.UNLINK, plotKey, local, -1, "", 0));
             case VAULT_KEY -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.CYCLE_VAULT_KEY, plotKey, local, -1, "", 0));
-            // Client-only: the next render picks the row up from the shared layout.
-            case TRAP_TOGGLE -> ContainerContentsMenu.toggleTrapRow();
-            case TRAPPED_CHANCE -> {
-                Integer chance = ContainerContentsMenu.trappedChance();
-                if (chance == null) return;
-                NumberStepper.click(trappedNumber(chance, plotKey, local),
-                    button, shift, MenuClickModifiers.cmdDown(), pad());
-            }
             // LINK_INDICATOR is informational — no click action.
             default -> {}
         }
@@ -278,15 +270,6 @@ public final class ContainerContentsMenuInputHandler {
             () -> send(ContainerContentsEditPacket.Op.BUMP_FILL_MAX, plotKey, local, -1, 1),
             () -> send(ContainerContentsEditPacket.Op.BUMP_FILL_MAX, plotKey, local, -1, -1),
             v -> send(ContainerContentsEditPacket.Op.SET_FILL_MAX, plotKey, local, -1, v));
-    }
-
-    /** A plain chest's trapped-chest chance: steps by {@link #CHANCE_STEP}, wrapping 0 and 100. */
-    private static NumberField trappedNumber(int chance, String plotKey, net.minecraft.core.BlockPos local) {
-        return new NumberField(NumberTitle.of("trapped_chance"), chance, 0,
-            ContainerContentsPool.MAX_TRAPPED_CHANCE, false,
-            () -> send(ContainerContentsEditPacket.Op.BUMP_TRAPPED_CHANCE, plotKey, local, -1, CHANCE_STEP),
-            () -> send(ContainerContentsEditPacket.Op.BUMP_TRAPPED_CHANCE, plotKey, local, -1, -CHANCE_STEP),
-            v -> send(ContainerContentsEditPacket.Op.SET_TRAPPED_CHANCE, plotKey, local, -1, v));
     }
 
     /** One entry's count, weight or chance cell. */
