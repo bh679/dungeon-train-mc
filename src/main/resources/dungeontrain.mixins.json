@@ -53,6 +53,7 @@
     "PlayerAdvancementsMultiplayerGateMixin",
     "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
+    "RespawnAnchorBlockMixin",
     "EnderChestBlockLabelMixin",
     "ServerPlayerBedSpawnMixin",
     "BucketItemMixin",

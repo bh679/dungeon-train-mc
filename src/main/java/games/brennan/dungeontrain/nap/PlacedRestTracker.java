@@ -10,9 +10,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * The beds a <b>player placed</b> in one level, both halves, by packed block position. A bed is a
- * natural nap bed exactly when it is not in here ({@link NapEligibility}): world generation, carriage
- * and room stamping never pass through {@code BlockEvent.EntityPlaceEvent}, players always do.
+ * The beds (both halves) and respawn anchors a <b>player placed</b> in one level, by packed block
+ * position. A bed or anchor is a natural nap spot exactly when it is not in here ({@link NapEligibility}):
+ * world generation, carriage and room stamping never pass through {@code BlockEvent.EntityPlaceEvent},
+ * players always do.
  *
  * <p>Breaking a natural bed and placing its item again therefore makes it a player-made bed, which is
  * Brennan's "broken or player made beds won't work". Carriage beds live in Sable plot space, whose
@@ -22,28 +23,28 @@ import net.minecraft.world.level.saveddata.SavedData;
  * that vanished another way can only make a later natural bed at that exact spot look player-made,
  * which costs a prompt, never grants one.</p>
  */
-public final class PlacedBedTracker extends SavedData {
+public final class PlacedRestTracker extends SavedData {
 
     public static final String NAME = "dungeontrain_placed_beds";
     private static final String TAG_POSITIONS = "positions";
 
     private final LongOpenHashSet positions;
 
-    private PlacedBedTracker(LongOpenHashSet positions) {
+    private PlacedRestTracker(LongOpenHashSet positions) {
         this.positions = positions;
     }
 
-    public static PlacedBedTracker get(ServerLevel level) {
+    public static PlacedRestTracker get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(() -> new PlacedBedTracker(new LongOpenHashSet()),
+            new SavedData.Factory<>(() -> new PlacedRestTracker(new LongOpenHashSet()),
                 (tag, registries) -> load(tag)),
             NAME);
     }
 
-    private static PlacedBedTracker load(CompoundTag tag) {
+    private static PlacedRestTracker load(CompoundTag tag) {
         LongOpenHashSet set = new LongOpenHashSet();
         for (long packed : tag.getLongArray(TAG_POSITIONS)) set.add(packed);
-        return new PlacedBedTracker(set);
+        return new PlacedRestTracker(set);
     }
 
     @Override
@@ -52,7 +53,7 @@ public final class PlacedBedTracker extends SavedData {
         return tag;
     }
 
-    /** Records both halves of the bed whose half {@code state} stands at {@code pos}. */
+    /** Records the anchor, or both halves of the bed, whose block {@code state} stands at {@code pos}. */
     public void markPlaced(BlockPos pos, BlockState state) {
         boolean changed = positions.add(pos.asLong());
         if (state.getBlock() instanceof BedBlock) {
@@ -61,7 +62,7 @@ public final class PlacedBedTracker extends SavedData {
         if (changed) setDirty();
     }
 
-    /** Forgets both halves of the bed whose half {@code state} stands at {@code pos}. */
+    /** Forgets the anchor, or both halves of the bed, whose block {@code state} stands at {@code pos}. */
     public void forget(BlockPos pos, BlockState state) {
         boolean changed = positions.remove(pos.asLong());
         if (state.getBlock() instanceof BedBlock) {

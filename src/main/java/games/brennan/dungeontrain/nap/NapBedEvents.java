@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -29,7 +30,8 @@ import java.util.UUID;
  *       ({@link Player#isSleepingLongEnough}), once per sleep.</li>
  * </ul>
  *
- * <p>Also feeds {@link PlacedBedTracker}: a bed a player places is recorded, and forgotten when broken.</p>
+ * <p>Also feeds {@link PlacedRestTracker}: a bed or respawn anchor a player places is recorded, and
+ * forgotten when broken. Anchors offer their nap from {@code RespawnAnchorBlockMixin}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NapBedEvents {
@@ -44,8 +46,8 @@ public final class NapBedEvents {
         if (!(event.getEntity() instanceof Player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockState state = event.getPlacedBlock();
-        if (state.getBlock() instanceof BedBlock) {
-            PlacedBedTracker.get(level).markPlaced(event.getPos(), state);
+        if (state.getBlock() instanceof BedBlock || state.getBlock() instanceof RespawnAnchorBlock) {
+            PlacedRestTracker.get(level).markPlaced(event.getPos(), state);
         }
     }
 
@@ -53,8 +55,8 @@ public final class NapBedEvents {
     public static void onBedBroken(BlockEvent.BreakEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockState state = event.getState();
-        if (state.getBlock() instanceof BedBlock) {
-            PlacedBedTracker.get(level).forget(event.getPos(), state);
+        if (state.getBlock() instanceof BedBlock || state.getBlock() instanceof RespawnAnchorBlock) {
+            PlacedRestTracker.get(level).forget(event.getPos(), state);
         }
     }
 

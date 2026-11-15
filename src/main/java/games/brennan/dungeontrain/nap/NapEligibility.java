@@ -8,16 +8,18 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Whether a bed offers a nap: save the player, quit, and delete the world ({@link NapService}).
+ * Whether a bed or respawn anchor offers a nap: save the player, quit, and delete the world
+ * ({@link NapService}).
  *
  * <p>Singleplayer only for now: the integrated server's owner, alone on it (no LAN guests), in a
- * real run world (one that starts with a train, not the Train Builder or Editor). The bed must be
- * natural ({@link PlacedBedTracker}). Beds that would explode never get here: the real Nether and
- * End and DT's band cores blow them up before vanilla reaches the sleep attempt
- * ({@code BedBlockMixin}).</p>
+ * real run world (one that starts with a train, not the Train Builder or Editor). The spot must be
+ * natural ({@link PlacedRestTracker}) and must work where it stands now ({@link HostileBandBeds}): a
+ * bed that would explode, in a Nether or End core, never offers a nap, and an anchor only offers one
+ * in the Nether. A carriage bed asleep as the train rolls into the Nether loses its night prompt.</p>
  */
 public final class NapEligibility {
 
@@ -35,17 +37,26 @@ public final class NapEligibility {
         return DungeonTrainWorldData.get(server.overworld()).startsWithTrain();
     }
 
-    /** Whether the bed standing at {@code pos} counts as natural. */
+    /** Whether the bed standing at {@code pos} counts as natural and sleeps (rather than exploding) here. */
     public static boolean isNaturalBed(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof BedBlock)) return false;
-        PlacedBedTracker placed = PlacedBedTracker.get(level);
-        return !placed.isPlayerPlaced(pos) && !placed.isPlayerPlaced(PlacedBedTracker.otherHalf(pos, state));
+        PlacedRestTracker placed = PlacedRestTracker.get(level);
+        if (placed.isPlayerPlaced(pos) || placed.isPlayerPlaced(PlacedRestTracker.otherHalf(pos, state))) return false;
+        return !HostileBandBeds.bedExplodes(level, pos);
     }
 
-    /** Both halves: a natural bed in a run that allows a nap. */
-    public static boolean canNap(ServerPlayer player, BlockPos bedPos) {
-        return runAllowsNap(player) && isNaturalBed(player.serverLevel(), bedPos);
+    /** Whether the respawn anchor at {@code pos} counts as natural and works (rather than exploding) here. */
+    public static boolean isNaturalAnchor(ServerLevel level, BlockPos pos) {
+        if (!(level.getBlockState(pos).getBlock() instanceof RespawnAnchorBlock)) return false;
+        return !PlacedRestTracker.get(level).isPlayerPlaced(pos) && HostileBandBeds.anchorWorks(level, pos);
+    }
+
+    /** Both halves: a natural bed or anchor that works here, in a run that allows a nap. */
+    public static boolean canNap(ServerPlayer player, BlockPos spot) {
+        if (!runAllowsNap(player)) return false;
+        ServerLevel level = player.serverLevel();
+        return isNaturalBed(level, spot) || isNaturalAnchor(level, spot);
     }
 
     private static boolean isBuilderWorld(ServerLevel level) {

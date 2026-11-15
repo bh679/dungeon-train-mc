@@ -61,12 +61,12 @@ final class RestStopPlanTest {
     }
 
     @Test
-    @DisplayName("no rest stops where beds explode")
-    void bedPhases() {
-        assertFalse(RestStopPlan.phaseAllowsBeds(TrainPhase.NETHER));
-        assertFalse(RestStopPlan.phaseAllowsBeds(TrainPhase.END));
-        assertFalse(RestStopPlan.phaseAllowsBeds(TrainPhase.DEEPER_DARK));
-        assertTrue(RestStopPlan.phaseAllowsBeds(TrainPhase.OVERWORLD));
-        assertTrue(RestStopPlan.phaseAllowsBeds(TrainPhase.LOST_CITY));
+    @DisplayName("Nether stops hold anchors, the End none, every other stretch beds")
+    void kindPerPhase() {
+        assertEquals(RestStopPlan.Kind.ANCHORS, RestStopPlan.kindFor(TrainPhase.NETHER));
+        assertEquals(RestStopPlan.Kind.NONE, RestStopPlan.kindFor(TrainPhase.END));
+        assertEquals(RestStopPlan.Kind.BEDS, RestStopPlan.kindFor(TrainPhase.DEEPER_DARK));
+        assertEquals(RestStopPlan.Kind.BEDS, RestStopPlan.kindFor(TrainPhase.OVERWORLD));
+        assertEquals(RestStopPlan.Kind.BEDS, RestStopPlan.kindFor(TrainPhase.LOST_CITY));
     }
 }

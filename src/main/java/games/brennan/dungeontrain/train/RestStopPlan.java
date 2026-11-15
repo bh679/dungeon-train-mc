@@ -5,9 +5,10 @@ import games.brennan.dungeontrain.worldgen.TrainPhase;
 import java.util.function.IntPredicate;
 
 /**
- * Where the train's guaranteed <b>rest stops</b> sit: carriages whose contents are forced to a bed
- * room, so a natural nap bed ({@code nap/NapEligibility}) is never more than {@link #MAX_GAP}
- * carriages away. Today's randomly rolled bed rooms stay on top of these and only shorten the gap.
+ * Where the train's guaranteed <b>rest stops</b> sit: carriages whose contents are forced to the bed
+ * room (with respawn anchors in the Nether, {@link #kindFor}), so a natural nap spot
+ * ({@code nap/NapEligibility}) is never more than {@link #MAX_GAP} carriages away outside the End.
+ * Today's randomly rolled bed rooms stay on top of these and only shorten the gap.
  *
  * <p>Rest stop {@code k} opens a window at {@code k * SPACING + jitter(seed, k)}, jitter in
  * {@code [0, JITTER)}, so stops are about {@link #SPACING} apart and never evenly. The stop is the
@@ -64,12 +65,28 @@ public final class RestStopPlan {
         return true;
     }
 
+    /** What a rest stop holds, by the phase it is generated in. */
+    public enum Kind {
+        /** No rest stop: beds and anchors both explode here (the End core). */
+        NONE,
+        /** The bed room. */
+        BEDS,
+        /** The bed room with its beds swapped for charged respawn anchors ({@link RestStopAnchors}). */
+        ANCHORS
+    }
+
     /**
-     * Phases where a bed sleeps rather than exploding. The Nether and End cores (and the Deeper
-     * Dark's Otherside) blow beds up ({@code BedBlockMixin}), so a rest stop there would be a trap.
+     * Beds explode in the Nether and End cores ({@code BedBlockMixin}); respawn anchors work in the
+     * Nether and explode everywhere else ({@code RespawnAnchorBlockMixin}). So the Nether gets anchors,
+     * the End nothing yet, and every other stretch beds. The Deeper Dark's Otherside biomes are not
+     * Nether biomes, so beds sleep there.
      */
-    public static boolean phaseAllowsBeds(TrainPhase phase) {
-        return phase != TrainPhase.NETHER && phase != TrainPhase.END && phase != TrainPhase.DEEPER_DARK;
+    public static Kind kindFor(TrainPhase phase) {
+        return switch (phase) {
+            case NETHER -> Kind.ANCHORS;
+            case END -> Kind.NONE;
+            default -> Kind.BEDS;
+        };
     }
 
     private static int jitter(long seed, int k) {
