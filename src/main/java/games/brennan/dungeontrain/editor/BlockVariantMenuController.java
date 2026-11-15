@@ -348,7 +348,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
                 conditionValuesToken(plot, localPos, s.condition()),
-                s.candles().id(), s.pot().id()));
+                s.candles().id(), s.pot().id(),
+                s.charges().toInt(), s.bedColours().mask()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -840,6 +841,28 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 BlockState shown = next.isDefault() || next.isRandom() ? entry.state()
                     : entry.state().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.CANDLES, next.count());
                 mutated.set(idx, entry.withState(shown, entry.blockEntityNbt()).withCandles(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_CHARGES -> {
+                // delta = VariantCharges.toInt(); the canonical constructor clamps the range.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !VariantCharges.isAnchor(entry.state())) return;
+                mutated.set(idx, entry.withCharges(VariantCharges.fromInt(packet.delta())));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_BED_COLOURS -> {
+                // delta = VariantBedColours mask; an empty mask falls back to white only.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !VariantBedColours.isWhiteBed(entry.state())) return;
+                mutated.set(idx, entry.withBedColours(new VariantBedColours(packet.delta())));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

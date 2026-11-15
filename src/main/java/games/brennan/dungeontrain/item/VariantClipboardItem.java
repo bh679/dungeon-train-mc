@@ -147,6 +147,10 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_CANDLES = "cd";
     /** Per-entry flower pot plant token ({@code VariantPot#id}). Absent when off. */
     private static final String NBT_POT = "po";
+    /** Per-entry respawn anchor charge range, packed ({@code VariantCharges#toInt}). Absent when as placed. */
+    private static final String NBT_CHARGES = "ch";
+    /** Per-entry white bed colour mask ({@code VariantBedColours#mask}). Absent when white only. */
+    private static final String NBT_BED_COLOURS = "bc";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -487,6 +491,12 @@ public final class VariantClipboardItem extends Item {
             if (!s.pot().isDefault()) {
                 entry.putString(NBT_POT, s.pot().id());
             }
+            if (!s.charges().isDefault()) {
+                entry.putInt(NBT_CHARGES, s.charges().toInt());
+            }
+            if (!s.bedColours().isDefault()) {
+                entry.putInt(NBT_BED_COLOURS, s.bedColours().mask());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -684,7 +694,13 @@ public final class VariantClipboardItem extends Item {
                 games.brennan.dungeontrain.editor.VariantCandles.parse(
                     entry.contains(NBT_CANDLES, Tag.TAG_STRING) ? entry.getString(NBT_CANDLES) : null),
                 games.brennan.dungeontrain.editor.VariantPot.parse(
-                    entry.contains(NBT_POT, Tag.TAG_STRING) ? entry.getString(NBT_POT) : null)));
+                    entry.contains(NBT_POT, Tag.TAG_STRING) ? entry.getString(NBT_POT) : null),
+                entry.contains(NBT_CHARGES, Tag.TAG_INT)
+                    ? games.brennan.dungeontrain.editor.VariantCharges.fromInt(entry.getInt(NBT_CHARGES))
+                    : games.brennan.dungeontrain.editor.VariantCharges.AS_PLACED,
+                entry.contains(NBT_BED_COLOURS, Tag.TAG_INT)
+                    ? new games.brennan.dungeontrain.editor.VariantBedColours(entry.getInt(NBT_BED_COLOURS))
+                    : games.brennan.dungeontrain.editor.VariantBedColours.WHITE_ONLY));
         }
         return out;
     }

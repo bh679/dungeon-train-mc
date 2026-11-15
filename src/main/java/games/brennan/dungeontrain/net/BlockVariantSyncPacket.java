@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.VariantBedColours;
+import games.brennan.dungeontrain.editor.VariantCharges;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -131,13 +133,18 @@ public record BlockVariantSyncPacket(
      * reference renders red, the same warning the editor gives a dangling
      * loot-prefab link. Liveness is computed server-side because only the
      * server holds the sidecar's full reference graph.</p>
+     *
+     * <p>{@code charges} is a respawn anchor row's packed {@link VariantCharges#toInt} and
+     * {@code bedColours} a white bed row's {@link VariantBedColours#mask}; both carry their
+     * defaults on every other row.</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
                         int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
                         int growth, String painting, String condition, boolean conditionLive,
-                        String conditionGroupValues, String candles, String pot) {
+                        String conditionGroupValues, String candles, String pot,
+                        int charges, int bedColours) {
 
         /** Cap on the condition token over the wire: eight namespaced ids and a target. */
         public static final int CONDITION_MAX_LEN = 1024;
@@ -152,6 +159,22 @@ public record BlockVariantSyncPacket(
 
         /** Cap on the flower pot token over the wire: {@code VariantPot.MAX_PLANTS} namespaced ids. */
         public static final int POT_MAX_LEN = 1024;
+
+        /**
+         * Backward-compat constructor for call sites that don't carry the respawn anchor charge
+         * range or white bed colours (defaults to as placed / white only).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
+                     int growth, String painting, String condition, boolean conditionLive,
+                     String conditionGroupValues, String candles, String pot) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode, growth,
+                painting, condition, conditionLive, conditionGroupValues, candles, pot,
+                VariantCharges.AS_PLACED.toInt(), VariantBedColours.WHITE_ONLY.mask());
+        }
 
         /**
          * Backward-compat constructor for call sites that don't carry candle / flower pot options
@@ -364,6 +387,8 @@ public record BlockVariantSyncPacket(
             buf.writeUtf(e.conditionGroupValues(), Entry.CONDITION_MAX_LEN * 2);
             buf.writeUtf(e.candles(), 16);
             buf.writeUtf(e.pot(), Entry.POT_MAX_LEN);
+            buf.writeVarInt(e.charges());
+            buf.writeVarInt(e.bedColours());
         }
     }
 
@@ -413,10 +438,12 @@ public record BlockVariantSyncPacket(
             String conditionGroupValues = buf.readUtf(Entry.CONDITION_MAX_LEN * 2);
             String candles = buf.readUtf(16);
             String pot = buf.readUtf(Entry.POT_MAX_LEN);
+            int charges = buf.readVarInt();
+            int bedColours = buf.readVarInt();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
                 activeMode, connectMode, growth, painting, condition, conditionLive, conditionGroupValues,
-                candles, pot));
+                candles, pot, charges, bedColours));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);

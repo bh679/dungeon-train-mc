@@ -221,7 +221,8 @@ public final class RotationApplier {
      * resolution — passed separately so this class stays free of the train package. Use this from
      * any stamp pass that writes a picked {@link VariantState}; writing {@code entry.state()}
      * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers, and the candle count
-     * ({@link VariantCandles}) and flower pot plant ({@link VariantPot}) options.
+     * ({@link VariantCandles}), flower pot plant ({@link VariantPot}), respawn anchor charge
+     * ({@link VariantCharges}) and white bed colour ({@link VariantBedColours}) options.
      */
     public static BlockState apply(
         BlockState base, VariantState entry,
@@ -231,7 +232,10 @@ public final class RotationApplier {
             localPos, worldSeed, carriageIndex, lockId);
         long key = posOrLockKey(localPos, lockId);
         placed = entry.candles().apply(placed, key, worldSeed, carriageIndex);
-        return entry.pot().apply(placed, key, worldSeed, carriageIndex);
+        placed = entry.pot().apply(placed, key, worldSeed, carriageIndex);
+        placed = entry.charges().apply(placed, key, worldSeed, carriageIndex);
+        // Keyed on the bed's head cell (not this cell) so both halves roll the same colour.
+        return entry.bedColours().apply(placed, localPos, lockId, worldSeed, carriageIndex);
     }
 
     /** The cell's roll key: its lock group when it has one (so the group rolls as one), else its position. */

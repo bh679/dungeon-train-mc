@@ -7430,6 +7430,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.block_variant.bed_colours_count": {
+    "1": {
+      "label": "how many bed colours are switched on",
+      "examples": [
+        "2",
+        "16"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.container.title_at": {
     "1": {
       "label": "the container's x,y,z inside the plot",

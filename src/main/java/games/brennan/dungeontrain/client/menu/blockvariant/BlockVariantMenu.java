@@ -94,6 +94,10 @@ public final class BlockVariantMenu {
         CANDLE_OPTION,
         /** A button in a flower pot row's Plant popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
         POT_OPTION,
+        /** A button in a respawn anchor row's Charge popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        CHARGE_OPTION,
+        /** A swatch in a white bed row's Colours popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        BED_COLOUR_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         /** The row's If pill — opens the condition popup for that row. */
@@ -234,6 +238,28 @@ public final class BlockVariantMenu {
             && games.brennan.dungeontrain.editor.FlowerPots.isPot(parsed);
     }
 
+    /** True when {@code entry} is a respawn anchor row — it shows the Charge pill and popup in the Grow slot. */
+    public static boolean isAnchorRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.VariantCharges.isAnchor(parsed);
+    }
+
+    /** True when {@code entry} is a white bed row — it shows the Colours pill and popup in the Grow slot. */
+    public static boolean isWhiteBedRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.VariantBedColours.isWhiteBed(parsed);
+    }
+
+    /** The row's respawn anchor charge option (as placed on every other row). */
+    public static games.brennan.dungeontrain.editor.VariantCharges charges(BlockVariantSyncPacket.Entry entry) {
+        return games.brennan.dungeontrain.editor.VariantCharges.fromInt(entry.charges());
+    }
+
+    /** The row's white bed colours (white only on every other row). */
+    public static games.brennan.dungeontrain.editor.VariantBedColours bedColours(BlockVariantSyncPacket.Entry entry) {
+        return new games.brennan.dungeontrain.editor.VariantBedColours(entry.bedColours());
+    }
+
     /** The row's candle count option, or as placed when the wire token is blank / malformed. */
     public static games.brennan.dungeontrain.editor.VariantCandles candles(BlockVariantSyncPacket.Entry entry) {
         games.brennan.dungeontrain.editor.VariantCandles c =
@@ -250,7 +276,7 @@ public final class BlockVariantMenu {
 
     /**
      * The popup the Grow pill slot opens for a row that uses the slot for something else than
-     * Grow (painting, candles, flower pot), or {@code null} for a growable row's own Grow popup.
+     * Grow (painting, candles, flower pot, respawn anchor, white bed), or {@code null} for a growable row's own Grow popup.
      */
     @Nullable
     static SlotPopup slotPopup(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed,
@@ -264,6 +290,12 @@ public final class BlockVariantMenu {
         if (isPotRow(entry, parsed)) {
             return new SlotPopup(CellKind.POT_OPTION, PotPopupLayout.rows(pot(entry), panelW, halfH));
         }
+        if (isAnchorRow(entry, parsed)) {
+            return new SlotPopup(CellKind.CHARGE_OPTION, ChargePopupLayout.rows(charges(entry), panelW, halfH));
+        }
+        if (isWhiteBedRow(entry, parsed)) {
+            return new SlotPopup(CellKind.BED_COLOUR_OPTION, BedColourPopupLayout.rows(panelW, halfH));
+        }
         return null;
     }
 
@@ -272,7 +304,8 @@ public final class BlockVariantMenu {
 
     /** True when the row shows an option pill in the Grow slot other than Grow itself. */
     public static boolean usesGrowSlot(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
-        return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed);
+        return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed)
+            || isAnchorRow(entry, parsed) || isWhiteBedRow(entry, parsed);
     }
 
     /** The row's painting option, or off when the wire token is blank / malformed. */

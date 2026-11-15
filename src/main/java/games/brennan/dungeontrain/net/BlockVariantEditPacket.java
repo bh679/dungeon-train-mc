@@ -138,7 +138,11 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Flower pot row: stateString = plant block id to add; "" adds the held plant.
                      ADD_POT_PLANT,
                      // Flower pot row: stateString = plant block id to drop.
-                     REMOVE_POT_PLANT }
+                     REMOVE_POT_PLANT,
+                     // Respawn anchor row: delta = VariantCharges.toInt() (ranged bit, min, max).
+                     SET_CHARGES,
+                     // White bed row: delta = VariantBedColours mask (DyeColor id bits).
+                     SET_BED_COLOURS }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
