@@ -27,16 +27,27 @@ public final class PlacedRestTracker extends SavedData {
 
     public static final String NAME = "dungeontrain_placed_beds";
     private static final String TAG_POSITIONS = "positions";
+    private static final String TAG_MOVED = "moved";
+
+    /** How a player-placed spot came to be. */
+    public enum Kind {
+        /** Placed from a bed or anchor item the player made or found. */
+        MADE,
+        /** Placed from a bed item a natural bed dropped: the train's own bed, moved. */
+        MOVED
+    }
 
     private final LongOpenHashSet positions;
+    private final LongOpenHashSet moved;
 
-    private PlacedRestTracker(LongOpenHashSet positions) {
+    private PlacedRestTracker(LongOpenHashSet positions, LongOpenHashSet moved) {
         this.positions = positions;
+        this.moved = moved;
     }
 
     public static PlacedRestTracker get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(() -> new PlacedRestTracker(new LongOpenHashSet()),
+            new SavedData.Factory<>(() -> new PlacedRestTracker(new LongOpenHashSet(), new LongOpenHashSet()),
                 (tag, registries) -> load(tag)),
             NAME);
     }
@@ -44,35 +55,52 @@ public final class PlacedRestTracker extends SavedData {
     private static PlacedRestTracker load(CompoundTag tag) {
         LongOpenHashSet set = new LongOpenHashSet();
         for (long packed : tag.getLongArray(TAG_POSITIONS)) set.add(packed);
-        return new PlacedRestTracker(set);
+        LongOpenHashSet movedSet = new LongOpenHashSet();
+        for (long packed : tag.getLongArray(TAG_MOVED)) movedSet.add(packed);
+        return new PlacedRestTracker(set, movedSet);
     }
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putLongArray(TAG_POSITIONS, positions.toLongArray());
+        tag.putLongArray(TAG_MOVED, moved.toLongArray());
         return tag;
     }
 
     /** Records the anchor, or both halves of the bed, whose block {@code state} stands at {@code pos}. */
-    public void markPlaced(BlockPos pos, BlockState state) {
-        boolean changed = positions.add(pos.asLong());
-        if (state.getBlock() instanceof BedBlock) {
-            changed |= positions.add(otherHalf(pos, state).asLong());
+    public void markPlaced(BlockPos pos, BlockState state, Kind kind) {
+        for (BlockPos p : spots(pos, state)) {
+            positions.add(p.asLong());
+            if (kind == Kind.MOVED) moved.add(p.asLong());
+            else moved.remove(p.asLong());
         }
-        if (changed) setDirty();
+        setDirty();
     }
 
     /** Forgets the anchor, or both halves of the bed, whose block {@code state} stands at {@code pos}. */
     public void forget(BlockPos pos, BlockState state) {
-        boolean changed = positions.remove(pos.asLong());
-        if (state.getBlock() instanceof BedBlock) {
-            changed |= positions.remove(otherHalf(pos, state).asLong());
+        boolean changed = false;
+        for (BlockPos p : spots(pos, state)) {
+            changed |= positions.remove(p.asLong());
+            moved.remove(p.asLong());
         }
         if (changed) setDirty();
     }
 
     public boolean isPlayerPlaced(BlockPos pos) {
         return positions.contains(pos.asLong());
+    }
+
+    /** How the spot at {@code pos} was placed, or null when no player placed it (natural). */
+    public Kind kindAt(BlockPos pos) {
+        if (!positions.contains(pos.asLong())) return null;
+        return moved.contains(pos.asLong()) ? Kind.MOVED : Kind.MADE;
+    }
+
+    private static BlockPos[] spots(BlockPos pos, BlockState state) {
+        return state.getBlock() instanceof BedBlock
+            ? new BlockPos[] {pos, otherHalf(pos, state)}
+            : new BlockPos[] {pos};
     }
 
     static BlockPos otherHalf(BlockPos pos, BlockState state) {

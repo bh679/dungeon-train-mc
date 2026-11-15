@@ -211,6 +211,11 @@ public final class PlayerJoinEvents {
     /** Player UUID → tick count of pending retry. Cleared on success/timeout/logout. */
     private static final Map<UUID, Integer> PENDING = new ConcurrentHashMap<>();
 
+    /** Whether {@code player} is still waiting to be put on the train after joining. */
+    public static boolean isPlacementPending(UUID player) {
+        return PENDING.containsKey(player);
+    }
+
     /**
      * Pre-computed placement from {@code TrainBootstrapEvents}. Read by
      * {@code PlayerFudgeSpawnMixin} to override vanilla's
@@ -996,11 +1001,22 @@ public final class PlayerJoinEvents {
     public static SpawnPlacement computeBootstrapPlacement(
         ServerLevel trainLevel, CarriageDims dims, int trainY
     ) {
-        // Bootstrap: the train is freshly spawned at origin and hasn't moved yet,
-        // so the trainCenter is (0, trainY, trackCenterZ). Real body placement
+        return computeBootstrapPlacement(trainLevel, dims, trainY, 0);
+    }
+
+    /**
+     * {@link #computeBootstrapPlacement(ServerLevel, CarriageDims, int)} for a seed train spawned at
+     * {@code originX} rather than the origin: a run woken from a nap starts where the nap was taken
+     * ({@code nap/NapWake}).
+     */
+    public static SpawnPlacement computeBootstrapPlacement(
+        ServerLevel trainLevel, CarriageDims dims, int trainY, int originX
+    ) {
+        // Bootstrap: the train is freshly spawned at its origin and hasn't moved yet,
+        // so the trainCenter is (originX, trainY, trackCenterZ). Real body placement
         // (world default spawn / fudge / respawn): never water.
         Vector3d trainCenter = new Vector3d(
-            0.0, trainY, TrackGeometry.from(dims, trainY).trackCenterZ() + 0.5);
+            originX, trainY, TrackGeometry.from(dims, trainY).trackCenterZ() + 0.5);
         return computeGroundPoseAt(trainLevel, dims, trainY, trainCenter, /*allowWater*/ false);
     }
 
@@ -1079,9 +1095,9 @@ public final class PlayerJoinEvents {
      * instead — it returns the same value without poisoning the cache.</p>
      */
     public static SpawnPlacement computeAndCacheBootstrapPlacement(
-        ServerLevel trainLevel, CarriageDims dims, int trainY
+        ServerLevel trainLevel, CarriageDims dims, int trainY, int originX
     ) {
-        SpawnPlacement placement = computeBootstrapPlacement(trainLevel, dims, trainY);
+        SpawnPlacement placement = computeBootstrapPlacement(trainLevel, dims, trainY, originX);
         bootstrapPlacement = placement;
         LOGGER.info("[DungeonTrain] Bootstrap placement cached: pos=({}, {}, {}) yaw={} pitch={}",
             String.format("%.1f", placement.x()), placement.y(), String.format("%.1f", placement.z()),

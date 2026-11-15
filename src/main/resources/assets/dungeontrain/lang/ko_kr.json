@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "일어나기.",
   "gui.dungeontrain.nap.main_menu": "메인 메뉴",
   "gui.dungeontrain.nap.free_play_cause": "자유 플레이 런에서 깨어남",
+  "chat.dungeontrain.nap.tampered.moved": "기차가 이 침대를 알아보지 못합니다. 누군가 손을 댔습니다.",
+  "chat.dungeontrain.nap.tampered.made": "기차는 당신이 만든 침대와 자신의 침대를 구별합니다. 여기선 통하지 않습니다.",
   "chat.dungeontrain.nap.failed": "휴식이 멀어집니다. 런은 계속됩니다.",
   "chat.dungeontrain.bed.no_respawn.1": "리스폰 지점이 설정되지 않았다. 침대는 철로 위에서 통하지 않는다 — 네가 깨어나는 곳은 기차 안, 기차가 굴러간 그곳이다.",
   "chat.dungeontrain.bed.no_respawn.2": "이 침대는 아무것도 붙들지 않는다. 자고 싶으면 자라 — 어디서 깨어날지는 베개가 아니라 기차가 정한다.",

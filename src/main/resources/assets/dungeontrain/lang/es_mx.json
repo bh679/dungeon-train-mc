@@ -630,6 +630,8 @@
   "gui.dungeontrain.nap.night.decline": "Despertar.",
   "gui.dungeontrain.nap.main_menu": "Menú principal",
   "gui.dungeontrain.nap.free_play_cause": "Despertaste de una partida en Juego Libre",
+  "chat.dungeontrain.nap.tampered.moved": "El tren no reconoce esta cama, la manipularon.",
+  "chat.dungeontrain.nap.tampered.made": "El tren distingue una cama hecha por ti de una de las suyas, aquí no va a funcionar.",
   "chat.dungeontrain.nap.failed": "El descanso se escapa. Tu partida continúa.",
   "chat.dungeontrain.bed.no_respawn.1": "No se fijó ningún punto de reaparición. Las camas no sirven sobre los rieles: despiertas en el tren, donde sea que haya rodado.",
   "chat.dungeontrain.bed.no_respawn.2": "Esta cama no ancla nada. Duerme si quieres: el tren decide dónde despiertas, no la almohada.",

@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "醒來。",
   "gui.dungeontrain.nap.main_menu": "主選單",
   "gui.dungeontrain.nap.free_play_cause": "從自由模式的旅程中醒來",
+  "chat.dungeontrain.nap.tampered.moved": "列車認不出這張床，它被人動過了。",
+  "chat.dungeontrain.nap.tampered.made": "列車分得清你做的床和它自己的床，這在這裡行不通。",
   "chat.dungeontrain.nap.failed": "安歇悄然溜走。你的旅程仍在繼續。",
   "chat.dungeontrain.bed.no_respawn.1": "未設定重生點。床在鐵軌上不管用，你會在列車上醒來，無論它駛到了哪裡。",
   "chat.dungeontrain.bed.no_respawn.2": "這張床什麼也錨定不了。想睡就睡吧，在哪裡醒來由列車決定，而不是枕頭。",

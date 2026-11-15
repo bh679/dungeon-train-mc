@@ -653,6 +653,8 @@
   "gui.dungeontrain.nap.night.decline": "Obudź się.",
   "gui.dungeontrain.nap.main_menu": "Menu główne",
   "gui.dungeontrain.nap.free_play_cause": "Przebudzenie z rozgrywki w Swobodnej Grze",
+  "chat.dungeontrain.nap.tampered.moved": "Pociąg nie rozpoznaje tego łóżka, ktoś przy nim majstrował.",
+  "chat.dungeontrain.nap.tampered.made": "Pociąg odróżni łóżko twojej roboty od swojego, to tu nie zadziała.",
   "chat.dungeontrain.nap.failed": "Odpoczynek się wymyka. Twoja rozgrywka trwa dalej.",
   "chat.dungeontrain.bed.no_respawn.1": "Nie ustawiono punktu odrodzenia. Łóżka nie działają na torach — budzisz się w pociągu, gdziekolwiek ten dojechał.",
   "chat.dungeontrain.bed.no_respawn.2": "To łóżko niczego nie zakotwicza. Śpij, jeśli chcesz — o tym, gdzie się obudzisz, decyduje pociąg, nie poduszka.",

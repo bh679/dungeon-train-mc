@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "Bangun.",
   "gui.dungeontrain.nap.main_menu": "Menu Utama",
   "gui.dungeontrain.nap.free_play_cause": "Terbangun dari permainan Main Bebas",
+  "chat.dungeontrain.nap.tampered.moved": "Kereta tidak mengenali ranjang ini, ranjang ini sudah diutak-atik.",
+  "chat.dungeontrain.nap.tampered.made": "Kereta bisa membedakan ranjang buatanmu dari miliknya sendiri, ini tidak akan berhasil di sini.",
   "chat.dungeontrain.nap.failed": "Istirahatnya lepas. Permainanmu berlanjut.",
   "chat.dungeontrain.bed.no_respawn.1": "Tidak ada titik bangkit yang ditetapkan. Ranjang tak berlaku di atas rel — kau bangun di kereta, ke mana pun ia melaju.",
   "chat.dungeontrain.bed.no_respawn.2": "Ranjang ini tidak menambatkan apa pun. Tidurlah kalau mau — kereta yang menentukan di mana kau bangun, bukan bantalnya.",

@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "ตื่นขึ้น",
   "gui.dungeontrain.nap.main_menu": "เมนูหลัก",
   "gui.dungeontrain.nap.free_play_cause": "ตื่นจากการเล่นในโหมดเล่นอิสระ",
+  "chat.dungeontrain.nap.tampered.moved": "รถไฟจำเตียงนี้ไม่ได้ มีคนไปยุ่งกับมันแล้ว",
+  "chat.dungeontrain.nap.tampered.made": "รถไฟแยกออกว่าเตียงไหนคุณทำเองและเตียงไหนเป็นของมัน แบบนี้ใช้ไม่ได้ที่นี่",
   "chat.dungeontrain.nap.failed": "การพักผ่อนเลือนหายไป การเล่นของคุณดำเนินต่อ",
   "chat.dungeontrain.bed.no_respawn.1": "ไม่ได้ตั้งจุดเกิดใหม่ เตียงใช้ไม่ได้บนราง — คุณจะตื่นบนขบวนรถไฟ ไม่ว่ามันจะแล่นไปถึงไหน",
   "chat.dungeontrain.bed.no_respawn.2": "เตียงนี้ไม่ได้ยึดอะไรไว้เลย จะนอนก็นอนเถอะ — ขบวนรถไฟเป็นคนตัดสินว่าคุณจะตื่นที่ไหน ไม่ใช่หมอน",

@@ -610,6 +610,8 @@
       "gui.dungeontrain.nap.night.decline",
       "gui.dungeontrain.nap.main_menu",
       "gui.dungeontrain.nap.free_play_cause",
+      "chat.dungeontrain.nap.tampered.moved",
+      "chat.dungeontrain.nap.tampered.made",
       "chat.dungeontrain.nap.failed",
       "chat.dungeontrain.bed.no_respawn.1",
       "chat.dungeontrain.bed.no_respawn.2",

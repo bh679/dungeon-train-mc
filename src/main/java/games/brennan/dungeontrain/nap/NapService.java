@@ -45,14 +45,44 @@ public final class NapService {
 
     private NapService() {}
 
-    /** Ask {@code player} about a nap in the bed at {@code bedPos}, if that bed and run allow one. */
-    public static boolean offer(ServerPlayer player, BlockPos bedPos, boolean night) {
-        if (!NapEligibility.canNap(player, bedPos) || levelIdOf(player.getServer()) == null) return false;
-        OFFERS.put(player.getUUID(), new Offer(bedPos.immutable(), night));
+    /** What a bed or anchor use came to, for the caller's feedback. */
+    public enum Outcome {
+        /** The prompt is open. */
+        OFFERED,
+        /** No nap here; vanilla carries on as if this class did not exist. */
+        NONE,
+        /** A natural spot, but monsters are nearby: vanilla's "monsters nearby" refusal. */
+        MONSTERS,
+        /** A natural bed's own item placed again: "tampered with". */
+        MOVED,
+        /** A bed the player made: "a bed of your making". */
+        MADE
+    }
+
+    /** Ask {@code player} about a nap at the bed or anchor at {@code spot}, if it and the run allow one. */
+    public static Outcome offer(ServerPlayer player, BlockPos spot, boolean night) {
+        if (!NapEligibility.runAllowsNap(player) || levelIdOf(player.getServer()) == null) return Outcome.NONE;
+        switch (NapEligibility.spotAt(player.serverLevel(), spot)) {
+            case NONE -> { return Outcome.NONE; }
+            case MOVED -> { return Outcome.MOVED; }
+            case MADE -> { return Outcome.MADE; }
+            default -> { }
+        }
+        if (NapEligibility.monstersNearby(player, spot)) return Outcome.MONSTERS;
+        OFFERS.put(player.getUUID(), new Offer(spot.immutable(), night));
         LOGGER.info("[DungeonTrain] Nap offered to {} ({}) at {}", player.getName().getString(),
-            night ? "night" : "day", bedPos);
+            night ? "night" : "day", spot);
         DungeonTrainNet.sendTo(player, new ShowNapPromptPacket(night));
-        return true;
+        return Outcome.OFFERED;
+    }
+
+    /** The action-bar line for a tampered bed, or null for any other outcome. */
+    public static Component tamperedMessage(Outcome outcome) {
+        return switch (outcome) {
+            case MOVED -> Component.translatable("chat.dungeontrain.nap.tampered.moved");
+            case MADE -> Component.translatable("chat.dungeontrain.nap.tampered.made");
+            default -> null;
+        };
     }
 
     public static void forget(UUID player) {
@@ -77,7 +107,7 @@ public final class NapService {
         }
         NapSnapshot nap = capture(player, levelId);
         try {
-            NapStore.local().save(player.getUUID(), nap);
+            NapStore.local().save(player.getUUID(), NapSlot.key(nap.cheated(), player.serverLevel().getDifficulty()), nap);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Nap for {} could not be saved", player.getName().getString(), e);
             refuse(player, "save failed");

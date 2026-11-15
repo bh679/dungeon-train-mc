@@ -630,6 +630,8 @@
   "gui.dungeontrain.nap.night.decline": "Se réveiller.",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.free_play_cause": "Réveillé d'une partie en Jeu Libre",
+  "chat.dungeontrain.nap.tampered.moved": "Le train ne reconnaît pas ce lit, on l'a trafiqué.",
+  "chat.dungeontrain.nap.tampered.made": "Le train distingue un lit de ta fabrication des siens, ça ne marchera pas ici.",
   "chat.dungeontrain.nap.failed": "Le repos t'échappe. Ta partie continue.",
   "chat.dungeontrain.bed.no_respawn.1": "Aucun point de réapparition défini. Les lits ne tiennent pas sur les rails : tu te réveilles dans le train, où qu'il ait roulé.",
   "chat.dungeontrain.bed.no_respawn.2": "Ce lit n'ancre rien. Dors si tu veux : c'est le train qui décide où tu te réveilles, pas l'oreiller.",

@@ -658,6 +658,8 @@
   "gui.dungeontrain.nap.night.decline": "Проснуться.",
   "gui.dungeontrain.nap.main_menu": "Главное меню",
   "gui.dungeontrain.nap.free_play_cause": "Пробуждение из забега в свободной игре",
+  "chat.dungeontrain.nap.tampered.moved": "Поезд не узнаёт эту кровать, её кто-то трогал.",
+  "chat.dungeontrain.nap.tampered.made": "Поезд отличает кровать твоей работы от своей, здесь это не сработает.",
   "chat.dungeontrain.nap.failed": "Покой ускользает. Забег продолжается.",
   "chat.dungeontrain.bed.no_respawn.1": "Точка возрождения не установлена. На рельсах кровати не работают — вы проснётесь в поезде, куда бы он ни укатил.",
   "chat.dungeontrain.bed.no_respawn.2": "Эта кровать ничего не закрепляет. Спите, если хотите, — где вы проснётесь, решает поезд, а не подушка.",

@@ -630,6 +630,8 @@
   "gui.dungeontrain.nap.night.decline": "Word wakker.",
   "gui.dungeontrain.nap.main_menu": "Hoofdmenu",
   "gui.dungeontrain.nap.free_play_cause": "Wakker geworden uit een run in Vrij Spel",
+  "chat.dungeontrain.nap.tampered.moved": "De trein herkent dit bed niet, er is mee geknoeid.",
+  "chat.dungeontrain.nap.tampered.made": "De trein kent een bed van jouw makelij van een van zijn eigen, dat werkt hier niet.",
   "chat.dungeontrain.nap.failed": "De rust glipt weg. Je run gaat verder.",
   "chat.dungeontrain.bed.no_respawn.1": "Geen spawnpunt ingesteld. Bedden houden geen stand op de rails — je wordt wakker in de trein, waar die ook naartoe gerold is.",
   "chat.dungeontrain.bed.no_respawn.2": "Dit bed verankert niets. Slaap gerust — de trein bepaalt waar je wakker wordt, niet het kussen.",

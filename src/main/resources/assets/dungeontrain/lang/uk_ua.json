@@ -729,6 +729,8 @@
   "gui.dungeontrain.nap.night.decline": "Прокинутися.",
   "gui.dungeontrain.nap.main_menu": "Головне меню",
   "gui.dungeontrain.nap.free_play_cause": "Пробудження із забігу у Вільній грі",
+  "chat.dungeontrain.nap.tampered.moved": "Потяг не впізнає це ліжко, його хтось чіпав.",
+  "chat.dungeontrain.nap.tampered.made": "Потяг відрізняє ліжко твоєї роботи від свого, тут це не спрацює.",
   "chat.dungeontrain.nap.failed": "Спокій вислизає. Забіг триває.",
   "chat.dungeontrain.bed.no_respawn.1": "Точку відродження не встановлено. На рейках ліжка не тримають — ти прокинешся в потязі, куди б він не докотився.",
   "chat.dungeontrain.bed.no_respawn.2": "Це ліжко нічого не закріплює. Спи, якщо хочеш — де ти прокинешся, вирішує потяг, а не подушка.",

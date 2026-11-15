@@ -1,12 +1,17 @@
 package games.brennan.dungeontrain.nap;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.player.RunRestore;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 
@@ -18,13 +23,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The first half of waking from a nap: when the singleplayer owner first joins a brand-new run
- * world and has a nap pending, vanilla loads them from the nap instead of as a new player
- * ({@code mixin/PlayerListNapLoadMixin}). Going through vanilla's own load means inventory, XP,
- * effects, attributes and every mod's attachments arrive and sync exactly as on a normal rejoin.
+ * Waking from a nap, in a brand-new run world of the nap's own {@link NapSlot}:
+ * <ol>
+ *   <li>At server start ({@link #planFor}, called by the train bootstrap just before it spawns), the owner's pending nap for
+ *       this world's slot is picked and the world's carriage counter raised to its depth, so the seed
+ *       train spawns at the nap's X ({@link #bootstrapOriginX}) and the first carriages generate at
+ *       that depth. The world spawn lands beside it.</li>
+ *   <li>On the owner's first login, vanilla loads them from the nap instead of as a new player
+ *       ({@code mixin/PlayerListNapLoadMixin}), standing at that spawn. Going through vanilla's own
+ *       load means inventory, XP, effects, attributes and every mod's attachments arrive and sync
+ *       exactly as on a normal rejoin, and the normal first-join placement puts them on the deck.</li>
+ * </ol>
  *
- * <p>The nap is used up right here, before the player is in the world, so no crash can wake it
- * twice. {@link NapWakeEvents} then moves the woken player to where they napped.</p>
+ * <p>The nap is used up at that login, before the player is in the world, so no crash can wake it
+ * twice. {@link NapWakeEvents} turns the woken player to face the way they were heading.</p>
  */
 public final class NapWake {
 
@@ -36,33 +48,55 @@ public final class NapWake {
         "SpawnX", "SpawnY", "SpawnZ", "SpawnDimension", "SpawnAngle", "SpawnForced",
         "SleepingX", "SleepingY", "SleepingZ");
 
-    /** Naps loaded this session, waiting for {@link NapWakeEvents} to place the player. Server thread. */
+    private record Plan(UUID owner, String slot, NapSnapshot nap) {}
+
+    /** The nap this server start will wake, if any. Server thread. */
+    private static Plan planned;
+    /** Naps loaded this session, waiting for {@link NapWakeEvents} to turn the player. Server thread. */
     private static final Map<UUID, NapSnapshot> WOKEN = new HashMap<>();
 
     private NapWake() {}
 
     /**
-     * The tag to load {@code player} from, when this login wakes a nap: the player is the integrated
-     * server's owner, the world is a fresh run world (no saved player yet), and a nap is pending.
+     * At server start: pick the singleplayer owner's nap for this world's slot, when this is a fresh
+     * run world, and raise the world's carriage counter to its depth.
      */
+    public static void planFor(MinecraftServer server) {
+        planned = null;
+        if (server.isDedicatedServer()) return;
+        GameProfile owner = server.getSingleplayerProfile();
+        if (owner == null || owner.getId() == null) return;
+        UUID uuid = owner.getId();
+        if (!isFreshRunWorld(server, uuid)) return;
+        String slot = NapSlot.forNewWorld(server);
+        Optional<NapSnapshot> nap = NapStore.local().load(uuid, slot);
+        if (nap.isEmpty() || nap.get().levelId().equals(NapService.levelIdOf(server))) return;
+        planned = new Plan(uuid, slot, nap.get());
+        RunRestore.raiseWorldProgress(server.overworld(), nap.get().worldDepth());
+        LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.get().napId(), slot,
+            Math.round(nap.get().x()), nap.get().carriage(), nap.get().band());
+    }
+
+    /** Where the seed train goes in {@code level}: the planned nap's X in the overworld, else 0. */
+    public static int bootstrapOriginX(ServerLevel level) {
+        if (planned == null || level.dimension() != Level.OVERWORLD) return 0;
+        return Mth.floor(planned.nap().x());
+    }
+
+    /** The tag to load {@code player} from, when this login wakes the planned nap. */
     public static Optional<CompoundTag> tagFor(MinecraftServer server, ServerPlayer player) {
-        if (server.isDedicatedServer() || !server.isSingleplayerOwner(player.getGameProfile())) return Optional.empty();
-        if (!isFreshRunWorld(server, player.getUUID())) return Optional.empty();
-        NapStore store = NapStore.local();
-        Optional<NapSnapshot> nap = store.load(player.getUUID());
-        if (nap.isEmpty()) return Optional.empty();
-        NapSnapshot snapshot = nap.get();
-        if (snapshot.levelId().equals(NapService.levelIdOf(server))) return Optional.empty();
+        Plan plan = planned;
+        if (plan == null || !plan.owner().equals(player.getUUID())) return Optional.empty();
+        planned = null;
         try {
-            store.consume(player.getUUID(), snapshot);
+            NapStore.local().consume(plan.owner(), plan.slot(), plan.nap());
         } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Nap {} could not be marked used; not waking it.", snapshot.napId(), e);
+            LOGGER.warn("[DungeonTrain] Nap {} could not be marked used; not waking it.", plan.nap().napId(), e);
             return Optional.empty();
         }
-        WOKEN.put(player.getUUID(), snapshot);
-        LOGGER.info("[DungeonTrain] Waking nap {} for {} (napped at x={} carriage={} band={})",
-            snapshot.napId(), player.getName().getString(), Math.round(snapshot.x()), snapshot.carriage(), snapshot.band());
-        return Optional.of(loadableTag(snapshot.player(), server));
+        WOKEN.put(player.getUUID(), plan.nap());
+        LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
+        return Optional.of(loadableTag(plan.nap().player(), server));
     }
 
     static Optional<NapSnapshot> takeWoken(UUID player) {
@@ -70,6 +104,7 @@ public final class NapWake {
     }
 
     static void clear() {
+        planned = null;
         WOKEN.clear();
     }
 

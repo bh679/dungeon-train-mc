@@ -630,6 +630,8 @@
   "gui.dungeontrain.nap.night.decline": "Acordar.",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.free_play_cause": "Acordou de uma partida no Jogo Livre",
+  "chat.dungeontrain.nap.tampered.moved": "O trem não reconhece esta cama, mexeram nela.",
+  "chat.dungeontrain.nap.tampered.made": "O trem diferencia uma cama feita por você de uma das dele, isso não vai funcionar aqui.",
   "chat.dungeontrain.nap.failed": "O descanso escapa. Sua partida continua.",
   "chat.dungeontrain.bed.no_respawn.1": "Nenhum ponto de renascimento definido. Camas não valem nos trilhos — você acorda no trem, onde quer que ele tenha ido.",
   "chat.dungeontrain.bed.no_respawn.2": "Esta cama não ancora nada. Durma se quiser — é o trem que decide onde você acorda, não o travesseiro.",

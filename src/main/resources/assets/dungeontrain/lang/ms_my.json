@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "Bangun.",
   "gui.dungeontrain.nap.main_menu": "Menu Utama",
   "gui.dungeontrain.nap.free_play_cause": "Terjaga daripada larian Main Bebas",
+  "chat.dungeontrain.nap.tampered.moved": "Kereta api tidak mengenali katil ini, ia telah diusik.",
+  "chat.dungeontrain.nap.tampered.made": "Kereta api dapat membezakan katil buatan anda daripada katilnya sendiri, ini tidak akan berjaya di sini.",
   "chat.dungeontrain.nap.failed": "Rehat itu terlepas. Larian anda diteruskan.",
   "chat.dungeontrain.bed.no_respawn.1": "Tiada titik jelma semula ditetapkan. Katil tidak berguna di atas landasan — anda bangun di dalam kereta api, ke mana sahaja ia bergerak.",
   "chat.dungeontrain.bed.no_respawn.2": "Katil ini tidak menambat apa-apa. Tidurlah jika mahu — kereta api yang menentukan di mana anda bangun, bukan bantal.",

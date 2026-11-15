@@ -10,6 +10,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Whether a bed or respawn anchor offers a nap: save the player, quit, and delete the world
@@ -37,26 +40,50 @@ public final class NapEligibility {
         return DungeonTrainWorldData.get(server.overworld()).startsWithTrain();
     }
 
-    /** Whether the bed standing at {@code pos} counts as natural and sleeps (rather than exploding) here. */
-    public static boolean isNaturalBed(ServerLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof BedBlock)) return false;
-        PlacedRestTracker placed = PlacedRestTracker.get(level);
-        if (placed.isPlayerPlaced(pos) || placed.isPlayerPlaced(PlacedRestTracker.otherHalf(pos, state))) return false;
-        return !HostileBandBeds.bedExplodes(level, pos);
+    /** What stands at a spot, as far as a nap is concerned. */
+    public enum Spot {
+        /** Not a bed or anchor that works here (an exploding bed, an anchor outside the Nether). */
+        NONE,
+        /** A natural bed or anchor that works here: offers a nap. */
+        NATURAL,
+        /** A bed placed from a natural bed's own item. */
+        MOVED,
+        /** Any other player-placed bed or anchor. */
+        MADE
     }
 
-    /** Whether the respawn anchor at {@code pos} counts as natural and works (rather than exploding) here. */
-    public static boolean isNaturalAnchor(ServerLevel level, BlockPos pos) {
-        if (!(level.getBlockState(pos).getBlock() instanceof RespawnAnchorBlock)) return false;
-        return !PlacedRestTracker.get(level).isPlayerPlaced(pos) && HostileBandBeds.anchorWorks(level, pos);
+    public static Spot spotAt(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        PlacedRestTracker placed = PlacedRestTracker.get(level);
+        if (state.getBlock() instanceof BedBlock) {
+            if (HostileBandBeds.bedExplodes(level, pos)) return Spot.NONE;
+            PlacedRestTracker.Kind kind = placed.kindAt(pos);
+            if (kind == null) kind = placed.kindAt(PlacedRestTracker.otherHalf(pos, state));
+            if (kind == null) return Spot.NATURAL;
+            return kind == PlacedRestTracker.Kind.MOVED ? Spot.MOVED : Spot.MADE;
+        }
+        if (state.getBlock() instanceof RespawnAnchorBlock) {
+            if (!HostileBandBeds.anchorWorks(level, pos)) return Spot.NONE;
+            return placed.isPlayerPlaced(pos) ? Spot.MADE : Spot.NATURAL;
+        }
+        return Spot.NONE;
     }
 
     /** Both halves: a natural bed or anchor that works here, in a run that allows a nap. */
     public static boolean canNap(ServerPlayer player, BlockPos spot) {
-        if (!runAllowsNap(player)) return false;
-        ServerLevel level = player.serverLevel();
-        return isNaturalBed(level, spot) || isNaturalAnchor(level, spot);
+        return runAllowsNap(player) && spotAt(player.serverLevel(), spot) == Spot.NATURAL;
+    }
+
+    /**
+     * Vanilla's "monsters nearby" test for resting at {@code pos}: any monster within 8 blocks across
+     * and 5 up or down that would keep the player awake. Creative players are never kept awake.
+     */
+    public static boolean monstersNearby(ServerPlayer player, BlockPos pos) {
+        if (player.isCreative()) return false;
+        Vec3 c = Vec3.atBottomCenterOf(pos);
+        return !player.level().getEntitiesOfClass(Monster.class,
+            new AABB(c.x - 8.0, c.y - 5.0, c.z - 8.0, c.x + 8.0, c.y + 5.0, c.z + 8.0),
+            m -> m.isPreventingPlayerRest(player)).isEmpty();
     }
 
     private static boolean isBuilderWorld(ServerLevel level) {

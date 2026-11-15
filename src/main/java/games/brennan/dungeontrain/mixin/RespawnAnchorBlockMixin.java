@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import games.brennan.dungeontrain.nap.HostileBandBeds;
 import games.brennan.dungeontrain.nap.NapService;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -27,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * follows the train in and out of the Nether.
  *
  * <p>A natural anchor that works here, in a run that allows it, offers a nap ({@link NapService})
- * instead of setting the spawn point.</p>
+ * instead of setting the spawn point, unless monsters are nearby (vanilla's bed message).</p>
  */
 @Mixin(RespawnAnchorBlock.class)
 public abstract class RespawnAnchorBlockMixin {
@@ -39,9 +40,14 @@ public abstract class RespawnAnchorBlockMixin {
         if (!(level instanceof ServerLevel serverLevel) || !(player instanceof ServerPlayer serverPlayer)) return;
         if (!HostileBandBeds.anchorWorks(serverLevel, pos)) return;   // overworld / End: vanilla explodes
 
-        if (NapService.offer(serverPlayer, pos, false)) {
+        NapService.Outcome nap = NapService.offer(serverPlayer, pos, false);
+        if (nap == NapService.Outcome.OFFERED) {
             cir.setReturnValue(InteractionResult.SUCCESS);
             return;
+        }
+        if (nap == NapService.Outcome.MONSTERS) {
+            // No nap with monsters about, the same refusal a bed gives; the anchor still sets spawn.
+            serverPlayer.displayClientMessage(Component.translatable("block.minecraft.bed.not_safe"), true);
         }
         if (level.dimension() == Level.NETHER) return;                // the real Nether: vanilla sets spawn
 
