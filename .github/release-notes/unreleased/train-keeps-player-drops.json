@@ -1,0 +1,17 @@
+{
+  "id": "train-keeps-player-drops",
+  "version": "0.1833.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "Your drops stay on the tracks",
+  "summary": "Items you drop, items you lose when you die, and loot from mobs you kill are no longer wiped away by the train passing over them.",
+  "highlights": [],
+  "pr": 2669,
+  "date": "2026-11-15",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
