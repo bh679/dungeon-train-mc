@@ -446,6 +446,29 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Effective carriages travelled when this player became a zombie (Dungeon Totems' Zombified curse),
+     * or {@code -1} while they are not one. "Undead Commuter" is the gap at the cure
+     * ({@link games.brennan.dungeontrain.advancement.TotemJourneyAdvancements}). Serialized so the ride
+     * survives a logout; <b>no</b> {@code copyOnDeath}, since dying ends the curse uncured.
+     */
+    public static final Supplier<AttachmentType<Integer>> CARTS_AT_ZOMBIFIED =
+        TYPES.register("carts_at_zombified",
+            () -> AttachmentType.<Integer>builder(() -> -1)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * The full stack of totems this player is holding for a "hold a full stack" advancement, as
+     * {@code "<item id>@<carriages travelled when they took it up>"}, or empty. Not serialized: a logout
+     * lets go of it, and so does dying.
+     */
+    public static final Supplier<AttachmentType<String>> HELD_TOTEM_STACK =
+        TYPES.register("held_totem_stack",
+            () -> AttachmentType.<String>builder(() -> "").build()
+        );
+
+    /**
      * How many times this player has paid Tribute to their own photo this life — each one triples the
      * next one's cost ({@link games.brennan.dungeontrain.compat.photo.OwnPhotoTribute#cost}).
      *

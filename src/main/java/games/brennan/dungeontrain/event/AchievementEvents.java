@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.advancement.AdvancementAwards;
 import games.brennan.dungeontrain.advancement.AdvancementVouch;
 import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
+import games.brennan.dungeontrain.advancement.TotemJourneyAdvancements;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.DeferredCapstoneGrants;
@@ -1200,6 +1201,8 @@ public final class AchievementEvents {
         if (player.tickCount % 20 != 0) return;
         NothingButBooksAdvancement.checkAndGrant(player);
         LeatherOverDiamondAdvancement.checkAndGrant(player);
+        TotemJourneyAdvancements.checkHeldStack(player);
+        TotemJourneyAdvancements.checkZombieRide(player);
     }
 
     /**

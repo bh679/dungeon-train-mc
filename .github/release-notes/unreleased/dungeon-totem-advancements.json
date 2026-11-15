@@ -1,0 +1,20 @@
+{
+  "id": "dungeon-totem-advancements",
+  "version": "0.1836.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements"
+  ],
+  "title": "Totem advancements",
+  "summary": "New advancements for the Dungeon Totems: be saved by them, collect every kind, try every animal form, cure yourself of zombification and stack them. Four new challenges ask you to carry a full stack, or ride the train as a zombie, for the long haul, and you can track them.",
+  "highlights": [
+    "Totems now only stack when you place one on top of another",
+    "The Totem of Loneliness is now the Totem of Generosity"
+  ],
+  "pr": 2672,
+  "date": "2026-11-15",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

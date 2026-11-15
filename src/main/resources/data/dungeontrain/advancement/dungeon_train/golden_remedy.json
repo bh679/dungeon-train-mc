@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/not_quite_undying",
+  "display": {
+    "icon": {
+      "id": "minecraft:golden_apple"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.golden_remedy.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.golden_remedy.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "cured": {
+      "trigger": "dungeontotems:curse_survived",
+      "conditions": {
+        "curse": "zombified"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "cured"
+    ]
+  ]
+}
