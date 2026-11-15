@@ -2,7 +2,7 @@
   "parent": "dungeontrain:dungeon_train/not_quite_undying",
   "display": {
     "icon": {
-      "id": "dungeontotems:weakness_totem"
+      "id": "dungeontotems:insomnia_totem"
     },
     "title": {
       "translate": "advancements.dungeontrain.dungeon_train.double_down.title"

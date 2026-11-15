@@ -3100,7 +3100,7 @@
   "advancements.dungeontrain.dungeon_train.party_of_one.hint": "เต็มกองตลอดทาง",
   "advancements.dungeontrain.dungeon_train.double_down.title": "เพิ่มเดิมพัน",
   "advancements.dungeontrain.dungeon_train.double_down.description": "ซ้อนโทเท็มดันเจี้ยนชนิดเดียวกันสองอัน",
-  "advancements.dungeontrain.dungeon_train.double_down.hint": "อันหนึ่งซ้อนบนอีกอัน",
+  "advancements.dungeontrain.dungeon_train.double_down.hint": "ซ้อนกันได้ด้วยเหรอ?",
   "advancements.dungeontrain.editor.root.title": "โปรแกรมแก้ไข",
   "advancements.dungeontrain.editor.root.description": "สร้างขบวนรถไฟที่คุณโดยสาร",
   "advancements.dungeontrain.editor.made_carriage.title": "สถาปนิก",
