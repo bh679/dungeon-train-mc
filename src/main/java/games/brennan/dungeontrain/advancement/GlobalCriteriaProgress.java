@@ -292,7 +292,7 @@ public final class GlobalCriteriaProgress {
         Map<ResourceLocation, Set<String>> progress = new LinkedHashMap<>();
         result.result().orElse(Data.EMPTY).progress()
             .forEach((id, criteria) -> progress.put(id, new LinkedHashSet<>(criteria)));
-        judge(SealedJson.verify(element.getAsJsonObject(), SealedJson.scope(SEAL_STORE, key.uuid(), key.partition())),
+        judge(SealedJson.verify(element.getAsJsonObject(), SealedJson.scope(SEAL_STORE, key.uuid(), key.partition()), path),
             key, path, progress.isEmpty());
         return progress;
     }
@@ -307,8 +307,8 @@ public final class GlobalCriteriaProgress {
             case UNVERIFIED -> {
                 if (empty) return;
                 UNVERIFIED.add(key);
-                LOGGER.warn("[DungeonTrain] GlobalCriteriaProgress: {} has no seal on an install that has "
-                    + "sealed before; its progress is kept but not vouched for.", path.getFileName());
+                LOGGER.error("[DungeonTrain] GlobalCriteriaProgress: {} has no seal and was written after this "
+                    + "install began sealing; its progress is kept but not vouched for.", path.getFileName());
             }
             default -> {
                 if (verdict.tainted()) {

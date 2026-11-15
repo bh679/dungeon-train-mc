@@ -153,8 +153,8 @@ public final class EarnedPhotoAlbumScreen extends Screen {
             return Component.literal("#" + (n > 0 ? n : slot + 1));
         }
         if (id == null) return Component.translatable("advancements.dungeontrain.hidden_description");
-        String key = (kind == Kind.BIOME ? "biome." : "entity.") + id.getNamespace() + "." + id.getPath().replace('/', '.');
-        return Component.translatable(key);
+        if (kind == Kind.BIOME) return BiomeNames.nameOf(id);
+        return Component.translatable("entity." + id.getNamespace() + "." + id.getPath().replace('/', '.'));
     }
 
     /** The entry under (mouseX, mouseY) in the grid, or -1. */

@@ -45,6 +45,20 @@ public final class FirstEverAdvancements {
     }
 
     /**
+     * Server thread, from a genuine earn of a derived grant that makes no record because the profile
+     * holds advancements on trust ({@link CompletionistAdvancement#heldOnTrust}): reported to the
+     * relay for review instead of claimed ({@link AdvancementFirstClient#reportUnverified}).
+     */
+    public static void onUnverifiedEarn(ServerPlayer player, AdvancementHolder advancement, int onTrust) {
+        ResourceLocation id = advancement.id();
+        if (!eligible(id) || onTrust <= 0) return;
+        if (!DungeonTrainConfig.isWorldInfoToRelay()) return;
+        if (RunIntegrity.isCheated(player)) return;            // onEarn's Free Play report covers it
+        AdvancementFirstClient.reportUnverified(player.getUUID(), player.getGameProfile().getName(), id.toString(),
+            DifficultyPartition.keyFor(player.level()), onTrust);
+    }
+
+    /**
      * Server thread, from a genuine (non-replay) earn. Cheap when the earn cannot be a first.
      *
      * @param burrito the Everything Burrito's recorded play time when this earn is the burrito, else null —

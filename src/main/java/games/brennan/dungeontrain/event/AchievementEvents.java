@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.AdvancementAwards;
+import games.brennan.dungeontrain.advancement.AdvancementVouch;
 import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.TotemJourneyAdvancements;
@@ -1102,6 +1103,9 @@ public final class AchievementEvents {
         // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
         // finished advancements, so without this a new world started them from zero.
         AdvancementProfiles.absorbCriteria(player, AdvancementProfiles.currentKey(player));
+        // Advancements held on trust that the relay saw this player claim cleanly go back to earned,
+        // so the burrito and the tab-completes can make their records again (AdvancementVouch).
+        AdvancementVouch.onLogin(player);
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -1334,6 +1338,9 @@ public final class AchievementEvents {
                 long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
                         ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
                 FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
+            } else {
+                // Not lost either: the relay keeps it for review, and hears that this profile needs a look.
+                FirstEverAdvancements.onUnverifiedEarn(player, advancement, CompletionistAdvancement.heldOnTrust(player));
             }
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside

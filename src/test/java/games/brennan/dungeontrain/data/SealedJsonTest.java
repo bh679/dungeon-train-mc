@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,6 +86,22 @@ class SealedJsonTest {
         assertTrue(Files.isRegularFile(dir.resolve(InstallKey.FILE_NAME)));
         InstallKey.useDirectoryForTests(dir);                   // the next session finds the key
         assertEquals(SealedJson.Provenance.UNVERIFIED, SealedJson.verify(payload("{\"a\":1}"), SCOPE).provenance());
+    }
+
+    @Test
+    @DisplayName("an unsealed file last written before the key was made is still this install's own history")
+    void unsealedOlderThanKeyIsOwnHistory() throws Exception {
+        SealedJson.seal(payload("{}"), SCOPE, false);          // the upgrade session makes the key
+        Instant keyMade = Files.getLastModifiedTime(dir.resolve(InstallKey.FILE_NAME)).toInstant();
+        InstallKey.useDirectoryForTests(dir);                   // a later session
+        assertEquals(SealedJson.Provenance.VERIFIED,
+            SealedJson.verify(payload("{\"a\":1}"), SCOPE, keyMade.minusSeconds(86_400)).provenance(),
+            "a partition the upgrade session never rewrote must not turn unverified");
+        assertEquals(SealedJson.Provenance.UNVERIFIED,
+            SealedJson.verify(payload("{\"a\":1}"), SCOPE, keyMade.plusSeconds(60)).provenance(),
+            "a seal stripped after the key existed is still not vouched for");
+        assertTrue(SealedJson.verify(payload("{\"a\":1}"), SCOPE, keyMade.minusSeconds(1)).unsealed());
+        assertFalse(SealedJson.verify(SealedJson.seal(payload("{}"), SCOPE, false), SCOPE).unsealed());
     }
 
     @Test

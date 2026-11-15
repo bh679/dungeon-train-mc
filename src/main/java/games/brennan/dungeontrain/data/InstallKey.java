@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.function.Supplier;
 
@@ -38,6 +39,8 @@ public final class InstallKey {
     private static volatile byte[] key;
     /** Did the key file exist when this session first looked? Decided once, on the first read. */
     private static volatile Boolean existedAtStart;
+    /** When the key file was made (its last-modified time), read with {@link #existedAtStart}. */
+    private static volatile Instant createdAt;
 
     private InstallKey() {}
 
@@ -59,8 +62,25 @@ public final class InstallKey {
         return Boolean.TRUE.equals(existedAtStart);
     }
 
+    /**
+     * When this install first sealed: the key file's date, as it stood when this session began.
+     * Null when there was no key then (this session is the upgrade) or its date can't be read. The
+     * key is written once and never rewritten, so the date is the moment sealing started here.
+     */
+    public static synchronized Instant createdAt() {
+        noteExisted(resolver.get());
+        return createdAt;
+    }
+
     private static void noteExisted(Path path) {
-        if (existedAtStart == null) existedAtStart = Files.isRegularFile(path);
+        if (existedAtStart != null) return;
+        existedAtStart = Files.isRegularFile(path);
+        if (!existedAtStart) return;
+        try {
+            createdAt = Files.getLastModifiedTime(path).toInstant();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] InstallKey: couldn't read the date of {}: {}", path, e.toString());
+        }
     }
 
     private static byte[] readKey(Path path) {
@@ -93,6 +113,7 @@ public final class InstallKey {
         resolver = () -> dir.resolve(FILE_NAME);
         key = null;
         existedAtStart = null;
+        createdAt = null;
     }
 
     /** Tests only: back to the game directory, forgetting everything. */
@@ -100,5 +121,6 @@ public final class InstallKey {
         resolver = () -> PlayerDataPaths.root().resolve(FILE_NAME);
         key = null;
         existedAtStart = null;
+        createdAt = null;
     }
 }

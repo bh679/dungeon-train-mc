@@ -3291,6 +3291,8 @@
   "advancements.dungeontrain.dungeon_train.all_biome_families.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d7ca53356d13abba"},
   "advancements.dungeontrain.dungeon_train.ridden_biomes_all.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d7ca53356d13abba"},
   "gui.dungeontrain.biome_checklist.rare": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "cdf99180dbe39084"},
+  "biome.betterend.flower_islets": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5d00a5611cb03ed5"},
+  "biome.betterend.waterfall_ponds": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e0b954ee0359cbcb"},
   "advancements.dungeontrain.dungeon_train.multiplayer.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f35ea850a30d026f"},
   "advancements.dungeontrain.dungeon_train.echo_encounter.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f642a935fbd386ce"},
   "advancements.dungeontrain.dungeon_train.echo_befriend.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "9c14f4d3f306aa56"},
