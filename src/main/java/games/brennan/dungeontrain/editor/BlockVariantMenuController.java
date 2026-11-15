@@ -348,7 +348,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
                 conditionValuesToken(plot, localPos, s.condition()),
-                s.candles().id(), s.pot().id()));
+                s.candles().id(), s.pot().id(), s.trapped()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -853,6 +853,19 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 if (next == null) return;
                 mutated.set(idx, entry.withPot(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case BUMP_TRAPPED, SET_TRAPPED -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !TrappedChestRoll.isTrappable(entry.state())) return;
+                int next = packet.op() == BlockVariantEditPacket.Op.SET_TRAPPED
+                    ? Math.max(0, Math.min(VariantState.MAX_TRAPPED, packet.delta()))
+                    : TrappedChestRoll.wrapChance(entry.trapped(), packet.delta());
+                if (next == entry.trapped()) return;
+                mutated.set(idx, entry.withTrapped(next));
                 dirty = true;
             }
             case BUMP_DIFF_MIN -> {
