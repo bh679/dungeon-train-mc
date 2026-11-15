@@ -172,7 +172,8 @@ public final class CarriagePhotos {
                 .toImmutable();
         ItemStack out = stack.copy();
         out.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, adopted);
-        if (!author.isBlank() && !out.has(DataComponents.LORE)) {
+        // A photograph carries an empty lore component by default, so look at its lines, not its presence.
+        if (!author.isBlank() && out.getOrDefault(DataComponents.LORE, ItemLore.EMPTY).lines().isEmpty()) {
             out.set(DataComponents.LORE, new ItemLore(List.of(
                     Component.translatable("item.dungeontrain.shared_photo.by", author)
                             .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false)))));
