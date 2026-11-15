@@ -5,7 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.locale.Language;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
@@ -233,22 +232,8 @@ public final class BiomeChecklistScreen extends Screen {
             g.drawString(font, font.plainSubstrByWidth(line.heading().getString(), room), x + 10, y, HEADING_COLOUR, true);
             return;
         }
-        String name = font.plainSubstrByWidth(nameOf(line.biome()).getString(), COLUMN_WIDTH - 14);
+        String name = font.plainSubstrByWidth(BiomeNames.nameOf(line.biome()).getString(), COLUMN_WIDTH - 14);
         g.drawString(font, name, x + 10, y, line.ridden() ? RIDDEN_COLOUR : line.spare() ? SPARE_COLOUR : MISSING_COLOUR, line.ridden());
-    }
-
-    /** The game's own name for a biome; its id, tidied, when no language names it ({@code waterfall_ponds} → Waterfall Ponds). */
-    private static Component nameOf(ResourceLocation biome) {
-        String key = "biome." + biome.getNamespace() + "." + biome.getPath().replace('/', '.');
-        if (Language.getInstance().has(key)) return Component.translatable(key);
-        String path = biome.getPath().substring(biome.getPath().lastIndexOf('/') + 1);
-        StringBuilder name = new StringBuilder();
-        for (String word : path.split("_")) {
-            if (word.isEmpty()) continue;
-            if (!name.isEmpty()) name.append(' ');
-            name.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
-        }
-        return Component.literal(name.toString());
     }
 
     @Override
