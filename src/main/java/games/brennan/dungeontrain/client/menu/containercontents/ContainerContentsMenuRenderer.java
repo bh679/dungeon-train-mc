@@ -122,9 +122,40 @@ public final class ContainerContentsMenuRenderer {
         return ContainerContentsMenu.vaultKey() != null;
     }
 
-    /** Height of the optional rows between the header and the toolbar: link, then vault key. */
+    /** True when the trapped-chest row is shown: a plain chest, opened from the toolbar's Trap cell. */
+    static boolean hasTrapRow() {
+        return ContainerContentsMenu.trapRowOpen();
+    }
+
+    /** Height of the optional rows between the header and the toolbar: link, then vault key or trap. */
     static double topRowsHeight() {
-        return (hasLinkRow() ? LINK_ROW_HEIGHT : 0.0) + (hasVaultKeyRow() ? LINK_ROW_HEIGHT : 0.0);
+        return (hasLinkRow() ? LINK_ROW_HEIGHT : 0.0) + (hasVaultKeyRow() ? LINK_ROW_HEIGHT : 0.0)
+            + (hasTrapRow() ? LINK_ROW_HEIGHT : 0.0);
+    }
+
+    private static final ContainerContentsMenu.CellKind[] TOOLBAR = {
+        ContainerContentsMenu.CellKind.ADD, ContainerContentsMenu.CellKind.SAVE,
+        ContainerContentsMenu.CellKind.FILL_MIN, ContainerContentsMenu.CellKind.FILL_MAX,
+        ContainerContentsMenu.CellKind.CLEAR, ContainerContentsMenu.CellKind.CLOSE
+    };
+    private static final ContainerContentsMenu.CellKind[] TOOLBAR_WITH_TRAP = {
+        ContainerContentsMenu.CellKind.ADD, ContainerContentsMenu.CellKind.SAVE,
+        ContainerContentsMenu.CellKind.FILL_MIN, ContainerContentsMenu.CellKind.FILL_MAX,
+        ContainerContentsMenu.CellKind.TRAP_TOGGLE,
+        ContainerContentsMenu.CellKind.CLEAR, ContainerContentsMenu.CellKind.CLOSE
+    };
+
+    /** Toolbar cells left to right; a plain chest gets the Trap cell after the fill range. */
+    static ContainerContentsMenu.CellKind[] toolbarCells() {
+        return ContainerContentsMenu.trappedChance() != null ? TOOLBAR_WITH_TRAP : TOOLBAR;
+    }
+
+    /** Trap cell text: {@code Trap}, or {@code Trap 30%} once a chance is set. */
+    static String trapLabel() {
+        Integer chance = ContainerContentsMenu.trappedChance();
+        return chance == null || chance == 0
+            ? MenuLang.t("container.trap")
+            : MenuLang.t("container.trap_pct", chance);
     }
 
     /** The key's item name, from the item's own translation. */
@@ -303,31 +334,39 @@ public final class ContainerContentsMenuRenderer {
                 0, (keyTop + keyBottom) / 2.0, keyHover ? 0xFF000000 : 0xFFFFFFFF);
         }
 
-        // Toolbar — 6 cells: Add | Save | FillMin | FillMax | Clear | X
+        // Trapped-chest row (plain chest, opened from the toolbar's Trap cell) — the strip steps the chance.
+        if (hasTrapRow()) {
+            double trapTop = halfH - HEADER_HEIGHT - (hasLinkRow() ? LINK_ROW_HEIGHT : 0.0);
+            double trapBottom = trapTop - LINK_ROW_HEIGHT;
+            boolean trapHover = hovered.kind() == ContainerContentsMenu.CellKind.TRAPPED_CHANCE;
+            drawQuad(ps, buffer, -halfW + 0.01, trapBottom + 0.005,
+                halfW - 0.01, trapTop - 0.005, trapHover ? 0xC0FFCC55 : 0x4099AA33);
+            drawCenteredText(ps, buffer, font,
+                MenuLang.t("container.trapped_chance", ContainerContentsMenu.trappedChance()),
+                0, (trapTop + trapBottom) / 2.0, trapHover ? 0xFF000000 : 0xFFFFFFFF);
+        }
+
+        // Toolbar — Add | Save | FillMin | FillMax | (Trap) | Clear | X
         double toolbarTop = halfH - HEADER_HEIGHT - linkH;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 6.0;
+        ContainerContentsMenu.CellKind[] cells = toolbarCells();
+        double cellW = panelW / cells.length;
         int fmin = ContainerContentsMenu.fillMin();
         int fmax = ContainerContentsMenu.fillMax();
         int cs = ContainerContentsMenu.containerSize();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < cells.length; i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
-            ContainerContentsMenu.CellKind cellKind = switch (i) {
-                case 0 -> ContainerContentsMenu.CellKind.ADD;
-                case 1 -> ContainerContentsMenu.CellKind.SAVE;
-                case 2 -> ContainerContentsMenu.CellKind.FILL_MIN;
-                case 3 -> ContainerContentsMenu.CellKind.FILL_MAX;
-                case 4 -> ContainerContentsMenu.CellKind.CLEAR;
-                default -> ContainerContentsMenu.CellKind.CLOSE;
-            };
-            boolean isHover = hovered.kind() == cellKind;
+            ContainerContentsMenu.CellKind cellKind = cells[i];
+            boolean isHover = hovered.kind() == cellKind
+                || (cellKind == ContainerContentsMenu.CellKind.TRAP_TOGGLE && ContainerContentsMenu.trapRowOpen());
             int tint = switch (cellKind) {
                 case CLOSE -> isHover ? 0xC0FF8080 : 0x40FF6060;
                 case CLEAR -> isHover ? 0xC0FFAA66 : 0x40CC7733;
                 case FILL_MIN, FILL_MAX -> isHover ? 0xC0FFCC55 : 0x4099AA33;
                 case SAVE -> isHover ? 0xB033CCFF : 0x40337799;
+                case TRAP_TOGGLE -> isHover ? 0xC0CC88FF : 0x40884499;
                 default -> isHover ? 0xB066FF99 : 0x4033CC66;
             };
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
@@ -340,6 +379,7 @@ public final class ContainerContentsMenuRenderer {
                     String shown = fmax < 0 ? MenuLang.t("stages.all") : Integer.toString(fmax);
                     yield cs > 0 ? shown + "/" + cs : shown;
                 }
+                case TRAP_TOGGLE -> trapLabel();
                 case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";

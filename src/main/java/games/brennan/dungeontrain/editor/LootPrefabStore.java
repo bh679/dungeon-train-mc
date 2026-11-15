@@ -452,6 +452,8 @@ public final class LootPrefabStore {
             ? obj.get("fillMax").getAsInt() : ContainerContentsPool.FILL_ALL;
         String vaultKey = obj.has("vaultKey") && obj.get("vaultKey").isJsonPrimitive()
             ? obj.get("vaultKey").getAsString() : ContainerContentsPool.DEFAULT_VAULT_KEY;
+        int trappedChance = obj.has("trappedChance") && obj.get("trappedChance").isJsonPrimitive()
+            ? obj.get("trappedChance").getAsInt() : 0;
         List<ContainerContentsEntry> entries = new ArrayList<>();
         if (obj.has("entries") && obj.get("entries").isJsonArray()) {
             JsonArray arr = obj.getAsJsonArray("entries");
@@ -502,7 +504,7 @@ public final class LootPrefabStore {
                     e.has("contents") && e.get("contents").isJsonPrimitive() ? e.get("contents").getAsString() : null));
             }
         }
-        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey)));
+        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey, trappedChance)));
     }
 
     private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock, String category) {
@@ -519,6 +521,9 @@ public final class LootPrefabStore {
         }
         if (!pool.isDefaultVaultKey()) {
             sb.append("  \"vaultKey\": \"").append(pool.vaultKey()).append("\",\n");
+        }
+        if (!pool.isDefaultTrapped()) {
+            sb.append("  \"trappedChance\": ").append(pool.trappedChance()).append(",\n");
         }
         sb.append("  \"entries\": [");
         boolean first = true;

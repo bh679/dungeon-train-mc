@@ -177,7 +177,7 @@ public final class LuckyBonusRoller {
             if (!isBookPlaceholder(e)) kept.add(e);
         }
         if (kept.size() == pool.size()) return pool;
-        return new ContainerContentsPool(List.copyOf(kept), pool.fillMin(), pool.fillMax(), pool.vaultKey());
+        return new ContainerContentsPool(List.copyOf(kept), pool.fillMin(), pool.fillMax(), pool.vaultKey(), pool.trappedChance());
     }
 
     static boolean isBookPlaceholder(ContainerContentsEntry entry) {

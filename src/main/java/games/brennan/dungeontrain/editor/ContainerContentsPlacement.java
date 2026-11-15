@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
@@ -86,7 +87,11 @@ public final class ContainerContentsPlacement {
                              @Nullable String variantLinkedLootPrefabId) {
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, level);
-        SilentBlockOps.setBlockSilent(level, worldPos, VaultLoot.stateForNbt(state, finalNbt), finalNbt);
+        boolean trap = spawnsTrapped(level, worldPos, state, plotKey, localPos, worldSeed, carriageIndex,
+            variantLinkedLootPrefabId);
+        BlockState placed = trap ? TrappedChestRoll.trapped(state) : VaultLoot.stateForNbt(state, finalNbt);
+        SilentBlockOps.setBlockSilent(level, worldPos, placed, trap ? TrappedChestRoll.trappedNbt(finalNbt) : finalNbt);
+        if (trap) TrappedChestRoll.swapPartner(level, worldPos, placed);
     }
 
     /**
@@ -123,7 +128,14 @@ public final class ContainerContentsPlacement {
         // context (used only by the furnace-slot path for recipe lookups).
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null);
-        level.setBlock(worldPos, VaultLoot.stateForNbt(state, finalNbt), Block.UPDATE_CLIENTS);
+        boolean trap = spawnsTrapped(level, worldPos, state, plotKey, localPos, worldSeed, carriageIndex,
+            variantLinkedLootPrefabId);
+        BlockState placed = trap ? TrappedChestRoll.trapped(state) : VaultLoot.stateForNbt(state, finalNbt);
+        level.setBlock(worldPos, placed, Block.UPDATE_CLIENTS);
+        if (trap) {
+            finalNbt = TrappedChestRoll.trappedNbt(finalNbt);
+            TrappedChestRoll.swapPartner(level, worldPos, placed);
+        }
         if (finalNbt == null || !state.hasBlockEntity()) return;
         BlockEntity be = level.getBlockEntity(worldPos);
         if (be == null) return;
@@ -135,6 +147,22 @@ public final class ContainerContentsPlacement {
         positioned.putInt("z", worldPos.getZ());
         be.loadWithComponents(positioned, level.registryAccess());
         be.setChanged();
+    }
+
+    /**
+     * Whether the plain chest about to land at {@code worldPos} goes in as a trapped chest: its own
+     * pool's {@link ContainerContentsPool#trappedChance()} rolled, or its partner half already trapped.
+     */
+    private static boolean spawnsTrapped(LevelAccessor level, BlockPos worldPos, BlockState state,
+                                         String plotKey, BlockPos localPos, long worldSeed, int carriageIndex,
+                                         @Nullable String variantLinkedLootPrefabId) {
+        if (!TrappedChestRoll.isTrappable(state)) return false;
+        ContainerContentsPool pool = variantLinkedLootPrefabId != null
+            ? LootPrefabStore.load(variantLinkedLootPrefabId).map(LootPrefabStore.Data::pool)
+                .orElse(ContainerContentsPool.empty())
+            : ContainerContentsStore.loadFor(plotKey).poolAt(localPos);
+        return TrappedChestRoll.rolls(pool, state, localPos, worldSeed, carriageIndex)
+            || TrappedChestRoll.partnerTrapped(level, worldPos, state);
     }
 
     /**

@@ -63,6 +63,7 @@ import java.util.Objects;
  *       "fillMin": 1,
  *       "fillMax": 10,
  *       "vaultKey": "minecraft:ominous_trial_key",   // vaults only; omitted when the default
+ *       "trappedChance": 30,                         // plain chests only; omitted when 0
  *       "entries": [
  *         { "id": "minecraft:diamond", "count": 3, "weight": 5 },
  *         { "id": "minecraft:air", "count": 1, "weight": 20 }
@@ -201,7 +202,8 @@ public final class ContainerContentsStore {
         // Drop only when truly default (no entries AND default fill range) so
         // a player who sets Fill before adding any items doesn't lose the
         // setting between clicks.
-        if (pool == null || (pool.isEmpty() && pool.isDefaultRange() && pool.isDefaultVaultKey())) {
+        if (pool == null || (pool.isEmpty() && pool.isDefaultRange() && pool.isDefaultVaultKey()
+            && pool.isDefaultTrapped())) {
             pools.remove(localPos);
             links.remove(localPos);
         } else {
@@ -560,6 +562,9 @@ public final class ContainerContentsStore {
             if (!pool.isDefaultVaultKey()) {
                 sb.append("\n      \"vaultKey\": \"").append(pool.vaultKey()).append("\",");
             }
+            if (!pool.isDefaultTrapped()) {
+                sb.append("\n      \"trappedChance\": ").append(pool.trappedChance()).append(",");
+            }
             sb.append("\n      \"entries\": [");
             boolean firstEntry = true;
             for (ContainerContentsEntry ce : pool.entries()) {
@@ -682,6 +687,7 @@ public final class ContainerContentsStore {
                     int fillMin = 0;
                     int fillMax = ContainerContentsPool.FILL_ALL;
                     String vaultKey = ContainerContentsPool.DEFAULT_VAULT_KEY;
+                    int trappedChance = 0;
                     if (value.isJsonArray()) {
                         // Legacy form (no fill fields).
                         arr = value.getAsJsonArray();
@@ -697,6 +703,7 @@ public final class ContainerContentsStore {
                         if (po.has("fillMin")) fillMin = po.get("fillMin").getAsInt();
                         if (po.has("fillMax")) fillMax = po.get("fillMax").getAsInt();
                         if (po.has("vaultKey")) vaultKey = po.get("vaultKey").getAsString();
+                        if (po.has("trappedChance")) trappedChance = po.get("trappedChance").getAsInt();
                         if (!po.has("entries") || !po.get("entries").isJsonArray()) continue;
                         arr = po.getAsJsonArray("entries");
                     } else {
@@ -748,8 +755,10 @@ public final class ContainerContentsStore {
                             eo.has("contents") && eo.get("contents").isJsonPrimitive()
                                 ? eo.get("contents").getAsString() : null));
                     }
-                    if (!entries.isEmpty()) {
-                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax, vaultKey));
+                    // A trap chance alone is a setting worth keeping, like a pool with items.
+                    if (!entries.isEmpty() || trappedChance > 0) {
+                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax, vaultKey,
+                            trappedChance));
                     }
                 }
             }

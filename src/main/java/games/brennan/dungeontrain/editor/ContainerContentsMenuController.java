@@ -282,14 +282,15 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         BlockState state = player.serverLevel().getBlockState(worldPos);
         int containerSize = ContainerContentsRoller.slotsForContainer(state);
         String vaultKey = VaultLoot.isVault(state) ? pool.vaultKey() : null;
+        Integer trappedChance = TrappedChestRoll.isTrappable(state) ? pool.trappedChance() : null;
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link, vaultKey));
+            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link, vaultKey, trappedChance));
     }
 
     private static ContainerContentsSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
         Direction face, Vec3 up, ContainerContentsPool pool, int containerSize,
-        String link, String vaultKey
+        String link, String vaultKey, Integer trappedChance
     ) {
         Vec3 normal = MenuPanelGeometry.normalOf(face);
         Vec3 anchor = MenuPanelGeometry.faceAnchor(worldPos, face);
@@ -315,7 +316,8 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.hasContents() ? e.contents() : ""));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
-            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
+            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey,
+            trappedChance);
     }
 
     /**
@@ -595,6 +597,16 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.withRandomEnchantment(!e.randomEnchantment()));
+                dirty = true;
+            }
+            case BUMP_TRAPPED_CHANCE -> {
+                next = current.withTrappedChance(wrapChance(current.trappedChance(), packet.delta()));
+                dirty = true;
+            }
+            case SET_TRAPPED_CHANCE -> {
+                int chance = Math.max(0, Math.min(ContainerContentsPool.MAX_TRAPPED_CHANCE, packet.delta()));
+                if (chance == current.trappedChance()) return;
+                next = current.withTrappedChance(chance);
                 dirty = true;
             }
             case BUMP_DUR_CHANCE -> {

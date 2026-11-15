@@ -25,7 +25,8 @@ import java.util.Map;
  * {@code linkedPrefabId != null}, the menu also draws a link sub-row that
  * names the linked loot prefab and offers an unlink action. When
  * {@code vaultKey != null} the target is a vault, and the menu draws a Key row
- * naming the item that unlocks it.</p>
+ * naming the item that unlocks it. When {@code trappedChance != null} the target is a plain chest,
+ * and the menu offers the Trap button and its percent row.</p>
  *
  * <p>Inactive packet ({@code localPos == null}): close the menu.</p>
  */
@@ -40,8 +41,18 @@ public record ContainerContentsSyncPacket(
     Vec3 anchorRight,
     Vec3 anchorUp,
     @Nullable String linkedPrefabId,
-    @Nullable String vaultKey
+    @Nullable String vaultKey,
+    @Nullable Integer trappedChance
 ) implements CustomPacketPayload {
+
+    /** Not a plain chest: no Trap button. */
+    public ContainerContentsSyncPacket(String plotKey, @Nullable BlockPos localPos, List<Entry> entries,
+                                       int fillMin, int fillMax, int containerSize,
+                                       Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                       @Nullable String linkedPrefabId, @Nullable String vaultKey) {
+        this(plotKey, localPos, entries, fillMin, fillMax, containerSize, anchorPos, anchorRight, anchorUp,
+            linkedPrefabId, vaultKey, null);
+    }
 
     /** Not a vault: no Key row. */
     public ContainerContentsSyncPacket(String plotKey, @Nullable BlockPos localPos, List<Entry> entries,
@@ -246,6 +257,7 @@ public record ContainerContentsSyncPacket(
             buf.writeBoolean(true);
             buf.writeUtf(vaultKey, 256);
         }
+        buf.writeVarInt(trappedChance == null ? -1 : trappedChance);
     }
 
     public static ContainerContentsSyncPacket decode(FriendlyByteBuf buf) {
@@ -295,8 +307,9 @@ public record ContainerContentsSyncPacket(
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         String vaultKey = buf.readBoolean() ? buf.readUtf(256) : null;
+        int trapped = buf.readVarInt();
         return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link,
-            vaultKey);
+            vaultKey, trapped < 0 ? null : Math.min(trapped, 100));
     }
 
     @Override

@@ -120,22 +120,18 @@ public final class ContainerContentsMenuRaycast {
         if (ContainerContentsMenuRenderer.hasVaultKeyRow() && hitY > linkBottom) {
             return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.VAULT_KEY, -1);
         }
+        // Trapped-chest row (plain chest, opened from the Trap cell), in the same slot.
+        if (ContainerContentsMenuRenderer.hasTrapRow() && hitY > linkBottom) {
+            return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.TRAPPED_CHANCE, -1);
+        }
 
-        // Toolbar — 6 cells: Add | Save | FillMin | FillMax | Clear | X
+        // Toolbar — Add | Save | FillMin | FillMax | (Trap) | Clear | X
         if (hitY > toolbarBottom) {
-            double cellW = panelW / 6.0;
+            ContainerContentsMenu.CellKind[] cells = ContainerContentsMenuRenderer.toolbarCells();
+            double cellW = panelW / cells.length;
             int idx = (int) Math.floor((hitX + halfW) / cellW);
-            if (idx < 0) idx = 0;
-            if (idx > 5) idx = 5;
-            ContainerContentsMenu.CellKind kind = switch (idx) {
-                case 0 -> ContainerContentsMenu.CellKind.ADD;
-                case 1 -> ContainerContentsMenu.CellKind.SAVE;
-                case 2 -> ContainerContentsMenu.CellKind.FILL_MIN;
-                case 3 -> ContainerContentsMenu.CellKind.FILL_MAX;
-                case 4 -> ContainerContentsMenu.CellKind.CLEAR;
-                default -> ContainerContentsMenu.CellKind.CLOSE;
-            };
-            return new ContainerContentsMenu.Hit(kind, -1);
+            idx = Math.max(0, Math.min(cells.length - 1, idx));
+            return new ContainerContentsMenu.Hit(cells[idx], -1);
         }
 
         // Grid — variable row height. Find which entry contains hitY by
