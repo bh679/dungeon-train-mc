@@ -81,7 +81,13 @@ public final class ProgressCreditingGrants {
         "dungeontrain:photo_tribute",
         "dungeontrain:photo_count",
         "minecraft:impossible",
-        "minecraft:inventory_changed"
+        "minecraft:inventory_changed",
+        // Dungeon Totems: a totem saving you, its curse lifting, a morph form — all follow a near-death
+        // or a timer, not the player getting anywhere.
+        "minecraft:used_totem",
+        "dungeontotems:totem_popped",
+        "dungeontotems:curse_survived",
+        "dungeontotems:became_form"
     ).map(ResourceLocation::parse).collect(Collectors.toUnmodifiableSet());
 
     private ProgressCreditingGrants() {}

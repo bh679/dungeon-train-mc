@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * The advancements a single action can rule out for the rest of the current life, and the
@@ -60,9 +61,19 @@ public final class LifeDisqualification {
     /** The distinct-chests streak — reset by opening the same chest twice. */
     public static final List<ResourceLocation> CHEST_STREAK = List.of(CHESTS_100_UNIQUE);
 
+    /**
+     * The Dungeon Totems carriage streaks ({@link TotemJourneyAdvancements}): a full stack held, reset by letting
+     * go; a zombie ride, reset by a cure that comes too early.
+     */
+    public static final List<ResourceLocation> TOTEM_STREAKS = List.of(
+        dt("dungeon_train/party_of_one"), dt("dungeon_train/seeing_red"),
+        dt("dungeon_train/undead_commuter"), dt("dungeon_train/heart_of_stone"));
+
     /** Streak advancements: trackable, told about on reset, never ruled out for a life. */
-    private static final List<ResourceLocation> STREAK_IDS = List.of(
-        NO_CONTAINER_100, NO_CONTAINER_1000, NO_BREAK_100, NO_BREAK_1000, CHESTS_100_UNIQUE);
+    private static final List<ResourceLocation> STREAK_IDS = Stream.concat(
+            Stream.of(NO_CONTAINER_100, NO_CONTAINER_1000, NO_BREAK_100, NO_BREAK_1000, CHESTS_100_UNIQUE),
+            TOTEM_STREAKS.stream())
+        .toList();
 
     /** Disqualification rules, in tree order. Insertion order is what the client receives. */
     private static final Map<ResourceLocation, Predicate<ServerPlayer>> RULES = buildRules();

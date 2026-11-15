@@ -5,6 +5,7 @@ dungeontrain:dungeon_train/all_others
 dungeontrain:dungeon_train/apple_a_day
 dungeontrain:dungeon_train/assassination_attempt
 dungeontrain:dungeon_train/ate_edible_backpack
+dungeontrain:dungeon_train/back_from_the_brink
 dungeontrain:dungeon_train/burned_leaderboard_book
 dungeontrain:dungeon_train/burned_stat_book
 dungeontrain:dungeon_train/burned_unread
@@ -18,6 +19,7 @@ dungeontrain:dungeon_train/collecting_stories
 dungeontrain:dungeon_train/contained_loop
 dungeontrain:dungeon_train/cross_country
 dungeontrain:dungeon_train/deathnote_self_target
+dungeontrain:dungeon_train/double_down
 dungeontrain:dungeon_train/drift_came_back
 dungeontrain:dungeon_train/drift_first_marks
 dungeontrain:dungeon_train/drift_left_behind
@@ -32,6 +34,7 @@ dungeontrain:dungeon_train/faulthursts_favourite
 dungeontrain:dungeon_train/friends
 dungeontrain:dungeon_train/fully_developed
 dungeontrain:dungeon_train/going_the_distance
+dungeontrain:dungeon_train/golden_remedy
 dungeontrain:dungeon_train/heros_handbook
 dungeontrain:dungeon_train/i_live_here_now
 dungeontrain:dungeon_train/i_must_know
@@ -44,6 +47,7 @@ dungeontrain:dungeon_train/loved_back
 dungeontrain:dungeon_train/lovenote_self_target
 dungeontrain:dungeon_train/marathon_passenger
 dungeontrain:dungeon_train/maxed_backpack_slots
+dungeontrain:dungeon_train/menagerie_of_one
 dungeontrain:dungeon_train/million_metre_club
 dungeontrain:dungeon_train/murderous_intent
 dungeontrain:dungeon_train/naked_and_afraid
@@ -53,6 +57,7 @@ dungeontrain:dungeon_train/no_break_1000
 dungeontrain:dungeon_train/no_container_100
 dungeontrain:dungeon_train/no_container_1000
 dungeontrain:dungeon_train/no_good_deed
+dungeontrain:dungeon_train/not_quite_undying
 dungeontrain:dungeon_train/nothing_but_books
 dungeontrain:dungeon_train/one_for_the_road
 dungeontrain:dungeon_train/pacifist_100
@@ -117,6 +122,7 @@ dungeontrain:dungeon_train/the_long_way_back
 dungeontrain:dungeon_train/the_same_but_different
 dungeontrain:dungeon_train/the_upside_down
 dungeontrain:dungeon_train/three_melons
+dungeontrain:dungeon_train/totem_pole
 dungeontrain:dungeon_train/train_explored
 dungeontrain:dungeon_train/train_inside_a_train
 dungeontrain:dungeon_train/upgraded_backpack

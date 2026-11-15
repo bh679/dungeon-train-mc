@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:dungeon_train/party_of_one",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:rage_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.seeing_red.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.seeing_red.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "held": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "full_stack_rage_totem",
+        "threshold": 500
+      }
+    }
+  },
+  "requirements": [
+    [
+      "held"
+    ]
+  ]
+}

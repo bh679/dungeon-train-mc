@@ -1,0 +1,231 @@
+{
+  "parent": "dungeontrain:dungeon_train/not_quite_undying",
+  "display": {
+    "icon": {
+      "id": "minecraft:armor_stand"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.totem_pole.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.totem_pole.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "weakness_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:weakness_totem"
+        }
+      }
+    },
+    "fatigue_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:fatigue_totem"
+        }
+      }
+    },
+    "heartbreak_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:heartbreak_totem"
+        }
+      }
+    },
+    "blindness_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:blindness_totem"
+        }
+      }
+    },
+    "morphing_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:morphing_totem"
+        }
+      }
+    },
+    "zombification_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:zombification_totem"
+        }
+      }
+    },
+    "rage_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:rage_totem"
+        }
+      }
+    },
+    "loneliness_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:loneliness_totem"
+        }
+      }
+    },
+    "pacifism_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:pacifism_totem"
+        }
+      }
+    },
+    "melon_diet_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:melon_diet_totem"
+        }
+      }
+    },
+    "restraint_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:restraint_totem"
+        }
+      }
+    },
+    "void_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:void_totem"
+        }
+      }
+    },
+    "feather_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:feather_totem"
+        }
+      }
+    },
+    "boom_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:boom_totem"
+        }
+      }
+    },
+    "fire_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:fire_totem"
+        }
+      }
+    },
+    "hunger_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:hunger_totem"
+        }
+      }
+    },
+    "slowness_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:slowness_totem"
+        }
+      }
+    },
+    "breathlessness_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:breathlessness_totem"
+        }
+      }
+    },
+    "insomnia_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "items": "dungeontotems:insomnia_totem"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "weakness_totem"
+    ],
+    [
+      "fatigue_totem"
+    ],
+    [
+      "heartbreak_totem"
+    ],
+    [
+      "blindness_totem"
+    ],
+    [
+      "morphing_totem"
+    ],
+    [
+      "zombification_totem"
+    ],
+    [
+      "rage_totem"
+    ],
+    [
+      "loneliness_totem"
+    ],
+    [
+      "pacifism_totem"
+    ],
+    [
+      "melon_diet_totem"
+    ],
+    [
+      "restraint_totem"
+    ],
+    [
+      "void_totem"
+    ],
+    [
+      "feather_totem"
+    ],
+    [
+      "boom_totem"
+    ],
+    [
+      "fire_totem"
+    ],
+    [
+      "hunger_totem"
+    ],
+    [
+      "slowness_totem"
+    ],
+    [
+      "breathlessness_totem"
+    ],
+    [
+      "insomnia_totem"
+    ]
+  ]
+}
