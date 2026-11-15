@@ -49,6 +49,8 @@ public final class NapService {
     public static boolean offer(ServerPlayer player, BlockPos bedPos, boolean night) {
         if (!NapEligibility.canNap(player, bedPos) || levelIdOf(player.getServer()) == null) return false;
         OFFERS.put(player.getUUID(), new Offer(bedPos.immutable(), night));
+        LOGGER.info("[DungeonTrain] Nap offered to {} ({}) at bed {}", player.getName().getString(),
+            night ? "night" : "day", bedPos);
         DungeonTrainNet.sendTo(player, new ShowNapPromptPacket(night));
         return true;
     }
