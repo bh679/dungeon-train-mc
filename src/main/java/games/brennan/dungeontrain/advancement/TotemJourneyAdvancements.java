@@ -15,6 +15,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -82,6 +83,9 @@ public final class TotemJourneyAdvancements {
         if (start < 0 || !player.isAlive()) return;
         if (commuted(start, travelled(player), AdvancementRequirements.intValue(UNDEAD_COMMUTER, COMMUTE_CARTS))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, COMMUTE_ACTION);
+        } else {
+            // Cured too early: the ride is over, and a player tracking Undead Commuter is told.
+            LifeDisqualification.notifyStreakReset(player, List.of(UNDEAD_COMMUTER));
         }
     }
 
@@ -99,19 +103,29 @@ public final class TotemJourneyAdvancements {
     public static void checkHeldStack(ServerPlayer player) {
         String was = player.getData(ModDataAttachments.HELD_TOTEM_STACK.get());
         Optional<ResourceLocation> held = heldFullStack(player);
-        if (held.isEmpty()) {
-            if (!was.isEmpty()) player.setData(ModDataAttachments.HELD_TOTEM_STACK.get(), "");
-            return;
-        }
         int now = travelled(player);
         HeldStack streak = HeldStack.parse(was);
-        if (streak == null || !streak.totem().equals(held.get())) {
-            player.setData(ModDataAttachments.HELD_TOTEM_STACK.get(), new HeldStack(held.get(), now).encode());
+        if (held.isEmpty() || streak == null || !streak.totem().equals(held.get())) {
+            if (streak != null) notifyLetGo(player, streak, now);
+            player.setData(ModDataAttachments.HELD_TOTEM_STACK.get(),
+                held.map(totem -> new HeldStack(totem, now).encode()).orElse(""));
             return;
         }
         ResourceLocation advancement = STACK_ADVANCEMENTS.get(streak.totem());
         if (now - streak.startCarts() >= AdvancementRequirements.intValue(advancement, STACK_CARTS.get(advancement))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, stackAction(streak.totem()));
+        }
+    }
+
+    /**
+     * The stack was let go (or broken up, or swapped for another totem): tell a player tracking its advancement the
+     * streak has reset. Only once it had carried the stack at least a carriage, so flicking past it on the hotbar
+     * raises nothing.
+     */
+    private static void notifyLetGo(ServerPlayer player, HeldStack streak, int now) {
+        ResourceLocation advancement = STACK_ADVANCEMENTS.get(streak.totem());
+        if (advancement != null && now != streak.startCarts()) {
+            LifeDisqualification.notifyStreakReset(player, List.of(advancement));
         }
     }
 

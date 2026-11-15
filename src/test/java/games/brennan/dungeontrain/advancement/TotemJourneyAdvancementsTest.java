@@ -79,6 +79,15 @@ class TotemJourneyAdvancementsTest {
         assertEquals(TotemJourneyAdvancements.STACK_ADVANCEMENTS.size(), TotemJourneyAdvancements.STACK_CARTS.size());
     }
 
+    @Test
+    @DisplayName("Every carriage-counted totem advancement is a trackable streak")
+    void totemStreaksAreTrackable() {
+        Set<ResourceLocation> counted = new java.util.HashSet<>(TotemJourneyAdvancements.STACK_ADVANCEMENTS.values());
+        counted.add(TotemJourneyAdvancements.UNDEAD_COMMUTER);
+        assertEquals(counted, Set.copyOf(LifeDisqualification.TOTEM_STREAKS));
+        assertTrue(LifeDisqualification.streakIds().containsAll(counted));
+    }
+
     private static int thresholdOf(ResourceLocation advancement) throws Exception {
         return criteria(advancement.getPath()).entrySet().iterator().next().getValue().getAsJsonObject()
             .getAsJsonObject("conditions").get("threshold").getAsInt();
