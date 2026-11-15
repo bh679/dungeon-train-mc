@@ -37,7 +37,11 @@ public final class DistantHorizonsUpdatePromptSuppression {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String DH_MOD_ID = "distanthorizons";
-    private static final String UPDATE_SCREEN_SUFFIX = "distanthorizons.common.wrappers.gui.updater.UpdateModScreen";
+    /**
+     * Prefix, not exact name: DH 3.x opens a per-loader subclass ({@code UpdateModScreen_neoforge}),
+     * which an exact or suffix match missed, so the prompt was never caught on 3.x.
+     */
+    private static final String UPDATE_SCREEN_PREFIX = "com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen";
 
     private static boolean logged;
 
@@ -68,10 +72,15 @@ public final class DistantHorizonsUpdatePromptSuppression {
         return hasCurrentScreen ? Decision.KEEP_CURRENT_SCREEN : Decision.OPEN_TITLE_SCREEN;
     }
 
+    /** Whether {@code className} is DH's update prompt, on any loader. Pure, so it is unit-testable. */
+    public static boolean isUpdateScreen(String className) {
+        return className != null && className.startsWith(UPDATE_SCREEN_PREFIX);
+    }
+
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
         Screen next = event.getNewScreen();
-        if (next == null || !next.getClass().getName().endsWith(UPDATE_SCREEN_SUFFIX)) return;
+        if (next == null || !isUpdateScreen(next.getClass().getName())) return;
 
         Decision decision = decide(event.getCurrentScreen() != null, InitialScreensCapture.hasPending());
         if (!logged) {
