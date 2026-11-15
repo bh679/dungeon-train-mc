@@ -191,6 +191,32 @@ class GlobalAchievementStoreTest {
             "a file last written before this install first sealed is its own history");
     }
 
+    @Test
+    @DisplayName("A relay vouch moves held-on-trust ids back to earned, and can never add one")
+    void vouchMovesAbsorbedBackToEarned(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.appendAllAbsorbed(PLAYER, "normal", List.of(GAMEPLAY, VANILLA));
+        ResourceLocation stranger = ResourceLocation.parse("dungeontrain:dungeon_train/never_earned");
+
+        assertEquals(1, GlobalAchievementStore.vouch(PLAYER, "normal", List.of(GAMEPLAY, stranger)));
+        assertEquals(Set.of(VANILLA), GlobalAchievementStore.unverified(PLAYER, "normal"));
+        assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.read(PLAYER, "normal"),
+            "an id the profile never held is not added by the relay's answer");
+        newSession(dir);
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal").granted(),
+            "written sealed, so it holds");
+    }
+
+    @Test
+    @DisplayName("A tainted profile is never vouched for")
+    void taintedProfileIsNotVouched(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.writeAtomic(normalFile(dir), PLAYER, "normal",
+            new GlobalAchievementStore.Profile(Set.of(), Set.of(GAMEPLAY), true));
+        assertEquals(0, GlobalAchievementStore.vouch(PLAYER, "normal", List.of(GAMEPLAY)));
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.unverified(PLAYER, "normal"));
+    }
+
     /** Land every write and forget every session-level memory, keeping the files and the key. */
     private static void newSession(Path dir) {
         GlobalAchievementStore.flushAndClearAll();

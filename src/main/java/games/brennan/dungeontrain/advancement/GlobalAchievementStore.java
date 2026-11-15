@@ -367,6 +367,29 @@ public final class GlobalAchievementStore {
     }
 
     /**
+     * Move every id in {@code confirmed} that the partition holds as absorbed back to earned: the
+     * relay has seen this player claim it cleanly ({@link AdvancementVouch}), so it no longer stands
+     * on trust. Ids the profile does not hold as absorbed are ignored, so the relay's answer can
+     * never add anything. A tainted profile is left alone.
+     *
+     * @return the number of ids moved.
+     */
+    public static synchronized int vouch(UUID playerUuid, String partitionKey, Collection<ResourceLocation> confirmed) {
+        if (confirmed.isEmpty()) return 0;
+        Key key = new Key(playerUuid, partitionKey);
+        Profile current = cached(key);
+        if (current.tainted()) return 0;
+        Set<ResourceLocation> granted = new LinkedHashSet<>(current.granted());
+        Set<ResourceLocation> absorbed = new LinkedHashSet<>(current.absorbed());
+        for (ResourceLocation id : confirmed) {
+            if (absorbed.remove(id)) granted.add(id);
+        }
+        int moved = current.absorbed().size() - absorbed.size();
+        if (moved > 0) store(key, new Profile(granted, absorbed, false));
+        return moved;
+    }
+
+    /**
      * Remove {@code advancement} from the partition's sidecar if present. Lets
      * {@code /advancement revoke} stick across logout — without this, the
      * login-replay would immediately re-grant a revoked advancement.
