@@ -17,7 +17,8 @@ import java.util.Set;
 
 /**
  * Tags items a player put on the ground — tossed, dropped on death, or dropped by a mob the player
- * killed — so the train's runway sweep ({@link TrainTickEvents}) leaves them on the track. The tag
+ * killed — so the train leaves them on the track: the runway sweep ({@link TrainTickEvents}) skips
+ * them and {@code WedgedMobEjector} never discards them. The tag
  * is an entity tag, so it persists with the item through chunk unload.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
