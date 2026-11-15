@@ -114,6 +114,7 @@ class Textures:
             "exposure": _mod_jar("maven.modrinth/exposure/*/*/exposure-*.jar"),
             "exposure_polaroid": _mod_jar("maven.modrinth/exposure-polaroid/*/*/exposure-polaroid-*.jar"),
             "ediblebackpacks": _mod_jar("bh679/ediblebackpacks/*/*/ediblebackpacks-*.jar"),
+            "dungeontotems": _mod_jar("bh679/dungeontotems/*/*/dungeontotems-*.jar"),
             "vista": _mod_jar("maven.modrinth/vista_tv/*/*/vista_tv-*.jar"),
         }
         self.missing: list[str] = []
