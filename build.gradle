@@ -841,6 +841,10 @@ tasks.named('test', Test).configure {
     doFirst {
         def dd = configurations.compileClasspath.files.find { it.name.startsWith('deeperdarker-') }
         systemProperty 'dungeontrain.test.deeperdarkerJar', dd != null ? dd.absolutePath : ''
+        // BiomeNamesTest checks every biome these mods add has a name in some language file.
+        def biomeMods = ['betterend-neoforge-', 'betternether-neoforge-', 'biomes-o-plenty-', 'deeperdarker-', 'vanillabackport-']
+        def biomeJars = biomeMods.collect { prefix -> configurations.compileClasspath.files.find { it.name.startsWith(prefix) } }
+        systemProperty 'dungeontrain.test.biomeModJars', biomeJars.collect { it != null ? it.absolutePath : '' }.join(File.pathSeparator)
     }
     // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
     // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
