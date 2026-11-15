@@ -895,6 +895,7 @@ public final class CarriagePlacer {
                 ? null
                 : GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriageIndex, dims.length());
             CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant, gateCtx);
+            contents = restStopContents(contents, variant, config, carriageIndex, gateCtx);
             // The one place the roll actually happens, with the placement-time gate context. The
             // F3+4 panel reads this back rather than re-rolling, which it cannot do correctly once
             // the train has moved — see PlacedCarriageFacts.
@@ -955,6 +956,33 @@ public final class CarriagePlacer {
      */
     public static CarriageDims variantDims(CarriageVariant variant, CarriageDims dims) {
         return sizeOf(variant).boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
+    }
+
+    /**
+     * {@code picked}, or the rest-stop bed room when this carriage is a {@link RestStopPlan} rest
+     * stop. Neighbouring shells are predicted with {@link #variantForIndex} under this carriage's
+     * gate, so a stretch whose phase or level flips inside the window can rarely miss or double its
+     * stop; the gap rule still holds everywhere else.
+     */
+    private static CarriageContents restStopContents(CarriageContents picked, CarriageVariant variant,
+                                                     CarriageGenerationConfig config, int carriageIndex,
+                                                     GateContext gateCtx) {
+        if (gateCtx == null || !RestStopPlan.phaseAllowsBeds(gateCtx.phase())) return picked;
+        if (RestStopPlan.windowOf(config.seed(), carriageIndex) == null) return picked;
+        boolean isStop = RestStopPlan.isRestStop(config.seed(), carriageIndex, i -> {
+            CarriageVariant v = i == carriageIndex ? variant
+                : variantForIndex(i, config, CarriageWeights.current(), gateCtx);
+            return !isAnyFlatbed(v) && sizeOf(v) == ContentsSize.ROOM && takesRestStop(v);
+        });
+        if (!isStop) return picked;
+        return CarriageContentsRegistry.find(RestStopPlan.REST_STOP_CONTENTS).orElse(picked);
+    }
+
+    /** A shell whose author's allow-list keeps the rest-stop room out never gets one forced in. */
+    private static boolean takesRestStop(CarriageVariant v) {
+        return games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.get(v)
+            .map(allow -> allow.isAllowed(RestStopPlan.REST_STOP_CONTENTS))
+            .orElse(true);
     }
 
     /**

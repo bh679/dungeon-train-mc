@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "187";
+    public static final String PROTOCOL_VERSION = "188";
 
     private DungeonTrainNet() {}
 
@@ -284,6 +284,11 @@ public final class DungeonTrainNet {
         registrar.playToServer(CustomContentChoicePacket.TYPE, CustomContentChoicePacket.STREAM_CODEC, CustomContentChoicePacket::handle);
         registrar.playToClient(ShowDifficultyConfirmPacket.TYPE, ShowDifficultyConfirmPacket.STREAM_CODEC, ShowDifficultyConfirmPacket::handle);
         registrar.playToServer(DifficultyConfirmResponsePacket.TYPE, DifficultyConfirmResponsePacket.STREAM_CODEC, DifficultyConfirmResponsePacket::handle);
+
+        // Nap beds: a natural bed asks to save and quit (nap/NapService); the client answers.
+        registrar.playToClient(ShowNapPromptPacket.TYPE, ShowNapPromptPacket.STREAM_CODEC, ShowNapPromptPacket::handle);
+        registrar.playToServer(NapResponsePacket.TYPE, NapResponsePacket.STREAM_CODEC, NapResponsePacket::handle);
+        registrar.playToClient(NapSavedPacket.TYPE, NapSavedPacket.STREAM_CODEC, NapSavedPacket::handle);
 
         // Pause-menu "Abandon This Run": client → server kill request, ending the run via the death screen.
         registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
