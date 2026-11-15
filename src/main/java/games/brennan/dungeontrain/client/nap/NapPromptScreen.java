@@ -18,7 +18,7 @@ import java.util.List;
  * daytime or night copy. Main Menu asks once more (the feature is still being tested with players),
  * then saves and quits; Stay awake / Wake up. (or Escape) carries on.
  *
- * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 80% black, or fully black
+ * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 95% black, or fully black
  * when the player is already asleep. The final Main Menu hides the buttons and fades the rest of the
  * way to black over {@value #EXIT_FADE_MS} ms before the answer goes to the server.</p>
  */
@@ -34,8 +34,8 @@ public final class NapPromptScreen extends Screen {
     private static final int LINE_GAP = 2;
     private static final int SECTION_GAP = 14;
 
-    private static final long FADE_MS = 2000L;
-    private static final float FADE_AWAKE = 0.8F;
+    private static final long FADE_MS = 1000L;
+    private static final float FADE_AWAKE = 0.95F;
     private static final float FADE_ASLEEP = 1.0F;
     private static final long EXIT_FADE_MS = 2000L;
     /** Black held after saying yes while the server saves; the screen gives up if no answer comes. */
