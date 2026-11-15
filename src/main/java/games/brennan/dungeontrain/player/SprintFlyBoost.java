@@ -12,8 +12,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 /**
  * Creative sprint-fly boost: a multiplier on the horizontal speed of sprint-flying only. Normal
- * flight and the up/down rate stay vanilla — see {@code mixin/PlayerSprintFlyMixin}, which applies
- * it where vanilla computes sprint-fly speed ({@code Player.getFlyingSpeed}).
+ * flight and the up/down rate stay vanilla — see {@code mixin/LivingEntitySprintFlyMixin}, which applies
+ * it to the air speed vanilla moves with ({@code LivingEntity.getFrictionInfluencedSpeed}).
  *
  * <p>Set with {@code /dt flyspeed <multiplier>}. The server keeps the chosen value in the player's
  * persisted NBT (survives relog and death); unset means {@link #DEFAULT} (3×), and {@code 1}
