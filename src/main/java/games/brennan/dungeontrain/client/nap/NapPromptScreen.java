@@ -2,22 +2,30 @@ package games.brennan.dungeontrain.client.nap;
 
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NapResponsePacket;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 
 import java.util.List;
 
 /**
  * "You feel comfortable here." The nap prompt a natural bed offers ({@code nap/NapBedEvents}), in its
- * daytime or night copy. Main Menu saves and quits; Stay awake / Wake up. (or Escape) carries on.
+ * daytime or night copy. Main Menu asks once more (the feature is still being tested with players),
+ * then saves and quits; Stay awake / Wake up. (or Escape) carries on.
+ *
+ * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 80% black, or fully black
+ * when the player is already asleep.</p>
  */
 public final class NapPromptScreen extends Screen {
 
     private static final int COLOUR_TITLE = 0xFFFFFFFF;
     private static final int COLOUR_BODY = 0xFFA0A0A0;
+    private static final int COLOUR_WARNING = 0xFFFFC857;
     private static final int TEXT_WIDTH = 300;
     private static final int BUTTON_W = 150;
     private static final int BUTTON_H = 20;
@@ -25,10 +33,18 @@ public final class NapPromptScreen extends Screen {
     private static final int LINE_GAP = 2;
     private static final int SECTION_GAP = 14;
 
+    private static final long FADE_MS = 2000L;
+    private static final float FADE_AWAKE = 0.8F;
+    private static final float FADE_ASLEEP = 1.0F;
+
     private final String prefix;
+    private final long openedAt = Util.getMillis();
+    private float fadeTarget = FADE_AWAKE;
     private boolean responded = false;
+    private boolean warning = false;
     private List<FormattedCharSequence> titleLines = List.of();
     private List<FormattedCharSequence> bodyLines = List.of();
+    private int titleColour = COLOUR_TITLE;
     private int textTop;
 
     public NapPromptScreen(boolean night) {
@@ -42,19 +58,50 @@ public final class NapPromptScreen extends Screen {
 
     @Override
     protected void init() {
+        if (this.minecraft != null && this.minecraft.player != null && this.minecraft.player.isSleeping()) {
+            fadeTarget = FADE_ASLEEP;
+        }
         int width = Math.min(TEXT_WIDTH, this.width - 40);
-        titleLines = this.font.split(Component.translatable(prefix + "title")
-            .append("\n").append(Component.translatable(prefix + "question")), width);
-        bodyLines = this.font.split(Component.translatable(prefix + "body"), width);
+        if (warning) {
+            titleLines = this.font.split(Component.translatable("gui.dungeontrain.nap.warning"), width);
+            bodyLines = List.of();
+            titleColour = COLOUR_WARNING;
+        } else {
+            titleLines = this.font.split(Component.translatable(prefix + "title")
+                .append("\n").append(Component.translatable(prefix + "question")), width);
+            bodyLines = this.font.split(Component.translatable(prefix + "body"), width);
+            titleColour = COLOUR_TITLE;
+        }
         int lh = this.font.lineHeight + LINE_GAP;
-        int blockH = titleLines.size() * lh + SECTION_GAP + bodyLines.size() * lh + SECTION_GAP + BUTTON_H;
+        int blockH = titleLines.size() * lh + SECTION_GAP
+            + (bodyLines.isEmpty() ? 0 : bodyLines.size() * lh + SECTION_GAP) + BUTTON_H;
         textTop = (this.height - blockH) / 2;
         int buttonY = textTop + blockH - BUTTON_H;
         int left = this.width / 2 - BUTTON_W - BUTTON_GAP / 2;
-        addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.nap.main_menu"), b -> respond(true))
-            .bounds(left, buttonY, BUTTON_W, BUTTON_H).build());
-        addRenderableWidget(Button.builder(Component.translatable(prefix + "decline"), b -> respond(false))
-            .bounds(left + BUTTON_W + BUTTON_GAP, buttonY, BUTTON_W, BUTTON_H).build());
+        Button mainMenu = warning
+            ? Button.builder(Component.translatable("gui.dungeontrain.nap.main_menu"), b -> respond(true)).build()
+            : Button.builder(Component.translatable("gui.dungeontrain.nap.main_menu"), b -> showWarning(true)).build();
+        Button other = warning
+            ? Button.builder(CommonComponents.GUI_BACK, b -> showWarning(false)).build()
+            : Button.builder(Component.translatable(prefix + "decline"), b -> respond(false)).build();
+        mainMenu.setRectangle(BUTTON_W, BUTTON_H, left, buttonY);
+        other.setRectangle(BUTTON_W, BUTTON_H, left + BUTTON_W + BUTTON_GAP, buttonY);
+        addRenderableWidget(mainMenu);
+        addRenderableWidget(other);
+    }
+
+    /** Main Menu first shows the in-development warning; its Back returns to the prompt. */
+    private void showWarning(boolean on) {
+        warning = on;
+        rebuildWidgets();
+    }
+
+    /** The world fades to black behind the prompt instead of vanilla's blur. */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        float t = Mth.clamp((Util.getMillis() - openedAt) / (float) FADE_MS, 0.0F, 1.0F);
+        int alpha = Math.round(fadeTarget * t * 255.0F);
+        g.fill(0, 0, this.width, this.height, alpha << 24);
     }
 
     @Override
@@ -63,7 +110,7 @@ public final class NapPromptScreen extends Screen {
         int lh = this.font.lineHeight + LINE_GAP;
         int y = textTop;
         for (FormattedCharSequence line : titleLines) {
-            g.drawCenteredString(this.font, line, this.width / 2, y, COLOUR_TITLE);
+            g.drawCenteredString(this.font, line, this.width / 2, y, titleColour);
             y += lh;
         }
         y += SECTION_GAP;
@@ -78,8 +125,13 @@ public final class NapPromptScreen extends Screen {
         return false;
     }
 
+    /** Escape backs out of the warning first, then says no. */
     @Override
     public void onClose() {
+        if (warning) {
+            showWarning(false);
+            return;
+        }
         respond(false);
     }
 

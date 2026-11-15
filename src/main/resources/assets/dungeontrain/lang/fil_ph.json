@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "Yayakapin mo ba ito?",
   "gui.dungeontrain.nap.night.body": "Hawak mo pa rin ang gamit mo at ang puwesto mo sa tren, pero sino ang nakakaalam kung saan ka magigising.",
   "gui.dungeontrain.nap.night.decline": "Gumising.",
+  "gui.dungeontrain.nap.warning": "Ginagawa pa ang feature na ito. Gamitin lang kung handa kang mawala ang lahat ng dala mo.",
   "gui.dungeontrain.nap.main_menu": "Main Menu",
   "gui.dungeontrain.nap.free_play_cause": "Nagising mula sa isang takbo sa Malayang Paglalaro",
   "chat.dungeontrain.nap.tampered.moved": "Hindi kilala ng tren ang kamang ito, may nakialam dito.",

@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "Adakah anda menerimanya?",
   "gui.dungeontrain.nap.night.body": "Anda masih memegang kelengkapan dan tempat anda di kereta api, tetapi siapa tahu di mana anda akan terjaga.",
   "gui.dungeontrain.nap.night.decline": "Bangun.",
+  "gui.dungeontrain.nap.warning": "Ciri ini masih dalam pembangunan. Gunakan hanya jika anda sanggup kehilangan semua yang anda bawa.",
   "gui.dungeontrain.nap.main_menu": "Menu Utama",
   "gui.dungeontrain.nap.free_play_cause": "Terjaga daripada larian Main Bebas",
   "chat.dungeontrain.nap.tampered.moved": "Kereta api tidak mengenali katil ini, ia telah diusik.",

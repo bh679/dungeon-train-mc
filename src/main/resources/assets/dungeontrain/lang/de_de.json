@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "Gibst du dich ihr hin?",
   "gui.dungeontrain.nap.night.body": "Du behältst deine Ausrüstung und deinen Platz im Zug, aber wer weiß, wo du aufwachst.",
   "gui.dungeontrain.nap.night.decline": "Aufwachen.",
+  "gui.dungeontrain.nap.warning": "Diese Funktion ist noch in Entwicklung. Nutze sie nur, wenn du bereit bist, alles zu verlieren, was du dabei hast.",
   "gui.dungeontrain.nap.main_menu": "Hauptmenü",
   "gui.dungeontrain.nap.free_play_cause": "Aus einem Lauf im Freien Spiel aufgewacht",
   "chat.dungeontrain.nap.tampered.moved": "Der Zug erkennt dieses Bett nicht, jemand hat daran herumgepfuscht.",

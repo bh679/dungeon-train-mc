@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "받아들이시겠습니까?",
   "gui.dungeontrain.nap.night.body": "장비와 기차 위의 자리는 그대로 지키지만, 어디서 깨어날지는 아무도 모릅니다.",
   "gui.dungeontrain.nap.night.decline": "일어나기.",
+  "gui.dungeontrain.nap.warning": "이 기능은 아직 개발 중입니다. 지니고 있는 모든 것을 잃어도 괜찮을 때만 사용하세요.",
   "gui.dungeontrain.nap.main_menu": "메인 메뉴",
   "gui.dungeontrain.nap.free_play_cause": "자유 플레이 런에서 깨어남",
   "chat.dungeontrain.nap.tampered.moved": "기차가 이 침대를 알아보지 못합니다. 누군가 손을 댔습니다.",

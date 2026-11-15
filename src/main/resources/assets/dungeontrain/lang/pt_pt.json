@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "Entregas-te a ele?",
   "gui.dungeontrain.nap.night.body": "Manténs o teu equipamento e o teu lugar no comboio, mas quem sabe onde vais acordar.",
   "gui.dungeontrain.nap.night.decline": "Acordar.",
+  "gui.dungeontrain.nap.warning": "Esta funcionalidade ainda está em desenvolvimento. Usa-a apenas se estiveres disposto a perder tudo o que tens contigo.",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.free_play_cause": "Acordaste de uma partida em Jogo Livre",
   "chat.dungeontrain.nap.tampered.moved": "O comboio não reconhece esta cama, mexeram nela.",

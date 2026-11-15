@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "Geef je je eraan over?",
   "gui.dungeontrain.nap.night.body": "Je houdt je uitrusting en je plek in de trein, maar wie weet waar je wakker wordt.",
   "gui.dungeontrain.nap.night.decline": "Word wakker.",
+  "gui.dungeontrain.nap.warning": "Deze functie is nog in ontwikkeling. Gebruik hem alleen als je bereid bent alles wat je bij je hebt kwijt te raken.",
   "gui.dungeontrain.nap.main_menu": "Hoofdmenu",
   "gui.dungeontrain.nap.free_play_cause": "Wakker geworden uit een run in Vrij Spel",
   "chat.dungeontrain.nap.tampered.moved": "De trein herkent dit bed niet, er is mee geknoeid.",

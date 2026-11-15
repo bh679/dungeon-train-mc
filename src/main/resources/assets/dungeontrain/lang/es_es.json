@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "¿Te dejas llevar?",
   "gui.dungeontrain.nap.night.body": "Conservas tu equipo y tu sitio en el tren, pero quién sabe dónde despertarás.",
   "gui.dungeontrain.nap.night.decline": "Despertar.",
+  "gui.dungeontrain.nap.warning": "Esta función aún está en desarrollo. Úsala solo si estás dispuesto a perder todo lo que llevas encima.",
   "gui.dungeontrain.nap.main_menu": "Menú principal",
   "gui.dungeontrain.nap.free_play_cause": "Despertaste de una partida en Juego Libre",
   "chat.dungeontrain.nap.tampered.moved": "El tren no reconoce esta cama, la han manipulado.",

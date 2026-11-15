@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "身を委ねますか？",
   "gui.dungeontrain.nap.night.body": "装備と列車での居場所はそのまま。でも、どこで目覚めるかは誰にもわかりません。",
   "gui.dungeontrain.nap.night.decline": "目を覚ます。",
+  "gui.dungeontrain.nap.warning": "この機能はまだ開発中です。持ち物をすべて失ってもかまわない場合にのみ使ってください。",
   "gui.dungeontrain.nap.main_menu": "メインメニュー",
   "gui.dungeontrain.nap.free_play_cause": "フリープレイのランから目覚めた",
   "chat.dungeontrain.nap.tampered.moved": "列車はこのベッドを認めない。誰かが手を加えたようだ。",

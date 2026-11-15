@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "Ti lasci andare?",
   "gui.dungeontrain.nap.night.body": "Tieni il tuo equipaggiamento e il tuo posto sul treno, ma chissà dove ti sveglierai.",
   "gui.dungeontrain.nap.night.decline": "Svegliati.",
+  "gui.dungeontrain.nap.warning": "Questa funzione è ancora in sviluppo. Usala solo se sei disposto a perdere tutto ciò che hai con te.",
   "gui.dungeontrain.nap.main_menu": "Menu principale",
   "gui.dungeontrain.nap.free_play_cause": "Risvegliato da una partita in Gioco Libero",
   "chat.dungeontrain.nap.tampered.moved": "Il treno non riconosce questo letto, è stato manomesso.",

@@ -651,6 +651,7 @@
   "gui.dungeontrain.nap.night.question": "Czy mu się poddasz?",
   "gui.dungeontrain.nap.night.body": "Zachowujesz ekwipunek i miejsce w pociągu, ale kto wie, gdzie się obudzisz.",
   "gui.dungeontrain.nap.night.decline": "Obudź się.",
+  "gui.dungeontrain.nap.warning": "Ta funkcja jest wciąż w trakcie tworzenia. Używaj jej tylko, jeśli jesteś gotów stracić wszystko, co masz przy sobie.",
   "gui.dungeontrain.nap.main_menu": "Menu główne",
   "gui.dungeontrain.nap.free_play_cause": "Przebudzenie z rozgrywki w Swobodnej Grze",
   "chat.dungeontrain.nap.tampered.moved": "Pociąg nie rozpoznaje tego łóżka, ktoś przy nim majstrował.",

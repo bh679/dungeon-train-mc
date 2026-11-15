@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "T'y abandonnes-tu ?",
   "gui.dungeontrain.nap.night.body": "Tu gardes ton équipement et ta place dans le train, mais qui sait où tu te réveilleras.",
   "gui.dungeontrain.nap.night.decline": "Se réveiller.",
+  "gui.dungeontrain.nap.warning": "Cette fonctionnalité est encore en développement. Ne l'utilise que si tu es prêt à perdre tout ce que tu as sur toi.",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.free_play_cause": "Réveillé d'une partie en Jeu Libre",
   "chat.dungeontrain.nap.tampered.moved": "Le train ne reconnaît pas ce lit, on l'a trafiqué.",

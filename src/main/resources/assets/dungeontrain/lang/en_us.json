@@ -704,6 +704,7 @@
   "gui.dungeontrain.nap.night.question": "Do you embrace it?",
   "gui.dungeontrain.nap.night.body": "You hold onto your gear and your place on the train, but who knows where you'll wake up.",
   "gui.dungeontrain.nap.night.decline": "Wake up.",
+  "gui.dungeontrain.nap.warning": "This feature is still in development, only use it if you're willing to lose everything on you.",
   "gui.dungeontrain.nap.main_menu": "Main Menu",
   "gui.dungeontrain.nap.free_play_cause": "Woke from a Free Play run",
   "chat.dungeontrain.nap.tampered.moved": "The train doesn't recognise this bed, it's been tampered with.",

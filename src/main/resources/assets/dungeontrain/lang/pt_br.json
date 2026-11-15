@@ -628,6 +628,7 @@
   "gui.dungeontrain.nap.night.question": "Você se entrega a ele?",
   "gui.dungeontrain.nap.night.body": "Você mantém seu equipamento e seu lugar no trem, mas quem sabe onde você vai acordar.",
   "gui.dungeontrain.nap.night.decline": "Acordar.",
+  "gui.dungeontrain.nap.warning": "Este recurso ainda está em desenvolvimento. Use apenas se estiver disposto a perder tudo o que carrega.",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.free_play_cause": "Acordou de uma partida no Jogo Livre",
   "chat.dungeontrain.nap.tampered.moved": "O trem não reconhece esta cama, mexeram nela.",

@@ -727,6 +727,7 @@
   "gui.dungeontrain.nap.night.question": "Піддасися йому?",
   "gui.dungeontrain.nap.night.body": "Спорядження і місце в потязі залишаються з тобою, але хто знає, де ти прокинешся.",
   "gui.dungeontrain.nap.night.decline": "Прокинутися.",
+  "gui.dungeontrain.nap.warning": "Ця функція ще в розробці. Використовуй її, лише якщо готовий втратити все, що маєш при собі.",
   "gui.dungeontrain.nap.main_menu": "Головне меню",
   "gui.dungeontrain.nap.free_play_cause": "Пробудження із забігу у Вільній грі",
   "chat.dungeontrain.nap.tampered.moved": "Потяг не впізнає це ліжко, його хтось чіпав.",

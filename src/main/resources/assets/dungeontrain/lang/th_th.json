@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "จะยอมรับมันไหม?",
   "gui.dungeontrain.nap.night.body": "คุณยังคงมีอุปกรณ์และที่ของคุณบนรถไฟ แต่ใครจะรู้ว่าคุณจะตื่นขึ้นที่ไหน",
   "gui.dungeontrain.nap.night.decline": "ตื่นขึ้น",
+  "gui.dungeontrain.nap.warning": "ฟีเจอร์นี้ยังอยู่ระหว่างการพัฒนา ใช้เฉพาะเมื่อคุณพร้อมจะเสียทุกอย่างที่ติดตัวอยู่",
   "gui.dungeontrain.nap.main_menu": "เมนูหลัก",
   "gui.dungeontrain.nap.free_play_cause": "ตื่นจากการเล่นในโหมดเล่นอิสระ",
   "chat.dungeontrain.nap.tampered.moved": "รถไฟจำเตียงนี้ไม่ได้ มีคนไปยุ่งกับมันแล้ว",

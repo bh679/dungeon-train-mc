@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "Bạn có đón nhận nó không?",
   "gui.dungeontrain.nap.night.body": "Bạn vẫn giữ trang bị và chỗ của mình trên tàu, nhưng ai biết bạn sẽ tỉnh dậy ở đâu.",
   "gui.dungeontrain.nap.night.decline": "Tỉnh dậy.",
+  "gui.dungeontrain.nap.warning": "Tính năng này vẫn đang được phát triển. Chỉ dùng nếu bạn sẵn sàng mất mọi thứ đang mang theo.",
   "gui.dungeontrain.nap.main_menu": "Menu chính",
   "gui.dungeontrain.nap.free_play_cause": "Tỉnh dậy từ một lượt chơi ở chế độ Chơi Tự do",
   "chat.dungeontrain.nap.tampered.moved": "Đoàn tàu không nhận ra chiếc giường này, nó đã bị can thiệp.",

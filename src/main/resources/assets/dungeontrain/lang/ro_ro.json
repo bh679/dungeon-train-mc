@@ -727,6 +727,7 @@
   "gui.dungeontrain.nap.night.question": "Te lași în voia ei?",
   "gui.dungeontrain.nap.night.body": "Îți păstrezi echipamentul și locul în tren, dar cine știe unde te vei trezi.",
   "gui.dungeontrain.nap.night.decline": "Trezește-te.",
+  "gui.dungeontrain.nap.warning": "Această funcție este încă în dezvoltare. Folosește-o doar dacă ești dispus să pierzi tot ce ai asupra ta.",
   "gui.dungeontrain.nap.main_menu": "Meniu principal",
   "gui.dungeontrain.nap.free_play_cause": "Trezit dintr-o tură în Joc Liber",
   "chat.dungeontrain.nap.tampered.moved": "Trenul nu recunoaște acest pat, cineva a umblat la el.",

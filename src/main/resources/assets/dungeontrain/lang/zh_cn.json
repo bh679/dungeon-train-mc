@@ -605,6 +605,7 @@
   "gui.dungeontrain.nap.night.question": "你要拥抱它吗？",
   "gui.dungeontrain.nap.night.body": "你保有你的装备和你在列车上的位置，但谁知道你会在哪里醒来。",
   "gui.dungeontrain.nap.night.decline": "醒来。",
+  "gui.dungeontrain.nap.warning": "此功能仍在开发中。只有在你愿意失去身上所有东西时才使用它。",
   "gui.dungeontrain.nap.main_menu": "主菜单",
   "gui.dungeontrain.nap.free_play_cause": "从自由模式的旅程中醒来",
   "chat.dungeontrain.nap.tampered.moved": "列车认不出这张床，它被人动过了。",
