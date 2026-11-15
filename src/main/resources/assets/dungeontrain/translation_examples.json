@@ -7478,6 +7478,24 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.container.trap_pct": {
+    "1": {
+      "label": "the percent chance the chest spawns as a trapped chest (a whole number, the % sign follows)",
+      "examples": [
+        "25",
+        "100"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.trapped_chance": {
+    "1": {
+      "label": "the percent chance the chest spawns as a trapped chest (a whole number, the % sign follows)",
+      "examples": [
+        "0",
+        "50"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.container.contents": {
     "1": {
       "label": "the id of the loot prefab the shulker box is filled from",
