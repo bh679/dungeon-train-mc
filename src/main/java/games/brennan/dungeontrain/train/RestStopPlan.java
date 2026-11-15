@@ -6,7 +6,7 @@ import java.util.function.IntPredicate;
 
 /**
  * Where the train's guaranteed <b>rest stops</b> sit: carriages whose contents are forced to the bed
- * room (with respawn anchors in the Nether, {@link #kindFor}), so a natural nap spot
+ * room (the respawn-anchor room in the Nether, {@link #kindFor}), so a natural nap spot
  * ({@code nap/NapEligibility}) is never more than {@link #MAX_GAP} carriages away outside the End.
  * Today's randomly rolled bed rooms stay on top of these and only shorten the gap.
  *
@@ -30,8 +30,14 @@ public final class RestStopPlan {
     /** Brennan's rule: at least one natural bed every this many carriages. */
     public static final int MAX_GAP = 250;
 
-    /** The bed room a rest stop gets. Ungated, so it fits every phase a bed can sleep in. */
+    /** The bed room an ordinary rest stop gets. Ungated, so it fits every phase a bed can sleep in. */
     public static final String REST_STOP_CONTENTS = "sleeping";
+    /**
+     * The respawn-anchor room a Nether rest stop gets. Authored in the editor as its own contents
+     * template; until a template with this id exists, the Nether has no guaranteed rest stop. Beds
+     * are never turned into anchors, nor anchors into beds.
+     */
+    public static final String NETHER_REST_STOP_CONTENTS = "respawnanchor";
 
     /** Decorrelates the jitter from every other {@code (seed, index)} roll. */
     private static final long SALT = 0x5EB7_57A9_D00DL;
@@ -71,8 +77,17 @@ public final class RestStopPlan {
         NONE,
         /** The bed room. */
         BEDS,
-        /** The bed room with its beds swapped for charged respawn anchors ({@link RestStopAnchors}). */
-        ANCHORS
+        /** The respawn-anchor room ({@link #NETHER_REST_STOP_CONTENTS}). */
+        ANCHORS;
+
+        /** The contents id this kind of rest stop is forced to, or null for none. */
+        public String contentsId() {
+            return switch (this) {
+                case NONE -> null;
+                case BEDS -> REST_STOP_CONTENTS;
+                case ANCHORS -> NETHER_REST_STOP_CONTENTS;
+            };
+        }
     }
 
     /**

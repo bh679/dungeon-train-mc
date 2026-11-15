@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.nap;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.player.RunRestore;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.nbt.CompoundTag;
@@ -96,6 +97,8 @@ public final class NapWake {
             LOGGER.warn("[DungeonTrain] Nap {} could not be marked used; not waking it.", plan.nap().napId(), e);
             return Optional.empty();
         }
+        // Not a new player: no welcome book and lightning. Marked before the login event, which reads it.
+        NarrativeProgressData.get(server.overworld()).markStartingBookReceived(player.getUUID());
         WOKEN.put(player.getUUID(), plan.nap());
         PLACE_AT.put(player.getUUID(), plan.nap().x());
         LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
