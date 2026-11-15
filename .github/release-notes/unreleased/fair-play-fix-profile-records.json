@@ -4,11 +4,10 @@
   "type": "fix",
   "tags": [
     "fix",
-    "advancements",
     "internal"
   ],
   "title": "Fair play fix",
-  "summary": "A fair play fix: some players' advancement records weren't being counted. They count again.",
+  "summary": "Fair play fix.",
   "highlights": [],
   "pr": 2671,
   "date": "2026-11-15",
