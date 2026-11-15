@@ -18,6 +18,7 @@
       "chat.dungeontrain.twitch.saved_verify",
       "gui.dungeontrain.editor_screen.layout.weight_tip",
       "gui.dungeontrain.options.catch_up_burst.hint",
+      "advancements.dungeontrain.dungeon_train.fully_developed.hint",
       "gui.dungeontrain.options.stream_audio.hint",
       "gui.dungeontrain.options.stream_audio.tip",
       "gui.dungeontrain.options.mic_support.hint",

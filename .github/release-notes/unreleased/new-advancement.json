@@ -1,0 +1,17 @@
+{
+  "id": "new-advancement",
+  "version": "0.1839.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements"
+  ],
+  "title": "New advancement",
+  "summary": "A new advancement is waiting to be found.",
+  "highlights": [],
+  "pr": 2675,
+  "date": "2026-11-15",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
