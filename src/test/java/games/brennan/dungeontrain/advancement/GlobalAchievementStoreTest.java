@@ -160,6 +160,44 @@ class GlobalAchievementStoreTest {
     }
 
     @Test
+    @DisplayName("A pre-seal file read in the upgrade session but never written stays earned in later sessions")
+    void upgradeSessionReadIsResealed(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Path shared = dir.resolve(GlobalAchievementStore.fileName(PLAYER, GlobalAchievementStore.SHARED));
+        Files.writeString(normalFile(dir), "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        Files.writeString(shared, "{\"granted\":[\"" + EDITOR + "\"]}");
+        // The upgrade session: both files are read, only Normal earns (which creates the key).
+        GlobalAchievementStore.read(PLAYER, GlobalAchievementStore.SHARED);
+        GlobalAchievementStore.append(PLAYER, "normal", VANILLA);
+        newSession(dir);
+
+        assertTrue(GlobalAchievementStore.unverified(PLAYER, GlobalAchievementStore.SHARED).isEmpty(),
+            "the shared file was this install's own history and must not turn unverified later");
+        assertTrue(GlobalAchievementStore.unverified(PLAYER, "normal").isEmpty());
+        assertTrue(Files.readString(shared).contains("\"seal\""), "read in the upgrade session, so sealed then");
+    }
+
+    @Test
+    @DisplayName("A pre-seal file never read in the upgrade session stays earned when a later session first reads it")
+    void upgradeSessionUnreadFileStaysEarned(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Path hard = dir.resolve(GlobalAchievementStore.fileName(PLAYER, "hard"));
+        Files.writeString(hard, "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        // The upgrade session plays Normal only; the Hard file is never opened.
+        GlobalAchievementStore.append(PLAYER, "normal", VANILLA);
+        newSession(dir);
+
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(hard, PLAYER, "hard").granted(),
+            "a file last written before this install first sealed is its own history");
+    }
+
+    /** Land every write and forget every session-level memory, keeping the files and the key. */
+    private static void newSession(Path dir) {
+        GlobalAchievementStore.flushAndClearAll();
+        InstallKey.useDirectoryForTests(dir);
+    }
+
+    @Test
     @DisplayName("Absorbed ids stay apart from earned ones and never upgrade by a repeat append")
     void absorbedStaysAbsorbed(@TempDir Path dir) {
         GlobalAchievementStore.useDirectoryForTests(dir);

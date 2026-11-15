@@ -249,25 +249,39 @@ public final class GlobalAchievementStore {
      * {@code absorbed}.
      */
     static Profile readFile(Path path, UUID uuid, String partition) {
-        if (!Files.isRegularFile(path)) return Profile.EMPTY;
+        return readJudged(path, uuid, partition).profile();
+    }
+
+    /**
+     * A read and whether its file wants writing back now: a caught edit (so the taint holds), or a
+     * file with no seal that was still this install's own history (so it is sealed while it can be
+     * vouched for, rather than turning unverified the next time the install key's date is in doubt).
+     */
+    record Read(Profile profile, boolean writeBack) {
+        static final Read NONE = new Read(Profile.EMPTY, false);
+    }
+
+    static Read readJudged(Path path, UUID uuid, String partition) {
+        if (!Files.isRegularFile(path)) return Read.NONE;
         JsonElement element;
         try (Reader reader = Files.newBufferedReader(path)) {
             element = JsonParser.parseReader(reader);
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("[DungeonTrain] GlobalAchievementStore: I/O error reading {}: {}", path, e.getMessage());
-            return Profile.EMPTY;
+            return Read.NONE;
         }
         var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
         if (result.error().isPresent() || !element.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] GlobalAchievementStore: failed to parse {}: {}",
                 path, result.error().map(e -> e.message()).orElse("not an object"));
-            return Profile.EMPTY;
+            return Read.NONE;
         }
         Data data = result.result().orElse(Data.EMPTY);
         SealedJson.Verdict verdict = SealedJson.verify(element.getAsJsonObject(),
-            SealedJson.scope(SEAL_STORE, uuid, partition));
-        return judged(new Profile(new LinkedHashSet<>(data.granted()), new LinkedHashSet<>(data.absorbed()), false),
+            SealedJson.scope(SEAL_STORE, uuid, partition), path);
+        Profile profile = judged(new Profile(new LinkedHashSet<>(data.granted()), new LinkedHashSet<>(data.absorbed()), false),
             verdict, uuid, path);
+        return new Read(profile, profile.tainted() || (verdict.verified() && verdict.unsealed()));
     }
 
     /** Apply a read's verdict to the profile it read. Package-private for tests. */
@@ -279,9 +293,11 @@ public final class GlobalAchievementStore {
             }
             case UNVERIFIED -> {
                 if (profile.granted().isEmpty()) return profile;
-                LOGGER.warn("[DungeonTrain] GlobalAchievementStore: {} has no seal on an install that has "
-                    + "sealed before; its {} advancement(s) are kept but not vouched for.",
-                    path.getFileName(), profile.granted().size());
+                // Loud on purpose: from here on this profile's tab-completes and burrito make no
+                // record, and nothing else tells anyone. AdvancementVouch is the way back.
+                LOGGER.error("[DungeonTrain] GlobalAchievementStore: {} for {} has no seal and was written after "
+                    + "this install began sealing; its {} advancement(s) are kept but not vouched for.",
+                    path.getFileName(), uuid, profile.granted().size());
                 Set<ResourceLocation> absorbed = new LinkedHashSet<>(profile.absorbed());
                 absorbed.addAll(profile.granted());
                 return new Profile(Set.of(), absorbed, false);
@@ -424,10 +440,12 @@ public final class GlobalAchievementStore {
         return CACHE.computeIfAbsent(key, k -> {
             Profile pending = PENDING.get(k);
             if (pending != null) return pending;
-            Profile loaded = readFile(resolver.apply(k.uuid(), k.partition()), k.uuid(), k.partition());
+            Read read = readJudged(resolver.apply(k.uuid(), k.partition()), k.uuid(), k.partition());
+            Profile loaded = read.profile();
             // A freshly caught edit is written straight back with the taint under the seal, so the
-            // mark survives even if nothing else is ever earned on this profile.
-            if (loaded.tainted()) {
+            // mark survives even if nothing else is ever earned on this profile; an unsealed file
+            // still read as this install's own history is sealed the same way, while it still is.
+            if (read.writeBack()) {
                 PENDING.put(k, loaded);
                 WRITER.execute(() -> writePending(k));
             }

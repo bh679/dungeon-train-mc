@@ -8,9 +8,13 @@ import org.slf4j.Logger;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.TreeMap;
@@ -26,10 +30,17 @@ import java.util.UUID;
  * stays set until the file is reset.</p>
  *
  * <p>Reading gives one of three {@link Provenance}s. {@code VERIFIED} is a seal that matches, or an
- * unsealed file on an install that had never sealed before this session (an upgrade). {@code UNVERIFIED}
- * is an unsealed file on an install that had: the seal was stripped, or an older backup was put
- * back. Neither can be told apart, so the contents are kept but not vouched for. {@code TAMPERED} is
- * a seal that does not match: the contents were changed.</p>
+ * unsealed file that is this install's own history from before it sealed: either the install had
+ * never sealed before this session (an upgrade), or the file was last written before the install
+ * key was made ({@link InstallKey#createdAt}). The second rule matters because a file is only
+ * sealed when it is next written, and a partition the upgrade session never touched (another
+ * difficulty, the shared file, another player) would otherwise turn unverified the session after.
+ * {@code UNVERIFIED} is an unsealed file written after the key existed: the seal was stripped, or an
+ * older backup was put back. Neither can be told apart, so the contents are kept but not vouched
+ * for. {@code TAMPERED} is a seal that does not match: the contents were changed.</p>
+ *
+ * <p>A store that reads an unsealed file as {@code VERIFIED} should write it back sealed
+ * ({@link Verdict#unsealed}), so it never has to lean on the file date again.</p>
  */
 public final class SealedJson {
 
@@ -40,8 +51,11 @@ public final class SealedJson {
 
     public enum Provenance { VERIFIED, UNVERIFIED, TAMPERED }
 
-    /** What a read found: where the contents stand, and whether the file carries a taint mark. */
-    public record Verdict(Provenance provenance, boolean tainted) {
+    /**
+     * What a read found: where the contents stand, whether the file carries a taint mark, and
+     * whether it had no seal at all (so a {@code VERIFIED} one wants sealing on the spot).
+     */
+    public record Verdict(Provenance provenance, boolean tainted, boolean unsealed) {
         public boolean verified() { return provenance == Provenance.VERIFIED; }
     }
 
@@ -62,20 +76,48 @@ public final class SealedJson {
         return out;
     }
 
-    /** Judge a file as read from disk. */
+    /** Judge a file whose date is unknown: an unsealed one is decided by {@link InstallKey#sealedBefore} alone. */
     public static Verdict verify(JsonObject file, String scope) {
+        return verify(file, scope, (Instant) null);
+    }
+
+    /** Judge a file read from {@code source} on disk; its date decides an unsealed file. */
+    public static Verdict verify(JsonObject file, String scope, Path source) {
+        return verify(file, scope, lastModified(source));
+    }
+
+    /**
+     * Judge a file as read. {@code lastModified} is when it was last written, or {@code null} when
+     * unknown, which judges an unsealed file by {@link InstallKey#sealedBefore} alone.
+     */
+    public static Verdict verify(JsonObject file, String scope, Instant lastModified) {
         JsonElement seal = file.get(SEAL);
         boolean tainted = file.has(TAINTED) && file.get(TAINTED).isJsonPrimitive()
             && file.get(TAINTED).getAsJsonPrimitive().isBoolean() && file.get(TAINTED).getAsBoolean();
         if (seal == null || !seal.isJsonPrimitive()) {
-            return new Verdict(InstallKey.sealedBefore() ? Provenance.UNVERIFIED : Provenance.VERIFIED, false);
+            return new Verdict(isOwnHistory(lastModified) ? Provenance.VERIFIED : Provenance.UNVERIFIED, false, true);
         }
         JsonObject body = file.deepCopy();
         body.remove(SEAL);
         String expected = mac(scope, canonical(body));
         boolean matches = MessageDigest.isEqual(
             expected.getBytes(StandardCharsets.US_ASCII), seal.getAsString().getBytes(StandardCharsets.US_ASCII));
-        return matches ? new Verdict(Provenance.VERIFIED, tainted) : new Verdict(Provenance.TAMPERED, true);
+        return matches ? new Verdict(Provenance.VERIFIED, tainted, false) : new Verdict(Provenance.TAMPERED, true, false);
+    }
+
+    /** Is an unsealed file written at {@code lastModified} from before this install ever sealed? */
+    private static boolean isOwnHistory(Instant lastModified) {
+        if (!InstallKey.sealedBefore()) return true;
+        Instant keyMade = InstallKey.createdAt();
+        return lastModified != null && keyMade != null && !lastModified.isAfter(keyMade);
+    }
+
+    private static Instant lastModified(Path source) {
+        try {
+            return Files.getLastModifiedTime(source).toInstant();
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
     }
 
     private static String mac(String scope, String canonical) {
