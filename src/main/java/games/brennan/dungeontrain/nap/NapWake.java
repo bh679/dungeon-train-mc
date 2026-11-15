@@ -16,7 +16,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +79,7 @@ public final class NapWake {
         if (nap.isEmpty() || nap.get().levelId().equals(NapService.levelIdOf(server))) return;
         planned = new Plan(uuid, slot, nap.get());
         RunRestore.raiseWorldProgress(server.overworld(), nap.get().worldDepth());
+        carryPreviousLife(server, uuid, nap.get());
         LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.get().napId(), slot,
             Math.round(nap.get().x()), nap.get().carriage(), nap.get().band());
     }
@@ -99,6 +103,8 @@ public final class NapWake {
         }
         // Not a new player: no welcome book and lightning. Marked before the login event, which reads it.
         NarrativeProgressData.get(server.overworld()).markStartingBookReceived(player.getUUID());
+        // No advancement can be earned by the wake itself (landing on the train, the first tick in a biome).
+        NapWakeGrace.open(player.getUUID());
         WOKEN.put(player.getUUID(), plan.nap());
         PLACE_AT.put(player.getUUID(), plan.nap().x());
         LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
@@ -131,6 +137,33 @@ public final class NapWake {
         pos.add(DoubleTag.valueOf(spawn.getZ() + 0.5));
         tag.put("Pos", pos);
         return tag;
+    }
+
+    /**
+     * The previous life's advancements, stats and narrative progress, written into this fresh world
+     * before anyone logs in, so vanilla loads them at login as already earned (no toasts) and the
+     * stories carry on where they were.
+     */
+    private static void carryPreviousLife(MinecraftServer server, UUID owner, NapSnapshot nap) {
+        writePlayerFile(server, LevelResource.PLAYER_ADVANCEMENTS_DIR, owner, nap.advancementsJson());
+        writePlayerFile(server, LevelResource.PLAYER_STATS_DIR, owner, nap.statsJson());
+        if (nap.narrative().isEmpty()) return;
+        try {
+            NarrativeProgressData.get(server.overworld()).importFor(owner, nap.narrative());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap {}: narrative progress not carried", nap.napId(), e);
+        }
+    }
+
+    private static void writePlayerFile(MinecraftServer server, LevelResource dir, UUID owner, String json) {
+        if (json.isEmpty()) return;
+        Path file = server.getWorldPath(dir).resolve(owner + ".json");
+        try {
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: could not write {}; not carried", file, e);
+        }
     }
 
     /** A run world nobody has played yet: DT generated its name, it has a train, and no saved player. */

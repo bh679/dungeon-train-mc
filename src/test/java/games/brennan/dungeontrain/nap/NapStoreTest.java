@@ -34,6 +34,34 @@ final class NapStoreTest {
     }
 
     @Test
+    @DisplayName("the previous life's advancements, stats and narrative survive the round trip")
+    void roundTripCarriesPreviousLife() {
+        CompoundTag player = new CompoundTag();
+        player.putInt("XpLevel", 7);
+        CompoundTag narrative = new CompoundTag();
+        narrative.putIntArray("shared_books_ever_read", new int[] {3, 9});
+        String advancements = "{\"minecraft:story/root\":{\"done\":true},\"DataVersion\":3955}"
+            + " ".repeat(70_000);
+        NapSnapshot n = new NapSnapshot(UUID.randomUUID(), 5L, "0.1840.0", "World 1700000000003", player,
+            12.0, 0, "Overworld", 1, 4, false, "normal", advancements, "{\"stats\":{}}", narrative);
+        NapSnapshot back = NapSnapshot.fromTag(n.toTag());
+        assertEquals(n, back);
+        assertEquals(advancements, back.advancementsJson(), "past NBT's 64 KB string limit");
+        assertEquals(narrative, back.narrative());
+    }
+
+    @Test
+    @DisplayName("a nap saved before the previous life was carried still reads, with none of it")
+    void oldNapReadsWithoutPreviousLife() {
+        CompoundTag tag = nap("World 1700000000004").toTag();
+        NapSnapshot back = NapSnapshot.fromTag(tag);
+        assertEquals("", back.advancementsJson());
+        assertEquals("", back.statsJson());
+        assertTrue(back.narrative().isEmpty());
+        assertFalse(tag.contains("advancements"), "empty fields are left out of the file");
+    }
+
+    @Test
     @DisplayName("a nap wakes once: a copy put back after waking is refused")
     void singleUse(@TempDir Path root) throws Exception {
         NapStore store = new NapStore(root);

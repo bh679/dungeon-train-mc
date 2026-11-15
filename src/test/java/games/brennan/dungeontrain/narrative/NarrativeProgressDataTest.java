@@ -290,4 +290,37 @@ final class NarrativeProgressDataTest {
         assertFalse(reloaded.isSeriesReported("life"), "a prefix of another series id is not a match");
         assertTrue(reloaded.markSeriesReported("life-a", bob), "a second reader can still report it");
     }
+
+    @Test
+    @DisplayName("a nap carries the napper's narrative progress, and none of another player's")
+    void napExportImport() {
+        UUID me = UUID.randomUUID();
+        UUID other = UUID.randomUUID();
+        NarrativeProgressData old = NarrativeProgressData.load(new CompoundTag());
+        old.markStoryVariantSeen(STORY, LETTER, VARIANT);
+        old.markRead(STORY, LETTER);
+        old.markSharedBookEverRead(42);
+        old.markStartingBookReceived(me);
+        old.markStartingBookReceived(other);
+        old.markSeriesReported("life-a", me);
+        old.markSeriesReported("life-b", other);
+        int myNext = old.nextLetter(me, 2L).letterIndex();
+        old.nextLetter(other, 0L);
+
+        CompoundTag napped = old.exportFor(me);
+        NarrativeProgressData fresh = NarrativeProgressData.load(new CompoundTag());
+        fresh.markRead(STORY, LETTER + 1);
+        fresh.importFor(me, napped);
+
+        assertTrue(fresh.hasSeenStoryVariant(STORY, LETTER, VARIANT));
+        assertTrue(fresh.progressFor(STORY).readLetters().contains(LETTER), "the nap's read letter");
+        assertTrue(fresh.progressFor(STORY).readLetters().contains(LETTER + 1), "this world's own is kept");
+        assertEquals(1, fresh.distinctSharedBooksEverRead());
+        assertTrue(fresh.hasReceivedStartingBook(me));
+        assertFalse(fresh.hasReceivedStartingBook(other), "another player's receipt stays behind");
+        assertTrue(fresh.hasReportedSeries("life-a", me));
+        assertFalse(fresh.isSeriesReported("life-b"));
+        assertEquals(myNext + 1, fresh.peekNextIndex(me, 2L), "the letter series carries on");
+        assertEquals(1, fresh.peekNextIndex(other, 0L));
+    }
 }

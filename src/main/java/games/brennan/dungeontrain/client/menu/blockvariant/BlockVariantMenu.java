@@ -238,10 +238,13 @@ public final class BlockVariantMenu {
             && games.brennan.dungeontrain.editor.FlowerPots.isPot(parsed);
     }
 
-    /** True when {@code entry} is a respawn anchor row — it shows the Charge pill and popup in the Grow slot. */
+    /**
+     * True when {@code entry} is a respawn anchor row (Charge) or a Respawn Obelisk row (Gems) — it shows
+     * that pill and popup in the Grow slot.
+     */
     public static boolean isAnchorRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
         return entry.entityId() == null && entry.groupRef() <= 0
-            && games.brennan.dungeontrain.editor.VariantCharges.isAnchor(parsed);
+            && games.brennan.dungeontrain.editor.VariantCharges.isChargeable(parsed);
     }
 
     /** True when {@code entry} is a white bed row — it shows the Colours pill and popup in the Grow slot. */
@@ -291,7 +294,8 @@ public final class BlockVariantMenu {
             return new SlotPopup(CellKind.POT_OPTION, PotPopupLayout.rows(pot(entry), panelW, halfH));
         }
         if (isAnchorRow(entry, parsed)) {
-            return new SlotPopup(CellKind.CHARGE_OPTION, ChargePopupLayout.rows(charges(entry), panelW, halfH));
+            return new SlotPopup(CellKind.CHARGE_OPTION, ChargePopupLayout.rows(charges(entry),
+                games.brennan.dungeontrain.editor.VariantCharges.maxFor(parsed), panelW, halfH));
         }
         if (isWhiteBedRow(entry, parsed)) {
             return new SlotPopup(CellKind.BED_COLOUR_OPTION, BedColourPopupLayout.rows(panelW, halfH));

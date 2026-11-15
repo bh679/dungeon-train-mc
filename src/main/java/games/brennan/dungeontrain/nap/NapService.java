@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
+import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NapSavedPacket;
 import games.brennan.dungeontrain.net.ShowNapPromptPacket;
@@ -19,6 +20,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -129,10 +134,33 @@ public final class NapService {
         } catch (RuntimeException e) {
             LOGGER.debug("[DungeonTrain] Nap: no band label at x={}", x, e);
         }
+        // Flushed first, so the files read below are this moment's.
+        player.getAdvancements().save();
+        player.getStats().save();
+        String advancements = readPlayerFile(server, LevelResource.PLAYER_ADVANCEMENTS_DIR, player.getUUID());
+        String stats = readPlayerFile(server, LevelResource.PLAYER_STATS_DIR, player.getUUID());
+        CompoundTag narrative = new CompoundTag();
+        try {
+            narrative = NarrativeProgressData.get(server.overworld()).exportFor(player.getUUID());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: narrative progress not carried", e);
+        }
         return new NapSnapshot(UUID.randomUUID(), System.currentTimeMillis(), modVersion(),
             levelId, playerTag, x, (int) Math.floor(x / BLOCKS_PER_CARRIAGE), band, facingAlongX(player),
             BoardingProgressData.get(server.overworld()).travelledCarriageIndex(), RunIntegrity.isCheated(player),
-            server.getWorldData().getDifficulty().getKey());
+            server.getWorldData().getDifficulty().getKey(), advancements, stats, narrative);
+    }
+
+    /** {@code <dir>/<uuid>.json} of this world as text, or empty when it is missing or unreadable. */
+    private static String readPlayerFile(MinecraftServer server, LevelResource dir, UUID player) {
+        Path file = server.getWorldPath(dir).resolve(player + ".json");
+        if (!Files.isRegularFile(file)) return "";
+        try {
+            return Files.readString(file, StandardCharsets.UTF_8);
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: could not read {}; not carried", file, e);
+            return "";
+        }
     }
 
     private static String modVersion() {

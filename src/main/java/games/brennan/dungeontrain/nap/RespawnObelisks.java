@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -22,6 +23,8 @@ import java.util.List;
 public final class RespawnObelisks {
 
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("betterend", "respawn_obelisk");
+    /** BetterEnd's Amber Gem, what an obelisk is fed ({@link RespawnObeliskGems}). */
+    public static final ResourceLocation AMBER_GEM = ResourceLocation.fromNamespaceAndPath("betterend", "amber_gem");
     private static final String SHAPE = "shape";
     private static final int HEIGHT = 3;
 
@@ -29,6 +32,15 @@ public final class RespawnObelisks {
 
     public static boolean isObelisk(BlockState state) {
         return ID.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+    }
+
+    public static boolean isAmberGem(ItemStack stack) {
+        return !stack.isEmpty() && AMBER_GEM.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+    }
+
+    /** True for the obelisk's bottom part, the one its gems are kept under. */
+    public static boolean isBottom(BlockState state) {
+        return isObelisk(state) && partIndex(state) == 0;
     }
 
     /** Index of {@code state}'s part from the bottom: 0 bottom, 1 middle, 2 top (0 when unreadable). */
@@ -68,6 +80,7 @@ public final class RespawnObelisks {
      */
     public static void explode(ServerLevel level, BlockPos pos, BlockState state) {
         List<BlockPos> parts = parts(pos, state);
+        RespawnObeliskGems.get(level).forget(parts.get(0));
         for (BlockPos p : parts) {
             if (isObelisk(level.getBlockState(p))) level.removeBlock(p, false);
         }

@@ -55,16 +55,19 @@ public final class NapWakeEvents {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         TURNING.remove(event.getEntity().getUUID());
+        NapWakeGrace.close(event.getEntity().getUUID());
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         TURNING.clear();
         NapWake.clear();
+        NapWakeGrace.clear();
     }
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
+        NapWakeGrace.tick(PlayerJoinEvents::isPlacementPending);
         if (TURNING.isEmpty()) return;
         MinecraftServer server = event.getServer();
         Iterator<UUID> it = TURNING.iterator();

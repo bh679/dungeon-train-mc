@@ -49,6 +49,40 @@ final class AnchorBedVariantsTest {
     // ---- charges ----
 
     @Test
+    @DisplayName("an obelisk's gem range reaches 6; an anchor still tops out at 4")
+    void gemRangeUpToSix() {
+        assertEquals(6, VariantCharges.MAX_GEMS);
+        assertEquals(4, VariantCharges.maxFor(Blocks.RESPAWN_ANCHOR.defaultBlockState()));
+        assertEquals(4, VariantCharges.maxFor(Blocks.STONE.defaultBlockState()));
+        assertFalse(VariantCharges.isObelisk(Blocks.RESPAWN_ANCHOR.defaultBlockState()));
+        assertTrue(VariantCharges.isChargeable(Blocks.RESPAWN_ANCHOR.defaultBlockState()));
+        assertFalse(VariantCharges.isChargeable(Blocks.STONE.defaultBlockState()));
+
+        VariantCharges six = VariantCharges.range(6, 6);
+        assertEquals(six, VariantCharges.fromInt(six.toInt()), "6 fits the packed wire form");
+        assertEquals(six, VariantCharges.parse(six.id()));
+        assertEquals(6, six.rollCount(7L, 1L, 0, VariantCharges.MAX_GEMS));
+        assertEquals(4, six.rollCount(7L, 1L, 0, VariantCharges.MAX), "clamped to the block's max");
+        assertEquals(0, VariantCharges.AS_PLACED.rollCount(7L, 1L, 0, VariantCharges.MAX_GEMS), "default holds none");
+        assertEquals(VariantCharges.range(2, 4), VariantCharges.range(2, 6).clampedTo(VariantCharges.MAX));
+        assertSame(VariantCharges.AS_PLACED, VariantCharges.AS_PLACED.clampedTo(VariantCharges.MAX));
+
+        BlockState anchor = Blocks.RESPAWN_ANCHOR.defaultBlockState();
+        assertEquals(4, VariantCharges.range(5, 6).apply(anchor, 7L, 1L, 0).getValue(RespawnAnchorBlock.CHARGE),
+            "an anchor never takes more than 4");
+
+        VariantCharges range = VariantCharges.range(0, 6);
+        Set<Integer> seen = new HashSet<>();
+        for (int carriage = 0; carriage < 400; carriage++) {
+            int n = range.rollCount(99L, 5L, carriage, VariantCharges.MAX_GEMS);
+            assertTrue(n >= 0 && n <= 6);
+            assertEquals(n, range.rollCount(99L, 5L, carriage, VariantCharges.MAX_GEMS), "deterministic");
+            seen.add(n);
+        }
+        assertEquals(7, seen.size(), "every count 0..6 comes up");
+    }
+
+    @Test
     @DisplayName("Charge tokens and packed ints round-trip; malformed tokens are rejected")
     void chargeTokens() {
         assertSame(VariantCharges.AS_PLACED, VariantCharges.parse(""));
@@ -56,7 +90,8 @@ final class AnchorBedVariantsTest {
         assertEquals(VariantCharges.range(1, 4), VariantCharges.parse("1-4"));
         assertEquals(VariantCharges.range(0, 0), VariantCharges.parse("0-0"));
         assertNull(VariantCharges.parse("3-1"));
-        assertNull(VariantCharges.parse("0-5"));
+        assertNull(VariantCharges.parse("0-7"), "past the obelisk's 6");
+        assertEquals(VariantCharges.range(0, 6), VariantCharges.parse("0-6"), "an obelisk's full gem range");
         assertNull(VariantCharges.parse("lots"));
         assertNull(VariantCharges.parse("2"));
         assertEquals("", VariantCharges.AS_PLACED.id());
@@ -66,7 +101,7 @@ final class AnchorBedVariantsTest {
             assertEquals(c, VariantCharges.parse(c.id()));
         }
         assertEquals(VariantCharges.range(3, 3), VariantCharges.range(3, 1), "max follows min up");
-        assertEquals(VariantCharges.range(0, 4), VariantCharges.range(-2, 9), "clamped to 0..4");
+        assertEquals(VariantCharges.range(0, 6), VariantCharges.range(-2, 9), "clamped to 0..6");
         assertTrue(VariantCharges.isAnchor(Blocks.RESPAWN_ANCHOR.defaultBlockState()));
         assertFalse(VariantCharges.isAnchor(Blocks.STONE.defaultBlockState()));
     }

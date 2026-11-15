@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.nap;
 
 import net.minecraft.nbt.CompoundTag;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -19,10 +20,15 @@ import java.util.UUID;
  * @param direction  +1 when the player faced +X along the train, -1 for -X
  * @param worldDepth the world's carriage counter ({@code BoardingProgressData}), raised again on waking
  * @param cheated    the run was Free Play, from any source; the woken run stays Free Play
+ * @param advancementsJson the player's advancements file from the napped world, verbatim; empty when none
+ * @param statsJson  the player's stats file from the napped world, verbatim; empty when none
+ * @param narrative  the world's narrative progress for the player ({@code NarrativeProgressData#exportFor});
+ *                   empty when none. All three are absent from naps saved before they existed.
  */
 public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
                           CompoundTag player, double x, int carriage, String band, int direction,
-                          int worldDepth, boolean cheated, String difficulty) {
+                          int worldDepth, boolean cheated, String difficulty,
+                          String advancementsJson, String statsJson, CompoundTag narrative) {
 
     private static final String TAG_ID = "napId";
     private static final String TAG_SAVED = "savedAt";
@@ -36,11 +42,25 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     private static final String TAG_DEPTH = "worldDepth";
     private static final String TAG_CHEATED = "cheated";
     private static final String TAG_DIFFICULTY = "difficulty";
+    private static final String TAG_ADVANCEMENTS = "advancements";
+    private static final String TAG_STATS = "stats";
+    private static final String TAG_NARRATIVE = "narrative";
 
     public NapSnapshot {
         direction = direction < 0 ? -1 : 1;
         band = band == null ? "" : band;
         difficulty = difficulty == null ? "" : difficulty;
+        advancementsJson = advancementsJson == null ? "" : advancementsJson;
+        statsJson = statsJson == null ? "" : statsJson;
+        narrative = narrative == null ? new CompoundTag() : narrative;
+    }
+
+    /** A nap without the previous life's advancements, stats or narrative progress. */
+    public NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
+                       CompoundTag player, double x, int carriage, String band, int direction,
+                       int worldDepth, boolean cheated, String difficulty) {
+        this(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction, worldDepth,
+            cheated, difficulty, "", "", new CompoundTag());
     }
 
     public CompoundTag toTag() {
@@ -57,6 +77,10 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         tag.putInt(TAG_DEPTH, worldDepth);
         tag.putBoolean(TAG_CHEATED, cheated);
         tag.putString(TAG_DIFFICULTY, difficulty);
+        // Bytes, not a string tag: NBT strings stop at 64 KB and a long run's advancements can pass that.
+        if (!advancementsJson.isEmpty()) tag.putByteArray(TAG_ADVANCEMENTS, advancementsJson.getBytes(StandardCharsets.UTF_8));
+        if (!statsJson.isEmpty()) tag.putByteArray(TAG_STATS, statsJson.getBytes(StandardCharsets.UTF_8));
+        if (!narrative.isEmpty()) tag.put(TAG_NARRATIVE, narrative.copy());
         return tag;
     }
 
@@ -66,6 +90,11 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         return new NapSnapshot(tag.getUUID(TAG_ID), tag.getLong(TAG_SAVED), tag.getString(TAG_VERSION),
             tag.getString(TAG_LEVEL), tag.getCompound(TAG_PLAYER), tag.getDouble(TAG_X), tag.getInt(TAG_CARRIAGE),
             tag.getString(TAG_BAND), tag.getInt(TAG_DIRECTION), tag.getInt(TAG_DEPTH), tag.getBoolean(TAG_CHEATED),
-            tag.getString(TAG_DIFFICULTY));
+            tag.getString(TAG_DIFFICULTY), text(tag, TAG_ADVANCEMENTS), text(tag, TAG_STATS),
+            tag.getCompound(TAG_NARRATIVE));
+    }
+
+    private static String text(CompoundTag tag, String key) {
+        return new String(tag.getByteArray(key), StandardCharsets.UTF_8);
     }
 }

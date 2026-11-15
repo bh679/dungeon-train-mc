@@ -9,7 +9,9 @@ import java.util.Locale;
 
 /**
  * Per-entry <b>charge range</b> for a respawn anchor row ({@link RespawnAnchorBlock}, the
- * {@code charges} property, 0..{@value #MAX}).
+ * {@code charges} property, 0..{@value #MAX}), and the same range as <b>Amber Gems</b> for a BetterEnd
+ * Respawn Obelisk row (0..{@value #MAX_GEMS}, kept in {@code nap/RespawnObeliskGems} since an obelisk
+ * has no state for it; {@link #rollCount}).
  *
  * <ul>
  *   <li>{@link #AS_PLACED} ({@code ranged == false}) — the charge stored in the captured state.
@@ -18,12 +20,17 @@ import java.util.Locale;
  *       lock group rolls with its group). {@code min == max} is a fixed charge.</li>
  * </ul>
  *
- * <p>Sidecar token: {@code "1-4"}; blank for the default.</p>
+ * <p>Sidecar token: {@code "1-4"}; blank for the default. The record holds 0..{@value #LIMIT} for
+ * either kind; an anchor clamps to {@value #MAX} when the charge is placed ({@link #maxFor}).</p>
  */
 public record VariantCharges(boolean ranged, int min, int max) {
 
     /** Most charges a respawn anchor holds. */
     public static final int MAX = RespawnAnchorBlock.MAX_CHARGES;
+    /** Most Amber Gems a Respawn Obelisk holds. */
+    public static final int MAX_GEMS = games.brennan.dungeontrain.nap.RespawnObeliskGems.MAX;
+    /** Widest range the record holds, the larger of the two. Fits the 3-bit packet fields. */
+    public static final int LIMIT = Math.max(MAX, MAX_GEMS);
 
     /** Default: keep the captured charge. */
     public static final VariantCharges AS_PLACED = new VariantCharges(false, 1, MAX);
@@ -43,7 +50,7 @@ public record VariantCharges(boolean ranged, int min, int max) {
         }
     }
 
-    /** A ranged option rolling {@code min..max}, clamped to 0..{@value #MAX}. */
+    /** A ranged option rolling {@code min..max}, clamped to 0..{@value #LIMIT}. */
     public static VariantCharges range(int min, int max) {
         return new VariantCharges(true, min, max);
     }
@@ -52,6 +59,28 @@ public record VariantCharges(boolean ranged, int min, int max) {
     public static boolean isAnchor(@Nullable BlockState state) {
         return state != null && state.getBlock() instanceof RespawnAnchorBlock
             && state.hasProperty(RespawnAnchorBlock.CHARGE);
+    }
+
+    /** True for a Respawn Obelisk, any of its three parts: the Gems pill's gate. */
+    public static boolean isObelisk(@Nullable BlockState state) {
+        return state != null && games.brennan.dungeontrain.nap.RespawnObelisks.isObelisk(state);
+    }
+
+    /** True for a row that offers the range: a respawn anchor (charges) or a Respawn Obelisk (gems). */
+    public static boolean isChargeable(@Nullable BlockState state) {
+        return isAnchor(state) || isObelisk(state);
+    }
+
+    /** The most {@code state}'s kind holds: {@value #MAX_GEMS} for an obelisk, else {@value #MAX}. */
+    public static int maxFor(@Nullable BlockState state) {
+        return isObelisk(state) ? MAX_GEMS : MAX;
+    }
+
+    /** This range with both ends clamped to 0..{@code max}; the default stays the default. */
+    public VariantCharges clampedTo(int max) {
+        if (isDefault()) return this;
+        int top = Math.max(0, Math.min(LIMIT, max));
+        return range(Math.min(min, top), Math.min(this.max, top));
     }
 
     /** True when this is the no-op default — used to skip JSON / NBT emission. */
@@ -70,7 +99,16 @@ public record VariantCharges(boolean ranged, int min, int max) {
      */
     public BlockState apply(BlockState state, long posOrLockKey, long worldSeed, int carriageIndex) {
         if (isDefault() || !isAnchor(state)) return state;
-        return state.setValue(RespawnAnchorBlock.CHARGE, roll(posOrLockKey, worldSeed, carriageIndex));
+        return state.setValue(RespawnAnchorBlock.CHARGE, Math.min(MAX, roll(posOrLockKey, worldSeed, carriageIndex)));
+    }
+
+    /**
+     * The count rolled for a block with no state to hold it (a Respawn Obelisk's gems), clamped to
+     * {@code max}, deterministic like {@link #apply}; 0 for the default.
+     */
+    public int rollCount(long posOrLockKey, long worldSeed, int carriageIndex, int max) {
+        if (isDefault()) return 0;
+        return Math.max(0, Math.min(max, roll(posOrLockKey, worldSeed, carriageIndex)));
     }
 
     int roll(long posOrLockKey, long worldSeed, int carriageIndex) {
@@ -105,7 +143,7 @@ public record VariantCharges(boolean ranged, int min, int max) {
         try {
             int min = Integer.parseInt(range[0].trim());
             int max = Integer.parseInt(range[1].trim());
-            if (min < 0 || max > MAX || min > max) return null;
+            if (min < 0 || max > LIMIT || min > max) return null;
             return range(min, max);
         } catch (NumberFormatException e) {
             return null;
@@ -113,6 +151,6 @@ public record VariantCharges(boolean ranged, int min, int max) {
     }
 
     private static int clamp(int v) {
-        return Math.max(0, Math.min(MAX, v));
+        return Math.max(0, Math.min(LIMIT, v));
     }
 }

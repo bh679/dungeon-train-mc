@@ -850,8 +850,9 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 VariantState entry = mutated.get(idx);
-                if (entry.isMob() || entry.isGroupRef() || !VariantCharges.isAnchor(entry.state())) return;
-                mutated.set(idx, entry.withCharges(VariantCharges.fromInt(packet.delta())));
+                if (entry.isMob() || entry.isGroupRef() || !VariantCharges.isChargeable(entry.state())) return;
+                mutated.set(idx, entry.withCharges(
+                    VariantCharges.fromInt(packet.delta()).clampedTo(VariantCharges.maxFor(entry.state()))));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

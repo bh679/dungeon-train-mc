@@ -7,7 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Geometry + labels of the Z menu's Charge popup for one respawn anchor row — opened from the same
+ * Geometry + labels of the Z menu's Charge popup for one respawn anchor row (or its Gems twin for a
+ * Respawn Obelisk row, 0..{@value VariantCharges#MAX_GEMS}) — opened from the same
  * pill slot as Grow (an anchor never grows), drawn with the Grow popup's {@link GrowthPopupLayout.Row}s.
  *
  * <p>Stacked sections, top to bottom: <b>Charge</b> ({@code As is | Range}), then — only while
@@ -31,9 +32,9 @@ final class ChargePopupLayout {
     }
 
     /** The visible sections for {@code charges}, top to bottom, positioned like the Grow popup. */
-    static List<GrowthPopupLayout.Row> rows(VariantCharges charges, double panelW, double halfH) {
+    static List<GrowthPopupLayout.Row> rows(VariantCharges charges, int max, double panelW, double halfH) {
         List<Object[]> spec = new ArrayList<>(3);
-        spec.add(new Object[] {SECTION_MODE, MenuLang.t("block_variant.charges"),
+        spec.add(new Object[] {SECTION_MODE, MenuLang.t(isGems(max) ? "block_variant.gems" : "block_variant.charges"),
             new String[] {MenuLang.t("block_variant.as_placed"), MenuLang.t("block_variant.charges_range")},
             charges.ranged() ? OPTION_RANGE : OPTION_AS_PLACED});
         if (charges.ranged()) {
@@ -54,10 +55,15 @@ final class ChargePopupLayout {
         return rows;
     }
 
-    /** The option after clicking {@code option} in the Charge section; Range starts at the full 1-4 span. */
-    static VariantCharges applyMode(VariantCharges current, int option) {
+    /** True when the popup is an obelisk's Gems rather than an anchor's Charge. */
+    static boolean isGems(int max) {
+        return max == VariantCharges.MAX_GEMS;
+    }
+
+    /** The option after clicking {@code option} in the Charge section; Range starts at 1 up to {@code max}. */
+    static VariantCharges applyMode(VariantCharges current, int option, int max) {
         if (option == OPTION_AS_PLACED) return VariantCharges.AS_PLACED;
-        return current.ranged() ? current : VariantCharges.range(current.min(), current.max());
+        return current.ranged() ? current : VariantCharges.range(current.min(), max);
     }
 
     /** The current value of a Min / Max section. */
@@ -66,11 +72,11 @@ final class ChargePopupLayout {
     }
 
     /**
-     * {@code current} with Min or Max set to {@code value}, clamped to 0..{@value VariantCharges#MAX};
+     * {@code current} with Min or Max set to {@code value}, clamped to 0..{@code max};
      * the other bound moves along so {@code min ≤ max} always holds.
      */
-    static VariantCharges withValue(VariantCharges current, int section, int value) {
-        int v = Math.max(0, Math.min(VariantCharges.MAX, value));
+    static VariantCharges withValue(VariantCharges current, int section, int value, int max) {
+        int v = Math.max(0, Math.min(max, value));
         return section == SECTION_MIN
             ? current.withRange(v, Math.max(v, current.max()))
             : current.withRange(Math.min(current.min(), v), v);

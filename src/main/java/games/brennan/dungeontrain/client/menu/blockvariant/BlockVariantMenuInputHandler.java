@@ -464,20 +464,23 @@ public final class BlockVariantMenuInputHandler {
         int section = GrowthPopupLayout.section(code);
         games.brennan.dungeontrain.editor.VariantCharges current =
             BlockVariantMenu.charges(BlockVariantMenu.entries().get(row));
+        int max = games.brennan.dungeontrain.editor.VariantCharges.maxFor(
+            BlockVariantMenu.parseState(BlockVariantMenu.entries().get(row).stateString()));
         if (ChargePopupLayout.isNumber(section)) {
             int value = ChargePopupLayout.value(current, section);
             java.util.function.IntConsumer setValue = v -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_CHARGES, variantId, local, row, "",
-                    ChargePopupLayout.withValue(current, section, v).toInt()));
+                    ChargePopupLayout.withValue(current, section, v, max).toInt()));
+            String kind = ChargePopupLayout.isGems(max) ? "gems" : "charges";
             NumberStepper.click(new NumberField(
-                    NumberTitle.of(section == ChargePopupLayout.SECTION_MIN ? "charges_min" : "charges_max"),
-                    value, 0, games.brennan.dungeontrain.editor.VariantCharges.MAX, false,
+                    NumberTitle.of(kind + (section == ChargePopupLayout.SECTION_MIN ? "_min" : "_max")),
+                    value, 0, max, false,
                     () -> setValue.accept(value + 1), () -> setValue.accept(value - 1), setValue),
                 button, shift, MenuClickModifiers.cmdDown(), pad());
             return;
         }
         games.brennan.dungeontrain.editor.VariantCharges next =
-            ChargePopupLayout.applyMode(current, GrowthPopupLayout.option(code));
+            ChargePopupLayout.applyMode(current, GrowthPopupLayout.option(code), max);
         if (next.equals(current)) return;
         DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
             BlockVariantEditPacket.Op.SET_CHARGES, variantId, local, row, "", next.toInt()));

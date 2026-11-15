@@ -19,7 +19,8 @@ import java.util.List;
  * then saves and quits; Stay awake / Wake up. (or Escape) carries on.
  *
  * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 80% black, or fully black
- * when the player is already asleep.</p>
+ * when the player is already asleep. The final Main Menu hides the buttons and fades the rest of the
+ * way to black over {@value #EXIT_FADE_MS} ms before the answer goes to the server.</p>
  */
 public final class NapPromptScreen extends Screen {
 
@@ -36,12 +37,19 @@ public final class NapPromptScreen extends Screen {
     private static final long FADE_MS = 2000L;
     private static final float FADE_AWAKE = 0.8F;
     private static final float FADE_ASLEEP = 1.0F;
+    private static final long EXIT_FADE_MS = 2000L;
+    /** Black held after saying yes while the server saves; the screen gives up if no answer comes. */
+    private static final long EXIT_HOLD_MS = 10000L;
 
     private final String prefix;
     private final long openedAt = Util.getMillis();
     private float fadeTarget = FADE_AWAKE;
     private boolean responded = false;
     private boolean warning = false;
+    /** When the final Main Menu was pressed; -1 until then. */
+    private long exitStartedAt = -1L;
+    /** The overlay's alpha at that moment, the exit fade's start. */
+    private float exitFrom = 0.0F;
     private List<FormattedCharSequence> titleLines = List.of();
     private List<FormattedCharSequence> bodyLines = List.of();
     private int titleColour = COLOUR_TITLE;
@@ -79,19 +87,58 @@ public final class NapPromptScreen extends Screen {
         int buttonY = textTop + blockH - BUTTON_H;
         int left = this.width / 2 - BUTTON_W - BUTTON_GAP / 2;
         Button mainMenu = warning
-            ? Button.builder(Component.translatable("gui.dungeontrain.nap.main_menu"), b -> respond(true)).build()
+            ? Button.builder(Component.translatable("gui.dungeontrain.nap.main_menu"), b -> startExitFade()).build()
             : Button.builder(Component.translatable("gui.dungeontrain.nap.main_menu"), b -> showWarning(true)).build();
         Button other = warning
             ? Button.builder(CommonComponents.GUI_BACK, b -> showWarning(false)).build()
             : Button.builder(Component.translatable(prefix + "decline"), b -> respond(false)).build();
         mainMenu.setRectangle(BUTTON_W, BUTTON_H, left, buttonY);
         other.setRectangle(BUTTON_W, BUTTON_H, left + BUTTON_W + BUTTON_GAP, buttonY);
+        if (exiting()) return;
         addRenderableWidget(mainMenu);
         addRenderableWidget(other);
     }
 
+    private boolean exiting() {
+        return exitStartedAt >= 0L;
+    }
+
+    /** The final Main Menu: buttons gone, then the fade to full black, then the answer ({@link #tick}). */
+    private void startExitFade() {
+        if (exiting() || responded) return;
+        exitFrom = overlayAlpha();
+        exitStartedAt = Util.getMillis();
+        clearWidgets();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!exiting()) return;
+        long elapsed = Util.getMillis() - exitStartedAt;
+        if (!responded && elapsed >= EXIT_FADE_MS) {
+            // Stays up, black, until the server's NapSavedPacket leaves the world.
+            responded = true;
+            DungeonTrainNet.sendToServer(new NapResponsePacket(true));
+        } else if (responded && elapsed >= EXIT_FADE_MS + EXIT_HOLD_MS && this.minecraft != null) {
+            // The server refused (the bed broke, monsters came): back to the game.
+            this.minecraft.setScreen(null);
+        }
+    }
+
+    /** The overlay's current alpha, 0..1. */
+    private float overlayAlpha() {
+        if (exiting()) {
+            float t = Mth.clamp((Util.getMillis() - exitStartedAt) / (float) EXIT_FADE_MS, 0.0F, 1.0F);
+            return Mth.lerp(t, exitFrom, 1.0F);
+        }
+        float t = Mth.clamp((Util.getMillis() - openedAt) / (float) FADE_MS, 0.0F, 1.0F);
+        return fadeTarget * t;
+    }
+
     /** Main Menu first shows the in-development warning; its Back returns to the prompt. */
     private void showWarning(boolean on) {
+        if (exiting()) return;
         warning = on;
         rebuildWidgets();
     }
@@ -99,14 +146,14 @@ public final class NapPromptScreen extends Screen {
     /** The world fades to black behind the prompt instead of vanilla's blur. */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        float t = Mth.clamp((Util.getMillis() - openedAt) / (float) FADE_MS, 0.0F, 1.0F);
-        int alpha = Math.round(fadeTarget * t * 255.0F);
+        int alpha = Math.round(overlayAlpha() * 255.0F);
         g.fill(0, 0, this.width, this.height, alpha << 24);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
+        if (exiting()) return;
         int lh = this.font.lineHeight + LINE_GAP;
         int y = textTop;
         for (FormattedCharSequence line : titleLines) {
@@ -125,9 +172,10 @@ public final class NapPromptScreen extends Screen {
         return false;
     }
 
-    /** Escape backs out of the warning first, then says no. */
+    /** Escape backs out of the warning first, then says no; it does nothing once the exit fade has begun. */
     @Override
     public void onClose() {
+        if (exiting()) return;
         if (warning) {
             showWarning(false);
             return;
@@ -135,7 +183,10 @@ public final class NapPromptScreen extends Screen {
         respond(false);
     }
 
-    /** Pushed aside by another screen without an answer: that is a no, so the server isn't left waiting. */
+    /**
+     * Pushed aside by another screen without an answer, even mid exit fade: that is a no, so the server
+     * isn't left waiting and nothing is deleted unless the fade ran to the end.
+     */
     @Override
     public void removed() {
         if (!responded) {

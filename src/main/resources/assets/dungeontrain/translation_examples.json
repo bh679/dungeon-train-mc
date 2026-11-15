@@ -1482,6 +1482,23 @@
       ]
     }
   },
+  "chat.dungeontrain.nap.obelisk_needs.one": {
+    "1": {
+      "label": "how many more Amber Gems the obelisk needs (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.nap.obelisk_needs.other": {
+    "1": {
+      "label": "how many more Amber Gems the obelisk needs, 2 to 6",
+      "examples": [
+        "3",
+        "6"
+      ]
+    }
+  },
   "gui.dungeontrain.photo_tribute.viewer.st": {
     "1": {
       "label": "which viewer of the photo the player is (a number taking this ending)",

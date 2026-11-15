@@ -7,6 +7,9 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -98,14 +101,19 @@ public final class NapBedEvents {
                 NATURAL_BREAKING.add(PlacedRestTracker.otherHalf(event.getPos(), state).asLong());
             }
             placed.forget(event.getPos(), state);
+            if (RespawnObelisks.isObelisk(state)) {
+                RespawnObeliskGems.get(level).forget(RespawnObelisks.bottom(event.getPos(), state));
+            }
         }
     }
 
     /**
      * A Respawn Obelisk clicked in survival, decided here on the server before DT's disabled-block veto
-     * (which lets obelisks through so the click reaches the server). A natural one offers a nap in an End
-     * core (or says monsters are nearby) and explodes anywhere else. It never sets a spawn point, so the
-     * click is always consumed: what isn't a nap or an explosion stays as blocked as before.
+     * (which lets obelisks through so the click reaches the server). A natural one explodes outside an
+     * End core. In one, it offers a nap (or says monsters are nearby) once it holds
+     * {@value RespawnObeliskGems#MAX} Amber Gems ({@link RespawnObeliskGems}); until then a click with
+     * Amber Gems puts them in, and any other click says how many more it needs. It never sets a spawn
+     * point, so the click is always consumed: what isn't a nap or an explosion stays as blocked as before.
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onObeliskUse(PlayerInteractEvent.RightClickBlock event) {
@@ -120,14 +128,52 @@ public final class NapBedEvents {
             RespawnObelisks.explode(level, pos, state);
             result = InteractionResult.SUCCESS;
         } else if (natural) {
-            NapService.Outcome outcome = NapService.offer(player, pos, false);
-            if (outcome == NapService.Outcome.OFFERED) result = InteractionResult.SUCCESS;
-            if (outcome == NapService.Outcome.MONSTERS) {
-                player.displayClientMessage(Component.translatable("block.minecraft.bed.not_safe"), true);
-            }
+            result = useNaturalObelisk(event, level, player, pos, state);
         }
         event.setCanceled(true);
         event.setCancellationResult(result);
+    }
+
+    /** An obelisk in an End core: fed Amber Gems until full, then the nap spot. */
+    private static InteractionResult useNaturalObelisk(PlayerInteractEvent.RightClickBlock event, ServerLevel level,
+                                                       ServerPlayer player, BlockPos pos, BlockState state) {
+        RespawnObeliskGems gems = RespawnObeliskGems.get(level);
+        BlockPos bottom = RespawnObelisks.bottom(pos, state);
+        if (gems.get(bottom) < RespawnObeliskGems.MAX) {
+            ItemStack held = event.getItemStack();
+            if (!RespawnObelisks.isAmberGem(held)) {
+                // The other hand's click feeds it, when that hand holds the gems.
+                if (RespawnObelisks.isAmberGem(player.getItemInHand(otherHand(event.getHand())))) {
+                    return InteractionResult.FAIL;
+                }
+                showNeeds(player, gems.get(bottom));
+                return InteractionResult.FAIL;
+            }
+            int taken = gems.add(bottom, held.getCount());
+            if (taken > 0) {
+                held.shrink(taken);
+                level.playSound(null, pos, SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.BLOCKS, 1.0F, 1.0F);
+            }
+            if (gems.get(bottom) < RespawnObeliskGems.MAX) {
+                showNeeds(player, gems.get(bottom));
+                return InteractionResult.SUCCESS;
+            }
+        }
+        NapService.Outcome outcome = NapService.offer(player, pos, false);
+        if (outcome == NapService.Outcome.MONSTERS) {
+            player.displayClientMessage(Component.translatable("block.minecraft.bed.not_safe"), true);
+        }
+        return outcome == NapService.Outcome.OFFERED ? InteractionResult.SUCCESS : InteractionResult.FAIL;
+    }
+
+    private static void showNeeds(ServerPlayer player, int held) {
+        player.displayClientMessage(games.brennan.dungeontrain.narrative.PluralRules.clause(
+            games.brennan.dungeontrain.discord.WorldInfoReporter.clientLanguage(player),
+            "chat.dungeontrain.nap.obelisk_needs", RespawnObeliskGems.MAX - held), true);
+    }
+
+    private static InteractionHand otherHand(InteractionHand hand) {
+        return hand == InteractionHand.MAIN_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
     }
 
     /** Marks the bed item a natural bed drops, so placing it again reads as "moved", not "made". */

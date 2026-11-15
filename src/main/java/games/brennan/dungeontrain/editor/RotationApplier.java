@@ -238,6 +238,21 @@ public final class RotationApplier {
         return entry.bedColours().apply(placed, localPos, lockId, worldSeed, carriageIndex);
     }
 
+    /**
+     * After a stamp pass writes {@code placed} at {@code world}: when it is a Respawn Obelisk's bottom
+     * part, set the gems it holds from {@code entry}'s range ({@link VariantCharges#rollCount}, rolled
+     * like the anchor's charge; none for the as-placed default). An obelisk has no state to keep them,
+     * so they go in {@code nap/RespawnObeliskGems}; a re-stamp overwrites what was there.
+     */
+    public static void stampObeliskGems(net.minecraft.server.level.ServerLevel level, BlockPos world,
+                                        BlockState placed, VariantState entry,
+                                        BlockPos localPos, long worldSeed, int carriageIndex, int lockId) {
+        if (!games.brennan.dungeontrain.nap.RespawnObelisks.isBottom(placed)) return;
+        int gems = entry.charges().rollCount(posOrLockKey(localPos, lockId), worldSeed, carriageIndex,
+            VariantCharges.MAX_GEMS);
+        games.brennan.dungeontrain.nap.RespawnObeliskGems.get(level).set(world, gems);
+    }
+
     /** The cell's roll key: its lock group when it has one (so the group rolls as one), else its position. */
     static long posOrLockKey(BlockPos localPos, int lockId) {
         return lockId > 0
