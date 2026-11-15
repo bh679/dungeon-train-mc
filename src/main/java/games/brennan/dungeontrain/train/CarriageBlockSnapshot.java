@@ -556,6 +556,45 @@ public final class CarriageBlockSnapshot {
         return NbtIo.readCompressed(new ByteArrayInputStream(raw), NbtAccounter.unlimitedHeap());
     }
 
+    // ---- live block-entity reads ----
+
+    /**
+     * Every block entity standing in a carriage's footprint, read live from its plot without capturing
+     * anything — for a scan that wants one fact from each (the photos a build holds) on every upload,
+     * deltas included. Walks the footprint's chunks rather than its cells.
+     */
+    public static java.util.List<BlockEntity> blockEntities(SableManagedShip ship, BlockPos origin, CarriageDims dims) {
+        LevelPlot plot = plotOf(ship);
+        Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
+        return blockEntitiesIn(origin, size, pos -> chunkAt(plot, pos));
+    }
+
+    /** {@link #blockEntities} for a build standing in the level itself (a dimensional carriage's room). */
+    public static java.util.List<BlockEntity> blockEntitiesLevel(ServerLevel level, BlockPos origin, Vec3i size) {
+        return blockEntitiesIn(origin, size, pos -> level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4));
+    }
+
+    private static java.util.List<BlockEntity> blockEntitiesIn(BlockPos origin, Vec3i size,
+                                                               java.util.function.Function<BlockPos, LevelChunk> chunkOf) {
+        BlockPos max = origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+        java.util.List<BlockEntity> out = new java.util.ArrayList<>();
+        for (int cx = origin.getX() >> 4; cx <= max.getX() >> 4; cx++) {
+            for (int cz = origin.getZ() >> 4; cz <= max.getZ() >> 4; cz++) {
+                LevelChunk chunk = chunkOf.apply(new BlockPos(cx << 4, origin.getY(), cz << 4));
+                if (chunk == null) continue;
+                for (BlockEntity be : chunk.getBlockEntities().values()) {
+                    BlockPos p = be.getBlockPos();
+                    if (p.getX() >= origin.getX() && p.getX() <= max.getX()
+                            && p.getY() >= origin.getY() && p.getY() <= max.getY()
+                            && p.getZ() >= origin.getZ() && p.getZ() <= max.getZ()) {
+                        out.add(be);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
     // ---- plot-chunk read helpers (mirrors CarriageDeck.blockInPlot) ----
 
     private static BlockState blockInPlot(LevelPlot plot, BlockPos shipLocal) {

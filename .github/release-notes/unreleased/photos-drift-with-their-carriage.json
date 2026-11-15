@@ -1,0 +1,20 @@
+{
+  "id": "photos-drift-with-their-carriage",
+  "version": "0.1837.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "Photos drift with their carriage",
+  "summary": "A photo you hang in a drifting carriage now goes with it, and every world the carriage drifts into shows the picture. While it hangs there it keeps its picture even after its last view, until someone takes it down.",
+  "highlights": [
+    "Works in drifting dimensional carriages too",
+    "A photo you take down from a drifting carriage works like any photo you find on the train, credited to whoever took it"
+  ],
+  "pr": 2673,
+  "date": "2026-11-15",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

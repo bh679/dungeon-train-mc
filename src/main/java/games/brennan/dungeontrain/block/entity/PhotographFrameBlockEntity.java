@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
 import games.brennan.dungeontrain.compat.photo.TestFramePhoto;
 import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModItems;
+import games.brennan.dungeontrain.train.SharedBuildBlockEntityEdits;
 import io.github.mortuusars.exposure.Exposure;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -11,6 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -144,6 +146,11 @@ public class PhotographFrameBlockEntity extends BlockEntity {
         if (level != null && !level.isClientSide) {
             BlockState state = getBlockState();
             level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+            // Hanging or taking out a photo changes no block, so a drifting build would never upload
+            // it — nor tell the relay it no longer holds the photo.
+            if (level instanceof ServerLevel serverLevel) {
+                SharedBuildBlockEntityEdits.onBlockEntityEdited(serverLevel, worldPosition);
+            }
         }
     }
 

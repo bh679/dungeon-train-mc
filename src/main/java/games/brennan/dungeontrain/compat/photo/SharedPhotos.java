@@ -784,7 +784,7 @@ public final class SharedPhotos {
 
     // ---- found photo ----------------------------------------------------------
 
-    private static String exposureIdFor(String base, int photoId) {
+    static String exposureIdFor(String base, int photoId) {
         return "dt_shared_" + Integer.toHexString(base.hashCode()) + "_" + photoId;
     }
 
