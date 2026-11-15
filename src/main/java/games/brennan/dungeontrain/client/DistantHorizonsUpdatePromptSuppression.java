@@ -12,14 +12,13 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 /**
- * Keeps Distant Horizons' own "update available" screen off the launch path for players running
- * the DH build the modpack pins.
+ * Keeps Distant Horizons' own "update available" screen from ever opening while DT is loaded.
  *
  * <p>DH's {@code MixinMinecraft} opens {@code UpdateModScreen} at startup whenever its self-updater
- * finds a newer release on Modrinth. The pack pins DH to one build on purpose — it is the build
- * whose API the band and portal-room suppression is compiled against — so for a pack player the
- * prompt is an invitation to break the pack. Any other DH version (a player who upgraded DH
- * themselves) is left alone and gets DH's prompt as normal.</p>
+ * finds a newer release on Modrinth. DT's band and portal-room suppression is compiled against one
+ * DH API, and the modpacks pin DH to match, so for a DT player the prompt is an invitation to break
+ * the game. It is swallowed on every DH version, not just the pinned one: older pack installs and
+ * hand-installed DH builds were still being prompted. Players can still update DH by hand.</p>
  *
  * <p>Matched by class name, so this file names no DH type and loads with or without DH present.
  * The swap happens in {@link ScreenEvent.Opening}. DH opens its prompt by redirecting the
@@ -31,8 +30,7 @@ import org.slf4j.Logger;
  * exactly what vanilla would have run. Opening a title screen instead used to cancel quick-play
  * joins (the perf harness's {@code -PquickJoin}). Should the prompt open at any other time, the
  * screen already showing is simply kept. Nothing of DH's is written or changed — its updater
- * config and state are untouched, and the prompt returns the moment the player is on a DH build
- * the pack does not pin.</p>
+ * config and state are untouched.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DistantHorizonsUpdatePromptSuppression {
@@ -75,22 +73,11 @@ public final class DistantHorizonsUpdatePromptSuppression {
         Screen next = event.getNewScreen();
         if (next == null || !next.getClass().getName().endsWith(UPDATE_SCREEN_SUFFIX)) return;
 
-        String pinned = VersionInfo.MODPACK_DISTANT_HORIZONS_VERSION;
-        String loaded = loadedDhVersion();
-        if (pinned.isEmpty() || loaded == null || !loaded.startsWith(pinned)) {
-            if (!logged) {
-                LOGGER.info("[DungeonTrain] Distant Horizons update prompt left alone: loaded {} vs modpack pin {}",
-                        loaded, pinned.isEmpty() ? "(none)" : pinned);
-                logged = true;
-            }
-            return;
-        }
-
         Decision decision = decide(event.getCurrentScreen() != null, InitialScreensCapture.hasPending());
         if (!logged) {
             Screen current = event.getCurrentScreen();
-            LOGGER.info("[DungeonTrain] Distant Horizons update prompt suppressed: loaded {} matches the modpack pin ({}; current screen {})",
-                    loaded, decision, current == null ? "none" : current.getClass().getName());
+            LOGGER.info("[DungeonTrain] Distant Horizons update prompt suppressed: DH {} ({}; current screen {})",
+                    loadedDhVersion(), decision, current == null ? "none" : current.getClass().getName());
             logged = true;
         }
         switch (decision) {
