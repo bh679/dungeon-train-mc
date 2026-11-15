@@ -1,0 +1,122 @@
+{
+  "parent": "dungeontrain:dungeon_train/not_quite_undying",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:weakness_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.double_down.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.double_down.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "weakness_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:weakness_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    },
+    "fatigue_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:fatigue_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    },
+    "heartbreak_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:heartbreak_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    },
+    "hunger_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:hunger_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    },
+    "slowness_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:slowness_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    },
+    "rage_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:rage_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    },
+    "loneliness_totem": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dungeontotems:loneliness_totem",
+            "count": {
+              "min": 2
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "weakness_totem",
+      "fatigue_totem",
+      "heartbreak_totem",
+      "hunger_totem",
+      "slowness_totem",
+      "rage_totem",
+      "loneliness_totem"
+    ]
+  ]
+}
