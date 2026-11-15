@@ -151,12 +151,79 @@ class GlobalAchievementStoreTest {
         write(normalFile(dir), "normal", GAMEPLAY);          // creates the key
         InstallKey.useDirectoryForTests(dir);                 // a new session: the key already exists
         Files.writeString(normalFile(dir), "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        // Written after the key: pinned, since a coarse file clock can give both the same date.
+        Files.setLastModifiedTime(normalFile(dir), java.nio.file.attribute.FileTime.from(
+            Files.getLastModifiedTime(dir.resolve(".install-key")).toInstant().plusSeconds(60)));
         GlobalAchievementStore.Profile profile = GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal");
         assertTrue(profile.granted().isEmpty());
         assertEquals(Set.of(GAMEPLAY), profile.absorbed());
         assertFalse(profile.tainted());
         assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.read(PLAYER, "normal"), "still replayed");
         assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.unverified(PLAYER, "normal"));
+    }
+
+    @Test
+    @DisplayName("A pre-seal file read in the upgrade session but never written stays earned in later sessions")
+    void upgradeSessionReadIsResealed(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Path shared = dir.resolve(GlobalAchievementStore.fileName(PLAYER, GlobalAchievementStore.SHARED));
+        Files.writeString(normalFile(dir), "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        Files.writeString(shared, "{\"granted\":[\"" + EDITOR + "\"]}");
+        // The upgrade session: both files are read, only Normal earns (which creates the key).
+        GlobalAchievementStore.read(PLAYER, GlobalAchievementStore.SHARED);
+        GlobalAchievementStore.append(PLAYER, "normal", VANILLA);
+        newSession(dir);
+
+        assertTrue(GlobalAchievementStore.unverified(PLAYER, GlobalAchievementStore.SHARED).isEmpty(),
+            "the shared file was this install's own history and must not turn unverified later");
+        assertTrue(GlobalAchievementStore.unverified(PLAYER, "normal").isEmpty());
+        assertTrue(Files.readString(shared).contains("\"seal\""), "read in the upgrade session, so sealed then");
+    }
+
+    @Test
+    @DisplayName("A pre-seal file never read in the upgrade session stays earned when a later session first reads it")
+    void upgradeSessionUnreadFileStaysEarned(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        Path hard = dir.resolve(GlobalAchievementStore.fileName(PLAYER, "hard"));
+        Files.writeString(hard, "{\"granted\":[\"" + GAMEPLAY + "\"]}");
+        // The upgrade session plays Normal only; the Hard file is never opened.
+        GlobalAchievementStore.append(PLAYER, "normal", VANILLA);
+        newSession(dir);
+
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(hard, PLAYER, "hard").granted(),
+            "a file last written before this install first sealed is its own history");
+    }
+
+    @Test
+    @DisplayName("A relay vouch moves held-on-trust ids back to earned, and can never add one")
+    void vouchMovesAbsorbedBackToEarned(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.appendAllAbsorbed(PLAYER, "normal", List.of(GAMEPLAY, VANILLA));
+        ResourceLocation stranger = ResourceLocation.parse("dungeontrain:dungeon_train/never_earned");
+
+        assertEquals(1, GlobalAchievementStore.vouch(PLAYER, "normal", List.of(GAMEPLAY, stranger)));
+        assertEquals(Set.of(VANILLA), GlobalAchievementStore.unverified(PLAYER, "normal"));
+        assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.read(PLAYER, "normal"),
+            "an id the profile never held is not added by the relay's answer");
+        newSession(dir);
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(normalFile(dir), PLAYER, "normal").granted(),
+            "written sealed, so it holds");
+    }
+
+    @Test
+    @DisplayName("A tainted profile is never vouched for")
+    void taintedProfileIsNotVouched(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.writeAtomic(normalFile(dir), PLAYER, "normal",
+            new GlobalAchievementStore.Profile(Set.of(), Set.of(GAMEPLAY), true));
+        assertEquals(0, GlobalAchievementStore.vouch(PLAYER, "normal", List.of(GAMEPLAY)));
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.unverified(PLAYER, "normal"));
+    }
+
+    /** Land every write and forget every session-level memory, keeping the files and the key. */
+    private static void newSession(Path dir) {
+        GlobalAchievementStore.flushAndClearAll();
+        InstallKey.useDirectoryForTests(dir);
     }
 
     @Test

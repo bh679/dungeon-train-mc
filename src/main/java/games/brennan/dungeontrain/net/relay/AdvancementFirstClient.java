@@ -152,6 +152,40 @@ public final class AdvancementFirstClient {
         }
     }
 
+    /**
+     * Tell the relay a derived grant (the burrito, a tab-complete) made no claim because the profile
+     * it stands on holds {@code onTrust} Dungeon Train advancements on trust
+     * ({@code POST /advancements/unverified-earn}). The relay keeps it for review rather than
+     * crediting it, so the earn is neither lost nor taken at face value, and the operator hears of
+     * it the same day. Fire-and-forget, like {@link #reportFreePlay}: an older relay's 404 is dropped.
+     */
+    public static void reportUnverified(UUID player, String name, String advancementId, String difficulty, int onTrust) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/advancements/unverified-earn"))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(
+                            unverifiedBody(player, name, advancementId, difficulty, onTrust).toString(), StandardCharsets.UTF_8))
+                    .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.discarding())
+                    .whenComplete((resp, err) -> {
+                        if (err != null) LOGGER.info("[DungeonTrain] unverified-earn failed: {}", err.toString());
+                        else if (resp.statusCode() / 100 != 2) LOGGER.info("[DungeonTrain] unverified-earn -> HTTP {}", resp.statusCode());
+                    });
+        } catch (Throwable t) {
+            LOGGER.info("[DungeonTrain] unverified-earn request failed to start: {}", t.toString());
+        }
+    }
+
+    /** The unverified-earn report's JSON body. */
+    static JsonObject unverifiedBody(UUID player, String name, String advancementId, String difficulty, int onTrust) {
+        JsonObject body = freePlayBody(player, advancementId);
+        body.addProperty("name", name);
+        if (difficulty != null && !difficulty.isEmpty()) body.addProperty("difficulty", difficulty);
+        body.addProperty("onTrust", onTrust);
+        return body;
+    }
+
     /** The Free Play report's JSON body. */
     static JsonObject freePlayBody(UUID player, String advancementId) {
         JsonObject body = new JsonObject();

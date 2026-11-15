@@ -120,13 +120,11 @@ public final class CompletionistAdvancement {
      */
     public static boolean isVerifiedEarn(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        String key = AdvancementProfiles.currentKey(player);
-        for (ResourceLocation id : GlobalAchievementStore.unverified(uuid, key)) {
-            if (DungeonTrain.MOD_ID.equals(id.getNamespace()) && !id.getPath().startsWith("editor/")) {
-                LOGGER.info("[DungeonTrain] {}'s profile holds {} on trust; this grant makes no record.",
-                    player.getName().getString(), id);
-                return false;
-            }
+        int onTrust = heldOnTrust(player);
+        if (onTrust > 0) {
+            LOGGER.warn("[DungeonTrain] {}'s profile holds {} Dungeon Train advancement(s) on trust; this grant "
+                + "makes no record.", player.getName().getString(), onTrust);
+            return false;
         }
         if (BurritoClock.isUnverified(uuid) || GlobalPlayerStats.isUnverified(uuid)) {
             LOGGER.info("[DungeonTrain] {}'s clock or stats could not be vouched for; this grant makes no record.",
@@ -134,6 +132,12 @@ public final class CompletionistAdvancement {
             return false;
         }
         return true;
+    }
+
+    /** How many Dungeon Train gameplay ids the player's current profile holds on trust. */
+    public static int heldOnTrust(ServerPlayer player) {
+        return AdvancementVouch.gameplayIds(GlobalAchievementStore.unverified(
+            player.getUUID(), AdvancementProfiles.currentKey(player))).size();
     }
 
     /** Is {@code id} a grant derived from the rest of the profile, which {@link #isVerifiedEarn} must judge? */
