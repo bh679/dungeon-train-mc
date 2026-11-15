@@ -181,9 +181,10 @@ public final class SharedRoomEvents {
                     CarriageBlockSnapshot.Captured cap = CarriageBlockSnapshot.captureLevelCells(
                             inst.level, inst.roomOrigin(), inst.size, drained,
                             DungeonTrainConfig.getSharedCarriageMaxEntities());
-                    long sig = CarriageEntitySnapshot.decorFingerprint(
-                            cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
-                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+                    net.minecraft.nbt.ListTag ents = cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
+                    long sig = CarriageEntitySnapshot.decorFingerprint(ents);
+                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig,
+                            photosOf(inst, ents));
                 } catch (Throwable t) {
                     LOGGER.debug("[DungeonTrain] shared-room delta capture failed for {}: {}", inst.describe(), t.toString());
                     return null;
@@ -195,13 +196,21 @@ public final class SharedRoomEvents {
     private static SharedUploadFlow.CapturedBlob captureFull(SharedRoomRegistry.Instance inst) {
         try {
             CarriageBlockSnapshot.Captured cap = captureRoom(inst.level, inst.roomOrigin(), inst.size);
-            long sig = CarriageEntitySnapshot.decorFingerprint(
-                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
-            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+            net.minecraft.nbt.ListTag ents = cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
+            long sig = CarriageEntitySnapshot.decorFingerprint(ents);
+            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig,
+                    photosOf(inst, ents));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-room full capture failed for {}: {}", inst.describe(), t.toString());
             return null;
         }
+    }
+
+    /** The community photos the whole room holds, for the relay to keep their pictures. */
+    private static com.google.gson.JsonArray photosOf(SharedRoomRegistry.Instance inst, net.minecraft.nbt.ListTag ents) {
+        return games.brennan.dungeontrain.compat.photo.CarriagePhotos.uploadList(
+                CarriageBlockSnapshot.blockEntitiesLevel(inst.level, inst.roomOrigin(), inst.size), ents,
+                inst.level.registryAccess());
     }
 
     private static CarriageBlockSnapshot.Captured captureRoom(ServerLevel level, BlockPos origin,

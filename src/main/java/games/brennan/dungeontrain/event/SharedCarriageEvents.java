@@ -375,8 +375,10 @@ public final class SharedCarriageEvents {
                     // The fingerprint of what this upload actually carries — recorded only once the POST
                     // lands, so a failed upload is re-tried rather than mistaken for "the relay already
                     // has these entities".
-                    long sig = CarriageEntitySnapshot.decorFingerprint(uploadEnts(inst, cap));
-                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+                    net.minecraft.nbt.ListTag ents = uploadEnts(inst, cap);
+                    long sig = CarriageEntitySnapshot.decorFingerprint(ents);
+                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig,
+                            photosOf(ship, inst, ents));
                 } catch (Throwable tErr) {
                     LOGGER.debug("[DungeonTrain] shared-carriage delta capture failed for pIdx={}: {}", inst.pIdx, tErr.toString());
                     return null;
@@ -391,12 +393,22 @@ public final class SharedCarriageEvents {
             CarriageBlockSnapshot.Captured cap =
                     CarriageBlockSnapshot.capture(ship, inst.level, inst.shipyardOrigin, inst.dims,
                             DungeonTrainConfig.getSharedCarriageMaxEntities());
-            long sig = CarriageEntitySnapshot.decorFingerprint(uploadEnts(inst, cap));
-            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+            net.minecraft.nbt.ListTag ents = uploadEnts(inst, cap);
+            long sig = CarriageEntitySnapshot.decorFingerprint(ents);
+            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig,
+                    photosOf(ship, inst, ents));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-carriage full capture failed for pIdx={}: {}", inst.pIdx, t.toString());
             return null;
         }
+    }
+
+    /** The community photos the whole carriage holds, for the relay to keep their pictures. */
+    private static com.google.gson.JsonArray photosOf(SableManagedShip ship, SharedCarriageRegistry.Instance inst,
+                                                      net.minecraft.nbt.ListTag ents) {
+        return games.brennan.dungeontrain.compat.photo.CarriagePhotos.uploadList(
+                CarriageBlockSnapshot.blockEntities(ship, inst.shipyardOrigin, inst.dims), ents,
+                inst.level.registryAccess());
     }
 
     /**
