@@ -91,10 +91,12 @@ class MultiBlockVariantsTest {
         VariantState door = door();
         List<MultiBlockVariants.Write> writes = MultiBlockVariants.expand(
             List.of(door, VariantState.of(Blocks.STONE.defaultBlockState())), VariantSpan.NONE, door, CELL, SEED, 0, AS_AUTHORED);
-        assertEquals(2, writes.size());
-        assertEquals(DoubleBlockHalf.LOWER, writes.get(0).state().getValue(DoorBlock.HALF));
-        assertEquals(ABOVE, writes.get(1).localPos());
-        assertEquals(DoubleBlockHalf.UPPER, writes.get(1).state().getValue(DoorBlock.HALF));
+        assertEquals(3, writes.size());
+        assertTrue(writes.get(0).isAir(), "the partner space is cleared first");
+        assertEquals(ABOVE, writes.get(0).localPos());
+        assertEquals(DoubleBlockHalf.LOWER, writes.get(1).state().getValue(DoorBlock.HALF));
+        assertEquals(ABOVE, writes.get(2).localPos());
+        assertEquals(DoubleBlockHalf.UPPER, writes.get(2).state().getValue(DoorBlock.HALF));
     }
 
     @Test
@@ -104,11 +106,13 @@ class MultiBlockVariantsTest {
         MultiBlockVariants.Rotator turnEast = v -> v.state().setValue(BedBlock.FACING, Direction.EAST);
         List<MultiBlockVariants.Write> writes = MultiBlockVariants.expand(
             List.of(bed), VariantSpan.NONE, bed, CELL, SEED, 0, turnEast);
-        assertEquals(3, writes.size());
-        assertTrue(writes.get(1).isAir());
-        assertEquals(CELL.north(), writes.get(1).localPos());
-        assertEquals(CELL.east(), writes.get(2).localPos());
-        assertEquals(BedPart.HEAD, writes.get(2).state().getValue(BedBlock.PART));
+        assertEquals(4, writes.size());
+        assertTrue(writes.get(0).isAir(), "the partner space is cleared first");
+        assertEquals(CELL.east(), writes.get(0).localPos());
+        assertTrue(writes.get(2).isAir());
+        assertEquals(CELL.north(), writes.get(2).localPos());
+        assertEquals(CELL.east(), writes.get(3).localPos());
+        assertEquals(BedPart.HEAD, writes.get(3).state().getValue(BedBlock.PART));
     }
 
     @Test
@@ -169,10 +173,11 @@ class MultiBlockVariantsTest {
         List<VariantState> cell = List.of(tallGrass, VariantState.of(Blocks.SHORT_GRASS.defaultBlockState()));
         List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell,
             span(TWO, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME), tallGrass, CELL, SEED, 0, AS_AUTHORED);
-        assertEquals(2, w.size());
-        assertEquals(DoubleBlockHalf.LOWER, w.get(0).state().getValue(DoorBlock.HALF));
-        assertEquals(ABOVE, w.get(1).localPos());
-        assertEquals(DoubleBlockHalf.UPPER, w.get(1).state().getValue(DoorBlock.HALF));
+        assertEquals(3, w.size());
+        assertTrue(w.get(0).isAir());
+        assertEquals(DoubleBlockHalf.LOWER, w.get(1).state().getValue(DoorBlock.HALF));
+        assertEquals(ABOVE, w.get(2).localPos());
+        assertEquals(DoubleBlockHalf.UPPER, w.get(2).state().getValue(DoorBlock.HALF));
     }
 
     @Test
@@ -365,5 +370,23 @@ class MultiBlockVariantsTest {
         assertEquals(VariantSpan.NONE, sidecar.spanAt(ABOVE));
         sidecar.remove(CELL);
         assertEquals(VariantSpan.NONE, sidecar.spanAt(CELL));
+    }
+
+    @Test
+    @DisplayName("A bed of another colour over the template's bed lands whole: partner cleared, then foot, then head")
+    void recolouredBedLandsWhole() {
+        VariantState white = VariantState.of(Blocks.WHITE_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.NORTH));
+        MultiBlockVariants.Rotator toRed = v -> Blocks.RED_BED.defaultBlockState()
+            .setValue(BedBlock.FACING, v.state().getValue(BedBlock.FACING))
+            .setValue(BedBlock.PART, v.state().getValue(BedBlock.PART));
+        List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(List.of(white), VariantSpan.NONE, white, CELL, SEED, 0, toRed);
+        assertEquals(3, w.size());
+        assertTrue(w.get(0).isAir());
+        assertEquals(CELL.north(), w.get(0).localPos());
+        assertEquals(Blocks.RED_BED, w.get(1).state().getBlock());
+        assertEquals(BedPart.FOOT, w.get(1).state().getValue(BedBlock.PART));
+        assertEquals(CELL.north(), w.get(2).localPos());
+        assertEquals(Blocks.RED_BED, w.get(2).state().getBlock());
+        assertEquals(BedPart.HEAD, w.get(2).state().getValue(BedBlock.PART));
     }
 }

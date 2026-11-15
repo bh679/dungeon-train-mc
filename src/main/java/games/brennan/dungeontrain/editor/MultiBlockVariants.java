@@ -101,7 +101,13 @@ public final class MultiBlockVariants {
         BlockState rotated = rotator.rotate(picked);
         BlockPos partner = MultiBlockFootprint.partnerOffset(rotated);
         if (partner != null) {
-            List<Write> out = new ArrayList<>(3);
+            List<Write> out = new ArrayList<>(4);
+            // Clear the partner space first. The stamp already put the template's own two halves
+            // here, and a silent write still runs shape updates: writing a different bed (another
+            // colour) or door over one half makes the template's other half see a stranger, drop to
+            // air, and take the new half with it, leaving half a bed. With the partner space empty,
+            // the new half sees nothing to react to and the new partner lands beside it.
+            out.add(Write.air(localPos.offset(partner)));
             out.add(new Write(localPos, picked, rotated));
             if (footprint != null && !footprint.equals(partner)) {
                 out.add(Write.air(localPos.offset(footprint)));
