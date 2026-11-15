@@ -1198,6 +1198,7 @@ public final class AchievementEvents {
         NothingButBooksAdvancement.checkAndGrant(player);
         LeatherOverDiamondAdvancement.checkAndGrant(player);
         TotemJourneyAdvancements.checkHeldStack(player);
+        TotemJourneyAdvancements.checkZombieRide(player);
     }
 
     /**

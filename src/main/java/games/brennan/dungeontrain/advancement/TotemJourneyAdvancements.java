@@ -58,11 +58,19 @@ public final class TotemJourneyAdvancements {
 
     // ---- Undead Commuter ----
 
-    @SubscribeEvent
-    public static void onEffectAdded(MobEffectEvent.Added event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !isZombified(event.getEffectInstance().getEffect())) return;
-        if (player.getData(ModDataAttachments.CARTS_AT_ZOMBIFIED.get()) >= 0) return; // already a zombie: keep the start
-        player.setData(ModDataAttachments.CARTS_AT_ZOMBIFIED.get(), travelled(player));
+    /**
+     * Once a second, from {@link AchievementEvents#onPlayerTick}: start the ride when the player is a zombie with no
+     * start recorded. Polled rather than heard, because Dungeon Totems puts its curses on with
+     * {@code forceAddEffect}, which fires no {@link MobEffectEvent.Added}.
+     */
+    public static void checkZombieRide(ServerPlayer player) {
+        boolean zombie = player.getActiveEffects().stream().anyMatch(e -> isZombified(e.getEffect()));
+        int start = player.getData(ModDataAttachments.CARTS_AT_ZOMBIFIED.get());
+        if (zombie && start < 0) {
+            player.setData(ModDataAttachments.CARTS_AT_ZOMBIFIED.get(), travelled(player));
+        } else if (!zombie && start >= 0) {
+            player.setData(ModDataAttachments.CARTS_AT_ZOMBIFIED.get(), -1); // gone without a removal event
+        }
     }
 
     /** A removal while alive is the cure (the curse has no timer and milk leaves it). */
