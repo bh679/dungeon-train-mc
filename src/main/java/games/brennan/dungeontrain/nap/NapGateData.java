@@ -22,9 +22,9 @@ import java.util.UUID;
 
 /**
  * Per player, what the nap gate needs that the run-state codec (full) can't keep across a relog:
- * the gate itself ({@link PlayerRunState#setNapGate}), how far this life has reached each way
- * ({@link PlayerRunState#noteReach}), and the last X the player stood at on the train's level.
- * Written on wake and by {@link NapReachTracker}, read back on login, dropped on a death. Stored at
+ * the gate itself ({@link PlayerRunState#setNapGate}, at the bed the player slept in) and the last X
+ * the player stood at on the train's level. Written on wake and by {@link NapTrainXTracker}, read back
+ * on login, dropped on a death. Stored at
  * {@code <world>/data/dungeontrain_nap_gates.dat}.
  *
  * <p>The train runs in the overworld. Anywhere else (a dimensional carriage, a home room, a real
@@ -37,16 +37,14 @@ public final class NapGateData extends SavedData {
     public static final String NAME = "dungeontrain_nap_gates";
     private static final String TAG_X = "x";
     private static final String TAG_DIR = "dir";
-    private static final String TAG_REACH_MIN = "reachMin";
-    private static final String TAG_REACH_MAX = "reachMax";
     private static final String TAG_LAST_TRAIN_X = "lastTrainX";
 
     /** One player's entry; NaN = not known. {@code dir} 0 = no gate. */
-    private record Entry(double x, int dir, double reachMin, double reachMax, double lastTrainX) {
-        static final Entry EMPTY = new Entry(0.0, 0, Double.NaN, Double.NaN, Double.NaN);
+    private record Entry(double x, int dir, double lastTrainX) {
+        static final Entry EMPTY = new Entry(0.0, 0, Double.NaN);
 
         boolean isEmpty() {
-            return dir == 0 && Double.isNaN(reachMin) && Double.isNaN(lastTrainX);
+            return dir == 0 && Double.isNaN(lastTrainX);
         }
     }
 
@@ -65,8 +63,7 @@ public final class NapGateData extends SavedData {
             try {
                 CompoundTag g = tag.getCompound(key);
                 int dir = Integer.signum(g.getInt(TAG_DIR));
-                Entry e = new Entry(dir == 0 ? 0.0 : g.getDouble(TAG_X), dir,
-                    optional(g, TAG_REACH_MIN), optional(g, TAG_REACH_MAX), optional(g, TAG_LAST_TRAIN_X));
+                Entry e = new Entry(dir == 0 ? 0.0 : g.getDouble(TAG_X), dir, optional(g, TAG_LAST_TRAIN_X));
                 if (!e.isEmpty()) data.entries.put(UUID.fromString(key), e);
             } catch (IllegalArgumentException ignored) {
                 // not a player id: skip the entry
@@ -87,10 +84,6 @@ public final class NapGateData extends SavedData {
                 t.putDouble(TAG_X, e.x());
                 t.putInt(TAG_DIR, e.dir());
             }
-            if (!Double.isNaN(e.reachMin()) && !Double.isNaN(e.reachMax())) {
-                t.putDouble(TAG_REACH_MIN, e.reachMin());
-                t.putDouble(TAG_REACH_MAX, e.reachMax());
-            }
             if (!Double.isNaN(e.lastTrainX())) t.putDouble(TAG_LAST_TRAIN_X, e.lastTrainX());
             tag.put(id.toString(), t);
         });
@@ -101,23 +94,20 @@ public final class NapGateData extends SavedData {
         return entries.getOrDefault(id, Entry.EMPTY);
     }
 
-    /** Record {@code run}'s gate and reach for {@code player}. */
+    /** Record {@code run}'s gate for {@code player} (or forget it when the run has none). */
     public static void remember(ServerPlayer player, PlayerRunState run) {
         NapGateData data = get(player.server);
         Entry old = data.entry(player.getUUID());
         Entry next = new Entry(run.napGated() ? run.napGateX() : 0.0, run.napGated() ? run.napGateDir() : 0,
-            run.hasReach() ? run.reachMin() : Double.NaN, run.hasReach() ? run.reachMax() : Double.NaN,
             old.lastTrainX());
         data.put(player.getUUID(), old, next);
     }
 
-    /** Record that {@code player} stands at {@code x} on the train's level now ({@link NapReachTracker}). */
-    static void rememberTrainX(ServerPlayer player, PlayerRunState run, double x) {
+    /** Record that {@code player} stands at {@code x} on the train's level now ({@link NapTrainXTracker}). */
+    static void rememberTrainX(ServerPlayer player, double x) {
         NapGateData data = get(player.server);
         Entry old = data.entry(player.getUUID());
-        Entry next = new Entry(old.x(), old.dir(),
-            run.hasReach() ? run.reachMin() : Double.NaN, run.hasReach() ? run.reachMax() : Double.NaN, x);
-        data.put(player.getUUID(), old, next);
+        data.put(player.getUUID(), old, new Entry(old.x(), old.dir(), x));
     }
 
     private void put(UUID id, Entry old, Entry next) {
@@ -132,7 +122,7 @@ public final class NapGateData extends SavedData {
         return get(player.server).entry(player.getUUID()).lastTrainX();
     }
 
-    /** After a relog: give the run state back the gate and reach this world holds for the player. */
+    /** After a relog: give the run state back the gate this world holds for the player. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -140,11 +130,9 @@ public final class NapGateData extends SavedData {
         if (e == null) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         if (e.dir() != 0 && !run.napGated()) run.setNapGate(e.x(), e.dir());
-        run.noteReach(e.reachMin());
-        run.noteReach(e.reachMax());
     }
 
-    /** A death ends the life, and the gate and reach with it. */
+    /** A death ends the life, and the gate with it. */
     @SubscribeEvent
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.isEndConquered() || !(event.getEntity() instanceof ServerPlayer player)) return;

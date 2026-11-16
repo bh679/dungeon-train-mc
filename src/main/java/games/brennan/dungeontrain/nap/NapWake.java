@@ -133,10 +133,9 @@ public final class NapWake {
             run.applyNapExtras(plan.nap().runExtras(), player.registryAccess());
             run.forgetChestPositionsKeepingCount();
             // Behind the nap point this world's carriages are re-rolled copies of cleared ones, so
-            // count-based run counters step down there for the rest of the life. The point is the
-            // furthest this life reached that way, not the bed: walking back to nap re-rolls nothing.
-            int dir = PlayerRunState.travelDirection(run.travelledCarriageIndex(), plan.nap().direction());
-            run.setNapGate(run.reachEdge(dir, plan.nap().x()), dir);
+            // count-based run counters step down there for the rest of the life.
+            run.setNapGate(plan.nap().x(),
+                PlayerRunState.travelDirection(run.travelledCarriageIndex(), plan.nap().direction()));
             NapGateData.remember(player, run);
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Nap {}: run-state extras not restored", plan.nap().napId(), e);

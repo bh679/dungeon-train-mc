@@ -322,14 +322,6 @@ public final class PlayerRunState {
      */
     private double napGateX;
     private int napGateDir;
-    /**
-     * The furthest world X this life has reached on the train's level each way (NaN = no sample yet),
-     * sampled by {@code nap/NapReachTracker}. A nap gates at the furthest of these in the travel
-     * direction, not at the bed, so walking back to a bed can't re-roll carriages already cleared.
-     * Not in {@link #CODEC}: carried by {@link #napExtras} and {@code nap/NapGateData}.
-     */
-    private double reachMin = Double.NaN;
-    private double reachMax = Double.NaN;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -480,8 +472,6 @@ public final class PlayerRunState {
     private static final String X_CAMERA_FRAMES = "cameraFrames";
     private static final String X_NAP_GATE_X = "napGateX";
     private static final String X_NAP_GATE_DIR = "napGateDir";
-    private static final String X_REACH_MIN = "reachMin";
-    private static final String X_REACH_MAX = "reachMax";
 
     /**
      * Every field of this life that {@link #CODEC} leaves out, for a nap: the codec fields already
@@ -531,10 +521,6 @@ public final class PlayerRunState {
         if (napGateDir != 0) {
             t.putDouble(X_NAP_GATE_X, napGateX);
             t.putInt(X_NAP_GATE_DIR, napGateDir);
-        }
-        if (hasReach()) {
-            t.putDouble(X_REACH_MIN, reachMin);
-            t.putDouble(X_REACH_MAX, reachMax);
         }
         return t;
     }
@@ -588,12 +574,6 @@ public final class PlayerRunState {
         int dir = t.getInt(X_NAP_GATE_DIR);
         napGateDir = dir == 0 ? 0 : Integer.signum(dir);
         napGateX = napGateDir == 0 ? 0.0 : t.getDouble(X_NAP_GATE_X);
-        reachMin = Double.NaN;
-        reachMax = Double.NaN;
-        if (t.contains(X_REACH_MIN) && t.contains(X_REACH_MAX)) {
-            noteReach(t.getDouble(X_REACH_MIN));
-            noteReach(t.getDouble(X_REACH_MAX));
-        }
     }
 
     // --- Nap gate --------------------------------------------------------------------------------
@@ -617,33 +597,6 @@ public final class PlayerRunState {
         if (napGateDir == d && (x - napGateX) * d <= 0) return;
         napGateX = x;
         napGateDir = d;
-    }
-
-    /** Widen this life's reach to take in world X {@code x} (ignored when not finite). */
-    public void noteReach(double x) {
-        if (!Double.isFinite(x)) return;
-        if (!hasReach()) {
-            reachMin = x;
-            reachMax = x;
-            return;
-        }
-        if (x < reachMin) reachMin = x;
-        if (x > reachMax) reachMax = x;
-    }
-
-    public boolean hasReach() { return !Double.isNaN(reachMin) && !Double.isNaN(reachMax); }
-
-    public double reachMin() { return reachMin; }
-
-    public double reachMax() { return reachMax; }
-
-    /**
-     * The furthest point of this life heading {@code dir}: the reach's edge that way, or
-     * {@code fallbackX} (the bed) when that is further or there is no reach yet.
-     */
-    public double reachEdge(int dir, double fallbackX) {
-        if (!hasReach()) return fallbackX;
-        return dir < 0 ? Math.min(reachMin, fallbackX) : Math.max(reachMax, fallbackX);
     }
 
     /** Drop the nap gate (debug only; a death drops it through {@link #resetDeathStats}). */
@@ -1318,8 +1271,6 @@ public final class PlayerRunState {
         maxCarriagesNoChest = 0;
         napGateX = 0.0;
         napGateDir = 0;
-        reachMin = Double.NaN;
-        reachMax = Double.NaN;
     }
 
     /** Reset everything (called on respawn). */
