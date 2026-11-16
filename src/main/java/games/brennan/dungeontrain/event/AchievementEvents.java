@@ -1119,6 +1119,8 @@ public final class AchievementEvents {
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Fully Developed's disc, once: backfills anyone who held it before the reward existed.
+        games.brennan.dungeontrain.advancement.DarkroomDiscReward.onLogin(player);
         // Advancements the developer gave this player (relay awards): granted as real earns once the
         // relay answers, after the replay above so one already held elsewhere is just "already done".
         AdvancementAwards.fetchAndApply(player);
@@ -1290,6 +1292,8 @@ public final class AchievementEvents {
         // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
         // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
+        // Fully Developed pays its disc as an advancement reward; record the earn so login won't backfill it.
+        games.brennan.dungeontrain.advancement.DarkroomDiscReward.onEarned(player, id);
         if (TabGateways.isLinked(id)) return;
         // The Live Eye streamer's earn, told to their client for the stream's Live chat (LiveMomentEvents).
         if (!AdvancementProfiles.isReplaying()) LiveMomentEvents.onAdvancement(player, advancement);
