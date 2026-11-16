@@ -8,6 +8,8 @@ import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
 import games.brennan.dungeontrain.client.nap.NapQuit;
+import games.brennan.dungeontrain.client.nap.NapSky;
+import games.brennan.dungeontrain.client.nap.NapSkyPainter;
 import games.brennan.dungeontrain.narrative.LocaleOrdinalWords;
 import games.brennan.dungeontrain.client.survey.KnownFeature;
 import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
@@ -444,8 +446,15 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** The napped world's save folder in nap mode ({@link #afterNap}); null on a death. */
     private String napLevelId = null;
+    /** The space under a page's kicker, now that the train rides in the top bar ({@link #drawTopTrain}). */
+    private static final int TRAIN_GAP = 10;
+    private static final int TOP_TRAIN_MARGIN = 14, TOP_TRAIN_MIN_W = 80;
     /** Set once a nap-mode exit has started, so a second click can't leave twice. */
     private boolean napLeaving = false;
+    /** The "a life ongoing" sky (nap mode), made once the lifetime stats arrive. */
+    private NapSkyPainter napSky = null;
+    /** The bottom question / answer line under the nap sky. */
+    private static final int NAP_SKY_TEXT = 0xFFD8C79A;
 
     public NarrativeDeathScreen() {
         this(Component.translatable("gui.dungeontrain.death.narr.title"));
@@ -882,6 +891,10 @@ public final class NarrativeDeathScreen extends Screen {
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE) {
             g.fill(0, 0, this.width, this.height, DONATE_WASH);
         }
+        // "a life ongoing" (nap): the perks sky, its paths traced out from the Engine.
+        if (nap() && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.ONGOING) {
+            drawNapSky(g, now);
+        }
 
         // Train engine: full on the first screen (as if aboard), fading evenly to
         // silence by the last screen — and rising again if the player steps back.
@@ -929,6 +942,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (commentBox != null) commentBox.visible = settled();
         if (uiAlpha > UI_EPS) {
             drawTopBar(g, mouseX, mouseY);
+            drawTopTrain(g);
 
             int y = 40;
             switch (page.kind()) {
@@ -961,7 +975,7 @@ public final class NarrativeDeathScreen extends Screen {
                 drawCargoTooltips(g, stats, mouseX, mouseY);
             }
             // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
-            if ((page.kind() == Kind.LIVES || page.kind() == Kind.ONGOING) && stats != null && settled()) {
+            if (page.kind() == Kind.LIVES && stats != null && settled()) {
                 drawLivesTooltips(g, mouseX, mouseY);
             }
             // Per-tile "what is this number?" tooltips on the donation page — wrapped to at most
@@ -1258,8 +1272,7 @@ public final class NarrativeDeathScreen extends Screen {
             drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
             y += 14;
         }
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);
         y = drawNarration(g, n.fallNarration(), cx, w, y);
         y += 10;
@@ -1276,8 +1289,7 @@ public final class NarrativeDeathScreen extends Screen {
                           int left, int w, int cx, int y, float partialTick) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_deeds");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.deedsQuestion(), cx, w, y);
         y = drawNarration(g, n.deedsNarration(), cx, w, y);
         y += 10;
@@ -1322,8 +1334,7 @@ public final class NarrativeDeathScreen extends Screen {
                          int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_gear");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.gearQuestion(), cx, w, y);
         y = drawNarration(g, n.gearNarration(), cx, w, y);
         y += 8;
@@ -1507,8 +1518,7 @@ public final class NarrativeDeathScreen extends Screen {
                           int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_lives");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.livesQuestion(), cx, w, y);
         if (!n.livesSubline().isEmpty()) {
             y = drawCentered(g, styled(n.livesSubline()), cx, w, y, SUBLINE);
@@ -1521,26 +1531,55 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * The nap farewell's last page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
-     * and not yet to fall.") over the same lifetime tiles and icons as {@link #drawLives}, holding only
-     * the lives before this one ({@code RunStatsEvents#napPacket}); a first life says there is nothing to
-     * compare it to yet instead.
+     * and not yet to fall.") over the perks sky ({@link #drawNapSky}): one line per previous life, then
+     * this life's, still open. The quiet totals line holds only the lives before this one
+     * ({@code RunStatsEvents#napPacket}); a first life has none.
      */
     private int drawOngoing(GuiGraphics g, DeathStatsPacket s, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.nap.ongoing.kicker");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
-        if (s != null) {
-            String locale = Minecraft.getInstance().getLanguageManager().getSelected();
-            String nth = LocaleOrdinalWords.forLocale(locale, s.lifeDeaths() + 1L, LocaleOrdinalWords.Gender.MASCULINE);
-            y = drawQuestion(g, Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString(), cx, w, y);
-            y += 10;
-            // A first life has no lives before it: say so rather than show a wall of zeros.
-            if (s.lifeDeaths() == 0L) {
-                return drawCentered(g, Component.translatable("gui.dungeontrain.nap.ongoing.first"), cx, w, y, NARR);
-            }
+        y += TRAIN_GAP;
+        if (s == null) return y;
+        long past = Math.max(0L, s.lifeDeaths());
+        String locale = Minecraft.getInstance().getLanguageManager().getSelected();
+        String nth = LocaleOrdinalWords.forLocale(locale, past + 1L, LocaleOrdinalWords.Gender.MASCULINE);
+        y = drawQuestion(g, Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString(), cx, w, y);
+        y += 2;
+        Component sub = past == 0L ? Component.translatable("gui.dungeontrain.nap.ongoing.subline_first")
+            : PluralRules.clause(locale, "gui.dungeontrain.nap.ongoing.subline_past", past);
+        y = drawCentered(g, sub, cx, w, y, NARR);
+
+        int rowY = this.height - 28;
+        boolean settled = napSky != null && napSky.settled(pageOpenedAtMs, Util.getMillis());
+        drawCenteredStr(g, Component.translatable(settled
+            ? "gui.dungeontrain.nap.ongoing.settled" : "gui.dungeontrain.nap.ongoing.question"),
+            cx, rowY - 14, NAP_SKY_TEXT);
+        if (past > 0L) {
+            drawCenteredStr(g, Component.translatable("gui.dungeontrain.nap.ongoing.totals",
+                fmtAboard(s.lifeTrainTicks()), Long.toString(s.lifeCarriages()), fmtDist(s.lifeDistance())),
+                cx, rowY - 27, KICKER);
         }
-        return drawLifetimeTotals(g, s, left, w, y);
+        return y;
+    }
+
+    /**
+     * The perks sky behind "a life ongoing" ({@link NapSkyPainter}), filling the screen under the text,
+     * the constellation centred in the space between the headline and the footer. Waits for the
+     * lifetime stats (the number of past lives).
+     */
+    private void drawNapSky(GuiGraphics g, long now) {
+        DeathStatsPacket s = DeathStatsCache.get();
+        if (napSky == null) {
+            NapSky sky = NapSky.get();
+            if (s == null || sky == null) return;
+            UUID player = this.minecraft != null && this.minecraft.getUser() != null
+                ? this.minecraft.getUser().getProfileId() : null;
+            napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime());
+        }
+        double top = 44, bottom = this.height - 34;
+        double size = Math.min(this.width - 24, (bottom - top) * 1.3);
+        double cy = (top + bottom) / 2.0 + size * 0.04;
+        napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, pageOpenedAtMs, now, uiAlpha);
     }
 
     /** The six lifetime text tiles and the 3×3 icon grid, shared by "all your lives" and "a life ongoing". */
@@ -1637,8 +1676,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawBugResponse(GuiGraphics g, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_upgrades");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         if (bugCard == null) return y;
         // Wider than the page column: the card carries buttons and release titles.
         int cardW = Math.max(w, Math.min(this.width - 24, 460));
@@ -1649,8 +1687,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawNote(GuiGraphics g, Page page, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.known_feature.kicker");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         KnownFeature note = noteFor(page);
         if (note == null) return y;
         y = drawQuestion(g, KnownFeatureNotes.title(note).getString(), cx, w, y);
@@ -1673,8 +1710,7 @@ public final class NarrativeDeathScreen extends Screen {
         scoreRects.clear();
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         // The first survey question keeps the calm "ledger" intro; the second (and any later)
         // question switches to a more urgent plea. drawSurvey only runs for the current page, so
         // the survey's ordinal is how many SURVEY pages occur up to and including this one.
@@ -1777,8 +1813,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawDonate(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
 
         DonationSummaryClient.Summary s = DonationSummaryCache.get();
         // Resolved before the narration, not with the tiles below, because the pitch itself quotes
@@ -2129,8 +2164,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_platform");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         // Fallback so the final page is never blank — e.g. a low-deaths Free Play
         // (creative) death where no conditioned platform lore entry matched.
         String platformNarration = n.platformNarration();
@@ -2237,11 +2271,6 @@ public final class NarrativeDeathScreen extends Screen {
         @Override
         public float alpha() {
             return uiAlpha;
-        }
-
-        @Override
-        public void train(GuiGraphics g, int left, int w, int y) {
-            drawTrain(g, left, w, y, currentPage);
         }
 
         @Override
@@ -2929,8 +2958,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawPhotos(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.photos.kicker");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.photos.title").getString(), cx, w, y);
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.subtitle"), cx, y + 2, KICKER);
         y += this.font.lineHeight + 4;
@@ -3072,6 +3100,23 @@ public final class NarrativeDeathScreen extends Screen {
      * where the fade falls away and only the assembled train and its ∞ remain
      * — a train that completes itself exactly as the narrative ends.
      */
+    /**
+     * The page's train, in the top bar between the brand and the leftmost chip, its rail on the chips'
+     * bottom edge, so every page's text starts just under its kicker. Left out when the bar is too
+     * narrow for a few carriages.
+     */
+    private void drawTopTrain(GuiGraphics g) {
+        int left = 12 + this.font.width(Component.translatable("gui.dungeontrain.death.narr.brand")) + TOP_TRAIN_MARGIN;
+        int right = this.width - 10;
+        for (Rect r : new Rect[] {leaveRect, reboardRect, deleteWorldRect, photosRect, dollarRect, envelopeRect}) {
+            if (r != null) right = Math.min(right, r.x());
+        }
+        right -= TOP_TRAIN_MARGIN;
+        if (right - left < TOP_TRAIN_MIN_W) return;
+        // drawTrain puts the rail 30 below y: -8 lays it along the chips' bottom edge (y 22).
+        drawTrain(g, left, right - left, -8, currentPage);
+    }
+
     private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
         DeathScreenText.drawTrain(g, this.font, left, w, y, advance, pages.size(), this::fade);
     }
