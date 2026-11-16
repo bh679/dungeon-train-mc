@@ -194,6 +194,21 @@
       "id": "outsidethebox",
       "weight": 12,
       "minLevel": 15
+    },
+    {
+      "id": "staircase",
+      "weight": 4,
+      "minLevel": 100
+    },
+    {
+      "id": "onionman",
+      "weight": 1,
+      "minLevel": 30
+    },
+    {
+      "id": "nnout",
+      "weight": 2,
+      "minLevel": 10
     }
   ]
 }

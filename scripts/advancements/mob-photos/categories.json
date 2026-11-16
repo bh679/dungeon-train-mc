@@ -173,6 +173,7 @@
     "minecraft:wandering_trader": "skip",
     "minecraft:armor_stand": "skip",
     "minecraft:end_crystal": "skip",
+    "minecraft:item_frame": "skip",
     "minecraft:hopper_minecart": "skip",
     "minecraft:minecart": "skip",
     "playermob:player_mob": "skip",
