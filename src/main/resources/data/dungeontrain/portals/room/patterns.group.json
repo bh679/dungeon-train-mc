@@ -30,6 +30,10 @@
       "id": "traineditor",
       "weight": 1,
       "minLevel": 30
+    },
+    {
+      "id": "housetown",
+      "weight": 1
     }
   ]
 }
