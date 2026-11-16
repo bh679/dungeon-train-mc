@@ -157,6 +157,12 @@ public enum ClientOptionsTab {
          * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
          */
         TWITCH_ACCOUNT(null),
+        /**
+         * Show "Playing Dungeon Train" and where you are on your Discord profile, through the Discord app on
+         * this computer — see {@code client.discord.DiscordRichPresence}. Off by default; hidden in Kid mode
+         * by the screen at draw time.
+         */
+        DISCORD_STATUS("gui.dungeontrain.options.discord_status"),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -396,6 +402,7 @@ public enum ClientOptionsTab {
             }
             case ACCOUNT -> {
                 rows.add(Row.DISCORD_ACCOUNT);
+                rows.add(Row.DISCORD_STATUS);
                 rows.add(Row.TWITCH_ACCOUNT);
             }
             case BACKUPS -> {
