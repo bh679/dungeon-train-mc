@@ -1558,7 +1558,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "The run ends and goes down as a death. There is no undo.",
   "gui.dungeontrain.abandon_confirm.yes": "Step off and die",
   "gui.dungeontrain.abandon_confirm.back": "Stay aboard",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "BUT there is a way to save! Find a naturally spawning bed, or equivalent. Use it.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "BUT there is a way to save!\nFind a naturally spawning bed, or equivalent. Use it.",
   "gui.dungeontrain.abandon_confirm.inventory": "On you now. Put them in an Ender Chest to keep them for next time.",
   "death.attack.dungeontrain.abandoned": "%1$s abandoned the train",
   "death.attack.dungeontrain.abandoned.player": "%1$s abandoned the train",

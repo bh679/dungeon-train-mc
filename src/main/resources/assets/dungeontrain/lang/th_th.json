@@ -1328,7 +1328,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "การเดินทางจบลงและถูกบันทึกเป็นการตายหนึ่งครั้ง ย้อนกลับไม่ได้",
   "gui.dungeontrain.abandon_confirm.yes": "ลงจากรถแล้วตาย",
   "gui.dungeontrain.abandon_confirm.back": "อยู่บนรถต่อ",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "แต่มีวิธีบันทึกอยู่นะ! หาเตียงที่เกิดขึ้นเองตามธรรมชาติ หรือสิ่งที่เทียบเท่า แล้วใช้มัน",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "แต่มีวิธีบันทึกอยู่นะ!\nหาเตียงที่เกิดขึ้นเองตามธรรมชาติ หรือสิ่งที่เทียบเท่า แล้วใช้มัน",
   "gui.dungeontrain.abandon_confirm.inventory": "นี่คือของที่คุณพกอยู่ตอนนี้ ใส่ไว้ในหีบเอนเดอร์เพื่อเก็บไว้ใช้ครั้งหน้า",
   "death.attack.dungeontrain.abandoned": "%1$s ละทิ้งขบวนรถไฟ",
   "death.attack.dungeontrain.abandoned.player": "%1$s ละทิ้งขบวนรถไฟ",

@@ -1328,7 +1328,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "Larian ini tamat dan direkodkan sebagai kematian. Tidak boleh diundurkan.",
   "gui.dungeontrain.abandon_confirm.yes": "Turun dan mati",
   "gui.dungeontrain.abandon_confirm.back": "Kekal di atas kereta api",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "TETAPI ada cara untuk simpan! Cari katil yang muncul secara semula jadi, atau yang setara. Gunakannya.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "TETAPI ada cara untuk simpan!\nCari katil yang muncul secara semula jadi, atau yang setara. Gunakannya.",
   "gui.dungeontrain.abandon_confirm.inventory": "Inilah yang anda bawa sekarang. Simpan dalam Peti Ender untuk kekalkannya bagi lain kali.",
   "death.attack.dungeontrain.abandoned": "%1$s meninggalkan kereta api",
   "death.attack.dungeontrain.abandoned.player": "%1$s meninggalkan kereta api",

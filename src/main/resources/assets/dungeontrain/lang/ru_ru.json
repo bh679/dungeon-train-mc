@@ -1419,7 +1419,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "Ваш забег закончится здесь смертью. Действие нельзя отменить.",
   "gui.dungeontrain.abandon_confirm.yes": "Да — убить меня",
   "gui.dungeontrain.abandon_confirm.back": "Назад",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "НО сохраниться можно! Найди кровать, появившуюся сама по себе, или что-то подобное. Воспользуйся ею.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "НО сохраниться можно!\nНайди кровать, появившуюся сама по себе, или что-то подобное. Воспользуйся ею.",
   "gui.dungeontrain.abandon_confirm.inventory": "Вот что у тебя с собой. Положи это в сундук Края, чтобы сохранить до следующего раза.",
   "death.attack.dungeontrain.abandoned": "%1$s бросил поезд",
   "death.attack.dungeontrain.abandoned.player": "%1$s бросил поезд",

@@ -5852,6 +5852,7 @@
       "chat.dungeontrain.live.appeal_hint",
       "command.dungeontrain.live_appeal.usage",
       "command.dungeontrain.live_appeal.sent",
+      "gui.dungeontrain.abandon_confirm.bed_hint",
       "gui.dungeontrain.support.button",
       "chat.dungeontrain.twitch.save_offer",
       "chat.dungeontrain.twitch.saved",

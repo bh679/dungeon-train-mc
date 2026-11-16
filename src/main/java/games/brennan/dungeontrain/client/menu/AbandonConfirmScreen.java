@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -17,14 +18,15 @@ import java.util.List;
  *
  * <p>The button says <i>abandon</i>, which reads like leaving; what actually happens is that the
  * character dies and the run is over. One misclick used to be enough. So the screen spells out the
- * part the label doesn't: <b>you will die</b>, it counts as a death, and there is no undo. It then
+ * part the label doesn't: <b>you will die</b>. It then
  * points at the way to stop without dying (a bed the train placed saves the run and quits), and
  * shows everything the player is carrying, backpack included, so they see what they'd be giving
  * up and are reminded the Ender Chest keeps things for next time.</p>
  *
  * <p>One centred row of two buttons — the destructive one on the left, the way out on its right,
  * the order vanilla's own confirm screens use — and Escape falling back to the option that changes
- * nothing. What "continue" means is the caller's: {@code proceed} runs only once the player has
+ * nothing. Hovering the destructive button washes the whole screen red, so the choice reads as the
+ * death it is. What "continue" means is the caller's: {@code proceed} runs only once the player has
  * said yes. On a screen too short for it all, the backpack goes first, then the whole grid; the
  * buttons always fit.</p>
  */
@@ -45,8 +47,12 @@ public final class AbandonConfirmScreen extends Screen {
     private static final int GREY = 0xA0A0A0;
     private static final int GOLD = 0xFFD860;
 
+    /** Red wash over the world at full hover, and how long it takes to fade in or out. */
+    private static final int WASH_RGB = 0xB00000;
+    private static final int WASH_MAX_ALPHA = 0x90;
+    private static final float WASH_FADE_MS = 400F;
+
     private static final Component LINE_1 = Component.translatable("gui.dungeontrain.abandon_confirm.line1");
-    private static final Component LINE_2 = Component.translatable("gui.dungeontrain.abandon_confirm.line2");
     private static final Component BED_HINT = Component.translatable("gui.dungeontrain.abandon_confirm.bed_hint");
     private static final Component INVENTORY = Component.translatable("gui.dungeontrain.abandon_confirm.inventory");
 
@@ -57,6 +63,9 @@ public final class AbandonConfirmScreen extends Screen {
     private final Runnable proceed;
     private final List<Line> lines = new ArrayList<>();
     private AbandonInventoryGrid grid;
+    private Button stepOff;
+    private float wash;
+    private long lastWashMs = -1;
 
     /**
      * @param lastScreen the pause menu to fall back to — cancelling must leave the run exactly as it was
@@ -71,7 +80,7 @@ public final class AbandonConfirmScreen extends Screen {
     @Override
     protected void init() {
         int wrap = Math.max(100, this.width - 2 * TEXT_MARGIN);
-        List<Line> warning = wrapAll(wrap, this.title, WHITE, LINE_1, RED, LINE_2, GREY, BED_HINT, GOLD);
+        List<Line> warning = wrapAll(wrap, this.title, WHITE, LINE_1, RED, BED_HINT, GOLD);
         List<Line> label = wrapAll(wrap, INVENTORY, GREY);
 
         int room = this.height - 2 * EDGE;
@@ -104,7 +113,7 @@ public final class AbandonConfirmScreen extends Screen {
         int x = (this.width - (BUTTON_WIDTH * 2 + GAP)) / 2;
 
         // The same red the Abandon button carries on the pause menu — the colour is the warning.
-        this.addRenderableWidget(new ColorTintedButton(x, y, BUTTON_WIDTH, BUTTON_HEIGHT,
+        stepOff = this.addRenderableWidget(new ColorTintedButton(x, y, BUTTON_WIDTH, BUTTON_HEIGHT,
                 Component.translatable("gui.dungeontrain.abandon_confirm.yes"),
                 1.0F, 0.30F, 0.30F,
                 b -> proceedNow()));
@@ -133,6 +142,24 @@ public final class AbandonConfirmScreen extends Screen {
             y += LINE_H;
         }
         return y;
+    }
+
+    /** The world behind the screen, washed red while the player hovers "Step off and die". */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(g, mouseX, mouseY, partialTick);
+        updateWash();
+        int alpha = Math.round(wash * WASH_MAX_ALPHA);
+        if (alpha > 0) g.fill(0, 0, this.width, this.height, (alpha << 24) | WASH_RGB);
+    }
+
+    /** Eases {@link #wash} toward 1 while the step-off button is hovered, back to 0 otherwise. */
+    private void updateWash() {
+        long now = Util.getMillis();
+        float step = lastWashMs < 0 ? 0F : (now - lastWashMs) / WASH_FADE_MS;
+        lastWashMs = now;
+        boolean hot = stepOff != null && stepOff.isHovered();
+        wash = hot ? Math.min(1F, wash + step) : Math.max(0F, wash - step);
     }
 
     @Override

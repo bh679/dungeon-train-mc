@@ -1371,7 +1371,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "Die Partie endet und zählt als Tod. Es gibt kein Zurück.",
   "gui.dungeontrain.abandon_confirm.yes": "Absteigen und sterben",
   "gui.dungeontrain.abandon_confirm.back": "An Bord bleiben",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "ABER es gibt einen Weg zu speichern! Finde ein natürlich entstandenes Bett oder Ähnliches. Benutze es.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "ABER es gibt einen Weg zu speichern!\nFinde ein natürlich entstandenes Bett oder Ähnliches. Benutze es.",
   "gui.dungeontrain.abandon_confirm.inventory": "Das trägst du gerade bei dir. Leg es in eine Endertruhe, um es fürs nächste Mal zu behalten.",
   "death.attack.dungeontrain.abandoned": "%1$s hat den Zug verlassen",
   "death.attack.dungeontrain.abandoned.player": "%1$s hat den Zug verlassen",

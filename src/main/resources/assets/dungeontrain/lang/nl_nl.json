@@ -1371,7 +1371,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "De run eindigt en telt als een dood. Er is geen weg terug.",
   "gui.dungeontrain.abandon_confirm.yes": "Afstappen en sterven",
   "gui.dungeontrain.abandon_confirm.back": "Aan boord blijven",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "MAAR je kunt wel opslaan! Zoek een bed dat vanzelf is verschenen, of iets vergelijkbaars. Gebruik het.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "MAAR je kunt wel opslaan!\nZoek een bed dat vanzelf is verschenen, of iets vergelijkbaars. Gebruik het.",
   "gui.dungeontrain.abandon_confirm.inventory": "Dit heb je nu bij je. Leg het in een enderkist om het voor de volgende keer te bewaren.",
   "death.attack.dungeontrain.abandoned": "%1$s heeft de trein verlaten",
   "death.attack.dungeontrain.abandoned.player": "%1$s heeft de trein verlaten",

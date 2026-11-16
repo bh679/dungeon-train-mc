@@ -5122,6 +5122,7 @@
       "gui.dungeontrain.abandon_confirm.line2",
       "gui.dungeontrain.abandon_confirm.yes",
       "gui.dungeontrain.abandon_confirm.back",
+      "gui.dungeontrain.abandon_confirm.bed_hint",
       "chat.dungeontrain.twitch.save_offer",
       "chat.dungeontrain.twitch.saved",
       "chat.dungeontrain.twitch.saved_verify",

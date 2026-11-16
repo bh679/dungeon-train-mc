@@ -1414,7 +1414,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "Rozgrywka kończy się i zostaje zapisana jako śmierć. Nie da się tego cofnąć.",
   "gui.dungeontrain.abandon_confirm.yes": "Wysiądź i zgiń",
   "gui.dungeontrain.abandon_confirm.back": "Zostań na pokładzie",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "ALE da się zapisać! Znajdź naturalnie wygenerowane łóżko lub jego odpowiednik. Użyj go.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "ALE da się zapisać!\nZnajdź naturalnie wygenerowane łóżko lub jego odpowiednik. Użyj go.",
   "gui.dungeontrain.abandon_confirm.inventory": "To masz teraz przy sobie. Włóż to do skrzyni Kresu, by zachować na następny raz.",
   "death.attack.dungeontrain.abandoned": "%1$s porzucił pociąg",
   "death.attack.dungeontrain.abandoned.player": "%1$s porzucił pociąg",

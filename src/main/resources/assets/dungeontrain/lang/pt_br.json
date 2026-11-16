@@ -1371,7 +1371,7 @@
   "gui.dungeontrain.abandon_confirm.line2": "A jornada termina e fica registrada como uma morte. Não dá para desfazer.",
   "gui.dungeontrain.abandon_confirm.yes": "Descer e morrer",
   "gui.dungeontrain.abandon_confirm.back": "Ficar a bordo",
-  "gui.dungeontrain.abandon_confirm.bed_hint": "MAS existe um jeito de salvar! Encontre uma cama gerada naturalmente, ou algo equivalente. Use-a.",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "MAS existe um jeito de salvar!\nEncontre uma cama gerada naturalmente, ou algo equivalente. Use-a.",
   "gui.dungeontrain.abandon_confirm.inventory": "Isto é o que você carrega agora. Coloque em um baú do Ender para guardar para a próxima vez.",
   "death.attack.dungeontrain.abandoned": "%1$s abandonou o trem",
   "death.attack.dungeontrain.abandoned.player": "%1$s abandonou o trem",
