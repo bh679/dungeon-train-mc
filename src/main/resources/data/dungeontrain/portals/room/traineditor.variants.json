@@ -1,6 +1,6 @@
 {
   "schemaVersion": 10,
-  "mirror": { "x": true, "y": false, "z": true, "v": true },
+  "mirror": { "x": false, "y": false, "z": false, "v": true },
   "variants": {
     "7,1,5": { "lockId": 1, "states": ["dungeontrain:stage_stone_bricks", "dungeontrain:stage_block_1", "dungeontrain:stage_planks"] },
     "7,1,4": { "lockId": 1, "states": ["dungeontrain:stage_stone_bricks", "dungeontrain:stage_block_1", "dungeontrain:stage_planks"] },
@@ -211,15 +211,18 @@
     "14,2,2": { "lockId": 2, "states": ["dungeontrain:stage_stone_bricks", "dungeontrain:stage_block_1", "dungeontrain:stage_planks"] },
     "6,2,8": { "lockId": 2, "states": ["dungeontrain:stage_stone_bricks", "dungeontrain:stage_block_1", "dungeontrain:stage_planks"] },
     "6,2,2": { "lockId": 2, "states": ["dungeontrain:stage_stone_bricks", "dungeontrain:stage_block_1", "dungeontrain:stage_planks"] },
-    "4,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "16,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "3,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "17,0,5": { "lockId": 12, "roll": "vary", "scope": "copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "2,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "18,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "1,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "19,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "0,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] },
-    "20,0,5": { "lockId": 12, "roll": "vary", "scope": "not_copies", "states": ["minecraft:bedrock", "dungeontrain:variant_placeholder"] }
+    "0,8,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "0,7,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "0,6,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "1,6,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "1,5,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "1,4,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "2,4,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "2,3,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "2,2,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "3,2,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "4,1,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "4,0,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] },
+    "3,1,5": { "lockId": 12, "scope": "not_copies", "states": ["dungeontrain:variant_placeholder", {"state": "minecraft:bedrock", "weight": 1000}] }
   }
 }
