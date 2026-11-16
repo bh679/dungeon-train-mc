@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.compat.PlayerMobNaturalGearBridge;
 import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
 import games.brennan.dungeontrain.client.ContentModeSyncClient;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
@@ -757,6 +758,15 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but rig-surface seam unavailable ({}); "
                         + "PlayerMobs cannot rig End Crystals on carriages.", t.toString());
+            }
+            // Wild-spawn items: standalone PlayerMob gives a natural spawn items at the nearest
+            // player's gear tier (NaturalSpawnGear, playermob 0.123.0+). DT gears PlayerMobs by
+            // difficulty itself, so switch it off. A build predating the seam has no such items.
+            try {
+                PlayerMobNaturalGearBridge.install();
+            } catch (Throwable t) {
+                LOGGER.info("PlayerMob predates the wild-spawn items seam ({}); nothing to turn off.",
+                        t.toString());
             }
         }
 
