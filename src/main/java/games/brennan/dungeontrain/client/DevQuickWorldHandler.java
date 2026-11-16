@@ -451,7 +451,12 @@ public final class DevQuickWorldHandler {
         try {
             java.util.UUID player = Minecraft.getInstance().getUser().getProfileId();
             String slot = games.brennan.dungeontrain.nap.NapSlot.key(freePlay, ClientDisplayConfig.getNewRunDifficulty());
-            return player != null && games.brennan.dungeontrain.nap.NapStore.local().load(player, slot).isPresent();
+            if (player == null) return false;
+            // A nap already waking in a world that is still there wakes only in that world (crash recovery).
+            return games.brennan.dungeontrain.nap.NapStore.local().load(player, slot)
+                .filter(nap -> games.brennan.dungeontrain.nap.NapBinding.waitsForNewWorld(nap,
+                    nap.bound() && Minecraft.getInstance().getLevelSource().levelExists(nap.wakeLevelId())))
+                .isPresent();
         } catch (RuntimeException e) {
             LOGGER.debug("DevQuickWorld: nap check for the New World button failed", e);
             return false;

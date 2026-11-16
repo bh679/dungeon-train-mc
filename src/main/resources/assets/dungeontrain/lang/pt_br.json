@@ -634,6 +634,7 @@
   "chat.dungeontrain.nap.tampered.moved": "O trem não reconhece esta cama, mexeram nela.",
   "chat.dungeontrain.nap.tampered.made": "O trem diferencia uma cama feita por você de uma das dele, isso não vai funcionar aqui.",
   "chat.dungeontrain.nap.failed": "O descanso escapa. Sua partida continua.",
+  "disconnect.dungeontrain.nap.world_napped": "Você tirou um cochilo neste mundo, então sua partida continua no cochilo. Comece um novo mundo para acordar.",
   "chat.dungeontrain.nap.obelisk_needs.one": "O obelisco precisa de mais %s gema de âmbar.",
   "chat.dungeontrain.nap.obelisk_needs.other": "O obelisco precisa de mais %s gemas de âmbar.",
   "chat.dungeontrain.bed.no_respawn.1": "Nenhum ponto de renascimento definido. Camas não valem nos trilhos — você acorda no trem, onde quer que ele tenha ido.",

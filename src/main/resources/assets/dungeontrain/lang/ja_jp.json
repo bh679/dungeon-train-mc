@@ -611,6 +611,7 @@
   "chat.dungeontrain.nap.tampered.moved": "列車はこのベッドを認めない。誰かが手を加えたようだ。",
   "chat.dungeontrain.nap.tampered.made": "列車は君が作ったベッドと自分のベッドを見分ける。ここでは通用しない。",
   "chat.dungeontrain.nap.failed": "安らぎが遠のいた。ランは続く。",
+  "disconnect.dungeontrain.nap.world_napped": "このワールドで仮眠したので、あなたのランは仮眠の中に続いています。新しいワールドを始めて目を覚ましましょう。",
   "chat.dungeontrain.nap.obelisk_needs.other": "オベリスクにはあと%s個の琥珀の宝石が必要だ。",
   "chat.dungeontrain.bed.no_respawn.1": "リスポーン地点は設定されなかった。線路の上ではベッドは役に立たない——目覚めるのは列車の中、列車が走り着いた場所だ。",
   "chat.dungeontrain.bed.no_respawn.2": "このベッドは何も繋ぎ止めない。眠りたければ眠るといい——どこで目覚めるかは枕ではなく列車が決める。",

@@ -634,6 +634,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Il treno non riconosce questo letto, è stato manomesso.",
   "chat.dungeontrain.nap.tampered.made": "Il treno distingue un letto fatto da te da uno dei suoi, qui non funzionerà.",
   "chat.dungeontrain.nap.failed": "Il riposo svanisce. La tua partita continua.",
+  "disconnect.dungeontrain.nap.world_napped": "Hai fatto un pisolino in questo mondo, quindi la tua partita continua nel pisolino. Avvia un nuovo mondo per svegliarti.",
   "chat.dungeontrain.nap.obelisk_needs.one": "All'obelisco manca ancora %s gemma d'ambra.",
   "chat.dungeontrain.nap.obelisk_needs.other": "All'obelisco mancano ancora %s gemme d'ambra.",
   "chat.dungeontrain.bed.no_respawn.1": "Nessun punto di rigenerazione impostato. I letti non reggono sulle rotaie: ti risvegli sul treno, ovunque sia rotolato.",

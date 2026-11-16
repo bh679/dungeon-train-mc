@@ -7,9 +7,11 @@ import games.brennan.dungeontrain.event.PlayerJoinEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
@@ -58,6 +60,16 @@ public final class NapWakeEvents {
         NapWake.finishLoading(event.getEntity().getUUID());
         TURNING.remove(event.getEntity().getUUID());
         NapWakeGrace.close(event.getEntity().getUUID());
+    }
+
+    /**
+     * For a start the train bootstrap skipped (the train is already there, as in a world reopened
+     * through crash recovery): a nap bound to this world is still used up or woken again. No-op when
+     * the bootstrap already planned this start.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onServerStarted(ServerStartedEvent event) {
+        NapWake.planFor(event.getServer());
     }
 
     @SubscribeEvent

@@ -634,6 +634,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Der Zug erkennt dieses Bett nicht, jemand hat daran herumgepfuscht.",
   "chat.dungeontrain.nap.tampered.made": "Der Zug unterscheidet ein Bett aus deiner Hand von einem seiner eigenen, das funktioniert hier nicht.",
   "chat.dungeontrain.nap.failed": "Die Ruhe entgleitet dir. Dein Lauf geht weiter.",
+  "disconnect.dungeontrain.nap.world_napped": "Du hast in dieser Welt ein Nickerchen gemacht, also lebt dein Lauf im Nickerchen weiter. Starte eine neue Welt, um aufzuwachen.",
   "chat.dungeontrain.nap.obelisk_needs.one": "Der Obelisk braucht noch %s Bernsteinjuwel.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Der Obelisk braucht noch %s Bernsteinjuwelen.",
   "chat.dungeontrain.bed.no_respawn.1": "Kein Spawnpunkt gesetzt. Betten halten auf den Schienen nicht — du erwachst im Zug, wohin auch immer er gerollt ist.",

@@ -662,6 +662,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Поезд не узнаёт эту кровать, её кто-то трогал.",
   "chat.dungeontrain.nap.tampered.made": "Поезд отличает кровать твоей работы от своей, здесь это не сработает.",
   "chat.dungeontrain.nap.failed": "Покой ускользает. Забег продолжается.",
+  "disconnect.dungeontrain.nap.world_napped": "Вы вздремнули в этом мире, поэтому ваш забег продолжается во сне. Начните новый мир, чтобы проснуться.",
   "chat.dungeontrain.nap.obelisk_needs.one": "Обелиску нужен ещё %s янтарный самоцвет.",
   "chat.dungeontrain.nap.obelisk_needs.few": "Обелиску нужно ещё %s янтарных самоцвета.",
   "chat.dungeontrain.nap.obelisk_needs.many": "Обелиску нужно ещё %s янтарных самоцветов.",

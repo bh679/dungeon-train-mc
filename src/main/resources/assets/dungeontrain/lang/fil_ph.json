@@ -611,6 +611,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Hindi kilala ng tren ang kamang ito, may nakialam dito.",
   "chat.dungeontrain.nap.tampered.made": "Alam ng tren ang kamang gawa mo mula sa isa sa sarili nito, hindi ito gagana rito.",
   "chat.dungeontrain.nap.failed": "Naglaho ang pahinga. Tuloy ang takbo mo.",
+  "disconnect.dungeontrain.nap.world_napped": "Umidlip ka sa mundong ito, kaya nasa idlip na ang iyong takbo. Magsimula ng Bagong Mundo para magising.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Kailangan pa ng obelisk ng %s Amber Gem.",
   "chat.dungeontrain.bed.no_respawn.1": "Walang respawn point na na-set. Hindi tumatalab ang kama sa riles — sa tren ka gigising, kahit saan pa ito napunta.",
   "chat.dungeontrain.bed.no_respawn.2": "Walang inaangkla ang kamang ito. Matulog ka kung gusto mo — ang tren ang magpapasya kung saan ka gigising, hindi ang unan.",
