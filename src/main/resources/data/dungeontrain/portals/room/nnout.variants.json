@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "34,8,14": ["minecraft:diamond_block", "minecraft:gold_block", "minecraft:emerald_block", "minecraft:lapis_block", "minecraft:iron_block", "minecraft:honey_block", "minecraft:slime_block", "minecraft:honeycomb_block", {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:barrel[facing=north,open=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "armorer_barrel"}]
+  }
+}
