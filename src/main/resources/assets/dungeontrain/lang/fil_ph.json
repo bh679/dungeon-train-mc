@@ -608,8 +608,6 @@
   "chat.dungeontrain.portal.walk_through": "Hindi kumokonekta ang bagon na pandimensyon na ito. Nabuksan na ang daan patawid.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Nararamdaman ng shulker box na hindi ito ang lugar para diyan, baka bug sa code ng gumawa?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Hindi sulit ang panganib. Maghanap ng ibang bagon.",
-  "chat.dungeontrain.portal.no_container.1": "May kung anong bagay sa bagon na ito ang nagsasabing huwag kang mag-iwan ng kahit ano rito. Baka wala na ito kung saan mo iniwan.",
-  "chat.dungeontrain.portal.no_container.2": "Itago mo ang mga gamit mo sa ibang bagon.",
   "chat.dungeontrain.portal_library.1": "Iisang pangalan ang dala ng bawat aklat dito: %1$s.",
   "chat.dungeontrain.portal_library.2": "Istante ng isang tao. Bawat gulugod na makikita mo ay nilagdaan ni %1$s.",
   "chat.dungeontrain.portal_library.3": "Iisang kamay ang sumulat ng lahat ng ito. Nilagdaan ang mga aklat ni %1$s.",

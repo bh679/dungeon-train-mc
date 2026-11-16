@@ -659,8 +659,6 @@
   "chat.dungeontrain.portal.walk_through": "Этот вагон-портал не соединяется. Проход открыт.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Явно не место для шалкер-ящика. Должно быть, веление Создателя.",
   "chat.dungeontrain.portal.no_shulker_box.2": "Оно того не стоит. Найди другой вагон.",
-  "chat.dungeontrain.portal.no_container.1": "Что-то в этом вагоне подсказывает: ничего здесь не оставляй. Оно может оказаться не там, где ты его оставил.",
-  "chat.dungeontrain.portal.no_container.2": "Держи свои вещи в другом вагоне.",
   "chat.dungeontrain.portal_library.1": "У каждой книги здесь один и тот же автор: %1$s.",
   "chat.dungeontrain.portal_library.2": "Чьи-то записи. На каждой обложке видна подпись %1$s.",
   "chat.dungeontrain.portal_library.3": "Все книги написаны от одной руки. Даже подпись: %1$s.",

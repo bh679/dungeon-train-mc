@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
@@ -33,5 +35,14 @@ public final class PortalCorridorContainers {
             || block instanceof BarrelBlock
             || block instanceof HopperBlock
             || block instanceof ShulkerBoxBlock;
+    }
+
+    /**
+     * True if this item is a minecart that may not be put on a corridor's rails: the hopper minecart,
+     * which pulls items out of whichever copy of a container sits above it. By item rather than class,
+     * because every minecart shares {@code MinecartItem} and tells them apart by a private field.
+     */
+    public static boolean isRefusedCartInCorridor(Item item) {
+        return item == Items.HOPPER_MINECART;
     }
 }

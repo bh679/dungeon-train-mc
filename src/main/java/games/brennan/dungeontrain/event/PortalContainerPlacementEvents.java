@@ -2,8 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalCorridorContainers;
+import games.brennan.dungeontrain.portal.PortalPairIndex;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -14,10 +14,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
@@ -37,15 +37,17 @@ import java.util.UUID;
 
 /**
  * Keeps storage out of both copies of a dimensional carriage's corridor: chests, trapped chests,
- * barrels, hoppers and shulker boxes ({@link PortalCorridorContainers}).
+ * barrels, hoppers, shulker boxes and hopper minecarts ({@link PortalCorridorContainers}).
  *
  * <p>The corridor exists twice — the hallway riding the train and its static twin at the room end —
  * and {@link games.brennan.dungeontrain.portal.PortalEditMirror} copies every edit from either to the
  * other so the crossing between them stays invisible. It copies block <i>state</i> only, so a
  * container mirrored is a second, empty container: what is stored in one copy is missing from the
- * other, and a shulker box broken in the copy drops a second box outright. Corridor cells are tested
- * with {@link PortalPairIndex#isCorridorCell}, the same index the mirror consults, so "cell the
- * mirror would copy" and "cell that refuses a container" cannot drift apart.</p>
+ * other, and a shulker box broken in the copy drops a second box outright. A hopper minecart is not a
+ * block, but it sits on the corridor's rails pulling items out of whatever copy is above it, which is
+ * the same split by another route. Corridor cells are tested with
+ * {@link PortalPairIndex#isCorridorCell}, the same index the mirror consults, so "cell the mirror
+ * would copy" and "cell that refuses a container" cannot drift apart.</p>
  *
  * <p><b>The dimensional room is untouched.</b> It has no twin and no mirror, so a chest in it behaves
  * like a chest anywhere else.</p>
@@ -57,32 +59,20 @@ import java.util.UUID;
  * {@link PlayerInteractEvent.RightClickBlock}, which runs <i>before</i> the item is used, and denies
  * only the item half ({@code setUseItem}) so right-clicking a chest with a box in hand still opens
  * the chest. The place events below stay as a backstop for placements that never pass through a
- * right-click at all. The client declines to predict the same placements
- * ({@code ClientPortalContainerPrediction}) so nothing appears and vanishes.</p>
+ * right-click at all. The client declines to predict the same block placements
+ * ({@code ClientPortalContainerPrediction}) so nothing appears and vanishes; a minecart is spawned by
+ * the server alone, so it needs no such help.</p>
  *
- * <p>Breaking a container placed before this existed, or stamped from a room's template, still
- * works, so nothing is stranded.</p>
+ * <p>Every refusal says the same two lines the shulker box always has. Breaking a container placed
+ * before this existed, or stamped from a template, still works, so nothing is stranded.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalContainerPlacementEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Where the refusal happened, which decides what the player is told. */
-    enum Reason {
-        CORRIDOR_SHULKER("chat.dungeontrain.portal.no_shulker_box.1",
-            "chat.dungeontrain.portal.no_shulker_box.2"),
-        CORRIDOR_CONTAINER("chat.dungeontrain.portal.no_container.1",
-            "chat.dungeontrain.portal.no_container.2");
-
-        final String firstKey;
-        final String secondKey;
-
-        Reason(String firstKey, String secondKey) {
-            this.firstKey = firstKey;
-            this.secondKey = secondKey;
-        }
-    }
+    private static final String REFUSED_KEY_1 = "chat.dungeontrain.portal.no_shulker_box.1";
+    private static final String REFUSED_KEY_2 = "chat.dungeontrain.portal.no_shulker_box.2";
 
     /** The beat between the two lines. The second is an afterthought, not a second warning. */
     private static final int SECOND_LINE_DELAY_TICKS = 40;
@@ -101,47 +91,40 @@ public final class PortalContainerPlacementEvents {
     /** Second lines not yet due. Server thread only, and never more than one per player. */
     private static final List<Pending> PENDING = new ArrayList<>();
 
-    private record Pending(UUID player, long dueAt, String key) {}
+    private record Pending(UUID player, long dueAt) {}
 
     private PortalContainerPlacementEvents() {}
 
     /**
-     * Why {@code block} may not go at {@code pos}, or {@code null} if it may.
+     * The refusal that actually matters: deny the click before anything is placed.
      *
-     * <p>Only corridor cells refuse anything, in either copy. A shulker box keeps the line it always
-     * had; the other containers get their own. {@link PortalPairIndex#isCorridorCell} returns at once
-     * when no corridor is live, so a world without one pays a field read.</p>
-     */
-    static Reason refusalFor(ServerLevel level, BlockPos pos, Block block) {
-        if (!PortalCorridorContainers.isRefusedInCorridor(block)) return null;
-        if (!PortalPairIndex.isCorridorCell(level, pos)) return null;
-        return block instanceof ShulkerBoxBlock ? Reason.CORRIDOR_SHULKER : Reason.CORRIDOR_CONTAINER;
-    }
-
-    /**
-     * The refusal that actually matters: deny the click before the block is ever placed.
-     *
-     * <p>The target cell is derived through {@link BlockPlaceContext}, which is what vanilla itself
-     * asks — the face offset, unless the clicked block is replaceable, in which case the click lands
-     * on it. Testing the clicked position instead would refuse a box placed against the <i>outside</i>
-     * of a wall, which is somewhere it is perfectly welcome.</p>
+     * <p>A block's target cell is derived through {@link BlockPlaceContext}, which is what vanilla
+     * itself asks — the face offset, unless the clicked block is replaceable, in which case the click
+     * lands on it. Testing the clicked position instead would refuse a chest placed against the
+     * <i>outside</i> of a wall, which is somewhere it is perfectly welcome. A minecart is different:
+     * vanilla puts it on the rail that was clicked, so that is the cell tested.</p>
      */
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (event.getUseItem() == TriState.FALSE) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        if (!(event.getItemStack().getItem() instanceof BlockItem item)) return;
-        Block block = item.getBlock();
-        if (!PortalCorridorContainers.isRefusedInCorridor(block)) return;
-
+        Item item = event.getItemStack().getItem();
         Player player = event.getEntity();
-        BlockPos target = new BlockPlaceContext(
-            new UseOnContext(player, event.getHand(), event.getHitVec())).getClickedPos();
-        Reason reason = refusalFor(level, target, block);
-        if (reason == null) return;
+
+        BlockPos target;
+        if (PortalCorridorContainers.isRefusedCartInCorridor(item)) {
+            target = event.getPos();
+        } else if (item instanceof BlockItem blockItem
+                && PortalCorridorContainers.isRefusedInCorridor(blockItem.getBlock())) {
+            target = new BlockPlaceContext(
+                new UseOnContext(player, event.getHand(), event.getHitVec())).getClickedPos();
+        } else {
+            return;
+        }
+        if (!PortalPairIndex.isCorridorCell(level, target)) return;
 
         event.setUseItem(TriState.FALSE);
-        refuse(player, target, block, reason, "click");
+        refuse(player, target, BuiltInRegistries.ITEM.getKey(item).toString(), "click");
     }
 
     /**
@@ -155,11 +138,10 @@ public final class PortalContainerPlacementEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         Block block = event.getPlacedBlock().getBlock();
         if (!PortalCorridorContainers.isRefusedInCorridor(block)) return;
-        Reason reason = refusalFor(level, event.getPos(), block);
-        if (reason == null) return;
+        if (!PortalPairIndex.isCorridorCell(level, event.getPos())) return;
 
         event.setCanceled(true);
-        refuse(event.getEntity(), event.getPos(), block, reason, "place");
+        refuse(event.getEntity(), event.getPos(), blockName(block), "place");
     }
 
     /**
@@ -178,13 +160,16 @@ public final class PortalContainerPlacementEvents {
             BlockPos pos = snapshot.getPos();
             Block block = level.getBlockState(pos).getBlock();
             if (!PortalCorridorContainers.isRefusedInCorridor(block)) continue;
-            Reason reason = refusalFor(level, pos, block);
-            if (reason == null) continue;
+            if (!PortalPairIndex.isCorridorCell(level, pos)) continue;
 
             event.setCanceled(true);
-            refuse(event.getEntity(), pos, block, reason, "multi-place");
+            refuse(event.getEntity(), pos, blockName(block), "multi-place");
             return;
         }
+    }
+
+    private static String blockName(Block block) {
+        return BuiltInRegistries.BLOCK.getKey(block).toString();
     }
 
     /**
@@ -197,9 +182,8 @@ public final class PortalContainerPlacementEvents {
      * placed" and "nobody tried" read identically). It is written on every refusal, including the
      * ones the cooldown silences.</p>
      */
-    private static void refuse(Entity entity, BlockPos pos, Block block, Reason reason, String via) {
-        LOGGER.info("[DungeonTrain] Portal: refused {} at {} ({}, {})",
-            BuiltInRegistries.BLOCK.getKey(block), pos, via, reason);
+    private static void refuse(Entity entity, BlockPos pos, String what, String via) {
+        LOGGER.info("[DungeonTrain] Portal: refused {} at {} ({})", what, pos, via);
         if (!(entity instanceof ServerPlayer player)) return;
 
         long now = player.serverLevel().getGameTime();
@@ -207,9 +191,8 @@ public final class PortalContainerPlacementEvents {
         if (told != null && now - told < REPEAT_COOLDOWN_TICKS) return;
         LAST_TOLD.put(player.getUUID(), now);
 
-        player.sendSystemMessage(Component.translatable(reason.firstKey).withStyle(ChatFormatting.GRAY));
-        PENDING.removeIf(p -> p.player().equals(player.getUUID()));
-        PENDING.add(new Pending(player.getUUID(), now + SECOND_LINE_DELAY_TICKS, reason.secondKey));
+        player.sendSystemMessage(Component.translatable(REFUSED_KEY_1).withStyle(ChatFormatting.GRAY));
+        PENDING.add(new Pending(player.getUUID(), now + SECOND_LINE_DELAY_TICKS));
     }
 
     /** Deliver the second lines that have come due, and forget players who have left. */
@@ -227,7 +210,7 @@ public final class PortalContainerPlacementEvents {
             ServerPlayer player = server.getPlayerList().getPlayer(pending.player());
             if (player != null) {
                 player.sendSystemMessage(
-                    Component.translatable(pending.key()).withStyle(ChatFormatting.GRAY));
+                    Component.translatable(REFUSED_KEY_2).withStyle(ChatFormatting.GRAY));
             }
         }
     }

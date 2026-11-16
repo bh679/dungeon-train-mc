@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.portal;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,6 +38,15 @@ class PortalCorridorContainersTest {
             Blocks.FURNACE, Blocks.CRAFTING_TABLE, Blocks.TORCH, Blocks.STONE);
         for (Block block : allowed) {
             assertFalse(PortalCorridorContainers.isRefusedInCorridor(block), block.toString());
+        }
+    }
+
+    @Test
+    void refusesOnlyTheHopperMinecart() {
+        assertTrue(PortalCorridorContainers.isRefusedCartInCorridor(Items.HOPPER_MINECART));
+        for (Item item : List.of(Items.MINECART, Items.CHEST_MINECART, Items.FURNACE_MINECART,
+                Items.TNT_MINECART, Items.HOPPER)) {
+            assertFalse(PortalCorridorContainers.isRefusedCartInCorridor(item), item.toString());
         }
     }
 }

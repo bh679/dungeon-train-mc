@@ -631,8 +631,6 @@
   "chat.dungeontrain.portal.walk_through": "Questo vagone dimensionale non si collega. Il passaggio è stato aperto.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Lo shulker box sente che non è il posto giusto per questo; forse un bug nel codice del creatore?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Non vale il rischio. Trova un altro vagone.",
-  "chat.dungeontrain.portal.no_container.1": "Qualcosa in questo vagone ti dice di non lasciare nulla qui. Potrebbe non essere dove l'hai lasciato.",
-  "chat.dungeontrain.portal.no_container.2": "Tieni le tue cose in un altro vagone.",
   "chat.dungeontrain.portal_library.1": "Ogni libro qui dentro porta lo stesso nome: %1$s.",
   "chat.dungeontrain.portal_library.2": "Gli scaffali di qualcuno. Ogni dorso che riesci a vedere è firmato %1$s.",
   "chat.dungeontrain.portal_library.3": "Una sola mano ha scritto tutto questo. I libri sono firmati %1$s.",

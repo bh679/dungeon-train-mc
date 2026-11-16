@@ -608,8 +608,6 @@
   "chat.dungeontrain.portal.walk_through": "这节维度车厢无法连通，已为你打开直接穿行的通道。",
   "chat.dungeontrain.portal.no_shulker_box.1": "潜影盒察觉到这里不是它该待的地方，也许是创作者代码里的一个漏洞？",
   "chat.dungeontrain.portal.no_shulker_box.2": "不值得冒这个险。去找另一节车厢吧。",
-  "chat.dungeontrain.portal.no_container.1": "这节车厢里的某种东西在告诉你，别在这里留下任何东西。它可能不会留在你放下的地方。",
-  "chat.dungeontrain.portal.no_container.2": "把你的东西放在别的车厢里。",
   "chat.dungeontrain.portal_library.1": "这里的每一本书都署着同一个名字：%1$s。",
   "chat.dungeontrain.portal_library.2": "某个人的藏书。放眼望去，每本书的书脊都署着%1$s。",
   "chat.dungeontrain.portal_library.3": "这里的书都出自同一人之手，署名为%1$s。",
