@@ -42,6 +42,7 @@ final class AbandonInventoryGrid {
     private static final int SLOT_DARK = 0xFF373737;
     private static final int SLOT_LIGHT = 0xFFFFFFFF;
     private static final float VEIL_Z = 300F;
+    private static final int VEIL_RGB = 0xD01818;
     private static final float TEXT_Z = 200F;
 
     private final List<ItemStack> stacks;
@@ -119,7 +120,7 @@ final class AbandonInventoryGrid {
 
     private int slotY(int i) { return y + (i / cols) * SLOT; }
 
-    /** @param fade 0 normal; towards 1 the items sink into their slots, which stay solid */
+    /** @param fade 0 normal; towards 1 the items are washed red (the slot bevels stay as they are) */
     void render(GuiGraphics g, Font font, float fade) {
         int veil = Math.round(Math.max(0F, Math.min(1F, fade)) * 255F);
         for (int i = 0; i < shown; i++) {
@@ -158,17 +159,11 @@ final class AbandonInventoryGrid {
         }
     }
 
-    /** Above the item (z 150) and its count (z 200): the slot face, then its bevel, faded in step. */
+    /** Above the item (z 150) and its count (z 200): a red wash over the slot face. */
     private static void veilSlot(GuiGraphics g, int sx, int sy, int alpha) {
         g.pose().pushPose();
         g.pose().translate(0, 0, VEIL_Z);
-        g.fill(sx + 1, sy + 1, sx + SLOT - 1, sy + SLOT - 1, (alpha << 24) | (SLOT_BG & 0xFFFFFF));
-        int dark = (alpha << 24) | (SLOT_DARK & 0xFFFFFF);
-        int light = (alpha << 24) | (SLOT_LIGHT & 0xFFFFFF);
-        g.fill(sx, sy, sx + SLOT, sy + 1, dark);
-        g.fill(sx, sy, sx + 1, sy + SLOT, dark);
-        g.fill(sx, sy + SLOT - 1, sx + SLOT, sy + SLOT, light);
-        g.fill(sx + SLOT - 1, sy, sx + SLOT, sy + SLOT, light);
+        g.fill(sx + 1, sy + 1, sx + SLOT - 1, sy + SLOT - 1, (alpha << 24) | VEIL_RGB);
         g.pose().popPose();
     }
 

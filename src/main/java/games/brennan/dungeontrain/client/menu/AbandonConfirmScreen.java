@@ -25,8 +25,8 @@ import net.neoforged.api.distmarker.OnlyIn;
  *       valuable first ({@link AbandonInventoryGrid}). Its button is the death.</li>
  * </ul>
  *
- * <p>Hovering <i>Step off and die</i> washes the screen red and fades the carried items nearly
- * away. Escape falls back to the pause menu. On a screen too narrow for two cards they stack, the
+ * <p>Hovering <i>Step off and die</i> washes the screen red, and the carried items with it at
+ * half strength. Escape falls back to the pause menu. On a screen too narrow for two cards they stack, the
  * gold one first. What "continue" means is the caller's: {@code proceed} runs only once the
  * player has said yes.</p>
  */
@@ -54,8 +54,8 @@ public final class AbandonConfirmScreen extends Screen {
     private static final int WASH_RGB = 0xB00000;
     private static final int WASH_MAX_ALPHA = 0x90;
     private static final float WASH_FADE_MS = 400F;
-    /** How far the carried items fade out at full wash: 95% gone. */
-    private static final float ITEM_FADE = 0.95F;
+    /** How strongly the carried items are washed red at full hover: half. */
+    private static final float ITEM_FADE = 0.5F;
 
     private static final Component SAVE_TITLE = Component.translatable("gui.dungeontrain.abandon_confirm.save_title");
     private static final Component SAVE_BODY = Component.translatable("gui.dungeontrain.abandon_confirm.save_body");
