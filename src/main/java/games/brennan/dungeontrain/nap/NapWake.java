@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.nap;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.ReverseSlide;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.difficulty.DifficultyOffset;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -146,13 +148,40 @@ public final class NapWake {
         return false;
     }
 
-    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot nap) {
+    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot napped) {
+        NapSnapshot nap = napped.withX(wakeX(server, napped));
         planned = new Plan(owner, slot, nap);
         RunRestore.raiseWorldProgress(server.overworld(), nap.worldDepth());
         carryDifficultyOffset(server, nap);
         carryPreviousLife(server, owner, nap);
         LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.napId(), slot,
             Math.round(nap.x()), nap.carriage(), nap.band());
+    }
+
+    /**
+     * Where the train wakes. With a band place, the napped world's reverse slide is carried over first
+     * (behind spawn a band's X depends on it) and the X is rebuilt from the band and depth, so the train
+     * is back in the same band at the same depth even going backwards. Naps saved before places existed,
+     * or whose place no longer fits the band layout, wake at their X.
+     */
+    static double wakeX(MinecraftServer server, NapSnapshot nap) {
+        NapSnapshot.Place place = nap.place();
+        if (place == null) return nap.x();
+        try {
+            ReverseSlide.seed(server.overworld(), place.originX(), place.reachX(), place.earned(), place.slide());
+            return resolveX(WorldGenCycle.fromConfig(), place.position(), nap.x());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap {}: band place not restored; waking at x={}", nap.napId(),
+                Math.round(nap.x()), e);
+            return nap.x();
+        }
+    }
+
+    /** {@code cycle}'s X for {@code pos}, keeping the fraction of a block {@code savedX} had; {@code savedX} when it doesn't fit. */
+    static double resolveX(WorldGenCycle cycle, WorldGenCycle.BandPosition pos, double savedX) {
+        long x = cycle.worldXOf(pos);
+        if (x == Long.MIN_VALUE) return savedX;
+        return x + (savedX - Math.floor(savedX));
     }
 
     /**
