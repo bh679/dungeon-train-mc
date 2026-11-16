@@ -522,6 +522,11 @@
     "minLevel": 10,
     "mode": "bedrock"
   },
+  "traineditor": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "endless_repetition/dynamic"
+  },
   "trap": {
     "weight": 1,
     "minLevel": 10,
