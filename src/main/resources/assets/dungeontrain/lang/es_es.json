@@ -633,6 +633,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Despertaste de una partida en Juego Libre",
   "chat.dungeontrain.nap.tampered.moved": "El tren no reconoce esta cama, la han manipulado.",
   "chat.dungeontrain.nap.tampered.made": "El tren distingue una cama hecha por ti de una de las suyas, aquí no funcionará.",
+  "chat.dungeontrain.nap.guests": "Las cosas de otro jugador están guardadas en este mundo. Aquí no hay siesta.",
   "chat.dungeontrain.nap.failed": "El descanso se escapa. Tu partida continúa.",
   "disconnect.dungeontrain.nap.world_napped": "Echaste una siesta en este mundo, así que tu partida sigue en la siesta. Empieza un mundo nuevo para despertar.",
   "chat.dungeontrain.nap.not_woken": "Tu descanso no se ha conservado. Esta es una partida nueva.",

@@ -610,6 +610,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Terjaga daripada larian Main Bebas",
   "chat.dungeontrain.nap.tampered.moved": "Kereta api tidak mengenali katil ini, ia telah diusik.",
   "chat.dungeontrain.nap.tampered.made": "Kereta api dapat membezakan katil buatan anda daripada katilnya sendiri, ini tidak akan berjaya di sini.",
+  "chat.dungeontrain.nap.guests": "Barang pemain lain disimpan dalam dunia ini. Tiada tidur sebentar di sini.",
   "chat.dungeontrain.nap.failed": "Rehat itu terlepas. Larian anda diteruskan.",
   "disconnect.dungeontrain.nap.world_napped": "Anda tidur sebentar di dunia ini, jadi larian anda kekal dalam tidur itu. Mulakan Dunia Baharu untuk bangun.",
   "chat.dungeontrain.nap.not_woken": "Rehat anda tidak dibawa. Ini larian baharu.",

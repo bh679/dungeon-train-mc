@@ -633,6 +633,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Réveillé d'une partie en Jeu Libre",
   "chat.dungeontrain.nap.tampered.moved": "Le train ne reconnaît pas ce lit, on l'a trafiqué.",
   "chat.dungeontrain.nap.tampered.made": "Le train distingue un lit de ta fabrication des siens, ça ne marchera pas ici.",
+  "chat.dungeontrain.nap.guests": "Les affaires d'un autre joueur sont sauvegardées dans ce monde. Pas de sieste ici.",
   "chat.dungeontrain.nap.failed": "Le repos t'échappe. Ta partie continue.",
   "disconnect.dungeontrain.nap.world_napped": "Tu as fait une sieste dans ce monde, ta partie continue donc dans la sieste. Lance un nouveau monde pour te réveiller.",
   "chat.dungeontrain.nap.not_woken": "Ton repos ne t'a pas suivi. C'est une nouvelle partie.",

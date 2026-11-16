@@ -1,0 +1,16 @@
+{
+  "id": "nap-keeps-guest-progress",
+  "version": "0.1841.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "multiplayer"
+  ],
+  "title": "Naps respect other players' saved progress",
+  "summary": "A world where another player has saved progress no longer offers a nap, so their things are never lost with it.",
+  "highlights": [],
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

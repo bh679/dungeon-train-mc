@@ -732,6 +732,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Пробудження із забігу у Вільній грі",
   "chat.dungeontrain.nap.tampered.moved": "Потяг не впізнає це ліжко, його хтось чіпав.",
   "chat.dungeontrain.nap.tampered.made": "Потяг відрізняє ліжко твоєї роботи від свого, тут це не спрацює.",
+  "chat.dungeontrain.nap.guests": "У цьому світі збережено речі іншого гравця. Тут подрімати не вийде.",
   "chat.dungeontrain.nap.failed": "Спокій вислизає. Забіг триває.",
   "disconnect.dungeontrain.nap.world_napped": "Ви задрімали в цьому світі, тож ваш забіг триває уві сні. Почніть новий світ, щоб прокинутися.",
   "chat.dungeontrain.nap.not_woken": "Твій відпочинок не зберігся. Це новий забіг.",

@@ -661,6 +661,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Пробуждение из забега в свободной игре",
   "chat.dungeontrain.nap.tampered.moved": "Поезд не узнаёт эту кровать, её кто-то трогал.",
   "chat.dungeontrain.nap.tampered.made": "Поезд отличает кровать твоей работы от своей, здесь это не сработает.",
+  "chat.dungeontrain.nap.guests": "В этом мире сохранены вещи другого игрока. Здесь вздремнуть не выйдет.",
   "chat.dungeontrain.nap.failed": "Покой ускользает. Забег продолжается.",
   "disconnect.dungeontrain.nap.world_napped": "Вы вздремнули в этом мире, поэтому ваш забег продолжается во сне. Начните новый мир, чтобы проснуться.",
   "chat.dungeontrain.nap.not_woken": "Твой отдых не сохранился. Это новый забег.",
