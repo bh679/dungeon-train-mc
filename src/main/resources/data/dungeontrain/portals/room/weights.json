@@ -251,7 +251,7 @@
   "housetown": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:50:10"
   },
   "icebears": {
     "weight": 1,
