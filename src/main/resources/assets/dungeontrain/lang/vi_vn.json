@@ -611,6 +611,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Đoàn tàu không nhận ra chiếc giường này, nó đã bị can thiệp.",
   "chat.dungeontrain.nap.tampered.made": "Đoàn tàu phân biệt được giường bạn làm với giường của nó, ở đây không được đâu.",
   "chat.dungeontrain.nap.failed": "Giấc nghỉ trôi đi. Lượt chơi của bạn tiếp tục.",
+  "chat.dungeontrain.nap.not_woken": "Giấc nghỉ của bạn không được giữ lại. Đây là một lượt chơi mới.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Tháp đá cần thêm %s Ngọc Hổ Phách.",
   "chat.dungeontrain.bed.no_respawn.1": "Không đặt điểm hồi sinh nào. Giường không có tác dụng trên đường ray — bạn tỉnh dậy trên tàu, dù nó đã lăn bánh đến đâu.",
   "chat.dungeontrain.bed.no_respawn.2": "Chiếc giường này chẳng neo giữ gì cả. Cứ ngủ nếu muốn — đoàn tàu quyết định nơi bạn tỉnh dậy, không phải cái gối.",

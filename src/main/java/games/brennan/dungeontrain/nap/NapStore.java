@@ -21,7 +21,8 @@ import java.util.UUID;
  * {@code root} parameter is where a multiplayer server would keep its own.
  *
  * <p>Waking records the nap's id in {@link NapAppliedLog} beside it, then deletes the file, so a copy
- * restored by hand is refused. If that record fails its check, no nap wakes (fails closed).</p>
+ * restored by hand is refused. If that record fails its check it is restarted and only naps saved
+ * after that wake ({@link NapAppliedLog}).</p>
  */
 public final class NapStore {
 
@@ -65,15 +66,13 @@ public final class NapStore {
                 LOGGER.warn("[DungeonTrain] Nap file {} is not a nap; ignoring it.", file);
                 return Optional.empty();
             }
-            Set<UUID> used;
-            try {
-                used = applied.read();
-            } catch (NapAppliedLog.Corrupt e) {
-                LOGGER.warn("[DungeonTrain] {} ({}); no nap wakes until it is fixed. Nap {} kept.",
-                    e.getMessage(), dir.resolve(NapAppliedLog.FILE), nap.napId());
+            NapAppliedLog.State used = applied.read();
+            if (!used.trusts(nap)) {
+                LOGGER.warn("[DungeonTrain] Nap {} was saved before the applied list was restarted; not waking it (kept).",
+                    nap.napId());
                 return Optional.empty();
             }
-            if (used.contains(nap.napId())) {
+            if (used.ids().contains(nap.napId())) {
                 LOGGER.warn("[DungeonTrain] Nap {} already woke once; discarding the copy.", nap.napId());
                 Files.deleteIfExists(file);
                 return Optional.empty();
@@ -89,6 +88,11 @@ public final class NapStore {
     public void consume(UUID player, String slot, NapSnapshot nap) throws IOException {
         applied.add(nap.napId());
         Files.deleteIfExists(fileFor(player, slot));
+    }
+
+    /** Whether a nap file sits in {@code slot}, woken or not. */
+    public boolean hasFile(UUID player, String slot) {
+        return Files.isRegularFile(fileFor(player, slot));
     }
 
     /** Save folders named by a pending nap: worlds that must not survive it. */

@@ -658,6 +658,7 @@
       "chat.dungeontrain.nap.tampered.moved",
       "chat.dungeontrain.nap.tampered.made",
       "chat.dungeontrain.nap.failed",
+      "chat.dungeontrain.nap.not_woken",
       "chat.dungeontrain.nap.obelisk_needs.one",
       "chat.dungeontrain.nap.obelisk_needs.few",
       "chat.dungeontrain.nap.obelisk_needs.many",

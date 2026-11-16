@@ -733,6 +733,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Trenul nu recunoaște acest pat, cineva a umblat la el.",
   "chat.dungeontrain.nap.tampered.made": "Trenul deosebește un pat făcut de tine de unul de-al lui, asta nu merge aici.",
   "chat.dungeontrain.nap.failed": "Odihna se risipește. Tura ta continuă.",
+  "chat.dungeontrain.nap.not_woken": "Odihna ta nu s-a păstrat. Aceasta este o partidă nouă.",
   "chat.dungeontrain.nap.obelisk_needs.one": "Obeliscul mai are nevoie de %s gemă de chihlimbar.",
   "chat.dungeontrain.nap.obelisk_needs.few": "Obeliscul mai are nevoie de %s geme de chihlimbar.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Obeliscul mai are nevoie de %s de geme de chihlimbar.",

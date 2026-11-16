@@ -634,6 +634,7 @@
   "chat.dungeontrain.nap.tampered.moved": "O comboio não reconhece esta cama, mexeram nela.",
   "chat.dungeontrain.nap.tampered.made": "O comboio distingue uma cama feita por ti de uma das dele, isto não vai funcionar aqui.",
   "chat.dungeontrain.nap.failed": "O descanso escapa-te. A tua partida continua.",
+  "chat.dungeontrain.nap.not_woken": "O teu descanso não se manteve. Esta é uma partida nova.",
   "chat.dungeontrain.nap.obelisk_needs.one": "O obelisco precisa de mais %s gema de âmbar.",
   "chat.dungeontrain.nap.obelisk_needs.other": "O obelisco precisa de mais %s gemas de âmbar.",
   "chat.dungeontrain.bed.no_respawn.1": "Nenhum ponto de reaparição definido. As camas não valem nos carris — acordas no comboio, para onde quer que tenha rolado.",

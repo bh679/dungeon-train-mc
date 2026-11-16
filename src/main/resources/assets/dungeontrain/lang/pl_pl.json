@@ -657,6 +657,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Pociąg nie rozpoznaje tego łóżka, ktoś przy nim majstrował.",
   "chat.dungeontrain.nap.tampered.made": "Pociąg odróżni łóżko twojej roboty od swojego, to tu nie zadziała.",
   "chat.dungeontrain.nap.failed": "Odpoczynek się wymyka. Twoja rozgrywka trwa dalej.",
+  "chat.dungeontrain.nap.not_woken": "Twój odpoczynek nie został zachowany. To nowa rozgrywka.",
   "chat.dungeontrain.nap.obelisk_needs.one": "Obelisk potrzebuje jeszcze %s bursztynowego klejnotu.",
   "chat.dungeontrain.nap.obelisk_needs.few": "Obelisk potrzebuje jeszcze %s bursztynowych klejnotów.",
   "chat.dungeontrain.nap.obelisk_needs.many": "Obelisk potrzebuje jeszcze %s bursztynowych klejnotów.",
