@@ -36230,6 +36230,44 @@
       "released": true,
       "released_in": "v0.1842.0",
       "released_at": "2026-11-16T00:56:18Z"
+    },
+    {
+      "id": "life-as-a-zombie",
+      "version": "0.1844.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "ui"
+      ],
+      "title": "Life as a zombie",
+      "summary": "Turning into a zombie changes how you live. You eat like one, read like one and write like one, your pack is out of reach, and villagers, animals, illagers and other players' echoes all treat you like one.",
+      "highlights": [],
+      "pr": 2682,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1844.0",
+      "released_at": "2026-11-16T04:30:22Z"
+    },
+    {
+      "id": "trap-chest-variants",
+      "version": "0.1842.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Trapped chests in the editor",
+      "summary": "Chests in the editor can now be set to spawn as trapped chests, anywhere from 0 to 100% of the time. Some chests on the train now come trapped.",
+      "highlights": [
+        "New Trap button on chest variants in the editor"
+      ],
+      "pr": 2679,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1844.0",
+      "released_at": "2026-11-16T04:30:22Z"
     }
   ]
 }
