@@ -2,8 +2,11 @@ package games.brennan.dungeontrain.nap;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.difficulty.DifficultyOffset;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.player.RunRestore;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
@@ -82,6 +85,7 @@ public final class NapWake {
         if (nap.isEmpty() || nap.get().levelId().equals(NapService.levelIdOf(server))) return;
         planned = new Plan(uuid, slot, nap.get());
         RunRestore.raiseWorldProgress(server.overworld(), nap.get().worldDepth());
+        carryDifficultyOffset(server, nap.get());
         carryPreviousLife(server, uuid, nap.get());
         LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.get().napId(), slot,
             Math.round(nap.get().x()), nap.get().carriage(), nap.get().band());
@@ -109,6 +113,40 @@ public final class NapWake {
         PLACE_AT.put(player.getUUID(), plan.nap().x());
         LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
         return Optional.of(loadableTag(plan.nap().player(), server));
+    }
+
+    /**
+     * Right after vanilla loaded {@code player} from the nap ({@code mixin/PlayerListNapLoadMixin}),
+     * before the login event: give the run state back the fields its codec could not carry, and make
+     * the chest streak forget the napped world's chest positions while keeping its count.
+     */
+    public static void restoreRunState(ServerPlayer player) {
+        Plan plan = LOADING.get(player.getUUID());
+        if (plan == null) return;
+        try {
+            PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+            run.applyNapExtras(plan.nap().runExtras(), player.registryAccess());
+            run.forgetChestPositionsKeepingCount();
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap {}: run-state extras not restored", plan.nap().napId(), e);
+        }
+    }
+
+    /**
+     * The napped world's admin difficulty offset, set on this one through the same path as the
+     * command, before the seed train generates. The per-player streak counters carried in the
+     * player tag hold offset-inclusive carriage readings, so a different offset here would shift
+     * them. {@code DifficultyOffsetLifecycle} only re-mirrors at world load (already past) and
+     * clears on a death, so nothing undoes this on login.
+     */
+    private static void carryDifficultyOffset(MinecraftServer server, NapSnapshot nap) {
+        if (nap.difficultyOffset() == 0) return;
+        try {
+            DifficultyOffset.set(server, nap.difficultyOffset());
+            LOGGER.info("[DungeonTrain] Nap {}: difficulty offset {} carried", nap.napId(), nap.difficultyOffset());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap {}: difficulty offset not carried", nap.napId(), e);
+        }
     }
 
     /**

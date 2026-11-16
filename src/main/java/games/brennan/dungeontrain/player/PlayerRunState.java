@@ -4,7 +4,9 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -413,6 +415,134 @@ public final class PlayerRunState {
         return List.copyOf(cameraFrames);
     }
 
+    // --- Nap carry -------------------------------------------------------------------------------
+
+    private static final String X_ECHOES_KILLED = "echoesKilled";
+    private static final String X_CARRIAGES_SINCE_CHEST = "carriagesSinceChest";
+    private static final String X_MAX_CARRIAGES_NO_CHEST = "maxCarriagesNoChest";
+    private static final String X_KILLED_MOBS = "killedMobs";
+    private static final String X_NARRATIVE_LETTERS = "narrativeLetters";
+    private static final String X_BOOKS_WRITTEN = "booksWritten";
+    private static final String X_OWN_SHELF_BOOST = "ownShelfBoostPending";
+    private static final String X_DEATH_NOTES = "deathNotesWritten";
+    private static final String X_LOVE_NOTES = "loveNotesWritten";
+    private static final String X_PHOTOS_TAKEN = "photosTaken";
+    private static final String X_PHOTOS_TRIBUTED = "photosTributed";
+    private static final String X_PHOTOS_PASSENGERS = "photosPassengers";
+    private static final String X_PHOTOS_HOSTILE = "photosHostile";
+    private static final String X_PHOTOS_ANIMALS = "photosAnimals";
+    private static final String X_PHOTO_SHOTS = "photoShots";
+    private static final String X_PHOTOS_VIEWED = "photosViewed";
+    private static final String X_TRIBUTES_MADE = "tributesMade";
+    private static final String X_TRIBUTE_EMERALDS = "tributeEmeralds";
+    private static final String X_LIVE_STREAM = "liveStreamSeconds";
+    private static final String X_LIVE_WATCH = "liveWatchSeconds";
+    private static final String X_FRIEND = "friendAppearance";
+    private static final String X_FRIEND_FEELING = "friendFeeling";
+    private static final String X_FRIEND_UUID = "friendUuid";
+    private static final String X_KILLED = "killedAppearance";
+    private static final String X_EARNED = "earnedAdvancements";
+    private static final String X_SERVED_BOOKS = "servedBooks";
+    private static final String X_TAMED = "tamedAnimals";
+    private static final String X_TAMED_COUNT = "tamedCount";
+    private static final String X_CAMERA_FRAMES = "cameraFrames";
+
+    /**
+     * Every field of this life that {@link #CODEC} leaves out, for a nap: the codec fields already
+     * travel inside the napped player's tag, so between the two the woken life is this one.
+     *
+     * <p>Left out on purpose: {@link #lastOwnShelfPair}, which names a library room of the napped
+     * world. That world is deleted, so the first own-books library of the new one should count as a
+     * visit, exactly as it does after a relog.</p>
+     *
+     * @param registries for the item stacks of the friend/killed portraits and the camera frames;
+     *                   null writes them without registry context (enchantments and other
+     *                   data-driven components may then be dropped)
+     */
+    public CompoundTag napExtras(HolderLookup.Provider registries) {
+        CompoundTag t = new CompoundTag();
+        t.putInt(X_ECHOES_KILLED, echoesKilled);
+        t.putInt(X_CARRIAGES_SINCE_CHEST, carriagesSinceChest);
+        t.putInt(X_MAX_CARRIAGES_NO_CHEST, maxCarriagesNoChest);
+        t.put(X_KILLED_MOBS, NapExtrasNbt.uuids(killedMobs));
+        t.put(X_NARRATIVE_LETTERS, NapExtrasNbt.strings(narrativeLetters));
+        t.putInt(X_BOOKS_WRITTEN, booksWrittenCount);
+        t.putBoolean(X_OWN_SHELF_BOOST, ownShelfBoostPending);
+        t.putInt(X_DEATH_NOTES, deathNotesWritten);
+        t.putInt(X_LOVE_NOTES, loveNotesWritten);
+        t.putInt(X_PHOTOS_TAKEN, photosTaken);
+        t.putInt(X_PHOTOS_TRIBUTED, photosTributed);
+        t.putInt(X_PHOTOS_PASSENGERS, photosPassengers);
+        t.putInt(X_PHOTOS_HOSTILE, photosHostile);
+        t.putInt(X_PHOTOS_ANIMALS, photosAnimals);
+        t.putInt(X_PHOTO_SHOTS, photoShots);
+        t.putInt(X_PHOTOS_VIEWED, photosViewed);
+        t.putInt(X_TRIBUTES_MADE, tributesMade);
+        t.putInt(X_TRIBUTE_EMERALDS, tributeEmeralds);
+        t.putLong(X_LIVE_STREAM, liveStreamSeconds);
+        t.putLong(X_LIVE_WATCH, liveWatchSeconds);
+        if (friendAppearance != null) {
+            t.put(X_FRIEND, NapExtrasNbt.appearance(friendAppearance, registries));
+            t.putFloat(X_FRIEND_FEELING, friendFeeling);
+            if (friendUuid != null) t.putUUID(X_FRIEND_UUID, friendUuid);
+        }
+        if (killedAppearance != null) t.put(X_KILLED, NapExtrasNbt.appearance(killedAppearance, registries));
+        t.put(X_EARNED, NapExtrasNbt.ids(earnedAdvancements));
+        t.put(X_SERVED_BOOKS, NapExtrasNbt.intMap(servedBookToCarriage));
+        t.put(X_TAMED, NapExtrasNbt.ids(tamedAnimals));
+        t.putInt(X_TAMED_COUNT, tamedCount);
+        t.put(X_CAMERA_FRAMES, NapExtrasNbt.frames(cameraFrames, registries));
+        return t;
+    }
+
+    /**
+     * Restore what {@link #napExtras} wrote, onto the run state the woken player was just loaded
+     * with. Replaces each field; a key the nap lacks (an older nap) leaves that field at its
+     * fresh-load value. Mutates this attachment in place, as every other run-state writer does.
+     */
+    public void applyNapExtras(CompoundTag t, HolderLookup.Provider registries) {
+        if (t == null || t.isEmpty()) return;
+        echoesKilled = t.getInt(X_ECHOES_KILLED);
+        carriagesSinceChest = t.getInt(X_CARRIAGES_SINCE_CHEST);
+        maxCarriagesNoChest = t.getInt(X_MAX_CARRIAGES_NO_CHEST);
+        killedMobs.clear();
+        killedMobs.addAll(NapExtrasNbt.uuids(t, X_KILLED_MOBS));
+        befriendedMobs.removeAll(killedMobs);
+        narrativeLetters.clear();
+        narrativeLetters.addAll(NapExtrasNbt.strings(t, X_NARRATIVE_LETTERS));
+        booksWrittenCount = t.getInt(X_BOOKS_WRITTEN);
+        ownShelfBoostPending = t.getBoolean(X_OWN_SHELF_BOOST);
+        lastOwnShelfPair = NO_OWN_SHELF_PAIR;
+        deathNotesWritten = t.getInt(X_DEATH_NOTES);
+        loveNotesWritten = t.getInt(X_LOVE_NOTES);
+        photosTaken = t.getInt(X_PHOTOS_TAKEN);
+        photosTributed = t.getInt(X_PHOTOS_TRIBUTED);
+        photosPassengers = t.getInt(X_PHOTOS_PASSENGERS);
+        photosHostile = t.getInt(X_PHOTOS_HOSTILE);
+        photosAnimals = t.getInt(X_PHOTOS_ANIMALS);
+        photoShots = t.getInt(X_PHOTO_SHOTS);
+        photosViewed = t.getInt(X_PHOTOS_VIEWED);
+        tributesMade = t.getInt(X_TRIBUTES_MADE);
+        tributeEmeralds = t.getInt(X_TRIBUTE_EMERALDS);
+        liveStreamSeconds = t.getLong(X_LIVE_STREAM);
+        liveWatchSeconds = t.getLong(X_LIVE_WATCH);
+        friendAppearance = NapExtrasNbt.appearance(t, X_FRIEND, registries);
+        friendFeeling = friendAppearance == null ? Float.NEGATIVE_INFINITY : t.getFloat(X_FRIEND_FEELING);
+        friendUuid = friendAppearance != null && t.hasUUID(X_FRIEND_UUID) ? t.getUUID(X_FRIEND_UUID) : null;
+        killedAppearance = NapExtrasNbt.appearance(t, X_KILLED, registries);
+        earnedAdvancements.clear();
+        earnedAdvancements.addAll(NapExtrasNbt.ids(t, X_EARNED));
+        servedBookToCarriage.clear();
+        servedBookToCarriage.putAll(NapExtrasNbt.intMap(t, X_SERVED_BOOKS));
+        tamedAnimals.clear();
+        List<ResourceLocation> tamed = NapExtrasNbt.ids(t, X_TAMED);
+        tamedAnimals.addAll(tamed.subList(0, Math.min(tamed.size(), TAMED_NAMES_CAP)));
+        tamedCount = Math.max(t.getInt(X_TAMED_COUNT), tamedAnimals.size());
+        cameraFrames.clear();
+        List<Frame> frames = NapExtrasNbt.frames(t, X_CAMERA_FRAMES, registries);
+        cameraFrames.addAll(frames.subList(0, Math.min(frames.size(), CAMERA_FRAMES_CAP)));
+    }
+
     public Set<BlockPos> uniqueChests() {
         return uniqueChests;
     }
@@ -468,14 +598,49 @@ public final class PlayerRunState {
         return uniqueChests.add(pos.immutable());
     }
 
-    /** Drop every chest position. */
+    /** Drop every chest position, carried-over ones included: the streak is over. */
     public void clearChests() {
         uniqueChests.clear();
     }
 
-    /** Number of distinct chests in the current streak. */
+    /**
+     * Number of chests in the current streak: the distinct positions opened in this world, plus any
+     * the streak carried from a napped world ({@link #forgetChestPositionsKeepingCount}).
+     */
     public int chestStreak() {
         return uniqueChests.size();
+    }
+
+    /**
+     * Y of the stand-in entries a nap leaves in {@link #uniqueChests}. No chest can be opened there,
+     * so a stand-in never matches a real position: it only counts.
+     */
+    static final int CARRIED_CHEST_Y = Integer.MIN_VALUE;
+
+    /**
+     * Keep the streak's count but forget where its chests were: for a nap woken in a new world, where
+     * the old positions mean nothing and could match a new chest, wrongly resetting the streak.
+     *
+     * <p>Each position becomes a stand-in at {@link #CARRIED_CHEST_Y}, so the count is still the set's
+     * size: it persists through the attachment codec on a later relog with no new field (the codec is
+     * full), {@link #chestStreak} and the advancement trigger read it unchanged, and a duplicate open
+     * that {@link #clearChests clears} the streak drops the carried count with it.</p>
+     */
+    public void forgetChestPositionsKeepingCount() {
+        int count = uniqueChests.size();
+        uniqueChests.clear();
+        for (int i = 0; i < count; i++) {
+            uniqueChests.add(new BlockPos(i, CARRIED_CHEST_Y, 0));
+        }
+    }
+
+    /** Chests in the streak carried from a napped world, whose positions were forgotten. */
+    public int uniqueChestsCarried() {
+        int carried = 0;
+        for (BlockPos pos : uniqueChests) {
+            if (pos.getY() == CARRIED_CHEST_Y) carried++;
+        }
+        return carried;
     }
 
     /**

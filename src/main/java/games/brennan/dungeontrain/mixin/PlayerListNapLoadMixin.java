@@ -29,6 +29,7 @@ public abstract class PlayerListNapLoadMixin {
         Optional<CompoundTag> nap = NapWake.tagFor(server, player);
         if (nap.isEmpty()) return;
         player.load(nap.get());
+        NapWake.restoreRunState(player);
         cir.setReturnValue(nap);
     }
 }

@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NapSavedPacket;
 import games.brennan.dungeontrain.net.ShowNapPromptPacket;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.RunWorldNames;
 import games.brennan.dungeontrain.worldgen.BandLabel;
 import net.minecraft.ChatFormatting;
@@ -145,10 +147,20 @@ public final class NapService {
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Nap: narrative progress not carried", e);
         }
+        // The run-state fields the attachment codec can't hold (the rest are in playerTag already).
+        CompoundTag runExtras = new CompoundTag();
+        try {
+            runExtras = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).napExtras(player.registryAccess());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: run-state extras not carried", e);
+        }
+        // Per-player streak counters hold offset-inclusive values, so the woken world takes this offset.
+        int difficultyOffset = DungeonTrainWorldData.get(server.overworld()).getDifficultyTravelledOffset();
         return new NapSnapshot(UUID.randomUUID(), System.currentTimeMillis(), modVersion(),
             levelId, playerTag, x, (int) Math.floor(x / BLOCKS_PER_CARRIAGE), band, facingAlongX(player),
             BoardingProgressData.get(server.overworld()).travelledCarriageIndex(), RunIntegrity.isCheated(player),
-            server.getWorldData().getDifficulty().getKey(), advancements, stats, narrative);
+            server.getWorldData().getDifficulty().getKey(), advancements, stats, narrative,
+            runExtras, difficultyOffset);
     }
 
     /** {@code <dir>/<uuid>.json} of this world as text, or empty when it is missing or unreadable. */

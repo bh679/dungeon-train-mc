@@ -24,11 +24,17 @@ import java.util.UUID;
  * @param statsJson  the player's stats file from the napped world, verbatim; empty when none
  * @param narrative  the world's narrative progress for the player ({@code NarrativeProgressData#exportFor});
  *                   empty when none. All three are absent from naps saved before they existed.
+ * @param runExtras  the run-state fields the attachment codec has no room for
+ *                   ({@code PlayerRunState#napExtras}); empty when none (naps saved before it existed)
+ * @param difficultyOffset the napped world's admin difficulty travelled-offset
+ *                   ({@code DungeonTrainWorldData#getDifficultyTravelledOffset}); 0 = automatic, and
+ *                   for naps saved before it existed
  */
 public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
                           CompoundTag player, double x, int carriage, String band, int direction,
                           int worldDepth, boolean cheated, String difficulty,
-                          String advancementsJson, String statsJson, CompoundTag narrative) {
+                          String advancementsJson, String statsJson, CompoundTag narrative,
+                          CompoundTag runExtras, int difficultyOffset) {
 
     private static final String TAG_ID = "napId";
     private static final String TAG_SAVED = "savedAt";
@@ -45,6 +51,8 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     private static final String TAG_ADVANCEMENTS = "advancements";
     private static final String TAG_STATS = "stats";
     private static final String TAG_NARRATIVE = "narrative";
+    private static final String TAG_RUN_EXTRAS = "runExtras";
+    private static final String TAG_DIFFICULTY_OFFSET = "difficultyOffset";
 
     public NapSnapshot {
         direction = direction < 0 ? -1 : 1;
@@ -53,6 +61,16 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         advancementsJson = advancementsJson == null ? "" : advancementsJson;
         statsJson = statsJson == null ? "" : statsJson;
         narrative = narrative == null ? new CompoundTag() : narrative;
+        runExtras = runExtras == null ? new CompoundTag() : runExtras;
+    }
+
+    /** A nap without the run-state extras or a difficulty offset. */
+    public NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
+                       CompoundTag player, double x, int carriage, String band, int direction,
+                       int worldDepth, boolean cheated, String difficulty,
+                       String advancementsJson, String statsJson, CompoundTag narrative) {
+        this(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction, worldDepth,
+            cheated, difficulty, advancementsJson, statsJson, narrative, new CompoundTag(), 0);
     }
 
     /** A nap without the previous life's advancements, stats or narrative progress. */
@@ -81,6 +99,8 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         if (!advancementsJson.isEmpty()) tag.putByteArray(TAG_ADVANCEMENTS, advancementsJson.getBytes(StandardCharsets.UTF_8));
         if (!statsJson.isEmpty()) tag.putByteArray(TAG_STATS, statsJson.getBytes(StandardCharsets.UTF_8));
         if (!narrative.isEmpty()) tag.put(TAG_NARRATIVE, narrative.copy());
+        if (!runExtras.isEmpty()) tag.put(TAG_RUN_EXTRAS, runExtras.copy());
+        if (difficultyOffset != 0) tag.putInt(TAG_DIFFICULTY_OFFSET, difficultyOffset);
         return tag;
     }
 
@@ -91,7 +111,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
             tag.getString(TAG_LEVEL), tag.getCompound(TAG_PLAYER), tag.getDouble(TAG_X), tag.getInt(TAG_CARRIAGE),
             tag.getString(TAG_BAND), tag.getInt(TAG_DIRECTION), tag.getInt(TAG_DEPTH), tag.getBoolean(TAG_CHEATED),
             tag.getString(TAG_DIFFICULTY), text(tag, TAG_ADVANCEMENTS), text(tag, TAG_STATS),
-            tag.getCompound(TAG_NARRATIVE));
+            tag.getCompound(TAG_NARRATIVE), tag.getCompound(TAG_RUN_EXTRAS), tag.getInt(TAG_DIFFICULTY_OFFSET));
     }
 
     private static String text(CompoundTag tag, String key) {

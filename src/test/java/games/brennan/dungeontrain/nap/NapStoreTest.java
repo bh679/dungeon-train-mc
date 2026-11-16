@@ -51,6 +51,33 @@ final class NapStoreTest {
     }
 
     @Test
+    @DisplayName("the run-state extras and the difficulty offset survive the round trip")
+    void roundTripCarriesRunExtrasAndOffset() {
+        CompoundTag player = new CompoundTag();
+        player.putInt("XpLevel", 3);
+        CompoundTag extras = new CompoundTag();
+        extras.putInt("echoesKilled", 4);
+        extras.putLong("liveStreamSeconds", 600L);
+        NapSnapshot n = new NapSnapshot(UUID.randomUUID(), 9L, "0.1840.0", "World 1700000000005", player,
+            300.0, 8, "Overworld", 1, 8, true, "hard", "", "", new CompoundTag(), extras, -250);
+        NapSnapshot back = NapSnapshot.fromTag(n.toTag());
+        assertEquals(n, back);
+        assertEquals(extras, back.runExtras());
+        assertEquals(-250, back.difficultyOffset());
+    }
+
+    @Test
+    @DisplayName("a nap saved before run extras and the offset were carried reads with none and automatic difficulty")
+    void oldNapReadsWithoutRunExtrasOrOffset() {
+        CompoundTag tag = nap("World 1700000000006").toTag();
+        assertFalse(tag.contains("runExtras"), "empty extras are left out of the file");
+        assertFalse(tag.contains("difficultyOffset"), "a zero offset is left out of the file");
+        NapSnapshot back = NapSnapshot.fromTag(tag);
+        assertTrue(back.runExtras().isEmpty());
+        assertEquals(0, back.difficultyOffset());
+    }
+
+    @Test
     @DisplayName("a nap saved before the previous life was carried still reads, with none of it")
     void oldNapReadsWithoutPreviousLife() {
         CompoundTag tag = nap("World 1700000000004").toTag();
