@@ -3,8 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
-import games.brennan.dungeontrain.portal.PortalRoomContainers;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.portal.PortalCorridorContainers;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -17,7 +16,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -38,27 +36,19 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Keeps storage out of the places a dimensional carriage cannot hold it: shulker boxes out of either
- * copy of its corridor, and chests, barrels, hoppers and shulker boxes out of its portal room and
- * every copy of that room.
+ * Keeps storage out of both copies of a dimensional carriage's corridor: chests, trapped chests,
+ * barrels, hoppers and shulker boxes ({@link PortalCorridorContainers}).
  *
- * <h2>Corridors: shulker boxes</h2>
- * <p>A dimensional carriage exists twice — the corridor riding the train and its static twin at the
- * world floor — and {@link games.brennan.dungeontrain.portal.PortalEditMirror} copies every edit from
- * either to the other so the crossing between them stays invisible. It copies block <i>state</i>
- * only. For a torch that is exactly right and for a chest it is close enough, but a shulker box
- * mirrored as a bare block is a second shulker box: break the copy and it drops, which duplicates the
- * item outright. So the box cannot go down there. Corridor cells are tested with
- * {@link PortalPairIndex#isCorridorCell}, the same index the mirror consults, so "cell the mirror
- * would copy" and "cell that refuses a box" cannot drift apart.</p>
+ * <p>The corridor exists twice — the hallway riding the train and its static twin at the room end —
+ * and {@link games.brennan.dungeontrain.portal.PortalEditMirror} copies every edit from either to the
+ * other so the crossing between them stays invisible. It copies block <i>state</i> only, so a
+ * container mirrored is a second, empty container: what is stored in one copy is missing from the
+ * other, and a shulker box broken in the copy drops a second box outright. Corridor cells are tested
+ * with {@link PortalPairIndex#isCorridorCell}, the same index the mirror consults, so "cell the
+ * mirror would copy" and "cell that refuses a container" cannot drift apart.</p>
  *
- * <h2>Rooms: storage of any kind</h2>
- * <p>The room past the corridor does not stay put — see {@link PortalRoomContainers} — so what a
- * container holds there is lost or duplicated as the room is re-stamped, tiled, relocated or carried
- * between worlds. Room cells are tested with {@link PortalCarriageEvents#portalRoomBodyPairKey}: the
- * room body and every standing copy, corridors excluded, the same volume the boarding credit uses.
- * The carriage and its corridors are deliberately not part of this: chests, barrels and hoppers stay
- * placeable there.</p>
+ * <p><b>The dimensional room is untouched.</b> It has no twin and no mirror, so a chest in it behaves
+ * like a chest anywhere else.</p>
  *
  * <h2>Refused at the click, not undone afterwards</h2>
  * <p>The obvious hook, {@link BlockEvent.EntityPlaceEvent}, fires once the block is already in the
@@ -82,7 +72,7 @@ public final class PortalContainerPlacementEvents {
     enum Reason {
         CORRIDOR_SHULKER("chat.dungeontrain.portal.no_shulker_box.1",
             "chat.dungeontrain.portal.no_shulker_box.2"),
-        ROOM_CONTAINER("chat.dungeontrain.portal.no_container.1",
+        CORRIDOR_CONTAINER("chat.dungeontrain.portal.no_container.1",
             "chat.dungeontrain.portal.no_container.2");
 
         final String firstKey;
@@ -118,19 +108,14 @@ public final class PortalContainerPlacementEvents {
     /**
      * Why {@code block} may not go at {@code pos}, or {@code null} if it may.
      *
-     * <p>The room test is cheap to skip: it is only asked for one of the refused blocks, only in the
-     * overworld (where every portal structure stands), and the query itself returns at once when no
-     * structure is standing.</p>
+     * <p>Only corridor cells refuse anything, in either copy. A shulker box keeps the line it always
+     * had; the other containers get their own. {@link PortalPairIndex#isCorridorCell} returns at once
+     * when no corridor is live, so a world without one pays a field read.</p>
      */
     static Reason refusalFor(ServerLevel level, BlockPos pos, Block block) {
-        boolean shulker = block instanceof ShulkerBoxBlock;
-        if (shulker && PortalPairIndex.isCorridorCell(level, pos)) return Reason.CORRIDOR_SHULKER;
-
-        if (!PortalRoomContainers.isRefusedInRoom(block)) return null;
-        if (!level.dimension().equals(Level.OVERWORLD)) return null;
-        Integer pair = PortalCarriageEvents.portalRoomBodyPairKey(
-            DungeonTrainWorldData.get(level).dims(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
-        return pair != null ? Reason.ROOM_CONTAINER : null;
+        if (!PortalCorridorContainers.isRefusedInCorridor(block)) return null;
+        if (!PortalPairIndex.isCorridorCell(level, pos)) return null;
+        return block instanceof ShulkerBoxBlock ? Reason.CORRIDOR_SHULKER : Reason.CORRIDOR_CONTAINER;
     }
 
     /**
@@ -147,7 +132,7 @@ public final class PortalContainerPlacementEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!(event.getItemStack().getItem() instanceof BlockItem item)) return;
         Block block = item.getBlock();
-        if (!PortalRoomContainers.isRefusedInRoom(block)) return;
+        if (!PortalCorridorContainers.isRefusedInCorridor(block)) return;
 
         Player player = event.getEntity();
         BlockPos target = new BlockPlaceContext(
@@ -169,7 +154,7 @@ public final class PortalContainerPlacementEvents {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         Block block = event.getPlacedBlock().getBlock();
-        if (!PortalRoomContainers.isRefusedInRoom(block)) return;
+        if (!PortalCorridorContainers.isRefusedInCorridor(block)) return;
         Reason reason = refusalFor(level, event.getPos(), block);
         if (reason == null) return;
 
@@ -192,7 +177,7 @@ public final class PortalContainerPlacementEvents {
         for (BlockSnapshot snapshot : event.getReplacedBlockSnapshots()) {
             BlockPos pos = snapshot.getPos();
             Block block = level.getBlockState(pos).getBlock();
-            if (!PortalRoomContainers.isRefusedInRoom(block)) continue;
+            if (!PortalCorridorContainers.isRefusedInCorridor(block)) continue;
             Reason reason = refusalFor(level, pos, block);
             if (reason == null) continue;
 

@@ -12,8 +12,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Pins which blocks a portal room refuses: storage that could be lost or duplicated, nothing else. */
-class PortalRoomContainersTest {
+/** Pins which blocks a dimensional carriage corridor refuses: storage that the mirror would split or duplicate, nothing else. */
+class PortalCorridorContainersTest {
 
     @BeforeAll
     static void bootstrap() {
@@ -26,7 +26,7 @@ class PortalRoomContainersTest {
         List<Block> refused = List.of(Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL, Blocks.HOPPER,
             Blocks.SHULKER_BOX, Blocks.RED_SHULKER_BOX, Blocks.BLACK_SHULKER_BOX);
         for (Block block : refused) {
-            assertTrue(PortalRoomContainers.isRefusedInRoom(block), block.toString());
+            assertTrue(PortalCorridorContainers.isRefusedInCorridor(block), block.toString());
         }
     }
 
@@ -35,7 +35,7 @@ class PortalRoomContainersTest {
         List<Block> allowed = List.of(Blocks.ENDER_CHEST, Blocks.DISPENSER, Blocks.DROPPER,
             Blocks.FURNACE, Blocks.CRAFTING_TABLE, Blocks.TORCH, Blocks.STONE);
         for (Block block : allowed) {
-            assertFalse(PortalRoomContainers.isRefusedInRoom(block), block.toString());
+            assertFalse(PortalCorridorContainers.isRefusedInCorridor(block), block.toString());
         }
     }
 }
