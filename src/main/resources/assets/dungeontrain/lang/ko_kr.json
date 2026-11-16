@@ -611,6 +611,7 @@
   "chat.dungeontrain.nap.tampered.moved": "기차가 이 침대를 알아보지 못합니다. 누군가 손을 댔습니다.",
   "chat.dungeontrain.nap.tampered.made": "기차는 당신이 만든 침대와 자신의 침대를 구별합니다. 여기선 통하지 않습니다.",
   "chat.dungeontrain.nap.failed": "휴식이 멀어집니다. 런은 계속됩니다.",
+  "disconnect.dungeontrain.nap.world_napped": "이 월드에서 낮잠을 잤으므로 당신의 런은 낮잠 속에 이어집니다. 새 월드를 시작해 깨어나세요.",
   "chat.dungeontrain.nap.not_woken": "휴식이 이어지지 않았습니다. 새로운 판입니다.",
   "chat.dungeontrain.nap.obelisk_needs.other": "오벨리스크에 호박 보석이 %s개 더 필요합니다.",
   "chat.dungeontrain.bed.no_respawn.1": "리스폰 지점이 설정되지 않았다. 침대는 철로 위에서 통하지 않는다 — 네가 깨어나는 곳은 기차 안, 기차가 굴러간 그곳이다.",

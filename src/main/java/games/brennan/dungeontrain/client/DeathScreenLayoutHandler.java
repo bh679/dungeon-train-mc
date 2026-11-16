@@ -527,9 +527,12 @@ public final class DeathScreenLayoutHandler {
         }
         mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
         if (delete) {
-            RunWorldCleanup.deleteWorld(mc, levelId);
+            RunWorldCleanup.deleteWorldWithRetry(mc, levelId);
         } else {
-            LOGGER.warn("DeathScreenLayout: napped world '{}' is not the current auto-generated save ({}); keeping it.",
+            // A different save is open than the one napped. A nap is only ever saved for an auto-generated
+            // world (NapService#levelIdOf), so the title screen's napped-world sweep still finds that world
+            // by its nap file and deletes it; a hand-named world is never napped, so never deleted.
+            LOGGER.warn("DeathScreenLayout: napped world '{}' is not the current auto-generated save ({}); leaving it to the sweep.",
                     levelId, current);
         }
         mc.setScreen(new TitleScreen());

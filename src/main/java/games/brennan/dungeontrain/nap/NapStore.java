@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -88,6 +90,38 @@ public final class NapStore {
     public void consume(UUID player, String slot, NapSnapshot nap) throws IOException {
         applied.add(nap.napId());
         Files.deleteIfExists(fileFor(player, slot));
+    }
+
+    /**
+     * Ties the pending nap to the world it is waking in ({@link NapBinding}), atomically, before the
+     * world gets the train or the player. Returns the bound nap.
+     */
+    public NapSnapshot bind(UUID player, String slot, NapSnapshot nap, String levelId) throws IOException {
+        NapSnapshot bound = nap.boundTo(levelId);
+        save(player, slot, bound);
+        return bound;
+    }
+
+    /** One pending nap and the slot it sits in. */
+    public record Pending(String slot, NapSnapshot nap) {}
+
+    /** Every pending nap of {@code player}, whatever its slot (same single-use checks as {@link #load}). */
+    public List<Pending> pending(UUID player) {
+        List<Pending> out = new ArrayList<>();
+        if (!Files.isDirectory(dir)) return out;
+        String prefix = player + "-";
+        try (var files = Files.list(dir)) {
+            for (Path f : (Iterable<Path>) files::iterator) {
+                String name = f.getFileName().toString();
+                if (!name.startsWith(prefix) || !name.endsWith(".dat")) continue;
+                String slot = name.substring(prefix.length(), name.length() - ".dat".length());
+                if (!slot.matches("[a-z_]+-[a-z_]+")) continue;
+                load(player, slot).ifPresent(nap -> out.add(new Pending(slot, nap)));
+            }
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Could not list naps in {}", dir, e);
+        }
+        return out;
     }
 
     /** Whether a nap file sits in {@code slot}, woken or not. */

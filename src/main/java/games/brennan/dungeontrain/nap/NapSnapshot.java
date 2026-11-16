@@ -29,12 +29,14 @@ import java.util.UUID;
  * @param difficultyOffset the napped world's admin difficulty travelled-offset
  *                   ({@code DungeonTrainWorldData#getDifficultyTravelledOffset}); 0 = automatic, and
  *                   for naps saved before it existed
+ * @param wakeLevelId the save folder this nap is waking in, written before the train spawns there
+ *                   ({@link NapBinding}); empty while unbound, and for naps saved before it existed
  */
 public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
                           CompoundTag player, double x, int carriage, String band, int direction,
                           int worldDepth, boolean cheated, String difficulty,
                           String advancementsJson, String statsJson, CompoundTag narrative,
-                          CompoundTag runExtras, int difficultyOffset) {
+                          CompoundTag runExtras, int difficultyOffset, String wakeLevelId) {
 
     private static final String TAG_ID = "napId";
     private static final String TAG_SAVED = "savedAt";
@@ -53,6 +55,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     private static final String TAG_NARRATIVE = "narrative";
     private static final String TAG_RUN_EXTRAS = "runExtras";
     private static final String TAG_DIFFICULTY_OFFSET = "difficultyOffset";
+    private static final String TAG_WAKE_LEVEL = "wakeLevelId";
 
     public NapSnapshot {
         direction = direction < 0 ? -1 : 1;
@@ -62,6 +65,29 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         statsJson = statsJson == null ? "" : statsJson;
         narrative = narrative == null ? new CompoundTag() : narrative;
         runExtras = runExtras == null ? new CompoundTag() : runExtras;
+        wakeLevelId = wakeLevelId == null ? "" : wakeLevelId;
+    }
+
+    /** An unbound nap (not yet tied to the world it wakes in). */
+    public NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
+                       CompoundTag player, double x, int carriage, String band, int direction,
+                       int worldDepth, boolean cheated, String difficulty,
+                       String advancementsJson, String statsJson, CompoundTag narrative,
+                       CompoundTag runExtras, int difficultyOffset) {
+        this(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction, worldDepth,
+            cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset, "");
+    }
+
+    /** True once the nap has started waking in a world ({@link NapBinding}). */
+    public boolean bound() {
+        return !wakeLevelId.isEmpty();
+    }
+
+    /** This nap tied to the save folder {@code levelId}: from now on it wakes only there. */
+    public NapSnapshot boundTo(String levelId) {
+        return new NapSnapshot(napId, savedAtEpochMs, modVersion, this.levelId, player, x, carriage, band, direction,
+            worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
+            levelId);
     }
 
     /** A nap without the run-state extras or a difficulty offset. */
@@ -101,6 +127,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         if (!narrative.isEmpty()) tag.put(TAG_NARRATIVE, narrative.copy());
         if (!runExtras.isEmpty()) tag.put(TAG_RUN_EXTRAS, runExtras.copy());
         if (difficultyOffset != 0) tag.putInt(TAG_DIFFICULTY_OFFSET, difficultyOffset);
+        if (!wakeLevelId.isEmpty()) tag.putString(TAG_WAKE_LEVEL, wakeLevelId);
         return tag;
     }
 
@@ -111,7 +138,8 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
             tag.getString(TAG_LEVEL), tag.getCompound(TAG_PLAYER), tag.getDouble(TAG_X), tag.getInt(TAG_CARRIAGE),
             tag.getString(TAG_BAND), tag.getInt(TAG_DIRECTION), tag.getInt(TAG_DEPTH), tag.getBoolean(TAG_CHEATED),
             tag.getString(TAG_DIFFICULTY), text(tag, TAG_ADVANCEMENTS), text(tag, TAG_STATS),
-            tag.getCompound(TAG_NARRATIVE), tag.getCompound(TAG_RUN_EXTRAS), tag.getInt(TAG_DIFFICULTY_OFFSET));
+            tag.getCompound(TAG_NARRATIVE), tag.getCompound(TAG_RUN_EXTRAS), tag.getInt(TAG_DIFFICULTY_OFFSET),
+            tag.getString(TAG_WAKE_LEVEL));
     }
 
     private static String text(CompoundTag tag, String key) {

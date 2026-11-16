@@ -634,6 +634,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Le train ne reconnaît pas ce lit, on l'a trafiqué.",
   "chat.dungeontrain.nap.tampered.made": "Le train distingue un lit de ta fabrication des siens, ça ne marchera pas ici.",
   "chat.dungeontrain.nap.failed": "Le repos t'échappe. Ta partie continue.",
+  "disconnect.dungeontrain.nap.world_napped": "Tu as fait une sieste dans ce monde, ta partie continue donc dans la sieste. Lance un nouveau monde pour te réveiller.",
   "chat.dungeontrain.nap.not_woken": "Ton repos ne t'a pas suivi. C'est une nouvelle partie.",
   "chat.dungeontrain.nap.obelisk_needs.one": "Il manque encore %s gemme d'ambre à l'obélisque.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Il manque encore %s gemmes d'ambre à l'obélisque.",

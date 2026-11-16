@@ -60,6 +60,8 @@ public final class NapWake {
 
     /** The nap this server start will wake, if any. Server thread. */
     private static Plan planned;
+    /** {@link #planFor} already ran for this server start. Server thread. */
+    private static boolean plannedThisStart;
     /** Naps loaded this session, waiting for {@link NapWakeEvents} to turn the player. Server thread. */
     private static final Map<UUID, NapSnapshot> WOKEN = new HashMap<>();
     /** Naps loaded into this world but not yet used up (the player is still loading in). Server thread. */
@@ -72,32 +74,100 @@ public final class NapWake {
     private NapWake() {}
 
     /**
-     * At server start: pick the singleplayer owner's nap for this world's slot, when this is a fresh
-     * run world, and raise the world's carriage counter to its depth.
+     * At server start: wake the singleplayer owner's nap here, when this is the world it is bound to
+     * or a fresh run world it may bind to, and raise the world's carriage counter to its depth. A nap
+     * bound to this world whose player is already saved here is used up instead ({@link NapBinding}).
+     * Runs once per server start; the train bootstrap calls it before the seed spawns, and
+     * {@link NapWakeEvents} calls it for starts the bootstrap skipped (a reopened world).
      */
     public static void planFor(MinecraftServer server) {
+        if (plannedThisStart) return;
+        plannedThisStart = true;
         planned = null;
         if (server.isDedicatedServer()) return;
         GameProfile owner = server.getSingleplayerProfile();
         if (owner == null || owner.getId() == null) return;
         UUID uuid = owner.getId();
+        String here = NapService.levelIdOf(server);
+        if (here == null) return;
+        NapStore store = NapStore.local();
+        if (wakeBoundHere(server, store, uuid, here)) return;
         if (!isFreshRunWorld(server, uuid)) return;
         String slot = NapSlot.forNewWorld(server);
-        Optional<NapSnapshot> nap = NapStore.local().load(uuid, slot);
-        if (nap.isEmpty() && NapStore.local().hasFile(uuid, slot)) NOT_WOKEN.add(uuid); // refused and kept: say so
-        if (nap.isEmpty() || nap.get().levelId().equals(NapService.levelIdOf(server))) return;
+        Optional<NapSnapshot> nap = store.load(uuid, slot);
+        if (nap.isEmpty() && store.hasFile(uuid, slot)) NOT_WOKEN.add(uuid); // refused and kept: say so
+        if (nap.isEmpty() || nap.get().levelId().equals(here)) return;
         if (!NapSlot.matches(slot, nap.get())) {
             NOT_WOKEN.add(uuid);
             LOGGER.warn("[DungeonTrain] Nap {} is a {} {} run but sits in slot {}; not waking it.", nap.get().napId(),
                 nap.get().cheated() ? "freeplay" : "survival", nap.get().difficulty(), slot);
             return;
         }
-        planned = new Plan(uuid, slot, nap.get());
-        RunRestore.raiseWorldProgress(server.overworld(), nap.get().worldDepth());
-        carryDifficultyOffset(server, nap.get());
-        carryPreviousLife(server, uuid, nap.get());
-        LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.get().napId(), slot,
-            Math.round(nap.get().x()), nap.get().carriage(), nap.get().band());
+        if (NapBinding.decide(nap.get(), here, boundWorldHolds(server, nap.get(), uuid), false)
+                != NapBinding.Decision.WAKE) {
+            LOGGER.info("[DungeonTrain] Nap {} is waking in '{}'; not here.", nap.get().napId(), nap.get().wakeLevelId());
+            return;
+        }
+        NapSnapshot bound;
+        try {
+            // Bound before the train spawns or the player loads: from here on it wakes only in this world.
+            bound = store.bind(uuid, slot, nap.get(), here);
+        } catch (IOException e) {
+            NOT_WOKEN.add(uuid);
+            LOGGER.warn("[DungeonTrain] Nap {} could not be bound to '{}'; not waking it.", nap.get().napId(), here, e);
+            return;
+        }
+        plan(server, uuid, slot, bound);
+    }
+
+    /**
+     * A nap already bound to this world (it was reopened, which only crash recovery does): used up
+     * when the player saved here, so the gear is here; woken again when they never did. True when
+     * one was woken.
+     */
+    private static boolean wakeBoundHere(MinecraftServer server, NapStore store, UUID owner, String here) {
+        boolean saved = hasSavedPlayer(server, owner);
+        for (NapStore.Pending p : store.pending(owner)) {
+            if (!here.equals(p.nap().wakeLevelId())) continue;
+            if (NapBinding.decide(p.nap(), here, true, saved) == NapBinding.Decision.CONSUME) {
+                try {
+                    store.consume(owner, p.slot(), p.nap());
+                    LOGGER.info("[DungeonTrain] Nap {} already loaded into '{}'; used up.", p.nap().napId(), here);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] Nap {} could not be marked used", p.nap().napId(), e);
+                }
+                continue;
+            }
+            LOGGER.info("[DungeonTrain] Nap {} never finished loading into '{}'; waking it again.",
+                p.nap().napId(), here);
+            plan(server, owner, p.slot(), p.nap());
+            return true;
+        }
+        return false;
+    }
+
+    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot nap) {
+        planned = new Plan(owner, slot, nap);
+        RunRestore.raiseWorldProgress(server.overworld(), nap.worldDepth());
+        carryDifficultyOffset(server, nap);
+        carryPreviousLife(server, owner, nap);
+        LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.napId(), slot,
+            Math.round(nap.x()), nap.carriage(), nap.band());
+    }
+
+    /**
+     * Whether the world {@code nap} is bound to still holds the owner's saved life
+     * ({@link NapBoundWorld}). Naps only wake on an integrated server, whose world sits in the
+     * client's saves folder beside every other save.
+     */
+    static boolean boundWorldHolds(MinecraftServer server, NapSnapshot nap, UUID owner) {
+        if (!nap.bound()) return false;
+        try {
+            Path saves = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
+            return NapBoundWorld.holdsLife(saves, nap.wakeLevelId(), owner);
+        } catch (RuntimeException e) {
+            return true; // can't tell: leave it to its own world
+        }
     }
 
     /** Where the seed train goes in {@code level}: the planned nap's X in the overworld, else 0. */
@@ -199,6 +269,7 @@ public final class NapWake {
 
     static void clear() {
         planned = null;
+        plannedThisStart = false;
         LOADING.clear();
         WOKEN.clear();
         PLACE_AT.clear();
@@ -245,11 +316,33 @@ public final class NapWake {
         }
     }
 
+    /**
+     * True when {@code profile} is this integrated server's owner and this world is the one a nap of
+     * theirs was taken in: that life is in the nap, so the world must not be played
+     * ({@code mixin/PlayerListNapWorldRefuseMixin}). The client deletes it from the title screen.
+     */
+    public static boolean isNappedWorld(MinecraftServer server, GameProfile profile) {
+        if (server == null || server.isDedicatedServer() || profile == null || profile.getId() == null) return false;
+        GameProfile owner = server.getSingleplayerProfile();
+        if (owner == null || !profile.getId().equals(owner.getId())) return false;
+        String here = NapService.levelIdOf(server);
+        if (here == null) return false;
+        for (NapStore.Pending p : NapStore.local().pending(owner.getId())) {
+            if (here.equals(p.nap().levelId())) return true;
+        }
+        return false;
+    }
+
     /** A run world nobody has played yet: DT generated its name, it has a train, and no saved player. */
     private static boolean isFreshRunWorld(MinecraftServer server, UUID player) {
         if (NapService.levelIdOf(server) == null) return false;
         if (!DungeonTrainWorldData.get(server.overworld()).startsWithTrain()) return false;
-        if (server.getWorldData().getLoadedPlayerTag() != null) return false;
-        return !Files.exists(server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve(player + ".dat"));
+        return !hasSavedPlayer(server, player);
+    }
+
+    /** The world already holds {@code player}'s saved data (singleplayer keeps it in level.dat). */
+    private static boolean hasSavedPlayer(MinecraftServer server, UUID player) {
+        if (server.getWorldData().getLoadedPlayerTag() != null) return true;
+        return Files.exists(server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve(player + ".dat"));
     }
 }

@@ -634,6 +634,7 @@
   "chat.dungeontrain.nap.tampered.moved": "De trein herkent dit bed niet, er is mee geknoeid.",
   "chat.dungeontrain.nap.tampered.made": "De trein kent een bed van jouw makelij van een van zijn eigen, dat werkt hier niet.",
   "chat.dungeontrain.nap.failed": "De rust glipt weg. Je run gaat verder.",
+  "disconnect.dungeontrain.nap.world_napped": "Je hebt in deze wereld een dutje gedaan, dus je run leeft voort in het dutje. Start een nieuwe wereld om wakker te worden.",
   "chat.dungeontrain.nap.not_woken": "Je rust is niet meegekomen. Dit is een nieuwe run.",
   "chat.dungeontrain.nap.obelisk_needs.one": "De obelisk heeft nog %s amberjuweel nodig.",
   "chat.dungeontrain.nap.obelisk_needs.other": "De obelisk heeft nog %s amberjuwelen nodig.",

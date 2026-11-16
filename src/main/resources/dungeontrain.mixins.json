@@ -116,6 +116,7 @@
     "ServerGamePacketListenerImplDifficultyMixin",
     "PlayerListCheatsMixin",
     "PlayerListNapLoadMixin",
+    "PlayerListNapWorldRefuseMixin",
     "MinecraftServerWorldSettingsMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
     "ContainersSpillMixin",

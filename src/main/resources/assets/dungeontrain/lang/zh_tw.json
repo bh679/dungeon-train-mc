@@ -611,6 +611,7 @@
   "chat.dungeontrain.nap.tampered.moved": "列車認不出這張床，它被人動過了。",
   "chat.dungeontrain.nap.tampered.made": "列車分得清你做的床和它自己的床，這在這裡行不通。",
   "chat.dungeontrain.nap.failed": "安歇悄然溜走。你的旅程仍在繼續。",
+  "disconnect.dungeontrain.nap.world_napped": "你在這個世界小睡過，你的冒險延續在小睡之中。開始一個新世界來醒來。",
   "chat.dungeontrain.nap.not_woken": "你的休息沒有延續下來。這是一局新的旅程。",
   "chat.dungeontrain.nap.obelisk_needs.other": "方尖碑還需要%s顆琥珀寶石。",
   "chat.dungeontrain.bed.no_respawn.1": "未設定重生點。床在鐵軌上不管用，你會在列車上醒來，無論它駛到了哪裡。",

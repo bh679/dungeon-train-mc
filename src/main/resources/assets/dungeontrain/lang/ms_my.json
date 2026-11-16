@@ -611,6 +611,7 @@
   "chat.dungeontrain.nap.tampered.moved": "Kereta api tidak mengenali katil ini, ia telah diusik.",
   "chat.dungeontrain.nap.tampered.made": "Kereta api dapat membezakan katil buatan anda daripada katilnya sendiri, ini tidak akan berjaya di sini.",
   "chat.dungeontrain.nap.failed": "Rehat itu terlepas. Larian anda diteruskan.",
+  "disconnect.dungeontrain.nap.world_napped": "Anda tidur sebentar di dunia ini, jadi larian anda kekal dalam tidur itu. Mulakan Dunia Baharu untuk bangun.",
   "chat.dungeontrain.nap.not_woken": "Rehat anda tidak dibawa. Ini larian baharu.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Obelisk ini memerlukan %s lagi Permata Amber.",
   "chat.dungeontrain.bed.no_respawn.1": "Tiada titik jelma semula ditetapkan. Katil tidak berguna di atas landasan — anda bangun di dalam kereta api, ke mana sahaja ia bergerak.",
