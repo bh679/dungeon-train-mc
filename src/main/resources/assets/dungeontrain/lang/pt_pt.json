@@ -1371,6 +1371,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "A partida termina e fica registada como uma morte. Não há como anular.",
   "gui.dungeontrain.abandon_confirm.yes": "Sair e morrer",
   "gui.dungeontrain.abandon_confirm.back": "Ficar a bordo",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "MAS há uma forma de guardar! Encontra uma cama gerada naturalmente, ou algo equivalente. Usa-a.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Isto é o que levas contigo. Põe-no num baú do Ender para o guardares para a próxima vez.",
   "death.attack.dungeontrain.abandoned": "%1$s abandonou o comboio",
   "death.attack.dungeontrain.abandoned.player": "%1$s abandonou o comboio",
   "death.attack.dungeontrain.stepped_off": "%1$s desceu do comboio",

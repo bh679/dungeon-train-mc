@@ -1328,6 +1328,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "旅はここで終わり、死亡として記録されます。取り消しはできません。",
   "gui.dungeontrain.abandon_confirm.yes": "降りて死ぬ",
   "gui.dungeontrain.abandon_confirm.back": "乗ったままでいる",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "でも、セーブする方法はある！自然に生成されたベッドか、それに代わるものを見つけて使おう。",
+  "gui.dungeontrain.abandon_confirm.inventory": "今の持ち物です。次回のために残したい物はエンダーチェストに入れておこう。",
   "death.attack.dungeontrain.abandoned": "%1$sは列車を捨てた",
   "death.attack.dungeontrain.abandoned.player": "%1$sは列車を捨てた",
   "death.attack.dungeontrain.stepped_off": "%1$sは列車を降りた",

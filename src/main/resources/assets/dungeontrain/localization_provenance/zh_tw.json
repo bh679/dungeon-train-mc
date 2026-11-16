@@ -1332,6 +1332,8 @@
       "gui.dungeontrain.abandon_confirm.line2",
       "gui.dungeontrain.abandon_confirm.yes",
       "gui.dungeontrain.abandon_confirm.back",
+      "gui.dungeontrain.abandon_confirm.bed_hint",
+      "gui.dungeontrain.abandon_confirm.inventory",
       "death.attack.dungeontrain.abandoned",
       "death.attack.dungeontrain.abandoned.player",
       "death.attack.dungeontrain.stepped_off",

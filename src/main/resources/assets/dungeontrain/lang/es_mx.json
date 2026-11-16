@@ -1371,6 +1371,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "La partida termina y queda registrada como una muerte. No se puede deshacer.",
   "gui.dungeontrain.abandon_confirm.yes": "Bajarme y morir",
   "gui.dungeontrain.abandon_confirm.back": "Quedarme a bordo",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "¡PERO hay una forma de guardar! Encuentra una cama generada de forma natural, o algo equivalente. Úsala.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Esto es lo que traes contigo. Guárdalo en un cofre de ender para conservarlo la próxima vez.",
   "death.attack.dungeontrain.abandoned": "%1$s abandonó el tren",
   "death.attack.dungeontrain.abandoned.player": "%1$s abandonó el tren",
   "death.attack.dungeontrain.stepped_off": "%1$s se bajó del tren",

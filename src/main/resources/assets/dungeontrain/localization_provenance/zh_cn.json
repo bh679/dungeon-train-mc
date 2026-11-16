@@ -632,6 +632,8 @@
       "gui.dungeontrain.abandon_confirm.line2",
       "gui.dungeontrain.abandon_confirm.yes",
       "gui.dungeontrain.abandon_confirm.back",
+      "gui.dungeontrain.abandon_confirm.bed_hint",
+      "gui.dungeontrain.abandon_confirm.inventory",
       "gui.dungeontrain.death.update_button",
       "gui.dungeontrain.death.update_sub.other",
       "gui.dungeontrain.update_prompt.title",

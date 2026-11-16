@@ -1328,6 +1328,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "本轮旅程到此结束，记为一次死亡。无法撤销。",
   "gui.dungeontrain.abandon_confirm.yes": "下车赴死",
   "gui.dungeontrain.abandon_confirm.back": "留在车上",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "但还是有办法存档的！找到一张自然生成的床，或类似的东西，使用它。",
+  "gui.dungeontrain.abandon_confirm.inventory": "这是你现在身上的东西。放进末影箱，下次还能用。",
   "death.attack.dungeontrain.abandoned": "%1$s 放弃了列车",
   "death.attack.dungeontrain.abandoned.player": "%1$s 放弃了列车",
   "death.attack.dungeontrain.stepped_off": "%1$s 离开了列车",

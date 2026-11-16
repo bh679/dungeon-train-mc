@@ -1607,6 +1607,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "Гра закінчиться й запишеться як смерть. Назад дороги немає.",
   "gui.dungeontrain.abandon_confirm.yes": "Зійти й загинути",
   "gui.dungeontrain.abandon_confirm.back": "Лишитися на борту",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "АЛЕ зберегтися можна! Знайди ліжко, що з'явилося саме, або щось подібне. Скористайся ним.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Ось що в тебе з собою. Поклади це в скриню Енду, щоб зберегти до наступного разу.",
   "death.attack.dungeontrain.abandoned": "%1$s покинув потяг",
   "death.attack.dungeontrain.abandoned.player": "%1$s покинув потяг",
   "death.attack.dungeontrain.stepped_off": "%1$s зійшов з потяга",

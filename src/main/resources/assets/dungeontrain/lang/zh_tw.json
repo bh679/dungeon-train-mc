@@ -1328,6 +1328,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "本趟旅程到此結束，記為一次死亡。無法復原。",
   "gui.dungeontrain.abandon_confirm.yes": "下車赴死",
   "gui.dungeontrain.abandon_confirm.back": "留在車上",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "但還是有辦法存檔的！找到一張自然生成的床，或類似的東西，使用它。",
+  "gui.dungeontrain.abandon_confirm.inventory": "這是你現在身上的東西。放進終界箱，下次還能用。",
   "death.attack.dungeontrain.abandoned": "%1$s 拋下了列車",
   "death.attack.dungeontrain.abandoned.player": "%1$s 拋下了列車",
   "death.attack.dungeontrain.stepped_off": "%1$s 走下了列車",

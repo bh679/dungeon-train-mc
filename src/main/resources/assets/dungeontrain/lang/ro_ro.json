@@ -1607,6 +1607,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "Cursa se încheie și se înregistrează ca o moarte. Nu există cale de întoarcere.",
   "gui.dungeontrain.abandon_confirm.yes": "Coboară și mori",
   "gui.dungeontrain.abandon_confirm.back": "Rămâi la bord",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "DAR există o cale de a salva! Găsește un pat apărut natural sau ceva echivalent. Folosește-l.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Asta ai la tine acum. Pune-le într-un cufăr Ender ca să le păstrezi pentru data viitoare.",
   "death.attack.dungeontrain.abandoned": "%1$s a abandonat trenul",
   "death.attack.dungeontrain.abandoned.player": "%1$s a abandonat trenul",
   "death.attack.dungeontrain.stepped_off": "%1$s a coborât din tren",

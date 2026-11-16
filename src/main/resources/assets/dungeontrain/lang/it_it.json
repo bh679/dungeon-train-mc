@@ -1371,6 +1371,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "La partita finisce e viene registrata come una morte. Non si può annullare.",
   "gui.dungeontrain.abandon_confirm.yes": "Scendi e muori",
   "gui.dungeontrain.abandon_confirm.back": "Resta a bordo",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "MA c'è un modo per salvare! Trova un letto generato naturalmente, o qualcosa di equivalente. Usalo.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Ecco cosa hai con te. Mettilo in una cassa di ender per tenerlo per la prossima volta.",
   "death.attack.dungeontrain.abandoned": "%1$s ha abbandonato il treno",
   "death.attack.dungeontrain.abandoned.player": "%1$s ha abbandonato il treno",
   "death.attack.dungeontrain.stepped_off": "%1$s è sceso dal treno",

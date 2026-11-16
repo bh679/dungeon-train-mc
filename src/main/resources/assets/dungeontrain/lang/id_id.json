@@ -1328,6 +1328,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "Perjalanan berakhir dan tercatat sebagai kematian. Tidak bisa dibatalkan.",
   "gui.dungeontrain.abandon_confirm.yes": "Turun dan mati",
   "gui.dungeontrain.abandon_confirm.back": "Tetap di kereta",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "TAPI ada cara untuk menyimpan! Temukan kasur yang muncul secara alami, atau yang setara. Gunakan.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Ini yang kamu bawa sekarang. Simpan di Peti Ender agar tetap ada untuk lain kali.",
   "death.attack.dungeontrain.abandoned": "%1$s meninggalkan kereta",
   "death.attack.dungeontrain.abandoned.player": "%1$s meninggalkan kereta",
   "death.attack.dungeontrain.stepped_off": "%1$s turun dari kereta",

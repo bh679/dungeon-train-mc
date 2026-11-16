@@ -1328,6 +1328,8 @@
   "gui.dungeontrain.abandon_confirm.line2": "Hành trình kết thúc và được ghi nhận là một lần chết. Không thể hoàn tác.",
   "gui.dungeontrain.abandon_confirm.yes": "Xuống tàu và chết",
   "gui.dungeontrain.abandon_confirm.back": "Ở lại trên tàu",
+  "gui.dungeontrain.abandon_confirm.bed_hint": "NHƯNG vẫn có cách để lưu! Hãy tìm một chiếc giường tự nhiên xuất hiện, hoặc thứ tương đương. Dùng nó.",
+  "gui.dungeontrain.abandon_confirm.inventory": "Đây là những gì bạn đang mang. Hãy cất vào Rương Ender để giữ cho lần sau.",
   "death.attack.dungeontrain.abandoned": "%1$s đã bỏ rơi đoàn tàu",
   "death.attack.dungeontrain.abandoned.player": "%1$s đã bỏ rơi đoàn tàu",
   "death.attack.dungeontrain.stepped_off": "%1$s đã bước xuống khỏi đoàn tàu",
