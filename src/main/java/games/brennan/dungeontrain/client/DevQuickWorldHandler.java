@@ -89,6 +89,9 @@ public final class DevQuickWorldHandler {
     private static final Component SINGLEPLAYER_KEY = Component.translatable("menu.singleplayer");
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.new_world");
     private static final Component REBOARD_LABEL = Component.translatable("gui.dungeontrain.new_world.reboard");
+    /** Sprite tint for a Reboard button (blue; blue channel stays 1). */
+    private static final float REBOARD_TINT_R = 0.35F;
+    private static final float REBOARD_TINT_G = 0.6F;
     private static final Component SETTINGS_ICON_LABEL =
             Component.literal("⚙").withStyle(ChatFormatting.BOLD);
     /**
@@ -177,20 +180,16 @@ public final class DevQuickWorldHandler {
 
         // Dev row uses the SAME wide+square split as the survival row, so the two rows line up
         // whichever is showing — only the square's occupant differs (perf world vs settings).
-        Button creativeNewWorld = Button.builder(newWorldLabel(true),
-                        b -> launchCreativeWorld(titleScreen))
-                .bounds(spX, spY, wideW, spH)
-                .build();
+        Button creativeNewWorld = newWorldButton(true, spX, spY, wideW, spH,
+                b -> launchCreativeWorld(titleScreen));
 
         Button perfNewWorld = Button.builder(PERF_ICON_LABEL,
                         b -> launchPerfWorld(titleScreen))
                 .bounds(spX + wideW + GAP, spY, iconW, spH)
                 .build();
 
-        Button survivalNewWorld = Button.builder(newWorldLabel(false),
-                        b -> launchSurvivalWorld(titleScreen))
-                .bounds(survivalX, spY, survivalW, spH)
-                .build();
+        Button survivalNewWorld = newWorldButton(false, survivalX, spY, survivalW, spH,
+                b -> launchSurvivalWorld(titleScreen));
 
         CustomContentToggleButton contentToggle = hasBuilds ? buildContentToggle(spX, spY, iconW) : null;
 
@@ -437,20 +436,26 @@ public final class DevQuickWorldHandler {
     }
 
     /**
-     * "Reboard" when a nap is waiting for the run this button starts (its Free Play or Survival slot,
-     * at the next run's difficulty), since that run wakes the nap; otherwise "New World".
+     * A New World button: blue and reading "Reboard" when a nap is waiting for the run it starts (its
+     * Free Play or Survival slot, at the next run's difficulty), since that run wakes the nap;
+     * otherwise the plain "New World".
      */
-    private static Component newWorldLabel(boolean freePlay) {
+    private static Button newWorldButton(boolean freePlay, int x, int y, int w, int h, Button.OnPress onPress) {
+        boolean reboard = napWaiting(freePlay);
+        return new games.brennan.dungeontrain.client.menu.PauseMenuActionButton(x, y, w, h,
+            reboard ? REBOARD_LABEL : NEW_WORLD_LABEL,
+            reboard ? REBOARD_TINT_R : 1.0F, reboard ? REBOARD_TINT_G : 1.0F, 1.0F, false, onPress);
+    }
+
+    private static boolean napWaiting(boolean freePlay) {
         try {
             java.util.UUID player = Minecraft.getInstance().getUser().getProfileId();
             String slot = games.brennan.dungeontrain.nap.NapSlot.key(freePlay, ClientDisplayConfig.getNewRunDifficulty());
-            if (player != null && games.brennan.dungeontrain.nap.NapStore.local().load(player, slot).isPresent()) {
-                return REBOARD_LABEL;
-            }
+            return player != null && games.brennan.dungeontrain.nap.NapStore.local().load(player, slot).isPresent();
         } catch (RuntimeException e) {
-            LOGGER.debug("DevQuickWorld: nap check for the New World label failed", e);
+            LOGGER.debug("DevQuickWorld: nap check for the New World button failed", e);
+            return false;
         }
-        return NEW_WORLD_LABEL;
     }
 
     private static void launchCreativeWorld(Screen lastScreen) {
