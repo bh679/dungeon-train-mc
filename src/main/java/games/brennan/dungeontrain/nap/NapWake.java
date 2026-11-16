@@ -68,6 +68,8 @@ public final class NapWake {
     private static final Map<UUID, Plan> LOADING = new HashMap<>();
     /** World-X a woken player is put on the train at, for the join placement. Server thread. */
     private static final Map<UUID, Double> PLACE_AT = new HashMap<>();
+    /** Owners whose waiting nap was refused at this server start, to be told at login. Server thread. */
+    private static final java.util.Set<UUID> NOT_WOKEN = new java.util.HashSet<>();
 
     private NapWake() {}
 
@@ -93,8 +95,10 @@ public final class NapWake {
         if (!isFreshRunWorld(server, uuid)) return;
         String slot = NapSlot.forNewWorld(server);
         Optional<NapSnapshot> nap = store.load(uuid, slot);
+        if (nap.isEmpty() && store.hasFile(uuid, slot)) NOT_WOKEN.add(uuid); // refused and kept: say so
         if (nap.isEmpty() || nap.get().levelId().equals(here)) return;
         if (!NapSlot.matches(slot, nap.get())) {
+            NOT_WOKEN.add(uuid);
             LOGGER.warn("[DungeonTrain] Nap {} is a {} {} run but sits in slot {}; not waking it.", nap.get().napId(),
                 nap.get().cheated() ? "freeplay" : "survival", nap.get().difficulty(), slot);
             return;
@@ -109,6 +113,7 @@ public final class NapWake {
             // Bound before the train spawns or the player loads: from here on it wakes only in this world.
             bound = store.bind(uuid, slot, nap.get(), here);
         } catch (IOException e) {
+            NOT_WOKEN.add(uuid);
             LOGGER.warn("[DungeonTrain] Nap {} could not be bound to '{}'; not waking it.", nap.get().napId(), here, e);
             return;
         }
@@ -253,6 +258,11 @@ public final class NapWake {
         return PLACE_AT.remove(player);
     }
 
+    /** Whether {@code player}'s waiting nap was refused at this server start; true once. */
+    static boolean takeNotWoken(UUID player) {
+        return NOT_WOKEN.remove(player);
+    }
+
     static Optional<NapSnapshot> takeWoken(UUID player) {
         return Optional.ofNullable(WOKEN.remove(player));
     }
@@ -263,6 +273,7 @@ public final class NapWake {
         LOADING.clear();
         WOKEN.clear();
         PLACE_AT.clear();
+        NOT_WOKEN.clear();
     }
 
     /** The nap's player tag with the old world's whereabouts removed, standing at this world's spawn. */

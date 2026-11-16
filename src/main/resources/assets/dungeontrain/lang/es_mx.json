@@ -635,6 +635,7 @@
   "chat.dungeontrain.nap.tampered.made": "El tren distingue una cama hecha por ti de una de las suyas, aquí no va a funcionar.",
   "chat.dungeontrain.nap.failed": "El descanso se escapa. Tu partida continúa.",
   "disconnect.dungeontrain.nap.world_napped": "Tomaste una siesta en este mundo, así que tu partida sigue en la siesta. Empieza un mundo nuevo para despertar.",
+  "chat.dungeontrain.nap.not_woken": "Tu descanso no se conservó. Esta es una partida nueva.",
   "chat.dungeontrain.nap.obelisk_needs.one": "Al obelisco le falta %s gema de ámbar más.",
   "chat.dungeontrain.nap.obelisk_needs.other": "Al obelisco le faltan %s gemas de ámbar más.",
   "chat.dungeontrain.bed.no_respawn.1": "No se fijó ningún punto de reaparición. Las camas no sirven sobre los rieles: despiertas en el tren, donde sea que haya rodado.",

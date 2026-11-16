@@ -34,7 +34,23 @@ public final class NapWakeGrace {
         "dungeontrain:biomes_visited", "dungeontrain:proximity_on_train", "dungeontrain:encountered_players",
         "dungeontrain:multiplayer_join", "dungeontrain:unique_chests_opened", "dungeontrain:carts_in_run",
         "dungeontrain:carts_both_directions", "dungeontrain:train_time", "dungeontrain:run_train_time",
-        "dungeontrain:run_distance", "dungeontrain:lifetime_distance");
+        "dungeontrain:run_distance", "dungeontrain:lifetime_distance", "dungeontrain:encountered_echo");
+
+    /**
+     * DT triggers fired by something the player did: they pass during the grace. Every DT trigger is in
+     * exactly one of the two lists ({@code NapWakeGraceTest} fails on a new one in neither); a trigger
+     * fired by a periodic scan, a join or a counter re-read belongs in {@link #STATE_TRIGGERS}.
+     */
+    static final Set<String> EVENT_TRIGGERS = Set.of(
+        "dungeontrain:roof_run_groups", "dungeontrain:story_set_completed", "dungeontrain:editor_action",
+        "dungeontrain:gameplay_action", "dungeontrain:code_granted", "dungeontrain:random_books_read",
+        "dungeontrain:random_book_variant_seen", "dungeontrain:starting_books_read",
+        "dungeontrain:books_burned_unread", "dungeontrain:gave_playermob_unrequited",
+        "dungeontrain:befriended_playermob", "dungeontrain:named_playermob",
+        "dungeontrain:pushed_playermob_off_train", "dungeontrain:defended_playermob",
+        "dungeontrain:befriended_echo", "dungeontrain:killed_echo", "dungeontrain:echo_feat",
+        "dungeontrain:photo_subject", "dungeontrain:photo_biomes", "dungeontrain:photo_tribute",
+        "dungeontrain:photo_count");
 
     private NapWakeGrace() {}
 

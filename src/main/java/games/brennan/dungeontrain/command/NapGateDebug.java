@@ -16,9 +16,10 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 /**
- * {@code /dungeontrain debug nap-gate <player> [show|set <x> <dir>|clear]} — read or stand in for the
- * nap gate a woken nap sets ({@link PlayerRunState#setNapGate}), so the ahead/behind counter rule can
- * be tested without taking a real nap. {@code show} also prints the counters it moves.
+ * {@code /dungeontrain debug nap-gate <player> [show|set <x> <dir>|wake <dir>|clear]} — read or stand in
+ * for the nap gate a woken nap sets ({@link PlayerRunState#setNapGate}), so the ahead/behind counter rule
+ * can be tested without taking a real nap. {@code wake} gates as a nap taken where the player stands
+ * would (at their current X, as at a bed). {@code show} also prints the counters it moves.
  */
 final class NapGateDebug {
 
@@ -31,6 +32,13 @@ final class NapGateDebug {
             .then(Commands.argument("player", EntityArgument.player())
                 .then(Commands.literal("show").executes(ctx -> show(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"))))
                 .then(Commands.literal("clear").executes(ctx -> clear(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"))))
+                .then(Commands.literal("wake")
+                    .then(Commands.argument("dir", IntegerArgumentType.integer(-1, 1))
+                        .executes(ctx -> {
+                            ServerPlayer p = EntityArgument.getPlayer(ctx, "player");
+                            int dir = IntegerArgumentType.getInteger(ctx, "dir");
+                            return set(ctx.getSource(), p, p.getX(), dir);
+                        })))
                 .then(Commands.literal("set")
                     .then(Commands.argument("x", DoubleArgumentType.doubleArg())
                         .then(Commands.argument("dir", IntegerArgumentType.integer(-1, 1))
@@ -61,10 +69,11 @@ final class NapGateDebug {
     private static int show(CommandSourceStack src, ServerPlayer player) {
         PlayerRunState r = run(player);
         String line = String.format(
-            "NAPGATE %s gated=%s gateX=%.1f dir=%d playerX=%.1f step=%d | mobKills=%d playerKills=%d echoes=%d "
+            "NAPGATE %s gated=%s gateX=%.1f dir=%d playerX=%.1f onTrain=%s lastTrainX=%.1f step=%d | mobKills=%d playerKills=%d echoes=%d "
                 + "weapons=%s chestStreak=%d containers=%d booksRead=%d photos=%d shots=%d tamed=%d encountered=%d",
             player.getGameProfile().getName(), r.napGated(), r.napGateX(), r.napGateDir(), player.getX(),
-            r.counterStep(player.getX()), r.mobKills(), r.playerKills(), r.echoesKilled(), r.weaponKillsSnapshot(),
+            NapGateData.onTrainLevel(player), NapGateData.lastTrainX(player),
+            NapGateData.step(player), r.mobKills(), r.playerKills(), r.echoesKilled(), r.weaponKillsSnapshot(),
             r.chestStreak(), r.containersOpened(), r.booksReadCount(), r.photosTaken(), r.photoShots(),
             r.tamedCount(), r.encounteredCount());
         LOGGER.info("[DungeonTrain] {}", line);

@@ -58,4 +58,24 @@ final class NapWakeGraceTest {
         assertFalse(NapWakeGrace.refuses(player, "minecraft:player_killed_entity"));
         assertFalse(NapWakeGrace.refuses(player, "dungeontrain:killed_echo"));
     }
+
+    @Test
+    @DisplayName("every registered DT trigger is classed as wake state or player event, once")
+    void everyDtTriggerIsClassified() {
+        java.util.List<String> unclassified = new java.util.ArrayList<>();
+        java.util.List<String> both = new java.util.ArrayList<>();
+        for (var entry : games.brennan.dungeontrain.advancement.ModAdvancementTriggers.TRIGGERS.getEntries()) {
+            String id = entry.getId().toString();
+            boolean state = NapWakeGrace.STATE_TRIGGERS.contains(id);
+            boolean evt = NapWakeGrace.EVENT_TRIGGERS.contains(id);
+            if (!state && !evt) unclassified.add(id);
+            if (state && evt) both.add(id);
+        }
+        assertTrue(unclassified.isEmpty(), "Add each to NapWakeGrace.STATE_TRIGGERS (refused while a nap wakes) "
+            + "or EVENT_TRIGGERS (allowed): " + unclassified);
+        assertTrue(both.isEmpty(), "In both NapWakeGrace lists: " + both);
+        for (String id : NapWakeGrace.EVENT_TRIGGERS) {
+            assertTrue(id.startsWith("dungeontrain:"), "EVENT_TRIGGERS is for DT triggers only: " + id);
+        }
+    }
 }

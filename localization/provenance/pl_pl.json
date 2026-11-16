@@ -658,6 +658,7 @@
   "chat.dungeontrain.nap.tampered.made": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0fe06f24ba7b4415"},
   "chat.dungeontrain.nap.failed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5a66cf0f41752655"},
   "disconnect.dungeontrain.nap.world_napped": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "07f3655f3a77a643"},
+  "chat.dungeontrain.nap.not_woken": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fd241b14980b79d2"},
   "chat.dungeontrain.nap.obelisk_needs.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4cd33e4f863498f2"},
   "chat.dungeontrain.nap.obelisk_needs.few": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "chat.dungeontrain.nap.obelisk_needs.many": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},

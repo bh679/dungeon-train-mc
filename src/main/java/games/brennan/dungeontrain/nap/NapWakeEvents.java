@@ -43,6 +43,9 @@ public final class NapWakeEvents {
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (NapWake.takeNotWoken(player.getUUID())) {
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.nap.not_woken"));
+        }
         NapWake.takeWoken(player.getUUID()).ifPresent(nap -> {
             // The Free Play that came from the old world itself (keepInventory, portal tuning) isn't in
             // the player tag; carry it so a nap can never clean a run.
