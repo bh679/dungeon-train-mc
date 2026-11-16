@@ -85,6 +85,14 @@ jobs:
         # slug instead of a modId. No network.
         run: python3 scripts/modpack/check-mod-ids.py
 
+      - name: Every CurseForge pin is a 1.21.1 NeoForge file
+        # check-mod-ids --verify opens the Modrinth jar, so a CurseForge file_id for another
+        # Minecraft version slips past it (PlayerMob's 26.2 file shipped in v0.1835.0-v0.1840.0).
+        # Reads each pinned file's game versions; the API key makes it authoritative.
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: python3 scripts/modpack/check-cf-game-versions.py
+
       # ~400 MB per copy. Only main saves one: PR-scoped copies used to fill half the repo's
       # 10 GB cache budget and push out the Gradle cache the build job needs.
       - name: Restore pinned modpack jars
@@ -116,6 +124,7 @@ jobs:
           python3 scripts/modpack/test_check_overrides.py
           python3 scripts/modpack/test_build_mrpack.py
           python3 scripts/modpack/test_check_pins.py
+          python3 scripts/modpack/test_check_cf_game_versions.py
           python3 scripts/modpack/test_upload_retry.py
           python3 scripts/modpack/test_reconcile.py
           python3 scripts/modpack/test_wait_for_approval.py
