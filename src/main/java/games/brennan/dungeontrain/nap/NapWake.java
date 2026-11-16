@@ -132,6 +132,11 @@ public final class NapWake {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             run.applyNapExtras(plan.nap().runExtras(), player.registryAccess());
             run.forgetChestPositionsKeepingCount();
+            // Behind the nap point this world's carriages are re-rolled copies of cleared ones, so
+            // count-based run counters step down there for the rest of the life.
+            run.setNapGate(plan.nap().x(),
+                PlayerRunState.travelDirection(run.travelledCarriageIndex(), plan.nap().direction()));
+            NapGateData.remember(player, run);
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Nap {}: run-state extras not restored", plan.nap().napId(), e);
         }

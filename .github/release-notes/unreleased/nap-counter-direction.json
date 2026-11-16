@@ -1,0 +1,16 @@
+{
+  "id": "nap-counter-direction",
+  "version": "0.1841.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "balance"
+  ],
+  "title": "Fair play tweak",
+  "summary": "A small fair play improvement.",
+  "highlights": [],
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
