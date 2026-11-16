@@ -60,7 +60,7 @@ final class PlayerRunStateNapExtrasTest {
         "photosHostile", "photosAnimals", "photoShots", "photosViewed", "tributesMade", "tributeEmeralds",
         "liveStreamSeconds", "liveWatchSeconds", "friendAppearance", "friendFeeling", "friendUuid",
         "killedAppearance", "earnedAdvancements", "servedBookToCarriage", "tamedAnimals", "tamedCount",
-        "cameraFrames", "napGateX", "napGateDir");
+        "cameraFrames", "napGateX", "napGateDir", "napFurthestX", "lifeMinTrainX", "lifeMaxTrainX");
     /** A library room of the napped world, which is deleted: see {@link PlayerRunState#napExtras}. */
     private static final Set<String> SKIPPED = Set.of("lastOwnShelfPair");
 
