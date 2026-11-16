@@ -62,6 +62,9 @@ public final class BlockVariantMenuInputHandler {
      */
     private static final int TYPED_WEIGHT_MAX = 1000;
 
+    /** One click on a chest row's Trap pill, in percent. */
+    private static final int TRAP_STEP = 5;
+
     private static final WorldPanelInput<BlockVariantMenu.Hit> INPUT = new WorldPanelInput<>(
         BlockVariantMenu::hovered, hit -> hit.kind() == BlockVariantMenu.CellKind.NONE,
         BlockVariantMenuInputHandler::shouldHandle, true, BlockVariantMenuInputHandler::dispatch);
@@ -170,6 +173,7 @@ public final class BlockVariantMenuInputHandler {
         if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT) return false;
         return switch (hit.kind()) {
             case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
+            case ENTRY_GROWTH -> isTrapRow(hit.index());
             case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(GrowthPopupLayout.section(hit.secondary()));
             default -> false;
         };
@@ -209,6 +213,12 @@ public final class BlockVariantMenuInputHandler {
             }
             case ENTRY_GROWTH -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                // A chest row's Grow slot is its Trap number: step it, no popup.
+                if (isTrapRow(hit.index())) {
+                    NumberStepper.click(trapNumber(variantId, local, hit.index(),
+                        BlockVariantMenu.entries().get(hit.index())), button, shift, MenuClickModifiers.cmdDown(), pad());
+                    return;
+                }
                 BlockVariantMenu.closeRotPopup();
                 BlockVariantMenu.closeSpanPopup();
                 BlockVariantMenu.closeCondPopup();
@@ -465,6 +475,23 @@ public final class BlockVariantMenuInputHandler {
             default -> new NumberField(NumberTitle.of("weight"), entry.weight(), 1, TYPED_WEIGHT_MAX, false,
                 inc, dec, set);
         };
+    }
+
+    /** True when row {@code index} is a plain chest row, whose Grow slot is the Trap number. */
+    private static boolean isTrapRow(int index) {
+        if (index < 0 || index >= BlockVariantMenu.entries().size()) return false;
+        BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(index);
+        return BlockVariantMenu.isTrapRow(e, BlockVariantMenu.parseState(e.stateString()));
+    }
+
+    /** The Trap pill as a number: click +5, right-click -5 (wrapping 0..100), cmd-click types it. */
+    private static NumberField trapNumber(String variantId, net.minecraft.core.BlockPos local, int row,
+                                          BlockVariantSyncPacket.Entry entry) {
+        return new NumberField(NumberTitle.of("trapped_chance"), entry.trapped(), 0,
+            games.brennan.dungeontrain.editor.VariantState.MAX_TRAPPED, false,
+            () -> send(BlockVariantEditPacket.Op.BUMP_TRAPPED, variantId, local, row, TRAP_STEP),
+            () -> send(BlockVariantEditPacket.Op.BUMP_TRAPPED, variantId, local, row, -TRAP_STEP),
+            v -> send(BlockVariantEditPacket.Op.SET_TRAPPED, variantId, local, row, v));
     }
 
     /**

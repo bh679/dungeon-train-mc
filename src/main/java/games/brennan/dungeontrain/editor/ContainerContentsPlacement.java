@@ -84,9 +84,12 @@ public final class ContainerContentsPlacement {
                              @Nullable CompoundTag baseBeNbt, String plotKey,
                              BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                              @Nullable String variantLinkedLootPrefabId) {
+        state = TrappedChestRoll.matchPartner(level, worldPos, state);
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, level);
-        SilentBlockOps.setBlockSilent(level, worldPos, VaultLoot.stateForNbt(state, finalNbt), finalNbt);
+        SilentBlockOps.setBlockSilent(level, worldPos, VaultLoot.stateForNbt(state, finalNbt),
+            TrappedChestRoll.nbtFor(state, finalNbt));
+        TrappedChestRoll.swapPartner(level, worldPos, state);
     }
 
     /**
@@ -121,9 +124,11 @@ public final class ContainerContentsPlacement {
                                      @Nullable String variantLinkedLootPrefabId) {
         // WorldGenLevel is not a Level, so pass null for the optional roll
         // context (used only by the furnace-slot path for recipe lookups).
-        CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
-            localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null);
+        state = TrappedChestRoll.matchPartner(level, worldPos, state);
+        CompoundTag finalNbt = TrappedChestRoll.nbtFor(state, rollForPlacement(level, state, baseBeNbt, plotKey,
+            localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null));
         level.setBlock(worldPos, VaultLoot.stateForNbt(state, finalNbt), Block.UPDATE_CLIENTS);
+        TrappedChestRoll.swapPartner(level, worldPos, state);
         if (finalNbt == null || !state.hasBlockEntity()) return;
         BlockEntity be = level.getBlockEntity(worldPos);
         if (be == null) return;

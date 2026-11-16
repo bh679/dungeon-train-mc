@@ -1,0 +1,20 @@
+{
+  "id": "trap-chest-variants",
+  "version": "0.1842.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "loot"
+  ],
+  "title": "Trapped chests in the editor",
+  "summary": "Chests in the editor can now be set to spawn as trapped chests, anywhere from 0 to 100% of the time. Some chests on the train now come trapped.",
+  "highlights": [
+    "New Trap button on chest variants in the editor"
+  ],
+  "pr": 2679,
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
