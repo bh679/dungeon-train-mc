@@ -126,15 +126,12 @@ final class AbandonInventoryGrid {
 
     private int slotY(int i) { return y + (i / cols) * SLOT; }
 
-    /** How the carried items react while "Step off and die" is hovered. */
-    enum HoverEffect { RED, FIRE }
-
-    /** Chosen effect; package-visible so both can be compared before one is settled on. */
-    static HoverEffect hoverEffect = HoverEffect.RED;
-
-    /** @param fade 0 normal; towards 1 the items themselves react (the slots stay as they are) */
-    void render(GuiGraphics g, Font font, float fade) {
-        float k = Math.max(0F, Math.min(1F, fade));
+    /**
+     * @param burn 0 normal; towards 1 vanilla's fire burns over each item (the slots stay as they
+     *             are). The block atlas keeps animating while the game is paused, so it flickers.
+     */
+    void render(GuiGraphics g, Font font, float burn) {
+        float k = Math.max(0F, Math.min(1F, burn));
         for (int i = 0; i < shown; i++) {
             int sx = slotX(i);
             int sy = slotY(i);
@@ -144,27 +141,9 @@ final class AbandonInventoryGrid {
                 continue;
             }
             ItemStack stack = stacks.get(i);
-            drawItem(g, stack, sx + 1, sy + 1, hoverEffect == HoverEffect.RED ? k : 0F);
+            g.renderItem(stack, sx + 1, sy + 1);
             g.renderItemDecorations(font, stack, sx + 1, sy + 1);
-            if (hoverEffect == HoverEffect.FIRE && k > 0F) drawFire(g, sx + 1, sy + 1, Math.min(1F, 2F * k));   // fire burns at full strength
-        }
-    }
-
-    /**
-     * The item with its green and blue pulled down by {@code red}, so only its own pixels redden.
-     * {@link GuiGraphics#renderItem} flushes before returning, so the shader colour is undone in time.
-     */
-    private static void drawItem(GuiGraphics g, ItemStack stack, int x, int y, float red) {
-        if (red <= 0F) {
-            g.renderItem(stack, x, y);
-            return;
-        }
-        float gb = 1F - red;
-        RenderSystem.setShaderColor(1F, gb, gb, 1F);
-        try {
-            g.renderItem(stack, x, y);
-        } finally {
-            RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+            if (k > 0F) drawFire(g, sx + 1, sy + 1, k);
         }
     }
 
