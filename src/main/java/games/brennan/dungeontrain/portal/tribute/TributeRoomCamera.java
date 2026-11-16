@@ -14,8 +14,12 @@ import java.util.List;
  */
 public final class TributeRoomCamera {
 
-    /** How far out from the screen plane the visitor's eyes stand, in blocks. */
-    public static final double STAND_OFF = 1.5;
+    /**
+     * How far out from the screen plane the visitor's eyes stand, in blocks. Far enough back that the
+     * room's 5 x 3 TV fills the view at a field of view narrower than the usual 70, so the arrival
+     * zoom ({@code TributeArrivalFov}) eases out rather than in.
+     */
+    public static final double STAND_OFF = 2.5;
     /** A standing player's eye height. */
     static final double EYE_HEIGHT = 1.62;
 
