@@ -44,6 +44,7 @@ final class AbandonInventoryGrid {
     private static final int SLOT_LIGHT = 0xFFFFFFFF;
     private static final int PANEL_FACE = 0xFFC6C6C6;
     private static final int PANEL_SHADE = 0xFF555555;
+    private static final float VEIL_Z = 300F;
 
     /** {@code index} is an {@link Inventory} slot, or a backpack slot when {@code backpack}. */
     private record Cell(int x, int y, boolean backpack, int index) {}
@@ -131,16 +132,37 @@ final class AbandonInventoryGrid {
         }
     }
 
-    void render(GuiGraphics g, Font font) {
+    /**
+     * @param fade 0 draws the items as normal; towards 1 they sink into their slots (the slots
+     *             themselves stay solid), done by veiling each filled slot's face in its own colour
+     *             above the item and its count
+     */
+    void render(GuiGraphics g, Font font, float fade) {
         for (Panel p : panels) drawPanel(g, p);
+        int veil = Math.round(Math.max(0F, Math.min(1F, fade)) * 255F);
         for (Cell c : cells) {
             drawSlot(g, c.x(), c.y());
             ItemStack stack = stackAt(c);
-            if (!stack.isEmpty()) {
-                g.renderItem(stack, c.x() + 1, c.y() + 1);
-                g.renderItemDecorations(font, stack, c.x() + 1, c.y() + 1);
-            }
+            if (stack.isEmpty()) continue;
+            g.renderItem(stack, c.x() + 1, c.y() + 1);
+            g.renderItemDecorations(font, stack, c.x() + 1, c.y() + 1);
+            if (veil > 0) veilSlot(g, c, veil);
         }
+    }
+
+    /** Above items (z 150) and their counts (z 200), so the slot face shows through them. */
+    private static void veilSlot(GuiGraphics g, Cell c, int alpha) {
+        g.pose().pushPose();
+        g.pose().translate(0, 0, VEIL_Z);
+        g.fill(c.x() + 1, c.y() + 1, c.x() + SLOT - 1, c.y() + SLOT - 1, (alpha << 24) | (SLOT_BG & 0xFFFFFF));
+        // The count's shadow spills onto the bevel; repaint the edges over it, faded in step.
+        int dark = (alpha << 24) | (SLOT_DARK & 0xFFFFFF);
+        int light = (alpha << 24) | (SLOT_LIGHT & 0xFFFFFF);
+        g.fill(c.x(), c.y(), c.x() + SLOT, c.y() + 1, dark);
+        g.fill(c.x(), c.y(), c.x() + 1, c.y() + SLOT, dark);
+        g.fill(c.x(), c.y() + SLOT - 1, c.x() + SLOT, c.y() + SLOT, light);
+        g.fill(c.x() + SLOT - 1, c.y(), c.x() + SLOT, c.y() + SLOT, light);
+        g.pose().popPose();
     }
 
     /** The vanilla item tooltip for the slot under the mouse, if it holds anything. */

@@ -6,7 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -21,12 +22,13 @@ import java.util.List;
  * part the label doesn't: <b>you will die</b>. It then
  * points at the way to stop without dying (a bed the train placed saves the run and quits), and
  * shows everything the player is carrying, backpack included, so they see what they'd be giving
- * up and are reminded the Ender Chest keeps things for next time.</p>
+ * up and are reminded the Ender Chest keeps things for next time. Each block of text sits in its own
+ * dark box (bed and Ender Chest icons beside their lines) so it reads over any world.</p>
  *
  * <p>One centred row of two buttons — the destructive one on the left, the way out on its right,
  * the order vanilla's own confirm screens use — and Escape falling back to the option that changes
  * nothing. Hovering the destructive button washes the whole screen red, so the choice reads as the
- * death it is. What "continue" means is the caller's: {@code proceed} runs only once the player has
+ * death it is, and the carried items fade nearly away. What "continue" means is the caller's: {@code proceed} runs only once the player has
  * said yes. On a screen too short for it all, the backpack goes first, then the whole grid; the
  * buttons always fit.</p>
  */
@@ -36,7 +38,6 @@ public final class AbandonConfirmScreen extends Screen {
     private static final int BUTTON_WIDTH = 150;
     private static final int BUTTON_HEIGHT = 20;
     private static final int GAP = 8;
-    private static final int LINE_H = 10;
     private static final int TEXT_MARGIN = 20;
     private static final int GRID_GAP = 6;
     private static final int BUTTON_GAP = 10;
@@ -51,17 +52,17 @@ public final class AbandonConfirmScreen extends Screen {
     private static final int WASH_RGB = 0xB00000;
     private static final int WASH_MAX_ALPHA = 0x90;
     private static final float WASH_FADE_MS = 400F;
+    /** How far the carried items fade out at full wash: 95% gone, so you see what you are giving up. */
+    private static final float ITEM_FADE = 0.95F;
+    private static final int BOX_GAP = 4;
 
     private static final Component LINE_1 = Component.translatable("gui.dungeontrain.abandon_confirm.line1");
     private static final Component BED_HINT = Component.translatable("gui.dungeontrain.abandon_confirm.bed_hint");
     private static final Component INVENTORY = Component.translatable("gui.dungeontrain.abandon_confirm.inventory");
 
-    /** One wrapped line of the text block, in its colour, at its y. */
-    private record Line(FormattedCharSequence text, int color, int y) {}
-
     private final Screen lastScreen;
     private final Runnable proceed;
-    private final List<Line> lines = new ArrayList<>();
+    private final List<AbandonTextBox> boxes = new ArrayList<>();
     private AbandonInventoryGrid grid;
     private Button stepOff;
     private float wash;
@@ -79,24 +80,36 @@ public final class AbandonConfirmScreen extends Screen {
 
     @Override
     protected void init() {
-        int wrap = Math.max(100, this.width - 2 * TEXT_MARGIN);
-        List<Line> warning = wrapAll(wrap, this.title, WHITE, LINE_1, RED, BED_HINT, GOLD);
-        List<Line> label = wrapAll(wrap, INVENTORY, GREY);
+        int maxW = Math.max(120, this.width - 2 * TEXT_MARGIN);
+        boxes.clear();
+        boxes.add(AbandonTextBox.of(this.font, maxW, ItemStack.EMPTY, this.title, WHITE, LINE_1, RED));
+        boxes.add(AbandonTextBox.of(this.font, maxW, new ItemStack(Items.RED_BED), BED_HINT, GOLD));
+        AbandonTextBox label = AbandonTextBox.of(this.font, maxW, new ItemStack(Items.ENDER_CHEST), INVENTORY, GREY);
 
-        int room = this.height - 2 * EDGE;
-        int fixed = (warning.size() + 1) * LINE_H + BUTTON_GAP + BUTTON_HEIGHT;   // +1: gap before the hint block's end
-        grid = fittingGrid(room - fixed - label.size() * LINE_H - GRID_GAP);
-        int gridH = grid == null ? 0 : label.size() * LINE_H + GRID_GAP + grid.height();
+        int textH = stackHeight(boxes);
+        int fixed = textH + BUTTON_GAP + BUTTON_HEIGHT;
+        grid = fittingGrid(this.height - 2 * EDGE - fixed - BOX_GAP - label.height() - GRID_GAP);
+        if (grid != null) boxes.add(label);
+        int gridH = grid == null ? 0 : BOX_GAP + label.height() + GRID_GAP + grid.height();
         int y = Math.max(EDGE, (this.height - fixed - gridH) / 2);
 
-        lines.clear();
-        y = addLines(warning, y) + LINE_H;
+        for (AbandonTextBox box : boxes) {
+            box.place((this.width - box.width()) / 2, y);
+            y += box.height() + BOX_GAP;
+        }
+        y -= BOX_GAP;
         if (grid != null) {
-            y = addLines(label, y) + GRID_GAP;
+            y += GRID_GAP;
             grid.place((this.width - grid.width()) / 2, y);
             y += grid.height();
         }
         addButtons(y + BUTTON_GAP);
+    }
+
+    private static int stackHeight(List<AbandonTextBox> list) {
+        int h = -BOX_GAP;
+        for (AbandonTextBox b : list) h += b.height() + BOX_GAP;
+        return h;
     }
 
     /** The grid with the backpack if it fits, without it if only that fits, else none. */
@@ -124,26 +137,6 @@ public final class AbandonConfirmScreen extends Screen {
                 .bounds(x + BUTTON_WIDTH + GAP, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
-    /** {@code parts} alternates Component, colour. Lines come back with y unset (0). */
-    private List<Line> wrapAll(int wrap, Object... parts) {
-        List<Line> out = new ArrayList<>();
-        for (int i = 0; i < parts.length; i += 2) {
-            int color = (Integer) parts[i + 1];
-            for (FormattedCharSequence s : this.font.split((Component) parts[i], wrap)) {
-                out.add(new Line(s, color, 0));
-            }
-        }
-        return out;
-    }
-
-    private int addLines(List<Line> block, int y) {
-        for (Line l : block) {
-            lines.add(new Line(l.text(), l.color(), y));
-            y += LINE_H;
-        }
-        return y;
-    }
-
     /** The world behind the screen, washed red while the player hovers "Step off and die". */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
@@ -165,9 +158,9 @@ public final class AbandonConfirmScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        for (Line l : lines) g.drawCenteredString(this.font, l.text(), this.width / 2, l.y(), l.color());
+        for (AbandonTextBox box : boxes) box.render(g, this.font);
         if (grid != null) {
-            grid.render(g, this.font);
+            grid.render(g, this.font, wash * ITEM_FADE);
             grid.renderTooltip(g, this.font, mouseX, mouseY);
         }
     }
