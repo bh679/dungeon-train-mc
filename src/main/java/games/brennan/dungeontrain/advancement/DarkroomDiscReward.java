@@ -3,24 +3,22 @@ package games.brennan.dungeontrain.advancement;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import org.slf4j.Logger;
-
-import java.util.Optional;
 
 /**
  * Completing The Darkroom (Fully Developed) earns the Live Eye's music disc, Vista's
- * {@code music_disc_sojourn}. Once per player per installation ({@link OneOffRewardMarkers}): an earn
- * replayed into a new world, or a revoke and regrant, gives nothing more.
+ * {@code music_disc_sojourn}. The disc itself is the advancement's own reward, the same way Biomes
+ * O' Plenty pays its Wanderer disc: {@code rewards.loot} in {@code fully_developed.json} →
+ * {@code loot_table/advancements/fully_developed.json}. Replays into new worlds don't pay it again
+ * ({@code AdvancementRewardsReplayMixin}).
  *
- * <p>Two ways in: the earn itself ({@link #onEarned}), and login ({@link #onLogin}), which backfills
- * anyone who already held Fully Developed before this reward existed.</p>
+ * <p>This class is only the one-off backfill for players who held Fully Developed before the reward
+ * existed: on login, a holder with no record of the disc gets those same rewards once. A genuine earn
+ * records it ({@link #onEarned}), so a new earner isn't paid twice. The record lives outside the world
+ * save ({@link OneOffRewardMarkers}), so each player is backfilled once per installation.</p>
  */
 public final class DarkroomDiscReward {
 
@@ -28,44 +26,31 @@ public final class DarkroomDiscReward {
 
     static final ResourceLocation FULLY_DEVELOPED =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/fully_developed");
-    static final ResourceLocation DISC = ResourceLocation.fromNamespaceAndPath("vista", "music_disc_sojourn");
     static final String MARKER_KEY = "darkroom_disc";
 
     private DarkroomDiscReward() {}
 
-    /** From {@code AdvancementEarnEvent}: Fully Developed just earned (live or replayed). */
+    /** From {@code AdvancementEarnEvent}: a genuine earn paid the reward itself, so just record it. */
     public static void onEarned(ServerPlayer player, ResourceLocation id) {
-        if (FULLY_DEVELOPED.equals(id)) grantOnce(player);
+        if (!FULLY_DEVELOPED.equals(id) || AdvancementProfiles.isRestoringEarned()) return;
+        OneOffRewardMarkers.live().markGiven(player.getUUID(), MARKER_KEY);
     }
 
     /** From login, after the profile replay: the one-off backfill for players who already hold it. */
     public static void onLogin(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        AdvancementHolder holder = server.getAdvancements().get(FULLY_DEVELOPED);
-        if (holder != null && player.getAdvancements().getOrStartProgress(holder).isDone()) grantOnce(player);
-    }
-
-    private static void grantOnce(ServerPlayer player) {
         try {
+            MinecraftServer server = player.getServer();
+            if (server == null) return;
+            AdvancementHolder holder = server.getAdvancements().get(FULLY_DEVELOPED);
+            if (holder == null || !player.getAdvancements().getOrStartProgress(holder).isDone()) return;
             OneOffRewardMarkers markers = OneOffRewardMarkers.live();
             if (markers.isGiven(player.getUUID(), MARKER_KEY)) return;
-            Optional<Item> disc = discItem();
-            if (disc.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Darkroom disc: {} is not registered (Vista missing?), held for later", DISC);
-                return;
-            }
-            // Mark first: a failed write must not turn every login into another disc.
+            // Record first: a failed write must not turn every login into another disc.
             if (!markers.markGiven(player.getUUID(), MARKER_KEY)) return;
-            ItemStack stack = new ItemStack(disc.get());
-            if (!player.getInventory().add(stack)) player.drop(stack, false);
-            LOGGER.info("[DungeonTrain] Darkroom disc given to {}", player.getName().getString());
+            holder.value().rewards().grant(player);
+            LOGGER.info("[DungeonTrain] Darkroom disc backfilled for {}", player.getName().getString());
         } catch (RuntimeException e) {
-            LOGGER.warn("[DungeonTrain] Darkroom disc: grant failed for {}: {}", player.getName().getString(), e.toString());
+            LOGGER.warn("[DungeonTrain] Darkroom disc: backfill failed for {}: {}", player.getName().getString(), e.toString());
         }
-    }
-
-    private static Optional<Item> discItem() {
-        return BuiltInRegistries.ITEM.getOptional(DISC).filter(item -> item != Items.AIR);
     }
 }

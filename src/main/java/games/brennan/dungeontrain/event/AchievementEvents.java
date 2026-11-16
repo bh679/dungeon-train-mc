@@ -1292,7 +1292,7 @@ public final class AchievementEvents {
         // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
         // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
-        // Completing The Darkroom earns the Live Eye's music disc (once per player, replays included).
+        // Fully Developed pays its disc as an advancement reward; record the earn so login won't backfill it.
         games.brennan.dungeontrain.advancement.DarkroomDiscReward.onEarned(player, id);
         if (TabGateways.isLinked(id)) return;
         // The Live Eye streamer's earn, told to their client for the stream's Live chat (LiveMomentEvents).
