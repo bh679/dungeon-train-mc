@@ -36372,6 +36372,23 @@
       "released": true,
       "released_in": "v0.1851.0",
       "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "housetown-dimensional-room",
+      "version": "0.1852.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Another new dimensional carriage room",
+      "summary": "One more room can now turn up behind a dimensional carriage door, once you've made it a little way down the line.",
+      "highlights": [],
+      "pr": 2698,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1852.0",
+      "released_at": "2026-11-16T15:32:07Z"
     }
   ]
 }
