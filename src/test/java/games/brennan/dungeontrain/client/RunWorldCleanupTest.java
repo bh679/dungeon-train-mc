@@ -4,6 +4,10 @@ import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,5 +70,26 @@ class RunWorldCleanupTest {
         CompoundTag root = new CompoundTag();
         root.put("Data", data);
         return root;
+    }
+
+    @Test
+    @DisplayName("napped sweep picks only auto-generated worlds a nap names")
+    void nappedSelection() {
+        List<String> dirs = List.of("World 1791741323610", "World 1791741323611", "My Castle", "train editor 3");
+        Set<String> napped = Set.of("World 1791741323610", "My Castle");
+        assertEquals(List.of("World 1791741323610"), RunWorldCleanup.selectNappedWorlds(dirs, napped));
+        assertEquals(List.of(), RunWorldCleanup.selectNappedWorlds(dirs, Set.of()));
+    }
+
+    @Test
+    @DisplayName("napped delete retries a few times within a few seconds")
+    void retryDelaysBounded() {
+        long total = 0;
+        for (long d : RunWorldCleanup.RETRY_DELAYS_MS) {
+            assertTrue(d > 0);
+            total += d;
+        }
+        assertTrue(RunWorldCleanup.RETRY_DELAYS_MS.length >= 3);
+        assertTrue(total <= 5000);
     }
 }
