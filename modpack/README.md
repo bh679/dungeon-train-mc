@@ -550,6 +550,10 @@ stay in `src/main/whitelist/approved_mods.curated.json`.
   `python3 scripts/modpack/check-mod-ids.py --fill`, which reads the pinned jar.
 - After bumping a pin, run `check-mod-ids.py --verify` (CI does too) — a new version can add or
   rename a module.
+- `--verify` opens the **Modrinth** jar, so it never sees the CurseForge `file_id`. A CurseForge
+  release is often one file per Minecraft version and loader: pick the `1.21.1` + `NeoForge` one.
+  `check-cf-game-versions.py` (CI and `release-modpack.yml`) fails on any other; PlayerMob's 26.2
+  file shipped in the CurseForge packs v0.1835.0 to v0.1840.0 and none of them loaded.
 - `sha1` is the pinned jar's file hash, also written by `--fill` and checked by `--verify`. The
   hash-verified whitelist bakes it into `approved_mods.json` `hashes`, so a stock install passes the
   FILE check offline (a mod id is a line in mods.toml anyone can edit; the hash is not). Every

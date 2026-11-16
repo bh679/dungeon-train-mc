@@ -420,7 +420,9 @@ loads (Advancement Plaques needs Iceberg).
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
   `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
   sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`) +
-  `check-mod-ids.py` (`mod_ids` present, and `--verify` against the pinned jars).
+  `check-mod-ids.py` (`mod_ids` present, and `--verify` against the pinned jars) +
+  `check-cf-game-versions.py` (every CurseForge `file_id` is a 1.21.1 NeoForge file; `--verify`
+  reads the Modrinth jar, so a wrong CurseForge file slips past it).
 - **`modpack/overrides/` is allowlisted.** The tree ships verbatim to every player, so a config
   file DT holds to its defaults landing there would put the whole player base into Free Play
   (`adventureitemstats.properties` → `AisDataIntegrity`). `check-overrides.py` fails CI on any
