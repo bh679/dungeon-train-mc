@@ -2263,6 +2263,10 @@ public final class NarrativeDeathScreen extends Screen {
             int menuW = this.font.width(menu) + 16;
             leaveRect = drawChip(g, this.width - 10 - menuW, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
             reboardRect = null;
+            // "$" beside it, as on a death's last page: jumps to the Contribute page from any question.
+            Component dollar = Component.literal("$");
+            int dollarW = this.font.width(dollar) + 16;
+            dollarRect = drawChip(g, leaveRect.x() - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
             return;
         }
         // Right-aligned: [photos] [reboard] [leave]. leave on the far right. Holding
@@ -2710,6 +2714,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Nap mode: no in-flow page after this one, so Next Screen leaves (and reads Main Menu). */
     private boolean lastNapPage() {
+        // Opened from the "$" chip: Next Screen goes back to the question, so it isn't the last page.
+        if (chipReturnPage >= 0) return false;
         for (int i = currentPage + 1; i < pages.size(); i++) {
             if (!outOfFlow(pages.get(i))) return false;
         }
