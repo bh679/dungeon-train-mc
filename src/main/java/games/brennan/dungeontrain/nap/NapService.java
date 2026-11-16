@@ -64,7 +64,9 @@ public final class NapService {
         /** A natural bed's own item placed again: "tampered with". */
         MOVED,
         /** A bed the player made: "a bed of your making". */
-        MADE
+        MADE,
+        /** Another player (a LAN guest who left) is saved in this world; a nap would delete them with it. */
+        GUESTS
     }
 
     /** Ask {@code player} about a nap at the bed or anchor at {@code spot}, if it and the run allow one. */
@@ -77,6 +79,7 @@ public final class NapService {
             default -> { }
         }
         if (NapEligibility.monstersNearby(player, spot)) return Outcome.MONSTERS;
+        if (NapGuests.othersSaved(player.getServer(), player.getUUID())) return Outcome.GUESTS;
         OFFERS.put(player.getUUID(), new Offer(spot.immutable(), night));
         LOGGER.info("[DungeonTrain] Nap offered to {} ({}) at {}", player.getName().getString(),
             night ? "night" : "day", spot);
@@ -84,11 +87,12 @@ public final class NapService {
         return Outcome.OFFERED;
     }
 
-    /** The action-bar line for a tampered bed, or null for any other outcome. */
+    /** The action-bar line for a tampered bed or a world holding another player, or null for any other outcome. */
     public static Component tamperedMessage(Outcome outcome) {
         return switch (outcome) {
             case MOVED -> Component.translatable("chat.dungeontrain.nap.tampered.moved");
             case MADE -> Component.translatable("chat.dungeontrain.nap.tampered.made");
+            case GUESTS -> Component.translatable("chat.dungeontrain.nap.guests");
             default -> null;
         };
     }
@@ -111,6 +115,10 @@ public final class NapService {
         String levelId = levelIdOf(player.getServer());
         if (levelId == null || !NapEligibility.canNap(player, offer.bedPos())) {
             refuse(player, "no longer eligible");
+            return;
+        }
+        if (NapGuests.othersSaved(player.getServer(), player.getUUID())) {
+            refuse(player, "another player is saved in this world");
             return;
         }
         NapSnapshot nap = capture(player, levelId, offer.bedPos());

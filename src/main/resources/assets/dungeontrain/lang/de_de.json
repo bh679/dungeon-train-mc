@@ -633,6 +633,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Aus einem Lauf im Freien Spiel aufgewacht",
   "chat.dungeontrain.nap.tampered.moved": "Der Zug erkennt dieses Bett nicht, jemand hat daran herumgepfuscht.",
   "chat.dungeontrain.nap.tampered.made": "Der Zug unterscheidet ein Bett aus deiner Hand von einem seiner eigenen, das funktioniert hier nicht.",
+  "chat.dungeontrain.nap.guests": "In dieser Welt sind die Sachen eines anderen Spielers gespeichert. Hier gibt es kein Nickerchen.",
   "chat.dungeontrain.nap.failed": "Die Ruhe entgleitet dir. Dein Lauf geht weiter.",
   "disconnect.dungeontrain.nap.world_napped": "Du hast in dieser Welt ein Nickerchen gemacht, also lebt dein Lauf im Nickerchen weiter. Starte eine neue Welt, um aufzuwachen.",
   "chat.dungeontrain.nap.not_woken": "Deine Rast hat nicht gehalten. Das ist ein neuer Lauf.",

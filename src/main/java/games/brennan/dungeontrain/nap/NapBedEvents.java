@@ -164,6 +164,7 @@ public final class NapBedEvents {
         if (outcome == NapService.Outcome.MONSTERS) {
             player.displayClientMessage(Component.translatable("block.minecraft.bed.not_safe"), true);
         }
+        if (outcome == NapService.Outcome.GUESTS) player.displayClientMessage(NapService.tamperedMessage(outcome), true);
         return outcome == NapService.Outcome.OFFERED ? InteractionResult.SUCCESS : InteractionResult.FAIL;
     }
 
@@ -203,7 +204,7 @@ public final class NapBedEvents {
         switch (outcome) {
             case OFFERED -> event.setProblem(Player.BedSleepingProblem.OTHER_PROBLEM);
             case MONSTERS -> event.setProblem(Player.BedSleepingProblem.NOT_SAFE);
-            case MOVED, MADE -> {
+            case MOVED, MADE, GUESTS -> {
                 event.setProblem(Player.BedSleepingProblem.OTHER_PROBLEM);
                 player.displayClientMessage(NapService.tamperedMessage(outcome), true);
             }

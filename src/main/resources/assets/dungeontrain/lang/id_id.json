@@ -610,6 +610,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Terbangun dari permainan Main Bebas",
   "chat.dungeontrain.nap.tampered.moved": "Kereta tidak mengenali ranjang ini, ranjang ini sudah diutak-atik.",
   "chat.dungeontrain.nap.tampered.made": "Kereta bisa membedakan ranjang buatanmu dari miliknya sendiri, ini tidak akan berhasil di sini.",
+  "chat.dungeontrain.nap.guests": "Barang pemain lain tersimpan di dunia ini. Tidak bisa tidur siang di sini.",
   "chat.dungeontrain.nap.failed": "Istirahatnya lepas. Permainanmu berlanjut.",
   "disconnect.dungeontrain.nap.world_napped": "Kamu tidur siang di dunia ini, jadi perjalananmu berlanjut di tidur itu. Mulai Dunia Baru untuk bangun.",
   "chat.dungeontrain.nap.not_woken": "Istirahatmu tidak terbawa. Ini permainan baru.",

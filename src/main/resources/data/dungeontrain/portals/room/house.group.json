@@ -1,10 +1,10 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 4,
   "variants": [
     {
       "id": "evilhouse",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 17,
       "phases": [
         "OVERWORLD",
@@ -28,12 +28,12 @@
     },
     {
       "id": "medievalhouse",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 12
     },
     {
       "id": "end",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 7,
       "phases": [
         "OVERWORLD",
@@ -56,78 +56,73 @@
     },
     {
       "id": "cvspharmacy",
-      "weight": 1,
-      "minLevel": 65
+      "weight": 2,
+      "minLevel": 100
     },
     {
       "id": "abandonedroom",
-      "weight": 1
+      "weight": 4
     },
     {
       "id": "sanemaze",
       "weight": 1,
-      "minLevel": 35,
-      "maxLevel": 41
+      "minLevel": 80
     },
     {
       "id": "upsidedown",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 15
     },
     {
       "id": "randomized",
       "weight": 1,
-      "minLevel": 70
+      "minLevel": 150
     },
     {
       "id": "miniword",
-      "weight": 1,
+      "weight": 5,
       "minLevel": 12
     },
     {
       "id": "deserter",
-      "weight": 1,
-      "maxLevel": 10
+      "weight": 2
     },
     {
       "id": "man",
-      "weight": 1,
-      "minLevel": 7,
-      "maxLevel": 17
+      "weight": 2,
+      "minLevel": 7
     },
     {
       "id": "terrarium",
-      "weight": 1,
+      "weight": 8,
       "minLevel": 11
     },
     {
       "id": "suspiciousfurniturestore",
-      "weight": 1,
-      "minLevel": 66,
-      "maxLevel": 108
+      "weight": 4,
+      "minLevel": 66
     },
     {
       "id": "peateargriffin",
       "weight": 1,
-      "minLevel": 31,
-      "maxLevel": 34
+      "minLevel": 31
     },
     {
       "id": "foundation",
-      "weight": 1,
-      "minLevel": 18
+      "weight": 4,
+      "minLevel": 110
     },
     {
       "id": "chess",
-      "weight": 1
+      "weight": 4
     },
     {
       "id": "nostalgia",
-      "weight": 1
+      "weight": 4
     },
     {
       "id": "squidwardshouse_2",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 30,
       "phases": [
         "OVERWORLD",
@@ -151,21 +146,21 @@
     },
     {
       "id": "bearcave",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 16
     },
     {
       "id": "gravityfalls",
-      "weight": 1,
-      "minLevel": 27
+      "weight": 4,
+      "minLevel": 40
     },
     {
       "id": "dreamcore",
-      "weight": 1
+      "weight": 4
     },
     {
       "id": "kfc",
-      "weight": 1,
+      "weight": 4,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -183,23 +178,37 @@
     },
     {
       "id": "safehaven",
-      "weight": 1,
+      "weight": 4,
       "maxLevel": 9
     },
     {
       "id": "grandisolagenerator",
       "weight": 1,
-      "minLevel": 19,
-      "maxLevel": 35
+      "minLevel": 150
     },
     {
       "id": "lowkeyabridge",
-      "weight": 1
+      "weight": 4
     },
     {
       "id": "outsidethebox",
-      "weight": 3,
+      "weight": 12,
       "minLevel": 15
+    },
+    {
+      "id": "staircase",
+      "weight": 4,
+      "minLevel": 100
+    },
+    {
+      "id": "onionman",
+      "weight": 1,
+      "minLevel": 30
+    },
+    {
+      "id": "nnout",
+      "weight": 2,
+      "minLevel": 10
     }
   ]
 }
