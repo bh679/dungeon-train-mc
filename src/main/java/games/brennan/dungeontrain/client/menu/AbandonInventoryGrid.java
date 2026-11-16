@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.ediblebackpacks.menu.BackpackLayout;
 import games.brennan.ediblebackpacks.registry.ModAttachments;
 import games.brennan.ediblebackpacks.storage.BackpackData;
+import games.brennan.tradeeverything.api.TradeEverythingApi;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,206 +15,168 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
- * Everything the player is carrying, drawn read-only for {@link AbandonConfirmScreen}: armour down
- * the left (head to feet) with the offhand under it, the 27 main slots, the hotbar below them, and
- * any unlocked Edible Backpack slots in grey side panels laid out exactly as the inventory screen
- * lays them out ({@link BackpackLayout}: 9-tall columns, the left panel filling outward first,
- * slot 54 onwards on the right).
+ * What the player would lose, for {@link AbandonConfirmScreen}: every stack they carry (armour,
+ * offhand, inventory and unlocked Edible Backpack slots), empty slots left out, most valuable
+ * first. Worth is Trade Everything's price for one item ({@link TradeEverythingApi}, which
+ * carries DT's own providers: gear stats, enchantments, totems, the community values) times the
+ * stack size; stacks it can't price follow, biggest first, and ties keep inventory order. Prices
+ * TE derives from recipes are indexed on the server, so in singleplayer they count and on a
+ * multiplayer client the order rests on the fixed prices alone.
  *
- * <p>Positions are fixed when the grid is built; the stacks are read live every frame, so the
- * grid never shows a stale copy.</p>
+ * <p>Laid out in rows of a fixed width. When the rows the screen can spare can't hold them all,
+ * the last slot reads "+N" for the rest.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class AbandonInventoryGrid {
 
-    static final int SLOT = BackpackLayout.SLOT;
-    private static final int ARMOR_GAP = 4;
-    private static final int HOTBAR_GAP = 4;
-    private static final int PANEL_GAP = BackpackLayout.GAP;
-    private static final int BORDER = BackpackLayout.BORDER;
+    static final int SLOT = 18;
 
-    /** The player's own grid: armour column + 9 wide. */
-    private static final int CORE_W = SLOT + ARMOR_GAP + 9 * SLOT;
-    /** Armour (4) + gap + offhand. Taller than main (3) + gap + hotbar. */
-    private static final int CORE_H = 4 * SLOT + HOTBAR_GAP + SLOT;
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static boolean warned;
 
     private static final int SLOT_BG = 0xFF8B8B8B;
     private static final int SLOT_DARK = 0xFF373737;
     private static final int SLOT_LIGHT = 0xFFFFFFFF;
-    private static final int PANEL_FACE = 0xFFC6C6C6;
-    private static final int PANEL_SHADE = 0xFF555555;
     private static final float VEIL_Z = 300F;
+    private static final float TEXT_Z = 200F;
 
-    /** {@code index} is an {@link Inventory} slot, or a backpack slot when {@code backpack}. */
-    private record Cell(int x, int y, boolean backpack, int index) {}
+    private final List<ItemStack> stacks;
+    private int cols = 1;
+    private int shown;
+    private int x;
+    private int y;
 
-    private record Panel(int x, int y, int w, int h) {}
-
-    private final Player player;
-    private final int unlocked;
-    private final List<Cell> cells = new ArrayList<>();
-    private final List<Panel> panels = new ArrayList<>();
-    private final int leftW;
-    private final int rightW;
-    private final int height;
-
-    private AbandonInventoryGrid(Player player, int unlocked) {
-        this.player = player;
-        this.unlocked = unlocked;
-        int left = BackpackLayout.unlockedOnPanel(unlocked, false);
-        int right = BackpackLayout.unlockedOnPanel(unlocked, true);
-        this.leftW = panelWidth(left);
-        this.rightW = panelWidth(right);
-        this.height = Math.max(CORE_H, Math.max(panelHeight(left), panelHeight(right)));
+    private AbandonInventoryGrid(List<ItemStack> stacks) {
+        this.stacks = stacks;
+        this.shown = stacks.size();
     }
 
-    /**
-     * @param withBackpack false leaves the backpack out (used when the screen is too short for it)
-     * @return null with no player to read from
-     */
-    static AbandonInventoryGrid of(Player player, boolean withBackpack) {
+    /** @return null when the player carries nothing (or there is no player) */
+    static AbandonInventoryGrid of(Player player) {
         if (player == null) return null;
-        return new AbandonInventoryGrid(player, withBackpack ? unlockedSlots(player) : 0);
+        List<ItemStack> all = carried(player);
+        if (all.isEmpty()) return null;
+        all.sort(Comparator.comparingLong(AbandonInventoryGrid::worth).reversed()
+                .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed()));
+        return new AbandonInventoryGrid(all);
     }
 
-    int width() { return leftW + CORE_W + rightW; }
-
-    int height() { return height; }
-
-    /** Fix every slot's screen position, the grid's top-left at ({@code x}, {@code y}). */
-    void place(int x, int y) {
-        cells.clear();
-        panels.clear();
-        int coreX = x + leftW;
-        int coreY = y + (height - CORE_H) / 2;
-        placeCore(coreX, coreY);
-        placeBackpack(coreX, y);
-    }
-
-    private void placeCore(int x, int y) {
-        for (int i = 0; i < 4; i++) {
-            cells.add(new Cell(x, y + i * SLOT, false, Inventory.INVENTORY_SIZE + 3 - i)); // head first
+    private static List<ItemStack> carried(Player player) {
+        List<ItemStack> out = new ArrayList<>();
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty()) out.add(s);
         }
-        cells.add(new Cell(x, y + 4 * SLOT + HOTBAR_GAP, false, Inventory.SLOT_OFFHAND));
-        int mainX = x + SLOT + ARMOR_GAP;
-        for (int i = 9; i < Inventory.INVENTORY_SIZE; i++) {
-            int row = (i - 9) / 9;
-            cells.add(new Cell(mainX + (i % 9) * SLOT, y + row * SLOT, false, i));
-        }
-        int hotY = y + 3 * SLOT + HOTBAR_GAP;
-        for (int i = 0; i < 9; i++) cells.add(new Cell(mainX + i * SLOT, hotY, false, i));
-    }
-
-    private void placeBackpack(int coreX, int top) {
-        if (unlocked <= 0) return;
-        int left = BackpackLayout.unlockedOnPanel(unlocked, false);
-        int right = BackpackLayout.unlockedOnPanel(unlocked, true);
-        int coreRight = coreX + CORE_W;
-        int leftTop = top + (height - panelHeight(left)) / 2;
-        int rightTop = top + (height - panelHeight(right)) / 2;
-        if (left > 0) {
-            int w = panelWidth(left) - PANEL_GAP;
-            panels.add(new Panel(coreX - PANEL_GAP - w, leftTop, w, panelHeight(left)));
-        }
-        if (right > 0) {
-            panels.add(new Panel(coreRight + PANEL_GAP, rightTop, panelWidth(right) - PANEL_GAP, panelHeight(right)));
-        }
+        BackpackData pack = player.getData(ModAttachments.BACKPACK);
+        ItemStackHandler items = pack.items();
+        int unlocked = Math.max(0, Math.min(pack.unlocked(), items.getSlots()));
         for (int i = 0; i < unlocked; i++) {
-            int col = BackpackLayout.columnOf(i);
-            int row = BackpackLayout.rowOf(i);
-            boolean onRight = BackpackLayout.isRightPanel(i);
-            int x = onRight
-                    ? coreRight + PANEL_GAP + BORDER + col * SLOT
-                    : coreX - PANEL_GAP - BORDER - SLOT - col * SLOT;
-            int y = (onRight ? rightTop : leftTop) + BORDER + row * SLOT;
-            cells.add(new Cell(x, y, true, i));
+            ItemStack s = items.getStackInSlot(i);
+            if (!s.isEmpty()) out.add(s);
+        }
+        return out;
+    }
+
+    /** Price of one × count; -1 for an item with no price, so it sorts after every priced one. */
+    private static long worth(ItemStack stack) {
+        try {
+            int each = TradeEverythingApi.getValueSixteenths(stack.copyWithCount(1));
+            return each > 0 ? (long) each * stack.getCount() : -1L;
+        } catch (RuntimeException e) {
+            if (!warned) {
+                warned = true;
+                LOGGER.warn("[abandon] could not price {} for sorting; unpriced items sort by count", stack, e);
+            }
+            return -1L;
         }
     }
 
-    /**
-     * @param fade 0 draws the items as normal; towards 1 they sink into their slots (the slots
-     *             themselves stay solid), done by veiling each filled slot's face in its own colour
-     *             above the item and its count
-     */
+    /** Rows of {@code columns}, at most {@code maxRows}; returns false if not even one row fits. */
+    boolean layout(int columns, int maxRows) {
+        if (columns < 1 || maxRows < 1) return false;
+        this.cols = Math.min(columns, stacks.size());
+        this.shown = Math.min(stacks.size(), cols * maxRows);
+        return true;
+    }
+
+    int width() { return cols * SLOT; }
+
+    int height() { return ((shown + cols - 1) / cols) * SLOT; }
+
+    void place(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    private boolean overflowing() { return shown < stacks.size(); }
+
+    private int slotX(int i) { return x + (i % cols) * SLOT; }
+
+    private int slotY(int i) { return y + (i / cols) * SLOT; }
+
+    /** @param fade 0 normal; towards 1 the items sink into their slots, which stay solid */
     void render(GuiGraphics g, Font font, float fade) {
-        for (Panel p : panels) drawPanel(g, p);
         int veil = Math.round(Math.max(0F, Math.min(1F, fade)) * 255F);
-        for (Cell c : cells) {
-            drawSlot(g, c.x(), c.y());
-            ItemStack stack = stackAt(c);
-            if (stack.isEmpty()) continue;
-            g.renderItem(stack, c.x() + 1, c.y() + 1);
-            g.renderItemDecorations(font, stack, c.x() + 1, c.y() + 1);
-            if (veil > 0) veilSlot(g, c, veil);
+        for (int i = 0; i < shown; i++) {
+            int sx = slotX(i);
+            int sy = slotY(i);
+            drawSlot(g, sx, sy);
+            if (overflowing() && i == shown - 1) {
+                drawMore(g, font, sx, sy, stacks.size() - shown + 1);
+                continue;
+            }
+            ItemStack stack = stacks.get(i);
+            g.renderItem(stack, sx + 1, sy + 1);
+            g.renderItemDecorations(font, stack, sx + 1, sy + 1);
+            if (veil > 0) veilSlot(g, sx, sy, veil);
         }
     }
 
-    /** Above items (z 150) and their counts (z 200), so the slot face shows through them. */
-    private static void veilSlot(GuiGraphics g, Cell c, int alpha) {
+    private static void drawMore(GuiGraphics g, Font font, int sx, int sy, int more) {
+        String label = "+" + more;
         g.pose().pushPose();
-        g.pose().translate(0, 0, VEIL_Z);
-        g.fill(c.x() + 1, c.y() + 1, c.x() + SLOT - 1, c.y() + SLOT - 1, (alpha << 24) | (SLOT_BG & 0xFFFFFF));
-        // The count's shadow spills onto the bevel; repaint the edges over it, faded in step.
-        int dark = (alpha << 24) | (SLOT_DARK & 0xFFFFFF);
-        int light = (alpha << 24) | (SLOT_LIGHT & 0xFFFFFF);
-        g.fill(c.x(), c.y(), c.x() + SLOT, c.y() + 1, dark);
-        g.fill(c.x(), c.y(), c.x() + 1, c.y() + SLOT, dark);
-        g.fill(c.x(), c.y() + SLOT - 1, c.x() + SLOT, c.y() + SLOT, light);
-        g.fill(c.x() + SLOT - 1, c.y(), c.x() + SLOT, c.y() + SLOT, light);
+        g.pose().translate(0, 0, TEXT_Z);
+        g.drawString(font, label, sx + (SLOT - font.width(label)) / 2, sy + 5, 0xFFFFFF);
         g.pose().popPose();
     }
 
-    /** The vanilla item tooltip for the slot under the mouse, if it holds anything. */
+    /** The vanilla item tooltip for the slot under the mouse. */
     void renderTooltip(GuiGraphics g, Font font, int mouseX, int mouseY) {
-        for (Cell c : cells) {
-            if (mouseX < c.x() || mouseY < c.y() || mouseX >= c.x() + SLOT || mouseY >= c.y() + SLOT) continue;
-            ItemStack stack = stackAt(c);
-            if (!stack.isEmpty()) g.renderTooltip(font, stack, mouseX, mouseY);
-            return;
+        for (int i = 0; i < shown; i++) {
+            if (overflowing() && i == shown - 1) continue;
+            int sx = slotX(i);
+            int sy = slotY(i);
+            if (mouseX >= sx && mouseY >= sy && mouseX < sx + SLOT && mouseY < sy + SLOT) {
+                g.renderTooltip(font, stacks.get(i), mouseX, mouseY);
+                return;
+            }
         }
     }
 
-    private ItemStack stackAt(Cell c) {
-        if (!c.backpack()) return player.getInventory().getItem(c.index());
-        ItemStackHandler items = backpack(player).items();
-        return c.index() < items.getSlots() ? items.getStackInSlot(c.index()) : ItemStack.EMPTY;
+    /** Above the item (z 150) and its count (z 200): the slot face, then its bevel, faded in step. */
+    private static void veilSlot(GuiGraphics g, int sx, int sy, int alpha) {
+        g.pose().pushPose();
+        g.pose().translate(0, 0, VEIL_Z);
+        g.fill(sx + 1, sy + 1, sx + SLOT - 1, sy + SLOT - 1, (alpha << 24) | (SLOT_BG & 0xFFFFFF));
+        int dark = (alpha << 24) | (SLOT_DARK & 0xFFFFFF);
+        int light = (alpha << 24) | (SLOT_LIGHT & 0xFFFFFF);
+        g.fill(sx, sy, sx + SLOT, sy + 1, dark);
+        g.fill(sx, sy, sx + 1, sy + SLOT, dark);
+        g.fill(sx, sy + SLOT - 1, sx + SLOT, sy + SLOT, light);
+        g.fill(sx + SLOT - 1, sy, sx + SLOT, sy + SLOT, light);
+        g.pose().popPose();
     }
 
-    private static BackpackData backpack(Player player) {
-        return player.getData(ModAttachments.BACKPACK);
-    }
-
-    private static int unlockedSlots(Player player) {
-        BackpackData data = backpack(player);
-        return Math.max(0, Math.min(data.unlocked(), data.items().getSlots()));
-    }
-
-    /** Panel plus the gap that separates it from the player's grid; 0 for an empty panel. */
-    private static int panelWidth(int slots) {
-        return slots <= 0 ? 0 : PANEL_GAP + BackpackLayout.columnsFor(slots) * SLOT + 2 * BORDER;
-    }
-
-    private static int panelHeight(int slots) {
-        return slots <= 0 ? 0 : Math.min(BackpackLayout.ROWS, slots) * SLOT + 2 * BORDER;
-    }
-
-    private static void drawPanel(GuiGraphics g, Panel p) {
-        g.fill(p.x(), p.y(), p.x() + p.w(), p.y() + p.h(), 0xFF000000);
-        g.fill(p.x() + 1, p.y() + 1, p.x() + p.w() - 1, p.y() + p.h() - 1, PANEL_FACE);
-        g.fill(p.x() + 1, p.y() + 1, p.x() + p.w() - 2, p.y() + 2, SLOT_LIGHT);
-        g.fill(p.x() + 1, p.y() + 1, p.x() + 2, p.y() + p.h() - 2, SLOT_LIGHT);
-        g.fill(p.x() + 2, p.y() + p.h() - 2, p.x() + p.w() - 1, p.y() + p.h() - 1, PANEL_SHADE);
-        g.fill(p.x() + p.w() - 2, p.y() + 2, p.x() + p.w() - 1, p.y() + p.h() - 1, PANEL_SHADE);
-    }
-
-    private static void drawSlot(GuiGraphics g, int x, int y) {
-        g.fill(x, y, x + SLOT, y + SLOT, SLOT_BG);
-        g.fill(x, y, x + SLOT, y + 1, SLOT_DARK);
-        g.fill(x, y, x + 1, y + SLOT, SLOT_DARK);
-        g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, SLOT_LIGHT);
-        g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, SLOT_LIGHT);
+    private static void drawSlot(GuiGraphics g, int sx, int sy) {
+        g.fill(sx, sy, sx + SLOT, sy + SLOT, SLOT_BG);
+        g.fill(sx, sy, sx + SLOT, sy + 1, SLOT_DARK);
+        g.fill(sx, sy, sx + 1, sy + SLOT, SLOT_DARK);
+        g.fill(sx, sy + SLOT - 1, sx + SLOT, sy + SLOT, SLOT_LIGHT);
+        g.fill(sx + SLOT - 1, sy, sx + SLOT, sy + SLOT, SLOT_LIGHT);
     }
 }

@@ -11,59 +11,62 @@ import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * "Abandon this run?" — the step between the pause menu's red Abandon button and the kill it sends.
+ * "Step off the train?" — the step between the pause menu's red Abandon button and the kill it sends.
  *
  * <p>The button says <i>abandon</i>, which reads like leaving; what actually happens is that the
- * character dies and the run is over. One misclick used to be enough. So the screen spells out the
- * part the label doesn't: <b>you will die</b>. It then
- * points at the way to stop without dying (a bed the train placed saves the run and quits), and
- * shows everything the player is carrying, backpack included, so they see what they'd be giving
- * up and are reminded the Ender Chest keeps things for next time. Each block of text sits in its own
- * dark box (bed and Ender Chest icons beside their lines) so it reads over any world.</p>
+ * character dies and the run is over. One misclick used to be enough. So the screen lays the two
+ * ways out side by side, as two cards of equal height with their buttons on one line:</p>
+ * <ul>
+ *   <li><b>left, gold</b> — the way to stop without dying: a naturally spawning bed saves and
+ *       quits; or put things in an Ender Chest to keep them for the next life (that line only when
+ *       there is something to keep). Its button, <i>Stay aboard</i>, changes nothing.</li>
+ *   <li><b>right, red</b> — stepping off is fatal, and the stacks the player would lose, most
+ *       valuable first ({@link AbandonInventoryGrid}). Its button is the death.</li>
+ * </ul>
  *
- * <p>One centred row of two buttons — the destructive one on the left, the way out on its right,
- * the order vanilla's own confirm screens use — and Escape falling back to the option that changes
- * nothing. Hovering the destructive button washes the whole screen red, so the choice reads as the
- * death it is, and the carried items fade nearly away. What "continue" means is the caller's: {@code proceed} runs only once the player has
- * said yes. On a screen too short for it all, the backpack goes first, then the whole grid; the
- * buttons always fit.</p>
+ * <p>Hovering <i>Step off and die</i> washes the screen red and fades the carried items nearly
+ * away. Escape falls back to the pause menu. On a screen too narrow for two cards they stack, the
+ * gold one first. What "continue" means is the caller's: {@code proceed} runs only once the
+ * player has said yes.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class AbandonConfirmScreen extends Screen {
 
-    private static final int BUTTON_WIDTH = 150;
-    private static final int BUTTON_HEIGHT = 20;
-    private static final int GAP = 8;
-    private static final int TEXT_MARGIN = 20;
-    private static final int GRID_GAP = 6;
-    private static final int BUTTON_GAP = 10;
+    private static final int TEXT_MARGIN = 16;
+    private static final int CARD_GAP = 8;
+    private static final int MIN_CARD_W = 150;
+    private static final int MAX_CARD_W = 210;
+    private static final int MAX_STACKED_W = 320;
+    private static final int GRID_COLS = 8;
+    private static final int TITLE_GAP = 6;
     private static final int EDGE = 4;
 
     private static final int WHITE = 0xFFFFFF;
     private static final int RED = 0xFF6060;
     private static final int GREY = 0xA0A0A0;
+    private static final int LIGHT = 0xE0E0E0;
     private static final int GOLD = 0xFFD860;
+    private static final int GOLD_BORDER = 0xC0FFD860;
+    private static final int RED_BORDER = 0xC0FF6060;
 
     /** Red wash over the world at full hover, and how long it takes to fade in or out. */
     private static final int WASH_RGB = 0xB00000;
     private static final int WASH_MAX_ALPHA = 0x90;
     private static final float WASH_FADE_MS = 400F;
-    /** How far the carried items fade out at full wash: 95% gone, so you see what you are giving up. */
+    /** How far the carried items fade out at full wash: 95% gone. */
     private static final float ITEM_FADE = 0.95F;
-    private static final int BOX_GAP = 4;
 
-    private static final Component LINE_1 = Component.translatable("gui.dungeontrain.abandon_confirm.line1");
-    private static final Component BED_HINT = Component.translatable("gui.dungeontrain.abandon_confirm.bed_hint");
-    private static final Component INVENTORY = Component.translatable("gui.dungeontrain.abandon_confirm.inventory");
+    private static final Component SAVE_TITLE = Component.translatable("gui.dungeontrain.abandon_confirm.save_title");
+    private static final Component SAVE_BODY = Component.translatable("gui.dungeontrain.abandon_confirm.save_body");
+    private static final Component ENDER_CHEST = Component.translatable("gui.dungeontrain.abandon_confirm.ender_chest");
+    private static final Component FATAL = Component.translatable("gui.dungeontrain.abandon_confirm.fatal");
 
     private final Screen lastScreen;
     private final Runnable proceed;
-    private final List<AbandonTextBox> boxes = new ArrayList<>();
-    private AbandonInventoryGrid grid;
+    private AbandonTextBox titleBox;
+    private AbandonCard keep;
+    private AbandonCard fatal;
     private Button stepOff;
     private float wash;
     private long lastWashMs = -1;
@@ -80,61 +83,60 @@ public final class AbandonConfirmScreen extends Screen {
 
     @Override
     protected void init() {
-        int maxW = Math.max(120, this.width - 2 * TEXT_MARGIN);
-        boxes.clear();
-        boxes.add(AbandonTextBox.of(this.font, maxW, ItemStack.EMPTY, this.title, WHITE, LINE_1, RED));
-        boxes.add(AbandonTextBox.of(this.font, maxW, new ItemStack(Items.RED_BED), BED_HINT, GOLD));
-        AbandonTextBox label = AbandonTextBox.of(this.font, maxW, new ItemStack(Items.ENDER_CHEST), INVENTORY, GREY);
+        int room = this.width - 2 * TEXT_MARGIN;
+        boolean stacked = (room - CARD_GAP) / 2 < MIN_CARD_W;
+        int cardW = stacked ? Math.min(MAX_STACKED_W, room) : Math.min(MAX_CARD_W, (room - CARD_GAP) / 2);
 
-        int textH = stackHeight(boxes);
-        int fixed = textH + BUTTON_GAP + BUTTON_HEIGHT;
-        grid = fittingGrid(this.height - 2 * EDGE - fixed - BOX_GAP - label.height() - GRID_GAP);
-        if (grid != null) boxes.add(label);
-        int gridH = grid == null ? 0 : BOX_GAP + label.height() + GRID_GAP + grid.height();
-        int y = Math.max(EDGE, (this.height - fixed - gridH) / 2);
+        AbandonInventoryGrid grid = AbandonInventoryGrid.of(Minecraft.getInstance().player);
+        titleBox = AbandonTextBox.of(this.font, room, ItemStack.EMPTY, this.title, WHITE);
+        keep = new AbandonCard(this.font, cardW, GOLD_BORDER)
+                .text(new ItemStack(Items.RED_BED), SAVE_TITLE, GOLD)
+                .text(ItemStack.EMPTY, SAVE_BODY, LIGHT);
+        if (grid != null) keep.text(new ItemStack(Items.ENDER_CHEST), ENDER_CHEST, GREY);
+        fatal = new AbandonCard(this.font, cardW, RED_BORDER).text(ItemStack.EMPTY, FATAL, RED);
 
-        for (AbandonTextBox box : boxes) {
-            box.place((this.width - box.width()) / 2, y);
-            y += box.height() + BOX_GAP;
+        int above = titleBox.height() + TITLE_GAP + (stacked ? keep.naturalHeight() + CARD_GAP : 0);
+        int rowsRoom = this.height - 2 * EDGE - above - fatal.baseHeight() - AbandonCard.GAP;
+        int cols = Math.min(GRID_COLS, fatal.innerWidth() / AbandonInventoryGrid.SLOT);
+        if (grid != null && grid.layout(cols, rowsRoom / AbandonInventoryGrid.SLOT)) fatal.grid(grid);
+
+        layoutCards(stacked, cardW);
+    }
+
+    private void layoutCards(boolean stacked, int cardW) {
+        int keepH = keep.naturalHeight();
+        int fatalH = fatal.naturalHeight();
+        if (!stacked) keepH = fatalH = Math.max(keepH, fatalH);
+        int cardsH = stacked ? keepH + CARD_GAP + fatalH : keepH;
+        int y = Math.max(EDGE, (this.height - titleBox.height() - TITLE_GAP - cardsH) / 2);
+
+        titleBox.place((this.width - titleBox.width()) / 2, y);
+        y += titleBox.height() + TITLE_GAP;
+        if (stacked) {
+            int x = (this.width - cardW) / 2;
+            keep.place(x, y, keepH);
+            fatal.place(x, y + keepH + CARD_GAP, fatalH);
+        } else {
+            int x = (this.width - (2 * cardW + CARD_GAP)) / 2;
+            keep.place(x, y, keepH);
+            fatal.place(x + cardW + CARD_GAP, y, fatalH);
         }
-        y -= BOX_GAP;
-        if (grid != null) {
-            y += GRID_GAP;
-            grid.place((this.width - grid.width()) / 2, y);
-            y += grid.height();
-        }
-        addButtons(y + BUTTON_GAP);
+        addButtons(cardW);
     }
 
-    private static int stackHeight(List<AbandonTextBox> list) {
-        int h = -BOX_GAP;
-        for (AbandonTextBox b : list) h += b.height() + BOX_GAP;
-        return h;
-    }
-
-    /** The grid with the backpack if it fits, without it if only that fits, else none. */
-    private AbandonInventoryGrid fittingGrid(int maxHeight) {
-        var player = Minecraft.getInstance().player;
-        AbandonInventoryGrid full = AbandonInventoryGrid.of(player, true);
-        if (full != null && full.height() <= maxHeight && full.width() <= this.width - 2 * EDGE) return full;
-        AbandonInventoryGrid bare = AbandonInventoryGrid.of(player, false);
-        if (bare != null && bare.height() <= maxHeight && bare.width() <= this.width - 2 * EDGE) return bare;
-        return null;
-    }
-
-    private void addButtons(int y) {
-        int x = (this.width - (BUTTON_WIDTH * 2 + GAP)) / 2;
-
-        // The same red the Abandon button carries on the pause menu — the colour is the warning.
-        stepOff = this.addRenderableWidget(new ColorTintedButton(x, y, BUTTON_WIDTH, BUTTON_HEIGHT,
-                Component.translatable("gui.dungeontrain.abandon_confirm.yes"),
-                1.0F, 0.30F, 0.30F,
-                b -> proceedNow()));
-
+    private void addButtons(int cardW) {
+        int w = cardW - 2 * AbandonCard.PAD;
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.dungeontrain.abandon_confirm.back"),
                         b -> this.onClose())
-                .bounds(x + BUTTON_WIDTH + GAP, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+                .bounds(keep.x() + AbandonCard.PAD, keep.buttonY(), w, AbandonCard.BUTTON_H).build());
+
+        // The same red the Abandon button carries on the pause menu — the colour is the warning.
+        stepOff = this.addRenderableWidget(new ColorTintedButton(
+                fatal.x() + AbandonCard.PAD, fatal.buttonY(), w, AbandonCard.BUTTON_H,
+                Component.translatable("gui.dungeontrain.abandon_confirm.yes"),
+                1.0F, 0.30F, 0.30F,
+                b -> proceedNow()));
     }
 
     /** The world behind the screen, washed red while the player hovers "Step off and die". */
@@ -144,6 +146,10 @@ public final class AbandonConfirmScreen extends Screen {
         updateWash();
         int alpha = Math.round(wash * WASH_MAX_ALPHA);
         if (alpha > 0) g.fill(0, 0, this.width, this.height, (alpha << 24) | WASH_RGB);
+        // Cards go under the buttons, which super.render draws next.
+        titleBox.render(g, this.font);
+        keep.render(g, 0F);
+        fatal.render(g, wash * ITEM_FADE);
     }
 
     /** Eases {@link #wash} toward 1 while the step-off button is hovered, back to 0 otherwise. */
@@ -158,14 +164,10 @@ public final class AbandonConfirmScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        for (AbandonTextBox box : boxes) box.render(g, this.font);
-        if (grid != null) {
-            grid.render(g, this.font, wash * ITEM_FADE);
-            grid.renderTooltip(g, this.font, mouseX, mouseY);
-        }
+        fatal.renderTooltip(g, mouseX, mouseY);
     }
 
-    /** Escape and Go back land in the same place: the pause menu, run untouched. */
+    /** Escape and Stay aboard land in the same place: the pause menu, run untouched. */
     @Override
     public void onClose() {
         Minecraft.getInstance().setScreen(lastScreen);
