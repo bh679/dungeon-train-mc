@@ -12,12 +12,15 @@ import java.util.Locale;
  * only light the hall, a doorway that belongs to the arrival room and would be a wall of doors
  * repeated down it.</p>
  *
- * <h2>Excluded means untouched, not empty</h2>
- * <p>Where a cell does not apply, the variant pass simply skips it, so the block the room's own
- * template stamped stays exactly as the author built it. It is deliberately not cleared to air:
- * the setting says "do not vary this here", and clearing would make it "delete this here" — a hole
- * the author would then have to build around. Air is still available where it is wanted, as an
- * empty-placeholder candidate inside the cell.</p>
+ * <h2>Excluded means empty</h2>
+ * <p>Where a cell does not apply, the variant pass writes it as an empty pick: air, with a
+ * two-space cell's partner space cleared too. It used to skip the cell and leave whatever the
+ * room's template stamped there, on the theory that this was a block the author had built. It
+ * never was: {@code VariantEditorPreviewTicker} keeps every variant cell cycling through its
+ * entries, and the room save captures the plot raw, so the template held whichever entry the
+ * preview happened to show at the moment of saving. A "Not copies" cell saved while its stage
+ * block was showing put that block in every copy. Empty is the one answer that does not depend
+ * on when the author pressed save.</p>
  *
  * <h2>Independent of the reroll flag</h2>
  * <p>This answers <i>whether the cell is there</i>; {@link VariantCopyRoll} answers <i>how it
@@ -33,10 +36,10 @@ public enum VariantCopyScope {
     /** Every tile — the arrival room and all its copies. What every cell authored before this did. */
     BOTH("both", "Both"),
 
-    /** The appended copies only. The arrival room keeps whatever the template stamped in this cell. */
+    /** The appended copies only. The arrival room leaves this cell empty. */
     COPIES("copies", "Copies"),
 
-    /** The arrival room only. Every copy keeps the template's own block in this cell. */
+    /** The arrival room only. Every copy leaves this cell empty. */
     NOT_COPIES("not_copies", "Not copies");
 
     private final String id;
@@ -75,6 +78,17 @@ public enum VariantCopyScope {
             case COPIES -> !baseTile;
             case NOT_COPIES -> baseTile;
         };
+    }
+
+    /**
+     * What a cell with this scope places in {@code baseTile}'s stamp: {@code roll}'s pick where the
+     * cell applies, {@link VariantConditions#EMPTY_PICK} where it does not.
+     *
+     * <p>{@code roll} is only called where the cell applies, so an excluded cell draws nothing
+     * from the seed. May return null when {@code roll} does (nothing to place).</p>
+     */
+    public VariantState pickFor(boolean baseTile, java.util.function.Supplier<VariantState> roll) {
+        return appliesTo(baseTile) ? roll.get() : VariantConditions.EMPTY_PICK;
     }
 
     /**
