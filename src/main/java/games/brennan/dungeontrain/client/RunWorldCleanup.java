@@ -69,8 +69,12 @@ public final class RunWorldCleanup {
     /** Waits before each retry of a failed napped-world delete (a session lock can outlive the disconnect briefly). */
     static final long[] RETRY_DELAYS_MS = {250L, 500L, 1000L, 1000L};
 
-    /** Dev-only: fail this many delete attempts, to exercise the retries and the sweep by hand. */
-    private static final int FORCED_FAILURES = Integer.getInteger("dungeontrain.napDeleteFailures", 0);
+    /**
+     * Dev builds only: fail this many delete attempts, to exercise the retries and the sweep by hand.
+     * Always 0 in a release build, so a launch flag can never stop a player's worlds being deleted.
+     */
+    private static final int FORCED_FAILURES =
+            DungeonTrain.isDevBuild() ? Integer.getInteger("dungeontrain.napDeleteFailures", 0) : 0;
     private static final java.util.concurrent.atomic.AtomicInteger FORCED_LEFT =
             new java.util.concurrent.atomic.AtomicInteger(FORCED_FAILURES);
 
