@@ -1,0 +1,17 @@
+{
+  "id": "darkroom-music-disc-reward",
+  "version": "0.1848.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "advancements"
+  ],
+  "title": "A music disc for a hidden achievement",
+  "summary": "One of the hidden achievements now rewards you with a music disc. Already earned it? Your disc is waiting the next time you join.",
+  "highlights": [],
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
