@@ -25,6 +25,11 @@
     {
       "id": "pathsforever",
       "weight": 0
+    },
+    {
+      "id": "traineditor",
+      "weight": 1,
+      "minLevel": 30
     }
   ]
 }
