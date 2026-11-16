@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.discord;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -117,10 +118,16 @@ final class DiscordIpcConnection implements Closeable {
         if (opcode == OP_CLOSE) {
             throw new IOException("Discord closed the connection: " + body);
         }
-        JsonObject reply = JsonParser.parseString(body).getAsJsonObject();
-        if (reply.has("evt") && "ERROR".equals(reply.get("evt").getAsString())) {
+        if (isErrorReply(body)) {
             throw new IOException("Discord rejected the command: " + body);
         }
+    }
+
+    /** True for {@code "evt":"ERROR"}. A normal command reply carries {@code "evt":null}, so null is not an error. */
+    static boolean isErrorReply(String body) {
+        JsonObject reply = JsonParser.parseString(body).getAsJsonObject();
+        JsonElement evt = reply.get("evt");
+        return evt != null && evt.isJsonPrimitive() && "ERROR".equals(evt.getAsString());
     }
 
     @Override

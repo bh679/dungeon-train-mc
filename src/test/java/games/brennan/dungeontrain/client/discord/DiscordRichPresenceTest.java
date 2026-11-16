@@ -81,6 +81,14 @@ class DiscordRichPresenceTest {
     }
 
     @Test
+    @DisplayName("A normal SET_ACTIVITY reply has evt null and is not an error; evt ERROR is")
+    void replyErrorDetection() {
+        assertFalse(DiscordIpcConnection.isErrorReply("{\"cmd\":\"SET_ACTIVITY\",\"data\":{},\"evt\":null,\"nonce\":\"x\"}"));
+        assertFalse(DiscordIpcConnection.isErrorReply("{\"cmd\":\"DISPATCH\",\"evt\":\"READY\"}"));
+        assertTrue(DiscordIpcConnection.isErrorReply("{\"cmd\":\"SET_ACTIVITY\",\"evt\":\"ERROR\",\"data\":{\"code\":4000}}"));
+    }
+
+    @Test
     @DisplayName("Windows probes the ten named pipes; other systems only list sockets that exist")
     void candidatePaths() {
         List<String> windows = DiscordIpcConnection.candidatePaths(true, Map.of());
