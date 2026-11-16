@@ -145,4 +145,37 @@ final class PlayerRunStateNapGateTest {
         woken.resetAll();
         assertFalse(woken.napGated());
     }
+
+    @Test
+    @DisplayName("the gate goes at the furthest point reached that way, not the bed")
+    void reachEdgeIsFurthest() {
+        PlayerRunState s = new PlayerRunState();
+        assertEquals(50.0, s.reachEdge(1, 50.0));
+        s.noteReach(10.0);
+        s.noteReach(2000.0);
+        s.noteReach(-30.0);
+        assertEquals(2000.0, s.reachEdge(1, 50.0));
+        assertEquals(-30.0, s.reachEdge(-1, 50.0));
+        assertEquals(2500.0, s.reachEdge(1, 2500.0));
+        s.noteReach(Double.NaN);
+        assertEquals(-30.0, s.reachMin());
+    }
+
+    @Test
+    @DisplayName("the reach rides the nap extras and ends with the life, not with a debug clear")
+    void reachCarriedAndReset() {
+        PlayerRunState s = new PlayerRunState();
+        s.noteReach(-5.0);
+        s.noteReach(812.25);
+        CompoundTag extras = s.napExtras(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
+        PlayerRunState woken = new PlayerRunState();
+        woken.applyNapExtras(extras, null);
+        assertEquals(-5.0, woken.reachMin());
+        assertEquals(812.25, woken.reachMax());
+        woken.setNapGate(woken.reachEdge(1, 100.0), 1);
+        woken.clearNapGate();
+        assertTrue(woken.hasReach());
+        woken.resetAll();
+        assertFalse(woken.hasReach());
+    }
 }
