@@ -609,6 +609,7 @@
   "gui.dungeontrain.nap.main_menu": "主選單",
   "gui.dungeontrain.nap.ongoing.kicker": "延續中的一生",
   "gui.dungeontrain.nap.ongoing.headline": "%s位乘客，尚未倒下。",
+  "gui.dungeontrain.nap.ongoing.first": "尚無可比之物。",
   "gui.dungeontrain.nap.free_play_cause": "從自由模式的旅程中醒來",
   "chat.dungeontrain.nap.tampered.moved": "列車認不出這張床，它被人動過了。",
   "chat.dungeontrain.nap.tampered.made": "列車分得清你做的床和它自己的床，這在這裡行不通。",

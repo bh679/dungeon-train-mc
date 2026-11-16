@@ -123,6 +123,12 @@ public final class PlayerRunState {
      * putting one down are different feats, and only the second one is this.
      */
     private int echoesKilled;
+    /**
+     * Echoes met this life that also went into the lifetime echoes-met total (so not on a cheated run).
+     * The nap farewell's "a life ongoing" takes it back out of that total, which accrues live, to show
+     * the lives before this one. In-memory and nap-carried, like {@link #echoesKilled}.
+     */
+    private int echoesMet;
     /** Carriages passed since the last loot container was opened this run. Reset by {@link #openedLootContainer}. */
     private int carriagesSinceChest;
     /** High-water mark of {@link #carriagesSinceChest} this run — the longest stretch gone without looting. */
@@ -341,6 +347,7 @@ public final class PlayerRunState {
         this.killedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
         this.echoesKilled = 0;
+        this.echoesMet = 0;
         this.carriagesSinceChest = 0;
         this.maxCarriagesNoChest = 0;
         this.tamedAnimals = new ArrayList<>();
@@ -382,6 +389,7 @@ public final class PlayerRunState {
         this.killedMobs = new HashSet<>();
         this.trainTimeTicks = trainTimeTicks;
         this.echoesKilled = 0;
+        this.echoesMet = 0;
         this.carriagesSinceChest = 0;
         this.maxCarriagesNoChest = 0;
         this.tamedAnimals = new ArrayList<>();
@@ -442,6 +450,7 @@ public final class PlayerRunState {
     // --- Nap carry -------------------------------------------------------------------------------
 
     private static final String X_ECHOES_KILLED = "echoesKilled";
+    private static final String X_ECHOES_MET = "echoesMet";
     private static final String X_CARRIAGES_SINCE_CHEST = "carriagesSinceChest";
     private static final String X_MAX_CARRIAGES_NO_CHEST = "maxCarriagesNoChest";
     private static final String X_KILLED_MOBS = "killedMobs";
@@ -488,6 +497,7 @@ public final class PlayerRunState {
     public CompoundTag napExtras(HolderLookup.Provider registries) {
         CompoundTag t = new CompoundTag();
         t.putInt(X_ECHOES_KILLED, echoesKilled);
+        t.putInt(X_ECHOES_MET, echoesMet);
         t.putInt(X_CARRIAGES_SINCE_CHEST, carriagesSinceChest);
         t.putInt(X_MAX_CARRIAGES_NO_CHEST, maxCarriagesNoChest);
         t.put(X_KILLED_MOBS, NapExtrasNbt.uuids(killedMobs));
@@ -533,6 +543,7 @@ public final class PlayerRunState {
     public void applyNapExtras(CompoundTag t, HolderLookup.Provider registries) {
         if (t == null || t.isEmpty()) return;
         echoesKilled = t.getInt(X_ECHOES_KILLED);
+        echoesMet = t.getInt(X_ECHOES_MET);
         carriagesSinceChest = t.getInt(X_CARRIAGES_SINCE_CHEST);
         maxCarriagesNoChest = t.getInt(X_MAX_CARRIAGES_NO_CHEST);
         killedMobs.clear();
@@ -914,6 +925,15 @@ public final class PlayerRunState {
         return echoesKilled = stepped(echoesKilled, step);
     }
 
+    /** Echoes met this life that counted toward the lifetime total (see {@link #echoesMet}). */
+    public int echoesMet() {
+        return echoesMet;
+    }
+
+    public void countEchoMet() {
+        echoesMet++;
+    }
+
     /** The longest run of carriages passed without opening a container this run. */
     public int maxCarriagesNoChest() {
         return maxCarriagesNoChest;
@@ -1267,6 +1287,7 @@ public final class PlayerRunState {
         friendFeeling = Float.NEGATIVE_INFINITY;
         killedAppearance = null;
         echoesKilled = 0;
+        echoesMet = 0;
         carriagesSinceChest = 0;
         maxCarriagesNoChest = 0;
         napGateX = 0.0;

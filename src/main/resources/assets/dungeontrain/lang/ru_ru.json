@@ -660,6 +660,7 @@
   "gui.dungeontrain.nap.main_menu": "Главное меню",
   "gui.dungeontrain.nap.ongoing.kicker": "жизнь продолжается",
   "gui.dungeontrain.nap.ongoing.headline": "Уже %s в пути, и ещё не павший.",
+  "gui.dungeontrain.nap.ongoing.first": "Пока не с чем сравнить.",
   "gui.dungeontrain.nap.free_play_cause": "Пробуждение из забега в свободной игре",
   "chat.dungeontrain.nap.tampered.moved": "Поезд не узнаёт эту кровать, её кто-то трогал.",
   "chat.dungeontrain.nap.tampered.made": "Поезд отличает кровать твоей работы от своей, здесь это не сработает.",

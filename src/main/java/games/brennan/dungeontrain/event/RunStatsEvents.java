@@ -461,6 +461,19 @@ public final class RunStatsEvents {
      * counter) so the login-replay re-fire of {@code AdvancementEarnEvent} can't inflate it. Vanilla
      * advancement completion is permanent per-player, so this is a true across-all-lives total.
      */
+    /** Dungeon Train advancements this life earned that the point-in-time count includes. */
+    private static long ownAdvancements(ServerPlayer player, PlayerRunState run) {
+        var manager = player.server.getAdvancements();
+        var progress = player.getAdvancements();
+        long count = 0;
+        for (ResourceLocation id : run.earnedAdvancements()) {
+            if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) continue;
+            AdvancementHolder h = manager.get(id);
+            if (h != null && progress.getOrStartProgress(h).isDone()) count++;
+        }
+        return count;
+    }
+
     private static long countDungeonTrainAdvancements(ServerPlayer player) {
         var manager = player.server.getAdvancements();
         var progress = player.getAdvancements();
@@ -514,14 +527,17 @@ public final class RunStatsEvents {
      */
     public static DeathStatsPacket napPacket(ServerPlayer player) {
         UUID id = player.getUUID();
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        // Time aboard accrues live (and not on a cheated run), so this life's share comes back out.
+        long ownTicks = RunIntegrity.isCheated(player) ? 0L : run.trainTimeTicks();
         return buildPacket(player,
                 GlobalPlayerStats.totalDeaths(id),
                 GlobalPlayerStats.totalCarriages(id),
                 GlobalPlayerStats.totalDistance(id),
                 GlobalPlayerStats.totalFriends(id),
                 GlobalPlayerStats.totalBooks(id),
-                GlobalPlayerStats.trainTicks(id),
-                DeathNarrative.EMPTY, "");
+                Math.max(0L, GlobalPlayerStats.trainTicks(id) - ownTicks),
+                DeathNarrative.EMPTY, "", true);
     }
 
     /**
@@ -533,6 +549,19 @@ public final class RunStatsEvents {
             long lifeDeaths, long lifeCarriages, double lifeDistance,
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative, String deathCause) {
+        return buildPacket(player, lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks,
+                lifeTrainTicks, narrative, deathCause, false);
+    }
+
+    /**
+     * @param previousLivesOnly the lifetime icons count only the lives before this one ({@link #napPacket}):
+     *                          the totals that accrue live (players and echoes met) and the advancement
+     *                          count lose what this life added. The death-accrued totals never held it.
+     */
+    private static DeathStatsPacket buildPacket(ServerPlayer player,
+            long lifeDeaths, long lifeCarriages, double lifeDistance,
+            long lifeFriends, long lifeBooks, long lifeTrainTicks,
+            DeathNarrative narrative, String deathCause, boolean previousLivesOnly) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         UUID id = player.getUUID();
         // All-lives icon-row lifetime totals — the current cross-world totals (accrued just above at
@@ -546,6 +575,14 @@ public final class RunStatsEvents {
         long lifeAdvancements = countDungeonTrainAdvancements(player);
         double lifeDamageDealt = GlobalPlayerStats.totalDamageDealt(id);
         double lifeDamageTaken = GlobalPlayerStats.totalDamageTaken(id);
+        if (previousLivesOnly) {
+            // Encounters only reach the lifetime total off a cheated run (onLevelTick), so a cheated
+            // life added none.
+            long ownMet = RunIntegrity.isCheated(player) ? 0L : run.encounteredCount();
+            lifePlayersEncountered = Math.max(0L, lifePlayersEncountered - ownMet);
+            lifeEchos = Math.max(0L, lifeEchos - run.echoesMet());
+            lifeAdvancements = Math.max(0L, lifeAdvancements - ownAdvancements(player, run));
+        }
         // Death-screen portrait subject: prefer a befriended mob (drawn left),
         // else the most-recent killed mob (drawn right), else none.
         byte side;
@@ -722,6 +759,7 @@ public final class RunStatsEvents {
                     // PlayerMobs — tally them separately for the all-lives "Echos come across" icon.
                     if (EchoIdentity.sourcePlayer(mob).isPresent()) {
                         GlobalPlayerStats.addEchos(player.getUUID(), 1L);
+                        run.countEchoMet();
                     }
                 }
                 // "Others?" — within 4 blocks of any PlayerMob. Earns regardless of

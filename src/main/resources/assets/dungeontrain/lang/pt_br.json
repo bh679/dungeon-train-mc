@@ -632,6 +632,7 @@
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.ongoing.kicker": "uma vida em curso",
   "gui.dungeontrain.nap.ongoing.headline": "O %s a embarcar, e ainda sem cair.",
+  "gui.dungeontrain.nap.ongoing.first": "Ainda não há nada com que comparar.",
   "gui.dungeontrain.nap.free_play_cause": "Acordou de uma partida no Jogo Livre",
   "chat.dungeontrain.nap.tampered.moved": "O trem não reconhece esta cama, mexeram nela.",
   "chat.dungeontrain.nap.tampered.made": "O trem diferencia uma cama feita por você de uma das dele, isso não vai funcionar aqui.",

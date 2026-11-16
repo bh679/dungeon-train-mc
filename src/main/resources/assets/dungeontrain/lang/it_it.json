@@ -632,6 +632,7 @@
   "gui.dungeontrain.nap.main_menu": "Menu principale",
   "gui.dungeontrain.nap.ongoing.kicker": "una vita che continua",
   "gui.dungeontrain.nap.ongoing.headline": "Il %s a salire a bordo, e non ancora a cadere.",
+  "gui.dungeontrain.nap.ongoing.first": "Ancora nulla con cui confrontarla.",
   "gui.dungeontrain.nap.free_play_cause": "Risvegliato da una partita in Gioco Libero",
   "chat.dungeontrain.nap.tampered.moved": "Il treno non riconosce questo letto, è stato manomesso.",
   "chat.dungeontrain.nap.tampered.made": "Il treno distingue un letto fatto da te da uno dei suoi, qui non funzionerà.",

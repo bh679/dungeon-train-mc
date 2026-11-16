@@ -1521,8 +1521,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * The nap farewell's last page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
-     * and not yet to fall.") over the same lifetime tiles and icons as {@link #drawLives}: the totals of
-     * the lives before this one, since a life is only added up when it ends.
+     * and not yet to fall.") over the same lifetime tiles and icons as {@link #drawLives}, holding only
+     * the lives before this one ({@code RunStatsEvents#napPacket}); a first life says there is nothing to
+     * compare it to yet instead.
      */
     private int drawOngoing(GuiGraphics g, DeathStatsPacket s, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.nap.ongoing.kicker");
@@ -1534,6 +1535,10 @@ public final class NarrativeDeathScreen extends Screen {
             String nth = LocaleOrdinalWords.forLocale(locale, s.lifeDeaths() + 1L, LocaleOrdinalWords.Gender.MASCULINE);
             y = drawQuestion(g, Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString(), cx, w, y);
             y += 10;
+            // A first life has no lives before it: say so rather than show a wall of zeros.
+            if (s.lifeDeaths() == 0L) {
+                return drawCentered(g, Component.translatable("gui.dungeontrain.nap.ongoing.first"), cx, w, y, NARR);
+            }
         }
         return drawLifetimeTotals(g, s, left, w, y);
     }

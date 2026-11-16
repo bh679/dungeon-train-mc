@@ -632,6 +632,7 @@
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.ongoing.kicker": "une vie qui continue",
   "gui.dungeontrain.nap.ongoing.headline": "Le %s à monter à bord, et pas encore à tomber.",
+  "gui.dungeontrain.nap.ongoing.first": "Rien encore à quoi le comparer.",
   "gui.dungeontrain.nap.free_play_cause": "Réveillé d'une partie en Jeu Libre",
   "chat.dungeontrain.nap.tampered.moved": "Le train ne reconnaît pas ce lit, on l'a trafiqué.",
   "chat.dungeontrain.nap.tampered.made": "Le train distingue un lit de ta fabrication des siens, ça ne marchera pas ici.",

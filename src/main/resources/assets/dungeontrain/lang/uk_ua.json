@@ -731,6 +731,7 @@
   "gui.dungeontrain.nap.main_menu": "Головне меню",
   "gui.dungeontrain.nap.ongoing.kicker": "життя триває",
   "gui.dungeontrain.nap.ongoing.headline": "Уже %s у дорозі, і ще не впав.",
+  "gui.dungeontrain.nap.ongoing.first": "Поки що немає з чим порівняти.",
   "gui.dungeontrain.nap.free_play_cause": "Пробудження із забігу у Вільній грі",
   "chat.dungeontrain.nap.tampered.moved": "Потяг не впізнає це ліжко, його хтось чіпав.",
   "chat.dungeontrain.nap.tampered.made": "Потяг відрізняє ліжко твоєї роботи від свого, тут це не спрацює.",

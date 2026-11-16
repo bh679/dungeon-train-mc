@@ -655,6 +655,7 @@
   "gui.dungeontrain.nap.main_menu": "Menu główne",
   "gui.dungeontrain.nap.ongoing.kicker": "życie, które trwa",
   "gui.dungeontrain.nap.ongoing.headline": "%s na pokładzie, i jeszcze nie poległ.",
+  "gui.dungeontrain.nap.ongoing.first": "Jeszcze nie ma z czym tego porównać.",
   "gui.dungeontrain.nap.free_play_cause": "Przebudzenie z rozgrywki w Swobodnej Grze",
   "chat.dungeontrain.nap.tampered.moved": "Pociąg nie rozpoznaje tego łóżka, ktoś przy nim majstrował.",
   "chat.dungeontrain.nap.tampered.made": "Pociąg odróżni łóżko twojej roboty od swojego, to tu nie zadziała.",

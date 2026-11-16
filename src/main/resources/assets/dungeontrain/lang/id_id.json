@@ -609,6 +609,7 @@
   "gui.dungeontrain.nap.main_menu": "Menu Utama",
   "gui.dungeontrain.nap.ongoing.kicker": "kehidupan yang berlanjut",
   "gui.dungeontrain.nap.ongoing.headline": "Yang %s menumpang, dan belum jatuh.",
+  "gui.dungeontrain.nap.ongoing.first": "Belum ada yang bisa dibandingkan.",
   "gui.dungeontrain.nap.free_play_cause": "Terbangun dari permainan Main Bebas",
   "chat.dungeontrain.nap.tampered.moved": "Kereta tidak mengenali ranjang ini, ranjang ini sudah diutak-atik.",
   "chat.dungeontrain.nap.tampered.made": "Kereta bisa membedakan ranjang buatanmu dari miliknya sendiri, ini tidak akan berhasil di sini.",
