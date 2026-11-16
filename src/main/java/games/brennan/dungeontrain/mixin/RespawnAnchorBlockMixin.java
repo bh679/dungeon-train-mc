@@ -49,6 +49,9 @@ public abstract class RespawnAnchorBlockMixin {
             // No nap with monsters about, the same refusal a bed gives; the anchor still sets spawn.
             serverPlayer.displayClientMessage(Component.translatable("block.minecraft.bed.not_safe"), true);
         }
+        if (nap == NapService.Outcome.GUESTS) {
+            serverPlayer.displayClientMessage(NapService.tamperedMessage(nap), true);
+        }
         if (level.dimension() == Level.NETHER) return;                // the real Nether: vanilla sets spawn
 
         // The Nether band: do what vanilla does in the Nether rather than exploding.

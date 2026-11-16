@@ -610,6 +610,7 @@
   "gui.dungeontrain.nap.free_play_cause": "ตื่นจากการเล่นในโหมดเล่นอิสระ",
   "chat.dungeontrain.nap.tampered.moved": "รถไฟจำเตียงนี้ไม่ได้ มีคนไปยุ่งกับมันแล้ว",
   "chat.dungeontrain.nap.tampered.made": "รถไฟแยกออกว่าเตียงไหนคุณทำเองและเตียงไหนเป็นของมัน แบบนี้ใช้ไม่ได้ที่นี่",
+  "chat.dungeontrain.nap.guests": "ของของผู้เล่นคนอื่นถูกบันทึกไว้ในโลกนี้ งีบที่นี่ไม่ได้",
   "chat.dungeontrain.nap.failed": "การพักผ่อนเลือนหายไป การเล่นของคุณดำเนินต่อ",
   "disconnect.dungeontrain.nap.world_napped": "คุณงีบหลับในโลกนี้ การเดินทางของคุณจึงอยู่ในการงีบนั้น เริ่มโลกใหม่เพื่อตื่นขึ้น",
   "chat.dungeontrain.nap.not_woken": "การพักผ่อนของคุณไม่ได้ถูกส่งต่อ นี่คือการเล่นรอบใหม่",

@@ -610,6 +610,7 @@
   "gui.dungeontrain.nap.free_play_cause": "從自由模式的旅程中醒來",
   "chat.dungeontrain.nap.tampered.moved": "列車認不出這張床，它被人動過了。",
   "chat.dungeontrain.nap.tampered.made": "列車分得清你做的床和它自己的床，這在這裡行不通。",
+  "chat.dungeontrain.nap.guests": "這個世界裡儲存著另一位玩家的物品。這裡無法小睡。",
   "chat.dungeontrain.nap.failed": "安歇悄然溜走。你的旅程仍在繼續。",
   "disconnect.dungeontrain.nap.world_napped": "你在這個世界小睡過，你的冒險延續在小睡之中。開始一個新世界來醒來。",
   "chat.dungeontrain.nap.not_woken": "你的休息沒有延續下來。這是一局新的旅程。",

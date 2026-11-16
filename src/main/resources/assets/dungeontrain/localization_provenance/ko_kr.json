@@ -613,6 +613,7 @@
       "gui.dungeontrain.nap.free_play_cause",
       "chat.dungeontrain.nap.tampered.moved",
       "chat.dungeontrain.nap.tampered.made",
+      "chat.dungeontrain.nap.guests",
       "chat.dungeontrain.nap.failed",
       "disconnect.dungeontrain.nap.world_napped",
       "chat.dungeontrain.nap.not_woken",

@@ -732,6 +732,7 @@
   "gui.dungeontrain.nap.free_play_cause": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f90f50d44194d789"},
   "chat.dungeontrain.nap.tampered.moved": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "20818b97eef6ad64"},
   "chat.dungeontrain.nap.tampered.made": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0fe06f24ba7b4415"},
+  "chat.dungeontrain.nap.guests": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "378664c9a1473a08"},
   "chat.dungeontrain.nap.failed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5a66cf0f41752655"},
   "disconnect.dungeontrain.nap.world_napped": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "07f3655f3a77a643"},
   "chat.dungeontrain.nap.not_woken": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fd241b14980b79d2"},

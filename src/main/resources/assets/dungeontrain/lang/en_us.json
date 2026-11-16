@@ -709,6 +709,7 @@
   "gui.dungeontrain.nap.free_play_cause": "Woke from a Free Play run",
   "chat.dungeontrain.nap.tampered.moved": "The train doesn't recognise this bed, it's been tampered with.",
   "chat.dungeontrain.nap.tampered.made": "The train knows a bed of your making from one of its own, this won't work here.",
+  "chat.dungeontrain.nap.guests": "Another player's things are saved in this world. No nap here.",
   "chat.dungeontrain.nap.failed": "The rest slips away. Your run carries on.",
   "disconnect.dungeontrain.nap.world_napped": "You napped in this world, so your run lives on in the nap. Start a New World to wake up.",
   "chat.dungeontrain.nap.not_woken": "Your rest didn't carry over. This is a fresh run.",
