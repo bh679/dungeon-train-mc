@@ -608,6 +608,8 @@
   "chat.dungeontrain.portal.walk_through": "ตู้ข้ามมิตินี้ไม่เชื่อมต่อ ทางผ่านถูกเปิดแล้ว",
   "chat.dungeontrain.portal.no_shulker_box.1": "กล่องชัลเกอร์รับรู้ได้ว่าที่นี่ไม่ใช่ที่สำหรับสิ่งนั้น หรือนี่จะเป็นบั๊กในโค้ดของผู้สร้าง?",
   "chat.dungeontrain.portal.no_shulker_box.2": "ไม่คุ้มที่จะเสี่ยง หาตู้อื่นเถอะ",
+  "chat.dungeontrain.portal.no_container.1": "มีบางอย่างในห้องนี้บอกคุณว่าอย่าทิ้งอะไรไว้ที่นี่ ของอาจไม่อยู่ที่เดิมที่คุณวางไว้",
+  "chat.dungeontrain.portal.no_container.2": "เก็บของของคุณไว้บนรถไฟ",
   "chat.dungeontrain.portal_library.1": "หนังสือทุกเล่มที่นี่มีชื่อเดียวกัน: %1$s",
   "chat.dungeontrain.portal_library.2": "ชั้นหนังสือของใครบางคน ทุกสันปกที่คุณมองเห็นลงชื่อว่า %1$s",
   "chat.dungeontrain.portal_library.3": "มือเดียวเขียนทั้งหมดนี้ หนังสือลงชื่อไว้ว่า %1$s",

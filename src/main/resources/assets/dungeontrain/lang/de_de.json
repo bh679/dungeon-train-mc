@@ -631,6 +631,8 @@
   "chat.dungeontrain.portal.walk_through": "Dieser dimensionale Waggon stellt keine Verbindung her. Der Weg hindurch wurde geöffnet.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Die Shulkerkiste spürt, dass dies nicht der Ort dafür ist. Vielleicht ein Fehler im Code des Schöpfers?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Es ist das Risiko nicht wert. Such dir einen anderen Waggon.",
+  "chat.dungeontrain.portal.no_container.1": "Irgendetwas an diesem Raum sagt dir, dass du hier nichts zurücklassen solltest. Es ist vielleicht nicht mehr da, wo du es gelassen hast.",
+  "chat.dungeontrain.portal.no_container.2": "Bewahre deine Sachen im Zug auf.",
   "chat.dungeontrain.portal_library.1": "Jedes Buch hier drin trägt denselben Namen: %1$s.",
   "chat.dungeontrain.portal_library.2": "Jemandes Regale. Jeder Buchrücken, den du siehst, ist mit %1$s signiert.",
   "chat.dungeontrain.portal_library.3": "Eine einzige Hand hat all das geschrieben. Die Bücher sind mit %1$s signiert.",

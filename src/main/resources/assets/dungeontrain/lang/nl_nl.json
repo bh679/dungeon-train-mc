@@ -631,6 +631,8 @@
   "chat.dungeontrain.portal.walk_through": "Deze dimensionale wagon maakt geen verbinding. De doorgang is geopend.",
   "chat.dungeontrain.portal.no_shulker_box.1": "De shulkerkist voelt dat dit daar niet de plek voor is; misschien een fout in de code van de maker?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Het risico is het niet waard. Zoek een andere wagon.",
+  "chat.dungeontrain.portal.no_container.1": "Iets aan deze kamer zegt je dat je hier niets moet achterlaten. Het ligt misschien niet meer waar je het liet.",
+  "chat.dungeontrain.portal.no_container.2": "Bewaar je spullen in de trein.",
   "chat.dungeontrain.portal_library.1": "Elk boek hier draagt dezelfde naam: %1$s.",
   "chat.dungeontrain.portal_library.2": "Iemands boekenplanken. Elke rug die je ziet is ondertekend met %1$s.",
   "chat.dungeontrain.portal_library.3": "Eén hand schreef dit alles. De boeken zijn ondertekend met %1$s.",

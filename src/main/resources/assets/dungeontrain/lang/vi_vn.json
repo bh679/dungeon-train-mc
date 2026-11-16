@@ -608,6 +608,8 @@
   "chat.dungeontrain.portal.walk_through": "Toa liên chiều này không kết nối. Lối đi xuyên qua đã được mở.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Hộp shulker cảm thấy đây không phải nơi dành cho việc đó, có lẽ là một lỗi trong mã của đấng sáng tạo?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Không đáng để liều. Hãy tìm một toa khác.",
+  "chat.dungeontrain.portal.no_container.1": "Có điều gì đó trong căn phòng này bảo bạn đừng để lại thứ gì ở đây. Nó có thể sẽ không còn ở chỗ bạn để.",
+  "chat.dungeontrain.portal.no_container.2": "Hãy giữ đồ của bạn trên tàu.",
   "chat.dungeontrain.portal_library.1": "Mọi cuốn sách trong này đều mang cùng một cái tên: %1$s.",
   "chat.dungeontrain.portal_library.2": "Kệ sách của một người nào đó. Mọi gáy sách bạn thấy đều ký tên %1$s.",
   "chat.dungeontrain.portal_library.3": "Một bàn tay đã viết tất cả chỗ này. Những cuốn sách đều ký tên %1$s.",

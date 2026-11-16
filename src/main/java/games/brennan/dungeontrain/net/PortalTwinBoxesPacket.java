@@ -16,7 +16,7 @@ import java.util.List;
  * Server → client: the world-space boxes of the twin corridors currently standing.
  *
  * <p>Sent so the client can decline to <i>predict</i> a shulker box into a twin — see
- * {@link games.brennan.dungeontrain.client.portal.ClientShulkerBoxPrediction}, which explains why a
+ * {@link games.brennan.dungeontrain.client.portal.ClientPortalContainerPrediction}, which explains why a
  * server-side refusal alone still leaves the box appearing and vanishing. The carriage half of that
  * problem needs no packet, because Sable already tells the client where its sub-levels are. A twin is
  * ordinary world blocks, so nothing tells the client about it, and this does.</p>

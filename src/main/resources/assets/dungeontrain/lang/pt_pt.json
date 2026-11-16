@@ -631,6 +631,8 @@
   "chat.dungeontrain.portal.walk_through": "Esta carruagem dimensional não está a ligar. A passagem foi aberta.",
   "chat.dungeontrain.portal.no_shulker_box.1": "A caixa de shulker pressente que este não é o sítio para isso. Talvez um bug no código do criador?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Não vale o risco. Procura outra carruagem.",
+  "chat.dungeontrain.portal.no_container.1": "Algo nesta sala diz-te para não deixares nada aqui. Pode não estar onde o deixaste.",
+  "chat.dungeontrain.portal.no_container.2": "Guarda as tuas coisas no comboio.",
   "chat.dungeontrain.portal_library.1": "Todos os livros aqui trazem o mesmo nome: %1$s.",
   "chat.dungeontrain.portal_library.2": "As prateleiras de alguém. Todas as lombadas à vista estão assinadas por %1$s.",
   "chat.dungeontrain.portal_library.3": "Uma só mão escreveu tudo isto. Os livros estão assinados por %1$s.",

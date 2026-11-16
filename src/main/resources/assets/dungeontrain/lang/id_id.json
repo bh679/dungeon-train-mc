@@ -608,6 +608,8 @@
   "chat.dungeontrain.portal.walk_through": "Gerbong dimensi ini tidak tersambung. Jalan tembusnya telah dibuka.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Kotak shulker merasa ini bukan tempatnya, mungkin ada bug di kode sang pencipta?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Tidak sepadan dengan risikonya. Carilah gerbong lain.",
+  "chat.dungeontrain.portal.no_container.1": "Ada sesuatu di ruangan ini yang memberitahumu agar tidak meninggalkan apa pun di sini. Mungkin barangnya tidak akan ada di tempat kamu meninggalkannya.",
+  "chat.dungeontrain.portal.no_container.2": "Simpan barang-barangmu di kereta.",
   "chat.dungeontrain.portal_library.1": "Setiap buku di sini membawa nama yang sama: %1$s.",
   "chat.dungeontrain.portal_library.2": "Rak milik seseorang. Setiap punggung buku yang terlihat bertanda tangan %1$s.",
   "chat.dungeontrain.portal_library.3": "Satu tangan menulis semua ini. Buku-bukunya ditandatangani %1$s.",

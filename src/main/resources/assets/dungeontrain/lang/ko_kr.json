@@ -608,6 +608,8 @@
   "chat.dungeontrain.portal.walk_through": "이 차원 객차가 연결되지 않습니다. 지나갈 길이 열렸습니다.",
   "chat.dungeontrain.portal.no_shulker_box.1": "셜커 상자가 여기는 그럴 곳이 아니라고 느낍니다. 제작자의 코드에 있는 버그일까요?",
   "chat.dungeontrain.portal.no_shulker_box.2": "위험을 무릅쓸 만한 일이 아닙니다. 다른 객차를 찾으세요.",
+  "chat.dungeontrain.portal.no_container.1": "이 방의 무언가가 여기에 아무것도 두고 가지 말라고 말한다. 둔 자리에 그대로 있지 않을지도 모른다.",
+  "chat.dungeontrain.portal.no_container.2": "물건은 열차에 보관하자.",
   "chat.dungeontrain.portal_library.1": "여기 있는 모든 책이 같은 이름을 달고 있다: %1$s.",
   "chat.dungeontrain.portal_library.2": "누군가의 서가다. 눈에 보이는 책등마다 %1$s(이)라 서명되어 있다.",
   "chat.dungeontrain.portal_library.3": "이 모두를 한 사람의 손이 썼다. 책들의 서명은 %1$s.",

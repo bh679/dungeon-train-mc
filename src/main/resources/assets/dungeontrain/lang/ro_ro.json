@@ -730,6 +730,8 @@
   "chat.dungeontrain.portal.walk_through": "Acest vagon dimensional nu se conectează. Trecerea a fost deschisă.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Cutia shulker simte că nu ăsta e locul pentru așa ceva. Poate o eroare în codul creatorului?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Nu merită riscul. Găsește alt vagon.",
+  "chat.dungeontrain.portal.no_container.1": "Ceva din această cameră îți spune să nu lași nimic aici. S-ar putea să nu mai fie unde l-ai lăsat.",
+  "chat.dungeontrain.portal.no_container.2": "Păstrează-ți lucrurile în tren.",
   "chat.dungeontrain.portal_library.1": "Fiecare carte de aici poartă același nume: %1$s.",
   "chat.dungeontrain.portal_library.2": "Rafturile cuiva. Fiecare cotor pe care îl vezi e semnat %1$s.",
   "chat.dungeontrain.portal_library.3": "O singură mână a scris tot. Cărțile sunt semnate %1$s.",

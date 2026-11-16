@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.portal;
 
 import dev.ryanhcode.sable.Sable;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.sound.ClientPortalTrainAudio;
+import games.brennan.dungeontrain.portal.PortalRoomContainers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -16,7 +18,7 @@ import org.joml.Vector3d;
 
 /**
  * Stops the client from <i>predicting</i> a shulker box into either copy of a dimensional carriage,
- * so a box the server is about to refuse never appears at all.
+ * or any container into a portal room, so a block the server is about to refuse never appears at all.
  *
  * <h2>Why the server-side refusal isn't enough on its own</h2>
  * <p>{@code MultiPlayerGameMode.useItemOn} places the block locally the instant you click and only
@@ -51,27 +53,42 @@ import org.joml.Vector3d;
  * because a twin does not move: the packet goes out when the set changes rather than every tick.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
-public final class ClientShulkerBoxPrediction {
+public final class ClientPortalContainerPrediction {
 
-    private ClientShulkerBoxPrediction() {}
+    private ClientPortalContainerPrediction() {}
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (event.getUseItem() == TriState.FALSE) return;
-        // Client only. The server has its own, authoritative refusal in PortalShulkerBoxEvents; this
+        // Client only. The server has its own, authoritative refusal in PortalContainerPlacementEvents; this
         // one decides nothing and must never be mistaken for the rule.
         if (!event.getLevel().isClientSide()) return;
         if (!(event.getItemStack().getItem() instanceof BlockItem item)) return;
-        if (!(item.getBlock() instanceof ShulkerBoxBlock)) return;
+        if (!PortalRoomContainers.isRefusedInRoom(item.getBlock())) return;
 
         // The cell vanilla would place into, not the one clicked — the same derivation the server
         // side makes, so the two agree about which block is in question.
         BlockPos target = new BlockPlaceContext(
             new UseOnContext(event.getEntity(), event.getHand(), event.getHitVec())).getClickedPos();
-        boolean onCarriage = Sable.HELPER.getContainingClient(
-            new Vector3d(target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5)) != null;
-        if (!onCarriage && !ClientPortalTwinBoxes.contains(target)) return;
+        if (!refusedHere(item.getBlock() instanceof ShulkerBoxBlock, target)) return;
 
         event.setUseItem(TriState.FALSE);
+    }
+
+    /**
+     * Whether the server is likely to refuse this placement. A shulker box: any carriage or twin
+     * corridor, as below. Any refused container: the portal room or one of its copies, read from the
+     * structure region the server already sends for the room's audio
+     * ({@link ClientPortalTrainAudio#inRoom}) — a stale region costs a delayed placement, never a
+     * wrong one.
+     */
+    private static boolean refusedHere(boolean shulker, BlockPos target) {
+        double x = target.getX() + 0.5;
+        double y = target.getY() + 0.5;
+        double z = target.getZ() + 0.5;
+        if (ClientPortalTrainAudio.inRoom(x, y, z)) return true;
+        if (!shulker) return false;
+        boolean onCarriage = Sable.HELPER.getContainingClient(new Vector3d(x, y, z)) != null;
+        return onCarriage || ClientPortalTwinBoxes.contains(target);
     }
 }
