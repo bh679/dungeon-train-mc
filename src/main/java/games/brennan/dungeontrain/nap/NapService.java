@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.RunWorldNames;
 import games.brennan.dungeontrain.worldgen.BandLabel;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -112,7 +113,7 @@ public final class NapService {
             refuse(player, "no longer eligible");
             return;
         }
-        NapSnapshot nap = capture(player, levelId);
+        NapSnapshot nap = capture(player, levelId, offer.bedPos());
         try {
             NapStore.local().save(player.getUUID(), NapSlot.key(nap.cheated(), player.serverLevel().getDifficulty()), nap);
         } catch (Exception e) {
@@ -126,10 +127,11 @@ public final class NapService {
         DungeonTrainNet.sendTo(player, new NapSavedPacket(levelId));
     }
 
-    static NapSnapshot capture(ServerPlayer player, String levelId) {
+    static NapSnapshot capture(ServerPlayer player, String levelId, BlockPos bedPos) {
         MinecraftServer server = player.getServer();
         CompoundTag playerTag = player.saveWithoutId(new CompoundTag());
-        double x = player.getX();
+        // The train's X (the bed's, as the carriage stands now), not wherever the player happens to be.
+        double x = NapEligibility.trainWorldX(player.serverLevel(), bedPos, player.getX());
         String band = "";
         try {
             band = BandLabel.bandAt(server.overworld(), Mth.floor(x));
@@ -160,7 +162,21 @@ public final class NapService {
             levelId, playerTag, x, (int) Math.floor(x / BLOCKS_PER_CARRIAGE), band, facingAlongX(player),
             BoardingProgressData.get(server.overworld()).travelledCarriageIndex(), RunIntegrity.isCheated(player),
             server.getWorldData().getDifficulty().getKey(), advancements, stats, narrative,
-            runExtras, difficultyOffset);
+            runExtras, difficultyOffset).withPlace(placeAt(server, x));
+    }
+
+    /** The train's band place at {@code x} plus the world's reverse-slide state, or null with no layout. */
+    private static NapSnapshot.Place placeAt(MinecraftServer server, double x) {
+        try {
+            WorldGenCycle.BandPosition pos = WorldGenCycle.fromConfig().bandPosition(Mth.floor(x));
+            if (pos == null) return null;
+            DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+            return new NapSnapshot.Place(pos, data.getReverseOriginX(), data.getReverseReachX(),
+                data.getReverseEarned(), data.getReverseSlide());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: band place not recorded at x={}; it will wake by X", x, e);
+            return null;
+        }
     }
 
     /** {@code <dir>/<uuid>.json} of this world as text, or empty when it is missing or unreadable. */
