@@ -130,13 +130,15 @@ public final class RunStatsEvents {
         // "deaths I caused".
         if (victim == killer) return;
         PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        run.incrementMobKills();
+        // Behind a nap point the kill counts against the run instead (re-rolled carriages).
+        int step = games.brennan.dungeontrain.nap.NapGateData.step(killer);
+        run.incrementMobKills(step);
         // PlayerMob kills are also tallied separately (the "players killed"
         // death-screen cell) and the victim's look is snapshotted for the
         // death-screen portrait (most-recent kill wins). mobKills still counts
         // everything, so the two overlap by design — a killed PlayerMob bumps both.
         if (victim instanceof PlayerMobEntity pm) {
-            run.incrementPlayerKills();
+            run.incrementPlayerKills(step);
             run.setKilledAppearance(PlayerMobAppearance.capture(pm));
             // ...and they stop being a friend you made. The kill still counts on the kill
             // side; it just can't also count on the friends side.
@@ -165,7 +167,7 @@ public final class RunStatsEvents {
         if (weaponStack == null) {
             weaponStack = killer.getMainHandItem().copy();
         }
-        run.recordWeaponKill(weaponStack);
+        run.recordWeaponKill(weaponStack, step);
     }
 
     /**
@@ -629,7 +631,7 @@ public final class RunStatsEvents {
         BlockState state = event.getState();
         if (!(state.getBlock() instanceof DecoratedPotBlock)
             && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isGloomslatePot(state)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened();
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened(games.brennan.dungeontrain.nap.NapGateData.step(player));
     }
 
     @SubscribeEvent
@@ -639,7 +641,7 @@ public final class RunStatsEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof WrittenBookItem)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead();
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead(games.brennan.dungeontrain.nap.NapGateData.step(player));
     }
 
     /**
@@ -690,11 +692,13 @@ public final class RunStatsEvents {
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             boolean cheated = RunIntegrity.isCheated(player);
+            // Behind a nap point, mobs met are re-rolled copies: neither met nor befriended.
+            boolean behindNap = games.brennan.dungeontrain.nap.NapGateData.step(player) < 0;
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
             for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {
                 // Per-run encounter set still records (death-screen stat); the
                 // cross-world lifetime counter + milestone freeze for cheated runs.
-                if (run.recordEncounter(mob.getUUID()) && !cheated) {
+                if (!behindNap && run.recordEncounter(mob.getUUID()) && !cheated) {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
                     // Echoes (reincarnations of a fallen player) are a distinct subset of encountered
@@ -717,7 +721,7 @@ public final class RunStatsEvents {
                 // is loaded near the player.
                 if (mob instanceof PlayerMobEntity pm) {
                     float feeling = pm.feelingToward(player);
-                    if (feeling > FRIEND_FEELING_MIN) {
+                    if (feeling > FRIEND_FEELING_MIN && !behindNap) {
                         run.recordBefriended(mob.getUUID());
                         if (feeling > run.friendFeeling()) {
                             run.captureFriendAppearance(mob.getUUID(), PlayerMobAppearance.capture(pm), feeling);
