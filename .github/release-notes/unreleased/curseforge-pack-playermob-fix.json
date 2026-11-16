@@ -1,0 +1,17 @@
+{
+  "id": "curseforge-pack-playermob-fix",
+  "version": "0.1842.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "CurseForge modpack starts again",
+  "summary": "The last few CurseForge modpack versions stopped at an error loading mods. The pack now ships the right version of Interactive Player Mobs.",
+  "highlights": [],
+  "pr": 2678,
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
