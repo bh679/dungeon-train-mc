@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
 import games.brennan.dungeontrain.compat.PlayerMobNaturalGearBridge;
 import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
+import games.brennan.dungeontrain.compat.ZombifiedBackpackLockBridge;
 import games.brennan.dungeontrain.client.ContentModeSyncClient;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
@@ -701,6 +702,17 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("Dungeon Totems present but its rescue seam is unavailable ({}); "
                         + "Void Totems will land on last safe ground.", t.toString());
+            }
+        }
+
+        // Zombified (Dungeon Totems) locks the main inventory; lock the bundled Edible Backpacks
+        // backpack with it: no clicks in or out, no pickups into it, and greyed out like the pack.
+        if (ModList.get().isLoaded("dungeontotems") && ModList.get().isLoaded("ediblebackpacks")) {
+            try {
+                ZombifiedBackpackLockBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("Zombified backpack lock unavailable ({}); the backpack stays usable while "
+                        + "Zombified.", t.toString());
             }
         }
 
