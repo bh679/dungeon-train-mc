@@ -25,9 +25,9 @@ public final class DiscordRichPresence {
 
     /**
      * The Discord application "Dungeon Train" (discord.com/developers/applications). Public, not a secret.
-     * Blank until the application exists; while blank, nothing ever connects.
+     * Shared with the relay bot (its DISCORD_CLIENT_ID); blank would mean nothing ever connects.
      */
-    public static final String APPLICATION_ID = "";
+    public static final String APPLICATION_ID = "1515159664818524220";
 
     static final long RETRY_MILLIS = 30_000L;
     private static final long IDLE_WAIT_MILLIS = 1_000L;
