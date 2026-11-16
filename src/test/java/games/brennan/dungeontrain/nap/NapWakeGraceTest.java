@@ -43,4 +43,19 @@ final class NapWakeGraceTest {
         NapWakeGrace.close(player);
         assertFalse(NapWakeGrace.isActive(player));
     }
+
+    @Test
+    @DisplayName("during the grace only state triggers are refused; events and unknowns as designed")
+    void refusesOnlyWakeArtefacts() {
+        UUID player = UUID.randomUUID();
+        assertFalse(NapWakeGrace.refuses(player, "minecraft:location"), "no grace, nothing refused");
+        NapWakeGrace.open(player);
+        assertTrue(NapWakeGrace.refuses(player, "minecraft:location"));
+        assertTrue(NapWakeGrace.refuses(player, "minecraft:inventory_changed"));
+        assertTrue(NapWakeGrace.refuses(player, "dungeontrain:biomes_visited"));
+        assertTrue(NapWakeGrace.refuses(player, null));
+        assertFalse(NapWakeGrace.refuses(player, "dungeontrain:gameplay_action"));
+        assertFalse(NapWakeGrace.refuses(player, "minecraft:player_killed_entity"));
+        assertFalse(NapWakeGrace.refuses(player, "dungeontrain:killed_echo"));
+    }
 }

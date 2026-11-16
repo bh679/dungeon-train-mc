@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** {@link NapSnapshot} round trip and {@link NapStore}'s single-use rule. */
@@ -123,5 +125,51 @@ final class NapStoreTest {
         assertTrue(store.load(player, NapSlot.key(false, Difficulty.NORMAL)).isPresent());
         assertFalse(store.load(player, NapSlot.key(true, Difficulty.NORMAL)).isPresent());
         assertFalse(store.load(player, NapSlot.key(false, Difficulty.HARD)).isPresent());
+    }
+
+    @Test
+    @DisplayName("the applied list is binary, and an old text list is migrated and removed")
+    void legacyTextListMigrated(@TempDir Path root) throws Exception {
+        NapStore store = new NapStore(root);
+        UUID player = UUID.randomUUID();
+        String slot = NapSlot.key(false, Difficulty.HARD);
+        NapSnapshot n = nap("World 1700000000003");
+        Path dir = root.resolve(NapStore.DIR);
+        Files.createDirectories(dir);
+        Files.writeString(dir.resolve(NapAppliedLog.LEGACY_FILE), n.napId() + "\n");
+        store.save(player, slot, n);
+
+        assertFalse(store.load(player, slot).isPresent(), "the id from the text list still counts");
+        assertFalse(Files.exists(dir.resolve(NapAppliedLog.LEGACY_FILE)));
+        assertEquals(Set.of(n.napId()), NapAppliedLog.decode(Files.readAllBytes(dir.resolve(NapAppliedLog.FILE))));
+    }
+
+    @Test
+    @DisplayName("an edited or truncated applied list fails closed: no nap wakes, no file is lost")
+    void corruptListFailsClosed(@TempDir Path root) throws Exception {
+        NapStore store = new NapStore(root);
+        UUID player = UUID.randomUUID();
+        String slot = NapSlot.key(false, Difficulty.HARD);
+        NapSnapshot used = nap("World 1700000000004");
+        store.save(player, slot, used);
+        store.consume(player, slot, used);
+        Path list = root.resolve(NapStore.DIR).resolve(NapAppliedLog.FILE);
+        byte[] good = Files.readAllBytes(list);
+
+        byte[] edited = good.clone();
+        edited[12] ^= 1;
+        Files.write(list, edited);
+        NapSnapshot pending = nap("World 1700000000005");
+        store.save(player, slot, pending);
+        assertFalse(store.load(player, slot).isPresent());
+        assertTrue(Files.exists(store.fileFor(player, slot)), "the nap is kept");
+        assertThrows(IOException.class, () -> store.consume(player, slot, pending));
+        assertTrue(Files.exists(store.fileFor(player, slot)), "consume did not delete it");
+
+        Files.write(list, java.util.Arrays.copyOf(good, good.length - 3));
+        assertFalse(store.load(player, slot).isPresent());
+
+        Files.write(list, good);
+        assertEquals(pending, store.load(player, slot).orElseThrow(), "a good list lets it wake");
     }
 }

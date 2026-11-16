@@ -7,11 +7,9 @@ import net.minecraft.nbt.NbtIo;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -22,20 +20,20 @@ import java.util.UUID;
  * client share the game directory, so the server writes it and the next run's server reads it; the
  * {@code root} parameter is where a multiplayer server would keep its own.
  *
- * <p>Waking deletes the file and appends the nap's id to {@code naps-applied.txt} beside it, so a copy
- * of the file restored by hand is refused.</p>
+ * <p>Waking records the nap's id in {@link NapAppliedLog} beside it, then deletes the file, so a copy
+ * restored by hand is refused. If that record fails its check, no nap wakes (fails closed).</p>
  */
 public final class NapStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     static final String DIR = "naps";
-    private static final String APPLIED = "naps-applied.txt";
-
     private final Path dir;
+    private final NapAppliedLog applied;
 
     public NapStore(Path root) {
         this.dir = root.resolve(DIR);
+        this.applied = new NapAppliedLog(dir);
     }
 
     /** The store in this install's {@code dungeontrain/} folder. */
@@ -67,7 +65,15 @@ public final class NapStore {
                 LOGGER.warn("[DungeonTrain] Nap file {} is not a nap; ignoring it.", file);
                 return Optional.empty();
             }
-            if (appliedIds().contains(nap.napId().toString())) {
+            Set<UUID> used;
+            try {
+                used = applied.read();
+            } catch (NapAppliedLog.Corrupt e) {
+                LOGGER.warn("[DungeonTrain] {} ({}); no nap wakes until it is fixed. Nap {} kept.",
+                    e.getMessage(), dir.resolve(NapAppliedLog.FILE), nap.napId());
+                return Optional.empty();
+            }
+            if (used.contains(nap.napId())) {
                 LOGGER.warn("[DungeonTrain] Nap {} already woke once; discarding the copy.", nap.napId());
                 Files.deleteIfExists(file);
                 return Optional.empty();
@@ -81,9 +87,7 @@ public final class NapStore {
 
     /** Marks the nap used, then removes its file. The mark goes first so a failed delete can't wake it again. */
     public void consume(UUID player, String slot, NapSnapshot nap) throws IOException {
-        Files.createDirectories(dir);
-        Files.writeString(dir.resolve(APPLIED), nap.napId() + "\n", StandardCharsets.UTF_8,
-            StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        applied.add(nap.napId());
         Files.deleteIfExists(fileFor(player, slot));
     }
 
@@ -104,16 +108,5 @@ public final class NapStore {
             LOGGER.warn("[DungeonTrain] Could not list naps in {}", dir, e);
         }
         return out;
-    }
-
-    private Set<String> appliedIds() throws IOException {
-        Path applied = dir.resolve(APPLIED);
-        if (!Files.isRegularFile(applied)) return Set.of();
-        Set<String> ids = new HashSet<>();
-        for (String line : Files.readAllLines(applied, StandardCharsets.UTF_8)) {
-            String id = line.trim();
-            if (!id.isEmpty()) ids.add(id);
-        }
-        return ids;
     }
 }
