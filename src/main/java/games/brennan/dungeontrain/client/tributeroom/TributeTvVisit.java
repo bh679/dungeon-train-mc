@@ -197,7 +197,7 @@ public final class TributeTvVisit {
                     if (readyAtMs < 0) readyAtMs = now;
                     if (now - readyAtMs >= SETTLE_MS) {
                         setPhase(Phase.FADING_IN);
-                        TributeArrivalFov.begin(now);
+                        TributeArrivalFov.begin(now, arrivalFov(mc));
                     }
                 } else if (now - phaseAtMs >= ROOM_TIMEOUT_MS) {
                     fallBack("no room after " + ROOM_TIMEOUT_MS + " ms");
@@ -233,6 +233,24 @@ public final class TributeTvVisit {
 
     public static void onClientTick() {
         if (texture != null && phase != Phase.IDLE && phase != Phase.ENDING && !zoomed()) texture.tick();
+    }
+
+    /**
+     * The field of view the TV's picture fills from where the visitor's eyes are: the zoom out starts
+     * there, so the dissolve from the window to the TV is the same picture at the same size.
+     */
+    private static double arrivalFov(Minecraft mc) {
+        if (screenBox == null || mc.player == null) return TributeArrivalFov.FALLBACK_START_FOV;
+        net.minecraft.core.Direction f = screenFacing;
+        boolean alongZ = f.getAxis() == net.minecraft.core.Direction.Axis.Z;
+        int across = alongZ ? screenBox.getXSpan() : screenBox.getZSpan();
+        int deep = alongZ ? screenBox.getZSpan() : screenBox.getXSpan();
+        // The picture's centre: the middle of the box, out to its face on the facing side.
+        double cx = (screenBox.minX() + screenBox.maxX() + 1) / 2.0 + f.getStepX() * deep / 2.0;
+        double cy = (screenBox.minY() + screenBox.maxY() + 1) / 2.0;
+        double cz = (screenBox.minZ() + screenBox.maxZ() + 1) / 2.0 + f.getStepZ() * deep / 2.0;
+        double distance = mc.player.getEyePosition().distanceTo(new net.minecraft.world.phys.Vec3(cx, cy, cz));
+        return TributeArrivalFov.fillFov(across, screenBox.getYSpan(), pictureAspect(), distance);
     }
 
     /** The room is up when we are alive in a level that has the TV's blocks — its chunk has arrived. */
