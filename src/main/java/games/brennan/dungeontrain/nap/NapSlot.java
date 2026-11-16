@@ -29,4 +29,16 @@ public final class NapSlot {
             || RunIntegrity.isVisiblySessionFreePlay();
         return key(freePlay, server.getWorldData().getDifficulty());
     }
+
+    /**
+     * Whether {@code nap} belongs in {@code slot}: its own Free Play flag and difficulty name that slot,
+     * so a nap file renamed into another slot is refused. A nap saved before the difficulty was recorded
+     * (empty) is judged on its Free Play flag alone.
+     */
+    public static boolean matches(String slot, NapSnapshot nap) {
+        String kind = (nap.cheated() ? "freeplay" : "survival") + "-";
+        if (nap.difficulty().isEmpty()) return slot.startsWith(kind);
+        Difficulty recorded = Difficulty.byName(nap.difficulty());
+        return recorded != null && slot.equals(key(nap.cheated(), recorded));
+    }
 }

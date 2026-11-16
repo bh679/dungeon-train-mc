@@ -83,6 +83,11 @@ public final class NapWake {
         String slot = NapSlot.forNewWorld(server);
         Optional<NapSnapshot> nap = NapStore.local().load(uuid, slot);
         if (nap.isEmpty() || nap.get().levelId().equals(NapService.levelIdOf(server))) return;
+        if (!NapSlot.matches(slot, nap.get())) {
+            LOGGER.warn("[DungeonTrain] Nap {} is a {} {} run but sits in slot {}; not waking it.", nap.get().napId(),
+                nap.get().cheated() ? "freeplay" : "survival", nap.get().difficulty(), slot);
+            return;
+        }
         planned = new Plan(uuid, slot, nap.get());
         RunRestore.raiseWorldProgress(server.overworld(), nap.get().worldDepth());
         carryDifficultyOffset(server, nap.get());
