@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.nap;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.discordpresence.survey.SurveyManager;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
@@ -32,7 +33,8 @@ import java.util.UUID;
 
 /**
  * The server half of a nap: offer it, and on Main Menu save the player to a {@link NapSnapshot} and
- * tell the client to leave and delete the world ({@link NapSavedPacket}).
+ * tell the client to leave and delete the world ({@link NapSavedPacket}), after the feedback survey and
+ * Contribute page ({@code NarrativeDeathScreen#afterNap}).
  *
  * <p>The offer is remembered per player with the bed it came from, so an answer only counts for a
  * prompt the server actually sent, and the bed is checked again before saving: it could have been
@@ -123,7 +125,21 @@ public final class NapService {
         LOGGER.info("[DungeonTrain] Nap {} saved for {}: x={} carriage={} band={} direction={} cheated={}",
             nap.napId(), player.getName().getString(), Math.round(nap.x()), nap.carriage(), nap.band(),
             nap.direction(), nap.cheated());
+        sendSurveyQuestions(player);
         DungeonTrainNet.sendTo(player, new NapSavedPacket(levelId));
+    }
+
+    /**
+     * The feedback questions a death sends, so the client's nap farewell ({@code NapQuit}) can show the
+     * survey before leaving. Sent ahead of {@link NapSavedPacket} on the same connection, so they land
+     * first; an empty list when the player hasn't consented, which leaves only the Contribute page.
+     */
+    private static void sendSurveyQuestions(ServerPlayer player) {
+        try {
+            SurveyManager.get().onPlayerDeath(player);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: survey questions could not be sent to {}", player.getName().getString(), e);
+        }
     }
 
     static NapSnapshot capture(ServerPlayer player, String levelId) {

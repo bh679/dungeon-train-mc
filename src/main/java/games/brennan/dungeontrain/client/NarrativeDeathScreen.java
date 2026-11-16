@@ -7,6 +7,7 @@ import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
+import games.brennan.dungeontrain.client.nap.NapQuit;
 import games.brennan.dungeontrain.client.survey.KnownFeature;
 import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
 import games.brennan.dungeontrain.client.survey.KnownFeatureNotes;
@@ -122,6 +123,11 @@ import java.util.concurrent.ThreadLocalRandom;
  * cached {@link DeathStatsPacket} ({@link DeathStatsCache}); the screen reads
  * it live each frame so a one-tick-late packet simply fills in. The survey
  * page set is rebuilt if the cached questions arrive after the screen opens.</p>
+ *
+ * <p><b>Nap mode</b> ({@link #afterNap}): after a nap is saved ({@code nap/NapService}) the same
+ * screen shows only the feedback questions and the Contribute page, with Main Menu in place of
+ * Board anew / Leave. It pauses the world, sends no death photos and no death-funnel analytics, and
+ * leaves through {@code NapQuit#leaveNow}, which deletes the napped world.</p>
  */
 public final class NarrativeDeathScreen extends Screen {
 
@@ -435,11 +441,42 @@ public final class NarrativeDeathScreen extends Screen {
     private Rect advViewport;               // advancements scroll viewport (hover / scroll hit-test)
     private final List<AdvIcon> gearAdvIcons = new ArrayList<>();  // resolved this frame, for hover
 
+    /** The napped world's save folder in nap mode ({@link #afterNap}); null on a death. */
+    private String napLevelId = null;
+    /** Set once a nap-mode exit has started, so a second click can't leave twice. */
+    private boolean napLeaving = false;
+
     public NarrativeDeathScreen() {
-        super(Component.translatable("gui.dungeontrain.death.narr.title"));
+        this(Component.translatable("gui.dungeontrain.death.narr.title"));
+    }
+
+    private NarrativeDeathScreen(Component title) {
+        super(title);
         // The bug-report response and the platform page's Update button read the launcher
         // listings + changelog; start (or reuse) that fetch now so it has landed by then.
         VersionCompareState.ensureFetched();
+    }
+
+    /**
+     * The nap farewell: the feedback questions and the Contribute page, shown once the nap is saved
+     * and before the player leaves {@code levelId} for the title screen.
+     */
+    public static NarrativeDeathScreen afterNap(String levelId) {
+        NarrativeDeathScreen screen = new NarrativeDeathScreen(Component.translatable("gui.dungeontrain.nap.main_menu"));
+        screen.napLevelId = levelId;
+        return screen;
+    }
+
+    /** True for the nap farewell rather than a death. */
+    private boolean nap() {
+        return napLevelId != null;
+    }
+
+    /** Leave the napped run for the title screen (world deleted); nap mode only. */
+    private void leaveNap() {
+        if (napLeaving) return;
+        napLeaving = true;
+        NapQuit.leaveNow(napLevelId);
     }
 
     /** Dev builds only: a death screen telling {@code lifeId}'s Live Eye pages, opened on "the broadcast". */
@@ -476,6 +513,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private List<Page> buildPages() {
+        if (nap()) return buildNapPages();
         List<Page> list = new ArrayList<>();
         list.add(Page.of(Kind.FALL));
         // "The broadcast" and "the crowd" — straight after the fall, on a life that went out on the
@@ -487,6 +525,23 @@ public final class NarrativeDeathScreen extends Screen {
         list.add(Page.of(Kind.DEEDS));
         list.add(Page.of(Kind.GEAR));
         list.add(Page.of(Kind.LIVES));
+        addSurveyPages(list);
+        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
+        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
+        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
+        // after it can move freely.
+        list.add(Page.of(Kind.DONATE));
+        // The photo page shows off this run's photos and photo stats, right before the final page,
+        // only when there are photos or any of the stats is above zero.
+        lastPhotoCount = photoSet().size();
+        lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
+        if (lastPhotoCount > 0 || lastPhotoStats) list.add(Page.of(Kind.PHOTOS));
+        list.add(Page.of(Kind.PLATFORM));
+        return list;
+    }
+
+    /** One page per feedback question, each followed by its bug-response or note pages. */
+    private void addSurveyPages(List<Page> list) {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             // A muted form stays in the deck but sits out of the normal Next-Screen flow (see
             // outOfFlow), exactly like the gated-out donation page — that keeps it reachable
@@ -501,17 +556,16 @@ public final class NarrativeDeathScreen extends Screen {
                 for (int slot = 0; slot < KNOWN_FEATURE_NOTE_PAGES; slot++) list.add(Page.note(e, slot));
             }
         }
-        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
-        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
-        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
-        // after it can move freely.
+    }
+
+    /** Nap mode's deck: the feedback questions (with their answer pages), then Contribute. */
+    private List<Page> buildNapPages() {
+        List<Page> list = new ArrayList<>();
+        addSurveyPages(list);
         list.add(Page.of(Kind.DONATE));
-        // The photo page shows off this run's photos and photo stats, right before the final page,
-        // only when there are photos or any of the stats is above zero.
+        // Kept in step with what tick() compares, so it doesn't rebuild every tick.
         lastPhotoCount = photoSet().size();
         lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
-        if (lastPhotoCount > 0 || lastPhotoStats) list.add(Page.of(Kind.PHOTOS));
-        list.add(Page.of(Kind.PLATFORM));
         return list;
     }
 
@@ -595,7 +649,7 @@ public final class NarrativeDeathScreen extends Screen {
             crowdPage = new CrowdPage(liveChrome);
         }
         pages = buildPages();
-        donateInFlow = shouldShowDonate();
+        donateInFlow = nap() || shouldShowDonate();
         // chipReturnPage is deliberately NOT reset here: init() re-runs on every page swap, so
         // clearing it would wipe the return index between a chip click and the page landing —
         // Next Screen then paged forward instead of going back where the chip was pressed. A new
@@ -606,8 +660,11 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
-        maybeSendRidePhoto();
-        maybeSendRideGallery();
+        if (!nap()) {
+            // Death-report photos: a nap is not a death.
+            maybeSendRidePhoto();
+            maybeSendRideGallery();
+        }
         kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
@@ -801,7 +858,7 @@ public final class NarrativeDeathScreen extends Screen {
                 : (fromShot != null ? fromShot : bgFor(currentPage));
         int backdropPage = photoNew && toShot != null ? toPage : (fromShot != null ? fromPage : currentPage);
         // A live streamer's death clip loops behind the opening page, under the same dip-to-black.
-        boolean clip = backdropPage == openingPage && openingPage >= 0
+        boolean clip = !nap() && backdropPage == openingPage && openingPage >= 0
             && DeathClipBackground.draw(g, this.width, this.height, ticksOpen, partialTick);
         if (clip || photo != null) {
             if (!clip) DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
@@ -826,10 +883,12 @@ public final class NarrativeDeathScreen extends Screen {
 
         // Train engine: full on the first screen (as if aboard), fading evenly to
         // silence by the last screen — and rising again if the player steps back.
-        TrainEngineSound.deathScreenActive = true;
-        TrainEngineSound.deathFade = pages.size() > 1
-                ? Math.max(0.0f, 1.0f - (float) currentPage / (pages.size() - 1))
-                : 1.0f;
+        if (!nap()) {
+            TrainEngineSound.deathScreenActive = true;
+            TrainEngineSound.deathFade = pages.size() > 1
+                    ? Math.max(0.0f, 1.0f - (float) currentPage / (pages.size() - 1))
+                    : 1.0f;
+        }
 
         // Clickable regions are set by the page body / footer each frame; clear
         // any from last frame so a page that doesn't draw one can't be clicked.
@@ -1002,7 +1061,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Start timing a newly-shown page and fire its {@code open} funnel event (consent-gated). */
     private void openPageAnalytics(Page page) {
-        openedPage = pageAnalyticsId(page.kind());
+        // Naps stay out of the death funnel (and the relay accepts no nap surface).
+        openedPage = nap() ? null : pageAnalyticsId(page.kind());
         openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
         pageOpenedAtMs = Util.getMillis();
         if (openedPage == null) return; // untracked page — leavePageAnalytics skips it too
@@ -2197,6 +2257,14 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopBar(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
+        if (nap()) {
+            // One way out at any point: Main Menu, which leaves the napped run.
+            Component menu = Component.translatable("gui.dungeontrain.nap.main_menu");
+            int menuW = this.font.width(menu) + 16;
+            leaveRect = drawChip(g, this.width - 10 - menuW, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
+            reboardRect = null;
+            return;
+        }
         // Right-aligned: [photos] [reboard] [leave]. leave on the far right. Holding
         // Shift turns the leave chip into a "Quit Game" chip (darker, lighter border + text)
         // and turns the reboard chip blue — signalling reboard will preserve the current
@@ -2392,7 +2460,8 @@ public final class NarrativeDeathScreen extends Screen {
         // Continue (centered) on every page except the platform, where Board anew /
         // Leave live in the page body instead.
         if (page.kind() != Kind.PLATFORM) {
-            Component cont = Component.translatable("gui.dungeontrain.death.continue");
+            Component cont = Component.translatable(nap() && lastNapPage()
+                    ? "gui.dungeontrain.nap.main_menu" : "gui.dungeontrain.death.continue");
             int bw = 120, h = 18;
             int bx = this.width / 2 - bw / 2;
             continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
@@ -2633,7 +2702,18 @@ public final class NarrativeDeathScreen extends Screen {
             // can be a run of them, so this is a loop rather than a single skip.
             while (next < pages.size() && outOfFlow(pages.get(next))) next++;
             if (next < pages.size()) startTransition(next);
+            else if (nap()) leaveNap();
+        } else if (nap()) {
+            leaveNap();
         }
+    }
+
+    /** Nap mode: no in-flow page after this one, so Next Screen leaves (and reads Main Menu). */
+    private boolean lastNapPage() {
+        for (int i = currentPage + 1; i < pages.size(); i++) {
+            if (!outOfFlow(pages.get(i))) return false;
+        }
+        return true;
     }
 
     private void back() {
@@ -2705,7 +2785,7 @@ public final class NarrativeDeathScreen extends Screen {
         // Funnel: record the chosen rating for scale questions (the score drives the death-screen
         // survey-response distribution). Text-only questions have no meaningful score, so they're
         // left out — never the free-text comment either way.
-        if (e.scaleMax() >= e.scaleMin()) {
+        if (!nap() && e.scaleMax() >= e.scaleMin()) {
             UiAnalytics.surveyAnswer(UiAnalytics.SURFACE_DEATH_SCREEN, e.id(), score, e.scaleMax());
         }
         // For a real-bug answer, collect + ship logs (shared with the /bug + /feedback path).
@@ -2753,6 +2833,10 @@ public final class NarrativeDeathScreen extends Screen {
      * {@link Screen#hasShiftDown()}, so the action matches the drawn label.
      */
     private void leaveOrQuit() {
+        if (nap()) {
+            leaveNap();
+            return;
+        }
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_LEAVE);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
         if (Screen.hasShiftDown()) {
@@ -2791,7 +2875,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
     private void openDonateLink() {
-        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
+        if (!nap()) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
         Minecraft.getInstance().setScreen(new DonationOptionsScreen(this));
     }
 
@@ -3099,8 +3183,9 @@ public final class NarrativeDeathScreen extends Screen {
     public boolean isPauseScreen() {
         // Like the vanilla death screen, do NOT pause — so the world keeps
         // ticking and the train engine keeps sounding behind the screen (which
-        // we then fade out page by page).
-        return false;
+        // we then fade out page by page). A nap is the exception: it is already
+        // saved, so nothing may happen to the player behind the farewell.
+        return nap();
     }
 
     @Override
