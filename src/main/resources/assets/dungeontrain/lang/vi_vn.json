@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "Tỉnh dậy.",
   "gui.dungeontrain.nap.warning": "Tính năng này vẫn đang được phát triển. Chỉ dùng nếu bạn sẵn sàng mất mọi thứ đang mang theo.",
   "gui.dungeontrain.nap.main_menu": "Menu chính",
+  "gui.dungeontrain.nap.ongoing.kicker": "một kiếp còn tiếp diễn",
+  "gui.dungeontrain.nap.ongoing.headline": "Người %s lên tàu, và vẫn chưa ngã xuống.",
   "gui.dungeontrain.nap.free_play_cause": "Tỉnh dậy từ một lượt chơi ở chế độ Chơi Tự do",
   "chat.dungeontrain.nap.tampered.moved": "Đoàn tàu không nhận ra chiếc giường này, nó đã bị can thiệp.",
   "chat.dungeontrain.nap.tampered.made": "Đoàn tàu phân biệt được giường bạn làm với giường của nó, ở đây không được đâu.",

@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "Bangun.",
   "gui.dungeontrain.nap.warning": "Ciri ini masih dalam pembangunan. Gunakan hanya jika anda sanggup kehilangan semua yang anda bawa.",
   "gui.dungeontrain.nap.main_menu": "Menu Utama",
+  "gui.dungeontrain.nap.ongoing.kicker": "kehidupan yang berterusan",
+  "gui.dungeontrain.nap.ongoing.headline": "Yang %s menaiki, dan belum lagi tumbang.",
   "gui.dungeontrain.nap.free_play_cause": "Terjaga daripada larian Main Bebas",
   "chat.dungeontrain.nap.tampered.moved": "Kereta api tidak mengenali katil ini, ia telah diusik.",
   "chat.dungeontrain.nap.tampered.made": "Kereta api dapat membezakan katil buatan anda daripada katilnya sendiri, ini tidak akan berjaya di sini.",

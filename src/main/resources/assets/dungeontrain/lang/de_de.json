@@ -630,6 +630,8 @@
   "gui.dungeontrain.nap.night.decline": "Aufwachen.",
   "gui.dungeontrain.nap.warning": "Diese Funktion ist noch in Entwicklung. Nutze sie nur, wenn du bereit bist, alles zu verlieren, was du dabei hast.",
   "gui.dungeontrain.nap.main_menu": "Hauptmenü",
+  "gui.dungeontrain.nap.ongoing.kicker": "ein Leben, das weitergeht",
+  "gui.dungeontrain.nap.ongoing.headline": "Der %s auf dem Zug, und noch nicht gefallen.",
   "gui.dungeontrain.nap.free_play_cause": "Aus einem Lauf im Freien Spiel aufgewacht",
   "chat.dungeontrain.nap.tampered.moved": "Der Zug erkennt dieses Bett nicht, jemand hat daran herumgepfuscht.",
   "chat.dungeontrain.nap.tampered.made": "Der Zug unterscheidet ein Bett aus deiner Hand von einem seiner eigenen, das funktioniert hier nicht.",

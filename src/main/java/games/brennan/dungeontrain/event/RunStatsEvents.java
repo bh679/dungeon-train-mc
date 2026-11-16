@@ -508,6 +508,23 @@ public final class RunStatsEvents {
     }
 
     /**
+     * The nap farewell's "a life ongoing" page ({@code nap/NapService}): this run's stats with the
+     * lifetime totals of the lives before it, built like the alive-logout summary. Nothing is accrued
+     * and nothing is posted; the client only caches it for the page.
+     */
+    public static DeathStatsPacket napPacket(ServerPlayer player) {
+        UUID id = player.getUUID();
+        return buildPacket(player,
+                GlobalPlayerStats.totalDeaths(id),
+                GlobalPlayerStats.totalCarriages(id),
+                GlobalPlayerStats.totalDistance(id),
+                GlobalPlayerStats.totalFriends(id),
+                GlobalPlayerStats.totalBooks(id),
+                GlobalPlayerStats.trainTicks(id),
+                DeathNarrative.EMPTY, "");
+    }
+
+    /**
      * Snapshot the player's current run stats + worn armor into a {@link DeathStatsPacket}, shared by
      * the death summary and the alive-logout summary. The equipment slots reflect the player's gear
      * right now (at death — before respawn/keep-inventory; at logout — their live gear).

@@ -8,6 +8,7 @@ import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
 import games.brennan.dungeontrain.client.nap.NapQuit;
+import games.brennan.dungeontrain.narrative.LocaleOrdinalWords;
 import games.brennan.dungeontrain.client.survey.KnownFeature;
 import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
 import games.brennan.dungeontrain.client.survey.KnownFeatureNotes;
@@ -131,7 +132,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM }
+    private enum Kind { FALL, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM, ONGOING }
 
     /** {@code slot} is which of its form's notes a NOTE page shows (see {@link #notes}); 0 elsewhere. */
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey, int slot) {
@@ -558,11 +559,12 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
-    /** Nap mode's deck: the feedback questions (with their answer pages), then Contribute. */
+    /** Nap mode's deck: the feedback questions (with their answer pages), Contribute, then "a life ongoing". */
     private List<Page> buildNapPages() {
         List<Page> list = new ArrayList<>();
         addSurveyPages(list);
         list.add(Page.of(Kind.DONATE));
+        list.add(Page.of(Kind.ONGOING));
         // Kept in step with what tick() compares, so it doesn't rebuild every tick.
         lastPhotoCount = photoSet().size();
         lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
@@ -934,6 +936,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, partialTick);
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
+                case ONGOING -> y = drawOngoing(g, stats, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
                 case NOTE -> y = drawNote(g, page, left, contentW, cx, y);
@@ -958,7 +961,7 @@ public final class NarrativeDeathScreen extends Screen {
                 drawCargoTooltips(g, stats, mouseX, mouseY);
             }
             // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
-            if (page.kind() == Kind.LIVES && stats != null && settled()) {
+            if ((page.kind() == Kind.LIVES || page.kind() == Kind.ONGOING) && stats != null && settled()) {
                 drawLivesTooltips(g, mouseX, mouseY);
             }
             // Per-tile "what is this number?" tooltips on the donation page — wrapped to at most
@@ -1031,7 +1034,7 @@ public final class NarrativeDeathScreen extends Screen {
             case FALL     -> List.of(SnapshotTag.SCENIC);
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
-            case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
+            case LIVES, ONGOING -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
             case BROADCAST, CROWD, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM -> List.of();
         };
     }
@@ -1056,6 +1059,8 @@ public final class NarrativeDeathScreen extends Screen {
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
             // Untracked: UiAnalytics PAGE_* ids are lock-step with the relay's ui-events.js.
             case PHOTOS -> null;
+            // Nap mode only, and nap mode sends no analytics.
+            case ONGOING -> null;
         };
     }
 
@@ -1511,6 +1516,30 @@ public final class NarrativeDeathScreen extends Screen {
         }
         y = drawNarration(g, n.livesNarration(), cx, w, y);
         y += 10;
+        return drawLifetimeTotals(g, s, left, w, y);
+    }
+
+    /**
+     * The nap farewell's last page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
+     * and not yet to fall.") over the same lifetime tiles and icons as {@link #drawLives}: the totals of
+     * the lives before this one, since a life is only added up when it ends.
+     */
+    private int drawOngoing(GuiGraphics g, DeathStatsPacket s, int left, int w, int cx, int y) {
+        drawKicker(g, cx, y, "gui.dungeontrain.nap.ongoing.kicker");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        if (s != null) {
+            String locale = Minecraft.getInstance().getLanguageManager().getSelected();
+            String nth = LocaleOrdinalWords.forLocale(locale, s.lifeDeaths() + 1L, LocaleOrdinalWords.Gender.MASCULINE);
+            y = drawQuestion(g, Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString(), cx, w, y);
+            y += 10;
+        }
+        return drawLifetimeTotals(g, s, left, w, y);
+    }
+
+    /** The six lifetime text tiles and the 3×3 icon grid, shared by "all your lives" and "a life ongoing". */
+    private int drawLifetimeTotals(GuiGraphics g, DeathStatsPacket s, int left, int w, int y) {
         if (s != null) {
             // Left: the six lifetime text tiles (narrowed, 3 cols × 2 rows). Right: a 3×3 hover-icon
             // grid, top-aligned with the tiles, so the icons sit beside — not below — the text.

@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "Gumising.",
   "gui.dungeontrain.nap.warning": "Ginagawa pa ang feature na ito. Gamitin lang kung handa kang mawala ang lahat ng dala mo.",
   "gui.dungeontrain.nap.main_menu": "Main Menu",
+  "gui.dungeontrain.nap.ongoing.kicker": "isang buhay na nagpapatuloy",
+  "gui.dungeontrain.nap.ongoing.headline": "Ang %s na sumakay, at hindi pa bumabagsak.",
   "gui.dungeontrain.nap.free_play_cause": "Nagising mula sa isang takbo sa Malayang Paglalaro",
   "chat.dungeontrain.nap.tampered.moved": "Hindi kilala ng tren ang kamang ito, may nakialam dito.",
   "chat.dungeontrain.nap.tampered.made": "Alam ng tren ang kamang gawa mo mula sa isa sa sarili nito, hindi ito gagana rito.",

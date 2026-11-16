@@ -729,6 +729,8 @@
   "gui.dungeontrain.nap.night.decline": "Trezește-te.",
   "gui.dungeontrain.nap.warning": "Această funcție este încă în dezvoltare. Folosește-o doar dacă ești dispus să pierzi tot ce ai asupra ta.",
   "gui.dungeontrain.nap.main_menu": "Meniu principal",
+  "gui.dungeontrain.nap.ongoing.kicker": "o viață care continuă",
+  "gui.dungeontrain.nap.ongoing.headline": "Este %s care urcă, și încă nu a căzut.",
   "gui.dungeontrain.nap.free_play_cause": "Trezit dintr-o tură în Joc Liber",
   "chat.dungeontrain.nap.tampered.moved": "Trenul nu recunoaște acest pat, cineva a umblat la el.",
   "chat.dungeontrain.nap.tampered.made": "Trenul deosebește un pat făcut de tine de unul de-al lui, asta nu merge aici.",

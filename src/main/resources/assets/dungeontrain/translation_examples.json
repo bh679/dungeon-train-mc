@@ -4756,6 +4756,15 @@
       ]
     }
   },
+  "gui.dungeontrain.nap.ongoing.headline": {
+    "1": {
+      "label": "which ride this is, as an ordinal in your language (previous deaths + 1)",
+      "examples": [
+        "fifth",
+        "37th"
+      ]
+    }
+  },
   "gui.dungeontrain.death.narr.photos": {
     "1": {
       "label": "how many photos this ride captured",

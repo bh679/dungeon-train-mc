@@ -5,6 +5,7 @@ import games.brennan.discordpresence.survey.SurveyManager;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
+import games.brennan.dungeontrain.event.RunStatsEvents;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NapSavedPacket;
@@ -126,6 +127,7 @@ public final class NapService {
             nap.napId(), player.getName().getString(), Math.round(nap.x()), nap.carriage(), nap.band(),
             nap.direction(), nap.cheated());
         sendSurveyQuestions(player);
+        sendLifetimeStats(player);
         DungeonTrainNet.sendTo(player, new NapSavedPacket(levelId));
     }
 
@@ -134,6 +136,15 @@ public final class NapService {
      * survey before leaving. Sent ahead of {@link NapSavedPacket} on the same connection, so they land
      * first; an empty list when the player hasn't consented, which leaves only the Contribute page.
      */
+    /** Lifetime totals for the farewell's "a life ongoing" page, sent ahead of {@link NapSavedPacket}. */
+    private static void sendLifetimeStats(ServerPlayer player) {
+        try {
+            DungeonTrainNet.sendTo(player, RunStatsEvents.napPacket(player));
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: lifetime stats could not be sent to {}", player.getName().getString(), e);
+        }
+    }
+
     private static void sendSurveyQuestions(ServerPlayer player) {
         try {
             SurveyManager.get().onPlayerDeath(player);

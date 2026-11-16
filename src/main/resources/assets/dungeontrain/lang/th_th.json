@@ -607,6 +607,8 @@
   "gui.dungeontrain.nap.night.decline": "ตื่นขึ้น",
   "gui.dungeontrain.nap.warning": "ฟีเจอร์นี้ยังอยู่ระหว่างการพัฒนา ใช้เฉพาะเมื่อคุณพร้อมจะเสียทุกอย่างที่ติดตัวอยู่",
   "gui.dungeontrain.nap.main_menu": "เมนูหลัก",
+  "gui.dungeontrain.nap.ongoing.kicker": "ชีวิตที่ยังดำเนินต่อ",
+  "gui.dungeontrain.nap.ongoing.headline": "ผู้โดยสารคน%s และยังไม่ล้มลง",
   "gui.dungeontrain.nap.free_play_cause": "ตื่นจากการเล่นในโหมดเล่นอิสระ",
   "chat.dungeontrain.nap.tampered.moved": "รถไฟจำเตียงนี้ไม่ได้ มีคนไปยุ่งกับมันแล้ว",
   "chat.dungeontrain.nap.tampered.made": "รถไฟแยกออกว่าเตียงไหนคุณทำเองและเตียงไหนเป็นของมัน แบบนี้ใช้ไม่ได้ที่นี่",
