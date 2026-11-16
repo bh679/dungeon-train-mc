@@ -1,0 +1,166 @@
+{
+  "parent": "dungeontrain:enchiridion/family_photo",
+  "display": {
+    "icon": {
+      "id": "minecraft:creeper_head"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.photobomb.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photobomb.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "minecraft:creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:creeper"
+      }
+    },
+    "creeperoverhaul:badlands_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:badlands_creeper"
+      }
+    },
+    "creeperoverhaul:bamboo_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:bamboo_creeper"
+      }
+    },
+    "creeperoverhaul:beach_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:beach_creeper"
+      }
+    },
+    "creeperoverhaul:birch_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:birch_creeper"
+      }
+    },
+    "creeperoverhaul:cave_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:cave_creeper"
+      }
+    },
+    "creeperoverhaul:dark_oak_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:dark_oak_creeper"
+      }
+    },
+    "creeperoverhaul:desert_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:desert_creeper"
+      }
+    },
+    "creeperoverhaul:dripstone_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:dripstone_creeper"
+      }
+    },
+    "creeperoverhaul:hills_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:hills_creeper"
+      }
+    },
+    "creeperoverhaul:jungle_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:jungle_creeper"
+      }
+    },
+    "creeperoverhaul:mushroom_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:mushroom_creeper"
+      }
+    },
+    "creeperoverhaul:savannah_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:savannah_creeper"
+      }
+    },
+    "creeperoverhaul:snowy_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:snowy_creeper"
+      }
+    },
+    "creeperoverhaul:spruce_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:spruce_creeper"
+      }
+    },
+    "creeperoverhaul:swamp_creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:creeperoverhaul:swamp_creeper"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "minecraft:creeper"
+    ],
+    [
+      "creeperoverhaul:badlands_creeper"
+    ],
+    [
+      "creeperoverhaul:bamboo_creeper"
+    ],
+    [
+      "creeperoverhaul:beach_creeper"
+    ],
+    [
+      "creeperoverhaul:birch_creeper"
+    ],
+    [
+      "creeperoverhaul:cave_creeper"
+    ],
+    [
+      "creeperoverhaul:dark_oak_creeper"
+    ],
+    [
+      "creeperoverhaul:desert_creeper"
+    ],
+    [
+      "creeperoverhaul:dripstone_creeper"
+    ],
+    [
+      "creeperoverhaul:hills_creeper"
+    ],
+    [
+      "creeperoverhaul:jungle_creeper"
+    ],
+    [
+      "creeperoverhaul:mushroom_creeper"
+    ],
+    [
+      "creeperoverhaul:savannah_creeper"
+    ],
+    [
+      "creeperoverhaul:snowy_creeper"
+    ],
+    [
+      "creeperoverhaul:spruce_creeper"
+    ],
+    [
+      "creeperoverhaul:swamp_creeper"
+    ]
+  ]
+}

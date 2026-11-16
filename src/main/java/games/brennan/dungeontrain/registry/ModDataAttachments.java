@@ -99,6 +99,19 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-chunk flag: a player has changed this chunk (broke, placed or used a block, an explosion, a
+     * portal built for them), so it is always saved. An untouched chunk is dropped once no player is near
+     * it and regenerates from the seed instead ({@code UntouchedChunkSaves}). Set once, never cleared.
+     * Serialized only while set.
+     */
+    public static final Supplier<AttachmentType<Boolean>> CHUNK_TOUCHED =
+        TYPES.register("chunk_touched",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL, touched -> touched)
+                .build()
+        );
+
+    /**
      * Per-chunk flag: this chunk sits in a BetterEnd End-band pass and is still owed its real-End terrain,
      * which is generated off-thread and written in a moment after the chunk loads
      * ({@code WorldEndBandEvents}). Persisted so a chunk that unloads first is filled on its next load;
@@ -469,6 +482,29 @@ public final class ModDataAttachments {
             () -> AttachmentType.<Integer>builder(() -> 0)
                 .serialize(Codec.INT)
                 .build()
+        );
+
+    /**
+     * Effective carriages travelled when this player became a zombie (Dungeon Totems' Zombified curse),
+     * or {@code -1} while they are not one. "Undead Commuter" is the gap at the cure
+     * ({@link games.brennan.dungeontrain.advancement.TotemJourneyAdvancements}). Serialized so the ride
+     * survives a logout; <b>no</b> {@code copyOnDeath}, since dying ends the curse uncured.
+     */
+    public static final Supplier<AttachmentType<Integer>> CARTS_AT_ZOMBIFIED =
+        TYPES.register("carts_at_zombified",
+            () -> AttachmentType.<Integer>builder(() -> -1)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * The full stack of totems this player is holding for a "hold a full stack" advancement, as
+     * {@code "<item id>@<carriages travelled when they took it up>"}, or empty. Not serialized: a logout
+     * lets go of it, and so does dying.
+     */
+    public static final Supplier<AttachmentType<String>> HELD_TOTEM_STACK =
+        TYPES.register("held_totem_stack",
+            () -> AttachmentType.<String>builder(() -> "").build()
         );
 
     /**

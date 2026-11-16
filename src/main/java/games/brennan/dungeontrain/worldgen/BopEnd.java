@@ -4,11 +4,13 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.density.BopEndBiomeSource;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import org.slf4j.Logger;
@@ -39,7 +41,9 @@ public final class BopEnd {
     /** The namespace a BoP End sample's decoration admits alongside vanilla. */
     public static final String NAMESPACE = "biomesoplenty";
 
-    public record Built(long seed, BopEndBiomeSource source, NoiseBasedChunkGenerator generator) {}
+    /** {@code structureState} is this generator's own: the live End's would list sets by the live End's biomes. */
+    public record Built(long seed, BopEndBiomeSource source, NoiseBasedChunkGenerator generator,
+                        ChunkGeneratorStructureState structureState) {}
 
     private static volatile Built built;
     private static volatile long failedSeed = Long.MIN_VALUE;
@@ -73,7 +77,10 @@ public final class BopEnd {
                         Holder.direct(endCopy(live.generatorSettings().value())));
                 LOGGER.info("[DungeonTrain] BoP End layout ready; outer-field sample: {}",
                         census(source, end.getChunkSource().randomState().sampler()));
-                b = new Built(seed, source, generator);
+                ChunkGeneratorStructureState structures = generator.createState(
+                        server.registryAccess().lookupOrThrow(Registries.STRUCTURE_SET),
+                        end.getChunkSource().randomState(), seed);
+                b = new Built(seed, source, generator, structures);
                 built = b;
                 return b;
             } catch (Throwable t) {

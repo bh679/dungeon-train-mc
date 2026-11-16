@@ -1,1 +1,1 @@
-[Read more](https://brennan.games/dungeontrain/update/)
+[Read more](https://dungeon.training/update/)

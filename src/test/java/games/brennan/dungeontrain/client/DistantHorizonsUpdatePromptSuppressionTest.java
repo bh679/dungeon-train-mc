@@ -7,6 +7,7 @@ import static games.brennan.dungeontrain.client.DistantHorizonsUpdatePromptSuppr
 import static games.brennan.dungeontrain.client.DistantHorizonsUpdatePromptSuppression.Decision.OPEN_TITLE_SCREEN;
 import static games.brennan.dungeontrain.client.DistantHorizonsUpdatePromptSuppression.Decision.RUN_INITIAL_SCREENS;
 import static games.brennan.dungeontrain.client.DistantHorizonsUpdatePromptSuppression.decide;
+import static games.brennan.dungeontrain.client.DistantHorizonsUpdatePromptSuppression.isUpdateScreen;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,5 +59,14 @@ final class DistantHorizonsUpdatePromptSuppressionTest {
         InitialScreensCapture.capture(task);
         InitialScreensCapture.clear();
         assertNull(InitialScreensCapture.consume());
+    }
+
+    @Test
+    @DisplayName("DH's update prompt is matched on its base class and DH 3.x's per-loader subclass")
+    void matchesUpdateScreenClasses() {
+        assertTrue(isUpdateScreen("com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen"));
+        assertTrue(isUpdateScreen("com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen_neoforge"));
+        assertFalse(isUpdateScreen("net.minecraft.client.gui.screens.TitleScreen"));
+        assertFalse(isUpdateScreen(null));
     }
 }

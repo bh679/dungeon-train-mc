@@ -138,7 +138,11 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Flower pot row: stateString = plant block id to add; "" adds the held plant.
                      ADD_POT_PLANT,
                      // Flower pot row: stateString = plant block id to drop.
-                     REMOVE_POT_PLANT }
+                     REMOVE_POT_PLANT,
+                     // Plain chest row: step the trapped-chest chance by delta, wrapping 0..100.
+                     BUMP_TRAPPED,
+                     // Plain chest row: set the trapped-chest chance to delta (cmd-click number pad).
+                     SET_TRAPPED }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

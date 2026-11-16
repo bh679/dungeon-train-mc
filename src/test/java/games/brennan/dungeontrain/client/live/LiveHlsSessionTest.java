@@ -66,6 +66,8 @@ class LiveHlsSessionTest {
     @Test
     void theStallWindowCoversMoreThanOneSegment() {
         assertTrue(LiveHlsSession.STALL_MS >= 2 * 10_000L, "a viewer buffers up to one 10 s segment legitimately");
+        assertTrue(LiveHlsSession.AUDIO_FRESH_MS >= 10_000L,
+            "a wait for the next segment never ends the speaker (the ring plays silence through it)");
     }
 
     @Test
@@ -92,6 +94,64 @@ class LiveHlsSessionTest {
         List<String> replay = List.of(LiveHlsSession.args("https://x/seg.ts", 640, 360, true, true));
         assertTrue(replay.contains("rgba"));
         assertFalse(String.join(" ", replay).contains("rgb24"), "the replay filter ends in rgba too");
+    }
+
+    @Test
+    void withSoundTheFirstAudioTrackGoesToTheLoopbackPortAsMonoPcm() {
+        for (boolean replay : new boolean[] {false, true}) {
+            List<String> a = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, replay, true, 41234));
+            String s = String.join(" ", a);
+            assertFalse(a.contains("-an"), "sound is decoded: " + s);
+            assertTrue(s.contains("-map 0:a:0 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41234 -map 0:v:0"),
+                "track 0 named, never ffmpeg's pick (a mic stream's game + mic mix): " + s);
+            assertTrue(a.indexOf("-map") > a.indexOf("-i"), "output options follow the input");
+            assertTrue(s.contains("-thread_type slice") && a.indexOf("-thread_type") < a.indexOf("-i"),
+                "slice-threaded decode, so the picture is not held back behind the sound: " + s);
+            assertEquals(List.of("-f", "image2pipe", "-c:v", "pam", "-pix_fmt", "rgba", "-"), a.subList(a.size() - 7, a.size()),
+                "the picture output is unchanged and last");
+        }
+    }
+
+    @Test
+    void withAMicPortTheSecondTrackGoesToItsOwnPortForTheLevelMeter() {
+        List<String> a = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 41234, 41235));
+        String s = String.join(" ", a);
+        assertTrue(s.contains("-map 0:a:0 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41234 "
+            + "-map 0:a:1 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41235 -map 0:v:0"),
+            "the sound first, the game-only track second, the picture last: " + s);
+        assertEquals(a, List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 41234, 41235)));
+        assertFalse(String.join(" ", LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 41234, 0)).contains("0:a:1"),
+            "no mic port, no second output");
+        assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 0, 41235)).contains("-an"),
+            "no sound port: nothing, mic port or not");
+    }
+
+    @Test
+    void aStreamWithNoMicTrackIsRecognisedFromFfmpegsError() {
+        assertTrue(LiveHlsSession.micTrackMissing("Failed to set value '0:a:1' for option 'map': Invalid argument"));
+        assertTrue(LiveHlsSession.micTrackMissing("Stream map '0:a:1' matches no streams."));
+        assertFalse(LiveHlsSession.micTrackMissing("Stream map '0:a:0' matches no streams."));
+        assertFalse(LiveHlsSession.micTrackMissing("Stream map '' matches no streams."), "unnamed: the next line says which");
+    }
+
+    @Test
+    void withoutSoundTheRunStaysPictureOnly() {
+        assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 0)).contains("-an"));
+        assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true)).contains("-an"));
+        assertTrue(List.of(LiveHlsSession.localArgs("/tmp/clip.mp4", 640, 360)).contains("-an"), "the death clip loops silent");
+    }
+
+    @Test
+    void aStreamWithNoAudioTrackIsRecognisedFromFfmpegsError() {
+        assertTrue(LiveHlsSession.audioMissing("Stream map '0:a:0' matches no streams."));
+        // ffmpeg 8: the map is unnamed in the first line and named in the second.
+        assertTrue(LiveHlsSession.audioMissing("Stream map '' matches no streams."));
+        assertTrue(LiveHlsSession.audioMissing("Failed to set value '0:a:0' for option 'map': Invalid argument"));
+        assertFalse(LiveHlsSession.audioMissing("Connection timed out"));
+        assertTrue(LiveHlsSession.audioOutputFailed("Error opening output tcp://127.0.0.1:54544: Connection refused"),
+            "a sound output that will not open falls back to the picture alone");
+        assertFalse(LiveHlsSession.audioOutputFailed("Error opening input https://x/live.m3u8"));
+        assertFalse(LiveHlsSession.audioMissing("Stream map '0:v:0' matches no streams."));
     }
 
     private static String joined(String url, boolean replay, boolean catchup) {

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.client.live.audio.LiveMic;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Result;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.SignedPut;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,8 @@ class LiveUploaderTest {
         final List<String> segmentPuts = new ArrayList<>();
         final Set<String> onStorage = new HashSet<>();
         int presignStatus = 200;
+        /** The reply's {@code mic.allowed}, or null for a relay that sends no mic block. */
+        Boolean micAllowed;
 
         @Override
         public CompletableFuture<Result> presign(String token, List<String> files) {
@@ -47,6 +50,11 @@ class LiveUploaderTest {
             JsonObject body = new JsonObject();
             body.add("urls", urls);
             if (presignStatus == 403) body.addProperty("takenBy", "Someone");
+            if (micAllowed != null) {
+                JsonObject mic = new JsonObject();
+                mic.addProperty("allowed", micAllowed);
+                body.add("mic", mic);
+            }
             return CompletableFuture.completedFuture(new Result(presignStatus, body, null));
         }
 
@@ -404,5 +412,30 @@ class LiveUploaderTest {
         encoderWrites(0, 3, false);
         u.pass(false);
         assertEquals(3, health.snapshot().samples());
+    }
+
+    @Test
+    void aHeartbeatReplyBarringTheMicSilencesItMidStream() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        try {
+            LiveMic.startStream(true);
+            encoderWrites(0, 1, false);
+            u.pass(false);
+            assertFalse(LiveMic.barred(), "no mic block (an older relay): nothing changes");
+
+            s.micAllowed = Boolean.FALSE;
+            encoderWrites(1, 1, false);
+            passNow(u);
+            assertTrue(LiveMic.barred(), "the relay's ban lands on the heartbeat");
+            assertTrue(LiveMic.takeBarredNotice(), "and the chat line is owed once");
+
+            s.micAllowed = Boolean.TRUE;
+            encoderWrites(2, 1, false);
+            passNow(u);
+            assertFalse(LiveMic.barred(), "an unban on the next heartbeat lets the mic through");
+        } finally {
+            LiveMic.endStream();
+        }
     }
 }

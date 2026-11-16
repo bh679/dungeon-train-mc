@@ -109,6 +109,53 @@ class UnionTest(unittest.TestCase):
         self.assertIsNone(index["repos"][1]["lastCommit"])
 
 
+class SourceTest(unittest.TestCase):
+    def test_local_path_used_without_clone_dir(self):
+        path, error = collect.resolve_source({"name": "a", "repo": "o/a", "path": "/x/a"})
+        self.assertEqual((path, error), (Path("/x/a"), None))
+
+    def test_repo_only_entry_without_clone_dir_is_skipped(self):
+        path, error = collect.resolve_source({"name": "a", "repo": "o/a"})
+        self.assertIsNone(path)
+        self.assertIn("--clone-dir", error)
+
+    def test_clone_dir_reads_a_bare_clone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            src = make_repo(tmp / "src", ["2026-08-26T14:00:00", "2026-08-26T16:00:00"])
+            bare = tmp / "bare"
+            subprocess.run(["git", "clone", "-q", "--bare", str(src), str(bare)], check=True)
+            hours, _, error = collect.collect_repo("a", bare)
+        self.assertIsNone(error)
+        self.assertEqual(len(hours), 2)
+
+    def test_failed_clone_is_skipped_not_fatal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = collect.build_index(
+                {"repos": [{"name": "nope", "repo": "bh679/does-not-exist-xyz"}]},
+                clone_dir=Path(tmp) / "clones", token=None)
+        self.assertEqual(index["totalHours"], 0)
+        self.assertTrue(index["repos"][0]["skipped"])
+
+    def test_token_rides_in_env_not_args(self):
+        env = collect.auth_env("secret-token")
+        self.assertIn("extraheader", env["GIT_CONFIG_KEY_0"])
+        self.assertNotIn("secret-token", env["GIT_CONFIG_VALUE_0"], "token must be base64'd")
+        self.assertIsNone(collect.auth_env(None))
+
+
+class ShrinkGuardTest(unittest.TestCase):
+    def test_lower_total_is_refused(self):
+        self.assertIsNotNone(collect.check_not_shrinking(2600, 2000))
+
+    def test_equal_or_higher_total_passes(self):
+        self.assertIsNone(collect.check_not_shrinking(2600, 2600))
+        self.assertIsNone(collect.check_not_shrinking(2600, 2700))
+
+    def test_no_previous_index_passes(self):
+        self.assertIsNone(collect.check_not_shrinking(None, 1))
+
+
 class IndexShapeTest(unittest.TestCase):
     def test_committed_index_is_self_consistent(self):
         path = Path(HERE).parents[1] / "docs/dev-hours/hour-index.json"

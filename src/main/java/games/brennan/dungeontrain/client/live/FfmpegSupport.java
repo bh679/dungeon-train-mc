@@ -209,11 +209,18 @@ public final class FfmpegSupport {
 
     /** Drain a process stream to the log on a daemon thread — ffmpeg blocks on a full stderr pipe. */
     public static void drain(InputStream in, String tag) {
+        drain(in, tag, line -> { });
+    }
+
+    /** {@link #drain(InputStream, String)}, handing each line to {@code onLine} as well (on the drain thread). */
+    public static void drain(InputStream in, String tag, java.util.function.Consumer<String> onLine) {
         Thread t = new Thread(() -> {
             try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = r.readLine()) != null) {
-                    if (!line.isBlank()) LOGGER.debug("[DungeonTrain] {}: {}", tag, line);
+                    if (line.isBlank()) continue;
+                    LOGGER.debug("[DungeonTrain] {}: {}", tag, line);
+                    onLine.accept(line);
                 }
             } catch (IOException ignored) {
                 // process ended

@@ -418,6 +418,14 @@ public final class PrefabUseHandler {
             || prefabStackOfType(player.getOffhandItem(), item);
     }
 
+    /** The loot prefab id a creative-tab prefab stack carries, or null for any other stack. */
+    @javax.annotation.Nullable
+    public static String lootPrefabIdOf(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        CompoundTag tag = customDataTag(stack);
+        return tag != null && tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING) ? tag.getString(NBT_LOOT_PREFAB_ID) : null;
+    }
+
     private static boolean prefabStackOfType(ItemStack stack, net.minecraft.world.item.Item item) {
         if (stack.isEmpty() || !stack.is(item)) return false;
         CompoundTag tag = customDataTag(stack);

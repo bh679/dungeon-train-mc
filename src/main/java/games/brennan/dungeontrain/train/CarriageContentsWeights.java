@@ -172,6 +172,13 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         bundledCatalogue = Map.of();
     }
 
+    /** Test seam: plain weights for {@code weights}' ids (default gates) until the next {@link #clear}. */
+    static synchronized void injectForTesting(Map<String, Integer> weights) {
+        Map<String, TemplateMeta> byId = new HashMap<>();
+        weights.forEach((id, w) -> byId.put(id.toLowerCase(Locale.ROOT), TemplateMeta.mergeWeight(null, w)));
+        current = new CarriageContentsWeights(byId);
+    }
+
     /**
      * Update the weight for {@code id} in-memory and persist the full weights
      * map to {@code config/dungeontrain/user/contents/weights.json}. The new weight

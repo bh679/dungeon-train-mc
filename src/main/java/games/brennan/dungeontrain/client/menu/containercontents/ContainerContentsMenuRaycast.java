@@ -65,11 +65,16 @@ public final class ContainerContentsMenuRaycast {
             hitY /= worldScale;
         }
 
-        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
-            ContainerContentsMenu.setHovered(rootHit(hitX, hitY));
-        } else {
-            ContainerContentsMenu.setHovered(searchHit(hitX, hitY));
-        }
+        ContainerContentsMenu.setHovered(hitFor(hitX, hitY));
+    }
+
+    /** The cell at these panel-local coordinates on whichever face of the panel is up. */
+    static ContainerContentsMenu.Hit hitFor(double hitX, double hitY) {
+        return switch (ContainerContentsMenu.screen()) {
+            case ROOT -> rootHit(hitX, hitY);
+            case BOOK_ENCHANTS -> BookEnchantListPanel.hit(hitX, hitY);
+            default -> searchHit(hitX, hitY);
+        };
     }
 
     /**
@@ -175,11 +180,33 @@ public final class ContainerContentsMenuRaycast {
             double dur1R = dur1L + subCellW;
             double dur2R = dur1R + subCellW;
             double ench1R = dur2R + subCellW;
+            if (layout.showContents()[idx]) {
+                return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_CONTENTS, idx);
+            }
             if (showScale) {
                 // Random-potion placeholder: scale toggle on the left half, bottle form on the right.
+                // Placeholders that can roll Luck split the left half: scale, then the Luck toggle.
+                if (hitX > dur1R && hitX <= dur2R && idx < ContainerContentsMenu.entries().size()
+                    && ContainerContentsMenuRenderer.hasLuckToggle(ContainerContentsMenu.entries().get(idx).itemId())) {
+                    return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_LUCK_TOGGLE, idx);
+                }
                 return hitX <= dur2R
                     ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE, idx)
                     : new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_POTION_FORM, idx);
+            }
+            boolean showBookEnch = layout.showBookEnch()[idx];
+            boolean bookOn = showBookEnch && idx < ContainerContentsMenu.entries().size()
+                && ContainerContentsMenu.entries().get(idx).hasRandomBookEnchants();
+            // A book's range, when on, takes the sub-row: Enchants, Level, then the List button in
+            // place of the random-enchant toggle and %, which are not drawn.
+            if (bookOn) {
+                ContainerContentsMenu.CellKind kind = hitX <= dur1R ? ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH
+                    : hitX <= dur2R ? ContainerContentsMenu.CellKind.ENTRY_BOOK_LEVEL
+                    : ContainerContentsMenu.CellKind.ENTRY_BOOK_LIST;
+                return new ContainerContentsMenu.Hit(kind, idx);
+            }
+            if (showBookEnch && hitX <= dur2R) {
+                return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH, idx);
             }
             if (hitX <= dur1R) {
                 return showDur

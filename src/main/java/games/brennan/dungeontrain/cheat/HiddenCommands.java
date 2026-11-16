@@ -40,11 +40,11 @@ public final class HiddenCommands {
      */
     public static final Set<String> HIDDEN_ROOTS = Set.of(
         // server, open to everyone
-        "fixaisconfig", "fixconfig", "customcontent", "liveappeal", "reportcarriage", "dtrebuild",
+        "fixaisconfig", "fixconfig", "customcontent", "liveappeal", "livereport", "reportcarriage", "dtrebuild",
         "dtbackup", "dtrestore", "dungeonbackup", "feedback", "log",
         // client-only
         "streamer", "twitch", "discord", "dungeontrain-options", "dungeontrain-rewards",
-        "framerate-throttle", "new-world",
+        "framerate-throttle", "new-world", "livemute",
         "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages");
 
     private static boolean warned;

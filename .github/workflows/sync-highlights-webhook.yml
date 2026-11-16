@@ -1,0 +1,35 @@
+name: Sync #highlights webhook to relay
+
+# Stores this repo's DISCORD_HIGHLIGHTS_WEBHOOK_URL secret on the relay, so its number milestones
+# (dp-relay socials-milestones.js) post to the same channel the major updates go to. GitHub never
+# shows the secret again, so this is how the relay gets it. release.yml re-syncs on every real
+# release; run this by hand after rotating the webhook, or with clear=true to remove the relay's copy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      clear:
+        description: Remove the relay's stored copy instead
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hand the webhook to the relay
+        env:
+          DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+          CLEAR: ${{ inputs.clear }}
+        run: |
+          if [ "$CLEAR" = "true" ]; then
+            python3 scripts/relay/sync-highlights-webhook.py --clear
+          else
+            python3 scripts/relay/sync-highlights-webhook.py
+          fi

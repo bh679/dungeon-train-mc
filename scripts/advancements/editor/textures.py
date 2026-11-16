@@ -114,6 +114,7 @@ class Textures:
             "exposure": _mod_jar("maven.modrinth/exposure/*/*/exposure-*.jar"),
             "exposure_polaroid": _mod_jar("maven.modrinth/exposure-polaroid/*/*/exposure-polaroid-*.jar"),
             "ediblebackpacks": _mod_jar("bh679/ediblebackpacks/*/*/ediblebackpacks-*.jar"),
+            "dungeontotems": _mod_jar("bh679/dungeontotems/*/*/dungeontotems-*.jar"),
             "vista": _mod_jar("maven.modrinth/vista_tv/*/*/vista_tv-*.jar"),
         }
         self.missing: list[str] = []
@@ -231,6 +232,9 @@ class Textures:
             return flat(img) if img else None
         if name in HEADS:
             return self._entity_cube(HEADS[name], (8, 0, 16, 8), (8, 8, 16, 16), (0, 8, 8, 16))
+        if name == "piglin_head":
+            # A piglin's head is 10 wide: take the middle 8 so the cube stays square.
+            return self._entity_cube("entity/piglin/piglin", (9, 0, 17, 8), (9, 8, 17, 16), (0, 8, 8, 16))
         if name in ("chest", "trapped_chest", "ender_chest"):
             path = "entity/chest/ender" if name == "ender_chest" else "entity/chest/normal"
             return self._entity_cube(path, (14, 0, 28, 14), (14, 14, 28, 28), (0, 14, 14, 28))

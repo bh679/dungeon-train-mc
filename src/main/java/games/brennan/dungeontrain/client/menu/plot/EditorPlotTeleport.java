@@ -137,6 +137,18 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals sky next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for which row an Endless Open copy repeats as its floor. */
+    public static String groundCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals ground next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for the Everything Below checkbox. */
+    public static String groundBelowCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals ground below";
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is fogged. */
     public static String roomFogCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;

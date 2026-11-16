@@ -92,7 +92,9 @@ class SharedCarriageRollsTest {
         assertFalse(SharedCarriageRolls.roomDrifts(seed, 30, 0.0));
         assertTrue(SharedCarriageRolls.roomDrifts(seed, 30, 1.0));
         double chance = games.brennan.dungeontrain.config.DungeonTrainConfig.DEFAULT_SHARED_ROOM_CHANCE;
-        assertEquals(1.0 / 15.0, chance, 1e-9, "one Bedrock room in fifteen drifts by default");
+        assertEquals(0.20, chance, 1e-9, "one Bedrock room in five drifts by default");
+        assertTrue(games.brennan.dungeontrain.config.DungeonTrainConfig.CURRENT_CONFIG_VERSION >= 6,
+                "existing installs hold the old chance on disk: the v5 -> v6 step must run");
         int drifting = 0, disagree = 0;
         for (int pair = 0; pair < 20_000; pair += 3) {
             boolean drifts = SharedCarriageRolls.roomDrifts(seed, pair, chance);
@@ -101,7 +103,7 @@ class SharedCarriageRollsTest {
             if (drifts != (SharedCarriageRolls.roll(seed, pair) < chance)) disagree++;
         }
         double rate = drifting / (20_000 / 3.0);
-        assertTrue(rate > 0.05 && rate < 0.085, "about one in fifteen, got " + rate);
+        assertTrue(rate > 0.18 && rate < 0.22, "about one in five, got " + rate);
         assertTrue(disagree > 0, "the room roll must not be the bucket roll in disguise");
     }
 

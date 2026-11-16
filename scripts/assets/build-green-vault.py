@@ -9,7 +9,9 @@ looks like the normal trial vault except for two things:
 * its top carries the Dungeon Train logo, a ring of four segments, drawn in the top's own blues
   (``draw_logo``), around the cage opening when the vault ejects.
 
-The Dungeon Trial Key is vanilla's trial key turned green (all its coloured pixels). The vault's
+The Dungeon Trial Key is vanilla's trial key turned green (all its coloured pixels), with a train
+carriage for a head in place of the skull (``KEY_HEADS``; the spare heads are previewed in
+``design/dungeon-trial-key/``). The vault's
 flames are swapped in code (``mixin/VaultClientParticlesMixin``).
 
     python3 scripts/assets/build-green-vault.py              # write everything
@@ -64,6 +66,54 @@ LOGO_TILT = 30.0
 # The top's own blues, darkest to brightest, and the cage interior's darks.
 DARKEST, DARK, MID, LIGHT, HIGHLIGHT = "#101d25", "#182c39", "#2a4455", "#406278", "#6b8799"
 HOLE_LIT, HOLE = "#251f2e", "#120f1b"
+
+# The key's head is a train carriage in place of vanilla's skull: 8 rows over the green blade
+# (rows 8..15, vanilla's). KEY_HEAD ships; the others are kept, previewed in DESIGN_DIR.
+KEY_HEAD = "front"
+KEY_HEAD_ROWS = 8
+# The blade's columns under the head: transparent pixels there take the blade's top row (the neck).
+KEY_NECK = range(6, 10)
+KEY_COLOURS = {
+    # vanilla trial key's stone greys, darkest last
+    "H": "#a19e94", "L": "#85837a", "M": "#6c716b", "C": "#525a51", "D": "#373b35", "O": "#292828",
+    "K": "#1a1a1a",  # window
+    "Y": "#ffd75e", "y": "#c9a23a",  # lamps
+    "w": "#8f5f32", "b": "#6b4423", "n": "#4a2f18",  # wood
+}
+# name -> (x of the map's left column, rows; "." keeps the pixel clear)
+KEY_HEADS = {
+    "front": (4, (
+        ".OOOOOO.",
+        "OHHHHHLO",
+        "OLKKKKMO",
+        "OLKKKKMO",
+        "OLLLLLCO",
+        "OYLLLLyO",
+        "OMMMMMDO",
+        ".OO..OO.",
+    )),
+    "side_windows": (2, (
+        ".OOOOOOOOOO.",
+        "OHHHHHHHHHLO",
+        "OLKKLLLLKKMO",
+        "OLKKLLLLKKMO",
+        "OMMMMMMMMMCO",
+        "OOOOOOOOOOOO",
+        ".OKO....OKO.",
+        "..O......O..",
+    )),
+    "wood_car": (2, (
+        ".OOOOOOOOOO.",
+        "OHHHHHHHHHLO",
+        "OwKKwbbwKKbO",
+        "OwKKwbbwKKbO",
+        "ObbbbbbbbbnO",
+        "OOOOOOOOOOOO",
+        ".OKO....OKO.",
+        "..O......O..",
+    )),
+}
+DESIGN_DIR = ROOT / "design/dungeon-trial-key"
 
 FACINGS = {"east": 90, "north": 0, "south": 180, "west": 270}
 STATES = ("active", "ejecting", "inactive", "unlocking")
@@ -204,6 +254,26 @@ def draw_logo(png: bytes, inner: float, clear_corners: bool):
     return img
 
 
+def train_key(green_key, head: str):
+    """The green key with vanilla's skull swapped for the ``head`` carriage of KEY_HEADS."""
+    img = green_key.copy()
+    pixels = img.load()
+    left, rows = KEY_HEADS[head]
+    for y in range(KEY_HEAD_ROWS):
+        for x in range(img.width):
+            pixels[x, y] = (0, 0, 0, 0)
+    for y, row in enumerate(rows):
+        for x, key in enumerate(row):
+            if key != ".":
+                pixels[left + x, y] = rgba(KEY_COLOURS[key])
+    # Under the carriage, carry the blade up to it so the two stay joined.
+    for y in range(KEY_HEAD_ROWS // 2, KEY_HEAD_ROWS):
+        for x in KEY_NECK:
+            if pixels[x, y][3] == 0:
+                pixels[x, y] = pixels[x, KEY_HEAD_ROWS]
+    return img
+
+
 def write_textures(jar: Path) -> int:
     try:
         import PIL  # noqa: F401
@@ -231,7 +301,11 @@ def write_textures(jar: Path) -> int:
             dest(f"vault_{face}").unlink(missing_ok=True)
         key_dir = DT_TEXTURES / "item"
         key_dir.mkdir(parents=True, exist_ok=True)
-        green_lights(vanilla("item/trial_key")).save(key_dir / "dungeon_trial_key.png")
+        green_key = green_lights(vanilla("item/trial_key"))
+        train_key(green_key, KEY_HEAD).save(key_dir / "dungeon_trial_key.png")
+        DESIGN_DIR.mkdir(parents=True, exist_ok=True)
+        for head in KEY_HEADS:
+            train_key(green_key, head).save(DESIGN_DIR / f"{head}.png")
     return len(LIT_TEXTURES) + len(LOGO_TEXTURES) + 1
 
 

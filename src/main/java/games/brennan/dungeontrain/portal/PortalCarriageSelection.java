@@ -402,12 +402,16 @@ public final class PortalCarriageSelection {
 
     /** True if this carriage is one of a portal's two corridors. */
     public static boolean isPortalCarriage(ServerLevel level, int carriageIndex) {
+        Boolean rebuilt = rebuiltSlotIs(carriageIndex, SLOT_ENTRY, SLOT_EXIT);
+        if (rebuilt != null) return rebuilt;
         return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
     /** True if this carriage is the cart between a portal's two corridors. */
     public static boolean isPortalMiddle(ServerLevel level, int carriageIndex) {
+        Boolean rebuilt = rebuiltSlotIs(carriageIndex, SLOT_MIDDLE, SLOT_MIDDLE);
+        if (rebuilt != null) return rebuilt;
         return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
@@ -421,6 +425,8 @@ public final class PortalCarriageSelection {
      * match its twin block-for-block, and the cart between two corridors is sealed space.</p>
      */
     public static boolean isPortalPart(ServerLevel level, int carriageIndex) {
+        Boolean rebuilt = rebuiltSlotIs(carriageIndex, SLOT_ENTRY, SLOT_MIDDLE, SLOT_EXIT);
+        if (rebuilt != null) return rebuilt;
         return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
@@ -437,8 +443,24 @@ public final class PortalCarriageSelection {
      * marches along the train and walks itself into the corridor regardless.</p>
      */
     public static boolean isPortalGroup(ServerLevel level, int carriageIndex) {
+        games.brennan.dungeontrain.train.id.RebuildScope rebuild = games.brennan.dungeontrain.train.id.RebuildScope.current();
+        if (rebuild != null) return rebuild.portal();
         return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
+    }
+
+    /**
+     * Inside a carriage rebuild, whether {@code carriageIndex} sits in one of {@code slots} of a group the
+     * id says the lottery fired for; {@code null} on the live train. The lottery itself follows the
+     * live game modes, so a rebuild replays the recorded verdict instead of drawing again.
+     */
+    private static Boolean rebuiltSlotIs(int carriageIndex, int... slots) {
+        games.brennan.dungeontrain.train.id.RebuildScope rebuild = games.brennan.dungeontrain.train.id.RebuildScope.current();
+        if (rebuild == null) return null;
+        if (!rebuild.portal()) return false;
+        int slot = slotOf(carriageIndex, DungeonTrainConfig.getGroupSize());
+        for (int s : slots) if (s == slot) return true;
+        return false;
     }
 
     public static boolean isPortalCarriage(int carriageIndex, int groupSize, Rate rate, long worldSeed) {

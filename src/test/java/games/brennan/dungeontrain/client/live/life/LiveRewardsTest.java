@@ -38,4 +38,13 @@ class LiveRewardsTest {
         assertFalse(r.active(LiveRewards.HD_STREAMS, NOW));
         assertFalse(r.active(LiveRewards.VOICE_ON_STREAM, NOW));
     }
+
+    @Test
+    void freeIsReadWhenSentAndFalseWhenNot() {
+        LiveRewards r = LiveRewards.parseBody("{\"rewards\":["
+            + "{\"id\":\"live_translation\",\"activeUntil\":" + (NOW + 1000) + ",\"by\":\"Brennan\",\"free\":true},"
+            + "{\"id\":\"quicker_streams\",\"activeUntil\":" + (NOW + 1000) + ",\"by\":\"Kestrel\"}]}");
+        assertTrue(r.find(LiveRewards.LIVE_TRANSLATION).free());
+        assertFalse(r.find(LiveRewards.QUICKER_STREAMS).free());
+    }
 }

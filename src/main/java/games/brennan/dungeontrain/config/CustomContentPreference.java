@@ -6,7 +6,8 @@ import games.brennan.dungeontrain.world.CustomContentChoice;
  * This client's remembered answer to the "you have custom Train Editor content"
  * prompt shown when a world starts.
  *
- * <p>{@link #ASK} (the default) shows the prompt every time a world with custom
+ * <p>{@link #DISABLE} (the default) runs every world Live on the bundled
+ * content. {@link #ASK} shows the prompt every time a world with custom
  * content is entered for the first time. Ticking "Remember decision" on the
  * prompt stores {@link #CONTINUE} or {@link #DISABLE} instead, and the prompt is
  * answered silently from then on. Changeable in Options → Dungeon Train.</p>

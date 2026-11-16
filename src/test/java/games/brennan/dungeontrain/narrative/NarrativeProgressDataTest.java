@@ -270,4 +270,24 @@ final class NarrativeProgressDataTest {
         assertFalse(data.hasReadAllPlayerLetters("life-b", letters), "scoped per series");
         assertFalse(data.hasReadAllPlayerLetters("life-a", java.util.List.of()), "an empty series is never finished");
     }
+
+    @Test
+    @DisplayName("Series reports: per player, per series, one-way, and survive save → load")
+    void seriesReportsRoundTrip() {
+        UUID alice = UUID.fromString("00000000-0000-0000-0000-00000000000a");
+        UUID bob = UUID.fromString("00000000-0000-0000-0000-00000000000b");
+        NarrativeProgressData original = NarrativeProgressData.load(new CompoundTag());
+        assertFalse(original.isSeriesReported("life-a"));
+
+        assertTrue(original.markSeriesReported("life-a", alice), "first report is fresh");
+        assertFalse(original.markSeriesReported("life-a", alice), "a repeat is not");
+
+        NarrativeProgressData reloaded = NarrativeProgressData.load(original.save(new CompoundTag(), null));
+        assertTrue(reloaded.hasReportedSeries("life-a", alice));
+        assertFalse(reloaded.hasReportedSeries("life-a", bob), "scoped per player");
+        assertTrue(reloaded.isSeriesReported("life-a"), "anyone's report stops the world serving it");
+        assertFalse(reloaded.isSeriesReported("life-b"), "scoped per series");
+        assertFalse(reloaded.isSeriesReported("life"), "a prefix of another series id is not a match");
+        assertTrue(reloaded.markSeriesReported("life-a", bob), "a second reader can still report it");
+    }
 }

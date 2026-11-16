@@ -27,8 +27,11 @@ import java.util.regex.Pattern;
  */
 public final class DebugScreenDepthLines {
 
-    /** Blocks to add to each displayed axis. {@link #NONE} is "tell the truth". */
-    public record Shift(int x, int y, int z) {
+    /**
+     * Blocks to add to each displayed axis. {@link #NONE} is "tell the truth". X is a {@code long} because the
+     * Far Lands readout ({@link FarLandsDebugX}) moves it by millions, past an int on later runs.
+     */
+    public record Shift(long x, int y, int z) {
         public static final Shift NONE = new Shift(0, 0, 0);
 
         public boolean isZero() {

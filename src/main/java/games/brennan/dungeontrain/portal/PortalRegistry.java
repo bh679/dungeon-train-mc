@@ -296,6 +296,9 @@ public final class PortalRegistry extends SavedData {
      * record forgotten) when {@code portalPart} is false. See {@link #stampedStages}.
      */
     public synchronized void noteStamped(int carriageIndex, boolean portalPart, String stageId) {
+        // A carriage rebuilt from its id stands at no place on the line: recording it would overwrite
+        // what the real train has at this index.
+        if (games.brennan.dungeontrain.train.id.RebuildScope.active()) return;
         boolean changed;
         if (portalPart) {
             changed = stampedPortalParts.add(carriageIndex);

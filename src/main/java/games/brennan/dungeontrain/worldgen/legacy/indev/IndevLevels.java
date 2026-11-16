@@ -3,10 +3,13 @@ package games.brennan.dungeontrain.worldgen.legacy.indev;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * The Indev floating band's world, tiled out of finite {@link IndevFloatingLevel}s: the XZ plane is cut
@@ -21,21 +24,33 @@ import java.util.concurrent.CompletableFuture;
  * same future — no duplicate builds, no partial reads. Builders never wait on anything themselves, so the
  * wait cannot deadlock. Finished levels are immutable; the LRU cache ({@link #MAX_TILES} levels, ~8 MB
  * each) is the only shared mutable state and is guarded by one lock.</p>
+ *
+ * <p><b>Prefetch.</b> A level takes ~0.75 s to build, and every worker that needs a chunk of it waits that
+ * long. The first demand for a tile therefore builds the next tile along +X on {@code prefetchExecutor},
+ * as {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels} does, so the train's ring of
+ * chunks usually finds its level ready.</p>
  */
 public final class IndevLevels {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Tiles kept resident: the train's corridor plus its view distance spans a handful at a time. */
-    static final int MAX_TILES = 6;
+    /**
+     * Tiles kept resident: the train's corridor spans three tile rows, and up to two columns of them are
+     * still generating while the prefetch adds a third ahead.
+     */
+    static final int MAX_TILES = 9;
 
     private final long seed;
+    private final Executor prefetchExecutor;
     private final Object lock = new Object();
     private final LinkedHashMap<Long, CompletableFuture<IndevFloatingLevel>> tiles =
             new LinkedHashMap<>(16, 0.75f, true);
+    /** Tiles a chunk has asked for (not just prefetched); only a demand prefetches, so prefetch never chains. */
+    private final Set<Long> demanded = new HashSet<>();
 
-    public IndevLevels(long seed) {
+    public IndevLevels(long seed, Executor prefetchExecutor) {
         this.seed = seed;
+        this.prefetchExecutor = prefetchExecutor;
     }
 
     public long seed() {
@@ -62,7 +77,29 @@ public final class IndevLevels {
 
     /** The level for tile {@code (tileX, tileZ)}, building it on this thread if nobody has yet. */
     public IndevFloatingLevel level(int tileX, int tileZ) {
-        long key = ((long) tileX << 32) | (tileZ & 0xFFFFFFFFL);
+        long key = key(tileX, tileZ);
+        boolean first;
+        synchronized (lock) {
+            first = demanded.add(key);
+        }
+        if (first) prefetch(tileX + 1, tileZ);
+        return obtain(tileX, tileZ, key).join();
+    }
+
+    private void prefetch(int tileX, int tileZ) {
+        long key = key(tileX, tileZ);
+        synchronized (lock) {
+            if (tiles.containsKey(key)) return;
+        }
+        try {
+            prefetchExecutor.execute(() -> obtain(tileX, tileZ, key));
+        } catch (RuntimeException rejected) {
+            // Executor shutting down — the level just builds on demand instead.
+        }
+    }
+
+    /** The tile's future, building the level on this thread first if nobody has started it. */
+    private CompletableFuture<IndevFloatingLevel> obtain(int tileX, int tileZ, long key) {
         CompletableFuture<IndevFloatingLevel> future;
         boolean build = false;
         synchronized (lock) {
@@ -87,14 +124,25 @@ public final class IndevLevels {
                 future.completeExceptionally(t);
             }
         }
-        return future.join();
+        return future;
     }
 
-    /** Drop least-recently-used finished levels past the cap (an in-flight build is never dropped). */
+    private static long key(int tileX, int tileZ) {
+        return ((long) tileX << 32) | (tileZ & 0xFFFFFFFFL);
+    }
+
+    /**
+     * Drop least-recently-used finished levels past the cap (an in-flight build is never dropped). A dropped
+     * tile forgets its demand too, so coming back to it prefetches again.
+     */
     private void evict() {
         Iterator<Map.Entry<Long, CompletableFuture<IndevFloatingLevel>>> it = tiles.entrySet().iterator();
         while (tiles.size() > MAX_TILES && it.hasNext()) {
-            if (it.next().getValue().isDone()) it.remove();
+            Map.Entry<Long, CompletableFuture<IndevFloatingLevel>> e = it.next();
+            if (e.getValue().isDone()) {
+                demanded.remove(e.getKey());
+                it.remove();
+            }
         }
     }
 

@@ -53,7 +53,8 @@ import java.util.Random;
  * <p>While two streams are live (the Two Streams reward) a viewer's box becomes two panes, the
  * second stream under the first ({@link HeadViewerPanes}), unless the box is at its largest size;
  * in the inventory a click on a pane makes that stream the only one and a click on the lone pane
- * brings both back. Under each pane a caption says who is live on it ({@link HeadViewerCaption}). The streamer's own preview does the same with their stream and the other one
+ * brings both back. Under each pane a caption says who is live on it ({@link HeadViewerCaption}), and up
+ * its right edge a green bar shows how loud the streamer's mic is ({@link HeadViewerMicBar}). The streamer's own preview does the same with their stream and the other one
  * ({@link StreamerBoxPanes}): their own by default, and the setting can also pick the other, both or none.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -115,10 +116,36 @@ public final class LiveHeadViewer {
         return head.is(ModItems.LIVE_HEADPIECE.get()) || TvItems.isTv(head);
     }
 
+    /** Whether the pinned box is up now (its sound plays flat: {@code LiveTvSpeakers}). */
+    static boolean watching() {
+        return shown(Minecraft.getInstance());
+    }
+
     /** Wearing a viewer hat with the box switched on — the box is shown in one of the two passes. */
     private static boolean shown(Minecraft mc) {
         return mc.level != null && mc.player != null && LiveFeedClientConfig.headViewerEnabled()
             && isViewerHat(mc.player.getItemBySlot(EquipmentSlot.HEAD));
+    }
+
+    /**
+     * GUI y just below the box pinned top-right on the HUD (all its panes, and its caption while watching),
+     * or 0 when there is none. The status-effect icons move below this ({@link HudEffectsBelowViewer}). The
+     * streaming settings button is left out: it shows only in the inventory, where the HUD's icons are not drawn.
+     */
+    static int hudBottom(Minecraft mc) {
+        if (!shown(mc) || mc.options.hideGui) return 0;
+        if (LiveStreamController.get().streaming()) {
+            var panes = streamerPanes(mc);
+            if (panes.isEmpty()) return 0;
+            Box lowest = panes.get(panes.size() - 1).box();
+            return lowest.y() + lowest.h() + BORDER;
+        }
+        var window = mc.getWindow();
+        var panes = panes(window.getGuiScaledWidth(), window.getGuiScaledHeight(), LiveFeedClientConfig.headViewerWidth(false),
+            secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
+        if (panes.isEmpty()) return 0;
+        Box lowest = HeadViewerCaption.withCaption(panes.get(panes.size() - 1).box());
+        return lowest.y() + lowest.h() + BORDER;
     }
 
     /** Watching: a HUD layer, under every screen and toast. */
@@ -138,6 +165,8 @@ public final class LiveHeadViewer {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
                     draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second(),
                         mc.player.tickCount, partial);
+                    // The streamer's mic level, a thin green bar up the pane's right edge (HeadViewerMicBar).
+                    HeadViewerMicBar.draw(g, source, pane.box(), pane.second());
                     HeadViewerCaption.draw(g, pane.box(), pane.second());
                 }
                 // The takeover button hangs under the lowest pane and its caption, so neither covers it.

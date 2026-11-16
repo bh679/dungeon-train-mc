@@ -1,6 +1,6 @@
 // pullTradeValues — refresh the bundled community-approved Trade Everything item values.
 //
-// The relay's item-values page (brennan.games/dungeontrain/items/) is where members suggest and
+// The relay's item-values page (dungeon.training/items/) is where members suggest and
 // Brennan approves what each item trades for. Nothing pushes from there: this task PULLS the
 // approved map (GET /items/export, a flat {itemId: sixteenths}) into
 // src/main/resources/data/dungeontrain/trade_values.json, which TradeValueTable reads at runtime.

@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/danger_close",
   "display": {
     "icon": {
-      "id": "minecraft:creeper_head"
+      "id": "minecraft:golden_sword"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.creature_feature.title"

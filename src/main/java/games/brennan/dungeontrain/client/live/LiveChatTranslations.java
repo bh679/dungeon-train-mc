@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.narrative.LanguageFamily;
+import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -8,15 +10,18 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The pure rules behind a Live chat line's translation: which language this reader reads, which of the
  * relay's translations is theirs, and how it reads in chat. No Minecraft state — everything comes in as
  * arguments. {@link LiveChatBridge} decides when; {@code LiveFeedClientConfig.liveChatTranslation()}
- * decides where (under the original, instead of it, or first).
+ * decides where (under the original, instead of it, or first), or that they are off. A line in one of
+ * the reader's Book languages is never translated for them.
  *
  * <p>The relay translates only while the Live Translations community reward is on, into the languages
  * its readers report on each poll ({@code lang=}), a poll or two after the line.</p>
@@ -26,8 +31,11 @@ public final class LiveChatTranslations {
     public static final String TRANSLATION_KEY = "chat.dungeontrain.live_chat.translation";
     public static final String TRANSLATION_NAMED_KEY = "chat.dungeontrain.live_chat.translation.named";
     public static final String ORIGINAL_KEY = "chat.dungeontrain.live_chat.translation.original";
+    public static final String FLIP_HIDE_KEY = "chat.dungeontrain.live_chat.translation.flip_hide";
+    public static final String FLIP_SHOW_KEY = "chat.dungeontrain.live_chat.translation.flip_show";
     public static final String ON_KEY = "chat.dungeontrain.live_chat.translation.on";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.translation.path";
+    public static final String TRANSLATED_KEY = "chat.dungeontrain.live_chat.translated";
 
     /** A Minecraft locale code as the relay expects it: {@code zh_cn}. */
     private static final Pattern LOCALE = Pattern.compile("[a-z]{2,3}_[a-z0-9]{2,4}");
@@ -43,6 +51,50 @@ public final class LiveChatTranslations {
         if (languageCode == null) return null;
         String code = languageCode.strip().toLowerCase(Locale.ROOT).replace('-', '_');
         return LOCALE.matcher(code).matches() ? code : null;
+    }
+
+    /**
+     * The language a chat poll names to the relay: this reader's ({@link #readerLang}) while translations
+     * are on, else null, so the relay is never asked to translate into a language read with them off.
+     */
+    @Nullable
+    public static String pollLang(@Nullable String languageCode, boolean translationsOn) {
+        return translationsOn ? readerLang(languageCode) : null;
+    }
+
+    /** Most extra languages a poll names: the relay keeps no more. */
+    static final int MAX_READS = 4;
+
+    /**
+     * The other languages a chat poll names ({@code reads=}): the reader's Book languages as locale codes,
+     * at most {@link #MAX_READS}, comma-joined; null while translations are off or there are none.
+     */
+    @Nullable
+    public static String pollReads(List<ReadingLanguages.Entry> extras, boolean translationsOn) {
+        if (!translationsOn || extras.isEmpty()) return null;
+        String joined = extras.stream().map(ReadingLanguages.Entry::locale).distinct().limit(MAX_READS)
+            .collect(Collectors.joining(","));
+        return joined.isEmpty() ? null : joined;
+    }
+
+    /**
+     * The language family of a line's {@code src} (a language tag such as {@code pt-BR} or {@code zh-Hant}),
+     * matched the way Book languages are ({@link LanguageFamily}); null when there is none.
+     */
+    @Nullable
+    public static String srcFamily(@Nullable String src) {
+        if (src == null || src.isBlank()) return null;
+        return LanguageFamily.of(src.strip().replace('-', '_'));
+    }
+
+    /** Whether the reader reads a line written in {@code src} already: it is one of their Book languages. */
+    public static boolean readsSource(@Nullable String src, List<ReadingLanguages.Entry> extras) {
+        String family = srcFamily(src);
+        if (family == null) return false;
+        for (ReadingLanguages.Entry e : extras) {
+            if (family.equals(e.family())) return true;
+        }
+        return false;
     }
 
     /**
@@ -66,10 +118,16 @@ public final class LiveChatTranslations {
      * printed in between ({@code adjacent} false), so the reader knows whose it is.
      */
     public static MutableComponent underLine(ChatLine line, String translation, boolean adjacent) {
-        String text = LiveChatRules.clean(translation, LiveChatRules.MAX_CONTENT);
-        if (adjacent) return Component.translatable(TRANSLATION_KEY, Component.literal(text)).withStyle(ChatFormatting.GRAY);
+        return underLine(line, translation, adjacent, null);
+    }
+
+    /** {@link #underLine(ChatLine, String, boolean)} starting with the source language's flag, when {@code flag} is one. */
+    public static MutableComponent underLine(ChatLine line, String translation, boolean adjacent, @Nullable MutableComponent flag) {
+        MutableComponent text = Component.literal(LiveChatRules.clean(translation, LiveChatRules.MAX_CONTENT));
+        MutableComponent shown = flag == null ? text : Component.empty().append(flag).append(" ").append(text);
+        if (adjacent) return Component.translatable(TRANSLATION_KEY, shown).withStyle(ChatFormatting.GRAY);
         return Component.translatable(TRANSLATION_NAMED_KEY,
-            Component.literal(LiveChatRules.clean(line.author(), LiveChatRules.MAX_AUTHOR)), Component.literal(text))
+            Component.literal(LiveChatRules.clean(line.author(), LiveChatRules.MAX_AUTHOR)), shown)
             .withStyle(ChatFormatting.GRAY);
     }
 
@@ -78,10 +136,39 @@ public final class LiveChatTranslations {
      * and coloured name as {@link LiveChatRules#line}.
      */
     public static MutableComponent replacedLine(ChatLine line, String translation) {
+        return replacedLine(line, translation, null);
+    }
+
+    /** {@link #replacedLine(ChatLine, String)} with the source language's flag before the text, when {@code flag} is one. */
+    public static MutableComponent replacedLine(ChatLine line, String translation, @Nullable MutableComponent flag) {
         Component original = Component.translatable(ORIGINAL_KEY,
             Component.literal(LiveChatRules.clean(line.content(), LiveChatRules.MAX_CONTENT)));
         Style hover = Style.EMPTY.withColor(ChatFormatting.WHITE).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, original));
-        return LiveChatRules.line(line, translation, hover);
+        return LiveChatRules.line(line, translation, hover, flag);
+    }
+
+    /** The line reading {@code shown} (its translation, or the original while its flag is hovered) with its flag; a click on the text flips it ({@link LiveChatFlip}). */
+    static MutableComponent flippableLine(ChatLine line, String shown, @Nullable MutableComponent flag) {
+        return LiveChatRules.line(line, shown, flipStyle(line, FLIP_HIDE_KEY), flag);
+    }
+
+    /** The line flipped to its original: no flag, as nothing about it is translated now; a click flips it back. */
+    static MutableComponent flippedLine(ChatLine line) {
+        return LiveChatRules.line(line, line.content(), flipStyle(line, FLIP_SHOW_KEY), null);
+    }
+
+    private static Style flipStyle(ChatLine line, String tipKey) {
+        return Style.EMPTY.withColor(ChatFormatting.WHITE)
+            .withClickEvent(LiveChatFlip.click(line.seq()))
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(tipKey)));
+    }
+
+    /** The relay's id for Google: its work must be credited with Google's own badge ({@link LiveChatTranslatedPill}). */
+    public static final String GOOGLE = "google";
+
+    /** The chat's label for any translator but Google, whose credit is its own badge. */
+    public static Component translatedLabel() {
+        return Component.translatable(TRANSLATED_KEY);
     }
 
     /** The language's own name for the one-time "being translated into …" notice: 中文, Deutsch, …; the code itself when unknown. */

@@ -14,8 +14,8 @@ class TwitchLinkClientTest {
 
     @Test
     void startParsesCodeAndPage() {
-        Start s = TwitchLinkClient.parseStart(200, "{\"ok\":true,\"code\":\"AB2CDE\",\"url\":\"https://brennan.games/dungeontrain/link/twitch/?code=AB2CDE\",\"expiresInSec\":900}");
-        assertEquals(new Start(true, "AB2CDE", "https://brennan.games/dungeontrain/link/twitch/?code=AB2CDE", 900, Error.NONE), s);
+        Start s = TwitchLinkClient.parseStart(200, "{\"ok\":true,\"code\":\"AB2CDE\",\"url\":\"https://dungeon.training/link/twitch/?code=AB2CDE\",\"expiresInSec\":900}");
+        assertEquals(new Start(true, "AB2CDE", "https://dungeon.training/link/twitch/?code=AB2CDE", 900, Error.NONE), s);
         assertEquals(Error.FAILED, TwitchLinkClient.parseStart(200, "{\"ok\":true,\"code\":\"AB2CDE\"}").error(), "no page, no link");
         assertEquals(Error.FAILED, TwitchLinkClient.parseStart(200, "{\"ok\":true,\"code\":\"AB2CDE\",\"url\":\"http://evil/\"}").error(), "https only");
         assertEquals(Error.RATE_LIMITED, TwitchLinkClient.parseStart(429, "{}").error());

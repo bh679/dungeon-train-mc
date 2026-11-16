@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.echo;
 
+import games.brennan.dungeontrain.provenance.ProvenanceSweep;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.ChanceKind;
 import games.brennan.adventureitemnames.api.NamingConfig;
@@ -65,7 +66,9 @@ public final class EchoDropCredit {
      */
     public static void onDrop(PlayerMobEntity mob, ItemStack stack) {
         try {
-            if (mob.level().isClientSide() || !eligible(stack)) return;
+            if (mob.level().isClientSide()) return;
+            ProvenanceSweep.markMobGear(mob, stack);
+            if (!eligible(stack)) return;
             boolean dying = mob.isDeadOrDying();
             if (!wasEquipped(mob, stack, dying)) return;
             credit(mob, stack, dying ? deathCause(mob.getKillCredit()) : EchoCreditText.Cause.SWAP);
@@ -77,7 +80,9 @@ public final class EchoDropCredit {
     /** An echo tossed {@code stack} to someone as a gift. */
     public static void onGift(PlayerMobEntity mob, ItemStack stack) {
         try {
-            if (mob.level().isClientSide() || !eligible(stack)) return;
+            if (mob.level().isClientSide()) return;
+            ProvenanceSweep.markMobGear(mob, stack);
+            if (!eligible(stack)) return;
             credit(mob, stack, EchoCreditText.Cause.GIFT);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] echo gift credit failed: {}", t.toString());

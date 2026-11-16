@@ -31,12 +31,30 @@ class EngineIntegrityTest {
     }
 
     @Test
-    @DisplayName("An engine whose outermost file is not DT's jar was replaced")
-    void topLevelEngineIsReplaced() {
+    @DisplayName("A top-level engine jar byte-identical to the baked one is DT's engine (the CurseForge modpack layout)")
+    void topLevelIdenticalEngineIsAccepted() {
+        Path cf = Path.of("mods", "dtmodverify-neoforge-0.2.1.jar");
+        List<EngineIntegrity.FileClaim> claims = List.of(claim(DT, "dungeontrain"), claim(cf, "dtmodverify"),
+            claim(Path.of("mods", "jei.jar"), "jei"));
+        assertEquals(List.of(), EngineIntegrity.tamperedFrom(DT, cf, SHA, SHA, VER, VER, claims));
+        assertEquals(List.of(), EngineIntegrity.tamperedFrom(DT, cf, SHA, SHA, VER, "", claims), "no baked version: hash alone decides");
+        assertEquals(List.of("dtmodverify-neoforge-0.2.1.jar (dtmodverify replaced)"),
+            EngineIntegrity.tamperedFrom(DT, cf, SHA, "", VER, VER, claims), "nothing baked to compare against: not vouched for");
+    }
+
+    @Test
+    @DisplayName("A top-level engine with another hash or version, or a second file claiming the engine, was replaced")
+    void topLevelDifferentEngineIsReplaced() {
         Path fake = Path.of("mods", "fake.jar");
         List<EngineIntegrity.FileClaim> claims = List.of(claim(DT, "dungeontrain"), claim(fake, "dtmodverify", "xray"));
         assertEquals(List.of("fake.jar (dtmodverify replaced)"),
-            EngineIntegrity.tamperedFrom(DT, fake, SHA, SHA, VER, VER, claims));
+            EngineIntegrity.tamperedFrom(DT, fake, "b".repeat(40), SHA, VER, VER, claims));
+        assertEquals(List.of("fake.jar (dtmodverify replaced)"),
+            EngineIntegrity.tamperedFrom(DT, fake, SHA, SHA, "9.9.9", VER, claims));
+        Path cf = Path.of("mods", "dtmodverify-neoforge-0.2.1.jar");
+        List<EngineIntegrity.FileClaim> two = List.of(claim(DT, "dungeontrain"), claim(cf, "dtmodverify"), claim(fake, "dtmodverify", "xray"));
+        assertEquals(List.of("fake.jar (dtmodverify replaced)"),
+            EngineIntegrity.tamperedFrom(DT, cf, SHA, SHA, VER, VER, two), "the accepted engine passes; the second claimant does not");
     }
 
     @Test

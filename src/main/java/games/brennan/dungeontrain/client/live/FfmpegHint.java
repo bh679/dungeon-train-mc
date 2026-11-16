@@ -58,14 +58,32 @@ public final class FfmpegHint {
     }
 
     private static Component hint() {
-        MutableComponent button = Component.translatable(KEY + "button")
+        return Component.translatable(KEY + "hint").withStyle(ChatFormatting.GOLD)
+            .append(" ")
+            .append(installButton());
+    }
+
+    /** The green "[Set up FFmpeg]" chat button: the TV hint's, and the Live Eye's no-broadcast line's. */
+    static Component installButton() {
+        return Component.translatable(KEY + "button")
             .withStyle(s -> s.withColor(ChatFormatting.GREEN).withUnderlined(true)
                 .withClickEvent(ChatClick.event(CLICK_ACTION, "install"))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                     Component.translatable(KEY + "button.hover"))));
-        return Component.translatable(KEY + "hint").withStyle(ChatFormatting.GOLD)
-            .append(" ")
-            .append(button);
+    }
+
+    /**
+     * Starts the install, as the chat button does: the Stream tab's Download FFmpeg button. Says
+     * "ready" if it already is, and nothing while an install runs.
+     */
+    public static void startInstall() {
+        if (FfmpegInstaller.running()) return;
+        if (FfmpegSupport.state() == FfmpegSupport.State.READY) {
+            say("ready", ChatFormatting.GREEN);
+            return;
+        }
+        if (!FFmpegManager.hasManagedBinaries()) say("installing", ChatFormatting.GRAY);
+        FfmpegInstaller.install();
     }
 
     private static void say(String key, ChatFormatting colour) {
@@ -134,14 +152,7 @@ public final class FfmpegHint {
                 openFolder();
                 return;
             }
-            if (!args.get(0).equals("install")) return;
-            if (FfmpegInstaller.running()) return;
-            if (FfmpegSupport.state() == FfmpegSupport.State.READY) {
-                say("ready", ChatFormatting.GREEN);
-                return;
-            }
-            if (!FFmpegManager.hasManagedBinaries()) say("installing", ChatFormatting.GRAY);
-            FfmpegInstaller.install();
+            if (args.get(0).equals("install")) startInstall();
         });
     }
 }

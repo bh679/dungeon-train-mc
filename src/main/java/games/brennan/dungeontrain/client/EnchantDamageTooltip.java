@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.DungeonTrain;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.ChatFormatting;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.ConditionalEffect;
@@ -42,6 +44,9 @@ import java.util.Optional;
  * to some mobs (Smite, Bane of Arthropods, Impaling) gets its own line, so the main number stays true
  * for every target. Amounts come from each enchantment's data, never from a copy of its formula.</p>
  *
+ * <p>Bows and crossbows get the same treatment on their AIS Ranged Damage line: Power goes into the
+ * number, scaled to what it adds on a full-draw shot.</p>
+ *
  * <p>Display only: this edits the tooltip's lines and leaves the stack's attributes alone. Writing the
  * bonus to an attribute would count it twice in combat.</p>
  */
@@ -57,6 +62,9 @@ public final class EnchantDamageTooltip {
             Enchantments.BANE_OF_ARTHROPODS, "tooltip.dungeontrain.enchant_damage.arthropods",
             Enchantments.IMPALING, "tooltip.dungeontrain.enchant_damage.aquatic");
 
+    /** Arrow damage is speed times base damage, and Power adds to the base; this is a full draw's speed. */
+    private static final float FULL_DRAW_SPEED = 3F;
+
     /** Only {@code remove_binomial} rolls, and no vanilla damage enchantment uses it. */
     private static final RandomSource RANDOM = RandomSource.create(0L);
 
@@ -66,6 +74,10 @@ public final class EnchantDamageTooltip {
     public static void onTooltip(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
         if (!stack.isEnchanted()) return;
+        if (stack.getItem() instanceof ProjectileWeaponItem) {
+            addPowerToRangedLine(event, stack);
+            return;
+        }
 
         Attribute attackDamage = Attributes.ATTACK_DAMAGE.value();
         List<Component> lines = event.getToolTip();
@@ -86,10 +98,30 @@ public final class EnchantDamageTooltip {
         }
 
         if (flatBonus != 0F) {
-            Optional<Component> rebuilt = rebuiltBaseLine(stack, event.getEntity(), event.getFlags(), flatBonus);
+            Optional<Component> rebuilt = rebuiltBaseLine(stack, Attributes.ATTACK_DAMAGE, EquipmentSlotGroup.MAINHAND,
+                    event.getEntity(), event.getFlags(), flatBonus);
             if (rebuilt.isPresent()) lines.set(index, rebuilt.get());
         }
         lines.addAll(index + 1, conditionalLines);
+    }
+
+    /** Power's damage is conditional only in that it applies to arrows, which is all a bow fires. */
+    private static void addPowerToRangedLine(ItemTooltipEvent event, ItemStack stack) {
+        Optional<? extends Holder<Attribute>> rangedDamage = StatsModifier.rangedDamageAttribute();
+        if (rangedDamage.isEmpty()) return;
+        List<Component> lines = event.getToolTip();
+        int index = baseDamageLine(lines, rangedDamage.get().value().getDescriptionId());
+        if (index < 0) return;
+
+        float powerBonus = 0F;
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : stack.getEnchantments().entrySet()) {
+            if (entry.getKey().is(Enchantments.POWER)) {
+                powerBonus += damageBonus(entry.getKey().value(), entry.getIntValue(), true) * FULL_DRAW_SPEED;
+            }
+        }
+        if (powerBonus == 0F) return;
+        rebuiltBaseLine(stack, rangedDamage.get(), EquipmentSlotGroup.HAND, event.getEntity(), event.getFlags(), powerBonus)
+                .ifPresent(rebuilt -> lines.set(index, rebuilt));
     }
 
     /**
@@ -132,16 +164,18 @@ public final class EnchantDamageTooltip {
     }
 
     /** The base line again with {@code bonus} added, built as {@code AttributeUtil.applyTextFor} builds it. */
-    private static Optional<Component> rebuiltBaseLine(ItemStack stack, Player player,
+    private static Optional<Component> rebuiltBaseLine(ItemStack stack, Holder<? extends Attribute> holder,
+                                                       EquipmentSlotGroup group, Player player,
                                                        TooltipFlag flag, float bonus) {
-        Holder<Attribute> attackDamage = Attributes.ATTACK_DAMAGE;
-        ResourceLocation baseId = attackDamage.value().getBaseId();
-        for (AttributeModifier modifier : AttributeUtil.getSortedModifiers(stack, EquipmentSlotGroup.MAINHAND).get(attackDamage)) {
+        @SuppressWarnings("unchecked")
+        Holder<Attribute> attribute = (Holder<Attribute>) holder;
+        ResourceLocation baseId = attribute.value().getBaseId();
+        for (AttributeModifier modifier : AttributeUtil.getSortedModifiers(stack, group).get(attribute)) {
             if (!modifier.id().equals(baseId)) continue;
-            double entityBase = player == null ? 0 : player.getAttributeBaseValue(attackDamage);
+            double entityBase = player == null ? 0 : player.getAttributeBaseValue(attribute);
             double value = modifier.amount() + entityBase + bonus;
             return Optional.of(Component.literal(" ")
-                    .append(attackDamage.value().toBaseComponent(value, entityBase, false, flag))
+                    .append(attribute.value().toBaseComponent(value, entityBase, false, flag))
                     .withStyle(ChatFormatting.DARK_GREEN));
         }
         return Optional.empty();

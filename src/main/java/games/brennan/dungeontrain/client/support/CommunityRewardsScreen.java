@@ -164,7 +164,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             for (int i = start; i < end; i++) {
                 CommunityRewards.Reward r = all[i];
                 int cx = colX + (i - start) * (cardW + GAP);
-                Button b = ContributePanel.giveButton(r, CommunityRewards.active(state, r, now), state, now,
+                Button b = ContributePanel.giveButton(r, CommunityRewards.giftRunning(state, r, now), state, now,
                         cx + PAD, giveY, cardW - PAD * 2, GIVE_H, links, false);
                 buttons.add(new Placed(b, giveY));
                 addWidget(b);
@@ -347,6 +347,9 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty += 2;
         ty += 2;
         ty = wrap(ContributePanel.lineOf(r), tx, ty, tw, COLOUR_LINE);
+        if (CommunityRewards.onFreeCredits(state, r, now)) {
+            ty = wrap(ContributePanel.freeThanks(state.find(r.id())), tx, ty + 2, tw, ContributePanel.COLOUR_ON);
+        }
         // Other rewards being on cost this one more to run, so the relay asked more: say which.
         Component raised = CommunityRewards.raisedLine(r);
         if (raised != null) ty = wrap(raised, tx, ty + 2, tw, COLOUR_SUB);

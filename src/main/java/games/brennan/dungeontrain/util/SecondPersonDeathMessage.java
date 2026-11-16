@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.util;
 
+import games.brennan.dungeontrain.narrative.LanguageFamily;
+
 /**
  * Rewrites a death message into the second person for the fall-page title on the
  * narrative death screen (e.g. "Brennan fell from a high place" →
@@ -11,6 +13,11 @@ package games.brennan.dungeontrain.util;
  * which covers was slain/shot/blown up/killed/impaled/pricked/struck by
  * lightning/frozen/doomed, etc. A message that does not begin with the player's
  * name (an unusual modded format) is returned unchanged.</p>
+ *
+ * <p>The rewrite is English-only. In singleplayer the message is rendered in the
+ * player's game language, and splicing an English "You" into it gave mixed lines
+ * like "You掉出了这个世界" (and "They…" in the Discord post built from it). A
+ * non-English message is returned as the game wrote it, name included.</p>
  *
  * <p>Pure string logic with no Minecraft types so it is unit-testable without a
  * game bootstrap; {@code RunStatsEvents#secondPersonCause} feeds it the localized
@@ -31,7 +38,17 @@ public final class SecondPersonDeathMessage {
      *         empty string if {@code message} is null/empty.
      */
     public static String rewrite(String message, String name) {
+        return rewrite(message, name, "en_us");
+    }
+
+    /**
+     * As {@link #rewrite(String, String)}, for a message rendered in {@code languageCode}
+     * (e.g. {@code "zh_cn"}). Only the English family is rewritten; any other language
+     * returns {@code message} unchanged.
+     */
+    public static String rewrite(String message, String name, String languageCode) {
         if (message == null || message.isEmpty()) return "";
+        if (!"en".equals(LanguageFamily.of(languageCode))) return message;
         String out = message;
         if (name != null && !name.isEmpty() && message.startsWith(name)) {
             out = "You" + message.substring(name.length());

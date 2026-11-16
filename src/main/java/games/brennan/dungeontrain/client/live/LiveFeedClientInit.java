@@ -22,6 +22,7 @@ public final class LiveFeedClientInit {
     static void onClientSetup(FMLClientSetupEvent event) {
         LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN, () -> LiveFeedSource.SECOND);
         games.brennan.dungeontrain.compat.vista.TributeTvBroadcast.setClientSource(() -> games.brennan.dungeontrain.client.tributeroom.TributeTvSource.INSTANCE);
+        LiveMuteChat.registerClicks();
         // ItemProperties is not thread-safe; registration belongs on the main thread like the rest
         event.enqueueWork(LiveHeadpieceAntenna::register);
     }
@@ -40,6 +41,8 @@ public final class LiveFeedClientInit {
                 LiveStatusPoller.reset();
                 LiveChatBridge.reset();
                 LiveHeadpieceAntenna.reset();
+                LiveTvSpeakers.stopAll();
+                LiveMuteChat.reset();
             });
         }
     }

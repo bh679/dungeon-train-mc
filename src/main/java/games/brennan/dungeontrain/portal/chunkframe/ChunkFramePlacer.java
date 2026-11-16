@@ -116,6 +116,26 @@ public final class ChunkFramePlacer {
         return Optional.of(new Picked(name, template.get(), ChunkFrameVariants.loadFor(name)));
     }
 
+    /**
+     * Read every frame that could dress {@code roomName} into its cache, off the server thread.
+     *
+     * <p>A frame's sidecar runs to megabytes, and the first stamp to ask for it would otherwise parse
+     * it inside the tick. Called from the sampler ahead of the room's ground, and a pair cannot be
+     * planned until the ground lands, so the stamp finds these already cached. A failure here costs
+     * only that: the stamp reads the frame itself, as it would have anyway.</p>
+     */
+    public static void preload(ServerLevel level, String roomName) {
+        try {
+            for (String name : ChunkFrameRegistry.names()) {
+                if (!ChunkFrameMetaStore.get(name).appliesTo(roomName)) continue;
+                ChunkFrameStore.get(level, name);
+                ChunkFrameVariants.loadFor(name);
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not preload the chunk frames for room {}: {}", roomName, e.toString());
+        }
+    }
+
     /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. */
     static String pick(String roomName, long seed) {
         java.util.List<String> names = new java.util.ArrayList<>();

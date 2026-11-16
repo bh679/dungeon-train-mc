@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#c:is_snowy",
+  "spawners": {
+    "type": "luminous_monsters:icy_zombie",
+    "weight": 80,
+    "minCount": 1,
+    "maxCount": 4
+  }
+}

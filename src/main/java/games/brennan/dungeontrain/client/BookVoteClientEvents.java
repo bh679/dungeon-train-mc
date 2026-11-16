@@ -177,10 +177,8 @@ public final class BookVoteClientEvents {
         // that is a boundary rather than a gap. Every control on this page commits through a packet
         // the server re-validates against the HELD stack (see BookPrivatePacket#matching), which is
         // what makes a spoofed or stale identity harmless; a lectern book would need a positional
-        // packet and a reach check to say the same thing. Nor is there much on the other side of it:
-        // a library room's lecterns carry the room's tribute note, not community books
-        // (PortalRoomLibrary#dressLecterns), so a player-written book only ever reaches one if
-        // somebody stands it there by hand.
+        // packet and a reach check to say the same thing. The one lectern book that needs reporting,
+        // a player-written letter series, has exactly that: LecternReportClientEvents.
         if (!(opening instanceof BookViewScreen book) || opening instanceof LecternScreen) return;
 
         LocalPlayer player = Minecraft.getInstance().player;

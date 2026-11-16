@@ -80,4 +80,23 @@ final class LuckyBonusCountTest {
             assertTrue(rate > 0.45 && rate < 0.55, "luck " + luck + " bonus rate " + rate);
         }
     }
+
+    @Test
+    @DisplayName("vault extras: none for no or Bad Luck, all for Luck II, half on average for Luck I")
+    void vaultExtras() {
+        RandomSource random = RandomSource.create(7L);
+        assertEquals(0, LuckyBonusRoller.vaultExtraCount(0f, 4, random));
+        assertEquals(0, LuckyBonusRoller.vaultExtraCount(-1f, 4, random));
+        assertEquals(4, LuckyBonusRoller.vaultExtraCount(2f, 4, random));
+        assertEquals(3, LuckyBonusRoller.vaultExtraCount(3f, 3, random));
+        assertEquals(2, LuckyBonusRoller.vaultExtraCount(1f, 4, random));
+        long sum = 0;
+        for (int i = 0; i < SAMPLES; i++) {
+            int kept = LuckyBonusRoller.vaultExtraCount(1f, 3, random);
+            assertTrue(kept == 1 || kept == 2, "kept " + kept);
+            sum += kept;
+        }
+        double mean = sum / (double) SAMPLES;
+        assertTrue(mean > 1.45 && mean < 1.55, "Luck I mean of 3 extras " + mean);
+    }
 }

@@ -290,6 +290,10 @@ public final class SableManagedShip implements ManagedShip {
             DRIVERS_BY_UUID.remove(uuid);
         } else {
             DRIVERS_BY_UUID.put(uuid, driver);
+            // The driver dies with the server and this marker does not: it is how a group woken from
+            // holding after a restart is known for a carriage. See DriverlessCarriageReaper.
+            ServerSubLevel subLevel = ref.get();
+            if (subLevel != null) subLevel.setUserDataTag(DriverlessCarriageRule.withMark(subLevel.getUserDataTag()));
         }
         // Attaching a train driver is the one place DT claims a sub-level as a carriage, so it is
         // where the rotation lock goes on: from here the carriage's orientation is clamped to

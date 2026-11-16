@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.train.engine.DriftEngine;
+import games.brennan.dungeontrain.train.engine.EngineStamp;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -179,9 +181,10 @@ public final class SharedRoomEvents {
                     CarriageBlockSnapshot.Captured cap = CarriageBlockSnapshot.captureLevelCells(
                             inst.level, inst.roomOrigin(), inst.size, drained,
                             DungeonTrainConfig.getSharedCarriageMaxEntities());
-                    long sig = CarriageEntitySnapshot.decorFingerprint(
-                            cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
-                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+                    net.minecraft.nbt.ListTag ents = cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
+                    long sig = CarriageEntitySnapshot.decorFingerprint(ents);
+                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig,
+                            photosOf(inst, ents));
                 } catch (Throwable t) {
                     LOGGER.debug("[DungeonTrain] shared-room delta capture failed for {}: {}", inst.describe(), t.toString());
                     return null;
@@ -193,13 +196,21 @@ public final class SharedRoomEvents {
     private static SharedUploadFlow.CapturedBlob captureFull(SharedRoomRegistry.Instance inst) {
         try {
             CarriageBlockSnapshot.Captured cap = captureRoom(inst.level, inst.roomOrigin(), inst.size);
-            long sig = CarriageEntitySnapshot.decorFingerprint(
-                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
-            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+            net.minecraft.nbt.ListTag ents = cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
+            long sig = CarriageEntitySnapshot.decorFingerprint(ents);
+            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig,
+                    photosOf(inst, ents));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-room full capture failed for {}: {}", inst.describe(), t.toString());
             return null;
         }
+    }
+
+    /** The community photos the whole room holds, for the relay to keep their pictures. */
+    private static com.google.gson.JsonArray photosOf(SharedRoomRegistry.Instance inst, net.minecraft.nbt.ListTag ents) {
+        return games.brennan.dungeontrain.compat.photo.CarriagePhotos.uploadList(
+                CarriageBlockSnapshot.blockEntitiesLevel(inst.level, inst.roomOrigin(), inst.size), ents,
+                inst.level.registryAccess());
     }
 
     private static CarriageBlockSnapshot.Captured captureRoom(ServerLevel level, BlockPos origin,
@@ -225,22 +236,33 @@ public final class SharedRoomEvents {
             return;
         }
         if (!SharedCarriageGate.canDiscover()) return;
-        // Same gate the planner used — mode, author's setting, test rig and the one-in-twenty roll.
+        // Same gate the planner used — mode, author's setting, test rig and the drift roll.
         if (!games.brennan.dungeontrain.portal.PortalRoomDriftPlanner.driftsHere(level, pairKey, structure.settings())) return;
         PortalRoomBlob blob = structure.blob();
         if (blob != null && blob.isLeased()) {
             SharedRoomRegistry.Instance inst = SharedRoomRegistry.register(level, pairKey, structure.roomName(),
                     roomOrigin, structure.roomSize(), true, blob.authoredHere(), blob.owner(),
                     blob.relayId(), blob.token(), blob.seqSeed(), stageId, blob.credits(), blob.deaths());
-            inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+            // The room burnt a coal joining this world (PortalRoomBlob.fromLease); tell the relay now.
+            inst.setFuel(blob.fuel());
+            // The relay's name id, else this world's for the pair's entry carriage (the relay keeps it).
+            inst.setNameId(blob.nameId().isEmpty()
+                    ? games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, pairKey) : blob.nameId());
+            inst.stampContact(System.currentTimeMillis());
+            SharedUploadFlow.heartbeat(inst);
             return;
         }
         // A stageless pair can never be shared — the relay refuses a build with no stage — so
         // registering it would only queue edits nobody can be served.
         if (stageId == null || stageId.isEmpty()) return;
-        SharedRoomRegistry.register(level, pairKey, structure.roomName(), roomOrigin, structure.roomSize(),
-                false, false, "", null, null, 0, stageId, SharedCarriageClient.Credits.EMPTY,
-                SharedCarriageClient.Deaths.EMPTY);
+        // Every fresh drifting room gets an empty Drifting Engine Block (FRESH_COAL), set down before registering
+        // so it is not mistaken for somebody's edit.
+        int coal = EngineStamp.ensure(level, roomOrigin, structure.roomSize(), DriftEngine.FRESH_COAL);
+        SharedRoomRegistry.Instance fresh = SharedRoomRegistry.register(level, pairKey, structure.roomName(),
+                roomOrigin, structure.roomSize(), false, false, "", null, null, 0, stageId,
+                SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY);
+        fresh.setFuel(coal);
+        fresh.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, pairKey));
         LOGGER.info("[DungeonTrain] drifting room pair={} '{}' registered fresh at {} — an edit inside it uploads",
                 pairKey, structure.roomName(), roomOrigin);
     }
@@ -293,9 +315,10 @@ public final class SharedRoomEvents {
             if (!inst.isOnRelay()) continue;
             Integer id = inst.relayId();
             String token = inst.leaseToken();
+            int fuel = inst.fuel();
             inst.clearRelayLease();
             if (id != null && token != null) {
-                SharedCarriageClient.returnLease(id, token, null, null, 0);
+                SharedCarriageClient.returnLease(id, token, null, null, 0, fuel);
                 detached++;
             }
         }

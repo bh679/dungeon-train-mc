@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Where the death screen's Update button goes: DT's own page at brennan.games, which lists the
+ * Where the death screen's Update button goes: DT's own page at dungeon.training, which lists the
  * newest build on each launcher with the player's first (dp-relay {@code public/dungeontrain/update/}).
  * Sending every player there rather than to a launcher keeps a CurseForge build from linking straight
  * to Modrinth while still telling them a newer release is out when CurseForge's review lags.
@@ -14,9 +14,9 @@ import java.util.Optional;
  */
 public final class UpdatePage {
 
-    public static final String BASE_URL = "https://brennan.games/dungeontrain/update/";
-    /** Shown as the button's destination ("Opens brennan.games, …"). A site name, not translated. */
-    public static final String SITE_NAME = "brennan.games";
+    public static final String BASE_URL = "https://dungeon.training/update/";
+    /** Shown as the button's destination ("Opens dungeon.training, …"). A site name, not translated. */
+    public static final String SITE_NAME = "dungeon.training";
 
     private UpdatePage() {}
 

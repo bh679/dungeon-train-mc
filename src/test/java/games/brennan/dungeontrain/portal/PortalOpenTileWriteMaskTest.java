@@ -50,7 +50,7 @@ class PortalOpenTileWriteMaskTest {
         for (Vec3i size : roomSizes()) {
             PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
             PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-                structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ false);
+                structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ false, PortalRoomGround.Rows.FLOOR);
 
             for (int x = 0; x < size.getX(); x++) {
                 for (int z = 0; z < size.getZ(); z++) {
@@ -83,7 +83,7 @@ class PortalOpenTileWriteMaskTest {
 
         PortalCorridorMask clear = PortalCorridorMask.NONE;
         PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-            structure, clear, ORIGIN, size, /*singlePlanes*/ false);
+            structure, clear, ORIGIN, size, /*singlePlanes*/ false, PortalRoomGround.Rows.FLOOR);
 
         assertTrue(clear.isEmpty(),
             "widening the clear mask would leave the copy standing in the deepslate it landed in");
@@ -101,7 +101,7 @@ class PortalOpenTileWriteMaskTest {
         BoundingBox corridor = new BoundingBox(0, 0, 0, 4, 4, 4);
         PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
             structure, PortalCorridorMask.NONE.plus(corridor), ORIGIN, size,
-            /*singlePlanes*/ false);
+            /*singlePlanes*/ false, PortalRoomGround.Rows.FLOOR);
 
         assertTrue(write.covers(2, 2, 2), "the corridor box must survive the union");
         assertTrue(write.covers(ORIGIN.getX(), ORIGIN.getY() + 1, ORIGIN.getZ()),
@@ -115,7 +115,7 @@ class PortalOpenTileWriteMaskTest {
         for (Vec3i size : roomSizes()) {
             PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
             PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-                structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ true);
+                structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ true, PortalRoomGround.Rows.FLOOR);
 
             for (int x = 0; x < size.getX(); x++) {
                 for (int z = 0; z < size.getZ(); z++) {
@@ -140,7 +140,7 @@ class PortalOpenTileWriteMaskTest {
 
         PortalCorridorMask clear = PortalCorridorMask.NONE;
         PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-            structure, clear, ORIGIN, size, /*singlePlanes*/ true);
+            structure, clear, ORIGIN, size, /*singlePlanes*/ true, PortalRoomGround.Rows.FLOOR);
 
         assertTrue(clear.isEmpty(),
             "widening the clear mask would leave the copy standing in the deepslate it landed in");
@@ -159,7 +159,7 @@ class PortalOpenTileWriteMaskTest {
             // never be true here in practice — but the mode check has to come first regardless, or
             // an Endless Repetition tile would mask its whole room and stamp an empty box.
             assertSame(clear, PortalRoomTiler.writeMaskFor(
-                    structure(mode, size), clear, ORIGIN, size, /*singlePlanes*/ true),
+                    structure(mode, size), clear, ORIGIN, size, /*singlePlanes*/ true, PortalRoomGround.Rows.FLOOR),
                 mode + " tiles the whole room and must write all of it");
         }
     }
@@ -173,9 +173,28 @@ class PortalOpenTileWriteMaskTest {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
             if (mode == PortalRoomMode.ENDLESS_OPEN) continue;
             PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-                structure(mode, size), clear, ORIGIN, size, /*singlePlanes*/ false);
+                structure(mode, size), clear, ORIGIN, size, /*singlePlanes*/ false, PortalRoomGround.Rows.FLOOR);
             // Same object, not merely equal: nothing is added, so nothing is rebuilt.
             assertSame(clear, write, mode + " tiles the whole room and must write all of it");
+        }
+    }
+
+    @Test
+    @DisplayName("A raised ground writes only its own rows and the roof, with or without the rows below")
+    void endlessOpen_raisedGroundWritesItsRowsAndTheRoof() {
+        for (Vec3i size : roomSizes()) {
+            PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
+            for (PortalRoomGround.Rows ground : new PortalRoomGround.Rows[]{
+                    new PortalRoomGround(PortalRoomGround.Level.ENTER, false).rows(3, size.getY()),
+                    new PortalRoomGround(PortalRoomGround.Level.ENTER, true).rows(3, size.getY())}) {
+                PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+                    structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ false, ground);
+                for (int y = 0; y < size.getY(); y++) {
+                    boolean writes = ground.contains(y) || y == size.getY() - 1;
+                    assertEquals(!writes, write.covers(ORIGIN.getX(), ORIGIN.getY() + y, ORIGIN.getZ()),
+                        size + " " + ground + " at row " + y);
+                }
+            }
         }
     }
 

@@ -165,6 +165,11 @@ neoForge {
             if (project.hasProperty('jitterDebug')) {
                 systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
             }
+            // Event-countdown seam: read update-page events from a local file server instead of
+            // dungeon.training, e.g. ./gradlew runClient -PeventsUrl=http://127.0.0.1:8765/events.json
+            if (project.hasProperty('eventsUrl')) {
+                systemProperty 'dungeontrain.eventsUrl', project.property('eventsUrl').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
@@ -305,6 +310,11 @@ neoForge {
             if (project.hasProperty('updatePollSeconds')) {
                 systemProperty 'dungeontrain.updatePollSeconds', project.property('updatePollSeconds').toString()
             }
+            // Low-storage warning seam: ./gradlew runClient -PfakeFreeMB=4000 (low) or =800 (critical)
+            // makes DiskSpace report that much free space instead of reading the drive. Dev builds only.
+            if (project.hasProperty('fakeFreeMB')) {
+                systemProperty 'dungeontrain.diskSpace.fakeFreeMB', project.property('fakeFreeMB').toString()
+            }
             // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes the
             // DPI Bypass Detect add-on report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running
@@ -365,6 +375,10 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Low-storage warning seam (see the client run): ./gradlew runServer -PfakeFreeMB=800
+            if (project.hasProperty('fakeFreeMB')) {
+                systemProperty 'dungeontrain.diskSpace.fakeFreeMB', project.property('fakeFreeMB').toString()
+            }
             // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
             // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
             // traingen trace (DevTraceDefaults) left off.
@@ -711,6 +725,15 @@ dependencies {
     // Sable: Ragdoll - Patch — Modrinth-only OPTIONAL (needs Ragdolls 0.7.5, which CurseForge lacks).
     // Nothing compiles against it; on the dev classpath so runClient behaves like a Modrinth player.
     runtimeOnly "maven.modrinth:sableragdoll-patch:${sableragdollpatch_version}"
+    // Sable Mob Paths — our clean-room mob pathing across sub-levels (see gradle.properties). Yields to
+    // Sable Pathfinder at load, so -PnoSablePathfinder is what exercises it in dev. Shared bh679 Ivy repo.
+    implementation "bh679:sablemobpaths:${sablemobpaths_version}"
+    jarJar(group: 'bh679', name: 'sablemobpaths', version: sablemobpaths_version)
+
+    // Dungeon Totems — cursed Totems of Undying (see gradle.properties). Bundled until its listings are
+    // approved; DT compiles against its API only through compat/DungeonTotemsBridge. Shared bh679 Ivy repo.
+    implementation "bh679:dungeontotems:${dungeontotems_version}"
+    jarJar(group: 'bh679', name: 'dungeontotems', version: dungeontotems_version)
 
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
@@ -742,6 +765,17 @@ dependencies {
     // Deeper Darker — REQUIRED third-party dep (see gradle.properties). The Deeper Dark pass copies chunks from
     // its Otherside dimension; DT names its level, biomes and structures by registry id only.
     implementation "maven.modrinth:deeperdarker:${deeperdarker_version}"
+
+    // Luminous Monsters — REQUIRED third-party dep (see gradle.properties). Natural biome-spawned mobs; DT names
+    // them by registry id only.
+    implementation "maven.modrinth:luminous-monsters:${luminous_monsters_version}"
+
+    // Creeper Overhaul + its libraries — REQUIRED third-party deps (see gradle.properties). Biome creepers placed in
+    // carriage rooms; DT names them by registry id only, so nothing compiles against these jars.
+    implementation "maven.modrinth:creeper-overhaul:${creeperoverhaul_version}"
+    implementation "maven.modrinth:geckolib:${geckolib_version}"
+    implementation "maven.modrinth:resourceful-lib:${resourcefullib_version}"
+    implementation "maven.modrinth:resourceful-config:${resourcefulconfig_version}"
 
     // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
     // DT names its entities and items by registry id only.
@@ -815,6 +849,10 @@ tasks.named('test', Test).configure {
     doFirst {
         def dd = configurations.compileClasspath.files.find { it.name.startsWith('deeperdarker-') }
         systemProperty 'dungeontrain.test.deeperdarkerJar', dd != null ? dd.absolutePath : ''
+        // BiomeNamesTest checks every biome these mods add has a name in some language file.
+        def biomeMods = ['betterend-neoforge-', 'betternether-neoforge-', 'biomes-o-plenty-', 'deeperdarker-', 'vanillabackport-']
+        def biomeJars = biomeMods.collect { prefix -> configurations.compileClasspath.files.find { it.name.startsWith(prefix) } }
+        systemProperty 'dungeontrain.test.biomeModJars', biomeJars.collect { it != null ? it.absolutePath : '' }.join(File.pathSeparator)
     }
     // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
     // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
@@ -1070,15 +1108,13 @@ tasks.register('generateModMetadata', ProcessResources) {
         lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
+        dungeontotems_min_version       : dungeontotems_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
         streamdetect_min_version         : streamdetect_min_version,
         dtmodverify_min_version          : dtmodverify_min_version,
         dpibypassdetect_min_version      : dpibypassdetect_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
-        // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
-        // update prompt for players who are on exactly that build (see DistantHorizonsUpdatePromptSuppression).
-        distant_horizons_version         : distant_horizons_version,
         // Declared-minimum floors for the EXTERNAL sibling deps (with the three above). Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.
@@ -1109,6 +1145,10 @@ tasks.register('generateModMetadata', ProcessResources) {
         platform_min_version              : platform_min_version,
         // Deeper Darker — floor only.
         deeperdarker_min_version          : deeperdarker_min_version,
+        // Luminous Monsters — floor only.
+        luminous_monsters_min_version     : luminous_monsters_min_version,
+        // Creeper Overhaul — floor only.
+        creeperoverhaul_min_version       : creeperoverhaul_min_version,
         // Piglin Proliferation — floor only.
         piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.

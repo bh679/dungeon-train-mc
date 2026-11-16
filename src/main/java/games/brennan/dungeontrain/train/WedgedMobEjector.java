@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.event.NetherMobSpawner;
+import games.brennan.dungeontrain.event.PlayerDropMarker;
 import games.brennan.dungeontrain.util.DtLogging;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
@@ -32,7 +33,8 @@ import java.util.WeakHashMap;
  *
  * <p>Owned pets never go over the side. One whose owner is online is sent to the owner (onto the
  * deck, when they ride one); one whose owner is offline takes a safe side spot or stays put, and is
- * never discarded.</p>
+ * never discarded. Items a player dropped or earned ({@link PlayerDropMarker}) are never discarded
+ * either: moved beside the carriage when there is room, left on the track when there is not.</p>
  *
  * <p>A mob knocked off the train onto the tracks within {@link WedgedUnderFloor#ROOMS_NEAR_PLAYER}
  * rooms of a player is left there instead, and crushed half a heart per
@@ -138,6 +140,16 @@ public final class WedgedMobEjector {
                 .record(e.getId(), level.getGameTime());
             if (repeats >= 0) {
                 LOGGER.info("[DungeonTrain] Left pet {} in a carriage floor at ({}, {}, {}): {}, owner offline repeats={}",
+                    e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), why, repeats);
+            }
+            return;
+        }
+        if (PlayerDropMarker.isPlayerDrop(e)) {
+            // An item a player dropped or earned is never discarded either: it stays on the track.
+            int repeats = LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle())
+                .record(e.getId(), level.getGameTime());
+            if (repeats >= 0) {
+                LOGGER.info("[DungeonTrain] Left player drop {} in a carriage floor at ({}, {}, {}): {} repeats={}",
                     e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), why, repeats);
             }
             return;

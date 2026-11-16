@@ -57,7 +57,7 @@ public final class OfficialLinks {
      * suggested. Linked from the Unsupported Mods screen.
      */
     static final String FALLBACK_MOD_WHITELIST =
-            "https://brennan.games/dungeontrain/mods/";
+            "https://dungeon.training/mods/";
 
     private static final int MAX_URL = 500;
 

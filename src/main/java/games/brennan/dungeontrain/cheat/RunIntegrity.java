@@ -42,6 +42,9 @@ import java.util.List;
  * ({@link PlayerFreePlayIntegrity}): one player in Free Play puts everyone on the world in Free Play,
  * for good, since items move between players.</p>
  *
+ * <p>{@link ProfileIntegrity} is per player and comes from the disk: one of the player's own
+ * cross-world progress files was changed outside the game. It holds until that file is reset.</p>
+ *
  * <p>{@link OperatorIntegrity} (someone online has cheats) is session-wide too,
  * but it is the one source that also stamps the player: each operator's own run
  * is marked permanently, so {@code /op} → cheat → {@code /deop} can't launder
@@ -107,6 +110,7 @@ public final class RunIntegrity {
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
             || PlayerFreePlayIntegrity.isWorldFreePlay()
+            || ProfileIntegrity.isPlayerFreePlay(player)
             || isPermanentlyCheated(player);
     }
 
@@ -153,6 +157,7 @@ public final class RunIntegrity {
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
             || PlayerFreePlayIntegrity.isWorldFreePlay()
+            || ProfileIntegrity.isPlayerFreePlay(player)
             || isPermanentlyCheated(player);
     }
 
@@ -324,6 +329,9 @@ public final class RunIntegrity {
             // Somebody else on this world went Free Play. Named, like the operator cause, because
             // a badge that arrived through another player's action reads as arbitrary otherwise.
             causes.add(new FreePlayCause(PlayerFreePlayIntegrity.cause(), null));
+        }
+        if (ProfileIntegrity.isPlayerFreePlay(player)) {
+            causes.add(new FreePlayCause(ProfileIntegrity.cause(), null));
         }
         if (isPermanentlyCheated(player)) {
             causes.add(new FreePlayCause(recordedCause(player), null));

@@ -178,7 +178,7 @@ public final class PortalRoomRescue {
      * <p>Same length as the hold, and never applied to somebody who was already invulnerable, so this
      * cannot switch off a creative player's flag when it expires.</p>
      */
-    private static void holdHarmless(ServerPlayer player, long now) {
+    public static void holdHarmless(ServerPlayer player, long now) {
         player.resetFallDistance();
         if (player.isInvulnerable()) return;
         player.setInvulnerable(true);

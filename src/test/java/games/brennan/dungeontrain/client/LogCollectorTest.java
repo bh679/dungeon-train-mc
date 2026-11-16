@@ -58,6 +58,38 @@ class LogCollectorTest {
     }
 
     @Test
+    void fitTailKeepsAWholeLogThatFits() throws IOException {
+        byte[] log = "[INFO] ok\n".repeat(1000).getBytes(StandardCharsets.UTF_8);
+        LogCollector.Fitted fitted = LogCollector.fitTail(log, 64 * 1024);
+        assertEquals(log.length, fitted.keptBytes());
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(fitted.gz()))) {
+            assertArrayEquals(log, in.readAllBytes());
+        }
+    }
+
+    @Test
+    void fitTailCutsTheStartAndKeepsTheNewestLines() throws IOException {
+        // Random-ish lines compress poorly, so 2 MB of them cannot fit in a 64 KB budget whole.
+        StringBuilder sb = new StringBuilder();
+        java.util.Random rnd = new java.util.Random(7);
+        for (int i = 0; sb.length() < 2 * 1024 * 1024; i++) {
+            sb.append("line ").append(i).append(' ').append(Long.toHexString(rnd.nextLong())).append('\n');
+        }
+        sb.append("NEWEST LINE\n");
+        byte[] log = sb.toString().getBytes(StandardCharsets.UTF_8);
+        int budget = 64 * 1024;
+
+        LogCollector.Fitted fitted = LogCollector.fitTail(log, budget);
+        assertTrue(fitted.gz().length <= budget, "fits the budget");
+        assertTrue(fitted.keptBytes() < log.length, "had to cut");
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(fitted.gz()))) {
+            String kept = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(kept.endsWith("NEWEST LINE\n"), "the newest lines survive");
+            assertEquals(fitted.keptBytes(), kept.getBytes(StandardCharsets.UTF_8).length);
+        }
+    }
+
+    @Test
     void redactHomeReplacesHomePathWithTilde() {
         String home = System.getProperty("user.home", "");
         String line = "[INFO] at " + home + "/.minecraft/mods/foo loaded";

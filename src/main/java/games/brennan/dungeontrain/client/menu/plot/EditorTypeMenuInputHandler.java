@@ -289,6 +289,12 @@ public final class EditorTypeMenuInputHandler {
         if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return;
         EditorTypeMenusPacket.Variant variant = menu.variants().get(hit.variantIdx());
 
+        // A contents pool's header is not a template: its name folds the pool's groups, the rest is read-only.
+        if (variant.poolHeader()) {
+            if (hit.cell() == EditorTypeMenuRenderer.CellKind.NAME) EditorTypeMenuRenderer.togglePool(variant.pool());
+            return;
+        }
+
         switch (hit.cell()) {
             case NAME -> {
                 // Shift-click a gateable template's name opens the Stage / Custom picker (the

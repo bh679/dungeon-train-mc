@@ -42,6 +42,7 @@ import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 
 import java.util.List;
+import java.util.function.IntFunction;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -106,8 +107,6 @@ public final class PhotoTributeButtons {
         }
 
         int cost = SharedPhotos.tributeCost(photo);
-        int emeralds = TributePayment.worth(player);
-        boolean canAfford = TributePayment.canPay(player, cost);
         int viewsLeft = SharedPhotos.viewsLeft(photo);
         int seen = SharedPhotos.viewsSeen(photo);
         // This viewer's own place: 1 / 10 for the first to open it, 10 / 10 for the last.
@@ -119,12 +118,10 @@ public final class PhotoTributeButtons {
         views.setPosition(left, y);
         views.setTooltip(Tooltip.create(viewerLine(seen + 1).append("\n").append(remainingLine(viewsLeft - 1))));
         left += viewsWidth + GAP;
-        TributeButton tribute = new TributeButton(left, y, tributeWidth, cost, canAfford, button -> {
+        TributeButton tribute = new TributeButton(left, y, tributeWidth, cost, button -> {
             DungeonTrainNet.sendToServer(new PhotoTributePacket());
             screen.onClose();
-        });
-        tribute.active = canAfford;
-        tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.offer")
+        }, emeralds -> Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.offer")
             .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", emeralds))));
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
@@ -153,12 +150,10 @@ public final class PhotoTributeButtons {
         int left = (screen.width - tributeWidth - closeWidth - trashWidth) / 2;
         List<Button> buttons = new java.util.ArrayList<>();
         if (cost > 0) {
-            boolean canAfford = TributePayment.canPay(player, cost);
-            TributeButton tribute = new TributeButton(left, y, tributeWidth - GAP, cost, canAfford, button -> {
+            TributeButton tribute = new TributeButton(left, y, tributeWidth - GAP, cost, button -> {
                 DungeonTrainNet.sendToServer(new OwnPhotoTributePacket());
                 screen.onClose();
-            });
-            tribute.active = canAfford;
+            }, null);
             tribute.setTooltip(Tooltip.create(TributeButton.LABEL));
             event.addListener(tribute);
             buttons.add(tribute);
@@ -344,27 +339,49 @@ public final class PhotoTributeButtons {
         }
     }
 
-    /** {@code <cost> <emerald>}: the cost is blue when the player carries enough emeralds, red when not. */
+    /**
+     * {@code <cost> <emerald>}: the cost is blue when the player carries enough emeralds, red when not.
+     * Re-checked every frame, so emeralds gifted while the photo is open make it payable at once.
+     */
     private static final class TributeButton extends Button {
 
         private static final Component LABEL = Component.translatable("gui.dungeontrain.photo_tribute.tribute");
         private static final ItemStack ICON = new ItemStack(Items.EMERALD);
 
+        private final int price;
         private final String cost;
-        private final boolean canAfford;
+        /** Builds the tooltip from the emeralds the player has, or null for a fixed tooltip. */
+        private final IntFunction<Tooltip> tooltipFor;
+        private boolean canAfford;
+        private int worthShown = -1;
 
-        TributeButton(int x, int y, int width, int cost, boolean canAfford, OnPress onPress) {
+        TributeButton(int x, int y, int width, int cost, OnPress onPress, IntFunction<Tooltip> tooltipFor) {
             super(x, y, width, HEIGHT, Component.empty(), onPress, DEFAULT_NARRATION);
+            this.price = cost;
             this.cost = String.valueOf(cost);
-            this.canAfford = canAfford;
+            this.tooltipFor = tooltipFor;
+            refresh();
         }
 
         static int widthFor(Font font, int cost) {
             return PADDING + font.width(String.valueOf(cost)) + 2 + ICON_SIZE + PADDING / 2;
         }
 
+        /** Reads what the player can pay with now; the tooltip is rebuilt only when that changes. */
+        private void refresh() {
+            LocalPlayer player = Minecraft.getInstance().player;
+            canAfford = player != null && TributePayment.canPay(player, price);
+            active = canAfford;
+            if (tooltipFor == null || player == null) return;
+            int worth = TributePayment.worth(player);
+            if (worth == worthShown) return;
+            worthShown = worth;
+            setTooltip(tooltipFor.apply(worth));
+        }
+
         @Override
         protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            refresh();
             super.renderWidget(graphics, mouseX, mouseY, partialTick);
             Font font = Minecraft.getInstance().font;
             int textY = getY() + (height - font.lineHeight) / 2 + 1;

@@ -44,6 +44,11 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Biomes O' Plenty | `220318` (slug `biomes-o-plenty`) | **enabled** | Third-party **hard dep**: on odd laps the overworld gap after the Nether band uses BoP biomes (`worldgen/density/OverworldStretchBiomes`; vanilla elsewhere, and kept out of the Nether/End bands). **Pinned**; floor `biomesoplenty_min_version` (not strict semver, so `check-pins.py` skips it). Requires **TerraBlender** + **GlitchCore**. |
 | TerraBlender (NeoForge) | `940057` (slug `terrablender-neoforge`) | **enabled** (library) | BoP's required library; DT also compiles against its Regions API. **Pinned**. |
 | GlitchCore | `955399` (slug `glitchcore`) | **enabled** (library) | BoP's required library. **Pinned**. |
+| Luminous Monsters | `1066090` (slug `luminous-monsters`) | **enabled** | Third-party **hard dep** (RipleysMods; All Rights Reserved in the jar, author permits modpack use): 16 zombie and skeleton variants that spawn naturally by biome. Needed on client AND server. DT overrides 10 of its biome modifiers (`data/luminous_monsters/neoforge/biome_modifier/`) because they list every biome, and hides its spawn eggs under the two creative settings. Audit: [`audits/luminous-monsters.md`](audits/luminous-monsters.md). **Pinned** (1.3.1); floor `luminous_monsters_min_version`. |
+| Creeper Overhaul | `561625` (slug `creeper-overhaul`) | **enabled** | Third-party **hard dep** (Joosh + ThatGravyBoat; All Rights Reserved): 16 biome creepers placed in carriage rooms. Needed on client AND server. Its natural spawns wait for the train's Diff-Level, and a biome keeps the vanilla creeper until one of its own creepers unlocks (`event/NaturalSpawnLevelGate`; DT empties its `remove_vanilla.json`). Spawn eggs hidden under the two creative settings. Audit: [`audits/creeper-overhaul.md`](audits/creeper-overhaul.md). **Pinned** (4.0.6); floor `creeperoverhaul_min_version`. |
+| GeckoLib | `388172` (slug `geckolib`) | **enabled** | Library (MIT) required by Creeper Overhaul's animated models. Client AND server. **Pinned** (4.9.3); floor `geckolib_min_version`. |
+| Resourceful Lib | `570073` (slug `resourceful-lib`) | **enabled** | Library (MIT) required by Creeper Overhaul (networking). Client AND server. **Pinned** (3.0.12); floor `resourcefullib_min_version`. |
+| Resourceful Config | `714059` (slug `resourceful-config`) | **enabled** | Library (MIT) required by Creeper Overhaul (its config). Client AND server. **Pinned** (3.0.11); floor `resourcefulconfig_min_version`. |
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
@@ -317,7 +322,7 @@ afterwards — leaving the workflow green and the release silently missing from 
 `approval_timeout_minutes` (default `300` — the most the 360-min job limit allows after the upload + verify) runs out, the run **defers** (`--on-timeout defer`):
 nothing is uploaded, every later step is skipped, and the run ends green with a warning and a
 step-summary note. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set
-(authoritative: `fileStatus == 4`), otherwise the caching cfwidget mirror — where the file
+(authoritative: `fileStatus == 4` and available), otherwise the caching cfwidget mirror — where the file
 appearing proves approval but its absence may just be cache lag. Either way an unapproved file
 never reaches a manifest.
 
@@ -393,8 +398,46 @@ credential and cannot read listings.)
 / v0.592.0 for a full 30 minutes after curseforge.com already listed 261 / v0.613.0. A cache
 cannot prove absence, so without an API key `--verify` downgrades a negative result to
 `INCONCLUSIVE`: it prints a warning with a link to check by hand and **does not fail the
-release**. Set the secret and the check becomes authoritative — a genuine rejection then fails
-the run, which is the whole point.
+release**. The public listing also hides files under review and rejected ones, so a quick green
+`verify-curseforge-upload.yml` run without the key says nothing about an unlisted file.
+
+**What a verify run means with the key.** `verify-curseforge-upload.yml` and
+`reupload-curseforge.yml` pass `--file-id`, which polls that file's own status:
+
+| API says | Run | Do |
+|---|---|---|
+| Approved | Green | Nothing |
+| Rejected, ChangesRequired, MalwareDetected, Deleted, FailedPublishing | **Red at once** | See the reason in the author dashboard; `reupload-curseforge.yml` if it was a CurseForge fault |
+| Still under review at the timeout | Green + warning | **Don't re-upload.** Re-dispatch to check again |
+| File unreadable to the timeout (including 404) | Green + warning, "UNKNOWN" | Check the author dashboard |
+| Key refused (401/403) | **Red** | Replace the key |
+
+`release-modpack.yml`'s pack check has no file id, so it searches the listing: red if the version
+is not listed within 30 min. That can't tell a rejected pack file from one that is still held.
+
+**Known gap:** manual review holds last days and one run stops at 300 min, so a rejection after
+that is not caught automatically.
+
+**Setting it up.** Get a key from the [CurseForge console](https://console.curseforge.com/); the
+[API docs](https://docs.curseforge.com/rest-api/) send non-game-developers to an application form.
+Then paste it at this prompt, so it stays out of shell history:
+
+```bash
+gh secret set CURSEFORGE_API_KEY --repo bh679/dungeon-train-mc
+```
+
+To test it without a release, pick a tag whose file is under review:
+
+```bash
+gh workflow run verify-curseforge-upload.yml -f tag=<tag> -f file_id=<id> -f timeout_minutes=15
+```
+
+The log should show `UnderManualReview` readings every 5 min, ending in the "still under review"
+warning. If it reports `lookup failed … 404` instead, CurseForge hides held files from the API
+too, so holds will read as UNKNOWN.
+
+The API allows at most 50 results per page with an undocumented sort order, so
+`cf_api.list_approved_files` walks every page and keeps only approved files.
 
 If verification fails, open the pack's file list in CurseForge Studio — a rejected file
 shows the reason inline. A rejection with a `500` body is CurseForge-side; the manifest
@@ -507,6 +550,10 @@ stay in `src/main/whitelist/approved_mods.curated.json`.
   `python3 scripts/modpack/check-mod-ids.py --fill`, which reads the pinned jar.
 - After bumping a pin, run `check-mod-ids.py --verify` (CI does too) — a new version can add or
   rename a module.
+- `--verify` opens the **Modrinth** jar, so it never sees the CurseForge `file_id`. A CurseForge
+  release is often one file per Minecraft version and loader: pick the `1.21.1` + `NeoForge` one.
+  `check-cf-game-versions.py` (CI and `release-modpack.yml`) fails on any other; PlayerMob's 26.2
+  file shipped in the CurseForge packs v0.1835.0 to v0.1840.0 and none of them loaded.
 - `sha1` is the pinned jar's file hash, also written by `--fill` and checked by `--verify`. The
   hash-verified whitelist bakes it into `approved_mods.json` `hashes`, so a stock install passes the
   FILE check offline (a mod id is a line in mods.toml anyone can edit; the hash is not). Every

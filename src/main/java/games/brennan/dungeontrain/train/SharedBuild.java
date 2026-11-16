@@ -93,6 +93,24 @@ public interface SharedBuild {
     /** The worldgen stage the build was placed in, or null when none covers it. */
     String stageId();
 
+    /**
+     * Coal in the build's Drifting Engine Block, as last seen, or -1 when unknown (a build placed before this
+     * session had anything to say about it). Sent with every relay call that holds the lease; the relay
+     * retires a build that leaves a world at zero.
+     */
+    int fuel();
+
+    void setFuel(int fuel);
+
+    /**
+     * The build's name id: its carriage id from the world it was first built in, which the relay keeps
+     * and hands back on every lease, so it reads the same in every world. Empty until it is set at
+     * registration. Shown on the Drifting Engine Block.
+     */
+    String nameId();
+
+    void setNameId(String nameId);
+
     /** A short label for log lines, e.g. {@code pIdx=12} or {@code pair=30}. */
     String describe();
 }

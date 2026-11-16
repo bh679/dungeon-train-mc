@@ -99,6 +99,7 @@ public class NarrativeLecternBlock extends LecternBlock {
         // Lock check: a prior interaction already resolved a book for this
         // lectern. The BE persists it across saves, so just open it again.
         if (!lectern.getBook().isEmpty()) {
+            stampReportedFor(sl, lectern, sp);
             return super.useWithoutItem(state, level, pos, player, hit);
         }
 
@@ -174,7 +175,21 @@ public class NarrativeLecternBlock extends LecternBlock {
 
         // Now let vanilla open the lectern menu — it reads the BE's book
         // we just swapped in.
+        stampReportedFor(sl, lectern, sp);
         return super.useWithoutItem(state, level, pos, player, hit);
+    }
+
+    /**
+     * Mark the lectern's player-series letter as reported or not FOR THIS OPENER, so the menu sync shows
+     * them the right ⚠ state ({@code LecternReportClientEvents}). Per-player and per-series: one report
+     * covers every lectern of that series. No-op for any other book.
+     */
+    private static void stampReportedFor(ServerLevel level, LecternBlockEntity lectern, ServerPlayer opener) {
+        ItemStack book = lectern.getBook();
+        PlayerNarrativeBookTag.read(book).ifPresent(pid -> {
+            NarrativeProgressData data = NarrativeProgressData.get(level.getServer().overworld());
+            PlayerNarrativeBookTag.setReported(book, data.hasReportedSeries(pid.seriesId(), opener.getUUID()));
+        });
     }
 
     /** The title of letter {@code letterIndex} of {@code series}, or {@code "?"} when it is not present. */

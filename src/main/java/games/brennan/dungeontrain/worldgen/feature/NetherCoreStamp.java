@@ -215,7 +215,7 @@ public final class NetherCoreStamp {
     static boolean isOthersideColumn(NetherBandContext bandCtx, int worldX, int worldZ) {
         if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return false;
         NetherCoreBiomes ncb = bandCtx.netherCoreBiomes();
-        return ncb.hasOtherside() && ncb.isOtherside(bandCtx.cycle().netherLookAt(worldX, worldZ, ncb.seed()));
+        return ncb.hasOtherside() && ncb.isOtherside(bandCtx.netherLookAt(worldX, worldZ));
     }
 
     /**
@@ -308,7 +308,7 @@ public final class NetherCoreStamp {
     /** The real-Nether biome KEY for a core column (drives the per-biome surface skin); nether_wastes fallback. */
     static ResourceKey<Biome> coreBiomeKeyAt(NetherBandContext bandCtx, int worldX, int worldZ) {
         if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return Biomes.NETHER_WASTES;
-        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ, bandCtx.cycle().netherLookAt(worldX, worldZ, bandCtx.netherCoreBiomes().seed()))
+        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ, bandCtx.netherLookAt(worldX, worldZ))
                 .unwrapKey().orElse(Biomes.NETHER_WASTES);
     }
 

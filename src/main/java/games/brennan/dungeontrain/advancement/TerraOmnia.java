@@ -23,7 +23,7 @@ import java.util.Set;
  * list the biomes in one order: the vanilla Overworld, the Nether, the End, then Biomes O' Plenty,
  * BetterNether, BetterEnd and Deeper Darker, then anything else; alphabetical within each.
  *
- * <p>Five Biomes O' Plenty biomes are so rare that riding every one of them was the wall at the end, so
+ * <p>Eight Biomes O' Plenty biomes are so rare that riding every one of them was the wall at the end, so
  * Terra Omnia asks for only {@link #RARE_NEEDED} of the {@link #RARE} ones. Coffee Table Book still wants a
  * photo in all of them ({@link #holdsEvery}).</p>
  */
@@ -67,16 +67,22 @@ public final class TerraOmnia {
         ResourceLocation.fromNamespaceAndPath("betternether", "upside_down_forest_cleared"),
         ResourceLocation.fromNamespaceAndPath("betternether", "wart_forest_edge"));
 
-    /** The rare biomes Terra Omnia asks only {@link #RARE_NEEDED} of. Twice as common in the BoP stretch too. */
+    /**
+     * The rare biomes Terra Omnia asks only {@link #RARE_NEEDED} of: the eight rarest Biomes O' Plenty biomes of the
+     * BoP stretch, averaged over a headless census of five seeds (0.02% to 0.1% of it each).
+     */
     public static final Set<ResourceLocation> RARE = Set.of(
         ResourceLocation.fromNamespaceAndPath("biomesoplenty", "wintry_origin_valley"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "moor"),
         ResourceLocation.fromNamespaceAndPath("biomesoplenty", "origin_valley"),
-        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "hot_springs"),
-        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "auroral_garden"),
-        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "tropics"));
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "tropics"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "wasteland_steppe"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "fungal_jungle"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "old_growth_dead_forest"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "dead_forest"));
 
     /** How many of {@link #RARE} Terra Omnia asks for. */
-    public static final int RARE_NEEDED = 2;
+    public static final int RARE_NEEDED = 4;
 
     private static final int OVERWORLD = 0;
     private static final int NETHER = 1;
@@ -131,6 +137,12 @@ public final class TerraOmnia {
         }
         int rareNeeded = Math.min(RARE_NEEDED, rare);
         return new Progress(commonRidden + Math.min(rareRidden, rareNeeded), common + rareNeeded);
+    }
+
+    /** Whether {@code ridden} holds as many of the rare biomes in {@code all} as Terra Omnia asks for. False when {@code all} has none. */
+    public static boolean hasEnoughRare(Set<ResourceLocation> ridden, Collection<ResourceLocation> all) {
+        List<ResourceLocation> rare = all.stream().filter(RARE::contains).toList();
+        return !rare.isEmpty() && rare.stream().filter(ridden::contains).count() >= Math.min(RARE_NEEDED, rare.size());
     }
 
     /** Whether {@code biome} is a rare one {@code ridden} no longer needs, because enough of the others are held. */

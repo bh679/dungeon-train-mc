@@ -9,6 +9,10 @@ Inputs (any mix):
   --backup  dungeontrain-backup-*.zip  DungeonBackup archive; its
                                  enderchestpersistence/<uuid>.dat is read like --ecp
 
+--with-run (with --level/--player) also writes a "run" block: the save's world-X, its
+dungeontrain:player_run_state as SNBT and Long Way Back's furthest carriage, plus "xpLevels".
+A restore carrying it puts the player back at that depth with that run's stats.
+
 Output: a JSON snapshot (schemaVersion 1.0) on --out, plus a readable list on stdout.
 Every stack keeps its full NBT as SNBT ("nbt"), so a restore round-trips components,
 enchantments, names and contents exactly; "id"/"count"/"summary" are for humans only.
@@ -93,6 +97,26 @@ def split_player(player):
     return inventory, armor, offhand, ender
 
 
+RUN_STATE_KEY = "dungeontrain:player_run_state"
+LWB_MAX_KEY = "dungeontrain:long_way_back_max_carriage"
+
+
+def run_block(player):
+    """The save's depth and run stats, or exit when the save has no run state to restore."""
+    attachments = player.get("neoforge:attachments", {})
+    state = attachments.get(RUN_STATE_KEY)
+    if state is None:
+        sys.exit(f"--with-run: the save has no {RUN_STATE_KEY}")
+    pos = player.get("Pos")
+    if not pos or str(player.get("Dimension", "minecraft:overworld")) != "minecraft:overworld":
+        sys.exit("--with-run: the player was not in the overworld at save time")
+    return {
+        "x": round(float(pos[0]), 2),
+        "runState": state.snbt(),
+        "longWayBackMaxCarriage": int(attachments.get(LWB_MAX_KEY, -1)),
+    }
+
+
 def ecp_slots(root):
     return {key: [entry(s, int(s.get("Slot", -1))) for s in items] for key, items in root.items()}
 
@@ -103,6 +127,10 @@ def ecp_from_backup(path, uuid):
         if not names:
             sys.exit(f"{path}: no enderchestpersistence/{uuid}.dat inside")
         return load_nbt_bytes(zf.read(names[0])), names[0]
+
+
+def load_run_state(snbt):
+    return nbtlib.parse_nbt(snbt)
 
 
 def print_list(title, items):
@@ -122,6 +150,8 @@ def main():
     ap.add_argument("--backup")
     ap.add_argument("--ecp-slot", default="survival",
                     help="which ECP chest slot becomes enderChest in the snapshot (default survival)")
+    ap.add_argument("--with-run", action="store_true",
+                    help="also return the player to the save's depth with its run stats")
     ap.add_argument("--note", default="")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -145,6 +175,11 @@ def main():
             snapshot["source"]["playerdata"] = args.player
         inv, armor, off, ender = split_player(player)
         snapshot.update(inventory=inv, armor=armor, offhand=off, worldEnderChest=ender)
+        if args.with_run:
+            snapshot["run"] = run_block(player)
+            snapshot["xpLevels"] = int(player.get("XpLevel", 0))
+    elif args.with_run:
+        sys.exit("--with-run needs --level or --player")
 
     ecp_root = None
     if args.ecp:
@@ -168,6 +203,11 @@ def main():
     for key, items in snapshot["ecpSlots"].items():
         if key != args.ecp_slot:
             print_list(f"ECP slot '{key}' (not restored)", items)
+    if "run" in snapshot:
+        state = load_run_state(snapshot["run"]["runState"])
+        print(f"\n== run ==\n  x={snapshot['run']['x']}  carriage={int(state.get('travelledCarriageIndex', 0))}"
+              f"  distance={round(float(state.get('distanceBlocks', 0)))}  kills={int(state.get('mobKills', 0))}"
+              f"  xpLevels={snapshot['xpLevels']}")
     if snapshot["worldEnderChest"]:
         print_list("world EnderItems (live chest at save time, not restored)", snapshot["worldEnderChest"])
 

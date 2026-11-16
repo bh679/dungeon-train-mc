@@ -1,4 +1,157 @@
 {
+  "chat.dungeontrain.event.in_24h": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.in_1h": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.in_10m": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.now": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.public_posts.death.two": {
+    "1": {
+      "label": "the carriage number the player died at",
+      "examples": [
+        "412",
+        "87"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "3": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death.plain.two": {
+    "1": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "2": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.two": {
+    "1": {
+      "label": "the photo's title",
+      "examples": [
+        "Sunset Bridge"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "3": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.plain.two": {
+    "1": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "2": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu.backdrop.live_named": {
+    "1": {
+      "label": "the name of the player streaming live, shown over the main menu",
+      "examples": [
+        "Iffy8251",
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu.backdrop.photo_by": {
+    "1": {
+      "label": "the name of the player who took the tributed photo behind the main menu",
+      "examples": [
+        "Iffy8251",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death": {
+    "1": {
+      "label": "the carriage number the player died at",
+      "examples": [
+        "412",
+        "87"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death.plain": {
+    "1": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo": {
+    "1": {
+      "label": "the photo's title",
+      "examples": [
+        "Sunset Bridge",
+        "Ride photo"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.plain": {
+    "1": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.delete_confirm": {
     "1": {
       "label": "the display name of the stage about to be deleted",
@@ -1000,6 +1153,51 @@
       ]
     }
   },
+  "chat.dungeontrain.low_disk": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "3.2 GB",
+        "4.8 GB"
+      ]
+    }
+  },
+  "chat.dungeontrain.low_disk.critical": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "412 MB",
+        "950 MB"
+      ]
+    }
+  },
+  "chat.dungeontrain.low_disk.server": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "812 MB",
+        "2.4 GB"
+      ]
+    }
+  },
+  "toast.dungeontrain.low_disk.body": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "3.2 GB",
+        "4.8 GB"
+      ]
+    }
+  },
+  "toast.dungeontrain.low_disk.critical_body": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "412 MB",
+        "950 MB"
+      ]
+    }
+  },
   "chat.dungeontrain.update_notice": {
     "1": {
       "label": "the version number of the new Dungeon Train release",
@@ -1072,6 +1270,15 @@
       "examples": [
         "4",
         "3.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.ffmpeg.downloading_percent": {
+    "1": {
+      "label": "how much of the download is done, a whole number from 0 to 100",
+      "examples": [
+        "42",
+        "100"
       ]
     }
   },
@@ -4923,6 +5130,24 @@
       ]
     }
   },
+  "gui.dungeontrain.live.mic_hint": {
+    "1": {
+      "label": "the name of the key bound to Toggle Live Eye Mic, as the game shows it",
+      "examples": [
+        "K",
+        "Mouse Button 5"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.mic_mix.value": {
+    "1": {
+      "label": "the mic's share of the stream's sound, a whole number from 0 to 100 (the percent sign follows)",
+      "examples": [
+        "50",
+        "75"
+      ]
+    }
+  },
   "gui.dungeontrain.options.internet": {
     "1": {
       "label": "whether it is on",
@@ -6401,6 +6626,42 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.undead_commuter.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.heart_of_stone.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.seeing_red.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.party_of_one.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.no_container_100.description": {
     "1": {
       "label": "carriages to travel, from the requirement",
@@ -6509,6 +6770,15 @@
       "examples": [
         "3",
         "10"
+      ]
+    }
+  },
+  "chat.dungeontrain.lucky_loot.vault_bonus": {
+    "1": {
+      "label": "how many extra items the Luck effect added to the vault's reward (1 to 10)",
+      "examples": [
+        "1",
+        "4"
       ]
     }
   },
@@ -6699,6 +6969,22 @@
       "examples": [
         "Off",
         "Daylight"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.ground": {
+    "1": {
+      "label": "the Ground level, already translated",
+      "examples": [
+        "Bottom",
+        "Door"
+      ]
+    },
+    "2": {
+      "label": "the block row inside the room",
+      "examples": [
+        "0",
+        "5"
       ]
     }
   },
@@ -7161,12 +7447,61 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.container.book_ench": {
+    "1": {
+      "label": "how many random enchantments the book gets, one number or a range",
+      "examples": [
+        "1-7",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.book_level": {
+    "1": { "label": "the levels the book's random enchantments roll at", "examples": ["max", "3-max", "2-4"] }
+  },
+  "gui.dungeontrain.editor_menu.container.book_list": {
+    "1": { "label": "how many enchantments are switched on", "examples": ["38", "12"] },
+    "2": { "label": "how many enchantments the list holds", "examples": ["42"] }
+  },
+  "gui.dungeontrain.editor_menu.container.book_list_new": {
+    "1": { "label": "how many enchantments the builder has not decided on yet", "examples": ["3", "1"] }
+  },
+  "chat.dungeontrain.editor_bar.contents_menu.book_ench_new": {
+    "1": { "label": "how many enchantments the builder has not decided on yet", "examples": ["3", "1"] }
+  },
   "gui.dungeontrain.editor_menu.container.vault_key": {
     "1": {
       "label": "the name of the key item that unlocks the vault",
       "examples": [
         "Trial Key",
         "Ominous Trial Key"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.trap_pct": {
+    "1": {
+      "label": "the percent chance the chest spawns as a trapped chest (a whole number, the % sign follows)",
+      "examples": [
+        "25",
+        "100"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.contents": {
+    "1": {
+      "label": "the id of the loot prefab the shulker box is filled from",
+      "examples": [
+        "shulker_supplies",
+        "mining"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.contents_menu.contents_set": {
+    "1": {
+      "label": "the id of the loot prefab the shulker box is filled from",
+      "examples": [
+        "shulker_supplies",
+        "mining"
       ]
     }
   },
@@ -11282,6 +11617,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_door_wall_option": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_ground_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [
@@ -15614,6 +15959,58 @@
       ]
     }
   },
+  "chat.dungeontrain.vault_first": {
+    "1": {
+      "label": "the item's name",
+      "examples": [
+        "Mace",
+        "Fox Spawn Egg"
+      ]
+    }
+  },
+  "lore.dungeontrain.vault_find.serial": {
+    "1": {
+      "label": "the item's number: how many of it have ever come out of a vault, counting this one",
+      "examples": [
+        "1",
+        "37"
+      ]
+    }
+  },
+  "lore.dungeontrain.vault_find.pulled_by": {
+    "1": {
+      "label": "the player who opened the vault",
+      "examples": [
+        "Steve"
+      ]
+    },
+    "2": {
+      "label": "the date it came out of the vault, year-month-day",
+      "examples": [
+        "2026-11-07"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_help.intro.modpack": {
+    "1": {
+      "label": "the launcher's name, a brand name left untranslated",
+      "examples": [
+        "CurseForge",
+        "Modrinth App",
+        "Prism Launcher"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_help.intro.mod": {
+    "1": {
+      "label": "the launcher's name, a brand name left untranslated",
+      "examples": [
+        "CurseForge",
+        "Modrinth App",
+        "ATLauncher"
+      ]
+    }
+  },
   "gui.dungeontrain.update_prompt.body": {
     "1": {
       "label": "the mod's name and newest version, shown in green",
@@ -15879,6 +16276,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live.mic_off_hint": {
+    "1": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live.mic_off_hint.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Microphone"
+      ]
+    }
+  },
   "chat.dungeontrain.live.needs_internet": {
     "1": {
       "label": "the clickable link that opens the internet consent card, already translated (chat.dungeontrain.live.needs_internet.link)",
@@ -16097,25 +16502,11 @@
       ]
     }
   },
-  "chat.dungeontrain.live.watch_links": {
-    "1": {
-      "label": "the clickable word Twitch, already translated (chat.dungeontrain.live.link.twitch)",
-      "examples": [
-        "Twitch"
-      ]
-    },
-    "2": {
-      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
-      "examples": [
-        "DungeonTrain TV"
-      ]
-    }
-  },
   "chat.dungeontrain.live.watch_link": {
     "1": {
-      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "label": "a row of clickable platform logos (the Dungeon Train logo for the website, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "DungeonTrain TV"
+        "[Dungeon Train] [Twitch] [YouTube] [Kick]"
       ]
     }
   },
@@ -16285,31 +16676,41 @@
       ]
     }
   },
-  "chat.dungeontrain.live.watch_links_own": {
+  "chat.dungeontrain.live.channel.live": {
     "1": {
-      "label": "the word Twitch, a link to the Dungeon Train Twitch channel",
+      "label": "the name of the player who just went live",
       "examples": [
-        "Twitch"
+        "AshSeven",
+        "Steve"
       ]
     },
     "2": {
-      "label": "the words DungeonTrain TV, a link to the website's live page",
+      "label": "a link to their Twitch channel",
       "examples": [
-        "DungeonTrain TV"
+        "twitch.tv/ashseven"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.channel.join": {
+    "1": {
+      "label": "the name of the player whose stream you are watching",
+      "examples": [
+        "AshSeven",
+        "Steve"
       ]
     },
-    "3": {
-      "label": "the streamer's Twitch channel, shown as a clickable link",
+    "2": {
+      "label": "a link to their Twitch channel",
       "examples": [
-        "twitch.tv/brennanhattongames"
+        "twitch.tv/ashseven"
       ]
     }
   },
   "chat.dungeontrain.live.watch_link_own": {
     "1": {
-      "label": "the words DungeonTrain TV, a link to the website's live page",
+      "label": "a row of clickable platform logos (the Dungeon Train logo for the website, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "DungeonTrain TV"
+        "[Dungeon Train] [Twitch] [YouTube] [Kick]"
       ]
     },
     "2": {
@@ -17523,6 +17924,15 @@
       ]
     }
   },
+  "gui.dungeontrain.rewards.status.free_thanks": {
+    "1": {
+      "label": "the name of the person keeping the translations free",
+      "examples": [
+        "Brennan",
+        "Kestrel"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.status.on_until_tomorrow": {
     "1": {
       "label": "the name of the player who gave",
@@ -18192,6 +18602,425 @@
       "examples": [
         "Wren",
         "Brennan"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.muted_streamers.button": {
+    "1": {
+      "label": "how many streamers you have muted",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.muted_streamers.unmute.tip": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.hearing": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.button.streamer": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.button.streamer.hover": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.streamer_muted": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.unmuted": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.list": {
+    "1": {
+      "label": "the muted streamers' names, comma separated",
+      "examples": [
+        "Alice, Bob"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.not_muted": {
+    "1": {
+      "label": "the name typed after /livemute unmute",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.stream": {
+    "1": {
+      "label": "which of the two live streams it is",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "that stream's streamer name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.stream_unnamed": {
+    "1": {
+      "label": "which of the two live streams it is",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.pick_reason": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.sent": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.open": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    },
+    "2": {
+      "label": "how long ago the earlier report was made, already translated (e.g. 'just now', '5 min ago')",
+      "examples": [
+        "5 min ago",
+        "just now"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.kept": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.not_live": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.not_found": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.minutes": {
+    "1": {
+      "label": "a number of minutes",
+      "examples": [
+        "5",
+        "42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.hours": {
+    "1": {
+      "label": "a number of hours",
+      "examples": [
+        "2",
+        "13"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.days": {
+    "1": {
+      "label": "a number of days",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.found_by": {
+    "1": {
+      "label": "the player who first held the item after it was found",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.made_by": {
+    "1": {
+      "label": "the player who crafted the item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.bought_by": {
+    "1": {
+      "label": "the player who bought the item from a villager",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.1": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.2": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.3": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.4": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.5": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.6": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.7": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.8": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.9": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.10": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.11": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.12": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.13": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.14": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.one": {
+    "1": {
+      "label": "worlds the coal lasts (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.other": {
+    "1": {
+      "label": "how many more worlds the coal lasts",
+      "examples": [
+        "3",
+        "40"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.carriage": {
+    "1": {
+      "label": "how many more worlds all the carriage's engines together last",
+      "examples": [
+        "8",
+        "30"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.carriage_id": {
+    "1": {
+      "label": "the drifting carriage's id, letters and digits, never translated",
+      "examples": [
+        "MZXW K 0C9-3",
+        "NOPI 3F L4 0C9P-7"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.off": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.curseforge": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.modrinth": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.other": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "chat.dungeontrain.known_feature.line": {
+    "1": {
+      "label": "the note's title, already translated",
+      "examples": [
+        "You already have a trash slot",
+        "Multiplayer is coming"
       ]
     }
   }

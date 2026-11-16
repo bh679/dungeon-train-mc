@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.google.gson.JsonArray;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.CallStatus;
@@ -37,8 +38,17 @@ public final class SharedUploadFlow {
      * A captured build ready for the relay: the base64 blob, its scraped moderation text, and the
      * decor fingerprint of the entities it carries — recorded on the build once the upload lands, so
      * the sweep can tell a later entity-only edit from the state the relay already holds.
+     *
+     * <p>{@code photos} is every community photo the WHOLE build holds ({@code CarriagePhotos.toJson}),
+     * even on a delta — the relay keeps their pictures until a later upload stops listing them. Null
+     * says nothing, and the relay keeps the list it has.</p>
      */
-    public record CapturedBlob(String base64, String text, long entitySig) {}
+    public record CapturedBlob(String base64, String text, long entitySig, JsonArray photos) {
+        /** A capture that says nothing about photos. */
+        public CapturedBlob(String base64, String text, long entitySig) {
+            this(base64, text, entitySig, null);
+        }
+    }
 
     /** How a caller reads its own blocks. Either answer may be null when the build is not readable right now. */
     public interface Capture {
@@ -71,7 +81,7 @@ public final class SharedUploadFlow {
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
         SharedCarriageClient.submit(ownerUuid, ownerName, blob.base64(), spec.l(), spec.h(), spec.w(),
-                        blob.text(), stage, mode, spec.kind(), spec.subKind())
+                        blob.text(), stage, mode, spec.kind(), spec.subKind(), build.nameId(), blob.photos())
                 .whenComplete((result, err) -> {
                     try {
                         if (err == null && result != null && result.isPresent() && result.get().token() != null) {
@@ -114,7 +124,8 @@ public final class SharedUploadFlow {
         }
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.delta(build.relayId(), build.leaseToken(), seq, blob.base64(), blob.text())
+        SharedCarriageClient.delta(build.relayId(), build.leaseToken(), seq, blob.base64(), blob.text(), build.fuel(),
+                        blob.photos())
                 .whenComplete((res, err) -> {
                     try {
                         if (err != null || res == null) {
@@ -150,7 +161,8 @@ public final class SharedUploadFlow {
         int baseSeq = build.currentSeq();
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.save(build.relayId(), build.leaseToken(), blob.base64(), blob.text(), baseSeq)
+        SharedCarriageClient.saveWithFuel(build.relayId(), build.leaseToken(), blob.base64(), blob.text(), baseSeq,
+                        build.fuel(), blob.photos())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) {
@@ -173,7 +185,7 @@ public final class SharedUploadFlow {
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
         SharedCarriageClient.heartbeat(build.relayId(), build.leaseToken(),
-                        SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName())
+                        SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName(), build.fuel(), build.nameId())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) build.stampContact(now);
@@ -197,6 +209,7 @@ public final class SharedUploadFlow {
         String token = build.leaseToken();
         if (id == null || token == null) return false;
         String blocks = null, text = null;
+        JsonArray photos = null;
         int baseSeq = build.currentSeq();
         boolean captured = false;
         if (allowCapture && build.hasPending()) { // else the streamed deltas already reflect every edit
@@ -204,10 +217,11 @@ public final class SharedUploadFlow {
             if (blob != null && blob.base64().length() <= MAX_BLOB_CHARS) {
                 blocks = blob.base64();
                 text = blob.text();
+                photos = blob.photos();
                 captured = true;
             }
         }
-        SharedCarriageClient.returnLease(id, token, blocks, text, baseSeq);
+        SharedCarriageClient.returnLease(id, token, blocks, text, baseSeq, build.fuel(), photos);
         return captured;
     }
 }

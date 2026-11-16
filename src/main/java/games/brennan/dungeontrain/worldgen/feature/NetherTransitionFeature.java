@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.compat.DisabledModContent;
+import net.minecraft.resources.ResourceKey;
 import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -477,7 +479,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      *
      * <p>A vanilla ({@code minecraft:}) core biome places only vanilla and Dungeon Train features — see
      * {@link NetherCoreFeatureFilter}. Other mods add their own ores to the vanilla Nether biomes, and the
-     * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list.</p>
+     * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list, minus the ores
+     * DT has turned off ({@link DisabledModContent}).</p>
      *
      * <p><b>LOD-lite:</b> on a Distant Horizons generator thread ({@link LodGeneration#liteDecoration()})
      * only the silhouette steps ({@link LodGeneration#LOD_VISIBLE_STEPS}) are placed. A skipped feature
@@ -538,6 +541,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     PlacedFeature pf = holder.value();
                     if (!placedThisStep.add(pf)) continue;
                     int seedIndex = featureIndex++;          // consumed even when LOD-lite skips: seeds stay identical
+                    // BetterNether's ores are off in DT. The decoration veto that keeps them out everywhere else
+                    // reads the feature's registry id, which remapForCore's copy no longer has, so it's asked
+                    // here. After the seed index, so every other feature keeps its seed.
+                    if (DisabledModContent.isDisabledOreFeature(holder.unwrapKey().map(ResourceKey::location).orElse(null))) {
+                        skipped++;
+                        continue;
+                    }
                     if (!lodVisibleStep) {
                         lodSkipped++;
                         continue;
@@ -592,7 +602,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ(), x1 = cp.getMaxBlockX(), z1 = cp.getMaxBlockZ();
             int[][] pts = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, {(x0 + x1) >> 1, (z0 + z1) >> 1}};
             for (int[] p : pts) {
-                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().netherLookAt(p[0], p[1], ncb.seed()));
+                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.netherLookAt(p[0], p[1]));
                 if (b != null) out.add(b);
             }
         }
@@ -623,7 +633,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         NetherCoreBiomes ncb = bandCtx.netherCoreBiomes();
         NetherCoreBiomes.SampleMemo samples = new NetherCoreBiomes.SampleMemo();
         return new CoreBiomeFilter.ColumnBiomes(
-                (x, z) -> ncb.biomeAt(x, z, bandCtx.cycle().netherLookAt(x, z, ncb.seed()), samples));
+                (x, z) -> ncb.biomeAt(x, z, bandCtx.netherLookAt(x, z), samples));
     }
 
     /** Registry namespace of a holder's key, or {@code null} for an unkeyed (direct) holder. */

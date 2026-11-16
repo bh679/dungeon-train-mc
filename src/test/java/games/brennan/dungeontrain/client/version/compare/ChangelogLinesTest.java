@@ -68,11 +68,11 @@ class ChangelogLinesTest {
 
                 ---
 
-                # [Capture The View](https://brennan.games/dungeontrain/update/)
+                # [Capture The View](https://dungeon.training/update/)
 
                 - one
 
-                [Read more](https://brennan.games/dungeontrain/update/)
+                [Read more](https://dungeon.training/update/)
                 """;
         List<ShaderDetailPane.Line> lines = ChangelogLines.fromMarkdown(notes);
         assertEquals(List.of(
@@ -87,6 +87,6 @@ class ChangelogLinesTest {
     void otherLinksKept() {
         assertEquals(List.of("• - nested", "See the wiki", "Get it on our site today"),
                 texts(ChangelogLines.fromMarkdown("- - nested\nSee [the wiki](https://example.org/wiki)\n"
-                        + "Get it on [our site](https://brennan.games/dungeontrain/update/) today")));
+                        + "Get it on [our site](https://dungeon.training/update/) today")));
     }
 }

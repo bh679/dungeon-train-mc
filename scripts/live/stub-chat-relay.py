@@ -11,6 +11,7 @@ Translations reward is on. Every poll's `lang=` is logged, which is the mod's ha
     POST /scene/<name>   queue a scene: inline  (a line read with its tr already on it)
                                         late    (a line, then its translations a poll later)
                                         delete  (a translated line, then its deletion)
+    POST /by/<id>        name the translator on every poll (azure, google, haiku); /by/none stops
     GET  /log            what was asked (polls with their lang, joins, sends)
 
 Dev tool only; never exposed beyond loopback.
@@ -23,7 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 LOCK = threading.Lock()
-STATE = {"seq": 10, "steps": [], "log": []}
+STATE = {"seq": 10, "steps": [], "log": [], "by": None}
 ZH = {"zh_cn": "苦力怕又炸了我一次"}  # the creeper got me again
 DE = {"de_de": "Der Creeper hat mich schon wieder erwischt"}
 
@@ -85,6 +86,8 @@ class Handler(BaseHTTPRequestHandler):
                     STATE["seq"] += 1
                     page.update(STATE["steps"].pop(0)(STATE["seq"]))
                 page["seq"] = STATE["seq"]
+                if STATE["by"]:
+                    page["translatedBy"] = STATE["by"]
             self._note("poll since=%s lang=%s -> seq %d %s" % (since, lang, page["seq"],
                        "msgs=%d tr=%d del=%d" % (len(page["messages"]), len(page["translations"]), len(page["deleted"]))))
             return self._send(200, page)
@@ -97,6 +100,12 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         n = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(n).decode("utf-8", "replace")
+        if u.path.startswith("/by/"):
+            by = u.path.split("/")[2]
+            with LOCK:
+                STATE["by"] = None if by == "none" else by
+            self._note("translated by " + by)
+            return self._send(200, {"ok": True})
         if u.path.startswith("/scene/"):
             name = u.path.split("/")[2]
             steps = scene(name)

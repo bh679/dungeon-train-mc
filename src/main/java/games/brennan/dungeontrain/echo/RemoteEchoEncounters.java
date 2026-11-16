@@ -5,6 +5,8 @@ import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
+import games.brennan.dungeontrain.discord.DiscordPings;
+import games.brennan.dungeontrain.discord.PingType;
 import games.brennan.dungeontrain.event.DeathNoteGate;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.ship.CarriageDeck;
@@ -500,6 +502,13 @@ public final class RemoteEchoEncounters {
         // Route to the public death-report channel (same cap as the death manifest) on main builds,
         // keeping the encounter story's greyish-blue bar; null on dev → the build's default cap.
         DiscordService.get().postReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME,
-                EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
+                EMBED_COLOR, webhookFor(enc));
+    }
+
+    /** The manifest hook, tagging the echo's own player (if linked) unless they met their own echo. */
+    private static String webhookFor(EchoEncounter enc) {
+        String override = DungeonTrain.manifestWebhookOverride();
+        if (enc.sourcePlayerId == null || enc.sourcePlayerId.equals(enc.primaryPlayerId)) return override;
+        return DiscordPings.forPlayer(override, enc.sourcePlayerId, PingType.ECHO);
     }
 }

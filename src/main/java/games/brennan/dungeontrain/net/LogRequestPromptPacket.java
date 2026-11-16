@@ -11,15 +11,19 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /**
  * Server → client: the Developer is asking for this player's logs (request {@code id}). The client
  * shows the consent line, or answers BLOCKED straight away when Developer chat is off — see
- * {@link LogRequestClient}.
+ * {@link LogRequestClient}. {@code full}: the request is {@code /bug full}, for the whole session's
+ * logs rather than their tails, and the consent line says so.
  */
-public record LogRequestPromptPacket(int id) implements CustomPacketPayload {
+public record LogRequestPromptPacket(int id, boolean full) implements CustomPacketPayload {
 
     public static final Type<LogRequestPromptPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "log_request_prompt"));
 
     public static final StreamCodec<FriendlyByteBuf, LogRequestPromptPacket> STREAM_CODEC =
-        StreamCodec.of((buf, p) -> buf.writeVarInt(p.id()), buf -> new LogRequestPromptPacket(buf.readVarInt()));
+        StreamCodec.of((buf, p) -> {
+            buf.writeVarInt(p.id());
+            buf.writeBoolean(p.full());
+        }, buf -> new LogRequestPromptPacket(buf.readVarInt(), buf.readBoolean()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -28,6 +32,6 @@ public record LogRequestPromptPacket(int id) implements CustomPacketPayload {
 
     /** Client-bound — only runs on the physical client. */
     public static void handle(LogRequestPromptPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> LogRequestClient.onPrompt(packet.id()));
+        ctx.enqueueWork(() -> LogRequestClient.onPrompt(packet.id(), packet.full()));
     }
 }

@@ -38,7 +38,7 @@ final class MixBandTest {
     @Test
     @DisplayName("every band behind the zone is a candidate once; chuncks and stacks never are")
     void candidateTable() {
-        assertEquals(22, CANDIDATES.size(), CANDIDATES.toString());
+        assertEquals(25, CANDIDATES.size(), CANDIDATES.toString());
         Set<String> tokens = new java.util.HashSet<>();
         for (MixBand.Candidate c : CANDIDATES) {
             assertTrue(tokens.add(c.token()), "duplicate " + c.token());
@@ -46,9 +46,22 @@ final class MixBandTest {
             assertFalse(c.type() == CycleLayout.Type.CHUNCKS || c.type() == CycleLayout.Type.STACKS
                     || c.type() == CycleLayout.Type.MIX);
         }
-        assertTrue(tokens.containsAll(Set.of("ow", "ow_wwoo", "ow_bop", "ow_sunk", "nether", "nether_better",
-                "nether_otherside", "end", "end_better", "upside_down", "spheres", "amplified", "void")));
-        assertEquals(20, MixBand.candidates(C, Set.of("nether", "beta")).size());
+        assertTrue(tokens.containsAll(Set.of("ow", "ow_wwoo", "ow_bop", "ow_sunk", "nether", "nether_bop", "nether_better",
+                "nether_otherside", "end", "end_bop", "end_better", "upside_down", "spheres", "amplified", "void",
+                "lost_city")));
+        assertEquals(23, MixBand.candidates(C, Set.of("nether", "beta")).size());
+    }
+
+    @Test
+    @DisplayName("LostCityMixStarts names the salt of DT's Lost City structure set")
+    void lostCitySetSalt() throws java.io.IOException {
+        String json;
+        try (java.io.InputStream in = MixBandTest.class.getResourceAsStream(
+                "/data/dungeontrain/worldgen/structure_set/lost_city.json")) {
+            assertTrue(in != null, "lost_city.json not on the classpath");
+            json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        assertTrue(json.contains("\"salt\": " + LostCityMixStarts.SET_SALT), "salt changed in lost_city.json");
     }
 
     @Test
@@ -105,13 +118,18 @@ final class MixBandTest {
             case OVERWORLD -> x -> s.slotIndexAt(x) >= 0
                     && LAYOUT.slot(s.slotIndexAt(x)).type() == CycleLayout.Type.OVERWORLD
                     && LAYOUT.slot(s.slotIndexAt(x)).style() == c.style();
-            case NETHER -> x -> s.isNetherCore(x) && s.netherStyleAt(x) == styleOnRun(c, run);
+            // run 0 wears the first-run split's looks; later runs the slot's later look
+            case NETHER -> x -> s.isNetherCore(x)
+                    && (run == 0 ? s.netherLookAt(x) == c.style() : s.netherStyleAt(x) == styleOnRun(c, run));
             case END -> x -> s.isEndCore(x) && s.endStyleAt(x) == styleOnRun(c, run);
             case UPSIDE_DOWN -> s::isInUpsideDownBand;
             case SPHERES -> s::isInSpheresBand;
             case LEGACY_RUN -> {
                 LegacyBandKind kind = c.era();
-                yield x -> s.isInLegacyBand(kind, x);
+                // The Lost City's pick lands where its buildings are at full density.
+                yield kind.usesVanillaTerrain()
+                        ? x -> s.isInLegacyBand(kind, x) && LostCityStructures.density(s, x >> 4) >= 1.0D
+                        : x -> s.isInLegacyBand(kind, x);
             }
             default -> x -> false;
         };
@@ -124,6 +142,53 @@ final class MixBandTest {
             if (slot.type() == c.type() && slot.style() == c.style()) return slot.styleOnRun(run);
         }
         return c.style();
+    }
+
+    @Test
+    @DisplayName("overworld and Lost City picks wear their own stretch's biomes; every other pick keeps the base")
+    void biomeFollowsOverworldPicks() {
+        Map<String, SecondLapOverworld.Stretch> looks = Map.of(
+                "ow", SecondLapOverworld.Stretch.VANILLA,
+                "ow_wwoo", SecondLapOverworld.Stretch.WWOO,
+                "ow_bop", SecondLapOverworld.Stretch.BOP,
+                "lost_city", SecondLapOverworld.Stretch.WWOO);
+        Set<String> seen = new java.util.HashSet<>();
+        int c0 = mixChunk(0);
+        int chunks = (int) LAYOUT.length(mixSlot()) / 16;
+        for (int cx = c0; cx < c0 + chunks; cx++) {
+            for (int cz = -40; cz <= 40; cz++) {
+                MixBand.Pick p = MixBand.pickAt(C, CANDIDATES, SEED, cx, cz);
+                if (p == null) continue;
+                String token = p.candidate().token();
+                boolean own = MixBand.wearsOwnBiome(p.candidate());
+                assertEquals(token.startsWith("ow") || token.equals("lost_city"), own, token);
+                SecondLapOverworld.Stretch expected = looks.get(token);
+                if (expected == null) continue;
+                seen.add(token);
+                int x = (cx << 4) + 8;
+                assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.lookAt(C, x), "base look at " + x);
+                assertEquals(expected, SecondLapOverworld.lookAt(C.shifted(p.dx()), x), token + " chunk " + cx);
+            }
+        }
+        assertEquals(looks.keySet(), seen);
+    }
+
+    @Test
+    @DisplayName("a Lost City pick lets a building start; on the base cycle the mix chunk never does")
+    void lostCityPicksAllowBuildings() {
+        int picks = 0;
+        int c0 = mixChunk(0);
+        int chunks = (int) LAYOUT.length(mixSlot()) / 16;
+        for (int cx = c0; cx < c0 + chunks; cx++) {
+            for (int cz = -40; cz <= 40; cz++) {
+                assertFalse(LostCityStructures.allowedAt(SEED, C, cx, cz), "base cycle chunk " + cx + "," + cz);
+                MixBand.Pick p = MixBand.pickAt(C, CANDIDATES, SEED, cx, cz);
+                if (p == null || !"lost_city".equals(p.candidate().token())) continue;
+                picks++;
+                assertTrue(LostCityStructures.allowedAt(SEED, C.shifted(p.dx()), cx, cz), "lost_city chunk " + cx + "," + cz);
+            }
+        }
+        assertTrue(picks > 20, "lost_city picks " + picks);
     }
 
     @Test

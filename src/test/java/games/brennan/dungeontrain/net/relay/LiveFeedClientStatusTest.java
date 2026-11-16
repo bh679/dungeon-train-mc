@@ -33,6 +33,33 @@ class LiveFeedClientStatusTest {
     }
 
     @Test
+    void theMicBlockSaysWhetherTheStreamCarriesAMicTrackAndWhetherItIsOpen() {
+        LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
+            + "\"streamer\":\"Alice\",\"mic\":{\"enabled\":true,\"on\":true,\"twitch\":false},"
+            + "\"second\":{\"live\":true,\"session\":\"s2\",\"playlistUrl\":\"https://x/second/s2/live.m3u8\","
+            + "\"streamer\":\"Bob\",\"mic\":{\"enabled\":true,\"on\":false}}}");
+        assertEquals(new LiveFeedClient.Mic(true, true), s.mic());
+        assertEquals(new LiveFeedClient.Mic(true, false), s.second().mic(), "the second stream's own mic");
+        assertNull(parse("{\"ok\":true,\"live\":true,\"playlistUrl\":\"https://x/main/s1/live.m3u8\"}").mic(),
+            "an older relay says nothing about the mic");
+        assertNull(parse("{\"ok\":true,\"live\":true,\"playlistUrl\":\"https://x/main/s1/live.m3u8\",\"mic\":\"on\"}").mic(),
+            "a malformed block is no block");
+        assertEquals(new LiveFeedClient.Mic(false, false),
+            parse("{\"ok\":true,\"live\":true,\"playlistUrl\":\"https://x/main/s1/live.m3u8\",\"mic\":{\"on\":\"true\"}}").mic(),
+            "only real booleans count");
+        assertNull(LiveFeedClient.Status.OFFLINE.mic());
+    }
+
+    @Test
+    void theMicBlockSaysWhetherTheVoiceIsApprovedForKids() {
+        String head = "{\"ok\":true,\"live\":true,\"playlistUrl\":\"https://x/main/s1/live.m3u8\",\"mic\":";
+        assertEquals(new LiveFeedClient.Mic(true, true, true), parse(head + "{\"enabled\":true,\"on\":true,\"kids\":true}}").mic());
+        assertEquals(new LiveFeedClient.Mic(true, true, false), parse(head + "{\"enabled\":true,\"on\":true,\"kids\":false}}").mic());
+        assertFalse(parse(head + "{\"enabled\":true,\"on\":true}}").mic().kids(), "a relay that says nothing has not approved it");
+        assertFalse(parse(head + "{\"enabled\":true,\"on\":true,\"kids\":\"yes\"}}").mic().kids(), "only a real boolean counts");
+    }
+
+    @Test
     void aStoppedStreamIsStillOnAirWithWhereToGoAfterItsTail() {
         LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
             + "\"streamer\":\"Alice\",\"ended\":true,\"replayUrl\":\"https://x/main/s1/seg00004.ts\"}");

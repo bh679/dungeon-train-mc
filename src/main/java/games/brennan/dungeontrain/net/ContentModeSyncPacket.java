@@ -25,7 +25,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * throwing or defaulting to ADULT — the same fail-safe direction the mirror uses, applied at the wire
  * boundary so an unknown value can never widen what a client is served.</p>
  */
-public record ContentModeSyncPacket(ContentMode mode, boolean livestream) implements CustomPacketPayload {
+public record ContentModeSyncPacket(ContentMode mode, boolean livestream, boolean publicPosts,
+                                    boolean eventReminders) implements CustomPacketPayload {
 
     public static final Type<ContentModeSyncPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "content_mode_sync"));
@@ -39,6 +40,11 @@ public record ContentModeSyncPacket(ContentMode mode, boolean livestream) implem
         // The client's Livestreaming switch (consent card / Options), so server-side loot can keep
         // the headpiece away from a Kid who has it off.
         buf.writeBoolean(pkt.livestream());
+        // The client's Public posts switch, so the server keeps this player's deaths and photos off
+        // Discord when they have it off.
+        buf.writeBoolean(pkt.publicPosts());
+        // The client's Event reminders switch, so the countdown skips a player who turned it off.
+        buf.writeBoolean(pkt.eventReminders());
     }
 
     private static ContentModeSyncPacket decode(FriendlyByteBuf buf) {
@@ -46,7 +52,7 @@ public record ContentModeSyncPacket(ContentMode mode, boolean livestream) implem
         ContentMode[] values = ContentMode.values();
         // Out-of-range = a mode this build doesn't know about → treat as the most restrictive one.
         ContentMode mode = ordinal >= 0 && ordinal < values.length ? values[ordinal] : ContentMode.KID;
-        return new ContentModeSyncPacket(mode, buf.readBoolean());
+        return new ContentModeSyncPacket(mode, buf.readBoolean(), buf.readBoolean(), buf.readBoolean());
     }
 
     @Override
@@ -57,7 +63,8 @@ public record ContentModeSyncPacket(ContentMode mode, boolean livestream) implem
     public static void handle(ContentModeSyncPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            ContentModeMirror.set(player, packet.mode(), packet.livestream());
+            ContentModeMirror.set(player, packet.mode(), packet.livestream(), packet.publicPosts(),
+                packet.eventReminders());
         });
     }
 }

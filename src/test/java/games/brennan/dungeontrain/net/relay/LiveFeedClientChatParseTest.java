@@ -44,6 +44,13 @@ class LiveFeedClientChatParseTest {
         assertEquals(Source.TWITCH, p.lines().get(2).source());
         assertFalse(p.lines().get(2).fromGame());
         assertEquals(Source.OTHER, p.lines().get(3).source(), "an unknown room is still shown");
+        assertEquals(Source.KICK, Source.parse("kick"));
+        assertEquals(Source.YOUTUBE, Source.parse("youtube"));
+        assertEquals(Source.TIKTOK, Source.parse("tiktok"));
+        assertEquals(Source.FACEBOOK, Source.parse("facebook"));
+        assertEquals(Source.INSTAGRAM, Source.parse("instagram"));
+        assertEquals("matrix", p.lines().get(3).sourceId(), "an unknown room keeps its name for the relay's catalog");
+        assertNull(Source.id("Bad Id"));
     }
 
     @Test

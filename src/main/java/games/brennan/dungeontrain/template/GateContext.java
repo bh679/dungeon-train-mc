@@ -62,6 +62,8 @@ public record GateContext(int level, TrainPhase phase, Set<BandFlavor> bands) {
      * something other than the column's own (a forced phase has no real band to read a style from).
      */
     private static Set<BandFlavor> bandsAt(ServerLevel overworld, int worldX, TrainPhase computed, TrainPhase used) {
+        Set<BandFlavor> forced = TestGate.bandsOrNull();
+        if (forced != null) return forced;
         return computed == used ? BandFlavor.at(overworld, worldX) : Collections.emptySet();
     }
 

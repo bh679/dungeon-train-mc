@@ -38,7 +38,8 @@ import java.util.Set;
  * with clickable <b>[Send logs]</b> / <b>[No thanks]</b> (chat-click actions, {@link ChatClick}, so
  * there is no command to type); typing {@code @Dev} while a request is waiting also sends. On
  * send it collects the same capped, home-redacted log set as the {@code /bug} survey plus the system
- * spec, and ships it as a bug report labelled {@link LogRequestManager#UPLOAD_LABEL}.</p>
+ * spec, and ships it as a bug report labelled {@link LogRequestManager#UPLOAD_LABEL}. A
+ * {@code /bug full} request says so in its line and sends the whole session's logs instead.</p>
  *
  * <p>Livestream requests come from {@code LiveChatBridge}: a relay chat line flagged as a Developer
  * log request for this player is handed to {@link #onLiveRequest}, which asks the server to start
@@ -54,26 +55,29 @@ public final class LogRequestClient {
 
     /** The request awaiting an answer, or -1. Client thread only. */
     private static int pendingId = -1;
+    /** Whether {@link #pendingId} is a {@code /bug full}. Client thread only. */
+    private static boolean pendingFull;
     private static final Set<String> SEEN_LIVE = new LinkedHashSet<>();
 
     private LogRequestClient() {}
 
     /** The server is asking for this player's logs. Client thread. */
-    public static void onPrompt(int id) {
+    public static void onPrompt(int id, boolean full) {
         if (!ClientDisplayConfig.isDevChatEnabled()) {
             answer(id, Answer.BLOCKED);
             return;
         }
         pendingId = id;
-        Minecraft.getInstance().gui.getChat().addMessage(promptLine(id));
+        pendingFull = full;
+        Minecraft.getInstance().gui.getChat().addMessage(promptLine(id, full));
     }
 
     /** A livestream-chat log request aimed at this client. Deduped by the relay's id. Client thread. */
-    public static void onLiveRequest(String reqId) {
+    public static void onLiveRequest(String reqId, boolean full) {
         if (reqId == null || reqId.isBlank() || !SEEN_LIVE.add(reqId)) return;
         if (SEEN_LIVE.size() > SEEN_LIVE_CAP) SEEN_LIVE.remove(SEEN_LIVE.iterator().next());
         if (Minecraft.getInstance().getConnection() == null) return;
-        DungeonTrainNet.sendToServer(new LogRequestFromLivePacket());
+        DungeonTrainNet.sendToServer(new LogRequestFromLivePacket(full));
     }
 
     /** Wire the [Send logs] / [No thanks] buttons ({@code DungeonTrainClient.clientSetup}). */
@@ -108,6 +112,7 @@ public final class LogRequestClient {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         pendingId = -1;
+        pendingFull = false;
     }
 
     private static int respond(int id, boolean send) {
@@ -118,6 +123,8 @@ public final class LogRequestClient {
             return 0;
         }
         pendingId = -1;
+        boolean full = pendingFull;
+        pendingFull = false;
         answer(id, send ? Answer.SEND : Answer.DECLINE);
         if (!send) {
             mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.log_request.declined")
@@ -126,12 +133,12 @@ public final class LogRequestClient {
         }
         mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.log_request.sent")
             .withStyle(ChatFormatting.GRAY));
-        upload(SystemSpecCollector.collect()); // the spec reads GL state: render thread, here
+        upload(SystemSpecCollector.collect(), full); // the spec reads GL state: render thread, here
         return 1;
     }
 
-    private static void upload(String spec) {
-        LogCollector.collectAsync().thenAccept(files -> {
+    private static void upload(String spec, boolean full) {
+        LogCollector.collectAsync(full).thenAccept(files -> {
             List<BugReportLogsPacket.LogBlob> blobs = files == null ? List.of() : files;
             Minecraft.getInstance().execute(() -> {
                 try {
@@ -151,9 +158,10 @@ public final class LogRequestClient {
         }
     }
 
-    private static Component promptLine(int id) {
+    private static Component promptLine(int id, boolean full) {
+        String prompt = full ? "chat.dungeontrain.log_request.prompt_full" : "chat.dungeontrain.log_request.prompt";
         MutableComponent line = Component.translatable("chat.dungeontrain.dev_message.prefix").withStyle(ChatFormatting.AQUA)
-            .append(Component.translatable("chat.dungeontrain.log_request.prompt").withStyle(ChatFormatting.YELLOW))
+            .append(Component.translatable(prompt).withStyle(ChatFormatting.YELLOW))
             .append(Component.literal(" "));
         line.append(button("chat.dungeontrain.log_request.send", ChatClick.event(CLICK_ACTION, "send", Integer.toString(id)), ChatFormatting.GREEN));
         line.append(Component.literal(" "));

@@ -52,6 +52,16 @@ class AdvancementTabsTest {
         return out;
     }
 
+    /** A {@code neoforge:false} load condition keeps the advancement out of the game (an unlaunched one). */
+    static boolean switchedOff(JsonObject adv) {
+        if (!adv.has("neoforge:conditions")) return false;
+        for (JsonElement c : adv.getAsJsonArray("neoforge:conditions")) {
+            if (c.isJsonObject() && c.getAsJsonObject().has("type")
+                    && "neoforge:false".equals(c.getAsJsonObject().get("type").getAsString())) return true;
+        }
+        return false;
+    }
+
     private static String parentPath(JsonObject adv) {
         JsonElement p = adv.get("parent");
         return p == null ? null : p.getAsString().replaceFirst("^dungeontrain:", "");
@@ -206,6 +216,7 @@ class AdvancementTabsTest {
         List<String> required = new ArrayList<>();
         Map<String, JsonObject> all = advancements();
         for (String path : all.keySet()) {
+            if (switchedOff(all.get(path))) continue; // never loaded, so never required
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", path);
             if (CompletionistAdvancement.isRequiredId(id, Set.of(), (DT + "root").equals(tabOf(all, path)))) required.add(id.toString());
         }

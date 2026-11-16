@@ -15,6 +15,7 @@ _SPEC.loader.exec_module(dmo)
 
 STAGES = {"early": {"minLevel": 0}, "mid": {"minLevel": 12}, "late": {"minLevel": 30}}
 HOSTILE = {e: "hostile" for e in (
+    "luminous_monsters:swamp_zombie", "minecraft:zombie",
     "minecraft:zombie", "minecraft:witch", "minecraft:warden", "minecraft:husk",
     "minecraft:shulker", "minecraft:evoker", *dmo.POT_MOBS)}
 HOSTILE["minecraft:cow"] = "animal"
@@ -93,6 +94,14 @@ class DeriveTest(unittest.TestCase):
         self.assertEqual(3, table["minecraft:shulker"], "passengers count too")
         self.assertNotIn("minecraft:cow", table)
         self.assertNotIn("minecraft:evoker", table, "weight 0 candidates never spawn")
+
+    def test_gated_mod_keeps_level_zero(self):
+        table = self._run(
+            {"room": {"weight": 1}}, {},
+            {"room": {"1,0,0": [{"entity": "luminous_monsters:swamp_zombie"},
+                                {"entity": "minecraft:zombie"}]}})
+        self.assertEqual(0, table["luminous_monsters:swamp_zombie"])
+        self.assertNotIn("minecraft:zombie", table)
 
     def test_java_table_round_trip(self):
         java = ("class X {\n    private static final Map<String, Integer> OFFSETS = Map.ofEntries(\n"

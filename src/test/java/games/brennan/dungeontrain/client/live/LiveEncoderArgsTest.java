@@ -144,4 +144,29 @@ class LiveEncoderArgsTest {
                 LiveEncoder.Cadence.of(10), dir, 0, true, null)),
             Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, true)));
     }
+
+    @Test
+    void aMicTrackReadsFourChannelsAndWritesTwoAacTracksMixFirst() {
+        Path dir = Path.of("/tmp/live/abc");
+        List<String> one = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 51234, false, null));
+        assertEquals(one, Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 51234, false, false, null)),
+            "no mic track: exactly today's one-track arguments");
+        assertEquals("2", one.get(one.indexOf("-ac") + 1));
+        assertFalse(one.contains("-filter:a:0"));
+
+        List<String> a = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 51234, true, false, null));
+        assertEquals("4", a.get(a.indexOf("-ac") + 1), "the pump's four-channel frame");
+        assertEquals(2, a.stream().filter("1:a:0"::equals).count(), "the sound input mapped twice: two tracks");
+        assertEquals("pan=stereo|c0=c0|c1=c1", a.get(a.indexOf("-filter:a:0") + 1), "track 0 = game + mic");
+        assertEquals("pan=stereo|c0=c2|c1=c3", a.get(a.indexOf("-filter:a:1") + 1), "track 1 = game only");
+        assertEquals("96k", a.get(a.indexOf("-b:a") + 1), "each track at the one-track rate");
+        assertEquals("2", a.get(a.lastIndexOf("-ac") + 1), "both tracks stereo");
+        assertTrue(a.contains("vflip"), "the picture's own filter is untouched");
+        assertFalse(a.contains("-filter_complex"));
+
+        List<String> silent = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, true, false, null));
+        assertEquals(Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, dir)), silent, "a mic track needs the sound input");
+        assertEquals(192, LiveEncoder.audioKbps(true));
+        assertEquals(96, LiveEncoder.audioKbps(false));
+    }
 }

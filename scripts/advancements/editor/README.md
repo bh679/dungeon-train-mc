@@ -42,7 +42,7 @@ and sends a comment to the Claude session watching the page, which commits them 
 thread. It is greyed out while no session is watching.
 
 Needs Pillow (`pip install pillow`) for the icons, and a workspace that has built once, so
-`~/.gradle/caches` holds the Minecraft client jar and the Exposure / Edible Backpacks jars.
+`~/.gradle/caches` holds the Minecraft client jar and the Exposure / Edible Backpacks / Dungeon Totems jars.
 
 ## What a save writes
 

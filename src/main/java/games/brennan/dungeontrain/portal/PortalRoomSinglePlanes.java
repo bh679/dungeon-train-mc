@@ -95,18 +95,20 @@ public final class PortalRoomSinglePlanes {
      * @param relight      as the stamp was called with — a lit write costs the light engine a pass,
      *                     an unlit one is section-local and is what the bulk paths use
      * @param variantIndex the copy's identity, {@code PortalStructure.variantIndexFor}
+     * @param ground       the rows the floor starts from, {@code PortalRoomSettings.groundRows}
      */
     public static void write(ServerLevel level, BlockPos origin, Vec3i size,
                              PortalRoomCopiesVariant palette, PortalCorridorMask clearMask,
-                             boolean relight, long worldSeed, int variantIndex) {
+                             boolean relight, long worldSeed, int variantIndex,
+                             PortalRoomGround.Rows ground) {
         if (palette == null || palette.isEmpty()) return;
         int x0 = origin.getX();
         int x1 = x0 + size.getX() - 1;
         int z0 = origin.getZ();
         int z1 = z0 + size.getZ() - 1;
-        int floorY = origin.getY();
-        int ceilingY = floorY + size.getY() - 1;
-        int floorTop = floorY + floorHeightFor(palette, size) - 1;
+        int floorY = origin.getY() + ground.bottom();
+        int ceilingY = origin.getY() + size.getY() - 1;
+        int floorTop = origin.getY() + floorTopRow(palette, size, ground);
 
         boolean liquidFloor = palette.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
 
@@ -175,6 +177,16 @@ public final class PortalRoomSinglePlanes {
         int roomHeight = size.getY();
         int max = Math.max(1, roomHeight - 2);
         return Math.max(1, Math.min(max, palette.floorHeight()));
+    }
+
+    /**
+     * The highest row this tile's floor reaches, relative to its bottom row: Floor height stacks up
+     * from the ground level, and stops short of the roof the same way {@link #floorHeightFor} does.
+     */
+    public static int floorTopRow(PortalRoomCopiesVariant palette, Vec3i size,
+                                  PortalRoomGround.Rows ground) {
+        int stacked = ground.top() + floorHeightFor(palette, size) - 1;
+        return Math.max(ground.top(), Math.min(size.getY() - 3, stacked));
     }
 
     /**

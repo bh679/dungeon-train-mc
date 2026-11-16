@@ -26,12 +26,12 @@ import java.util.regex.Pattern;
  * BetterNether. DT keeps their biomes and blocks but not their parallel gear progression, which would
  * bypass DT's own loot and difficulty balance. Also Exposure's original camera, film and lightroom
  * ({@link #HIDDEN_ITEMS}), replaced by the Polaroid add-on's instant camera, and Vista's Viewfinder, Wave Gate and
- * cassettes — DT's Television shows only the Live Feed — plus Vista's Picture Tape recipe ({@link #DISABLED_RECIPES}),
+ * cassettes — DT's Television shows only the Live Feed — and its Mirror, plus Vista's Picture Tape recipe ({@link #DISABLED_RECIPES}),
  * though the tape itself is kept. And every non-vanilla enchantment
  * ({@link #isDisabledEnchantment}) — today BetterNether's Obsidian Breaker and Ruby Fire and BetterEnd's
  * Resonance and End Veil — kept out of the enchanting table and villager books by the {@code remove} lists in
  * {@code data/minecraft/tags/enchantment/}, and stripped from loot and creative here. And a handful of the mods'
- * blocks ({@link #DISABLED_BLOCKS}) — respawn statues, the ritual pedestal and the gear chain's anvils and smelter.
+ * blocks ({@link #DISABLED_BLOCKS}) — respawn statues, the ritual pedestal, the mods' anvils and the gear chain's smelter.
  *
  * <p>Single source of truth for five enforcement points: recipes ({@code RecipeManagerDisableMixin}),
  * loot ({@link StripDisabledItemsLootModifier}), ore placement ({@code ChunkGeneratorDecorationMixin})
@@ -58,9 +58,16 @@ public final class DisabledModContent {
         "deeperdarker:sculk_smite", "deeperdarker:catalysis", "deeperdarker:reverberation");
 
     /** Mods whose own creative tabs are hidden by default: the ones above, plus VanillaBackport — its gear is
-     *  kept — and Exposure with its Polaroid add-on, whose one item players get is DT's own disposable camera. */
+     *  kept — and Exposure with its Polaroid add-on, whose one item players get is DT's own disposable camera, and Creeper Overhaul (its spawn eggs and tiny cactus). */
     private static final Set<String> HIDDEN_TAB_NAMESPACES =
-        Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid");
+        Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid",
+            "creeperoverhaul");
+
+    /**
+     * Mods with no creative tab of their own whose items sit in vanilla's tabs: hidden from every tab and the search
+     * under the same two settings as {@link #HIDDEN_TAB_NAMESPACES}. Luminous Monsters' sixteen spawn eggs.
+     */
+    private static final Set<String> HIDDEN_ITEM_NAMESPACES = Set.of("luminous_monsters");
 
     /**
      * Items from a {@link #HIDDEN_TAB_NAMESPACES} tab that recipe viewers still list. Hiding a mod's tab takes its
@@ -98,8 +105,9 @@ public final class DisabledModContent {
      *
      * <p>And Vista's Viewfinder, Wave Gate, pre-recorded Cassette and Hollow Cassette: a Television's only job in
      * DT is the Live Feed, which it tunes to by itself. Hiding the two cassettes also strips Vista's own chest and
-     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors and the
-     * music disc are left as Vista ships them; Picture Tape is too, except that it can't be crafted
+     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Vista's Mirror is
+     * out of the game too: no bundled template or DT loot pool places one, and a mirror a player already holds is
+     * kept. The music disc is left as Vista ships it; Picture Tape is too, except that it can't be crafted
      * ({@link #DISABLED_RECIPES}).</p>
      *
      * <p>And Deeper Darker's Sonorous Staff and Sculk Transmitters (plain and all sixteen dyed): disabled for now.
@@ -123,6 +131,7 @@ public final class DisabledModContent {
         "vista:wave_gate",
         "vista:cassette",
         "vista:hollow_cassette",
+        "vista:mirror",
         "deeperdarker:sonorous_staff");
 
     /**
@@ -138,12 +147,14 @@ public final class DisabledModContent {
     /**
      * Blocks turned off outright: BetterNether's Respawner Statue and BetterEnd's Respawn Obelisk (both set a
      * respawn point, around DT's own death rules), BetterEnd's Infusion Pedestal (ritual crafting), its
-     * Thallasium/Terminite/Aeternium Anvils and End Stone Smelter (the dead gear chain). Their items share the
+     * Thallasium/Terminite/Aeternium Anvils and End Stone Smelter (the dead gear chain), and BetterNether's
+     * Cincinnasite Anvil (craftable from the cincinnasite its band structures are built of). Their items share the
      * block's id, so {@link #isDisabledItem} hides them; copies placed by the mods' own structures are kept
      * from working by {@link DisabledBlockUseGate}.
      */
     static final Set<String> DISABLED_BLOCKS = Set.of(
         "betternether:pig_statue_respawner",
+        "betternether:cincinnasite_anvil",
         "betterend:respawn_obelisk",
         "betterend:infusion_pedestal",
         "betterend:aeternium_anvil",
@@ -178,11 +189,21 @@ public final class DisabledModContent {
             && ORE.matcher(placedFeature.getPath()).matches();
     }
 
+    /** A disabled mod's ore block ({@code betternether:cincinnasite_ore}, …) — its ore features never place it. */
+    public static boolean isDisabledOreBlock(ResourceLocation blockId) {
+        return isDisabledOreFeature(blockId);
+    }
+
     /** A biome mod's own creative tab ({@code betternether:blocks_tab}, {@code biomesoplenty:main},
      *  {@code vanillabackport:vanilla_backport}, …). Hidden, and kept out of the creative search, unless
      *  the client's two creative settings say otherwise — see {@link DisabledModCreativeTabs}. */
     public static boolean isBiomeModCreativeTab(ResourceLocation tabId) {
         return tabId != null && HIDDEN_TAB_NAMESPACES.contains(tabId.getNamespace());
+    }
+
+    /** An item of a mod that fills vanilla's tabs instead of its own ({@link #HIDDEN_ITEM_NAMESPACES}). */
+    public static boolean isHiddenCreativeItem(ResourceLocation itemId) {
+        return itemId != null && HIDDEN_ITEM_NAMESPACES.contains(itemId.getNamespace());
     }
 
     /** True for a disabled mod's armour, weapon, tool, tool part, gear smithing template, metal or ore item. */
@@ -295,7 +316,7 @@ public final class DisabledModContent {
     }
 
     /** Armour, melee weapons (swords, maces, tridents), ranged weapons, shields and every tiered tool. */
-    private static boolean isGearClass(Item item) {
+    public static boolean isGearClass(Item item) {
         return item instanceof ArmorItem
             || item instanceof TieredItem
             || item instanceof ElytraItem

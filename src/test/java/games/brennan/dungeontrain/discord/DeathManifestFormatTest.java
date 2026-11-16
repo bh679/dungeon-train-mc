@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.discord;
 
 import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -50,6 +51,25 @@ final class DeathManifestFormatTest {
     void stripsNumberColourSentinels() {
         // The death screen wraps figures in U+0001 … U+0002; the report must not carry them.
         assertEquals("forty-seven", DeathManifestFormat.strip("forty-seven"));
+    }
+
+    @Test
+    void longDashesNeverReachThePassengerLog() {
+        assertEquals("The line is patient, it can afford to be.",
+                DeathManifestFormat.noLongDashes("The line is patient — it can afford to be."));
+        assertEquals("stops, it", DeathManifestFormat.noLongDashes("stops—it"));
+        assertEquals("stops, it", DeathManifestFormat.noLongDashes("stops – it"));
+        assertEquals("它不会停，只会继续", DeathManifestFormat.noLongDashes("它不会停——只会继续"));
+        assertEquals("止まらない、ただ進む", DeathManifestFormat.noLongDashes("止まらない——ただ進む"));
+        assertEquals("ends here", DeathManifestFormat.noLongDashes("— ends here —"));
+        // Ordinary hyphens (number words, the title) are untouched.
+        assertEquals("forty-seven", DeathManifestFormat.noLongDashes("forty-seven"));
+
+        DeathNarrative n = narr("The Dungeon Train does not stop — it only goes on, deeper, forever.",
+                "", "", "", "the line is patient — it will wait for the rest.");
+        String d = DeathManifestFormat.description(n, 0, 0, 0);
+        assertFalse(d.contains("—") || d.contains("–"), d);
+        assertTrue(d.contains("does not stop, it only goes on"), d);
     }
 
     @Test
@@ -144,5 +164,15 @@ final class DeathManifestFormatTest {
         assertEquals(3, f.size(), "no advancement row when none earned");
         assertFalse(f.stream().anyMatch(x -> x.name().equals("Advancements")), "no Advancements field");
         assertFalse(f.get(1).value().contains("🏆"), "no advancement marker in the This run column");
+    }
+
+    @Test
+    void nonEnglishCauseStaysInOneLanguage() {
+        // zh_cn singleplayer death: the cause line must not gain an English "They"/"You".
+        String cause = SecondPersonDeathMessage.rewrite("Hiro_659掉出了这个世界", "Hiro_659", "zh_cn");
+        String fall = DeathManifestFormat.fields(cause,
+                100.0, 200L, 0.0, 0.0, 0, 0, List.of(), 0, 0, 0, 0).get(0).value();
+        String causeLine = fall.lines().findFirst().orElse("");
+        assertEquals("🪦 Hiro\\_659掉出了这个世界", causeLine);
     }
 }

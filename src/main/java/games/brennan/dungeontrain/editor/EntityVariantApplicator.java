@@ -261,7 +261,7 @@ public final class EntityVariantApplicator {
                 pool, e -> bucketsBySlot.get(slot).contains(e),
                 localPos, seed, carriageIndex, slotKey);
             if (picked == null || picked.isAir()) continue;
-            int count = ContainerContentsRoller.rollItemCount(picked.count(), localPos, seed, carriageIndex, slotKey);
+            int count = ContainerContentsRoller.rollItemCount(picked.minCount(), picked.count(), localPos, seed, carriageIndex, slotKey);
             ItemStack stack = ContainerContentsRoller.rollItemStack(
                 picked, count, localPos, seed, carriageIndex, slotKey, registries);
             if (stack.isEmpty()) continue;

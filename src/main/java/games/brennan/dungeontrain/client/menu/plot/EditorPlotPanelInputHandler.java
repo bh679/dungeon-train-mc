@@ -170,6 +170,8 @@ public final class EditorPlotPanelInputHandler {
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
+            case GROUND_CYCLE -> dispatchGroundCycle(entry);
+            case GROUND_BELOW_TOGGLE -> dispatchGroundBelowToggle(entry);
             case DOOR_WALL_CYCLE -> dispatchDoorWallCycle(entry);
             case ROOM_SKY_CYCLE -> dispatchRoomSkyCycle(entry);
             case ROOM_FOG_CYCLE -> dispatchRoomFogCycle(entry);
@@ -260,6 +262,18 @@ public final class EditorPlotPanelInputHandler {
 
     private static void dispatchRoomSkyCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.roomSkyCycleCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    private static void dispatchGroundCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.groundCycleCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    private static void dispatchGroundBelowToggle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.groundBelowCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }

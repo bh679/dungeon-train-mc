@@ -42,11 +42,37 @@ public final class ContentModeMirror {
     /** Per-player Livestreaming switch, seeded from the same sync. Absent = not-yet-known = off. */
     private static final Map<UUID, Boolean> LIVESTREAM = new ConcurrentHashMap<>();
 
+    /**
+     * Per-player Public posts switch, seeded from the same sync. Absent = not-yet-known = on: a client
+     * on an older build has no switch and keeps today's behaviour, and the relay drops posts for a
+     * player who opted out there anyway.
+     */
+    private static final Map<UUID, Boolean> PUBLIC_POSTS = new ConcurrentHashMap<>();
+
+    /**
+     * Per-player Event reminders switch, seeded from the same sync. Absent = not-yet-known = on: a client
+     * on an older build has no switch and keeps getting the countdown.
+     */
+    private static final Map<UUID, Boolean> EVENT_REMINDERS = new ConcurrentHashMap<>();
+
     /** Seed / update the mirror from the client's sync packet. Server thread. */
-    public static void set(ServerPlayer player, ContentMode mode, boolean livestream) {
+    public static void set(ServerPlayer player, ContentMode mode, boolean livestream, boolean publicPosts,
+                           boolean eventReminders) {
         if (player == null || mode == null) return;
         MODES.put(player.getUUID(), mode);
         LIVESTREAM.put(player.getUUID(), livestream);
+        PUBLIC_POSTS.put(player.getUUID(), publicPosts);
+        EVENT_REMINDERS.put(player.getUUID(), eventReminders);
+    }
+
+    /** Whether {@code playerId}'s deaths and photos may be posted publicly; on for an unknown player. */
+    public static boolean isPublicPostsOn(UUID playerId) {
+        return playerId == null || PUBLIC_POSTS.getOrDefault(playerId, true);
+    }
+
+    /** Whether {@code playerId} gets the community-event countdown; on for an unknown player. */
+    public static boolean isEventRemindersOn(UUID playerId) {
+        return playerId == null || EVENT_REMINDERS.getOrDefault(playerId, true);
     }
 
     /** {@code player}'s Livestreaming switch; fail-safe false for an unknown player. */
@@ -88,6 +114,8 @@ public final class ContentModeMirror {
         if (playerId != null) {
             MODES.remove(playerId);
             LIVESTREAM.remove(playerId);
+            PUBLIC_POSTS.remove(playerId);
+            EVENT_REMINDERS.remove(playerId);
         }
     }
 
@@ -96,5 +124,7 @@ public final class ContentModeMirror {
         // Nothing leaks into the next world: every client re-seeds its state on the next login.
         MODES.clear();
         LIVESTREAM.clear();
+        PUBLIC_POSTS.clear();
+        EVENT_REMINDERS.clear();
     }
 }

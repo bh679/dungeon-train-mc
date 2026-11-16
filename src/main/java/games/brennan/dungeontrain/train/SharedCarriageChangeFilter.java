@@ -46,6 +46,7 @@ public final class SharedCarriageChangeFilter {
             "attached",   // tripwire
             "disarmed",   // tripwire
             "lit",        // redstone lamps/ore/torch, furnaces, campfires
+            "low",        // Drifting Engine Block on its last coal (embers)
             "power",      // redstone wire, weighted pressure plates, daylight detectors
             "locked",     // repeaters
             "vault_state" // vaults: inactive / active / unlocking / ejecting as players come and go

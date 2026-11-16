@@ -4,8 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.AdvancementAwards;
+import games.brennan.dungeontrain.advancement.AdvancementVouch;
 import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
+import games.brennan.dungeontrain.advancement.TotemJourneyAdvancements;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.DeferredCapstoneGrants;
@@ -1101,6 +1103,9 @@ public final class AchievementEvents {
         // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
         // finished advancements, so without this a new world started them from zero.
         AdvancementProfiles.absorbCriteria(player, AdvancementProfiles.currentKey(player));
+        // Advancements held on trust that the relay saw this player claim cleanly go back to earned,
+        // so the burrito and the tab-completes can make their records again (AdvancementVouch).
+        AdvancementVouch.onLogin(player);
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -1114,6 +1119,8 @@ public final class AchievementEvents {
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Fully Developed's disc, once: backfills anyone who held it before the reward existed.
+        games.brennan.dungeontrain.advancement.DarkroomDiscReward.onLogin(player);
         // Advancements the developer gave this player (relay awards): granted as real earns once the
         // relay answers, after the replay above so one already held elsewhere is just "already done".
         AdvancementAwards.fetchAndApply(player);
@@ -1196,6 +1203,8 @@ public final class AchievementEvents {
         if (player.tickCount % 20 != 0) return;
         NothingButBooksAdvancement.checkAndGrant(player);
         LeatherOverDiamondAdvancement.checkAndGrant(player);
+        TotemJourneyAdvancements.checkHeldStack(player);
+        TotemJourneyAdvancements.checkZombieRide(player);
     }
 
     /**
@@ -1283,6 +1292,8 @@ public final class AchievementEvents {
         // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
         // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
+        // Fully Developed pays its disc as an advancement reward; record the earn so login won't backfill it.
+        games.brennan.dungeontrain.advancement.DarkroomDiscReward.onEarned(player, id);
         if (TabGateways.isLinked(id)) return;
         // The Live Eye streamer's earn, told to their client for the stream's Live chat (LiveMomentEvents).
         if (!AdvancementProfiles.isReplaying()) LiveMomentEvents.onAdvancement(player, advancement);
@@ -1311,19 +1322,30 @@ public final class AchievementEvents {
             // earn into the per-life run state; read into the death packet on death.
             player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordEarnedAdvancement(id);
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
-            // The three milestone earns go to the public passenger log and ping Brennan —
-            // genuine earns only (this block), clean runs only (the reporter checks).
-            MilestoneAdvancementReporter.maybePost(player, advancement);
-            // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
-            // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
-            // The burrito's play time (since first played or the last reset) is recorded here and rides
-            // the relay claim below, for the fastest-burrito board.
-            BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
-            // The Challenge is a one-life feat, so its time is this life's time aboard — the
-            // fastest-challenge board.
-            long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
-                    ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
-            FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
+            // A grant derived from the whole profile (the burrito, a tab-complete) is only a record
+            // when the profile it stands on was seen earned here: progress absorbed from a world's
+            // own advancement file, or read from an unsealed profile, is replayed but not vouched
+            // for, and a forged file must not end as a Discord post or a relay first.
+            boolean record = !CompletionistAdvancement.isDerivedGrant(id)
+                    || CompletionistAdvancement.isVerifiedEarn(player);
+            if (record) {
+                // The three milestone earns go to the public passenger log and ping Brennan —
+                // genuine earns only (this block), clean runs only (the reporter checks).
+                MilestoneAdvancementReporter.maybePost(player, advancement);
+                // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
+                // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
+                // The burrito's play time (since first played or the last reset) is recorded here and rides
+                // the relay claim below, for the fastest-burrito board.
+                BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
+                // The Challenge is a one-life feat, so its time is this life's time aboard — the
+                // fastest-challenge board.
+                long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
+                        ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
+                FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
+            } else {
+                // Not lost either: the relay keeps it for review, and hears that this profile needs a look.
+                FirstEverAdvancements.onUnverifiedEarn(player, advancement, CompletionistAdvancement.heldOnTrust(player));
+            }
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

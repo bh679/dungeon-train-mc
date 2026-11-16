@@ -40,7 +40,7 @@ import changelog_io  # noqa: E402
 ENVS = ("DUNGEONTRAIN_RELAY_ADMIN_BASE", "DUNGEONTRAIN_RELAY_ADMIN_URL")
 HOME_FILE = Path.home() / ".dungeontrain-relay-admin"
 REPO = "bh679/dungeon-train-mc"
-UPDATE_PAGE_URL = "https://brennan.games/dungeontrain/update/"
+UPDATE_PAGE_URL = "https://dungeon.training/update/"
 LEDGER = Path(__file__).resolve().parents[2] / ".github" / "release-notes" / "changelog.json"
 TAG_RE = re.compile(r"^v?(\d{1,6}\.\d{1,6}\.\d{1,6})$")
 HEADING_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)

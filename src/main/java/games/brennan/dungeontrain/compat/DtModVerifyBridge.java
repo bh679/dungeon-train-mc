@@ -5,6 +5,7 @@ import games.brennan.dtmodverify.api.FileFingerprint;
 import games.brennan.dtmodverify.api.ModVerify;
 import games.brennan.dtmodverify.api.Verdict;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
+import games.brennan.dungeontrain.cheat.EngineIntegrity;
 import games.brennan.dungeontrain.cheat.ModFileFingerprint;
 import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
 import net.neoforged.fml.ModList;
@@ -78,6 +79,22 @@ public final class DtModVerifyBridge {
     /** Is the engine installed and linking? */
     public static boolean isPresent() {
         return present;
+    }
+
+    /**
+     * The file on disk a loaded mod file came from, as the engine maps it (0.2.1: a custom-locator
+     * nested file resolves to the shell that bundles it). Without the engine, or with one too old
+     * for the seam, the jar-in-jar parent chain alone ({@link EngineIntegrity#outermost}).
+     */
+    public static java.nio.file.Path outermostPath(net.neoforged.neoforgespi.locating.IModFile file) {
+        if (present) {
+            try {
+                return Api.outermostPath(file);
+            } catch (LinkageError e) {
+                LOGGER.debug("[DungeonTrain] dtmodverify has no outermostPath seam ({}); using the parent chain", e.toString());
+            }
+        }
+        return EngineIntegrity.outermost(file).getFilePath();
     }
 
     /** The engine's scan future, once started; completes when every jar has been fingerprinted. */
@@ -237,6 +254,10 @@ public final class DtModVerifyBridge {
 
         static String version() {
             return ModVerify.version();
+        }
+
+        static java.nio.file.Path outermostPath(net.neoforged.neoforgespi.locating.IModFile file) {
+            return ModVerify.outermostPath(file);
         }
 
         static ModFileFingerprint from(FileFingerprint f) {

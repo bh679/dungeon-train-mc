@@ -823,6 +823,7 @@ public final class VariantOverlayRenderer {
                 // the icon it had.
                 .append('/').append(l.copiesFloorBlock())
                 .append('/').append(l.copiesRoofBlock())
+                .append('/').append(l.note())
                 .append(l.inPlot() ? "*" : "").append(';');
         }
         String snapshotKey = keyBuf.toString();
@@ -843,7 +844,7 @@ public final class VariantOverlayRenderer {
                 l.category(), l.modelId(), l.modelName(),
                 l.inPlot(), l.isUser(), l.isImported(),
                 l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode(),
-                l.copiesFloorBlock(), l.copiesRoofBlock(), l.copiesFloorHeight()));
+                l.copiesFloorBlock(), l.copiesRoofBlock(), l.copiesFloorHeight(), l.note()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",

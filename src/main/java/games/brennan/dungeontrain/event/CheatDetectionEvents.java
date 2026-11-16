@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
 import games.brennan.dungeontrain.cheat.OperatorIntegrity;
 import games.brennan.dungeontrain.cheat.PlayerFreePlayIntegrity;
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
@@ -369,6 +370,16 @@ public final class CheatDetectionEvents {
                 Component.translatable("chat.dungeontrain.free_play.cause.keep_inventory"));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
+        }
+        // Load the player's sealed progress files now, ahead of the login replay that reads them,
+        // so an edit caught in one of them is explained here with the other causes.
+        ProfileIntegrity.refreshOnJoin(player);
+        if (ProfileIntegrity.isPlayerFreePlay(player)) {
+            // Per-player and from the disk: one of this player's own progress files was changed
+            // outside the game. The mark is kept inside that file, so it is back on every login
+            // until the file is reset from Video Tools. No one-click fix.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player, ProfileIntegrity.cause());
         }
         // A player already Free Play on a world that doesn't know it yet marks the world first, so
         // the block below and everyone already online follow.

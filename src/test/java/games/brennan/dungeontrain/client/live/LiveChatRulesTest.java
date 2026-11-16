@@ -119,6 +119,18 @@ class LiveChatRulesTest {
     }
 
     @Test
+    @DisplayName("every source has its own icon, each a distinct glyph")
+    void everySourceHasAnIcon() {
+        Set<Character> glyphs = new java.util.HashSet<>();
+        for (Source s : Source.values()) {
+            LiveChatRules.Icon icon = LiveChatRules.icon(new ChatLine(1, 0, "A", null, "x", s));
+            assertTrue(icon != null, s + " has an icon");
+            glyphs.add(icon.glyph);
+        }
+        assertEquals(Source.values().length, glyphs.size(), "no two sources share a glyph");
+    }
+
+    @Test
     @DisplayName("line: [Live] <icon> Name: text, the icon in the icon font, the name coloured by room")
     void line() {
         ChatLine l = new ChatLine(1, 0, "Viewer", null, "hi there", Source.DISCORD);
@@ -130,7 +142,10 @@ class LiveChatRulesTest {
         assertEquals(TextColor.fromLegacyFormat(ChatFormatting.WHITE), glyph.getColor(), "white, so the glyph keeps its colours");
         assertEquals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE), LiveChatRules.line(t).getSiblings().get(2).getStyle().getColor());
         ChatLine o = new ChatLine(3, 0, "Bot", null, "?", Source.OTHER);
-        assertEquals("chat.dungeontrain.live_chat.prefix Bot: ?", LiveChatRules.line(o).getString(), "an unknown room has no icon");
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE006 Bot: ?", LiveChatRules.line(o).getString(), "an unknown room gets the plain bubble");
+        ChatLine k = new ChatLine(4, 0, "KickViewer", null, "hey", Source.KICK);
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE005 KickViewer: hey", LiveChatRules.line(k).getString());
+        assertEquals(ChatFormatting.DARK_GREEN, LiveChatRules.nameColour(Source.KICK));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.WEB));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.DISCORD));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.OTHER));
@@ -147,7 +162,13 @@ class LiveChatRulesTest {
         assertEquals(LiveChatRules.Icon.WEB, LiveChatRules.icon(new ChatLine(1, 0, "W", null, "x", Source.WEB)));
         assertEquals(LiveChatRules.Icon.DISCORD, LiveChatRules.icon(new ChatLine(1, 0, "D", null, "x", Source.DISCORD)));
         assertEquals(LiveChatRules.Icon.TWITCH, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TWITCH)));
-        assertNull(LiveChatRules.icon(new ChatLine(1, 0, "O", null, "x", Source.OTHER)));
+        assertEquals(LiveChatRules.Icon.KICK, LiveChatRules.icon(new ChatLine(1, 0, "K", null, "x", Source.KICK)));
+        assertEquals(LiveChatRules.Icon.OTHER, LiveChatRules.icon(new ChatLine(1, 0, "O", null, "x", Source.OTHER)), "an unknown room: the plain bubble");
+        assertEquals(LiveChatRules.Icon.YOUTUBE, LiveChatRules.icon(new ChatLine(1, 0, "Y", null, "x", Source.YOUTUBE)));
+        assertEquals(LiveChatRules.Icon.TIKTOK, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TIKTOK)));
+        assertEquals(LiveChatRules.Icon.FACEBOOK, LiveChatRules.icon(new ChatLine(1, 0, "F", null, "x", Source.FACEBOOK)));
+        assertEquals(LiveChatRules.Icon.INSTAGRAM, LiveChatRules.icon(new ChatLine(1, 0, "I", null, "x", Source.INSTAGRAM)));
+        assertEquals(ChatFormatting.RED, LiveChatRules.nameColour(Source.YOUTUBE));
     }
 
     @Test

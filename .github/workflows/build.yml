@@ -85,6 +85,14 @@ jobs:
         # slug instead of a modId. No network.
         run: python3 scripts/modpack/check-mod-ids.py
 
+      - name: Every CurseForge pin is a 1.21.1 NeoForge file
+        # check-mod-ids --verify opens the Modrinth jar, so a CurseForge file_id for another
+        # Minecraft version slips past it (PlayerMob's 26.2 file shipped in v0.1835.0-v0.1840.0).
+        # Reads each pinned file's game versions; the API key makes it authoritative.
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: python3 scripts/modpack/check-cf-game-versions.py
+
       # ~400 MB per copy. Only main saves one: PR-scoped copies used to fill half the repo's
       # 10 GB cache budget and push out the Gradle cache the build job needs.
       - name: Restore pinned modpack jars
@@ -116,10 +124,14 @@ jobs:
           python3 scripts/modpack/test_check_overrides.py
           python3 scripts/modpack/test_build_mrpack.py
           python3 scripts/modpack/test_check_pins.py
+          python3 scripts/modpack/test_check_cf_game_versions.py
           python3 scripts/modpack/test_upload_retry.py
           python3 scripts/modpack/test_reconcile.py
           python3 scripts/modpack/test_wait_for_approval.py
           python3 scripts/modpack/test_catch_up.py
+          python3 scripts/listing/test_listing.py
+          python3 scripts/release-notes/test_preview_update_page.py
+          python3 scripts/release-notes/test_preview_social_posts.py
 
       - name: Lost City templates + data match their recipes
         # DT's own Lost City buildings are generated (scripts/lost-city). Fails if a committed .nbt or
@@ -227,6 +239,22 @@ jobs:
           locales=$(ls src/main/resources/assets/dungeontrain/lang \
             | sed 's/\.json$//' | grep -v '^en_us$' | tr '\n' ' ')
           python3 scripts/localization/validate-locale.py $locales
+
+      # Main only. Two PRs that each add a key from the same base both write the SAME count edit
+      # (5678 -> 5679) to the generated credit/contributor files, and git keeps it once (#2541).
+      # The merge commit is right, its counts are one short, and version-bump.yml commits the
+      # regenerated counts with the bump. So on main the check below judges the counts as that
+      # bump will leave them. PRs skip this and stay strict: a branch that forgets to stamp fails.
+      - name: Regenerate translation counts as version-bump will (main only)
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          python3 scripts/localization/stamp-provenance.py --refresh > /dev/null
+          CHANGED=$(git status --porcelain -- src/main/resources/assets/dungeontrain)
+          if [ -n "$CHANGED" ]; then
+            echo "::notice::This merge left the translation counts stale; version-bump.yml regenerates them:"
+            echo "$CHANGED"
+          fi
 
       - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py

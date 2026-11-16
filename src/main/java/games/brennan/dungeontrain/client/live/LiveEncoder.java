@@ -36,6 +36,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>With stream audio on, ffmpeg also reads the game's sound as a second input from a loopback port
  * ({@code LiveAudioPump}), paced against {@link #framesWritten()}, and muxes it as AAC into the same
  * segments. The picture's encoding and segmenting are the same either way.</p>
+ *
+ * <p>A stream with a mic track reads four channels from that port ({@code mixL, mixR, gameL, gameR}) and
+ * writes two AAC tracks from them: track 0 the game with the streamer's voice, track 1 the game alone
+ * (the relay picks which one goes where). Without a mic the arguments are exactly the one-track ones.</p>
  */
 public final class LiveEncoder implements AutoCloseable {
 
@@ -61,6 +65,8 @@ public final class LiveEncoder implements AutoCloseable {
     static final int MIN_BITRATE_KBPS = 500;
     /** Stream audio bitrate: AAC stereo, plenty for game sound. */
     static final int AUDIO_KBPS = 96;
+    /** Channels the pump sends with a mic track: the mix's pair, then the game's. */
+    static final int MIC_INPUT_CHANNELS = 4;
     /** Input queue for each input when there are two, so neither blocks ffmpeg's reader on the other. */
     static final int INPUT_QUEUE = 512;
     /** ffmpeg's time to finish after its input ends, on a teardown off the render thread. */
@@ -93,12 +99,18 @@ public final class LiveEncoder implements AutoCloseable {
      */
     public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int videoKbps, Cadence cadence,
                        int audioPort, boolean saveBandwidth, @Nullable Resume resume) throws IOException {
+        this(ffmpeg, grabber, dir, fps, videoKbps, cadence, audioPort, false, saveBandwidth, resume);
+    }
+
+    /** {@code micTrack}: the sound input is the pump's four-channel frame, written as two audio tracks. */
+    public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int videoKbps, Cadence cadence,
+                       int audioPort, boolean micTrack, boolean saveBandwidth, @Nullable Resume resume) throws IOException {
         this.grabber = grabber;
         this.fps = fps;
         this.saveBandwidth = saveBandwidth;
         this.videoKbps = videoKbps;
         this.process = ffmpeg.runFFmpeg(encodeArgs(grabber.width(), grabber.height(), fps, videoKbps, cadence, dir,
-            audioPort, saveBandwidth, resume));
+            audioPort, micTrack, saveBandwidth, resume));
         FfmpegSupport.drain(process.getErrorStream(), "encoder");
         FfmpegSupport.drain(process.getInputStream(), "encoder-out");
         this.writer = new Thread(this::writeLoop, "dt-live-encoder");
@@ -173,15 +185,27 @@ public final class LiveEncoder implements AutoCloseable {
     /** {@link #args} with the video bitrate {@code kbps} as given, and an optional {@link Resume}. */
     static String[] encodeArgs(int w, int h, int fps, int kbps, Cadence cadence, Path dir, int audioPort,
                                boolean saveBandwidth, @Nullable Resume resume) {
+        return encodeArgs(w, h, fps, kbps, cadence, dir, audioPort, false, saveBandwidth, resume);
+    }
+
+    /**
+     * {@code micTrack} (only with sound): read {@value #MIC_INPUT_CHANNELS} channels and write two stereo
+     * AAC tracks, each {@value #AUDIO_KBPS} kbit/s, split by a {@code pan} filter per output stream
+     * (simple filters, so the picture's {@code -vf} stays as it is).
+     */
+    static String[] encodeArgs(int w, int h, int fps, int kbps, Cadence cadence, Path dir, int audioPort,
+                               boolean micTrack, boolean saveBandwidth, @Nullable Resume resume) {
         int gop = fps * cadence.keyframeSeconds();
         boolean audio = audioPort > 0;
+        boolean mic = audio && micTrack;
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin"));
         if (audio) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
         a.addAll(List.of("-f", "rawvideo", "-pix_fmt", "rgba", "-s", w + "x" + h, "-r", String.valueOf(fps), "-i", "-"));
         if (audio) {
             a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
-            a.addAll(List.of("-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "tcp://127.0.0.1:" + audioPort,
-                "-map", "0:v:0", "-map", "1:a:0"));
+            a.addAll(List.of("-f", "s16le", "-ar", "48000", "-ac", mic ? String.valueOf(MIC_INPUT_CHANNELS) : "2",
+                "-i", "tcp://127.0.0.1:" + audioPort, "-map", "0:v:0", "-map", "1:a:0"));
+            if (mic) a.addAll(List.of("-map", "1:a:0"));
         }
         a.addAll(List.of(
             "-vf", "vflip",
@@ -194,6 +218,9 @@ public final class LiveEncoder implements AutoCloseable {
             "-b:v", kbps + "k", "-maxrate", kbps + "k", "-bufsize", (kbps * 2) + "k",
             "-g", String.valueOf(gop), "-keyint_min", String.valueOf(gop), "-sc_threshold", "0",
             "-force_key_frames", "expr:gte(t,n_forced*" + cadence.keyframeSeconds() + ")"));
+        if (mic) {
+            a.addAll(List.of("-filter:a:0", "pan=stereo|c0=c0|c1=c1", "-filter:a:1", "pan=stereo|c0=c2|c1=c3"));
+        }
         if (audio) a.addAll(List.of("-c:a", "aac", "-b:a", AUDIO_KBPS + "k", "-ar", "48000", "-ac", "2"));
         if (resume != null) {
             a.addAll(List.of("-output_ts_offset", String.format(Locale.ROOT, "%.3f", Math.max(0, resume.tsOffsetSeconds()))));
@@ -212,6 +239,11 @@ public final class LiveEncoder implements AutoCloseable {
     static int effectiveBitrateKbps(int bitrateKbps, boolean saveBandwidth) {
         if (!saveBandwidth) return bitrateKbps;
         return Math.max(MIN_BITRATE_KBPS, (int) Math.round(bitrateKbps * SAVE_BANDWIDTH_BITRATE_FACTOR));
+    }
+
+    /** Upload the sound takes: one AAC track, or two with a mic track. */
+    public static int audioKbps(boolean micTrack) {
+        return micTrack ? 2 * AUDIO_KBPS : AUDIO_KBPS;
     }
 
     /** The video bitrate this encoder sends, kbit/s. */

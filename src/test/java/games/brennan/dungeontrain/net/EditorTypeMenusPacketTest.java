@@ -105,4 +105,22 @@ final class EditorTypeMenusPacketTest {
         // The credit is not the label: a row keeps its own name whoever built it.
         assertEquals("standard", rows.get(1).displayName());
     }
+
+    @Test
+    @DisplayName("a contents pool's header and its groups keep their pool through the buffer")
+    void roundTrip_poolRows() {
+        EditorTypeMenusPacket.Variant header = EditorTypeMenusPacket.Variant.poolHeader("enemies", "Enemies", 8, "CONTENTS");
+        EditorTypeMenusPacket.Variant group = new EditorTypeMenusPacket.Variant("enemies_nether", 60, 0, -1, 1,
+            "CONTENTS", "enemies_nether", "enemies_nether", false, false).inPool("enemies");
+        EditorTypeMenusPacket decoded = roundTrip(new EditorTypeMenusPacket(List.of(new EditorTypeMenusPacket.Menu(
+            BlockPos.ZERO, "Room", List.of(header, group))), "", false));
+        List<EditorTypeMenusPacket.Variant> rows = decoded.menus().get(0).variants();
+        assertTrue(rows.get(0).poolHeader());
+        assertEquals("Enemies", rows.get(0).displayName());
+        assertEquals(8, rows.get(0).weight());
+        assertTrue(rows.get(1).isPooled());
+        assertEquals("enemies", rows.get(1).pool());
+        assertEquals(1, rows.get(1).phaseMask(), "a pooled group keeps its gate cells");
+        assertFalse(rows.get(0).isPooled(), "the header is not one of its own groups");
+    }
 }

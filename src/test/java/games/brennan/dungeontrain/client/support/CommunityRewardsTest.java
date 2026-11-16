@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -129,5 +130,18 @@ class CommunityRewardsTest {
         LiveRewards state = new LiveRewards(List.of(on(LiveRewards.LIVE_TRANSLATION, 10 * DAY, "Moth", "Ash", "Wren")));
         assertEquals(NOW + 10 * DAY + 2 * CommunityRewards.MONTH_MS,
                 CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+    }
+
+    @Test
+    void freeCreditsAreOnButLeaveAGiftStartingNow() {
+        LiveRewards state = new LiveRewards(List.of(
+                new LiveRewards.Reward(LiveRewards.LIVE_TRANSLATION, NOW + 10 * DAY, "Brennan", List.of(), true),
+                on(LiveRewards.QUICKER_STREAMS, 10 * DAY, "Moth")));
+        assertTrue(CommunityRewards.active(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+        assertTrue(CommunityRewards.onFreeCredits(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+        assertFalse(CommunityRewards.giftRunning(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
+        assertFalse(CommunityRewards.onFreeCredits(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        assertTrue(CommunityRewards.giftRunning(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        assertFalse(CommunityRewards.giftRunning(state, CommunityRewards.Reward.HD_STREAMS, NOW));
     }
 }

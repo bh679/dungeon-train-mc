@@ -1,0 +1,28 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:heartbreak_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.not_quite_undying.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.not_quite_undying.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "saved": {
+      "trigger": "dungeontotems:totem_popped"
+    }
+  },
+  "requirements": [
+    [
+      "saved"
+    ]
+  ]
+}

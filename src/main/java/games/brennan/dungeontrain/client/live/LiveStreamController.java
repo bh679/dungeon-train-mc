@@ -6,10 +6,13 @@ import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
 import games.brennan.dungeontrain.perks.effects.archivist.LiveEyeSafeDuration;
+import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.client.live.audio.LiveAudioPump;
+import games.brennan.dungeontrain.client.live.audio.LiveMic;
+import games.brennan.dungeontrain.client.live.audio.MicCapture;
 import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
@@ -131,6 +134,8 @@ public final class LiveStreamController {
     @Nullable private LiveQualityGovernor governor;
     /** An encoder swap to a new bitrate is under way (render thread). */
     private boolean switching;
+    /** The claim's word on this streamer's mic: false = barred, so no track is added mid-stream either. */
+    private boolean micRelayAllowed = true;
     /** Stream seconds the encoders before the running one wrote: where its timestamps start. */
     private double tsOffsetSeconds;
     /** The streamer was told once this stream that their upload lowered the quality. */
@@ -164,7 +169,10 @@ public final class LiveStreamController {
     /** Render thread: inside {@link #onLoggingOut}, so any ended pop-up waits for the title screen. */
     private boolean leaving;
 
-    private LiveStreamController() {}
+    private LiveStreamController() {
+        // The mic switch turned on during a stream without a mic track: add one (joinMicMidStream).
+        LiveMic.setMidStreamJoin(this::joinMicMidStream);
+    }
 
     public static LiveStreamController get() {
         return INSTANCE;
@@ -335,7 +343,7 @@ public final class LiveStreamController {
         }
         if (!LiveFeedClientConfig.streamingEnabled()) {
             say(Component.translatable("chat.dungeontrain.live.disabled",
-                    LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path"))
+                    LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path", ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVESTREAM))
                 .withStyle(ChatFormatting.GRAY));
             tellServerEnded(LiveStreamEndedPacket.Reason.DISABLED);
             return;
@@ -347,7 +355,7 @@ public final class LiveStreamController {
         headpiece.reset();
         switch (FfmpegSupport.state()) {
             case OFF, FAILED -> {
-                say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
+                sayNoFfmpeg();
                 state = State.IDLE;
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             }
@@ -360,6 +368,13 @@ public final class LiveStreamController {
             // Not on yet (login: the inventory may land after START) → the tick claims once it is.
             case READY -> { if (headpieceWorn()) claimChannel(false, null); }
         }
+    }
+
+    /** No ffmpeg on this client: the line, with the button that sets it up ({@link FfmpegHint}). */
+    private static void sayNoFfmpeg() {
+        say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED)
+            .append(" ")
+            .append(FfmpegHint.installButton()));
     }
 
     /** The Live Eye is on this client's own head, as far as this client can see. */
@@ -419,7 +434,7 @@ public final class LiveStreamController {
             if (++waitTicks % 20 != 0) return;
             switch (FfmpegSupport.state()) {
                 case OFF, FAILED -> {
-                    say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
+                    sayNoFfmpeg();
                     state = State.IDLE;
                     tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 }
@@ -434,7 +449,16 @@ public final class LiveStreamController {
             if (++qualityTicks % QUALITY_CHECK_TICKS == 0) tickQuality(System.currentTimeMillis());
             // The approved list can change under a running stream (the relay's overlay revokes a mod).
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
+            // A mic ban that landed on a heartbeat (LiveUploader): the same line as a ban at claim time, once.
+            if (LiveMic.takeBarredNotice()) sayMicBarred();
+            // A relay too old to count a mid-stream mic track: the voice waits for the next stream.
+            if (LiveMic.takeHeldNotice()) say(Component.translatable("chat.dungeontrain.live.mic_next_stream").withStyle(ChatFormatting.YELLOW));
         }
+    }
+
+    /** The relay has the mic turned off for this streamer: at claim time, or mid-stream on a heartbeat. */
+    static void sayMicBarred() {
+        say(Component.translatable("chat.dungeontrain.live.mic_barred").withStyle(ChatFormatting.GRAY));
     }
 
     /**
@@ -467,9 +491,9 @@ public final class LiveStreamController {
     }
 
     /**
-     * "You are now live on [Twitch] &amp; [DungeonTrain TV]" ({@link LiveWatchLinks}) then "N people
+     * "You are now live on" and its logo row ({@link LiveWatchLinks}) then "N people
      * watching" once the relay's first viewer count lands (or after
-     * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0), then a line each time the count settles in a
+     * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0) and the mic line ({@link LiveMicHint}), then a line each time the count settles in a
      * new band ({@link LiveViewerBands}).
      */
     private void announceViewers(long nowMs) {
@@ -482,6 +506,8 @@ public final class LiveStreamController {
             say(LiveWatchLinks.line(claim == null ? null : claim.twitch()));
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
                 .withStyle(ChatFormatting.GREEN));
+            Component mic = LiveMicHint.line(audio != null);
+            if (mic != null) say(mic);
             sayShoutoutHint();
             return;
         }
@@ -533,7 +559,9 @@ public final class LiveStreamController {
         int safeRank = games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.LIVE_EYE_SAFE_DURATION);
         long takeoverExtraMs = LiveEyeSafeDuration.takeoverExtraMs(safeRank);
         long holderVoteExtraMs = LiveEyeSafeDuration.holderVoteExtraMs(safeRank);
-        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket, takeoverExtraMs, holderVoteExtraMs)
+        // Only asks to stream a mic when there is one to stream (and it needs the stream's sound).
+        boolean micWanted = LiveFeedClientConfig.streamAudio() && LiveMic.available();
+        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket, takeoverExtraMs, holderVoteExtraMs, micWanted)
             .thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
             LiveTakeoverClient.Holder holder = LiveTakeoverClient.parseBlocked(result);
@@ -560,7 +588,10 @@ public final class LiveStreamController {
             // The channel is ours: the server makes this player its streamer (and turns the previous
             // one's Live Eye into a TV).
             tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() == null ? "" : c.prevName());
-            beginStreaming(c, hasAac);
+            LiveFeedClient.MicPolicy mic = LiveFeedClient.parseMic(result);
+            micRelayAllowed = mic.allowed();
+            if (micWanted && !mic.allowed()) sayMicBarred();
+            beginStreaming(c, hasAac, micWanted && mic.allowed());
         }, mc);
     }
 
@@ -617,7 +648,7 @@ public final class LiveStreamController {
      * to STREAMING back on the render thread. The claim is held from here so a stop meanwhile still
      * tells the relay.
      */
-    private void beginStreaming(Claim c, boolean aac) {
+    private void beginStreaming(Claim c, boolean aac, boolean micAllowed) {
         Minecraft mc = Minecraft.getInstance();
         int gen = generation;
         try {
@@ -647,10 +678,13 @@ public final class LiveStreamController {
             boolean save = LiveFeedClientConfig.saveBandwidth();
             // Off, not possible here, or an unapproved mod loaded (it could play anything):
             // the stream goes out without sound, as before.
-            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac) : null;
+            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac, micAllowed) : null;
             int audioPort = audio == null ? 0 : audio.port();
+            // A mic track rides the stream's sound: two audio tracks for the whole stream, the mic off to start.
+            boolean micTrack = audio != null && audio.withMic();
+            LiveMic.startStream(micTrack);
             int ceiling = LiveEncoder.effectiveBitrateKbps(bitrate, save);
-            int audioKbps = audio == null ? 0 : LiveEncoder.AUDIO_KBPS;
+            int audioKbps = audio == null ? 0 : LiveEncoder.audioKbps(micTrack);
             int kbps = adaptive ? LiveQualityGovernor.startKbps(ceiling, learned, audioKbps) : ceiling;
             health = new LiveUploadHealth(cadence.segmentSeconds());
             governor = adaptive ? new LiveQualityGovernor(ceiling, kbps, audioKbps, System.currentTimeMillis()) : null;
@@ -661,7 +695,7 @@ public final class LiveStreamController {
                 LOGGER.info("[DungeonTrain] live quality: starting at {}x{} {} kbit/s (set {} kbit/s) for the {} kbit/s upload measured last stream",
                     w, h, kbps, ceiling, learned);
             }
-            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, audioPort, save, null), STARTER)
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, audioPort, micTrack, save, null), STARTER)
                 .whenCompleteAsync((enc, err) -> adoptEncoder(gen, enc, err, fps), mc);
         } catch (Exception e) {
             failStart(e);
@@ -691,7 +725,7 @@ public final class LiveStreamController {
         LiveEncoder.Cadence cadence = cadenceOf(c);
         LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, {} kbit/s{}{}{}, {} s segments x{}, {} s keyframes, playlist {}",
             c.session(), grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
-            fps, enc.videoKbps(), governor != null ? " (adaptive)" : "", audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "",
+            fps, enc.videoKbps(), governor != null ? " (adaptive)" : "", audio == null ? "" : LiveMic.enabled() ? " with sound and a mic track" : " with sound", enc.saveBandwidth() ? ", saving bandwidth" : "",
             cadence.segmentSeconds(), cadence.listSize(), cadence.keyframeSeconds(), c.playlistUrl());
         announcedLive = false;
         if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
@@ -711,10 +745,10 @@ public final class LiveStreamController {
 
     /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. {@code videoKbps} is sent as it is. */
     private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int videoKbps,
-                                            LiveEncoder.Cadence cadence, int audioPort, boolean saveBandwidth,
+                                            LiveEncoder.Cadence cadence, int audioPort, boolean micTrack, boolean saveBandwidth,
                                             @Nullable LiveEncoder.Resume resume) {
         try {
-            return new LiveEncoder(ffmpeg, grab, d, fps, videoKbps, cadence, audioPort, saveBandwidth, resume);
+            return new LiveEncoder(ffmpeg, grab, d, fps, videoKbps, cadence, audioPort, micTrack, saveBandwidth, resume);
         } catch (IOException e) {
             throw new CompletionException(e);
         }
@@ -745,6 +779,7 @@ public final class LiveStreamController {
             || old == null || snd == null) return false;
         LOGGER.warn("[DungeonTrain] live encoder failed with stream sound on; carrying on without sound");
         audio = null;
+        LiveMic.endStream(); // no sound input, so no mic track either
         encoder = null;
         int gen = generation;
         int fps = LiveFeedClientConfig.captureFps();
@@ -754,7 +789,7 @@ public final class LiveStreamController {
         CompletableFuture.supplyAsync(() -> {
             snd.close();
             old.close();
-            return spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, 0, save, null);
+            return spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, 0, false, save, null);
         }, STARTER).whenCompleteAsync((enc, err) -> {
             if (gen != generation || state != State.STREAMING) {
                 if (enc != null) closeEncoderAsync(enc);
@@ -786,8 +821,25 @@ public final class LiveStreamController {
             if (kbps == enc.videoKbps()) return;
             LOGGER.info("[DungeonTrain] live quality {} -> {} kbit/s (upload {} kbit/s, busy {}% of the time over {} segment(s))",
                 enc.videoKbps(), kbps, snap.throughputKbps(), Math.round(snap.utilisation() * 100), snap.samples());
-            restartAtBitrate(kbps);
+            restartEncoder(kbps, false);
         });
+    }
+
+    /**
+     * Render thread, from the mic switch ({@link LiveMic#setMidStreamJoin}): the mic went on during a
+     * stream without a mic track. With stream sound on, the encoder is swapped for one with a mic track
+     * ({@link #restartEncoder}) and the voice is held silent until the relay counts the track
+     * ({@link LiveMic#relayTrack}). Otherwise the voice joins from the next stream.
+     */
+    private LiveMic.Toggle joinMicMidStream() {
+        if (state != State.STREAMING || audio == null || encoder == null || switching || postMortem.active()) {
+            return LiveMic.Toggle.NEXT_STREAM;
+        }
+        if (!micRelayAllowed) return LiveMic.Toggle.BARRED;
+        if (MicCapture.devices().isEmpty()) return LiveMic.Toggle.NO_DEVICE;
+        LOGGER.info("[DungeonTrain] live mic: switched on mid-stream; adding a mic track");
+        restartEncoder(encoder.videoKbps(), true);
+        return LiveMic.Toggle.JOINING;
     }
 
     /**
@@ -795,9 +847,11 @@ public final class LiveStreamController {
      * one's playlist, segment numbers and clock ({@link LiveEncoder.Resume}), so viewers, the relay's
      * renditions and Twitch's copy see a discontinuity, not a new stream. The uploader is held while the
      * old one writes its ENDLIST, which is taken out again before anyone sees it. Sound needs its own
-     * pump again (one ffmpeg connection each), opened back on the render thread.
+     * pump again (one ffmpeg connection each), opened back on the render thread. {@code addMic}: the new
+     * encoder gains a mic track (a mid-stream mic, {@link #joinMicMidStream}); otherwise the track layout
+     * stays as it was.
      */
-    private void restartAtBitrate(int kbps) {
+    private void restartEncoder(int kbps, boolean addMic) {
         LiveUploader up = uploader;
         var ffmpeg = FfmpegSupport.get();
         LiveFrameGrabber grab = grabber;
@@ -829,17 +883,25 @@ public final class LiveStreamController {
                 restartFailed(err);
                 return;
             }
-            LiveAudioPump pump = snd != null && soundAllowedByMods(false) ? LiveAudioPump.open(true) : null;
+            // The same track layout as before the switch, so the mic carries on where it was (or gains one).
+            LiveAudioPump pump = snd != null && soundAllowedByMods(false) ? LiveAudioPump.open(true, addMic || snd.withMic()) : null;
             int port = pump == null ? 0 : pump.port();
-            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, port, save,
+            boolean micTrack = pump != null && pump.withMic();
+            if (!micTrack) LiveMic.endStream();
+            boolean micAdded = addMic && micTrack;
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, port, micTrack, save,
                     new LiveEncoder.Resume(offset)), STARTER)
-                .whenCompleteAsync((enc, err2) -> adoptSwitched(gen, enc, err2, pump, offset, from, fps), mc);
+                .whenCompleteAsync((enc, err2) -> adoptSwitched(gen, enc, err2, pump, offset, from, fps, micAdded), mc);
         }, mc);
     }
 
-    /** Render thread: the encoder a bitrate switch spawned is up (or failed). */
+    /**
+     * Render thread: the encoder a switch spawned is up (or failed). {@code micAdded}: it writes a mic
+     * track this stream did not have; only now, with the track really in the segments, does the
+     * heartbeat tell the relay ({@link LiveMic#joinMidStream}).
+     */
     private void adoptSwitched(int gen, @Nullable LiveEncoder enc, @Nullable Throwable err, @Nullable LiveAudioPump pump,
-                               double offset, int fromKbps, int fps) {
+                               double offset, int fromKbps, int fps, boolean micAdded) {
         if (gen != generation || state != State.STREAMING) {
             if (enc != null) closeEncoderAsync(enc);
             if (pump != null) pump.close();
@@ -854,6 +916,10 @@ public final class LiveStreamController {
         encoder = enc;
         audio = pump;
         if (pump != null) pump.start(enc::framesWritten, fps);
+        if (micAdded) {
+            LiveMic.joinMidStream();
+            if (governor != null) governor.setAudioKbps(LiveEncoder.audioKbps(true));
+        }
         if (health != null) health.restart();
         switching = false;
         if (enc.videoKbps() < fromKbps && !toldLowered) {
@@ -976,6 +1042,7 @@ public final class LiveStreamController {
     private void teardown(boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended, String life) {
         boolean wait = deadlineMs != ASYNC;
         TwitchHandleCapture.close();
+        LiveMic.endStream();
         LiveEncoder enc = encoder;
         LiveAudioPump snd = audio;
         LiveUploader up = uploader;

@@ -248,7 +248,7 @@ public final class LegacyBands {
         IndevLevels i = indev;
         if (i != null && i.seed() == seed) return i;
         synchronized (LegacyBands.class) {
-            if (indev == null || indev.seed() != seed) indev = new IndevLevels(seed);
+            if (indev == null || indev.seed() != seed) indev = new IndevLevels(seed, Util.backgroundExecutor());
             return indev;
         }
     }

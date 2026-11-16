@@ -150,6 +150,40 @@ public final class EarnedPhotos {
      * until the subject is photographed again here.
      */
     public static List<Entry> visibleEntries(ResourceLocation advancement, AdvancementProgress progress) {
+        List<Entry> own = ownVisibleEntries(advancement, progress);
+        ResourceLocation fallback = fallbackAlbum(advancement);
+        if (fallback == null || progress == null) return own;
+        return withFallback(own, entries(fallback), id -> isTicked(progress, id));
+    }
+
+    /**
+     * {@code own}, plus a {@code fallback} photo for each ticked entry {@code own} has none of — a mob that
+     * reached Family Photo or Skeleton Crew from Most Wanted brings no photo of its own. Its own photo always wins.
+     */
+    static List<Entry> withFallback(List<Entry> own, List<Entry> fallback,
+                                    java.util.function.Predicate<ResourceLocation> ticked) {
+        Set<ResourceLocation> have = new java.util.HashSet<>();
+        own.forEach(e -> have.add(e.id()));
+        List<Entry> out = new ArrayList<>(own);
+        for (Entry e : fallback) {
+            if (have.add(e.id()) && ticked.test(e.id())) out.add(e);
+        }
+        return out.size() == own.size() ? own : List.copyOf(out);
+    }
+
+    /** The album a collection borrows a missing photo from ({@link EnchiridionAdvancements#photoFallbackAlbum}). */
+    private static ResourceLocation fallbackAlbum(ResourceLocation advancement) {
+        if (advancement == null || !DungeonTrain.MOD_ID.equals(advancement.getNamespace())) return null;
+        String path = EnchiridionAdvancements.photoFallbackAlbum(advancement.getPath());
+        return path == null ? null : ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path);
+    }
+
+    private static boolean isTicked(AdvancementProgress progress, ResourceLocation id) {
+        var criterion = progress == null ? null : progress.getCriterion(id.toString());
+        return criterion != null && criterion.isDone();
+    }
+
+    private static List<Entry> ownVisibleEntries(ResourceLocation advancement, AdvancementProgress progress) {
         List<Entry> all = entries(advancement);
         if (all.isEmpty()) return all;
         String album = albumOf(advancement).getPath();
@@ -162,10 +196,7 @@ public final class EarnedPhotos {
                 int n = EnchiridionAdvancements.countEntryNumber(e.id().getPath());
                 counts = n >= 1 && n <= PHOTO_COUNTS.getOrDefault(category, 0);
             } else {
-                counts = biomes
-                        ? PHOTOGRAPHED_BIOMES.contains(e.id().toString())
-                        : progress != null && progress.getCriterion(e.id().toString()) != null
-                                && progress.getCriterion(e.id().toString()).isDone();
+                counts = biomes ? PHOTOGRAPHED_BIOMES.contains(e.id().toString()) : isTicked(progress, e.id());
             }
             if (counts) out.add(e);
         }
@@ -266,11 +297,20 @@ public final class EarnedPhotos {
         if (holder == null) return visible;
         for (List<String> group : holder.value().requirements().requirements()) {
             for (String criterion : group) {
-                Entry e = byId.get(criterion);
-                out.add(e != null ? e : new Entry(null, null));
+                ResourceLocation id = ResourceLocation.tryParse(criterion);
+                out.add(slot(byId.get(criterion), id, id != null && isTicked(progress, id)));
             }
         }
         return out;
+    }
+
+    /**
+     * One creature slot: its photo when one is kept; a ticked entry with no photo anywhere keeps its name over
+     * an empty frame; only an entry still to earn hides as "???" ({@code id} null).
+     */
+    static Entry slot(Entry photo, ResourceLocation id, boolean ticked) {
+        if (photo != null) return photo;
+        return new Entry(ticked ? id : null, null);
     }
 
     /**

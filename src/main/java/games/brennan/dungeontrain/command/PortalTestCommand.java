@@ -462,6 +462,8 @@ public final class PortalTestCommand {
                         net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(roomOrigin, roomOrigin.offset(roomSize.getX() - 1, roomSize.getY() - 1, roomSize.getZ() - 1)));
                 }
             });
+        // The author is about to be stood in it.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.finishPour(overworld, dims, PortalTestSession.PAIR_KEY, structure);
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 

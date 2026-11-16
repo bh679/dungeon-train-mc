@@ -78,7 +78,7 @@ public final class CustomContentCommand {
         CustomContentPromptEvents.onChoiceApplied(source.getServer());
         boolean suppressed = choice.suppressesContent();
         if (!flipped) {
-            // The choice is recorded either way (UNSET -> ALLOW records an answer without changing
+            // The choice is recorded either way (UNSET -> DISABLE records an answer without changing
             // what loads), but nothing needs re-stamping, so say so rather than implying a reload.
             source.sendSuccess(() -> Component.translatable(
                     suppressed

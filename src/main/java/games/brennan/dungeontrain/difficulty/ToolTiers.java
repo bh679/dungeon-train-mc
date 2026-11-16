@@ -101,6 +101,14 @@ public final class ToolTiers {
         };
     }
 
+    /**
+     * Whether a Miner may break a block, on top of any {@link #mayBreak} tier it rolled: whatever its held
+     * tool can break and harvest, from its first room level. Luminous Monsters' Miners spawn holding one.
+     */
+    public static boolean minerMayBreak(boolean correctTool, boolean floor) {
+        return correctTool && !floor;
+    }
+
     /** Tool pool a mob at {@code level} draws from. */
     static List<DifficultyTier.WeightedItem> toolPool(int level) {
         return ProceduralTiers.toolPool(level);

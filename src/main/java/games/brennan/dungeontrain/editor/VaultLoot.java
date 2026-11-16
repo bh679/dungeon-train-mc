@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.provenance.ItemProvenance;
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import games.brennan.dungeontrain.block.VaultGreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -22,6 +24,7 @@ import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,12 +61,21 @@ public final class VaultLoot {
     public static final String OMINOUS_PREFAB = "ominous_trial_vault";
     public static final String GREEN_PREFAB = "green_trial_vault";
 
+    /**
+     * How many carriages further along the train a Dungeon Trial (green) vault's reward is rolled: its
+     * stats, enchantment cap and potion strength come out as if found that much deeper. Its
+     * {@code VaultStatBoost} multiplier then applies on top.
+     */
+    public static final int GREEN_CARRIAGE_BONUS = 2000;
+
     /** Sub-compound of the block entity's {@code NeoForgeData} holding the pool and its roll frame. */
     static final String TAG_VAULT = "dungeontrain_vault";
     private static final String NBT_NEOFORGE_DATA = "NeoForgeData";
     private static final String TAG_POOL = "pool";
     private static final String TAG_SEED = "seed";
     private static final String TAG_CARRIAGE = "carriage";
+    /** The train carriage the vault stands in, when it was stamped in one ({@link ProvenanceScope}). */
+    private static final String TAG_TRAIN_CARRIAGE = "train_carriage";
     private static final String TAG_DIFF = "diff";
     private static final String TAG_POS = "pos";
 
@@ -75,6 +87,8 @@ public final class VaultLoot {
 
     private static final long PLAYER_MIX_HI = 0x9E3779B97F4A7C15L;
     private static final long PLAYER_MIX_LO = 0xC2B2AE3D27D4EB4FL;
+    /** Seed salt per extra roll, so a lucky player's second roll ({@code pass} 1) differs from the first. */
+    private static final long PASS_MIX = 0xD6E8FEB86659FD93L;
 
     /** Parsed pools by their text: the display item re-reads the pool every couple of seconds. */
     private static final int POOL_CACHE_SIZE = 64;
@@ -98,6 +112,14 @@ public final class VaultLoot {
 
     public static boolean isGreenKey(String key) {
         return GREEN_KEY.equals(key);
+    }
+
+    /**
+     * {@code diff} moved {@link #GREEN_CARRIAGE_BONUS} carriages further from spawn. The difficulty
+     * tier reads the distance either side of spawn, so a negative index moves down, not up. Pure.
+     */
+    static int greenDiff(int diff) {
+        return diff >= 0 ? diff + GREEN_CARRIAGE_BONUS : diff - GREEN_CARRIAGE_BONUS;
     }
 
     /** The key after {@code key} in {@link #KEY_CYCLE}; an unknown key starts the cycle over. */
@@ -201,6 +223,9 @@ public final class VaultLoot {
         vault.putLong(TAG_SEED, worldSeed);
         vault.putInt(TAG_CARRIAGE, carriageIndex);
         vault.putInt(TAG_DIFF, diffIndex);
+        // Only a train carriage's stamp names a carriage; tunnels and dimensional carriages pass other
+        // indices in carriageIndex. Rewards are marked with it at unlock (ItemProvenance).
+        ProvenanceScope.current().ifPresent(pIdx -> vault.putInt(TAG_TRAIN_CARRIAGE, pIdx));
         vault.putIntArray(TAG_POS, new int[] {localPos.getX(), localPos.getY(), localPos.getZ()});
         CompoundTag neo = out.getCompound(NBT_NEOFORGE_DATA).copy();
         neo.put(TAG_VAULT, vault);
@@ -221,25 +246,51 @@ public final class VaultLoot {
      */
     public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
                                                           HolderLookup.Provider registries) {
+        return rollForPlayer(be, player, registries, 0);
+    }
+
+    /**
+     * Roll number {@code pass} of {@code player}'s reward: pass 0 is the reward itself, a later pass
+     * is a Luck extra ({@link LuckyBonusRoller#vaultExtraCount}). Each pass is its own fixed roll.
+     */
+    public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
+                                                          HolderLookup.Provider registries, int pass) {
         CompoundTag vault = vaultTag(be);
         if (vault == null) return Optional.empty();
         ContainerContentsPool pool = poolOf(vault);
         if (pool == null) return Optional.empty();
         int[] p = vault.getIntArray(TAG_POS);
         BlockPos localPos = p.length == 3 ? new BlockPos(p[0], p[1], p[2]) : BlockPos.ZERO;
-        long seed = vault.getLong(TAG_SEED) ^ playerSalt(player);
+        long seed = rollSeed(vault.getLong(TAG_SEED), player, pass);
         int carriage = vault.getInt(TAG_CARRIAGE);
-        int diff = vault.getInt(TAG_DIFF);
+        int stored = vault.getInt(TAG_DIFF);
+        int diff = isGreenKey(pool.vaultKey()) ? greenDiff(stored) : stored;
         // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
         // for this player every time, so an empty one would lock them out of this vault for good.
         ContainerContentsPool atLeastOne = pool.withFillMin(Math.max(1, pool.fillMin()));
+        // Split: a reward rolled above the item's stack size ("totem 3-7") pays out as several items.
         List<ItemStack> rolled = ContainerContentsRoller.rollStacks(atLeastOne, VAULT_SLOTS, localPos, seed,
-            carriage, diff, registries);
+            carriage, diff, true, registries);
         if (rolled.isEmpty()) {
             rolled = ContainerContentsRoller.rollStacks(defaultPool(pool.vaultKey()), VAULT_SLOTS, localPos, seed,
-                carriage, diff, registries);
+                carriage, diff, true, registries);
+        }
+        if (vault.contains(TAG_TRAIN_CARRIAGE)) {
+            OptionalInt pIdx = OptionalInt.of(vault.getInt(TAG_TRAIN_CARRIAGE));
+            for (ItemStack stack : rolled) ItemProvenance.markFresh(stack, pIdx);
         }
         return Optional.of(rolled);
+    }
+
+    /** Does {@code be} carry a DT pool? False for a vanilla vault, which keeps its loot table. */
+    public static boolean hasPool(BlockEntity be) {
+        CompoundTag vault = vaultTag(be);
+        return vault != null && poolOf(vault) != null;
+    }
+
+    /** The roll seed for {@code player}'s pass {@code pass}; pass 0 keeps the original per-player seed. */
+    static long rollSeed(long worldSeed, UUID player, int pass) {
+        return worldSeed ^ playerSalt(player) ^ (pass * PASS_MIX);
     }
 
     /** Seed salt for one player: distinct per UUID, stable across sessions. */

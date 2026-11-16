@@ -126,7 +126,9 @@ if want_job modpack-checks; then
     scripts/modpack/test_upload_retry.py \
     scripts/modpack/test_reconcile.py \
     scripts/modpack/test_wait_for_approval.py \
-    scripts/modpack/test_catch_up.py
+    scripts/modpack/test_catch_up.py \
+    scripts/listing/test_listing.py \
+    scripts/release-notes/test_preview_update_page.py
   step "Lost City tests"                                  python3 scripts/lost-city/test_lostcity.py
   step "Lost City templates match their recipes"          python3 scripts/lost-city/build-templates.py --check
   step "Lost City variants match their recipes"           python3 scripts/lost-city/generate-variants.py --check

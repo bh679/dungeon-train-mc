@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#c:is_swamp",
+  "spawners": {
+    "type": "luminous_monsters:swamp_zombie",
+    "weight": 60,
+    "minCount": 1,
+    "maxCount": 4
+  }
+}

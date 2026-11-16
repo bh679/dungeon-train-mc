@@ -40,6 +40,14 @@ Optional:
                     card on the web update page. With it:
   --description-file PATH  Markdown description (replaces summary + highlights).
   --image URL       https:// URL of the release photo.
+  --video URL       https:// URL of an .mp4 clip with sound: the social posts' videos
+                    are built from it (its sound kept) instead of the photo.
+  --video-cover S   The second of the clip whose frame is the posts' cover (default 0.5).
+  --video-feed / --video-story / --video-tiktok URL  A clip recorded for that post's
+                    visible area (Facebook and Instagram's feed, a story, TikTok);
+                    a format without one uses --video.
+  --mention TEXT PLATFORM HANDLE  A description link whose text is TEXT shows as
+                    HANDLE (@name) in that platform's caption (instagram, tiktok).
   --notable         The middle tier: a major that the web update page shows as a
                     smaller "Notable update" card (milestone-sized). Implies --major.
   Attach or change these later with set-major.py.
@@ -133,6 +141,32 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Major release only: https:// URL of the release photo.",
     )
     p.add_argument(
+        "--video",
+        default=None,
+        help="Major release only: https:// URL of an .mp4 clip with sound for the social posts.",
+    )
+    p.add_argument(
+        "--mention",
+        nargs=3,
+        action="append",
+        default=None,
+        metavar=("TEXT", "PLATFORM", "HANDLE"),
+        help="Major release only: a description link whose text is TEXT shows as HANDLE (@name) in that "
+        "PLATFORM's caption (instagram or tiktok). Repeat for each.",
+    )
+    for fmt in changelog_io.VIDEO_FORMATS:
+        p.add_argument(
+            f"--video-{fmt}",
+            default=None,
+            help=f"Major release only: https:// URL of an .mp4 clip recorded for the {fmt} post's visible area.",
+        )
+    p.add_argument(
+        "--video-cover",
+        type=float,
+        default=None,
+        help="Major release only, with --video: the second of the clip whose frame is the cover.",
+    )
+    p.add_argument(
         "--version",
         default=None,
         help="Override the computed ship version (X.Y.Z).",
@@ -209,14 +243,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.notable:
         args.major = True
-    if (args.description_file or args.image) and not args.major:
-        print("::error::--description-file / --image need --major", file=sys.stderr)
+    videos = {f: getattr(args, f"video_{f}") for f in changelog_io.VIDEO_FORMATS if getattr(args, f"video_{f}")}
+    if (args.description_file or args.image or args.video or videos or args.video_cover is not None or args.mention) and not args.major:
+        print("::error::--description-file / --image / --video / --video-<format> / --mention need --major", file=sys.stderr)
         return 1
     if args.major:
         try:
             description = read_text(args.description_file) if args.description_file else None
             entry = changelog_io.with_major(
-                entry, description=description, image=args.image, notable=args.notable or None
+                entry, description=description, image=args.image, notable=args.notable or None,
+                video=args.video, video_cover=args.video_cover, videos=videos or None,
+                mentions=changelog_io.mentions_from_args(args.mention),
             )
         except (OSError, ValueError) as e:
             print(f"::error::{e}", file=sys.stderr)

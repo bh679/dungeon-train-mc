@@ -23,6 +23,19 @@ class LogRequestManagerTest {
     }
 
     @Test
+    @DisplayName("/bug full is the command too, and the only form that asks for the whole session")
+    void fullCommand() {
+        assertTrue(LogRequestManager.isCommand("/bug full"));
+        assertTrue(LogRequestManager.isCommand(" !BUG   Full "));
+        assertTrue(LogRequestManager.isFullCommand("/bug full"));
+        assertTrue(LogRequestManager.isFullCommand("!Bug FULL"));
+        assertFalse(LogRequestManager.isFullCommand("/bug"));
+        assertFalse(LogRequestManager.isFullCommand("/bug fullest"));
+        assertFalse(LogRequestManager.isCommand("/bug full please"));
+        assertFalse(LogRequestManager.isFullCommand(null));
+    }
+
+    @Test
     @DisplayName("/version (with full and/or a name) is swallowed; anything else is a message")
     void versionCommand() {
         assertTrue(LogRequestManager.isVersionCommand("/version"));
@@ -57,7 +70,7 @@ class LogRequestManagerTest {
     @Test
     @DisplayName("an upload is taken only for an outstanding, unexpired SEND")
     void consumable() {
-        LogRequestManager.Pending asked = new LogRequestManager.Pending(1, LogRequestManager.Origin.THREAD, 1_000L, false, null);
+        LogRequestManager.Pending asked = new LogRequestManager.Pending(1, LogRequestManager.Origin.THREAD, 1_000L, false, false, null);
         LogRequestManager.Pending sending = asked.sendingUntil(2_000L);
         assertNull(LogRequestManager.consumable(null, 0L));
         assertNull(LogRequestManager.consumable(asked, 500L));

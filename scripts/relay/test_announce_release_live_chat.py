@@ -17,7 +17,7 @@ ar = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ar)
 
 NOTES = (
-    "# [Twitch integration](https://brennan.games/dungeontrain/update/#v0.1309.0)\n\n"
+    "# [Twitch integration](https://dungeon.training/update/#v0.1309.0)\n\n"
     "![Twitch integration](https://example.com/x.jpg)\n\n"
     "Dungeon Train TV can now connect to your Twitch.\n\n## Fixes\n- a fix\n"
 )
@@ -83,7 +83,7 @@ def test_major_line_has_banner_name_version_and_summary():
     body = ar.build_announcement("0.1426.0", NOTES, [FEAT, MAJOR_ENTRY])
     assert body["content"] == ("★ MAJOR UPDATE ★ A Deeper Darker Train (v0.1426.0). "
                                "Deep down the line, a new stretch waits. What's new")
-    assert body["link"] == {"text": "What's new", "url": "https://brennan.games/dungeontrain/update/#v0.1426.0"}
+    assert body["link"] == {"text": "What's new", "url": "https://dungeon.training/update/#v0.1426.0"}
 
 
 def test_notable_line_has_name_version_and_summary():

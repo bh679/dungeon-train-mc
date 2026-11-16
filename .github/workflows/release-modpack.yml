@@ -122,6 +122,14 @@ jobs:
         if: ${{ steps.approval.outputs.approved == 'true' }}
         run: python3 scripts/modpack/check-overrides.py
 
+      - name: Every CurseForge pin is a 1.21.1 NeoForge file
+        # A pack pinning another Minecraft version's file publishes fine and then refuses to load
+        # (PlayerMob's 26.2 file shipped in v0.1835.0-v0.1840.0). Same --ref bypass as above.
+        if: ${{ steps.approval.outputs.approved == 'true' }}
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: python3 scripts/modpack/check-cf-game-versions.py
+
       - name: Render modpack manifest
         if: ${{ steps.approval.outputs.approved == 'true' }}
         env:

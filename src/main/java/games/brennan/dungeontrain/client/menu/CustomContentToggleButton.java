@@ -19,9 +19,9 @@ import net.neoforged.api.distmarker.OnlyIn;
  * ({@code EditorContentIntegrity.hasCustomContent()}).
  *
  * <p>It writes the same client preference the confirmation popup's "Remember decision" checkbox
- * writes, so pressing it also answers the per-world question from here on — {@code
- * CustomContentGate.askCounting} skips the popup for any preference that isn't ASK. That is the
- * point of the button: a player who knows which way they want it shouldn't be asked every world.</p>
+ * writes. Off (the default) starts every world Live with no popup; on still has
+ * {@code CustomContentGate.askCounting} confirm each New World, because that run gives up its
+ * stats.</p>
  *
  * <p>One icon in two finishes rather than two icons: the Free Play badge on a light blue face when
  * the designs are in play, and dimmed to grey on the plain button face when they aren't. A swap

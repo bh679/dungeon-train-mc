@@ -15,12 +15,12 @@ final class LiveFeedClientBodiesTest {
 
     @Test
     void claimCarriesSafeDurationExtrasOnlyWhenPositive() {
-        JsonObject plain = LiveFeedClient.claimBody(ME, "Alice", null, null, null, false, null, null, 0L, 0L);
+        JsonObject plain = LiveFeedClient.claimBody(ME, "Alice", null, null, null, false, null, null, 0L, 0L, false);
         assertFalse(plain.has("takeoverExtraMs"));
         assertFalse(plain.has("holderVoteExtraMs"));
         assertEquals("Alice", plain.get("name").getAsString());
 
-        JsonObject perked = LiveFeedClient.claimBody(ME, "Alice", null, null, null, false, null, null, 300_000L, 150_000L);
+        JsonObject perked = LiveFeedClient.claimBody(ME, "Alice", null, null, null, false, null, null, 300_000L, 150_000L, false);
         assertEquals(300_000L, perked.get("takeoverExtraMs").getAsLong());
         assertEquals(150_000L, perked.get("holderVoteExtraMs").getAsLong());
     }

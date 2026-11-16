@@ -208,6 +208,10 @@ public final class EditorTypeMenuRenderer {
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
     private static final int COLUMN_SEP_COLOR = 0x30FFFFFF;
     static final int HEADER_BG = 0x60FFEEBB;
+    /** A contents pool's header row: a paler band of the header colour. */
+    private static final int POOL_HEADER_BG = 0x28FFEEBB;
+    /** How far a pooled group's name sits in from its row's left edge. */
+    private static final double POOL_INDENT = 0.12;
     /** Stronger green band behind the active category button — distinct from active-row tint. */
     private static final int ACTIVE_CATEGORY_BG = 0x8055FF55;
     /** Dim band behind every collapsed tab so they read as inactive columns. */
@@ -283,6 +287,8 @@ public final class EditorTypeMenuRenderer {
     private static String newLabel() { return MenuLang.t("type_menu.new"); }
 
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
+    /** The menus as the server sent them; {@link #CACHE} is this with folded contents pools left out. */
+    private static volatile List<EditorTypeMenusPacket.Menu> RAW = List.of();
     /** Global "focused stage" id for the per-stage carriage preview ("" = none); mirrors the server selection. */
     private static volatile String SELECTED_STAGE = "";
     /**
@@ -354,6 +360,7 @@ public final class EditorTypeMenuRenderer {
         games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.onTypeMenusChanged();
         if (packet.isEmpty()) {
             CACHE = List.of();
+            RAW = List.of();
             // Editor exited — the next entry's panels face the player afresh.
             EditorPanelFacing.clearAll();
             SELECTED_STAGE = "";
@@ -370,7 +377,8 @@ public final class EditorTypeMenuRenderer {
             return;
         }
         List<EditorTypeMenusPacket.Menu> menus = List.copyOf(packet.menus());
-        CACHE = menus;
+        RAW = menus;
+        CACHE = ContentsPoolRows.view(menus);
         SELECTED_STAGE = packet.selectedStageId();
         HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
         EditorTypeMenusPacket.Menu first = menus.get(0);
@@ -380,6 +388,18 @@ public final class EditorTypeMenuRenderer {
 
     public static List<EditorTypeMenusPacket.Menu> menus() {
         return CACHE;
+    }
+
+    /** Fold or unfold a contents pool's groups under its header row (view state only). */
+    static void togglePool(String poolId) {
+        ContentsPoolRows.toggle(poolId);
+        CACHE = ContentsPoolRows.view(RAW);
+        HOVERED = Hovered.NONE;
+    }
+
+    /** The text a row's name cell draws: a pool header's marker, name and group count, else the label. */
+    static String rowLabel(EditorTypeMenusPacket.Variant v) {
+        return v.poolHeader() ? ContentsPoolRows.headerLabel(v) : v.displayName();
     }
 
     /** The globally focused stage id for the per-stage carriage preview, or "" when none is selected. */
@@ -509,7 +529,8 @@ public final class EditorTypeMenuRenderer {
         boolean anyGate = false;
         boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(rowLabel(v)) * TEXT_SCALE + 2 * PAD_X
+                + (v.isPooled() ? POOL_INDENT + font.width("100%") * TEXT_SCALE + PAD_X : 0);
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
@@ -547,7 +568,8 @@ public final class EditorTypeMenuRenderer {
         boolean anyGate = false;
         boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(rowLabel(v)) * TEXT_SCALE + 2 * PAD_X
+                + (v.isPooled() ? POOL_INDENT + font.width("100%") * TEXT_SCALE + PAD_X : 0);
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
@@ -1509,6 +1531,11 @@ public final class EditorTypeMenuRenderer {
                 rowRight - 0.005, rowTop - 0.005, USER_ROW_BG);
         }
 
+        if (variant.poolHeader()) {
+            drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                rowRight - 0.005, rowTop - 0.005, POOL_HEADER_BG);
+        }
+
         // Active-row tint for the variant matching the player's current plot.
         boolean isActive = !activeModelId.isEmpty()
             && activeModelId.equals(variant.modelId())
@@ -1564,8 +1591,15 @@ public final class EditorTypeMenuRenderer {
                 || games.brennan.dungeontrain.client.menu.ClientPartVisibility.isDisplayed(pk, variant.name());
             drawCenteredText(ps, buffer, font, shown ? "[x]" : "[ ]", (rowLeft + visR) / 2.0, rowCY, NAME_COLOR);
             drawCenteredText(ps, buffer, font, variant.displayName(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+        } else if (variant.isPooled()) {
+            // A pool's group: indented under its header, with its share of the pool's slot by the weight.
+            double shareW = font.width("100%") * TEXT_SCALE + PAD_X;
+            drawCenteredText(ps, buffer, font, variant.displayName(),
+                (rowLeft + POOL_INDENT + nameR - shareW) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, ContentsPoolRows.shareLabel(variant),
+                nameR - shareW / 2.0, rowCY, WEIGHT_COLOR);
         } else {
-            drawCenteredText(ps, buffer, font, variant.displayName(), (rowLeft + nameR) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, rowLabel(variant), (rowLeft + nameR) / 2.0, rowCY, NAME_COLOR);
         }
         if (nameR < rc.nameRight()) {
             drawCenteredText(ps, buffer, font,
@@ -1634,7 +1668,8 @@ public final class EditorTypeMenuRenderer {
         double toolbarW = font.width(MenuLang.t("type_menu.stage_add") + "    " + MenuLang.t("type_menu.stage_remove_on")) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(rowLabel(v)) * TEXT_SCALE + 2 * PAD_X
+                + (v.isPooled() ? POOL_INDENT + font.width("100%") * TEXT_SCALE + PAD_X : 0);
             if (w > maxNameW) maxNameW = w;
         }
         // Stage rows reserve GATE_AREA_FRACTION for min|max|phase; the fixed icons band sits just

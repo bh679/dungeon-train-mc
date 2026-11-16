@@ -72,7 +72,7 @@ cached() { find "$GC/$1/$2" -name "*.jar" ! -name "*sources*" 2>/dev/null | head
 
 resolve() {
   case "$1" in
-    dt)       ls -t "$REPO"/build/libs/dungeontrain-*.jar 2>/dev/null | grep -v -- '-sources' | grep -v -- '-curseforge' | head -1 ;;
+    dt)       ls -t "$REPO"/build/libs/dungeontrain-*.jar 2>/dev/null | grep -v -- '-sources\.jar$' | grep -v -- '-curseforge\.jar$' | head -1 ;;
     # The CurseForge-only jar: the main jar minus the jarJar'd Stream Detect + DPI Bypass Detect.
     dtcf)     ls -t "$REPO"/build/libs/dungeontrain-*-curseforge.jar 2>/dev/null | head -1 ;;
     sable)    cached "maven.modrinth/sable"          "$(prop sable_version)" ;;
@@ -100,6 +100,12 @@ resolve() {
     # VanillaBackport + Platform — required; the Nether-exit sulfur caves.
     vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
     dd)       cached "maven.modrinth/deeperdarker" "$(prop deeperdarker_version)" ;;
+    lm)       cached "maven.modrinth/luminous-monsters" "$(prop luminous_monsters_version)" ;;
+    # Creeper Overhaul + its libraries — required; biome creepers in carriages.
+    co)       cached "maven.modrinth/creeper-overhaul" "$(prop creeperoverhaul_version)" ;;
+    gl)       cached "maven.modrinth/geckolib"         "$(prop geckolib_version)" ;;
+    rlib)     cached "maven.modrinth/resourceful-lib"  "$(prop resourcefullib_version)" ;;
+    rcfg)     cached "maven.modrinth/resourceful-config" "$(prop resourcefulconfig_version)" ;;
     ppro)     cached "maven.modrinth/piglin-proliferation" "$(prop piglinproliferation_version)" ;;
     pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
     # Exposure + its Polaroid add-on — required; the cameras, film and photographs.
@@ -128,6 +134,9 @@ resolve() {
     # Discord Presence — hybrid like eb: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
     dp)       cached "bh679/discordpresence"         "$(prop discordpresence_version)" ;;
+    # Dungeon Totems — jarJar'd inside the DT jar and not yet listed anywhere. Present (Case A) it models
+    # the future CurseForge-app install (top-level copy wins); every other case loads the nested copy.
+    bt)       cached "bh679/dungeontotems"          "$(prop dungeontotems_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.EnderMan;
@@ -19,8 +20,9 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
  * spawn types) are never touched.
  *
  * <ul>
- *   <li><b>Disintegration/End band:</b> the world is the End, so only endermen belong — every other
- *       ambient mob whose position falls in the band's world-X range is cancelled.</li>
+ *   <li><b>Disintegration/End band:</b> the world is the End, so only its natives belong — endermen, and
+ *       in a BetterEnd column whatever its biome lists ({@link EndBandSpawnRules}). Every other ambient
+ *       mob whose position falls in the band's world-X range is cancelled.</li>
  *   <li><b>Upside-down band:</b> the terrain is a vertical mirror — the "ground" is a ceiling with
  *       an open gap at the train — so any naturally-spawned mob has nothing to stand on and simply
  *       falls to its death. Every ambient spawn (hostile <em>and</em> passive) in the band is
@@ -46,9 +48,12 @@ public final class BandMobSpawnEvents {
         int x = (int) Math.floor(event.getX());
         int z = (int) Math.floor(event.getZ());
 
-        // End band: only endermen (the End's natives) survive; cancel every other ambient spawn.
+        // End band: only the End's natives survive: endermen, plus a BetterEnd column's own biome list (a BoP column's lists none).
         if (DisintegrationBand.middleRampAt(level, x, z) > 0.0) {
-            if (!(event.getEntity() instanceof EnderMan)) {
+            BlockPos pos = BlockPos.containing(event.getX(), event.getY(), event.getZ());
+            if (!EndBandSpawnRules.admits(event.getEntity() instanceof EnderMan,
+                    EndBandSpawnRules.isBetterEndColumn(level, x, z),
+                    EndBandSpawnRules.listedByBiome(level, pos, event.getEntity().getType()))) {
                 event.setSpawnCancelled(true);
             }
             return;

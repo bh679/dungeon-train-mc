@@ -100,7 +100,7 @@ public final class PortalRoomDriftPlanner {
     /**
      * Whether this pair's room takes part in drifting at all: the room's mode and the author's
      * setting say it may, it is not the editor's test rig, and the pair won its
-     * {@code sharedRoomChance} roll — one in fifteen by default. The same answer registers a fresh
+     * {@code sharedRoomChance} roll — one in five by default. The same answer registers a fresh
      * room for upload ({@code SharedRoomEvents.onStructureStamped}) and lets the planner draw a
      * copy, so a pair that lost the roll is a plain template room in every respect.
      */

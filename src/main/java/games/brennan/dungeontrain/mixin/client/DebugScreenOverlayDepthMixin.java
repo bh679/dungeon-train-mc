@@ -2,9 +2,12 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientBandDimension;
 import games.brennan.dungeontrain.client.ClientPortalRoomDepth;
+import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.DebugScreenDepthLines;
 import games.brennan.dungeontrain.client.DebugScreenDimensionLine;
+import games.brennan.dungeontrain.client.FarLandsDebugX;
 import games.brennan.dungeontrain.worldgen.BandDimensionName;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -84,6 +87,7 @@ public abstract class DebugScreenOverlayDepthMixin {
 
             DebugScreenDepthLines.Shift shift =
                 ClientPortalRoomDepth.shiftAt(camera.getX(), camera.getY(), camera.getZ());
+            if (shift.isZero()) shift = dungeontrain$farLandsShift(camera);
             if (shift.isZero()) return;
 
             BlockPos block = camera.blockPosition();
@@ -93,5 +97,18 @@ public abstract class DebugScreenOverlayDepthMixin {
             // The debug screen is a readout. Anything unexpected here leaves vanilla's own lines
             // standing rather than taking the overlay, and with it the frame, down with it.
         }
+    }
+
+    /**
+     * The X the legacy run around the Far Lands prints ({@link FarLandsDebugX}). Read from the client's own
+     * cycle, as the clocks and compasses read theirs ({@code OtherworldBand}), so it needs no packet.
+     */
+    @Unique
+    private static DebugScreenDepthLines.Shift dungeontrain$farLandsShift(Entity camera) {
+        if (!camera.level().dimension().equals(Level.OVERWORLD) || !ClientVoidBand.startsWithTrain()) {
+            return DebugScreenDepthLines.Shift.NONE;
+        }
+        long dx = FarLandsDebugX.offsetAt(WorldGenCycle.fromConfig(), camera.getBlockX());
+        return dx == 0L ? DebugScreenDepthLines.Shift.NONE : new DebugScreenDepthLines.Shift(dx, 0, 0);
     }
 }

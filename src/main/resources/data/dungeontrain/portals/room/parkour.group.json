@@ -4,23 +4,27 @@
   "variants": [
     {
       "id": "skymaze",
-      "weight": 2,
+      "weight": 4,
       "minLevel": 6
     },
     {
       "id": "jumps",
-      "weight": 2,
+      "weight": 4,
       "minLevel": 10
     },
     {
       "id": "gemotricwalk",
-      "weight": 1,
+      "weight": 2,
       "minLevel": 8
     },
     {
       "id": "safe",
-      "weight": 1,
+      "weight": 2,
       "maxLevel": 23
+    },
+    {
+      "id": "waterparkour",
+      "weight": 1
     }
   ]
 }

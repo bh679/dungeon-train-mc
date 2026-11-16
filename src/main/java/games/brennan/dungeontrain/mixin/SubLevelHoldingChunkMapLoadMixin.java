@@ -4,15 +4,20 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.storage.HoldingSubLevel;
 import dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap;
 import dev.ryanhcode.sable.sublevel.storage.serialization.SubLevelData;
+import games.brennan.dungeontrain.ship.sable.DriverlessCarriageReaper;
 import games.brennan.dungeontrain.ship.sable.SableHoldingIndex;
+import net.minecraft.server.level.ServerLevel;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Clears Dungeon Train's holding record when Sable takes a sub-level back out of holding, the
- * counterpart to {@link SubLevelHoldingChunkFileMixin}. See {@link SableHoldingIndex}.
+ * counterpart to {@link SubLevelHoldingChunkFileMixin}. See {@link SableHoldingIndex}. Also tells
+ * {@link DriverlessCarriageReaper} what woke, for the same reason: every wake passes through here.
  *
  * <p>{@code loadHoldingSubLevel} is the single funnel every resurrection passes through —
  * {@code snatchAndLoad} (DT's explicit reload) and {@code processChanges} →
@@ -34,12 +39,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = SubLevelHoldingChunkMap.class, remap = false)
 public abstract class SubLevelHoldingChunkMapLoadMixin {
 
+    @Shadow @Final private ServerLevel level;
+
     @Inject(method = "loadHoldingSubLevel", at = @At("TAIL"))
     private void dungeonTrain$recordLoaded(HoldingSubLevel held, CallbackInfo ci) {
         if (held == null) return;
         SubLevelData data = held.data();
         if (data == null) return;
         SableHoldingIndex.loaded(data.uuid());
+        DriverlessCarriageReaper.noteWoken(level, data.uuid());
     }
 
     @Inject(method = "queueDeletion", at = @At("HEAD"))

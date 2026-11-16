@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "piglin",
+      "weight": 6
+    },
+    {
+      "id": "brute",
+      "weight": 5,
+      "minLevel": 3
+    },
+    {
+      "id": "piglin2",
+      "weight": 3
+    },
+    {
+      "id": "witherskel",
+      "weight": 10,
+      "stages": [
+        "nether",
+        "quartz"
+      ]
+    },
+    {
+      "id": "winterskeleton",
+      "weight": 1,
+      "minLevel": 2
+    },
+    {
+      "id": "witherreal",
+      "weight": 1,
+      "minLevel": 81
+    },
+    {
+      "id": "blaze",
+      "weight": 4,
+      "phases": [
+        "NETHER",
+        "CHUNCKS",
+        "SPHERES",
+        "FLOATING"
+      ]
+    },
+    {
+      "id": "nagaspawn",
+      "weight": 7,
+      "minLevel": 3,
+      "phases": [
+        "NETHER",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "jungleskel",
+      "weight": 7,
+      "minLevel": 4,
+      "phases": [
+        "NETHER",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "piglings",
+      "weight": 4,
+      "phases": [
+        "NETHER",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "pinglings2",
+      "weight": 4,
+      "minLevel": 3,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "crimszomb",
+      "weight": 4,
+      "minLevel": 6,
+      "phases": [
+        "NETHER",
+        "VOID",
+        "END",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "reverent",
+      "weight": 4,
+      "minLevel": 6,
+      "phases": [
+        "NETHER",
+        "VOID",
+        "END",
+        "FAR_LANDS"
+      ]
+    }
+  ]
+}

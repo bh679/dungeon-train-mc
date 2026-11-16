@@ -1,9 +1,8 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.worldgen.SpheresSky;
+import games.brennan.dungeontrain.worldgen.BandSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 import java.util.function.IntPredicate;
@@ -61,28 +60,7 @@ public final class ClientVoidBand {
      */
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
-        int x = (int) Math.floor(worldX);
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        double end = DungeonTrainCommonConfig.isDisintegrationEnabled()
-                ? cycle.endSkyRamp(x, DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks())
-                : 0.0;
-        // The two bands never overlap, so max() just picks whichever one the camera is in.
-        return Math.max(end, spheresEndSkyIntensity(cycle, x));
-    }
-
-    /**
-     * End-sky intensity over the spheres band's End-sky window ({@link SpheresSky#endSky}), so the whole
-     * End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds, music — takes
-     * over {@code spheresEndSkyStartBlocks} into the spheres and fades back to the overworld sky over the
-     * {@code spheresEndSkyExitFadeBlocks} before its closing void.
-     */
-    private static double spheresEndSkyIntensity(WorldGenCycle cycle, int worldX) {
-        if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
-            return 0.0;
-        }
-        return SpheresSky.endSky(cycle, SpheresProgressionConfig.segments(), worldX,
-                DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks(), SpheresProgressionConfig.endSkyExitFadeBlocks(),
-                SpheresProgressionConfig.exitVoidBlocks());
+        return BandSky.endSkyIntensityAt(WorldGenCycle.fromConfig(), (int) Math.floor(worldX));
     }
 
     /** Sample spacing for the Distant Horizons zone checks; every band's entry fade alone is far wider. */
