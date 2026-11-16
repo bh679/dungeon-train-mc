@@ -5,7 +5,12 @@ import games.brennan.ediblebackpacks.storage.BackpackData;
 import games.brennan.tradeeverything.api.TradeEverythingApi;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -41,8 +46,9 @@ final class AbandonInventoryGrid {
     private static final int SLOT_BG = 0xFF8B8B8B;
     private static final int SLOT_DARK = 0xFF373737;
     private static final int SLOT_LIGHT = 0xFFFFFFFF;
-    private static final float VEIL_Z = 300F;
-    private static final int VEIL_RGB = 0xD01818;
+    /** Above the item (z 150) and its count (z 200). */
+    private static final float FIRE_Z = 300F;
+    private static final ResourceLocation FIRE = ResourceLocation.withDefaultNamespace("block/fire_0");
     private static final float TEXT_Z = 200F;
 
     private final List<ItemStack> stacks;
@@ -120,9 +126,15 @@ final class AbandonInventoryGrid {
 
     private int slotY(int i) { return y + (i / cols) * SLOT; }
 
-    /** @param fade 0 normal; towards 1 the items are washed red (the slot bevels stay as they are) */
+    /** How the carried items react while "Step off and die" is hovered. */
+    enum HoverEffect { RED, FIRE }
+
+    /** Chosen effect; package-visible so both can be compared before one is settled on. */
+    static HoverEffect hoverEffect = HoverEffect.RED;
+
+    /** @param fade 0 normal; towards 1 the items themselves react (the slots stay as they are) */
     void render(GuiGraphics g, Font font, float fade) {
-        int veil = Math.round(Math.max(0F, Math.min(1F, fade)) * 255F);
+        float k = Math.max(0F, Math.min(1F, fade));
         for (int i = 0; i < shown; i++) {
             int sx = slotX(i);
             int sy = slotY(i);
@@ -132,10 +144,36 @@ final class AbandonInventoryGrid {
                 continue;
             }
             ItemStack stack = stacks.get(i);
-            g.renderItem(stack, sx + 1, sy + 1);
+            drawItem(g, stack, sx + 1, sy + 1, hoverEffect == HoverEffect.RED ? k : 0F);
             g.renderItemDecorations(font, stack, sx + 1, sy + 1);
-            if (veil > 0) veilSlot(g, sx, sy, veil);
+            if (hoverEffect == HoverEffect.FIRE && k > 0F) drawFire(g, sx + 1, sy + 1, Math.min(1F, 2F * k));   // fire burns at full strength
         }
+    }
+
+    /**
+     * The item with its green and blue pulled down by {@code red}, so only its own pixels redden.
+     * {@link GuiGraphics#renderItem} flushes before returning, so the shader colour is undone in time.
+     */
+    private static void drawItem(GuiGraphics g, ItemStack stack, int x, int y, float red) {
+        if (red <= 0F) {
+            g.renderItem(stack, x, y);
+            return;
+        }
+        float gb = 1F - red;
+        RenderSystem.setShaderColor(1F, gb, gb, 1F);
+        try {
+            g.renderItem(stack, x, y);
+        } finally {
+            RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+        }
+    }
+
+    /** Vanilla's animated fire (block atlas {@code block/fire_0}) over the item, fading in with it. */
+    private static void drawFire(GuiGraphics g, int x, int y, float alpha) {
+        TextureAtlasSprite fire = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(FIRE);
+        RenderSystem.enableBlend();
+        g.blit(x, y, (int) FIRE_Z, 16, 16, fire, 1F, 1F, 1F, alpha);
+        RenderSystem.disableBlend();
     }
 
     private static void drawMore(GuiGraphics g, Font font, int sx, int sy, int more) {
@@ -157,14 +195,6 @@ final class AbandonInventoryGrid {
                 return;
             }
         }
-    }
-
-    /** Above the item (z 150) and its count (z 200): a red wash over the slot face. */
-    private static void veilSlot(GuiGraphics g, int sx, int sy, int alpha) {
-        g.pose().pushPose();
-        g.pose().translate(0, 0, VEIL_Z);
-        g.fill(sx + 1, sy + 1, sx + SLOT - 1, sy + SLOT - 1, (alpha << 24) | VEIL_RGB);
-        g.pose().popPose();
     }
 
     private static void drawSlot(GuiGraphics g, int sx, int sy) {

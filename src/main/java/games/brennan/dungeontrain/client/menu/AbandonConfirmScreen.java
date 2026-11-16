@@ -54,7 +54,7 @@ public final class AbandonConfirmScreen extends Screen {
     private static final int WASH_RGB = 0xB00000;
     private static final int WASH_MAX_ALPHA = 0x90;
     private static final float WASH_FADE_MS = 400F;
-    /** How strongly the carried items are washed red at full hover: half. */
+    /** How strongly the carried items react at full hover: half. */
     private static final float ITEM_FADE = 0.5F;
 
     private static final Component SAVE_TITLE = Component.translatable("gui.dungeontrain.abandon_confirm.save_title");
