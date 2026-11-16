@@ -21,20 +21,57 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DiscordRichPresenceTest {
 
     @Test
-    @DisplayName("Only the three vanilla places are named; every other band reads as Other")
+    @DisplayName("Vanilla places and every band are named as on F3; carriages and other mods read as Other")
     void placeMapping() {
-        assertEquals(Place.OVERWORLD, PresenceSnapshot.placeFor("minecraft:overworld"));
-        assertEquals(Place.NETHER, PresenceSnapshot.placeFor("minecraft:the_nether"));
-        assertEquals(Place.END, PresenceSnapshot.placeFor("minecraft:the_end"));
+        assertEquals("dungeontrain.discord_status.overworld", PresenceSnapshot.placeFor("minecraft:overworld").langKey());
+        assertEquals("dungeontrain.discord_status.nether", PresenceSnapshot.placeFor("minecraft:the_nether").langKey());
+        assertEquals("end", PresenceSnapshot.placeFor("minecraft:the_end").imageKey());
         assertEquals(Place.OTHER, PresenceSnapshot.placeFor(BandDimensionName.DIMENSIONAL_CARRIAGE));
         assertEquals(Place.OTHER, PresenceSnapshot.placeFor("othermod:somewhere"));
+        assertEquals(Place.OTHER, PresenceSnapshot.placeFor("dungeontrain:ud"));
         assertEquals(Place.OTHER, PresenceSnapshot.placeFor(null));
         for (TrainPhase phase : TrainPhase.values()) {
             String id = BandDimensionName.of(phase);
             if (id.startsWith("dungeontrain:")) {
-                assertEquals(Place.OTHER, PresenceSnapshot.placeFor(id), "band " + phase + " must not be named");
+                assertEquals("gui.dungeontrain.editor_menu.phase." + phase.token(),
+                        PresenceSnapshot.placeFor(id).langKey(), "band " + phase);
             }
         }
+    }
+
+    @Test
+    @DisplayName("Every band name the card can show exists in every shipped locale")
+    void bandNamesInEveryLocale() throws Exception {
+        java.nio.file.Path dir = games.brennan.dungeontrain.RepoPaths.root().resolve("src/main/resources/assets/dungeontrain/lang");
+        try (var files = java.nio.file.Files.list(dir)) {
+            for (java.nio.file.Path file : files.filter(p -> p.toString().endsWith(".json")).toList()) {
+                JsonObject lang = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(file)).getAsJsonObject();
+                for (TrainPhase phase : TrainPhase.values()) {
+                    String key = PresenceSnapshot.placeFor(BandDimensionName.of(phase)).langKey();
+                    assertTrue(lang.has(key), file.getFileName() + " lacks " + key);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A band shows only once the player is as deep in as its advancement needs")
+    void depthGate() {
+        assertEquals(games.brennan.dungeontrain.advancement.BandAdvancements.ENTRY_DEPTH_BLOCKS, BandDepthGate.DEPTH_BLOCKS);
+        String ud = "dungeontrain:upside_down";
+        BandDepthGate g = BandDepthGate.EMPTY.next("minecraft:overworld", 0, true);
+        assertEquals("minecraft:overworld", g.shownId(), "spawn overworld is named at once");
+        g = g.next(ud, 1000, true);
+        assertEquals("minecraft:overworld", g.shownId(), "just entered: keep the last place");
+        g = g.next(ud, 1399, true);
+        assertEquals("minecraft:overworld", g.shownId());
+        g = g.next(ud, 1400, true);
+        assertEquals(ud, g.shownId(), "400 blocks in: named");
+        g = g.next("minecraft:the_nether", 5000, true).next("minecraft:the_nether", 4600, true);
+        assertEquals("minecraft:the_nether", g.shownId(), "riding backwards gates the same");
+        assertEquals("minecraft:the_end", BandDepthGate.EMPTY.next("minecraft:the_end", 0, false).shownId(),
+                "a real dimension is named at once");
+        assertEquals(null, BandDepthGate.EMPTY.next(ud, 0, true).shownId(), "joining mid-band waits too");
     }
 
     @Test
@@ -68,7 +105,7 @@ class DiscordRichPresenceTest {
     @Test
     @DisplayName("The card carries one line and the logo: no state, no timer")
     void activityShape() {
-        JsonObject activity = DiscordIpcConnection.activityJson(new PresenceSnapshot(Place.NETHER, "In the Nether"));
+        JsonObject activity = DiscordIpcConnection.activityJson(new PresenceSnapshot("nether", "In the Nether"));
         assertEquals("In the Nether", activity.get("details").getAsString());
         assertFalse(activity.has("state"));
         assertFalse(activity.has("timestamps"));
@@ -76,7 +113,7 @@ class DiscordRichPresenceTest {
         assertEquals("logo", assets.get("large_image").getAsString());
         assertEquals("nether", assets.get("small_image").getAsString());
 
-        JsonObject menu = DiscordIpcConnection.activityJson(new PresenceSnapshot(Place.MENU, "In the menu"));
+        JsonObject menu = DiscordIpcConnection.activityJson(new PresenceSnapshot(Place.MENU.imageKey(), "In the menu"));
         assertFalse(menu.getAsJsonObject("assets").has("small_image"));
     }
 

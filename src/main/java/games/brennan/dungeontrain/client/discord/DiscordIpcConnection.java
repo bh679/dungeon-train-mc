@@ -84,8 +84,8 @@ final class DiscordIpcConnection implements Closeable {
         JsonObject assets = new JsonObject();
         assets.addProperty("large_image", "logo");
         assets.addProperty("large_text", "Dungeon Train");
-        if (snapshot.place() != PresenceSnapshot.Place.MENU) {
-            assets.addProperty("small_image", snapshot.place().imageKey());
+        if (snapshot.imageKey() != null) {
+            assets.addProperty("small_image", snapshot.imageKey());
             assets.addProperty("small_text", snapshot.details());
         }
         JsonObject activity = new JsonObject();
