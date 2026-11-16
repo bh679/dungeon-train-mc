@@ -599,6 +599,12 @@ public final class PlayerRunState {
         napGateDir = d;
     }
 
+    /** Drop the nap gate (debug only; a death drops it through {@link #resetDeathStats}). */
+    public void clearNapGate() {
+        napGateX = 0.0;
+        napGateDir = 0;
+    }
+
     /** True once this life has woken from a nap. */
     public boolean napGated() { return napGateDir != 0; }
 
