@@ -251,7 +251,7 @@ public final class NarrativeBookEvents {
         String key = id.storyBasename() + "#" + id.letterIndex();
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         if (run.recordNarrativeRead(key)) {
-            run.incrementBooksRead();
+            run.incrementBooksRead(games.brennan.dungeontrain.nap.NapGateData.step(player));
         }
     }
 
@@ -267,7 +267,7 @@ public final class NarrativeBookEvents {
         String key = "pnarr:" + pid.seriesId() + "#" + pid.letterIndex();
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         if (run.recordNarrativeRead(key)) {
-            run.incrementBooksRead();
+            run.incrementBooksRead(games.brennan.dungeontrain.nap.NapGateData.step(player));
         }
     }
 

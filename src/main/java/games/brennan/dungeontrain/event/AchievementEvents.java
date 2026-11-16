@@ -239,7 +239,8 @@ public final class AchievementEvents {
         // position — AND ends the chest-free streak. Decorated-pot breaks feed
         // the counter from RunStatsEvents.onPotBreak but leave the streak alone,
         // which is the rule the advancement below has always used.
-        run.openedLootContainer();
+        int step = games.brennan.dungeontrain.nap.NapGateData.step(player);
+        run.openedLootContainer(step);
         AllAtOnceAdvancement.markLost(player);
         // Break the "no chest or barrel" streak: the next milestone is measured
         // from this carriage reading onward. Decorated pots never reach here —
@@ -249,6 +250,11 @@ public final class AchievementEvents {
         // already in the streak is ignored outright. One already counted still resets the streak
         // when reopened, emptied or not.
         if (!run.uniqueChests().contains(pos) && !hasLoot(event.getLevel(), pos, state)) return;
+        if (step < 0) {
+            // Behind a nap point: a re-rolled chest takes one off the streak instead of adding one.
+            run.shrinkChestStreak();
+            return;
+        }
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.
@@ -325,7 +331,7 @@ public final class AchievementEvents {
         // leaderboard) and feeds the containers-opened tally. The unique-chest streak stays
         // right-click-only: smashing a chest is not "opening a distinct chest".
         if (!isLootContainer(event.getState().getBlock())) return;
-        run.openedLootContainer();
+        run.openedLootContainer(games.brennan.dungeontrain.nap.NapGateData.step(player));
         resetContainerStreak(player, run);
     }
 
