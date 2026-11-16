@@ -692,8 +692,9 @@ public final class RunStatsEvents {
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             boolean cheated = RunIntegrity.isCheated(player);
-            // Behind a nap point, mobs met are re-rolled copies: neither met nor befriended.
-            boolean behindNap = games.brennan.dungeontrain.nap.NapGateData.step(player) < 0;
+            // Short of the furthest point a napped life had reached, mobs met are re-rolled copies:
+            // neither met nor befriended.
+            boolean behindNap = games.brennan.dungeontrain.nap.NapGateData.step(player) <= 0;
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
             for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {
                 // Per-run encounter set still records (death-screen stat); the

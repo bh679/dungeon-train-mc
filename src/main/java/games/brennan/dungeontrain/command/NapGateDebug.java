@@ -16,10 +16,11 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 /**
- * {@code /dungeontrain debug nap-gate <player> [show|set <x> <dir>|wake <dir>|clear]} — read or stand in
+ * {@code /dungeontrain debug nap-gate <player> [show|set <x> <dir> [furthest]|furthest <x>|wake <dir>|clear]} — read or stand in
  * for the nap gate a woken nap sets ({@link PlayerRunState#setNapGate}), so the ahead/behind counter rule
  * can be tested without taking a real nap. {@code wake} gates as a nap taken where the player stands
- * would (at their current X, as at a bed). {@code show} also prints the counters it moves.
+ * would (at their current X, as at a bed, with the life's furthest point as a real nap takes it).
+ * {@code furthest} moves only the furthest point. {@code show} also prints the counters it moves.
  */
 final class NapGateDebug {
 
@@ -37,24 +38,39 @@ final class NapGateDebug {
                         .executes(ctx -> {
                             ServerPlayer p = EntityArgument.getPlayer(ctx, "player");
                             int dir = IntegerArgumentType.getInteger(ctx, "dir");
-                            return set(ctx.getSource(), p, p.getX(), dir);
+                            return set(ctx.getSource(), p, p.getX(), dir,
+                                dir == 0 ? Double.NaN : run(p).furthestReached(p.getX(), dir));
+                        })))
+                .then(Commands.literal("furthest")
+                    .then(Commands.argument("x", DoubleArgumentType.doubleArg())
+                        .executes(ctx -> {
+                            ServerPlayer p = EntityArgument.getPlayer(ctx, "player");
+                            PlayerRunState run = run(p);
+                            run.setNapFurthest(DoubleArgumentType.getDouble(ctx, "x"));
+                            NapGateData.remember(p, run);
+                            return show(ctx.getSource(), p);
                         })))
                 .then(Commands.literal("set")
                     .then(Commands.argument("x", DoubleArgumentType.doubleArg())
                         .then(Commands.argument("dir", IntegerArgumentType.integer(-1, 1))
                             .executes(ctx -> set(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"),
-                                DoubleArgumentType.getDouble(ctx, "x"), IntegerArgumentType.getInteger(ctx, "dir")))))));
+                                DoubleArgumentType.getDouble(ctx, "x"), IntegerArgumentType.getInteger(ctx, "dir"), Double.NaN))
+                            .then(Commands.argument("furthest", DoubleArgumentType.doubleArg())
+                                .executes(ctx -> set(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"),
+                                    DoubleArgumentType.getDouble(ctx, "x"), IntegerArgumentType.getInteger(ctx, "dir"),
+                                    DoubleArgumentType.getDouble(ctx, "furthest"))))))));
     }
 
     private static PlayerRunState run(ServerPlayer player) {
         return player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
     }
 
-    private static int set(CommandSourceStack src, ServerPlayer player, double x, int dir) throws CommandSyntaxException {
+    private static int set(CommandSourceStack src, ServerPlayer player, double x, int dir, double furthest)
+            throws CommandSyntaxException {
         if (dir == 0) throw new com.mojang.brigadier.exceptions.SimpleCommandExceptionType(
             Component.literal("dir must be 1 or -1")).create();
         PlayerRunState run = run(player);
-        run.setNapGate(x, dir);
+        run.setNapGate(x, dir, furthest);
         NapGateData.remember(player, run);
         return show(src, player);
     }
@@ -69,9 +85,10 @@ final class NapGateDebug {
     private static int show(CommandSourceStack src, ServerPlayer player) {
         PlayerRunState r = run(player);
         String line = String.format(
-            "NAPGATE %s gated=%s gateX=%.1f dir=%d playerX=%.1f onTrain=%s lastTrainX=%.1f step=%d | mobKills=%d playerKills=%d echoes=%d "
+            "NAPGATE %s gated=%s gateX=%.1f furthestX=%.1f dir=%d lifeTrainX=[%.1f..%.1f] playerX=%.1f onTrain=%s lastTrainX=%.1f step=%d | mobKills=%d playerKills=%d echoes=%d "
                 + "weapons=%s chestStreak=%d containers=%d booksRead=%d photos=%d shots=%d tamed=%d encountered=%d",
-            player.getGameProfile().getName(), r.napGated(), r.napGateX(), r.napGateDir(), player.getX(),
+            player.getGameProfile().getName(), r.napGated(), r.napGateX(), r.napFurthestX(), r.napGateDir(),
+            r.lifeMinTrainX(), r.lifeMaxTrainX(), player.getX(),
             NapGateData.onTrainLevel(player), NapGateData.lastTrainX(player),
             NapGateData.step(player), r.mobKills(), r.playerKills(), r.echoesKilled(), r.weaponKillsSnapshot(),
             r.chestStreak(), r.containersOpened(), r.booksReadCount(), r.photosTaken(), r.photoShots(),

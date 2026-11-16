@@ -255,6 +255,8 @@ public final class AchievementEvents {
             run.shrinkChestStreak();
             return;
         }
+        // Between the bed and the furthest point reached: a re-rolled chest leaves the streak alone.
+        if (step == 0) return;
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.

@@ -38,13 +38,48 @@ public final class NapGateData extends SavedData {
     private static final String TAG_X = "x";
     private static final String TAG_DIR = "dir";
     private static final String TAG_LAST_TRAIN_X = "lastTrainX";
+    private static final String TAG_FURTHEST = "furthest";
+    private static final String TAG_MIN_X = "minTrainX";
+    private static final String TAG_MAX_X = "maxTrainX";
 
-    /** One player's entry; NaN = not known. {@code dir} 0 = no gate. */
-    private record Entry(double x, int dir, double lastTrainX) {
-        static final Entry EMPTY = new Entry(0.0, 0, Double.NaN);
+    /**
+     * One player's entry; NaN = not known. {@code dir} 0 = no gate. {@code furthest} is the gate's
+     * furthest point ({@link PlayerRunState#napFurthestX}); {@code minX}/{@code maxX} this life's
+     * train-level X range, for the next nap.
+     */
+    record Entry(double x, int dir, double furthest, double lastTrainX, double minX, double maxX) {
+        static final Entry EMPTY = new Entry(0.0, 0, 0.0, Double.NaN, Double.NaN, Double.NaN);
 
         boolean isEmpty() {
-            return dir == 0 && Double.isNaN(lastTrainX);
+            return dir == 0 && Double.isNaN(lastTrainX) && Double.isNaN(minX) && Double.isNaN(maxX);
+        }
+
+        /** This entry having seen the player at train-level {@code tx}. */
+        Entry withTrainX(double tx) {
+            return new Entry(x, dir, furthest, tx,
+                Double.isNaN(minX) ? tx : Math.min(minX, tx), Double.isNaN(maxX) ? tx : Math.max(maxX, tx));
+        }
+
+        CompoundTag toTag() {
+            CompoundTag t = new CompoundTag();
+            if (dir != 0) {
+                t.putDouble(TAG_X, x);
+                t.putInt(TAG_DIR, dir);
+                t.putDouble(TAG_FURTHEST, furthest);
+            }
+            if (!Double.isNaN(lastTrainX)) t.putDouble(TAG_LAST_TRAIN_X, lastTrainX);
+            if (!Double.isNaN(minX)) t.putDouble(TAG_MIN_X, minX);
+            if (!Double.isNaN(maxX)) t.putDouble(TAG_MAX_X, maxX);
+            return t;
+        }
+
+        /** An older entry has no furthest point: it is the bed. */
+        static Entry fromTag(CompoundTag g) {
+            int dir = Integer.signum(g.getInt(TAG_DIR));
+            double x = dir == 0 ? 0.0 : g.getDouble(TAG_X);
+            double furthest = dir == 0 ? 0.0 : g.contains(TAG_FURTHEST) ? g.getDouble(TAG_FURTHEST) : x;
+            return new Entry(x, dir, furthest, optional(g, TAG_LAST_TRAIN_X), optional(g, TAG_MIN_X),
+                optional(g, TAG_MAX_X));
         }
     }
 
@@ -61,9 +96,7 @@ public final class NapGateData extends SavedData {
         NapGateData data = new NapGateData();
         for (String key : tag.getAllKeys()) {
             try {
-                CompoundTag g = tag.getCompound(key);
-                int dir = Integer.signum(g.getInt(TAG_DIR));
-                Entry e = new Entry(dir == 0 ? 0.0 : g.getDouble(TAG_X), dir, optional(g, TAG_LAST_TRAIN_X));
+                Entry e = Entry.fromTag(tag.getCompound(key));
                 if (!e.isEmpty()) data.entries.put(UUID.fromString(key), e);
             } catch (IllegalArgumentException ignored) {
                 // not a player id: skip the entry
@@ -78,15 +111,7 @@ public final class NapGateData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        entries.forEach((id, e) -> {
-            CompoundTag t = new CompoundTag();
-            if (e.dir() != 0) {
-                t.putDouble(TAG_X, e.x());
-                t.putInt(TAG_DIR, e.dir());
-            }
-            if (!Double.isNaN(e.lastTrainX())) t.putDouble(TAG_LAST_TRAIN_X, e.lastTrainX());
-            tag.put(id.toString(), t);
-        });
+        entries.forEach((id, e) -> tag.put(id.toString(), e.toTag()));
         return tag;
     }
 
@@ -98,8 +123,9 @@ public final class NapGateData extends SavedData {
     public static void remember(ServerPlayer player, PlayerRunState run) {
         NapGateData data = get(player.server);
         Entry old = data.entry(player.getUUID());
-        Entry next = new Entry(run.napGated() ? run.napGateX() : 0.0, run.napGated() ? run.napGateDir() : 0,
-            old.lastTrainX());
+        boolean gated = run.napGated();
+        Entry next = new Entry(gated ? run.napGateX() : 0.0, gated ? run.napGateDir() : 0,
+            gated ? run.napFurthestX() : 0.0, old.lastTrainX(), run.lifeMinTrainX(), run.lifeMaxTrainX());
         data.put(player.getUUID(), old, next);
     }
 
@@ -107,7 +133,7 @@ public final class NapGateData extends SavedData {
     static void rememberTrainX(ServerPlayer player, double x) {
         NapGateData data = get(player.server);
         Entry old = data.entry(player.getUUID());
-        data.put(player.getUUID(), old, new Entry(old.x(), old.dir(), x));
+        data.put(player.getUUID(), old, old.withTrainX(x));
     }
 
     private void put(UUID id, Entry old, Entry next) {
@@ -129,7 +155,8 @@ public final class NapGateData extends SavedData {
         Entry e = get(player.server).entries.get(player.getUUID());
         if (e == null) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        if (e.dir() != 0 && !run.napGated()) run.setNapGate(e.x(), e.dir());
+        if (e.dir() != 0 && !run.napGated()) run.setNapGate(e.x(), e.dir(), e.furthest());
+        run.noteTrainRange(e.minX(), e.maxX());
     }
 
     /** A death ends the life, and the gate with it. */
@@ -155,19 +182,22 @@ public final class NapGateData extends SavedData {
 
     /**
      * The X the gate is judged at: the player's own on the train's level, else the last train-level X,
-     * else the gate itself (counts as ahead).
+     * else the gate's furthest point (counts as ahead).
      */
     static double gateX(boolean onTrainLevel, double x, double lastTrainX, double napGateX) {
         if (onTrainLevel && Double.isFinite(x)) return x;
         return Double.isFinite(lastTrainX) ? lastTrainX : napGateX;
     }
 
-    /** -1 when {@code player} is behind their nap point (counters shrink), else +1. */
+    /**
+     * How {@code player}'s count-based counters move now ({@link PlayerRunState#counterStep}): -1
+     * behind the bed, 0 short of the furthest point reached before the nap, else +1.
+     */
     public static int step(ServerPlayer player) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         if (!run.napGated()) return 1;
         boolean on = onTrainLevel(player);
         double last = on ? Double.NaN : lastTrainX(player);
-        return run.counterStep(gateX(on, player.getX(), last, run.napGateX()));
+        return run.counterStep(gateX(on, player.getX(), last, run.napFurthestX()));
     }
 }

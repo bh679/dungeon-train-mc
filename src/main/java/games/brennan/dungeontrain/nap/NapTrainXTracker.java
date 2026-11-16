@@ -24,7 +24,9 @@ public final class NapTrainXTracker {
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             if (player.isSpectator() || !player.isAlive() || !NapGateData.onTrainLevel(player)) continue;
             double x = player.getX();
-            if (Double.isFinite(x)) NapGateData.rememberTrainX(player, x);
+            if (!Double.isFinite(x)) continue;
+            player.getData(games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get()).noteTrainX(x);
+            NapGateData.rememberTrainX(player, x);
         }
     }
 }

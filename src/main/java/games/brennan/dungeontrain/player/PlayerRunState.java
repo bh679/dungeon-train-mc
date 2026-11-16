@@ -322,6 +322,16 @@ public final class PlayerRunState {
      */
     private double napGateX;
     private int napGateDir;
+    /**
+     * The furthest X this life had reached in {@link #napGateDir} when it last napped (never behind
+     * {@link #napGateX}). Between the bed and here the woken world's carriages are re-rolled copies of
+     * ones already cleared, so counters don't move there ({@link #counterStep} 0); past it they count.
+     * Frozen at the nap: the live mark below only feeds the next nap.
+     */
+    private double napFurthestX;
+    /** The lowest and highest X this life has stood at on the train's level; NaN = not known. */
+    private double lifeMinTrainX = Double.NaN;
+    private double lifeMaxTrainX = Double.NaN;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -406,6 +416,7 @@ public final class PlayerRunState {
      * count and, when the count falls below the named list, the latest name with it.
      */
     public int recordTame(ResourceLocation entityType, int step) {
+        if (step == 0) return tamedCount;
         if (step < 0) {
             tamedCount = stepped(tamedCount, step);
             while (tamedAnimals.size() > tamedCount) tamedAnimals.remove(tamedAnimals.size() - 1);
@@ -472,6 +483,9 @@ public final class PlayerRunState {
     private static final String X_CAMERA_FRAMES = "cameraFrames";
     private static final String X_NAP_GATE_X = "napGateX";
     private static final String X_NAP_GATE_DIR = "napGateDir";
+    private static final String X_NAP_FURTHEST_X = "napFurthestX";
+    private static final String X_LIFE_MIN_TRAIN_X = "lifeMinTrainX";
+    private static final String X_LIFE_MAX_TRAIN_X = "lifeMaxTrainX";
 
     /**
      * Every field of this life that {@link #CODEC} leaves out, for a nap: the codec fields already
@@ -521,7 +535,10 @@ public final class PlayerRunState {
         if (napGateDir != 0) {
             t.putDouble(X_NAP_GATE_X, napGateX);
             t.putInt(X_NAP_GATE_DIR, napGateDir);
+            t.putDouble(X_NAP_FURTHEST_X, napFurthestX);
         }
+        if (!Double.isNaN(lifeMinTrainX)) t.putDouble(X_LIFE_MIN_TRAIN_X, lifeMinTrainX);
+        if (!Double.isNaN(lifeMaxTrainX)) t.putDouble(X_LIFE_MAX_TRAIN_X, lifeMaxTrainX);
         return t;
     }
 
@@ -574,6 +591,17 @@ public final class PlayerRunState {
         int dir = t.getInt(X_NAP_GATE_DIR);
         napGateDir = dir == 0 ? 0 : Integer.signum(dir);
         napGateX = napGateDir == 0 ? 0.0 : t.getDouble(X_NAP_GATE_X);
+        // An older nap has no furthest point: it is the bed, as before.
+        napFurthestX = napGateDir == 0 || !t.contains(X_NAP_FURTHEST_X) ? napGateX
+            : further(napGateX, t.getDouble(X_NAP_FURTHEST_X), napGateDir);
+        lifeMinTrainX = finiteOrNaN(t, X_LIFE_MIN_TRAIN_X);
+        lifeMaxTrainX = finiteOrNaN(t, X_LIFE_MAX_TRAIN_X);
+    }
+
+    private static double finiteOrNaN(CompoundTag t, String key) {
+        if (!t.contains(key)) return Double.NaN;
+        double v = t.getDouble(key);
+        return Double.isFinite(v) ? v : Double.NaN;
     }
 
     // --- Nap gate --------------------------------------------------------------------------------
@@ -588,21 +616,78 @@ public final class PlayerRunState {
         return facing < 0 ? -1 : 1;
     }
 
-    /**
-     * Gate this life at a nap taken at {@code x}, heading {@code dir}. A second nap in the same
-     * direction only moves the point further ahead, never back; one heading the other way replaces it.
-     */
+    /** Gate this life at a nap taken at {@code x}, heading {@code dir}, with the bed as its furthest point. */
     public void setNapGate(double x, int dir) {
+        setNapGate(x, dir, x);
+    }
+
+    /**
+     * Gate this life at a nap taken at {@code bedX}, heading {@code dir}, having reached
+     * {@code furthestX} (taken no nearer than the bed). A second nap in the same direction only moves
+     * the bed point and the furthest point further ahead, never back; one heading the other way
+     * replaces both.
+     */
+    public void setNapGate(double bedX, int dir, double furthestX) {
         int d = dir < 0 ? -1 : 1;
-        if (napGateDir == d && (x - napGateX) * d <= 0) return;
-        napGateX = x;
+        double furthest = Double.isFinite(furthestX) ? further(bedX, furthestX, d) : bedX;
+        if (napGateDir == d) {
+            napGateX = further(napGateX, bedX, d);
+            napFurthestX = further(napFurthestX, furthest, d);
+            return;
+        }
+        napGateX = bedX;
+        napFurthestX = furthest;
         napGateDir = d;
+    }
+
+    /** Of {@code a} and {@code b}, the one further along {@code dir}. */
+    private static double further(double a, double b, int dir) {
+        return dir < 0 ? Math.min(a, b) : Math.max(a, b);
+    }
+
+    /** Set only the furthest point of an existing gate (debug); never nearer than the bed. */
+    public void setNapFurthest(double x) {
+        if (napGateDir == 0 || !Double.isFinite(x)) return;
+        napFurthestX = further(napGateX, x, napGateDir);
     }
 
     /** Drop the nap gate (debug only; a death drops it through {@link #resetDeathStats}). */
     public void clearNapGate() {
         napGateX = 0.0;
+        napFurthestX = 0.0;
         napGateDir = 0;
+    }
+
+    public double napFurthestX() { return napFurthestX; }
+
+    /** Widen this life's train-level X range to take in {@code x} ({@code nap/NapTrainXTracker}). */
+    public void noteTrainX(double x) {
+        if (!Double.isFinite(x)) return;
+        lifeMinTrainX = Double.isNaN(lifeMinTrainX) ? x : Math.min(lifeMinTrainX, x);
+        lifeMaxTrainX = Double.isNaN(lifeMaxTrainX) ? x : Math.max(lifeMaxTrainX, x);
+    }
+
+    /** Restore a known range (relog); a NaN end is left as it is. */
+    public void noteTrainRange(double min, double max) {
+        noteTrainX(min);
+        noteTrainX(max);
+    }
+
+    public double lifeMinTrainX() { return lifeMinTrainX; }
+
+    public double lifeMaxTrainX() { return lifeMaxTrainX; }
+
+    /**
+     * The furthest X this life has reached heading {@code dir}, counting a nap taken at {@code bedX}
+     * and any earlier nap's furthest point: what the next nap's gate should remember.
+     */
+    public double furthestReached(double bedX, int dir) {
+        int d = dir < 0 ? -1 : 1;
+        double f = bedX;
+        double live = d < 0 ? lifeMinTrainX : lifeMaxTrainX;
+        if (Double.isFinite(live)) f = further(f, live, d);
+        if (napGateDir == d) f = further(f, napFurthestX, d);
+        return f;
     }
 
     /** True once this life has woken from a nap. */
@@ -613,15 +698,18 @@ public final class PlayerRunState {
     public int napGateDir() { return napGateDir; }
 
     /**
-     * +1 when a count-based counter should grow for activity at {@code x}, -1 when it should shrink:
-     * -1 only behind the nap point of a gated life.
+     * How a count-based counter moves for activity at {@code x}: +1 grows it, 0 leaves it, -1 shrinks
+     * it. For a gated life, -1 behind the bed, 0 from the bed up to the furthest point it had reached
+     * (carriages already cleared, re-rolled), +1 from there on.
      */
     public int counterStep(double x) {
         if (napGateDir == 0) return 1;
-        return (x - napGateX) * napGateDir >= 0 ? 1 : -1;
+        if ((x - napGateX) * napGateDir < 0) return -1;
+        return (x - napFurthestX) * napGateDir >= 0 ? 1 : 0;
     }
 
     private static int stepped(int value, int step) {
+        if (step == 0) return value;
         return Math.max(0, value + (step < 0 ? -1 : 1));
     }
 
@@ -1270,7 +1358,10 @@ public final class PlayerRunState {
         carriagesSinceChest = 0;
         maxCarriagesNoChest = 0;
         napGateX = 0.0;
+        napFurthestX = 0.0;
         napGateDir = 0;
+        lifeMinTrainX = Double.NaN;
+        lifeMaxTrainX = Double.NaN;
     }
 
     /** Reset everything (called on respawn). */
