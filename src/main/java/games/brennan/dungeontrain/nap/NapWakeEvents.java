@@ -11,6 +11,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -67,6 +68,12 @@ public final class NapWakeEvents {
      * through crash recovery): a nap bound to this world is still used up or woken again. No-op when
      * the bootstrap already planned this start.
      */
+    /** Fresh wake state for every start, even if the last server's exit skipped ServerStoppedEvent. */
+    @SubscribeEvent
+    public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        NapWake.clear();
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onServerStarted(ServerStartedEvent event) {
         NapWake.planFor(event.getServer());

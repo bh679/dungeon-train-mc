@@ -99,7 +99,7 @@ public final class NapWake {
                 nap.get().cheated() ? "freeplay" : "survival", nap.get().difficulty(), slot);
             return;
         }
-        if (NapBinding.decide(nap.get(), here, boundWorldExists(server, nap.get()), false)
+        if (NapBinding.decide(nap.get(), here, boundWorldHolds(server, nap.get(), uuid), false)
                 != NapBinding.Decision.WAKE) {
             LOGGER.info("[DungeonTrain] Nap {} is waking in '{}'; not here.", nap.get().napId(), nap.get().wakeLevelId());
             return;
@@ -151,15 +151,15 @@ public final class NapWake {
     }
 
     /**
-     * Whether the world {@code nap} is bound to is still on disk. Naps only wake on an integrated
-     * server, whose world sits in the client's saves folder beside every other save.
+     * Whether the world {@code nap} is bound to still holds the owner's saved life
+     * ({@link NapBoundWorld}). Naps only wake on an integrated server, whose world sits in the
+     * client's saves folder beside every other save.
      */
-    static boolean boundWorldExists(MinecraftServer server, NapSnapshot nap) {
+    static boolean boundWorldHolds(MinecraftServer server, NapSnapshot nap, UUID owner) {
         if (!nap.bound()) return false;
         try {
             Path saves = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
-            Path bound = saves.resolve(nap.wakeLevelId()).normalize();
-            return saves.equals(bound.getParent()) && Files.isRegularFile(bound.resolve("level.dat"));
+            return NapBoundWorld.holdsLife(saves, nap.wakeLevelId(), owner);
         } catch (RuntimeException e) {
             return true; // can't tell: leave it to its own world
         }

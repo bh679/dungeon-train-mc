@@ -22,23 +22,25 @@ public final class NapBinding {
 
     /**
      * @param thisLevelId        save folder of the world starting now
-     * @param boundWorldExists   whether the nap's bound world is still on disk (ignored when unbound
-     *                           or bound here)
+     * @param boundWorldHolds    whether the nap's bound world is still on disk with the owner's
+     *                           player saved in it ({@link NapBoundWorld}; ignored when unbound or
+     *                           bound here). A bound world the player never saved into holds nothing
      * @param thisHasSavedPlayer whether this world already holds saved player data for the owner
      */
-    public static Decision decide(NapSnapshot nap, String thisLevelId, boolean boundWorldExists,
+    public static Decision decide(NapSnapshot nap, String thisLevelId, boolean boundWorldHolds,
                                   boolean thisHasSavedPlayer) {
         if (!nap.bound()) return Decision.WAKE;
         if (nap.wakeLevelId().equals(thisLevelId)) {
             // Reopened (only through crash recovery): if the player saved here, the gear is here.
             return thisHasSavedPlayer ? Decision.CONSUME : Decision.WAKE;
         }
-        // Bound to a world that is gone: nothing can hold the life, so it wakes in the next one.
-        return boundWorldExists ? Decision.IGNORE : Decision.WAKE;
+        // Bound to a world that is gone, or that the game died in before the player was saved:
+        // nothing holds the life, so it wakes (and rebinds) in the next one.
+        return boundWorldHolds ? Decision.IGNORE : Decision.WAKE;
     }
 
     /** Whether the title screen should offer "Reboard" for {@code nap}. */
-    public static boolean waitsForNewWorld(NapSnapshot nap, boolean boundWorldExists) {
-        return !nap.bound() || !boundWorldExists;
+    public static boolean waitsForNewWorld(NapSnapshot nap, boolean boundWorldHolds) {
+        return !nap.bound() || !boundWorldHolds;
     }
 }
