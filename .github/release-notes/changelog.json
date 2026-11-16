@@ -36268,6 +36268,127 @@
       "released": true,
       "released_in": "v0.1844.0",
       "released_at": "2026-11-16T04:30:22Z"
+    },
+    {
+      "id": "zombified-backpack-lock",
+      "version": "0.1846.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui",
+        "balance"
+      ],
+      "title": "Zombified players can no longer reach their backpack",
+      "summary": "While Zombified, your backpack is locked just like the rest of your pack: greyed out, nothing goes in or comes out, and pickups skip it.",
+      "highlights": [
+        "The cure hint no longer pops up over items in your backpack; it shows only on the effect itself."
+      ],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1846.0",
+      "released_at": "2026-11-16T10:47:54Z"
+    },
+    {
+      "id": "darkroom-music-disc-reward",
+      "version": "0.1848.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "advancements"
+      ],
+      "title": "A music disc for a hidden achievement",
+      "summary": "One of the hidden achievements now rewards you with a music disc. Already earned it? Your disc is waiting the next time you join.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "dimensional-carriage-editor-variant-scope",
+      "version": "0.1849.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriage editor fix",
+      "summary": "Block variants you limit to part of a dimensional carriage now stay out of the rest of it.",
+      "highlights": [],
+      "pr": 2692,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "dimensional-carriage-item-fix",
+      "version": "0.1849.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Item fix",
+      "summary": "Fixed an item issue in dimensional carriages.",
+      "highlights": [],
+      "pr": 2693,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "tnt-trap-plates-unpressed",
+      "version": "0.1847.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "TNT traps no longer go off by themselves",
+      "summary": "The TNT dimensional carriage and the TNT and easy-trap carriages could explode the moment they appeared, before anyone stepped on a pressure plate. Their plates now start unpressed, so the traps only fire when you step on them.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "traineditor-dimensional-room",
+      "version": "0.1849.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "A new dimensional carriage room",
+      "summary": "A new room can now turn up behind a dimensional carriage door. See how far it goes.",
+      "highlights": [],
+      "pr": 2691,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "housetown-dimensional-room",
+      "version": "0.1852.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Another new dimensional carriage room",
+      "summary": "One more room can now turn up behind a dimensional carriage door, once you've made it a little way down the line.",
+      "highlights": [],
+      "pr": 2698,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1852.0",
+      "released_at": "2026-11-16T15:32:07Z"
     }
   ]
 }

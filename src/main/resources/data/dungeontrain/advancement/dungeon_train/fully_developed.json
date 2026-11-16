@@ -16,5 +16,8 @@
   },
   "requirements": [
     ["complete"]
-  ]
+  ],
+  "rewards": {
+    "loot": ["dungeontrain:advancements/fully_developed"]
+  }
 }

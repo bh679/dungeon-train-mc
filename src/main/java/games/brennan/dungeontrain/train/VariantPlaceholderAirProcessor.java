@@ -17,10 +17,12 @@ import org.jetbrains.annotations.Nullable;
  * {@code dungeontrain:variant_placeholder} ghost cube and its legacy command-block form
  * ({@link CarriageVariantBlocks#isEmptyPlaceholder}).
  *
- * <p>Belt and braces: a template saved from the editor holds the placeholder at every variant
- * cell, and the variant appliers overwrite each of those cells anyway. What this catches is a
- * stray one — a cell whose variant entry was later removed with the world block left behind —
- * which would otherwise ride out into a live carriage as a translucent cube.</p>
+ * <p>Belt and braces: a template saved from the editor holds, at each variant cell, whichever
+ * entry the editor preview was showing at save time — the placeholder among them — and the
+ * variant appliers overwrite each of those cells anyway (a portal room's copy-scoped cells
+ * included: they are written empty where they do not apply). What this catches is a stray one —
+ * a cell whose variant entry was later removed with the world block left behind — which would
+ * otherwise ride out into a live carriage as a translucent cube.</p>
  *
  * <p>Gated on {@link StagePlacementScope#active()}: editor stamps run outside the scope on
  * purpose (their plots are captured back into templates on save), and there the placeholder
