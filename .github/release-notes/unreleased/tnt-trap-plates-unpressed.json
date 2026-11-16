@@ -1,0 +1,16 @@
+{
+  "id": "tnt-trap-plates-unpressed",
+  "version": "0.1847.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "TNT traps no longer go off by themselves",
+  "summary": "The TNT dimensional carriage and the TNT and easy-trap carriages could explode the moment they appeared, before anyone stepped on a pressure plate. Their plates now start unpressed, so the traps only fire when you step on them.",
+  "highlights": [],
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
