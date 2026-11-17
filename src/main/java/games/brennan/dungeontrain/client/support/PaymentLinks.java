@@ -323,8 +323,13 @@ public final class PaymentLinks {
         return mc == null || mc.getLanguageManager() == null ? null : mc.getLanguageManager().getSelected();
     }
 
+    /**
+     * The name every donation link carries: the player's own, or the friend they chose on the
+     * Contribute screen's "on behalf of" picker ({@link DonationRecipient}).
+     */
     private static String playerName() {
         Minecraft mc = Minecraft.getInstance();
-        return mc != null && mc.getUser() != null ? mc.getUser().getName() : "Player";
+        String self = mc != null && mc.getUser() != null ? mc.getUser().getName() : "Player";
+        return DonationRecipient.nameFor(self);
     }
 }

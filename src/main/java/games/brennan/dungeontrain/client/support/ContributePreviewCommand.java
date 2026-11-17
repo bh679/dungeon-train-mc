@@ -45,7 +45,27 @@ public final class ContributePreviewCommand {
     private static final String FLAG_FILE = "contribute-preview.flag";
     private static final int SETTLE_TICKS = 30;
 
-    private record Step(String name, String state, Function<Screen, Screen> screen) {}
+    /** One shot; {@code setup} runs once the screen is open (the "on behalf of" picker states). */
+    private record Step(String name, String state, Function<Screen, Screen> screen, Runnable setup) {
+        Step(String name, String state, Function<Screen, Screen> screen) {
+            this(name, state, screen, () -> {});
+        }
+    }
+
+    /** Someone else chosen with {@code name} typed, then the host re-laid out and the list opened or not. */
+    private static Runnable gift(String name, boolean listOpen) {
+        return () -> {
+            DonationRecipient.chooseOther();
+            DonationRecipient.setTyped(name);
+            relayoutCurrent();
+            if (listOpen) RecipientPicker.openActive();
+        };
+    }
+
+    private static void relayoutCurrent() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) mc.screen.resize(mc, mc.screen.width, mc.screen.height);
+    }
 
     private static final List<Step> SWEEP = List.of(
             new Step("contribute-none", "none", ContributeScreen::new),
@@ -58,7 +78,20 @@ public final class ContributePreviewCommand {
             new Step("rewards-personal-bottom", "some", CommunityRewardsScreen::new),
             // The relay's real state last: against a local relay with test gifts, Give and ON as players see them.
             new Step("contribute-relay", "relay", ContributeScreen::new),
-            new Step("rewards-relay", "relay", CommunityRewardsScreen::new));
+            new Step("rewards-relay", "relay", CommunityRewardsScreen::new),
+            // The "on behalf of" face picker: list open as yourself, then gifting, then no valid name yet.
+            new Step("recipient-list-self", "some", ContributeScreen::new, RecipientPicker::openActive),
+            new Step("recipient-gifting", "some", ContributeScreen::new, gift("Notch", false)),
+            new Step("recipient-list-gifting", "some", ContributeScreen::new, gift("Notch", true)),
+            new Step("recipient-blocked", "some", ContributeScreen::new, gift("No", true)),
+            new Step("recipient-death-gifting", "give", DonationOptionsScreen::new, gift("Notch", false)),
+            new Step("recipient-rewards-gifting", "give", CommunityRewardsScreen::new, gift("Notch", false)),
+            new Step("recipient-confirm", "some", ContributeScreen::new, () -> {
+                gift("Notch", false).run();
+                SupportTier tier = SupportTier.values()[SupportTier.values().length / 2];
+                Minecraft mc = Minecraft.getInstance();
+                PaymentConfirmScreen.tryOpen(mc.screen, "preview", tier.analyticsTarget(), PaymentLinks.tierUrl(tier));
+            }));
 
     private static List<Step> queue = List.of();
     private static int ticks;
@@ -135,6 +168,7 @@ public final class ContributePreviewCommand {
         Step s = queue.get(0);
         apply(s.state());
         mc.setScreen(s.screen().apply(new TitleScreen()));
+        s.setup().run();
         if (s.name().endsWith("-bottom") && mc.screen instanceof CommunityRewardsScreen rewards) rewards.scrollToEnd();
         ticks = 0;
     }
@@ -151,6 +185,7 @@ public final class ContributePreviewCommand {
         queue.remove(0);
         if (queue.isEmpty()) {
             apply("relay");
+            DonationRecipient.reset();
             CommunityRewards.devForceGive = false;
             mc.setScreen(new TitleScreen());
             LOGGER.info("[DungeonTrain] contribute preview sweep done");
