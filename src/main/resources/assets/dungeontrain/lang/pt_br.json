@@ -1579,6 +1579,8 @@
   "gui.dungeontrain.support.confirm.body.stripe": "No seu navegador, em brennan.games. Seu nome do Minecraft já vai preenchido para o quadro.",
   "gui.dungeontrain.support.confirm.body.patreon": "No seu navegador, em patreon.com. Qualquer valor, cancele quando quiser.",
   "gui.dungeontrain.support.confirm.body.revolut": "No seu navegador, em revolut.me. Seu nome do Minecraft vai como nota para o quadro.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "No seu navegador, em brennan.games. O nome que você escolheu já vai preenchido para o quadro.",
+  "gui.dungeontrain.support.confirm.body.revolut.gift": "No seu navegador, em revolut.me. O nome que você escolheu vai como nota para o quadro.",
   "gui.dungeontrain.support.confirm.open": "Abrir",
   "gui.dungeontrain.support.confirm.cancel": "Cancelar",
   "gui.dungeontrain.support.confirm.body.stripe_direct": "No seu navegador, na página de pagamento do próprio Stripe.",

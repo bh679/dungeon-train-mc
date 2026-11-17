@@ -163,12 +163,16 @@ public final class ContributePanel {
         int lh = font.lineHeight;
         int top = y;
 
-        // "Gifting for Steve" (or "Enter a Minecraft name") while the face picker is on Someone else.
+        // "Gifting for Steve" (or "Enter a Minecraft name") while the face picker is on Someone else:
+        // right-aligned on the first group label's line, so the column keeps its height. Only a label
+        // too long to share its line pushes the status onto a row of its own.
+        if (commit) recipientY = -1;
         if (DonationRecipient.isOther()) {
+            Component first = Component.translatable(PaymentLinks.tiersAvailable()
+                    ? "gui.dungeontrain.contribute.group.dev" : "gui.dungeontrain.contribute.group.everyone");
+            boolean ownRow = font.width(first) + GAP * 2 + RecipientPicker.statusWidth(font) > w;
             if (commit) { recipientX = x + w; recipientY = y; }
-            y += lh + GAP;
-        } else if (commit) {
-            recipientY = -1;
+            if (ownRow) y += lh + GAP;
         }
 
         // The thank-you this player already has waiting, in boosts: "30 Book Boosts waiting".

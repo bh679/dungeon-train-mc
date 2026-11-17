@@ -1531,6 +1531,8 @@
   "gui.dungeontrain.support.confirm.body.stripe": "Dalam pelayar anda, di brennan.games. Nama Minecraft anda sudah diisi untuk papan.",
   "gui.dungeontrain.support.confirm.body.patreon": "Dalam pelayar anda, di patreon.com. Apa jua jumlah, batal bila-bila masa.",
   "gui.dungeontrain.support.confirm.body.revolut": "Dalam pelayar anda, di revolut.me. Nama Minecraft anda ditambah sebagai nota untuk papan.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "Dalam pelayar anda, di brennan.games. Nama yang anda pilih sudah diisi untuk papan.",
+  "gui.dungeontrain.support.confirm.body.revolut.gift": "Dalam pelayar anda, di revolut.me. Nama yang anda pilih ditambah sebagai nota untuk papan.",
   "gui.dungeontrain.support.confirm.open": "Buka",
   "gui.dungeontrain.support.confirm.cancel": "Batal",
   "gui.dungeontrain.support.confirm.body.stripe_direct": "Dalam pelayar anda, di halaman pembayaran Stripe sendiri.",

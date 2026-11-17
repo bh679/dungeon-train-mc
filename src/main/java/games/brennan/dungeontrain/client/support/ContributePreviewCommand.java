@@ -57,6 +57,7 @@ public final class ContributePreviewCommand {
         return () -> {
             DonationRecipient.chooseOther();
             DonationRecipient.setTyped(name);
+            RecipientFaces.of(name, true);
             relayoutCurrent();
             if (listOpen) RecipientPicker.openActive();
         };
@@ -96,6 +97,7 @@ public final class ContributePreviewCommand {
     private static List<Step> queue = List.of();
     private static int ticks;
     private static int waitTicks;
+    private static int screenWaitTicks;
     private static String grabName;
 
     private ContributePreviewCommand() {}
@@ -147,7 +149,17 @@ public final class ContributePreviewCommand {
                 mc.setScreen(new TitleScreen());
                 return;
             }
-            if (!(mc.screen instanceof TitleScreen)) return;
+            // A fresh run dir opens Discord Presence's network-consent prompt over the title: close it
+            // unanswered (nothing is granted), as a player pressing Esc would.
+            if (mc.screen != null && mc.screen.getClass().getSimpleName().equals("NetworkConsentScreen")) {
+                mc.screen.onClose();
+                return;
+            }
+            if (!(mc.screen instanceof TitleScreen)) {
+                if (++screenWaitTicks % 200 == 1) LOGGER.info("[DungeonTrain] contribute preview waiting on {}",
+                        mc.screen == null ? "no screen" : mc.screen.getClass().getName());
+                return;
+            }
             // Shoot what players see: wait (up to 15 s) for the relay's links, which carry the tiers.
             games.brennan.dungeontrain.client.links.OfficialLinks.ensureFetched();
             if (PaymentLinks.tiersAvailable() == false && ++waitTicks < 300) return;
@@ -161,7 +173,9 @@ public final class ContributePreviewCommand {
             begin(mc);
             return;
         }
-        if (++ticks == SETTLE_TICKS) grabName = queue.get(0).name() + ".png";
+        // The picker's steps wait longer: a friend's face is a network lookup.
+        int settle = queue.get(0).name().startsWith("recipient") ? SETTLE_TICKS * 4 : SETTLE_TICKS;
+        if (++ticks == settle) grabName = queue.get(0).name() + ".png";
     }
 
     private static void begin(Minecraft mc) {

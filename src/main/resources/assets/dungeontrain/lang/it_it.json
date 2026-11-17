@@ -1579,6 +1579,8 @@
   "gui.dungeontrain.support.confirm.body.stripe": "Nel tuo browser, su brennan.games. Il tuo nome Minecraft è già inserito per la bacheca.",
   "gui.dungeontrain.support.confirm.body.patreon": "Nel tuo browser, su patreon.com. Qualsiasi importo, annulli quando vuoi.",
   "gui.dungeontrain.support.confirm.body.revolut": "Nel tuo browser, su revolut.me. Il tuo nome Minecraft viene aggiunto come nota per la bacheca.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "Nel tuo browser, su brennan.games. Il nome che hai scelto è già inserito per la bacheca.",
+  "gui.dungeontrain.support.confirm.body.revolut.gift": "Nel tuo browser, su revolut.me. Il nome che hai scelto viene aggiunto come nota per la bacheca.",
   "gui.dungeontrain.support.confirm.open": "Apri",
   "gui.dungeontrain.support.confirm.cancel": "Annulla",
   "gui.dungeontrain.support.confirm.body.stripe_direct": "Nel tuo browser, sulla pagina di pagamento di Stripe.",

@@ -1820,6 +1820,8 @@
   "gui.dungeontrain.support.confirm.body.stripe": "În browserul tău, pe brennan.games. Numele tău din Minecraft este deja completat pentru panou.",
   "gui.dungeontrain.support.confirm.body.patreon": "În browserul tău, pe patreon.com. Orice sumă, anulezi oricând.",
   "gui.dungeontrain.support.confirm.body.revolut": "În browserul tău, pe revolut.me. Numele tău din Minecraft este adăugat ca notă pentru panou.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "În browserul tău, pe brennan.games. Numele ales este deja completat pentru panou.",
+  "gui.dungeontrain.support.confirm.body.revolut.gift": "În browserul tău, pe revolut.me. Numele ales este adăugat ca notă pentru panou.",
   "gui.dungeontrain.support.confirm.open": "Deschide",
   "gui.dungeontrain.support.confirm.cancel": "Anulează",
   "gui.dungeontrain.support.confirm.body.stripe_direct": "În browserul tău, pe pagina de plată a Stripe.",

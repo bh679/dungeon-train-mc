@@ -1531,6 +1531,8 @@
   "gui.dungeontrain.support.confirm.body.stripe": "Sa browser mo, sa brennan.games. Nakalagay na ang Minecraft name mo para sa board.",
   "gui.dungeontrain.support.confirm.body.patreon": "Sa browser mo, sa patreon.com. Kahit magkano, puwedeng kanselahin anumang oras.",
   "gui.dungeontrain.support.confirm.body.revolut": "Sa browser mo, sa revolut.me. Idadagdag ang Minecraft name mo bilang note para sa board.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "Sa browser mo, sa brennan.games. Nakalagay na ang pangalang pinili mo para sa board.",
+  "gui.dungeontrain.support.confirm.body.revolut.gift": "Sa browser mo, sa revolut.me. Idadagdag ang pangalang pinili mo bilang note para sa board.",
   "gui.dungeontrain.support.confirm.open": "Buksan",
   "gui.dungeontrain.support.confirm.cancel": "Kanselahin",
   "gui.dungeontrain.support.confirm.body.stripe_direct": "Sa browser mo, sa sariling checkout page ng Stripe.",

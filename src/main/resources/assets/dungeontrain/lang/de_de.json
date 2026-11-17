@@ -1579,6 +1579,8 @@
   "gui.dungeontrain.support.confirm.body.stripe": "In deinem Browser, auf brennan.games. Dein Minecraft-Name ist für die Tafel schon eingetragen.",
   "gui.dungeontrain.support.confirm.body.patreon": "In deinem Browser, auf patreon.com. Beliebiger Betrag, jederzeit kündbar.",
   "gui.dungeontrain.support.confirm.body.revolut": "In deinem Browser, auf revolut.me. Dein Minecraft-Name wird als Notiz für die Tafel angehängt.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "In deinem Browser, auf brennan.games. Der gewählte Name ist für die Tafel schon eingetragen.",
+  "gui.dungeontrain.support.confirm.body.revolut.gift": "In deinem Browser, auf revolut.me. Der gewählte Name wird als Notiz für die Tafel angehängt.",
   "gui.dungeontrain.support.confirm.open": "Öffnen",
   "gui.dungeontrain.support.confirm.cancel": "Abbrechen",
   "gui.dungeontrain.support.confirm.body.stripe_direct": "In deinem Browser, auf Stripes eigener Kassenseite.",

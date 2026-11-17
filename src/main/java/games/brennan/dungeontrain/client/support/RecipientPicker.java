@@ -223,6 +223,13 @@ public final class RecipientPicker {
         return mc.getUser() != null ? mc.getUser().getName() : "Player";
     }
 
+    /** The widest the status line can be for the current name, for a host deciding where it fits. */
+    public static int statusWidth(Font font) {
+        String name = DonationRecipient.typed().isEmpty() ? "MMMMMMMMMMMMMMMM" : DonationRecipient.typed();
+        return Math.max(font.width(Component.translatable("gui.dungeontrain.contribute.recipient.gifting", name)),
+                font.width(Component.translatable("gui.dungeontrain.contribute.recipient.enter_name")));
+    }
+
     /**
      * The one status line under the header while "Someone else" is chosen: green "Gifting for Steve",
      * or red "Enter a Minecraft name" until a valid one is typed. Draws nothing for the player themself.
