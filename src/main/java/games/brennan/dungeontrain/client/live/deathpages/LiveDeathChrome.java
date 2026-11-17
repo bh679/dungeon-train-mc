@@ -6,7 +6,7 @@ import net.minecraft.network.chat.Component;
 
 /**
  * What the Live Eye death pages borrow from {@code NarrativeDeathScreen}, so they draw with its
- * fade, tiles, bevels and train instead of copies of them.
+ * fade, tiles and bevels instead of copies of them.
  */
 public interface LiveDeathChrome {
 
@@ -17,9 +17,6 @@ public interface LiveDeathChrome {
 
     /** The transition's current alpha, 0..1, for things drawn without a colour (skin faces). */
     float alpha();
-
-    /** The page's train across the content column. */
-    void train(GuiGraphics g, int left, int w, int y);
 
     /** One stat tile: {@code value} over {@code label}, centred on {@code centerX}, {@code cw} wide. */
     void cell(GuiGraphics g, int centerX, int y, String value, Component label, int cw);

@@ -688,6 +688,40 @@ public record WorldGenCycle(long startX, int owGap,
         return i < 0 ? Long.MIN_VALUE : worldOf(worldX, layout.start(i) + local);
     }
 
+    /**
+     * Where {@code worldX} sits in the band layout: which side of the anchor, which doubling run, which
+     * slot and how far into it. Ahead of the anchor this follows from X alone; behind it the same X
+     * lands in a different band once {@link #reverseSlide} differs, so a nap keeps this as well as X.
+     *
+     * @param reversed true behind the anchor (the reversed cycle)
+     * @param run      doubling run index {@code k}
+     * @param slot     layout slot index
+     * @param local    base blocks into the slot (world blocks over {@code 2^run})
+     */
+    public record BandPosition(boolean reversed, int run, int slot, long local) {}
+
+    /** {@link BandPosition} of {@code worldX}, or null with no layout or inside the overworld buffer. */
+    public BandPosition bandPosition(long worldX) {
+        if (layout == null) return null;
+        int i = slotAt(worldX);
+        if (i < 0) return null;
+        return new BandPosition(worldX < startX, runAt(worldX), i, baseAt(worldX) - layout.start(i));
+    }
+
+    /**
+     * The world X at {@code p} under this cycle and the live {@link #reverseSlide}, or
+     * {@link Long#MIN_VALUE} when {@code p} does not fit this layout (no layout, a slot or depth it does
+     * not have, an absurd run). The inverse of {@link #bandPosition}.
+     */
+    public long worldXOf(BandPosition p) {
+        if (layout == null || p == null) return Long.MIN_VALUE;
+        if (p.slot() < 0 || p.slot() >= layout.count() || p.run() < 0 || p.run() > 40) return Long.MIN_VALUE;
+        if (p.local() < 0L || p.local() >= layout.length(p.slot())) return Long.MIN_VALUE;
+        long u = layout.start(p.slot()) + p.local();
+        long low = p.reversed() ? reversedRunLowX(p.run()) : startX + CycleLayout.runStart(p.run(), layout.period());
+        return low + (u << p.run());
+    }
+
     /** Doubling scale ({@code 2^run}) at {@code worldX}: world blocks per base block. 1 without a layout. */
     public long runScaleAt(int worldX) {
         return layout == null ? 1L : 1L << runAt(worldX);

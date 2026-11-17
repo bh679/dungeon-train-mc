@@ -69,7 +69,7 @@
       "min_deaths": 2
     },
     "question": "Sono tutte buone domande",
-    "narration": "Questi non sono i segni di una sola vita. Attraverso tutte le {deaths} —ogni oscurità su cui sei salito, ogni volta che la linea ti ha preso e ciò nonostante sei tornato—, questo è l'intero tuo viaggio."
+    "narration": "Questi non sono i segni di una sola vita. Attraverso tutte le {deaths}, ogni oscurità su cui sei salito, ogni volta che la linea ti ha preso e ciò nonostante sei tornato, questo è l'intero tuo viaggio."
   },
   {
     "page": "lives",
@@ -168,7 +168,7 @@
     "page": "deeds",
     "weight": 2,
     "question": "Perché sei qui?",
-    "narration": "{mobs} creature caddero davanti a te e {hearts} cuori caddero da te. Ti sei imbattuto in {met} anime nell'oscurità —a {slain} hai posto fine, {friends} hai conservato— e poi è toccato a te."
+    "narration": "{mobs} creature caddero davanti a te e {hearts} cuori caddero da te. Ti sei imbattuto in {met} anime nell'oscurità, a {slain} hai posto fine, {friends} hai conservato, e poi è toccato a te."
   },
   {
     "page": "deeds",
@@ -192,7 +192,7 @@
       "min_slain": 5
     },
     "question": "Con cosa hai risposto all'oscurità?",
-    "narration": "Delle {met} che hai incontrato, {slain} ne hai abbattute —e {mobs} creature in più nell'oscurità, per giunta— al costo di {hearts} cuori, e {friends} hai risparmiato per chiamarli amici. La linea non lo chiama omicidio."
+    "narration": "Delle {met} che hai incontrato, {slain} ne hai abbattute, e {mobs} creature in più nell'oscurità, per giunta, al costo di {hearts} cuori, e {friends} hai risparmiato per chiamarli amici. La linea non lo chiama omicidio."
   },
   {
     "page": "gear",
@@ -216,7 +216,7 @@
       "max_loot": 9
     },
     "question": "Cosa dovresti fare?",
-    "narration": "Una manciata di casse aperte —{loot} in tutto— e una lama sempre a portata. La linea è generosa con chi si ferma; tu ti sei fermato appena."
+    "narration": "Una manciata di casse aperte, {loot} in tutto, e una lama sempre a portata. La linea è generosa con chi si ferma; tu ti sei fermato appena."
   },
   {
     "page": "gear",
@@ -297,7 +297,7 @@
       "min_deaths": 2
     },
     "question": "Salirai di nuovo, o lascerai che il binario ti trattenga?",
-    "narration": "Il fischio risuona già, lontano davanti. Non ti aspetta —non l'ha mai fatto—, eppure eccoti qui, a decidere di seguirlo.",
+    "narration": "Il fischio risuona già, lontano davanti. Non ti aspetta, non l'ha mai fatto, eppure eccoti qui, a decidere di seguirlo.",
     "epitaph": "il {deaths}º a cadere. la linea prosegue."
   },
   {

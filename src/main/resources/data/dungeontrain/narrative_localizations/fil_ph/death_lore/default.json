@@ -3,7 +3,7 @@
     "page": "fall",
     "weight": 3,
     "question": "Ano ang Dungeon Train?",
-    "narration": "Bagon {carriage}. Doon ka inabot ng dilim. Kilala mo na ba ito ngayon? Hindi humihinto ang Dungeon Train — patuloy lang itong nagpapatuloy, palalim, magpakailanman."
+    "narration": "Bagon {carriage}. Doon ka inabot ng dilim. Kilala mo na ba ito ngayon? Hindi humihinto ang Dungeon Train, patuloy lang itong nagpapatuloy, palalim, magpakailanman."
   },
   {
     "page": "fall",
@@ -17,19 +17,19 @@
     "weight": 1,
     "conditions": { "max_carriage": 3 },
     "question": "Ano ang Dungeon Train?",
-    "narration": "Bagon {carriage}. Katatapak lang, at inabot ka na ng dilim. Matiyaga ang riles — kaya nitong maghintay."
+    "narration": "Bagon {carriage}. Katatapak lang, at inabot ka na ng dilim. Matiyaga ang riles, kaya nitong maghintay."
   },
   {
     "page": "deeds",
     "weight": 3,
     "question": "Bakit ka naririto?",
-    "narration": "Bumagsak sa iyo ang {mobs} bagay sa dilim, at nagdurugo ka nang {hearts} puso para rito.\nSa {met} kaluluwang natagpuan mo, {slain} ang iyong winakasan — at {friends} ang tinawag mong kaibigan."
+    "narration": "Bumagsak sa iyo ang {mobs} bagay sa dilim, at nagdurugo ka nang {hearts} puso para rito.\nSa {met} kaluluwang natagpuan mo, {slain} ang iyong winakasan, at {friends} ang tinawag mong kaibigan."
   },
   {
     "page": "gear",
     "weight": 3,
     "question": "Ano ang dapat mong gawin?",
-    "narration": "Bakal at talim, tinipon mula sa dilim at dinala nang ganito kalayo. Wala ni isa rito ang sapat — baka hindi naman iyon ang punto."
+    "narration": "Bakal at talim, tinipon mula sa dilim at dinala nang ganito kalayo. Wala ni isa rito ang sapat, baka hindi naman iyon ang punto."
   },
   {
     "page": "gear",
@@ -57,7 +57,7 @@
     "weight": 3,
     "conditions": { "min_deaths": 2 },
     "question": "Mabubuting tanong ang mga ito",
-    "narration": "Hindi ito ang mga marka ng iisang buhay. Sa lahat ng {deaths} — bawat dilim na sinakyan mo, bawat pagkuha sa iyo ng riles at muli ka pa ring bumalik — ito ang kabuuan ng iyong paglalakbay."
+    "narration": "Hindi ito ang mga marka ng iisang buhay. Sa lahat ng {deaths}, bawat dilim na sinakyan mo, bawat pagkuha sa iyo ng riles at muli ka pa ring bumalik, ito ang kabuuan ng iyong paglalakbay."
   },
   {
     "page": "lives",
@@ -65,7 +65,7 @@
     "conditions": { "min_deaths": 1, "max_deaths": 1 },
     "question": "Ganoon ba kadaling maubos ang isang buhay?",
     "subline": "ang iyong unang pagbagsak sa riles.",
-    "narration": "Wala nang ibang buhay na maitutumbas dito — hindi pa. Ito ang buo mong sarili: lahat ng ginawa simula nang una kang sumakay. Aalalahanin ito ng riles. Dapat mo rin."
+    "narration": "Wala nang ibang buhay na maitutumbas dito, hindi pa. Ito ang buo mong sarili: lahat ng ginawa simula nang una kang sumakay. Aalalahanin ito ng riles. Dapat mo rin."
   },
   {
     "page": "lives",
@@ -79,16 +79,16 @@
     "weight": 3,
     "conditions": { "min_deaths": 2 },
     "question": "Sasakay ka bang muli, o hahakbang sa katahimikan?",
-    "narration": "Walang laman ang plataporma. Tumutunog ang pito sa malayong dulo ng riles. Tumatakbo ito nang walang katapusan — at gayundin, tila, ikaw.",
+    "narration": "Walang laman ang plataporma. Tumutunog ang pito sa malayong dulo ng riles. Tumatakbo ito nang walang katapusan, at gayundin, tila, ikaw.",
     "epitaph": "ang ika-{deaths} bumagsak. baka hindi ang huli."
   },
   {
     "page": "platform",
     "weight": 1,
     "conditions": { "min_deaths": 1, "max_deaths": 1 },
-    "question": "Sasakay ka bang muli — ngayong alam mo na kung paano ito magtatapos?",
+    "question": "Sasakay ka bang muli, ngayong alam mo na kung paano ito magtatapos?",
     "narration": "Walang laman ang plataporma, tulad noong una kang sumakay. Tumutunog ang pito sa malayong dulo ng riles. Bumagsak ka nang minsan. Kung may pangalawang pagkakataon ay, tulad ng dati, nasa iyong pagpapasya.",
-    "epitaph": "ang unang bumagsak. matiyaga ang riles — hihintayin nito ang iba."
+    "epitaph": "ang unang bumagsak. matiyaga ang riles, hihintayin nito ang iba."
   },
   {
     "page": "platform",
@@ -96,14 +96,14 @@
     "conditions": { "min_deaths": 20 },
     "question": "Kailangan mo pa bang itanong?",
     "narration": "Kilala na ng plataporma ang iyong mukha ngayon. Tumutunog ang pito sa paraang lagi nitong ginagawa. Alam mo na kung ano ang susunod.",
-    "epitaph": "ang ika-{deaths} bumagsak — at hindi, tila, ang huli."
+    "epitaph": "ang ika-{deaths} bumagsak, at hindi, tila, ang huli."
   },
 
   {
     "page": "fall",
     "weight": 2,
     "question": "Ano ang Dungeon Train?",
-    "narration": "Bagon {carriage}. Naghihintay na roon ang dilim mula pa noon — dumating ka lang para makatagpo ito."
+    "narration": "Bagon {carriage}. Naghihintay na roon ang dilim mula pa noon, dumating ka lang para makatagpo ito."
   },
   {
     "page": "fall",
@@ -146,7 +146,7 @@
     "page": "deeds",
     "weight": 2,
     "question": "Bakit ka naririto?",
-    "narration": "{mobs} bagay ang bumagsak sa iyo at {hearts} puso ang bumagsak mula sa iyo. Tumawid ka ng {met} pang kaluluwa sa dilim — winakasan ang {slain}, itinago ang {friends} — at pagkatapos ay ikaw naman."
+    "narration": "{mobs} bagay ang bumagsak sa iyo at {hearts} puso ang bumagsak mula sa iyo. Tumawid ka ng {met} pang kaluluwa sa dilim, winakasan ang {slain}, itinago ang {friends}, at pagkatapos ay ikaw naman."
   },
   {
     "page": "deeds",
@@ -166,28 +166,28 @@
     "weight": 1,
     "conditions": { "min_slain": 5 },
     "question": "Ano ang isinagot mo sa dilim?",
-    "narration": "Sa {met} na nakilala mo, {slain} ang pinabagsak mo — {mobs} pang bagay sa dilim bukod pa — para sa {hearts} puso, at {friends} ang pinatawad mong tawaging kaibigan. Hindi ito tinatawag ng riles na pagpatay."
+    "narration": "Sa {met} na nakilala mo, {slain} ang pinabagsak mo, {mobs} pang bagay sa dilim bukod pa, para sa {hearts} puso, at {friends} ang pinatawad mong tawaging kaibigan. Hindi ito tinatawag ng riles na pagpatay."
   },
 
   {
     "page": "gear",
     "weight": 2,
     "question": "Ano ang dapat mong gawin?",
-    "narration": "Tinipon mo ang lahat ng kaya mong dalhin mula sa mga bagon. Hinahayaan kang itago ito ng riles — wala itong gamit sa kargamento, para lamang sa mga pasahero."
+    "narration": "Tinipon mo ang lahat ng kaya mong dalhin mula sa mga bagon. Hinahayaan kang itago ito ng riles, wala itong gamit sa kargamento, para lamang sa mga pasahero."
   },
   {
     "page": "gear",
     "weight": 1,
     "conditions": { "max_loot": 0 },
     "question": "Ano ang dapat mong gawin?",
-    "narration": "Ni isang kahon ay hindi mo binasag sa riles — dala mo lang ang isinakay mo, at itinaga ito hanggang sa dulo. Itinatago ng dilim ang ayaw mong kunin."
+    "narration": "Ni isang kahon ay hindi mo binasag sa riles, dala mo lang ang isinakay mo, at itinaga ito hanggang sa dulo. Itinatago ng dilim ang ayaw mong kunin."
   },
   {
     "page": "gear",
     "weight": 1,
     "conditions": { "max_loot": 9 },
     "question": "Ano ang dapat mong gawin?",
-    "narration": "Ilang kahon lang ang nabuksan — {loot} lahat-lahat — at isang talim na itinabi nang malapit. Mapagbigay ang riles sa mga humihinto; halos hindi ka nagpahinga."
+    "narration": "Ilang kahon lang ang nabuksan, {loot} lahat-lahat, at isang talim na itinabi nang malapit. Mapagbigay ang riles sa mga humihinto; halos hindi ka nagpahinga."
   },
   {
     "page": "gear",
@@ -201,7 +201,7 @@
     "weight": 1,
     "conditions": { "max_books": 0 },
     "question": "Ano ang dapat mong gawin?",
-    "narration": "Ni isang pahina ay hindi binaligtad — bakal lamang ang tinipon at itinaga. Itinatago ng riles ang mga kuwento nito para sa mga huminto para magbasa."
+    "narration": "Ni isang pahina ay hindi binaligtad, bakal lamang ang tinipon at itinaga. Itinatago ng riles ang mga kuwento nito para sa mga huminto para magbasa."
   },
   {
     "page": "gear",
@@ -237,7 +237,7 @@
     "weight": 1,
     "conditions": { "min_deaths": 5 },
     "question": "Bakit ka patuloy na sumasakay?",
-    "narration": "{deaths} kamatayan ang nasa likod mo at ang parehong pito sa unahan. Hindi ka na pasahero — bahagi ka na ng talatakdaan."
+    "narration": "{deaths} kamatayan ang nasa likod mo at ang parehong pito sa unahan. Hindi ka na pasahero, bahagi ka na ng talatakdaan."
   },
   {
     "page": "lives",
@@ -252,7 +252,7 @@
     "weight": 2,
     "conditions": { "min_deaths": 2 },
     "question": "Sasakay ka bang muli, o hahayaang panatilihin ka ng plataporma?",
-    "narration": "Tumutunog na ang pito, malayo sa unahan. Hindi ito naghihintay sa iyo — kailanman ay hindi — at gayunpaman nakatayo ka rito, nagpapasyang sumunod.",
+    "narration": "Tumutunog na ang pito, malayo sa unahan. Hindi ito naghihintay sa iyo, kailanman ay hindi, at gayunpaman nakatayo ka rito, nagpapasyang sumunod.",
     "epitaph": "ang ika-{deaths} bumagsak. nagpapatuloy ang riles."
   },
   {
@@ -269,6 +269,6 @@
     "conditions": { "min_deaths": 5 },
     "question": "Kailangan pa bang magtanong ang riles?",
     "narration": "Alam mo na ang bigat ng pinto, ang lamig ng hakbang. Isa nang lugar na binibisita mo lang ang dilim ngayon.",
-    "epitaph": "ang ika-{deaths} bumagsak — isang suki ng riles."
+    "epitaph": "ang ika-{deaths} bumagsak, isang suki ng riles."
   }
 ]

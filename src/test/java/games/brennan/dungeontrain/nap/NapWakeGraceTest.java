@@ -1,0 +1,81 @@
+package games.brennan.dungeontrain.nap;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** {@link NapWakeGrace}: held through the placement, then 10 seconds more. */
+final class NapWakeGraceTest {
+
+    @AfterEach
+    void reset() {
+        NapWakeGrace.clear();
+    }
+
+    @Test
+    @DisplayName("the grace lasts while placement is pending and 200 ticks after")
+    void closesTenSecondsAfterPlacement() {
+        UUID player = UUID.randomUUID();
+        UUID other = UUID.randomUUID();
+        NapWakeGrace.open(player);
+        assertTrue(NapWakeGrace.isActive(player));
+        assertFalse(NapWakeGrace.isActive(other));
+
+        for (int i = 0; i < 500; i++) NapWakeGrace.tick(p -> true);
+        assertTrue(NapWakeGrace.isActive(player), "still being placed");
+
+        for (int i = 0; i < NapWakeGrace.AFTER_PLACEMENT_TICKS - 1; i++) NapWakeGrace.tick(p -> false);
+        assertTrue(NapWakeGrace.isActive(player));
+        NapWakeGrace.tick(p -> false);
+        assertFalse(NapWakeGrace.isActive(player), "closed after 200 ticks on the deck");
+    }
+
+    @Test
+    @DisplayName("logging out ends it")
+    void closeEnds() {
+        UUID player = UUID.randomUUID();
+        NapWakeGrace.open(player);
+        NapWakeGrace.close(player);
+        assertFalse(NapWakeGrace.isActive(player));
+    }
+
+    @Test
+    @DisplayName("during the grace only state triggers are refused; events and unknowns as designed")
+    void refusesOnlyWakeArtefacts() {
+        UUID player = UUID.randomUUID();
+        assertFalse(NapWakeGrace.refuses(player, "minecraft:location"), "no grace, nothing refused");
+        NapWakeGrace.open(player);
+        assertTrue(NapWakeGrace.refuses(player, "minecraft:location"));
+        assertTrue(NapWakeGrace.refuses(player, "minecraft:inventory_changed"));
+        assertTrue(NapWakeGrace.refuses(player, "dungeontrain:biomes_visited"));
+        assertTrue(NapWakeGrace.refuses(player, null));
+        assertFalse(NapWakeGrace.refuses(player, "dungeontrain:gameplay_action"));
+        assertFalse(NapWakeGrace.refuses(player, "minecraft:player_killed_entity"));
+        assertFalse(NapWakeGrace.refuses(player, "dungeontrain:killed_echo"));
+    }
+
+    @Test
+    @DisplayName("every registered DT trigger is classed as wake state or player event, once")
+    void everyDtTriggerIsClassified() {
+        java.util.List<String> unclassified = new java.util.ArrayList<>();
+        java.util.List<String> both = new java.util.ArrayList<>();
+        for (var entry : games.brennan.dungeontrain.advancement.ModAdvancementTriggers.TRIGGERS.getEntries()) {
+            String id = entry.getId().toString();
+            boolean state = NapWakeGrace.STATE_TRIGGERS.contains(id);
+            boolean evt = NapWakeGrace.EVENT_TRIGGERS.contains(id);
+            if (!state && !evt) unclassified.add(id);
+            if (state && evt) both.add(id);
+        }
+        assertTrue(unclassified.isEmpty(), "Add each to NapWakeGrace.STATE_TRIGGERS (refused while a nap wakes) "
+            + "or EVENT_TRIGGERS (allowed): " + unclassified);
+        assertTrue(both.isEmpty(), "In both NapWakeGrace lists: " + both);
+        for (String id : NapWakeGrace.EVENT_TRIGGERS) {
+            assertTrue(id.startsWith("dungeontrain:"), "EVENT_TRIGGERS is for DT triggers only: " + id);
+        }
+    }
+}

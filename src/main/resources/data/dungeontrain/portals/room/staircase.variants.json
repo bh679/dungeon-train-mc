@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 10,
+  "mirror": { "x": false, "y": false, "z": true, "v": true },
+  "variants": {
+    "17,15,12": [{"state": "dungeontrain:stage_stone_bricks_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["east"]}}],
+    "23,21,12": [{"state": "dungeontrain:stage_stone_bricks_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["east"]}}],
+    "32,30,12": [{"state": "dungeontrain:stage_stone_bricks_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["east"]}}],
+    "37,35,12": [{"state": "dungeontrain:stage_stone_bricks_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["east"]}}],
+    "17,14,12": ["dungeontrain:stage_stone_cracked", "dungeontrain:variant_placeholder"],
+    "23,20,12": ["dungeontrain:stage_stone_cracked", "dungeontrain:variant_placeholder"],
+    "32,29,12": ["dungeontrain:stage_stone_cracked", "dungeontrain:variant_placeholder"],
+    "37,34,12": ["dungeontrain:stage_stone_cracked", "dungeontrain:variant_placeholder"]
+  }
+}

@@ -35,6 +35,7 @@ public final class ContributeScreen extends Screen
     private final Screen parent;
     private final ContributePanel panel;
     private final CurrencyPicker currency;
+    private final games.brennan.dungeontrain.client.support.RecipientPicker recipient;
     /** Contribute-only time: paused while the Community Rewards page is open over this one. */
     private PageClock clock = PageClock.open(System.currentTimeMillis());
     private boolean timeReported;
@@ -56,6 +57,9 @@ public final class ContributeScreen extends Screen
         this.panel = new ContributePanel(this, UiAnalytics.SURFACE_SUPPORT_PAGE, ContributePanel.Style.DEATH,
                 this::rebuildWidgets);
         this.currency = new CurrencyPicker(UiAnalytics.SURFACE_SUPPORT_PAGE, this::rebuildWidgets);
+        this.recipient = new games.brennan.dungeontrain.client.support.RecipientPicker(this::rebuildWidgets);
+        // Every opening starts on the player themself: a gift never goes to someone else by accident.
+        games.brennan.dungeontrain.client.support.DonationRecipient.reset();
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_SUPPORT_PAGE);
         OfficialLinks.ensureFetched();
         CommunityRewardsScreen.refreshSummary(this);
@@ -79,6 +83,9 @@ public final class ContributeScreen extends Screen
         titleY = top;
         // The currency button sits at the column's top right, level with the title.
         currency.layout(this.font, cx + rowW / 2, titleY - 3, this.height, this::addRenderableWidget);
+        // The "on behalf of" face sits just left of the currency (or in its place while that is hidden).
+        int faceRight = currency.button() != null ? currency.button().getX() - 3 : cx + rowW / 2;
+        recipient.layout(this.font, faceRight, titleY - 3, this::addRenderableWidget);
         subtitleTop = titleY + lineH + 6;
         int y = subtitleTop + subH + 8;
         y += panel.layout(this.font, cx - rowW / 2, y, rowW, this::addRenderableWidget);
@@ -100,10 +107,12 @@ public final class ContributeScreen extends Screen
         }
         panel.render(g, this.font, mouseX, mouseY);
         currency.render(g, this.font, mouseX, mouseY);
+        recipient.render(g, this.font, mouseX, mouseY, partialTick);
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (recipient.mouseClicked(mx, my, button)) return true;
         if (currency.mouseClicked(mx, my, button)) return true;
         if (button == 0 && panel.mouseClicked(this.font, mx, my)) return true;
         return super.mouseClicked(mx, my, button);
@@ -116,7 +125,13 @@ public final class ContributeScreen extends Screen
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        return currency.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
+        return recipient.keyPressed(keyCode, scanCode, modifiers) || currency.keyPressed(keyCode)
+                || super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char c, int modifiers) {
+        return recipient.charTyped(c, modifiers) || super.charTyped(c, modifiers);
     }
 
     @Override

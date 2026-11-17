@@ -241,9 +241,12 @@ public final class VariantEditorPreviewTicker {
     static BlockState computePreviewState(VariantState picked, long previewTick) {
         BlockState shown = applyActivePreview(computeOrientationPreview(picked, previewTick),
             picked.active(), previewTick);
-        // Random candle counts and pot plants re-roll each preview tick, so the author sees the spread.
+        // Random candle counts, pot plants, anchor charges and bed colours re-roll each preview
+        // tick, so the author sees the spread. Both bed halves share the tick, so they agree.
         shown = picked.candles().apply(shown, previewTick, 0L, 0);
-        return picked.pot().apply(shown, previewTick, 0L, 0);
+        shown = picked.pot().apply(shown, previewTick, 0L, 0);
+        shown = picked.charges().apply(shown, previewTick, 0L, 0);
+        return picked.bedColours().apply(shown, previewTick, 0L, 0);
     }
 
     /** Facing + half portion of {@link #computePreviewState}; the redstone toggle layers on top. */

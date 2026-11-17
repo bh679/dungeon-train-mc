@@ -895,6 +895,10 @@ public final class CarriagePlacer {
                 ? null
                 : GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriageIndex, dims.length());
             CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant, gateCtx);
+            RestStopPlan.Kind restStop = restStopKind(variant, config, carriageIndex, gateCtx);
+            if (restStop != RestStopPlan.Kind.NONE) {
+                contents = CarriageContentsRegistry.find(restStop.contentsId()).orElse(contents);
+            }
             // The one place the roll actually happens, with the placement-time gate context. The
             // F3+4 panel reads this back rather than re-rolling, which it cannot do correctly once
             // the train has moved — see PlacedCarriageFacts.
@@ -955,6 +959,35 @@ public final class CarriagePlacer {
      */
     public static CarriageDims variantDims(CarriageVariant variant, CarriageDims dims) {
         return sizeOf(variant).boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
+    }
+
+    /**
+     * What rest stop this carriage is ({@link RestStopPlan}), or {@link RestStopPlan.Kind#NONE}.
+     * Neighbouring shells are predicted with {@link #variantForIndex} under this carriage's gate, so a
+     * stretch whose phase or level flips inside the window can rarely miss or double its stop; the
+     * gap rule still holds everywhere else.
+     */
+    private static RestStopPlan.Kind restStopKind(CarriageVariant variant, CarriageGenerationConfig config,
+                                                  int carriageIndex, GateContext gateCtx) {
+        if (gateCtx == null || RestStopPlan.windowOf(config.seed(), carriageIndex) == null) return RestStopPlan.Kind.NONE;
+        RestStopPlan.Kind kind = RestStopPlan.kindFor(gateCtx.phase());
+        if (kind == RestStopPlan.Kind.NONE) return kind;
+        // No authored room for this kind yet (the Nether's anchor room): no rest stop rather than a
+        // room that would not work here.
+        if (CarriageContentsRegistry.find(kind.contentsId()).isEmpty()) return RestStopPlan.Kind.NONE;
+        boolean isStop = RestStopPlan.isRestStop(config.seed(), carriageIndex, i -> {
+            CarriageVariant v = i == carriageIndex ? variant
+                : variantForIndex(i, config, CarriageWeights.current(), gateCtx);
+            return !isAnyFlatbed(v) && sizeOf(v) == ContentsSize.ROOM && takesRestStop(v, kind);
+        });
+        return isStop ? kind : RestStopPlan.Kind.NONE;
+    }
+
+    /** A shell whose author's allow-list keeps the rest-stop room out never gets one forced in. */
+    private static boolean takesRestStop(CarriageVariant v, RestStopPlan.Kind kind) {
+        return games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.get(v)
+            .map(allow -> allow.isAllowed(kind.contentsId()))
+            .orElse(true);
     }
 
     /**
@@ -1029,6 +1062,8 @@ public final class CarriagePlacer {
                             games.brennan.dungeontrain.editor.BlockVariantPlot.carriageKey(variant.id()), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
+                        games.brennan.dungeontrain.editor.RotationApplier.stampObeliskGems(level, world, w.state(),
+                            w.entry(), e.localPos(), seed, carriageIndex, lockId);
                         GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
                     }
                 }

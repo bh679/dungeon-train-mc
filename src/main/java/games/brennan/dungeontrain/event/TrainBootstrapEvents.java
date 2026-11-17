@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.nap.NapWake;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -120,11 +121,17 @@ public final class TrainBootstrapEvents {
         int trainY = data.getTrainY();
         CarriageDims dims = data.dims();
 
+        // A run woken from a nap starts where the nap was taken (NapWake); every other run at X 0.
+        // Planned here rather than in its own ServerStartedEvent listener: the new world's choices
+        // (startsWithTrain) are committed at NORMAL priority, and the plan has to land before the seed.
+        NapWake.planFor(event.getServer());
+        int originX = NapWake.bootstrapOriginX(target);
+
         BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.spawning_seed");
-        ManagedShip seedShip = ensureTrainSpawned(target, data);
+        ManagedShip seedShip = ensureTrainSpawned(target, data, originX);
 
         BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.anchoring_spawn");
-        anchorWorldSpawnNearCorridor(target, dims, trainY);
+        anchorWorldSpawnNearCorridor(target, dims, trainY, originX);
 
         // Eager-fill the train to the server-configured window NOW (while
         // the world-load phase is still blocking the client's loading
@@ -157,10 +164,10 @@ public final class TrainBootstrapEvents {
      * visible jump.</p>
      */
     private static void anchorWorldSpawnNearCorridor(
-        ServerLevel target, CarriageDims dims, int trainY
+        ServerLevel target, CarriageDims dims, int trainY, int originX
     ) {
         PlayerJoinEvents.SpawnPlacement placement =
-            PlayerJoinEvents.computeAndCacheBootstrapPlacement(target, dims, trainY);
+            PlayerJoinEvents.computeAndCacheBootstrapPlacement(target, dims, trainY, originX);
         if (placement != null) {
             target.setDefaultSpawnPos(placement.blockPos(), placement.yaw());
             LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw={} (cached bootstrap placement)",
@@ -170,7 +177,7 @@ public final class TrainBootstrapEvents {
 
         // Fallback (cache compute returned null): coarse near-corridor spawn.
         TrackGeometry g = TrackGeometry.from(dims, trainY);
-        int spawnX = 0;
+        int spawnX = originX;
         int spawnZ = g.trackCenterZ() + SHARED_SPAWN_PERP;
         WorldgenForceGuard.forceChunk(target, spawnX >> 4, spawnZ >> 4);
         int surfaceY = target.getHeight(Heightmap.Types.MOTION_BLOCKING, spawnX, spawnZ);
@@ -300,6 +307,11 @@ public final class TrainBootstrapEvents {
      * pose.</p>
      */
     public static ManagedShip ensureTrainSpawned(ServerLevel target, DungeonTrainWorldData data) {
+        return ensureTrainSpawned(target, data, 0);
+    }
+
+    /** {@link #ensureTrainSpawned(ServerLevel, DungeonTrainWorldData)} with the seed at world-X {@code originX}. */
+    public static ManagedShip ensureTrainSpawned(ServerLevel target, DungeonTrainWorldData data, int originX) {
         ManagedShip existing = findTrain(target);
         if (existing != null) return existing;
         List<UUID> held = heldTrainIdsIn(target);
@@ -323,7 +335,7 @@ public final class TrainBootstrapEvents {
         TrainTransformProvider.beginLoadGrace(target.dimension(), target.getGameTime());
 
         int trainY = data.getTrainY();
-        BlockPos trainOrigin = new BlockPos(0, trainY, 0);
+        BlockPos trainOrigin = new BlockPos(originX, trainY, 0);
         CarriageDims dims = data.dims();
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 

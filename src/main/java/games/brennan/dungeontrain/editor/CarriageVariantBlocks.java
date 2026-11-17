@@ -478,10 +478,13 @@ public final class CarriageVariantBlocks {
             VariantPot pot = parsePot(obj.get("pot"), contextId, contextPos);
             // Additive trapped-chest chance (0-100). Absent → 0, so older files spawn unchanged.
             int trapped = parseTrapped(obj.get("trapped"), contextId, contextPos);
+            // Additive respawn anchor charge range / white bed colours. Absent → as placed / white.
+            VariantCharges charges = parseCharges(obj.get("charges"), contextId, contextPos);
+            VariantBedColours bedColours = parseBedColours(obj.get("colours"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
                 VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
                 groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
-                condition, candles, pot, trapped);
+                condition, candles, pot, trapped, charges, bedColours);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -946,6 +949,18 @@ public final class CarriageVariantBlocks {
         if (s.trapped() > 0) {
             sb.append(", \"trapped\": ").append(s.trapped());
         }
+        if (!s.charges().isDefault()) {
+            sb.append(", \"charges\": \"").append(s.charges().id()).append("\"");
+        }
+        if (!s.bedColours().isDefault()) {
+            sb.append(", \"colours\": [");
+            List<String> names = s.bedColours().names();
+            for (int i = 0; i < names.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("\"").append(names.get(i)).append("\"");
+            }
+            sb.append("]");
+        }
         sb.append("}");
     }
 
@@ -1112,6 +1127,43 @@ public final class CarriageVariantBlocks {
             return VariantCandles.AS_PLACED;
         }
         return candles;
+    }
+
+    /** Parse an optional {@code "charges"} range ({@code "1-4"}). Absent or malformed → as placed. */
+    private static VariantCharges parseCharges(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantCharges.AS_PLACED;
+        String token = el.isJsonPrimitive() ? el.getAsString() : null;
+        VariantCharges charges = token == null ? null : VariantCharges.parse(token);
+        if (charges == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown charges '{}', using as placed.",
+                contextId, contextPos, el);
+            return VariantCharges.AS_PLACED;
+        }
+        return charges;
+    }
+
+    /** Parse an optional {@code "colours"} array of dye names. Absent or malformed → white only. */
+    private static VariantBedColours parseBedColours(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantBedColours.WHITE_ONLY;
+        VariantBedColours colours = null;
+        if (el.isJsonArray()) {
+            List<String> names = new ArrayList<>();
+            boolean ok = true;
+            for (JsonElement n : el.getAsJsonArray()) {
+                if (!n.isJsonPrimitive()) {
+                    ok = false;
+                    break;
+                }
+                names.add(n.getAsString());
+            }
+            if (ok) colours = VariantBedColours.fromNames(names);
+        }
+        if (colours == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown colours '{}', using white.",
+                contextId, contextPos, el);
+            return VariantBedColours.WHITE_ONLY;
+        }
+        return colours;
     }
 
     /** Parse an optional {@code "pot"} token ({@code "random"}, {@code "minecraft:poppy,…"}). Absent or malformed → off. */

@@ -130,13 +130,15 @@ public final class RunStatsEvents {
         // "deaths I caused".
         if (victim == killer) return;
         PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        run.incrementMobKills();
+        // Behind a nap point the kill counts against the run instead (re-rolled carriages).
+        int step = games.brennan.dungeontrain.nap.NapGateData.step(killer);
+        run.incrementMobKills(step);
         // PlayerMob kills are also tallied separately (the "players killed"
         // death-screen cell) and the victim's look is snapshotted for the
         // death-screen portrait (most-recent kill wins). mobKills still counts
         // everything, so the two overlap by design — a killed PlayerMob bumps both.
         if (victim instanceof PlayerMobEntity pm) {
-            run.incrementPlayerKills();
+            run.incrementPlayerKills(step);
             run.setKilledAppearance(PlayerMobAppearance.capture(pm));
             // ...and they stop being a friend you made. The kill still counts on the kill
             // side; it just can't also count on the friends side.
@@ -165,7 +167,7 @@ public final class RunStatsEvents {
         if (weaponStack == null) {
             weaponStack = killer.getMainHandItem().copy();
         }
-        run.recordWeaponKill(weaponStack);
+        run.recordWeaponKill(weaponStack, step);
     }
 
     /**
@@ -241,6 +243,11 @@ public final class RunStatsEvents {
             GlobalPlayerStats.addDamageDealt(id, run.damageDealt());
             GlobalPlayerStats.addDamageTaken(id, run.damageTaken());
             lifeDeaths = GlobalPlayerStats.addDeaths(id, 1L);
+        }
+
+        if (run.napSaves() > 0) {
+            LOGGER.info("[DungeonTrain] Life of {} ended after {} nap save(s)", player.getName().getString(),
+                run.napSaves());
         }
 
         // Roll the per-death narrative from the data-driven pool, keyed on the
@@ -459,6 +466,19 @@ public final class RunStatsEvents {
      * counter) so the login-replay re-fire of {@code AdvancementEarnEvent} can't inflate it. Vanilla
      * advancement completion is permanent per-player, so this is a true across-all-lives total.
      */
+    /** Dungeon Train advancements this life earned that the point-in-time count includes. */
+    private static long ownAdvancements(ServerPlayer player, PlayerRunState run) {
+        var manager = player.server.getAdvancements();
+        var progress = player.getAdvancements();
+        long count = 0;
+        for (ResourceLocation id : run.earnedAdvancements()) {
+            if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) continue;
+            AdvancementHolder h = manager.get(id);
+            if (h != null && progress.getOrStartProgress(h).isDone()) count++;
+        }
+        return count;
+    }
+
     private static long countDungeonTrainAdvancements(ServerPlayer player) {
         var manager = player.server.getAdvancements();
         var progress = player.getAdvancements();
@@ -506,6 +526,26 @@ public final class RunStatsEvents {
     }
 
     /**
+     * The nap farewell's "a life ongoing" page ({@code nap/NapService}): this run's stats with the
+     * lifetime totals of the lives before it, built like the alive-logout summary. Nothing is accrued
+     * and nothing is posted; the client only caches it for the page.
+     */
+    public static DeathStatsPacket napPacket(ServerPlayer player) {
+        UUID id = player.getUUID();
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        // Time aboard accrues live (and not on a cheated run), so this life's share comes back out.
+        long ownTicks = RunIntegrity.isCheated(player) ? 0L : run.trainTimeTicks();
+        return buildPacket(player,
+                GlobalPlayerStats.totalDeaths(id),
+                GlobalPlayerStats.totalCarriages(id),
+                GlobalPlayerStats.totalDistance(id),
+                GlobalPlayerStats.totalFriends(id),
+                GlobalPlayerStats.totalBooks(id),
+                Math.max(0L, GlobalPlayerStats.trainTicks(id) - ownTicks),
+                DeathNarrative.EMPTY, "", true);
+    }
+
+    /**
      * Snapshot the player's current run stats + worn armor into a {@link DeathStatsPacket}, shared by
      * the death summary and the alive-logout summary. The equipment slots reflect the player's gear
      * right now (at death — before respawn/keep-inventory; at logout — their live gear).
@@ -514,6 +554,19 @@ public final class RunStatsEvents {
             long lifeDeaths, long lifeCarriages, double lifeDistance,
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative, String deathCause) {
+        return buildPacket(player, lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks,
+                lifeTrainTicks, narrative, deathCause, false);
+    }
+
+    /**
+     * @param previousLivesOnly the lifetime icons count only the lives before this one ({@link #napPacket}):
+     *                          the totals that accrue live (players and echoes met) and the advancement
+     *                          count lose what this life added. The death-accrued totals never held it.
+     */
+    private static DeathStatsPacket buildPacket(ServerPlayer player,
+            long lifeDeaths, long lifeCarriages, double lifeDistance,
+            long lifeFriends, long lifeBooks, long lifeTrainTicks,
+            DeathNarrative narrative, String deathCause, boolean previousLivesOnly) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         UUID id = player.getUUID();
         // All-lives icon-row lifetime totals — the current cross-world totals (accrued just above at
@@ -527,6 +580,14 @@ public final class RunStatsEvents {
         long lifeAdvancements = countDungeonTrainAdvancements(player);
         double lifeDamageDealt = GlobalPlayerStats.totalDamageDealt(id);
         double lifeDamageTaken = GlobalPlayerStats.totalDamageTaken(id);
+        if (previousLivesOnly) {
+            // Encounters only reach the lifetime total off a cheated run (onLevelTick), so a cheated
+            // life added none.
+            long ownMet = RunIntegrity.isCheated(player) ? 0L : run.encounteredCount();
+            lifePlayersEncountered = Math.max(0L, lifePlayersEncountered - ownMet);
+            lifeEchos = Math.max(0L, lifeEchos - run.echoesMet());
+            lifeAdvancements = Math.max(0L, lifeAdvancements - ownAdvancements(player, run));
+        }
         // Death-screen portrait subject: prefer a befriended mob (drawn left),
         // else the most-recent killed mob (drawn right), else none.
         byte side;
@@ -629,7 +690,7 @@ public final class RunStatsEvents {
         BlockState state = event.getState();
         if (!(state.getBlock() instanceof DecoratedPotBlock)
             && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isGloomslatePot(state)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened();
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened(games.brennan.dungeontrain.nap.NapGateData.step(player));
     }
 
     @SubscribeEvent
@@ -639,7 +700,7 @@ public final class RunStatsEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof WrittenBookItem)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead();
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead(games.brennan.dungeontrain.nap.NapGateData.step(player));
     }
 
     /**
@@ -690,17 +751,20 @@ public final class RunStatsEvents {
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             boolean cheated = RunIntegrity.isCheated(player);
+            // Behind a nap point, mobs met are re-rolled copies: neither met nor befriended.
+            boolean behindNap = games.brennan.dungeontrain.nap.NapGateData.step(player) < 0;
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
             for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {
                 // Per-run encounter set still records (death-screen stat); the
                 // cross-world lifetime counter + milestone freeze for cheated runs.
-                if (run.recordEncounter(mob.getUUID()) && !cheated) {
+                if (!behindNap && run.recordEncounter(mob.getUUID()) && !cheated) {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
                     // Echoes (reincarnations of a fallen player) are a distinct subset of encountered
                     // PlayerMobs — tally them separately for the all-lives "Echos come across" icon.
                     if (EchoIdentity.sourcePlayer(mob).isPresent()) {
                         GlobalPlayerStats.addEchos(player.getUUID(), 1L);
+                        run.countEchoMet();
                     }
                 }
                 // "Others?" — within 4 blocks of any PlayerMob. Earns regardless of
@@ -717,7 +781,7 @@ public final class RunStatsEvents {
                 // is loaded near the player.
                 if (mob instanceof PlayerMobEntity pm) {
                     float feeling = pm.feelingToward(player);
-                    if (feeling > FRIEND_FEELING_MIN) {
+                    if (feeling > FRIEND_FEELING_MIN && !behindNap) {
                         run.recordBefriended(mob.getUUID());
                         if (feeling > run.friendFeeling()) {
                             run.captureFriendAppearance(mob.getUUID(), PlayerMobAppearance.capture(pm), feeling);

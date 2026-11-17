@@ -1,5 +1,9 @@
 {
   "armor": 1,
+  "bed2": {
+    "weight": 1,
+    "name": "crib"
+  },
   "bedroom": {
     "weight": 1,
     "optIn": true

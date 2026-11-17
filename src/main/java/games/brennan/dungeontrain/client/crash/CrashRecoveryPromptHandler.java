@@ -102,6 +102,14 @@ public final class CrashRecoveryPromptHandler {
                 CrashRunState.clear(PlayerDataPaths.root());
                 return Optional.empty();
             }
+            // A world a pending nap was taken in: its life is in the nap, which always wins. Never
+            // offer it; the nap stays valid and the title-screen sweep removes the world.
+            if (games.brennan.dungeontrain.nap.NapStore.local().pendingLevelIds().contains(state.get().levelId())) {
+                LOGGER.info("[DungeonTrain] Crash recovery: '{}' was napped; not offering it.",
+                        state.get().levelId());
+                CrashRunState.clear(PlayerDataPaths.root());
+                return Optional.empty();
+            }
             // A Free Play run has nothing to salvage that a fresh Free Play world wouldn't hand
             // straight back, and its Ender Chest is the Free Play one anyway. Skip the card.
             if (SaveFreePlayProbe.wasFreePlay(mc.getLevelSource().getLevelPath(state.get().levelId()),

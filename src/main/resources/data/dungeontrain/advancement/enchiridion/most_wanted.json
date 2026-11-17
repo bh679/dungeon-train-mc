@@ -501,6 +501,12 @@
       "conditions": {
         "subject": "entity:creeperoverhaul:swamp_creeper"
       }
+    },
+    "luminous_monsters:sunken_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:sunken_skeleton"
+      }
     }
   },
   "requirements": [
@@ -746,6 +752,9 @@
     ],
     [
       "creeperoverhaul:swamp_creeper"
+    ],
+    [
+      "luminous_monsters:sunken_skeleton"
     ]
   ]
 }

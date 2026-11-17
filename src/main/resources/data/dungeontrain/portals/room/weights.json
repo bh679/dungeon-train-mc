@@ -333,6 +333,25 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on:15"
   },
+  "nnout": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "void/exact/off/off/off/none/sealed/0/7"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "void"
@@ -345,9 +364,14 @@
       "name": "AntonioMacarely"
     }
   },
+  "onionman": 1,
   "outsidethebox": {
     "weight": 3,
-    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14"
+    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "parkour": {
     "weight": 2,
@@ -461,6 +485,10 @@
   "squidwardshouse_2": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/1/-1/1"
+  },
+  "staircase": {
+    "weight": 1,
+    "mode": "void/exact/off/off/off/end/sealed/0/0/0/43/minecraft:bedrock/on"
   },
   "statue2": {
     "weight": 1,
@@ -603,7 +631,11 @@
   },
   "vaultchambers": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:50:10"
+    "mode": "endless_repetition/dynamic/off/random:50:10",
+    "builder": {
+      "uuid": "7b7774bd61fc44b59b8b3f38ce70a443",
+      "name": "AshSeven"
+    }
   },
   "waterparkour": {
     "weight": 2,
