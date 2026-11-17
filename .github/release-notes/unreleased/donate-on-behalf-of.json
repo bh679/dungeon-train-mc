@@ -1,0 +1,21 @@
+{
+  "id": "donate-on-behalf-of",
+  "version": "0.1857.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Donate on behalf of a friend",
+  "summary": "Gift a donation in someone else's name, straight from the Contribute screen.",
+  "highlights": [
+    "A small face button next to the currency picks who a gift is for: you, or someone else by their Minecraft name",
+    "Their face shows once the name is found, and the checkout carries their name for the board",
+    "It goes back to you every time the screen opens"
+  ],
+  "pr": 2705,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
