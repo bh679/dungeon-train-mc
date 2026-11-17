@@ -1001,8 +1001,8 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue discordRichPresence = b
                 .comment("Discord status: show \"Playing Dungeon Train\" and where you are (the Overworld, the Nether,",
                          "the End, or riding the train) on your Discord profile. Talks only to the Discord app",
-                         "running on this computer; nothing is sent anywhere else. Off by default.")
-                .define("richPresence", false);
+                         "running on this computer; nothing is sent anywhere else. On by default; turn it off in Options → Account.")
+                .define("richPresence", true);
         b.pop();
 
         b.push("dev");
