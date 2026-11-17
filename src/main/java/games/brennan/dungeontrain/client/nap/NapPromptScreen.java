@@ -19,8 +19,8 @@ import java.util.List;
 /**
  * "You feel comfortable here." The nap prompt a natural bed offers ({@code nap/NapBedEvents}), in its
  * daytime or night copy. Main Menu asks once more (the feature is still being tested with players),
- * then saves and quits; Stay awake / Wake up. (or Escape) carries on. That warning also lays out
- * everything the player carries (inventory, armour, offhand), since it is what they stand to lose.
+ * then saves and quits; Stay awake / Wake up. (or Escape) carries on. That warning lays out everything
+ * the player carries (inventory, armour, offhand) under its title, then asks whether they would lose it.
  *
  * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 95% black, or fully black
  * when the player is already asleep. The final Main Menu hides the buttons and fades the rest of the
@@ -85,9 +85,11 @@ public final class NapPromptScreen extends Screen {
         int width = Math.min(TEXT_WIDTH, this.width - 40);
         if (warning) {
             titleLines = this.font.split(Component.translatable("gui.dungeontrain.nap.warning"), width);
-            bodyLines = List.of();
             titleColour = COLOUR_WARNING;
             carried = carriedItems();
+            // The question names what is laid out above it, so it waits for something to name.
+            bodyLines = carried.isEmpty() ? List.of()
+                : this.font.split(Component.translatable("gui.dungeontrain.nap.warning_items"), width);
         } else {
             carried = List.of();
             titleLines = this.font.split(Component.translatable(prefix + "title")
@@ -194,8 +196,14 @@ public final class NapPromptScreen extends Screen {
             y += lh;
         }
         y += SECTION_GAP;
+        if (!carried.isEmpty()) {
+            int rows = (carried.size() + gridCols - 1) / gridCols;
+            y = gridTop + rows * SLOT + SECTION_GAP;
+        }
+        // On the warning the body is its question, in the warning's colour, under the items.
+        int bodyColour = warning ? COLOUR_WARNING : COLOUR_BODY;
         for (FormattedCharSequence line : bodyLines) {
-            g.drawCenteredString(this.font, line, this.width / 2, y, COLOUR_BODY);
+            g.drawCenteredString(this.font, line, this.width / 2, y, bodyColour);
             y += lh;
         }
         renderCarried(g, mouseX, mouseY);
