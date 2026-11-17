@@ -93,6 +93,12 @@
       "conditions": {
         "subject": "entity:luminous_monsters:hollow_skeleton"
       }
+    },
+    "luminous_monsters:sunken_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:sunken_skeleton"
+      }
     }
   },
   "requirements": [
@@ -134,6 +140,9 @@
     ],
     [
       "luminous_monsters:hollow_skeleton"
+    ],
+    [
+      "luminous_monsters:sunken_skeleton"
     ]
   ]
 }

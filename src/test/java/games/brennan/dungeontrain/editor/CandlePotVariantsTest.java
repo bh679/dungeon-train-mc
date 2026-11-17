@@ -231,7 +231,7 @@ final class CandlePotVariantsTest {
                 }
             }
         }
-        assertEquals(64, random, "shipped Random pots");
+        assertEquals(68, random, "shipped Random pots");
         assertEquals(2, bowls, "worf dog bowls");
     }
 
