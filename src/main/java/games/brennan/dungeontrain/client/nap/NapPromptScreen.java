@@ -10,13 +10,17 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * "You feel comfortable here." The nap prompt a natural bed offers ({@code nap/NapBedEvents}), in its
  * daytime or night copy. Main Menu asks once more (the feature is still being tested with players),
- * then saves and quits; Stay awake / Wake up. (or Escape) carries on.
+ * then saves and quits; Stay awake / Wake up. (or Escape) carries on. That warning also lays out
+ * everything the player carries (inventory, armour, offhand), since it is what they stand to lose.
  *
  * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 95% black, or fully black
  * when the player is already asleep. The final Main Menu hides the buttons and fades the rest of the
@@ -33,6 +37,11 @@ public final class NapPromptScreen extends Screen {
     private static final int BUTTON_GAP = 8;
     private static final int LINE_GAP = 2;
     private static final int SECTION_GAP = 14;
+    /** The warning's item grid: one inventory-sized slot per carried stack, at most this many across. */
+    private static final int SLOT = 18;
+    private static final int GRID_MAX_COLS = 12;
+    private static final int COLOUR_SLOT = 0x60000000;
+    private static final int COLOUR_SLOT_EDGE = 0x40FFFFFF;
 
     private static final long FADE_MS = 1000L;
     private static final float FADE_AWAKE = 0.95F;
@@ -54,6 +63,10 @@ public final class NapPromptScreen extends Screen {
     private List<FormattedCharSequence> bodyLines = List.of();
     private int titleColour = COLOUR_TITLE;
     private int textTop;
+    /** What the player carries, shown under the warning; empty on the first prompt. */
+    private List<ItemStack> carried = List.of();
+    private int gridCols;
+    private int gridTop;
 
     public NapPromptScreen(boolean night) {
         super(Component.translatable(keyPrefix(night) + "title"));
@@ -74,16 +87,23 @@ public final class NapPromptScreen extends Screen {
             titleLines = this.font.split(Component.translatable("gui.dungeontrain.nap.warning"), width);
             bodyLines = List.of();
             titleColour = COLOUR_WARNING;
+            carried = carriedItems();
         } else {
+            carried = List.of();
             titleLines = this.font.split(Component.translatable(prefix + "title")
                 .append("\n").append(Component.translatable(prefix + "question")), width);
             bodyLines = this.font.split(Component.translatable(prefix + "body"), width);
             titleColour = COLOUR_TITLE;
         }
         int lh = this.font.lineHeight + LINE_GAP;
+        gridCols = Math.max(1, Math.min(carried.size(), Math.min(GRID_MAX_COLS, width / SLOT)));
+        int gridRows = carried.isEmpty() ? 0 : (carried.size() + gridCols - 1) / gridCols;
+        int gridH = gridRows * SLOT;
         int blockH = titleLines.size() * lh + SECTION_GAP
-            + (bodyLines.isEmpty() ? 0 : bodyLines.size() * lh + SECTION_GAP) + BUTTON_H;
+            + (bodyLines.isEmpty() ? 0 : bodyLines.size() * lh + SECTION_GAP)
+            + (gridRows == 0 ? 0 : gridH + SECTION_GAP) + BUTTON_H;
         textTop = (this.height - blockH) / 2;
+        gridTop = textTop + titleLines.size() * lh + SECTION_GAP;
         int buttonY = textTop + blockH - BUTTON_H;
         int left = this.width / 2 - BUTTON_W - BUTTON_GAP / 2;
         Button mainMenu = warning
@@ -97,6 +117,19 @@ public final class NapPromptScreen extends Screen {
         if (exiting()) return;
         addRenderableWidget(mainMenu);
         addRenderableWidget(other);
+    }
+
+    /** Every non-empty stack the player carries: main inventory and hotbar, then armour, then offhand. */
+    private List<ItemStack> carriedItems() {
+        if (this.minecraft == null || this.minecraft.player == null) return List.of();
+        Inventory inv = this.minecraft.player.getInventory();
+        List<ItemStack> out = new ArrayList<>();
+        for (List<ItemStack> part : List.of(inv.items, inv.armor, inv.offhand)) {
+            for (ItemStack stack : part) {
+                if (!stack.isEmpty()) out.add(stack.copy());
+            }
+        }
+        return List.copyOf(out);
     }
 
     private boolean exiting() {
@@ -165,6 +198,28 @@ public final class NapPromptScreen extends Screen {
             g.drawCenteredString(this.font, line, this.width / 2, y, COLOUR_BODY);
             y += lh;
         }
+        renderCarried(g, mouseX, mouseY);
+    }
+
+    /** The warning's grid of carried items, centred, with the hovered stack's tooltip. */
+    private void renderCarried(GuiGraphics g, int mouseX, int mouseY) {
+        if (carried.isEmpty()) return;
+        int rows = (carried.size() + gridCols - 1) / gridCols;
+        ItemStack hovered = ItemStack.EMPTY;
+        for (int i = 0; i < carried.size(); i++) {
+            int row = i / gridCols;
+            // The last row may be short: centre it on its own.
+            int inRow = row == rows - 1 ? carried.size() - row * gridCols : gridCols;
+            int x = this.width / 2 - inRow * SLOT / 2 + (i % gridCols) * SLOT;
+            int y = gridTop + row * SLOT;
+            g.fill(x, y, x + SLOT, y + SLOT, COLOUR_SLOT_EDGE);
+            g.fill(x + 1, y + 1, x + SLOT - 1, y + SLOT - 1, COLOUR_SLOT);
+            ItemStack stack = carried.get(i);
+            g.renderItem(stack, x + 1, y + 1);
+            g.renderItemDecorations(this.font, stack, x + 1, y + 1);
+            if (mouseX >= x && mouseX < x + SLOT && mouseY >= y && mouseY < y + SLOT) hovered = stack;
+        }
+        if (!hovered.isEmpty()) g.renderTooltip(this.font, hovered, mouseX, mouseY);
     }
 
     @Override
