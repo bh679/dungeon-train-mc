@@ -277,4 +277,26 @@ class PaymentLinksTest {
         assertFalse(PaymentLinks.isSimplifiedChineseLocale(""));
         assertFalse(PaymentLinks.isSimplifiedChineseLocale(null));
     }
+
+    // --- gifting on behalf of someone else --------------------------------------------------
+
+    @Test
+    void giftFromIsAppendedOnlyWhenGifting() {
+        String base = "https://brennan.games/dungeontrain/pay/checkout?displayname=Notch";
+        assertEquals(base + "&giftfrom=Dev", PaymentLinks.withGiftFrom(base, "Dev"));
+        assertEquals(base, PaymentLinks.withGiftFrom(base, null));
+        assertEquals(base, PaymentLinks.withGiftFrom(base, "  "));
+        assertNull(PaymentLinks.withGiftFrom(null, "Dev"));
+    }
+
+    @Test
+    void giftFromIsEncodedLikeTheDisplayName() {
+        assertEquals("https://x/pay?giftfrom=A%20B%26C", PaymentLinks.withGiftFrom("https://x/pay", "A B&C"));
+    }
+
+    @Test
+    void revolutNoteNamesThePayerOnlyForAGift() {
+        assertEquals("Notch", PaymentLinks.revolutNote("Notch", null));
+        assertEquals("Notch (gift from Dev)", PaymentLinks.revolutNote("Notch", "Dev"));
+    }
 }

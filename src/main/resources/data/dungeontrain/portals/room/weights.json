@@ -367,7 +367,11 @@
   "onionman": 1,
   "outsidethebox": {
     "weight": 3,
-    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14"
+    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "parkour": {
     "weight": 2,
@@ -584,7 +588,11 @@
   },
   "vaultchambers": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:50:10"
+    "mode": "endless_repetition/dynamic/off/random:50:10",
+    "builder": {
+      "uuid": "7b7774bd61fc44b59b8b3f38ce70a443",
+      "name": "AshSeven"
+    }
   },
   "waterparkour": {
     "weight": 2,

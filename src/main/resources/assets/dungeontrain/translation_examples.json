@@ -17882,6 +17882,15 @@
       ]
     }
   },
+  "gui.dungeontrain.contribute.recipient.self": {
+    "1": { "label": "the player's own Minecraft name", "examples": ["Brennan", "Steve"] }
+  },
+  "gui.dungeontrain.contribute.recipient.gifting": {
+    "1": { "label": "the Minecraft name the player typed to donate on behalf of", "examples": ["Steve", "Alex_42"] }
+  },
+  "gui.dungeontrain.contribute.recipient.confirm": {
+    "1": { "label": "the Minecraft name the player typed to donate on behalf of", "examples": ["Steve", "Alex_42"] }
+  },
   "gui.dungeontrain.currency.approx": {
     "1": {
       "label": "the name of the currency amounts are shown in",
