@@ -60,7 +60,7 @@ final class PlayerRunStateNapExtrasTest {
         "photosHostile", "photosAnimals", "photoShots", "photosViewed", "tributesMade", "tributeEmeralds",
         "liveStreamSeconds", "liveWatchSeconds", "friendAppearance", "friendFeeling", "friendUuid",
         "killedAppearance", "earnedAdvancements", "servedBookToCarriage", "tamedAnimals", "tamedCount",
-        "cameraFrames", "napGateX", "napGateDir");
+        "cameraFrames", "napGateX", "napGateDir", "napSaves");
     /** A library room of the napped world, which is deleted: see {@link PlayerRunState#napExtras}. */
     private static final Set<String> SKIPPED = Set.of("lastOwnShelfPair");
 
@@ -297,5 +297,60 @@ final class PlayerRunStateNapExtrasTest {
         assertEquals(0, s.uniqueChestsCarried());
         assertFalse(s.addChestPos(new BlockPos(1, 64, 1)));
         assertEquals(1, s.chestStreak());
+    }
+
+    /** A nap saved from {@code napped}: its extras count this save, as {@code NapService#capture} does. */
+    private static PlayerRunState napAndWake(PlayerRunState napped) {
+        CompoundTag extras = PlayerRunState.withNapSaved(napped.napExtras(registries));
+        PlayerRunState woken = PlayerRunState.CODEC.parse(NbtOps.INSTANCE,
+            PlayerRunState.CODEC.encodeStart(NbtOps.INSTANCE, napped).getOrThrow()).getOrThrow();
+        woken.applyNapExtras(extras, registries);
+        return woken;
+    }
+
+    @Test
+    @DisplayName("each nap counts one save for the life, carried to the next nap")
+    void napSavesCountAcrossNaps() {
+        PlayerRunState life = new PlayerRunState();
+        assertEquals(0, life.napSaves());
+        life = napAndWake(life);
+        assertEquals(1, life.napSaves());
+        life = napAndWake(life);
+        life = napAndWake(life);
+        assertEquals(3, life.napSaves());
+        assertEquals(3, wake(life).napSaves(), "extras alone carry the count without adding to it");
+    }
+
+    @Test
+    @DisplayName("counting a save copies the extras: the live life and its extras are left alone")
+    void withNapSavedCopies() {
+        PlayerRunState life = new PlayerRunState();
+        CompoundTag extras = life.napExtras(registries);
+        CompoundTag saved = PlayerRunState.withNapSaved(extras);
+        assertEquals(0, PlayerRunState.napSavesIn(extras));
+        assertEquals(1, PlayerRunState.napSavesIn(saved));
+        assertEquals(0, life.napSaves());
+    }
+
+    @Test
+    @DisplayName("a nap from before the count existed wakes as 0 and its next save is the first")
+    void oldNapWithoutCount() {
+        CompoundTag old = new PlayerRunState().napExtras(registries);
+        old.remove("napSaves");
+        assertEquals(0, PlayerRunState.napSavesIn(old));
+        assertEquals(1, PlayerRunState.napSavesIn(PlayerRunState.withNapSaved(old)));
+        assertEquals(1, PlayerRunState.napSavesIn(PlayerRunState.withNapSaved(null)));
+    }
+
+    @Test
+    @DisplayName("a death ends the life's save count; a relog restore never lowers it")
+    void napSavesResetOnDeath() {
+        PlayerRunState life = napAndWake(napAndWake(new PlayerRunState()));
+        life.restoreNapSaves(1);
+        assertEquals(2, life.napSaves());
+        life.restoreNapSaves(5);
+        assertEquals(5, life.napSaves());
+        life.resetAll();
+        assertEquals(0, life.napSaves());
     }
 }

@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NapSavedPacket;
 import games.brennan.dungeontrain.net.ShowNapPromptPacket;
+import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.RunWorldNames;
@@ -132,9 +133,9 @@ public final class NapService {
             refuse(player, "save failed");
             return;
         }
-        LOGGER.info("[DungeonTrain] Nap {} saved for {}: x={} carriage={} band={} direction={} cheated={}",
-            nap.napId(), player.getName().getString(), Math.round(nap.x()), nap.carriage(), nap.band(),
-            nap.direction(), nap.cheated());
+        LOGGER.info("[DungeonTrain] Nap {} saved for {}: save=#{} x={} carriage={} band={} direction={} cheated={}",
+            nap.napId(), player.getName().getString(), PlayerRunState.napSavesIn(nap.runExtras()),
+            Math.round(nap.x()), nap.carriage(), nap.band(), nap.direction(), nap.cheated());
         sendSurveyQuestions(player);
         sendLifetimeStats(player);
         DungeonTrainNet.sendTo(player, new NapSavedPacket(levelId));
@@ -187,7 +188,9 @@ public final class NapService {
         // The run-state fields the attachment codec can't hold (the rest are in playerTag already).
         CompoundTag runExtras = new CompoundTag();
         try {
-            runExtras = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).napExtras(player.registryAccess());
+            // This nap counts itself: the woken life has been saved one more time.
+            runExtras = PlayerRunState.withNapSaved(
+                player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).napExtras(player.registryAccess()));
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Nap: run-state extras not carried", e);
         }

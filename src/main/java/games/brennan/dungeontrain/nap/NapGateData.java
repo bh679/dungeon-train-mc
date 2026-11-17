@@ -23,7 +23,8 @@ import java.util.UUID;
 /**
  * Per player, what the nap gate needs that the run-state codec (full) can't keep across a relog:
  * the gate itself ({@link PlayerRunState#setNapGate}, at the bed the player slept in) and the last X
- * the player stood at on the train's level. Written on wake and by {@link NapTrainXTracker}, read back
+ * the player stood at on the train's level. Also this life's nap save count
+ * ({@link PlayerRunState#napSaves}), which only changes at a nap and so only needs recording on wake. Written on wake and by {@link NapTrainXTracker}, read back
  * on login, dropped on a death. Stored at
  * {@code <world>/data/dungeontrain_nap_gates.dat}.
  *
@@ -38,13 +39,18 @@ public final class NapGateData extends SavedData {
     private static final String TAG_X = "x";
     private static final String TAG_DIR = "dir";
     private static final String TAG_LAST_TRAIN_X = "lastTrainX";
+    private static final String TAG_NAP_SAVES = "napSaves";
 
-    /** One player's entry; NaN = not known. {@code dir} 0 = no gate. */
-    private record Entry(double x, int dir, double lastTrainX) {
-        static final Entry EMPTY = new Entry(0.0, 0, Double.NaN);
+    /** One player's entry; NaN = not known. {@code dir} 0 = no gate. {@code napSaves} 0 = never napped. */
+    record Entry(double x, int dir, double lastTrainX, int napSaves) {
+        static final Entry EMPTY = new Entry(0.0, 0, Double.NaN, 0);
 
         boolean isEmpty() {
-            return dir == 0 && Double.isNaN(lastTrainX);
+            return dir == 0 && Double.isNaN(lastTrainX) && napSaves <= 0;
+        }
+
+        Entry withLastTrainX(double x) {
+            return new Entry(this.x, dir, x, napSaves);
         }
     }
 
@@ -61,9 +67,7 @@ public final class NapGateData extends SavedData {
         NapGateData data = new NapGateData();
         for (String key : tag.getAllKeys()) {
             try {
-                CompoundTag g = tag.getCompound(key);
-                int dir = Integer.signum(g.getInt(TAG_DIR));
-                Entry e = new Entry(dir == 0 ? 0.0 : g.getDouble(TAG_X), dir, optional(g, TAG_LAST_TRAIN_X));
+                Entry e = readEntry(tag.getCompound(key));
                 if (!e.isEmpty()) data.entries.put(UUID.fromString(key), e);
             } catch (IllegalArgumentException ignored) {
                 // not a player id: skip the entry
@@ -72,21 +76,30 @@ public final class NapGateData extends SavedData {
         return data;
     }
 
+    static Entry readEntry(CompoundTag g) {
+        int dir = Integer.signum(g.getInt(TAG_DIR));
+        return new Entry(dir == 0 ? 0.0 : g.getDouble(TAG_X), dir, optional(g, TAG_LAST_TRAIN_X),
+            Math.max(0, g.getInt(TAG_NAP_SAVES)));
+    }
+
+    static CompoundTag writeEntry(Entry e) {
+        CompoundTag t = new CompoundTag();
+        if (e.dir() != 0) {
+            t.putDouble(TAG_X, e.x());
+            t.putInt(TAG_DIR, e.dir());
+        }
+        if (!Double.isNaN(e.lastTrainX())) t.putDouble(TAG_LAST_TRAIN_X, e.lastTrainX());
+        if (e.napSaves() > 0) t.putInt(TAG_NAP_SAVES, e.napSaves());
+        return t;
+    }
+
     private static double optional(CompoundTag t, String key) {
         return t.contains(key) ? t.getDouble(key) : Double.NaN;
     }
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        entries.forEach((id, e) -> {
-            CompoundTag t = new CompoundTag();
-            if (e.dir() != 0) {
-                t.putDouble(TAG_X, e.x());
-                t.putInt(TAG_DIR, e.dir());
-            }
-            if (!Double.isNaN(e.lastTrainX())) t.putDouble(TAG_LAST_TRAIN_X, e.lastTrainX());
-            tag.put(id.toString(), t);
-        });
+        entries.forEach((id, e) -> tag.put(id.toString(), writeEntry(e)));
         return tag;
     }
 
@@ -94,12 +107,12 @@ public final class NapGateData extends SavedData {
         return entries.getOrDefault(id, Entry.EMPTY);
     }
 
-    /** Record {@code run}'s gate for {@code player} (or forget it when the run has none). */
+    /** Record {@code run}'s gate and nap save count for {@code player} (or forget them when the run has none). */
     public static void remember(ServerPlayer player, PlayerRunState run) {
         NapGateData data = get(player.server);
         Entry old = data.entry(player.getUUID());
         Entry next = new Entry(run.napGated() ? run.napGateX() : 0.0, run.napGated() ? run.napGateDir() : 0,
-            old.lastTrainX());
+            old.lastTrainX(), run.napSaves());
         data.put(player.getUUID(), old, next);
     }
 
@@ -107,7 +120,7 @@ public final class NapGateData extends SavedData {
     static void rememberTrainX(ServerPlayer player, double x) {
         NapGateData data = get(player.server);
         Entry old = data.entry(player.getUUID());
-        data.put(player.getUUID(), old, new Entry(old.x(), old.dir(), x));
+        data.put(player.getUUID(), old, old.withLastTrainX(x));
     }
 
     private void put(UUID id, Entry old, Entry next) {
@@ -122,7 +135,7 @@ public final class NapGateData extends SavedData {
         return get(player.server).entry(player.getUUID()).lastTrainX();
     }
 
-    /** After a relog: give the run state back the gate this world holds for the player. */
+    /** After a relog: give the run state back the gate and nap save count this world holds for the player. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -130,6 +143,7 @@ public final class NapGateData extends SavedData {
         if (e == null) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         if (e.dir() != 0 && !run.napGated()) run.setNapGate(e.x(), e.dir());
+        run.restoreNapSaves(e.napSaves());
     }
 
     /** A death ends the life, and the gate with it. */
