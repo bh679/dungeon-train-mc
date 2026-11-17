@@ -638,6 +638,7 @@
   "gui.dungeontrain.nap.ongoing.subline_past.one": "%s vida traçou sua linha neste céu. Esta ainda está traçando.",
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s vidas traçaram suas linhas neste céu. Esta ainda está traçando.",
   "gui.dungeontrain.nap.ongoing.question": "Que caminho esta vida vai seguir?",
+  "gui.dungeontrain.nap.ongoing.lbl_lives": "vidas",
   "gui.dungeontrain.nap.free_play_cause": "Acordou de uma partida no Jogo Livre",
   "chat.dungeontrain.nap.tampered.moved": "O trem não reconhece esta cama, mexeram nela.",
   "chat.dungeontrain.nap.tampered.made": "O trem diferencia uma cama feita por você de uma das dele, isso não vai funcionar aqui.",

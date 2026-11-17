@@ -614,6 +614,7 @@
   "gui.dungeontrain.nap.ongoing.subline_first": "一条线正在成形，但它的形状仍由你决定。",
   "gui.dungeontrain.nap.ongoing.subline_past.other": "已有 %s 条生命在这片天空画下了线。这一条还在画。",
   "gui.dungeontrain.nap.ongoing.question": "这一生会走向哪条路?",
+  "gui.dungeontrain.nap.ongoing.lbl_lives": "人生",
   "gui.dungeontrain.nap.free_play_cause": "从自由模式的旅程中醒来",
   "chat.dungeontrain.nap.tampered.moved": "列车认不出这张床，它被人动过了。",
   "chat.dungeontrain.nap.tampered.made": "列车分得清你做的床和它自己的床，这在这里行不通。",

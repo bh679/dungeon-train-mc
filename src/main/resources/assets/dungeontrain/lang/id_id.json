@@ -614,6 +614,7 @@
   "gui.dungeontrain.nap.ongoing.subline_first": "Sebuah garis mulai terbentuk, tapi bentuknya masih kamu yang menentukan.",
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s kehidupan telah menarik garisnya di langit ini. Yang ini masih menggambar.",
   "gui.dungeontrain.nap.ongoing.question": "Ke mana kehidupan ini akan pergi?",
+  "gui.dungeontrain.nap.ongoing.lbl_lives": "kehidupan",
   "gui.dungeontrain.nap.free_play_cause": "Terbangun dari permainan Main Bebas",
   "chat.dungeontrain.nap.tampered.moved": "Kereta tidak mengenali ranjang ini, ranjang ini sudah diutak-atik.",
   "chat.dungeontrain.nap.tampered.made": "Kereta bisa membedakan ranjang buatanmu dari miliknya sendiri, ini tidak akan berhasil di sini.",

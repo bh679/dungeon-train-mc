@@ -614,6 +614,7 @@
   "gui.dungeontrain.nap.ongoing.subline_first": "เส้นหนึ่งกำลังก่อตัว แต่รูปร่างของมันยังเป็นของคุณที่จะกำหนด",
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s ชีวิตได้ลากเส้นของตนบนฟ้านี้ ชีวิตนี้ยังคงวาดอยู่",
   "gui.dungeontrain.nap.ongoing.question": "ชีวิตนี้จะไปทางไหน?",
+  "gui.dungeontrain.nap.ongoing.lbl_lives": "ชีวิต",
   "gui.dungeontrain.nap.free_play_cause": "ตื่นจากการเล่นในโหมดเล่นอิสระ",
   "chat.dungeontrain.nap.tampered.moved": "รถไฟจำเตียงนี้ไม่ได้ มีคนไปยุ่งกับมันแล้ว",
   "chat.dungeontrain.nap.tampered.made": "รถไฟแยกออกว่าเตียงไหนคุณทำเองและเตียงไหนเป็นของมัน แบบนี้ใช้ไม่ได้ที่นี่",

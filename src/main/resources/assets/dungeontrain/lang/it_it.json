@@ -638,6 +638,7 @@
   "gui.dungeontrain.nap.ongoing.subline_past.one": "%s vita ha tracciato la sua linea in questo cielo. Questa sta ancora tracciando.",
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s vite hanno tracciato le loro linee in questo cielo. Questa sta ancora tracciando.",
   "gui.dungeontrain.nap.ongoing.question": "Quale strada prenderà questa vita?",
+  "gui.dungeontrain.nap.ongoing.lbl_lives": "vite",
   "gui.dungeontrain.nap.free_play_cause": "Risvegliato da una partita in Gioco Libero",
   "chat.dungeontrain.nap.tampered.moved": "Il treno non riconosce questo letto, è stato manomesso.",
   "chat.dungeontrain.nap.tampered.made": "Il treno distingue un letto fatto da te da uno dei suoi, qui non funzionerà.",

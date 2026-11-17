@@ -1589,13 +1589,14 @@ public final class NarrativeDeathScreen extends Screen {
     private static final float ONGOING_CARD_MIN_ALPHA = 0.03f;
 
     /**
-     * The lives before this one, as a column of cards down the right edge of "a life ongoing": time
-     * aboard, carriages, distance. Centred on the sky's middle but never above {@code textBottom}
+     * The lives before this one, as a column of cards down the right edge of "a life ongoing": how
+     * many lives, time aboard, carriages, distance. Centred on the sky's middle but never above {@code textBottom}
      * (the headline lines run wide), each card backed by the sky's colour so the star lines don't
      * show through it. They fade in one at a time, top first, each rising a little as it comes.
      */
     private void drawOngoingCards(GuiGraphics g, DeathStatsPacket s, int textBottom) {
         List<String[]> cards = List.of(
+            new String[] {Long.toString(s.lifeDeaths()), "gui.dungeontrain.nap.ongoing.lbl_lives"},
             new String[] {fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard"},
             new String[] {Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages"},
             new String[] {fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance"});
