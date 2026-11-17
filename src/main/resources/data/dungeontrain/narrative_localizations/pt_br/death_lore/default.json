@@ -3,7 +3,7 @@
     "page": "fall",
     "weight": 3,
     "question": "O que é o Dungeon Train?",
-    "narration": "Carruagem {carriage}. Foi aí que a escuridão te alcançou. Você a conhece agora? O Dungeon Train não para — ele apenas segue, mais fundo, para sempre."
+    "narration": "Carruagem {carriage}. Foi aí que a escuridão te alcançou. Você a conhece agora? O Dungeon Train não para, ele apenas segue, mais fundo, para sempre."
   },
   {
     "page": "fall",
@@ -17,19 +17,19 @@
     "weight": 1,
     "conditions": { "max_carriage": 3 },
     "question": "O que é o Dungeon Train?",
-    "narration": "Carruagem {carriage}. Mal a bordo, e a escuridão já te tinha. A linha é paciente — ela pode se dar a esse luxo."
+    "narration": "Carruagem {carriage}. Mal a bordo, e a escuridão já te tinha. A linha é paciente, ela pode se dar a esse luxo."
   },
   {
     "page": "deeds",
     "weight": 3,
     "question": "Por que você está aqui?",
-    "narration": "Você derrubou {mobs} coisas na escuridão, e sangrou por isso {hearts} corações.\nDas {met} almas que encontrou, {slain} você findou — e {friends} você chamou de amigo."
+    "narration": "Você derrubou {mobs} coisas na escuridão, e sangrou por isso {hearts} corações.\nDas {met} almas que encontrou, {slain} você findou, e {friends} você chamou de amigo."
   },
   {
     "page": "gear",
     "weight": 3,
     "question": "O que você deve fazer?",
-    "narration": "Ferro e gume, reunidos da escuridão e carregados até aqui. Nada disso foi o bastante — talvez esse nunca tenha sido o ponto."
+    "narration": "Ferro e gume, reunidos da escuridão e carregados até aqui. Nada disso foi o bastante, talvez esse nunca tenha sido o ponto."
   },
   {
     "page": "gear",
@@ -57,7 +57,7 @@
     "weight": 3,
     "conditions": { "min_deaths": 2 },
     "question": "Essas são todas boas perguntas",
-    "narration": "Estas não são as marcas de uma só vida. Ao longo de todas as {deaths} — cada escuridão em que você embarcou, cada vez que a linha te levou e ainda assim você retornou — este é o todo da sua jornada."
+    "narration": "Estas não são as marcas de uma só vida. Ao longo de todas as {deaths}, cada escuridão em que você embarcou, cada vez que a linha te levou e ainda assim você retornou, este é o todo da sua jornada."
   },
   {
     "page": "lives",
@@ -65,7 +65,7 @@
     "conditions": { "min_deaths": 1, "max_deaths": 1 },
     "question": "Uma vida se gasta assim tão facilmente?",
     "subline": "sua primeira queda na linha.",
-    "narration": "Não há outras vidas para pesar contra esta — ainda não. Este é o todo de você: tudo o que foi feito desde que embarcou pela primeira vez. A linha vai se lembrar. Você também deveria."
+    "narration": "Não há outras vidas para pesar contra esta, ainda não. Este é o todo de você: tudo o que foi feito desde que embarcou pela primeira vez. A linha vai se lembrar. Você também deveria."
   },
   {
     "page": "lives",
@@ -79,16 +79,16 @@
     "weight": 3,
     "conditions": { "min_deaths": 2 },
     "question": "Você vai embarcar de novo, ou descer para o silêncio?",
-    "narration": "A plataforma está vazia. O apito soa lá longe na linha. Ela corre sem fim — e você também, ao que parece.",
+    "narration": "A plataforma está vazia. O apito soa lá longe na linha. Ela corre sem fim, e você também, ao que parece.",
     "epitaph": "o {deaths}º a cair. talvez não o último."
   },
   {
     "page": "platform",
     "weight": 1,
     "conditions": { "min_deaths": 1, "max_deaths": 1 },
-    "question": "Você vai embarcar de novo — agora que sabe como termina?",
+    "question": "Você vai embarcar de novo, agora que sabe como termina?",
     "narration": "A plataforma está vazia, a mesma de quando você embarcou pela primeira vez. O apito soa lá longe na linha. Você caiu uma vez. Se haverá uma segunda é, como sempre, sua decisão.",
-    "epitaph": "o primeiro a cair. a linha é paciente — ela vai esperar pelos demais."
+    "epitaph": "o primeiro a cair. a linha é paciente, ela vai esperar pelos demais."
   },
   {
     "page": "platform",
@@ -96,14 +96,14 @@
     "conditions": { "min_deaths": 20 },
     "question": "Você precisa mesmo perguntar?",
     "narration": "A plataforma já conhece seu rosto. O apito soa como sempre soa. Você já sabe o que vem a seguir.",
-    "epitaph": "o {deaths}º a cair — e não, ao que parece, o último."
+    "epitaph": "o {deaths}º a cair, e não, ao que parece, o último."
   },
 
   {
     "page": "fall",
     "weight": 2,
     "question": "O que é o Dungeon Train?",
-    "narration": "Carruagem {carriage}. A escuridão estava esperando ali o tempo todo — você só chegou para encontrá-la."
+    "narration": "Carruagem {carriage}. A escuridão estava esperando ali o tempo todo, você só chegou para encontrá-la."
   },
   {
     "page": "fall",
@@ -146,7 +146,7 @@
     "page": "deeds",
     "weight": 2,
     "question": "Por que você está aqui?",
-    "narration": "{mobs} coisas caíram por você e {hearts} corações caíram de você. Você cruzou com {met} outras almas na escuridão — findou {slain}, guardou {friends} — e então foi a sua vez."
+    "narration": "{mobs} coisas caíram por você e {hearts} corações caíram de você. Você cruzou com {met} outras almas na escuridão, findou {slain}, guardou {friends}, e então foi a sua vez."
   },
   {
     "page": "deeds",
@@ -166,28 +166,28 @@
     "weight": 1,
     "conditions": { "min_slain": 5 },
     "question": "Com o que você respondeu à escuridão?",
-    "narration": "Das {met} que encontrou, {slain} você abateu — {mobs} coisas a mais na escuridão além disso — por {hearts} corações, e {friends} você poupou para chamar de amigo. A linha não chama isso de assassinato."
+    "narration": "Das {met} que encontrou, {slain} você abateu, {mobs} coisas a mais na escuridão além disso, por {hearts} corações, e {friends} você poupou para chamar de amigo. A linha não chama isso de assassinato."
   },
 
   {
     "page": "gear",
     "weight": 2,
     "question": "O que você deve fazer?",
-    "narration": "Você reuniu tudo o que conseguia segurar das carruagens. A linha deixa você ficar com isso — ela não tem uso para carga, apenas para passageiros."
+    "narration": "Você reuniu tudo o que conseguia segurar das carruagens. A linha deixa você ficar com isso, ela não tem uso para carga, apenas para passageiros."
   },
   {
     "page": "gear",
     "weight": 1,
     "conditions": { "max_loot": 0 },
     "question": "O que você deve fazer?",
-    "narration": "Você não arrombou um único caixote na linha — carregou apenas o que trouxe ao embarcar, e o brandiu até o fim. A escuridão guarda o que você não quis levar."
+    "narration": "Você não arrombou um único caixote na linha, carregou apenas o que trouxe ao embarcar, e o brandiu até o fim. A escuridão guarda o que você não quis levar."
   },
   {
     "page": "gear",
     "weight": 1,
     "conditions": { "max_loot": 9 },
     "question": "O que você deve fazer?",
-    "narration": "Um punhado de caixotes abertos — {loot} ao todo — e uma lâmina mantida por perto. A linha é generosa com quem para; você mal fez uma pausa."
+    "narration": "Um punhado de caixotes abertos, {loot} ao todo, e uma lâmina mantida por perto. A linha é generosa com quem para; você mal fez uma pausa."
   },
   {
     "page": "gear",
@@ -201,7 +201,7 @@
     "weight": 1,
     "conditions": { "max_books": 0 },
     "question": "O que você deve fazer?",
-    "narration": "Nenhuma página virada — apenas aço reunido e brandido. A linha guarda suas histórias para quem para para ler."
+    "narration": "Nenhuma página virada, apenas aço reunido e brandido. A linha guarda suas histórias para quem para para ler."
   },
   {
     "page": "gear",
@@ -237,7 +237,7 @@
     "weight": 1,
     "conditions": { "min_deaths": 5 },
     "question": "Por que você continua embarcando?",
-    "narration": "{deaths} mortes atrás de você e o mesmo apito à frente. Você já não é um passageiro — você faz parte do horário."
+    "narration": "{deaths} mortes atrás de você e o mesmo apito à frente. Você já não é um passageiro, você faz parte do horário."
   },
   {
     "page": "lives",
@@ -252,7 +252,7 @@
     "weight": 2,
     "conditions": { "min_deaths": 2 },
     "question": "Você vai embarcar de novo, ou deixar a plataforma te reter?",
-    "narration": "O apito já está soando, lá adiante. Ele não está esperando por você — nunca esteve — e ainda assim aqui está você, decidindo seguir.",
+    "narration": "O apito já está soando, lá adiante. Ele não está esperando por você, nunca esteve, e ainda assim aqui está você, decidindo seguir.",
     "epitaph": "o {deaths}º a cair. a linha segue em frente."
   },
   {
@@ -269,6 +269,6 @@
     "conditions": { "min_deaths": 5 },
     "question": "A linha precisa mesmo perguntar?",
     "narration": "Você conhece o peso da porta, o frio do degrau. A escuridão é apenas um lugar que você visita agora.",
-    "epitaph": "o {deaths}º a cair — um habitué da linha."
+    "epitaph": "o {deaths}º a cair, um habitué da linha."
   }
 ]

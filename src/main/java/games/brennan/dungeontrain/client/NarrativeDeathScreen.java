@@ -451,6 +451,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int TOP_TRAIN_MARGIN = 14, TOP_TRAIN_MIN_W = 80;
     /** Halo behind the nap sky's text: rings out, each ring's alpha, and the eight directions. */
     private static final int HALO_RINGS = 3;
+    /** Where every page starts (its kicker), and the gap kept above the footer's buttons when centring. */
+    private static final int CONTENT_TOP_Y = 40, CENTRE_FOOT_Y = 40;
     /** Room between the bottom of the donation page's supporter list and the footer's buttons. */
     private static final int DONATE_LIST_FOOT_GAP = 8;
     private static final float[] HALO_ALPHA = {1.0f, 0.55f, 0.25f};
@@ -950,7 +952,10 @@ public final class NarrativeDeathScreen extends Screen {
             drawTopBar(g, mouseX, mouseY);
             drawTopTrain(g);
 
-            int y = 40;
+            // The kicker stays at the top; everything under it is centred in the room above the
+            // footer, using where this page's content ended last frame (measured unshifted).
+            contentShift = centredShift(page);
+            int y = CONTENT_TOP_Y + contentShift;
             switch (page.kind()) {
                 case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, partialTick);
@@ -968,6 +973,8 @@ public final class NarrativeDeathScreen extends Screen {
                 case PHOTOS -> y = drawPhotos(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
+            contentBottoms.put(currentPage, y - contentShift);
+            contentShift = 0;
 
             drawFooter(g, page, mouseX, mouseY);
 
@@ -1273,7 +1280,7 @@ public final class NarrativeDeathScreen extends Screen {
         // place") when the server sent one, wrapped in the kicker style so a long cause
         // can't clip; otherwise the static "the fall" kicker.
         if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
-            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y, KICKER) + 3;
+            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y - contentShift, KICKER) + 3 + contentShift;
         } else {
             drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
             y += 14;
@@ -1919,7 +1926,7 @@ public final class NarrativeDeathScreen extends Screen {
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
         int ly = y + 30;
-        String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
+        String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "?";
 
         // Slot 1 — the ask. One card with three renderings, picked off the ladder: the running cost
         // in orange while the bill is what is being asked for; the next rung's cost in orange, with
@@ -3043,7 +3050,8 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawKicker(GuiGraphics g, int cx, int y, String key) {
-        drawCenteredStr(g, Component.translatable(key), cx, y, KICKER);
+        // Pinned to the top: the page's y arrives shifted down by the centring.
+        drawCenteredStr(g, Component.translatable(key), cx, y - contentShift, KICKER);
     }
 
     private void drawSecLabel(GuiGraphics g, int cx, int y, String key) {
@@ -3138,6 +3146,30 @@ public final class NarrativeDeathScreen extends Screen {
      * bottom edge, so every page's text starts just under its kicker. Left out when the bar is too
      * narrow for a few carriages.
      */
+    /** This frame's centring offset; the kicker draws {@code contentShift} higher so it stays put. */
+    private int contentShift;
+    /** Each page's content bottom from its last frame, as if drawn unshifted. */
+    private final java.util.Map<Integer, Integer> contentBottoms = new java.util.HashMap<>();
+
+    /**
+     * How far down to move a page's content (all but its kicker) so it sits centred between the
+     * kicker and the footer. Zero for pages laid out against the bottom of the screen (the nap sky,
+     * the supporter list, the photo strip, the live pages), whose height follows the screen.
+     */
+    private int centredShift(Page page) {
+        switch (page.kind()) {
+            case ONGOING, DONATE, BROADCAST, CROWD -> { return 0; }
+            case PHOTOS -> { if (!photos().isEmpty()) return 0; }
+            default -> { }
+        }
+        Integer bottom = contentBottoms.get(currentPage);
+        if (bottom == null) return 0;
+        int top = CONTENT_TOP_Y + 14 + TRAIN_GAP;   // where content starts under the kicker
+        int room = (this.height - CENTRE_FOOT_Y) - top;
+        int used = bottom - top;
+        return Math.max(0, (room - used) / 2);
+    }
+
     private void drawTopTrain(GuiGraphics g) {
         int left = 12 + this.font.width(Component.translatable("gui.dungeontrain.death.narr.brand")) + TOP_TRAIN_MARGIN;
         int right = this.width - 10;
