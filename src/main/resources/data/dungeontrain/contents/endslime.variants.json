@@ -1,7 +1,7 @@
 {
   "schemaVersion": 10,
   "variants": {
-    "3,0,2": ["dungeontrain:variant_placeholder", {"entity": "betterend:end_slime"}],
+    "3,0,2": ["dungeontrain:variant_placeholder", {"entity": "betterend:end_slime", "slime": {"types": ["mossy"]}}],
     "4,0,1": ["dungeontrain:variant_placeholder", {"entity": "betterend:end_slime", "difficulty": {"min": 7, "max": "all"}}],
     "4,0,3": ["dungeontrain:variant_placeholder", {"entity": "betterend:end_slime", "difficulty": {"min": 15, "max": "all"}}],
     "2,0,1": ["dungeontrain:variant_placeholder", {"entity": "betterend:end_slime", "difficulty": {"min": 20, "max": "all"}}],
