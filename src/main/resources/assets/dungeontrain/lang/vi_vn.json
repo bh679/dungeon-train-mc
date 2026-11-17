@@ -607,6 +607,7 @@
   "gui.dungeontrain.nap.night.decline": "Tỉnh dậy.",
   "gui.dungeontrain.nap.warning": "Tính năng này vẫn đang được phát triển",
   "gui.dungeontrain.nap.warning_items": "Bạn có sẵn sàng mất những thứ này nếu có sự cố không?",
+  "gui.dungeontrain.nap.warning_back_hint": "Hãy tìm một Rương Ender để cất đồ cho kiếp sau",
   "gui.dungeontrain.nap.main_menu": "Menu chính",
   "gui.dungeontrain.nap.ongoing.kicker": "một kiếp còn tiếp diễn",
   "gui.dungeontrain.nap.ongoing.headline": "Người %s lên tàu, và vẫn chưa ngã xuống.",

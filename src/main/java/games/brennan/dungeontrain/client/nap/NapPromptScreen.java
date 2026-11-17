@@ -6,12 +6,14 @@ import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +22,8 @@ import java.util.List;
  * "You feel comfortable here." The nap prompt a natural bed offers ({@code nap/NapBedEvents}), in its
  * daytime or night copy. Main Menu asks once more (the feature is still being tested with players),
  * then saves and quits; Stay awake / Wake up. (or Escape) carries on. That warning lays out everything
- * the player carries (inventory, armour, offhand) under its title, then asks whether they would lose it.
+ * the player carries (inventory, armour, offhand) under its title, then asks whether they would lose it;
+ * hovering its Back suggests an Ender Chest, the way to carry things into the next life.
  *
  * <p>The world fades out behind it over its first {@value #FADE_MS} ms, to 95% black, or fully black
  * when the player is already asleep. The final Main Menu hides the buttons and fades the rest of the
@@ -42,6 +45,9 @@ public final class NapPromptScreen extends Screen {
     private static final int GRID_MAX_COLS = 12;
     private static final int COLOUR_SLOT = 0x60000000;
     private static final int COLOUR_SLOT_EDGE = 0x40FFFFFF;
+    /** The Back hint's tooltip: an Ender Chest icon, then the line, padded like a vanilla tooltip. */
+    private static final ItemStack ENDER_CHEST = new ItemStack(Items.ENDER_CHEST);
+    private static final int HINT_PAD = 4, HINT_ICON = 16, HINT_ICON_GAP = 4, HINT_Z = 400;
 
     private static final long FADE_MS = 1000L;
     private static final float FADE_AWAKE = 0.95F;
@@ -67,6 +73,8 @@ public final class NapPromptScreen extends Screen {
     private List<ItemStack> carried = List.of();
     private int gridCols;
     private int gridTop;
+    /** The warning's Back button, whose hover shows the Ender Chest hint; null on the first prompt. */
+    private Button backButton;
 
     public NapPromptScreen(boolean night) {
         super(Component.translatable(keyPrefix(night) + "title"));
@@ -114,6 +122,7 @@ public final class NapPromptScreen extends Screen {
         Button other = warning
             ? Button.builder(CommonComponents.GUI_BACK, b -> showWarning(false)).build()
             : Button.builder(Component.translatable(prefix + "decline"), b -> respond(false)).build();
+        backButton = warning ? other : null;
         mainMenu.setRectangle(BUTTON_W, BUTTON_H, left, buttonY);
         other.setRectangle(BUTTON_W, BUTTON_H, left + BUTTON_W + BUTTON_GAP, buttonY);
         if (exiting()) return;
@@ -207,6 +216,22 @@ public final class NapPromptScreen extends Screen {
             y += lh;
         }
         renderCarried(g, mouseX, mouseY);
+        if (backButton != null && backButton.isHovered()) renderBackHint(g, mouseX, mouseY);
+    }
+
+    /** "Find an Ender Chest…" beside the cursor, with the chest's icon: kept on screen. */
+    private void renderBackHint(GuiGraphics g, int mouseX, int mouseY) {
+        Component text = Component.translatable("gui.dungeontrain.nap.warning_back_hint");
+        int w = HINT_ICON + HINT_ICON_GAP + this.font.width(text);
+        int h = HINT_ICON;
+        int x = Math.min(mouseX + 12, this.width - w - HINT_PAD - 2);
+        int y = Math.max(HINT_PAD + 2, mouseY - h - 12);
+        g.pose().pushPose();
+        g.pose().translate(0, 0, HINT_Z);
+        TooltipRenderUtil.renderTooltipBackground(g, x, y, w, h, 0);
+        g.renderItem(ENDER_CHEST, x, y);
+        g.drawString(this.font, text, x + HINT_ICON + HINT_ICON_GAP, y + (h - this.font.lineHeight) / 2 + 1, 0xFFFFFFFF);
+        g.pose().popPose();
     }
 
     /** The warning's grid of carried items, centred, with the hovered stack's tooltip. */

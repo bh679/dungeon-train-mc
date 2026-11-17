@@ -729,6 +729,7 @@
   "gui.dungeontrain.nap.night.decline": "Trezește-te.",
   "gui.dungeontrain.nap.warning": "Această funcție este încă în dezvoltare",
   "gui.dungeontrain.nap.warning_items": "Ești dispus să pierzi toate acestea dacă ceva nu merge bine?",
+  "gui.dungeontrain.nap.warning_back_hint": "Găsește un cufăr Ender ca să păstrezi obiecte pentru viața următoare",
   "gui.dungeontrain.nap.main_menu": "Meniu principal",
   "gui.dungeontrain.nap.ongoing.kicker": "o viață care continuă",
   "gui.dungeontrain.nap.ongoing.headline": "Este %s care urcă, și încă nu a căzut.",

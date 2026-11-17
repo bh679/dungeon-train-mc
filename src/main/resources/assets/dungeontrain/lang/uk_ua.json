@@ -729,6 +729,7 @@
   "gui.dungeontrain.nap.night.decline": "Прокинутися.",
   "gui.dungeontrain.nap.warning": "Ця функція ще в розробці",
   "gui.dungeontrain.nap.warning_items": "Ти готовий втратити все це, якщо щось піде не так?",
+  "gui.dungeontrain.nap.warning_back_hint": "Знайди скриню Енду, щоб зберегти предмети для наступного життя",
   "gui.dungeontrain.nap.main_menu": "Головне меню",
   "gui.dungeontrain.nap.ongoing.kicker": "життя триває",
   "gui.dungeontrain.nap.ongoing.headline": "Уже %s у дорозі, і ще не впав.",

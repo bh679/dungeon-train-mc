@@ -630,6 +630,7 @@
   "gui.dungeontrain.nap.night.decline": "Despertar.",
   "gui.dungeontrain.nap.warning": "Esta función aún está en desarrollo",
   "gui.dungeontrain.nap.warning_items": "¿Estás dispuesto a perder esto si algo sale mal?",
+  "gui.dungeontrain.nap.warning_back_hint": "Encuentra un cofre de Ender para guardar objetos para la próxima vida",
   "gui.dungeontrain.nap.main_menu": "Menú principal",
   "gui.dungeontrain.nap.ongoing.kicker": "una vida en curso",
   "gui.dungeontrain.nap.ongoing.headline": "El %s en subir, y aún sin caer.",

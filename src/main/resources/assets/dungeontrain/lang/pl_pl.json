@@ -653,6 +653,7 @@
   "gui.dungeontrain.nap.night.decline": "Obudź się.",
   "gui.dungeontrain.nap.warning": "Ta funkcja jest wciąż w fazie rozwoju",
   "gui.dungeontrain.nap.warning_items": "Czy możesz to stracić, jeśli coś pójdzie nie tak?",
+  "gui.dungeontrain.nap.warning_back_hint": "Znajdź skrzynię Endu, by przechować przedmioty na następne życie",
   "gui.dungeontrain.nap.main_menu": "Menu główne",
   "gui.dungeontrain.nap.ongoing.kicker": "życie, które trwa",
   "gui.dungeontrain.nap.ongoing.headline": "%s na pokładzie, i jeszcze nie poległ.",

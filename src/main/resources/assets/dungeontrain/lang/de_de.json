@@ -630,6 +630,7 @@
   "gui.dungeontrain.nap.night.decline": "Aufwachen.",
   "gui.dungeontrain.nap.warning": "Diese Funktion ist noch in Entwicklung",
   "gui.dungeontrain.nap.warning_items": "Bist du bereit, diese Dinge zu verlieren, wenn etwas schiefgeht?",
+  "gui.dungeontrain.nap.warning_back_hint": "Finde eine Endertruhe, um Gegenstände fürs nächste Leben aufzubewahren",
   "gui.dungeontrain.nap.main_menu": "Hauptmenü",
   "gui.dungeontrain.nap.ongoing.kicker": "ein Leben, das weitergeht",
   "gui.dungeontrain.nap.ongoing.headline": "Der %s auf dem Zug, und noch nicht gefallen.",

@@ -607,6 +607,7 @@
   "gui.dungeontrain.nap.night.decline": "Bangun.",
   "gui.dungeontrain.nap.warning": "Ciri ini masih dalam pembangunan",
   "gui.dungeontrain.nap.warning_items": "Adakah anda sanggup kehilangan semua ini jika berlaku masalah?",
+  "gui.dungeontrain.nap.warning_back_hint": "Cari Peti Ender untuk menyimpan item bagi kehidupan seterusnya",
   "gui.dungeontrain.nap.main_menu": "Menu Utama",
   "gui.dungeontrain.nap.ongoing.kicker": "kehidupan yang berterusan",
   "gui.dungeontrain.nap.ongoing.headline": "Yang %s menaiki, dan belum lagi tumbang.",

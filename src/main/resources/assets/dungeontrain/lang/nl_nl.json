@@ -630,6 +630,7 @@
   "gui.dungeontrain.nap.night.decline": "Word wakker.",
   "gui.dungeontrain.nap.warning": "Deze functie is nog in ontwikkeling",
   "gui.dungeontrain.nap.warning_items": "Ben je bereid dit kwijt te raken als er iets misgaat?",
+  "gui.dungeontrain.nap.warning_back_hint": "Zoek een enderkist om spullen te bewaren voor je volgende leven",
   "gui.dungeontrain.nap.main_menu": "Hoofdmenu",
   "gui.dungeontrain.nap.ongoing.kicker": "een leven dat doorgaat",
   "gui.dungeontrain.nap.ongoing.headline": "De %s die meerijdt, en nog niet gevallen.",

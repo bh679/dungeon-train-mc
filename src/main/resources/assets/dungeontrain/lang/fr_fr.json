@@ -630,6 +630,7 @@
   "gui.dungeontrain.nap.night.decline": "Se réveiller.",
   "gui.dungeontrain.nap.warning": "Cette fonctionnalité est encore en développement",
   "gui.dungeontrain.nap.warning_items": "Es-tu prêt à perdre tout ceci si quelque chose tourne mal ?",
+  "gui.dungeontrain.nap.warning_back_hint": "Trouve un coffre de l'Ender pour garder des objets pour ta prochaine vie",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.ongoing.kicker": "une vie qui continue",
   "gui.dungeontrain.nap.ongoing.headline": "Le %s à monter à bord, et pas encore à tomber.",

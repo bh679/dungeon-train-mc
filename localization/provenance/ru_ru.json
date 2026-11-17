@@ -658,6 +658,7 @@
   "gui.dungeontrain.nap.night.decline": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b2f79f2ac8ca8b91"},
   "gui.dungeontrain.nap.warning": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9581e7d9d2ce74a4"},
   "gui.dungeontrain.nap.warning_items": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "061fd659452937c3"},
+  "gui.dungeontrain.nap.warning_back_hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "41d8e6ef235b5a2c"},
   "gui.dungeontrain.nap.main_menu": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "35f9896e9461c34e"},
   "gui.dungeontrain.nap.ongoing.kicker": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "df05e038a04d4868"},
   "gui.dungeontrain.nap.ongoing.headline": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1d74480718ff4485"},

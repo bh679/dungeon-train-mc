@@ -607,6 +607,7 @@
   "gui.dungeontrain.nap.night.decline": "ตื่นขึ้น",
   "gui.dungeontrain.nap.warning": "ฟีเจอร์นี้ยังอยู่ระหว่างการพัฒนา",
   "gui.dungeontrain.nap.warning_items": "คุณยอมเสียของเหล่านี้ไปหรือไม่ หากเกิดข้อผิดพลาด?",
+  "gui.dungeontrain.nap.warning_back_hint": "หาหีบเอนเดอร์เพื่อเก็บไอเท็มไว้สำหรับชีวิตถัดไป",
   "gui.dungeontrain.nap.main_menu": "เมนูหลัก",
   "gui.dungeontrain.nap.ongoing.kicker": "ชีวิตที่ยังดำเนินต่อ",
   "gui.dungeontrain.nap.ongoing.headline": "ผู้โดยสารคน%s และยังไม่ล้มลง",

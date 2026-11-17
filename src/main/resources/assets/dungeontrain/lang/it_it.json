@@ -630,6 +630,7 @@
   "gui.dungeontrain.nap.night.decline": "Svegliati.",
   "gui.dungeontrain.nap.warning": "Questa funzione è ancora in sviluppo",
   "gui.dungeontrain.nap.warning_items": "Sei disposto a perdere tutto questo se qualcosa va storto?",
+  "gui.dungeontrain.nap.warning_back_hint": "Trova una cassa dell'End per conservare oggetti per la prossima vita",
   "gui.dungeontrain.nap.main_menu": "Menu principale",
   "gui.dungeontrain.nap.ongoing.kicker": "una vita che continua",
   "gui.dungeontrain.nap.ongoing.headline": "Il %s a salire a bordo, e non ancora a cadere.",

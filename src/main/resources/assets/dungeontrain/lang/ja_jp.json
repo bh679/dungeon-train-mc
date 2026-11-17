@@ -607,6 +607,7 @@
   "gui.dungeontrain.nap.night.decline": "目を覚ます。",
   "gui.dungeontrain.nap.warning": "この機能はまだ開発中です",
   "gui.dungeontrain.nap.warning_items": "うまくいかなかったとき、これらを失ってもかまいませんか？",
+  "gui.dungeontrain.nap.warning_back_hint": "エンダーチェストを見つけて、次の人生のためにアイテムをしまっておこう",
   "gui.dungeontrain.nap.main_menu": "メインメニュー",
   "gui.dungeontrain.nap.ongoing.kicker": "続いている生",
   "gui.dungeontrain.nap.ongoing.headline": "%sの乗客、まだ倒れてはいない。",

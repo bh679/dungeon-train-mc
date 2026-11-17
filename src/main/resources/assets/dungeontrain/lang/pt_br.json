@@ -630,6 +630,7 @@
   "gui.dungeontrain.nap.night.decline": "Acordar.",
   "gui.dungeontrain.nap.warning": "Este recurso ainda está em desenvolvimento",
   "gui.dungeontrain.nap.warning_items": "Você aceita perder estes itens se algo der errado?",
+  "gui.dungeontrain.nap.warning_back_hint": "Encontre um baú do Ender para guardar itens para a próxima vida",
   "gui.dungeontrain.nap.main_menu": "Menu principal",
   "gui.dungeontrain.nap.ongoing.kicker": "uma vida em curso",
   "gui.dungeontrain.nap.ongoing.headline": "O %s a embarcar, e ainda sem cair.",

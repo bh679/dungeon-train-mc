@@ -607,6 +607,7 @@
   "gui.dungeontrain.nap.night.decline": "醒来。",
   "gui.dungeontrain.nap.warning": "此功能仍在开发中",
   "gui.dungeontrain.nap.warning_items": "如果出了问题，你愿意失去这些物品吗？",
+  "gui.dungeontrain.nap.warning_back_hint": "找到末影箱，把物品存起来留给下一条命",
   "gui.dungeontrain.nap.main_menu": "主菜单",
   "gui.dungeontrain.nap.ongoing.kicker": "延续中的一生",
   "gui.dungeontrain.nap.ongoing.headline": "%s位乘客，尚未倒下。",
