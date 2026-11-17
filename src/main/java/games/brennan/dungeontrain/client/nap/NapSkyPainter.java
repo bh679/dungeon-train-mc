@@ -94,7 +94,12 @@ public final class NapSkyPainter {
 
     /** Whether this life's path has settled (gold) on the page opened at {@code pageOpenedAt}. */
     public boolean settled(long pageOpenedAt, long now) {
-        return now - pageOpenedAt - START_MS - liveStart >= livePath.depth() * STEP_MS * SETTLE_SLOW;
+        return now >= settledAt(pageOpenedAt);
+    }
+
+    /** When this life's path settles (gold) on the page opened at {@code pageOpenedAt}, in millis. */
+    public long settledAt(long pageOpenedAt) {
+        return pageOpenedAt + START_MS + liveStart + Math.round(livePath.depth() * STEP_MS * SETTLE_SLOW);
     }
 
     /**
