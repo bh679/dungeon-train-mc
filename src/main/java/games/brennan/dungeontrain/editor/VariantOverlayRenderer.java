@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import net.minecraft.nbt.CompoundTag;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -1249,9 +1250,11 @@ public final class VariantOverlayRenderer {
             VariantState shown = states.get(
                 VariantEditorPreviewTicker.pickEntryIndex(plot.key(), local, states.size(), previewTick));
             if (!shown.isMob() || shown.entityId() == null) continue;
+            CompoundTag ghostNbt = slimeGhostNbt(shown, previewTick);
             ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
-                plot.origin().offset(local), shown.entityId().toString(), shown.blockEntityNbt()));
+                plot.origin().offset(local), shown.entityId().toString(), ghostNbt));
             key.append('|').append(local.asLong()).append('=').append(shown.entityId());
+            if (ghostNbt != null) key.append(ghostNbt);
         }
         if (ghosts.isEmpty()) {
             clearMobGhostsIfStale(player);
@@ -1264,6 +1267,29 @@ public final class VariantOverlayRenderer {
     }
 
     /** Send the empty mob-ghost packet if the player previously had a non-empty snapshot. */
+    /**
+     * The ghost NBT for {@code shown}: its egg NBT, plus — on a slime, magma cube or End slime row —
+     * the {@link VariantSlime} size and End slime type it would spawn as, stepping through the lit
+     * ones (all of them when none is lit) on the preview's beat. An egg that bakes its own
+     * {@code Size} / {@code Variant} keeps it, as the spawn does.
+     */
+    static @org.jetbrains.annotations.Nullable CompoundTag slimeGhostNbt(VariantState shown, long previewTick) {
+        CompoundTag nbt = shown.blockEntityNbt();
+        if (!VariantSlime.isSlime(shown.entityId())) return nbt;
+        CompoundTag out = nbt == null ? new CompoundTag() : nbt.copy();
+        VariantSlime slime = shown.slime();
+        if (!out.contains("Size")) {
+            List<Integer> sizes = slime.sizes();
+            // Slime NBT stores size - 1.
+            out.putInt("Size", sizes.get((int) Math.floorMod(previewTick, (long) sizes.size())) - 1);
+        }
+        if (VariantSlime.isEndSlime(shown.entityId()) && !out.contains("Variant")) {
+            List<Integer> types = slime.types();
+            out.putInt("Variant", types.get((int) Math.floorMod(previewTick, (long) types.size())));
+        }
+        return out;
+    }
+
     private static void clearMobGhostsIfStale(ServerPlayer player) {
         if (LAST_MOB_GHOSTS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,

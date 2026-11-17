@@ -301,6 +301,7 @@ public final class BlockVariantMenuInputHandler {
             case POT_OPTION -> dispatchPot(hit, variantId, local);
             case CHARGE_OPTION -> dispatchCharges(hit, variantId, local, shift, button);
             case BED_COLOUR_OPTION -> dispatchBedColours(hit, variantId, local);
+            case SLIME_OPTION -> dispatchSlime(hit, variantId, local);
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -515,6 +516,27 @@ public final class BlockVariantMenuInputHandler {
         if (next.equals(current)) return;
         DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
             BlockVariantEditPacket.Op.SET_BED_COLOURS, variantId, local, hit.index(), "", next.mask()));
+    }
+
+    /**
+     * A slime-type row's Slime popup: a size or End slime type button switches it in or out of the
+     * spawn's pool (none lit = any). Same modal rules as the Grow popup.
+     */
+    private static void dispatchSlime(BlockVariantMenu.Hit hit, String variantId,
+                                      net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        games.brennan.dungeontrain.editor.VariantSlime current =
+            BlockVariantMenu.slime(BlockVariantMenu.entries().get(hit.index()));
+        games.brennan.dungeontrain.editor.VariantSlime next = SlimePopupLayout.toggled(
+            current, GrowthPopupLayout.section(code), GrowthPopupLayout.option(code));
+        if (next.equals(current)) return;
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+            BlockVariantEditPacket.Op.SET_SLIME, variantId, local, hit.index(), "", next.mask()));
     }
 
     private static NumberField rowNumber(BlockVariantMenu.CellKind kind, String variantId,

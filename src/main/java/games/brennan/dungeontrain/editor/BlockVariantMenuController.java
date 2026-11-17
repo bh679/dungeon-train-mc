@@ -349,7 +349,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
                 conditionValuesToken(plot, localPos, s.condition()),
                 s.candles().id(), s.pot().id(), s.trapped(),
-                s.charges().toInt(), s.bedColours().mask()));
+                s.charges().toInt(), s.bedColours().mask(), s.slime().mask()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -876,6 +876,20 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantPot next = potEdit(entry.pot(), packet, player);
                 if (next == null) return;
                 mutated.set(idx, entry.withPot(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_SLIME -> {
+                // delta = VariantSlime mask; the canonical VariantState constructor drops the type
+                // bits on a slime / magma cube row.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob() || !VariantSlime.isSlime(entry.entityId())) return;
+                VariantSlime next = new VariantSlime(packet.delta());
+                if (next.equals(entry.slime())) return;
+                mutated.set(idx, entry.withSlime(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

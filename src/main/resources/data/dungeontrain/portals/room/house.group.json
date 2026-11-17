@@ -196,6 +196,21 @@
       "minLevel": 15
     },
     {
+      "id": "thearchivistsociety",
+      "weight": 1,
+      "minLevel": 25
+    },
+    {
+      "id": "taslibrary1",
+      "weight": 1,
+      "minLevel": 15
+    },
+    {
+      "id": "tassortinghouse",
+      "weight": 0,
+      "minLevel": 100
+    },
+    {
       "id": "staircase",
       "weight": 4,
       "minLevel": 100
