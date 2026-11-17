@@ -531,6 +531,25 @@
       "name": "Firefly_on_ytb"
     }
   },
+  "thearchivistsociety": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/1/0"
+  },
   "tntlong": {
     "weight": 1,
     "minLevel": 10,

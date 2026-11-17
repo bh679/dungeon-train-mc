@@ -200,6 +200,11 @@
       "id": "outsidethebox",
       "weight": 3,
       "minLevel": 15
+    },
+    {
+      "id": "thearchivistsociety",
+      "weight": 1,
+      "minLevel": 25
     }
   ]
 }
