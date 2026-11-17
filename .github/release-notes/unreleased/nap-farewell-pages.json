@@ -1,0 +1,21 @@
+{
+  "id": "nap-farewell-pages",
+  "version": "0.1857.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Bedtime farewell and death screen refresh",
+  "summary": "Saving and quitting at a train bed now ends with a few pages of its own, and the death screens are easier to read.",
+  "highlights": [
+    "Resting in a train bed to save and quit now offers the feedback questions, a way to support the line, and a closing look at the life still underway",
+    "Before you go, the bed shows everything you are carrying and asks if you are willing to risk it",
+    "The death screen's train rides in the top bar, and each page now sits centred under its title"
+  ],
+  "pr": 2704,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
