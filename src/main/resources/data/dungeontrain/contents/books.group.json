@@ -175,6 +175,10 @@
         "LOST_CITY",
         "DEEPER_DARK"
       ]
+    },
+    {
+      "id": "hiddenbed",
+      "weight": 1
     }
   ]
 }
