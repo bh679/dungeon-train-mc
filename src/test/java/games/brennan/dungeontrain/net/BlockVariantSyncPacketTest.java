@@ -207,7 +207,7 @@ final class BlockVariantSyncPacketTest {
         int colours = 0b0100_0000_0000_0001; // white + red
         BlockVariantSyncPacket.Entry anchor = new BlockVariantSyncPacket.Entry(
             "minecraft:respawn_anchor", null, 1, (byte) 1, (byte) 0, null, null,
-            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", charges, colours);
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, charges, colours);
         BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
             "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
             (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "");

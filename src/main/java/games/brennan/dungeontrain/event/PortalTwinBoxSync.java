@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * Tells clients where the standing twin corridors are, so they can decline to predict a shulker box
- * into one — see {@link games.brennan.dungeontrain.client.portal.ClientShulkerBoxPrediction}.
+ * into one — see {@link games.brennan.dungeontrain.client.portal.ClientPortalContainerPrediction}.
  *
  * <p><b>Only when it changes.</b> {@link PortalPairIndex} is republished every tick as the train
  * moves, but the twins in it are stamped into the ground and do not move: the same pair yields the

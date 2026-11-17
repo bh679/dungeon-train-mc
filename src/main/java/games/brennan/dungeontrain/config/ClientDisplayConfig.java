@@ -340,6 +340,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue EVENT_REMINDERS;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. Off by default. */
+    public static final ModConfigSpec.BooleanValue DISCORD_RICH_PRESENCE;
     /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
@@ -502,6 +504,7 @@ public final class ClientDisplayConfig {
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         EVENT_REMINDERS = pair.getLeft().eventReminders;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        DISCORD_RICH_PRESENCE = pair.getLeft().discordRichPresence;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
         HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
@@ -994,6 +997,14 @@ public final class ClientDisplayConfig {
                 .define("lowMemoryNoticeChat", true);
         b.pop();
 
+        b.push("discord");
+        ModConfigSpec.BooleanValue discordRichPresence = b
+                .comment("Discord status: show \"Playing Dungeon Train\" and where you are (the Overworld, the Nether,",
+                         "the End, or riding the train) on your Discord profile. Talks only to the Discord app",
+                         "running on this computer; nothing is sent anywhere else. On by default; turn it off in Options → Account.")
+                .define("richPresence", true);
+        b.pop();
+
         b.push("dev");
         ModConfigSpec.BooleanValue devHud = b
                 .comment("Development builds only: draw the developer read-out (version, carriage, difficulty,",
@@ -1049,7 +1060,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat, eventReminders,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
+                lowMemoryNoticeChat, discordRichPresence, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme, placeholderCollision,
@@ -1578,6 +1589,22 @@ public final class ClientDisplayConfig {
         if (!isLoaded() || EVENT_REMINDERS.get() == value) return;
         EVENT_REMINDERS.set(value);
         EVENT_REMINDERS.save();
+    }
+
+    /**
+     * The Discord status switch (Options row, Account tab): whether this client shows its game on the
+     * player's Discord profile through the local Discord app. Off by default, pre-load included, so
+     * nothing reaches Discord until the player turns it on.
+     */
+    public static boolean isDiscordRichPresence() {
+        return isLoaded() && DISCORD_RICH_PRESENCE.get();
+    }
+
+    /** Persist the Discord status switch. Idempotent; no-op pre-load. */
+    public static void setDiscordRichPresence(boolean value) {
+        if (!isLoaded() || DISCORD_RICH_PRESENCE.get() == value) return;
+        DISCORD_RICH_PRESENCE.set(value);
+        DISCORD_RICH_PRESENCE.save();
     }
 
     /**
@@ -2507,6 +2534,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue eventReminders,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.BooleanValue discordRichPresence,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
             ModConfigSpec.BooleanValue hideOtherAdvancementCards,

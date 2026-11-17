@@ -438,6 +438,15 @@ public final class AdvancementProfiles {
      * Run {@code awards} with chat announcements, Discord Presence's announce and the earn-event side
      * effects all stood down — for awards that restore what the player already earned.
      */
+    /**
+     * Run {@code awards} with chat and Discord announcements off and {@link #isReplaying} set, so what it
+     * grants is restored quietly rather than celebrated, and is not banked. For re-deriving advancements
+     * the player already holds, never for a genuine first earn.
+     */
+    public static void grantSilently(MinecraftServer server, Runnable awards) {
+        silently(server, awards);
+    }
+
     private static void silently(MinecraftServer server, Runnable awards) {
         GameRules.BooleanValue announce = server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS);
         boolean wasAnnouncing = announce.get();

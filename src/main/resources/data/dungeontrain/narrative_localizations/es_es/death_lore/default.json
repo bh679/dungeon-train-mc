@@ -57,7 +57,7 @@
     "weight": 3,
     "conditions": { "min_deaths": 2 },
     "question": "Todas estas son buenas preguntas",
-    "narration": "Estas no son las marcas de una sola vida. A lo largo de las {deaths} —cada oscuridad en la que subiste, cada vez que la línea te llevó y aun así volviste—, esto es todo tu viaje."
+    "narration": "Estas no son las marcas de una sola vida. A lo largo de las {deaths}, cada oscuridad en la que subiste, cada vez que la línea te llevó y aun así volviste, esto es todo tu viaje."
   },
   {
     "page": "lives",
@@ -146,7 +146,7 @@
     "page": "deeds",
     "weight": 2,
     "question": "¿Por qué estás aquí?",
-    "narration": "{mobs} criaturas cayeron ante ti y {hearts} corazones cayeron de ti. Te cruzaste con {met} almas en la oscuridad —pusiste fin a {slain}, conservaste a {friends}— y luego te tocó a ti."
+    "narration": "{mobs} criaturas cayeron ante ti y {hearts} corazones cayeron de ti. Te cruzaste con {met} almas en la oscuridad, pusiste fin a {slain}, conservaste a {friends}, y luego te tocó a ti."
   },
   {
     "page": "deeds",
@@ -166,7 +166,7 @@
     "weight": 1,
     "conditions": { "min_slain": 5 },
     "question": "¿Con qué respondiste a la oscuridad?",
-    "narration": "De las {met} que encontraste, a {slain} abatiste —y {mobs} criaturas más en la oscuridad, además— a costa de {hearts} corazones, y a {friends} perdonaste para llamarlos amigos. La línea no lo llama asesinato."
+    "narration": "De las {met} que encontraste, a {slain} abatiste, y {mobs} criaturas más en la oscuridad, además, a costa de {hearts} corazones, y a {friends} perdonaste para llamarlos amigos. La línea no lo llama asesinato."
   },
 
   {
@@ -187,7 +187,7 @@
     "weight": 1,
     "conditions": { "max_loot": 9 },
     "question": "¿Qué se supone que debes hacer?",
-    "narration": "Un puñado de cajas abiertas —{loot} en total— y una hoja siempre a mano. La línea es generosa con quienes se detienen; tú apenas te detuviste."
+    "narration": "Un puñado de cajas abiertas, {loot} en total, y una hoja siempre a mano. La línea es generosa con quienes se detienen; tú apenas te detuviste."
   },
   {
     "page": "gear",
@@ -252,7 +252,7 @@
     "weight": 2,
     "conditions": { "min_deaths": 2 },
     "question": "¿Volverás a subir, o dejarás que el andén te retenga?",
-    "narration": "El silbato ya suena, lejos por delante. No te espera —nunca lo hizo—, y sin embargo aquí estás, decidiendo seguirlo.",
+    "narration": "El silbato ya suena, lejos por delante. No te espera, nunca lo hizo, y sin embargo aquí estás, decidiendo seguirlo.",
     "epitaph": "el {deaths}.º en caer. la línea continúa."
   },
   {

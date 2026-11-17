@@ -54,7 +54,7 @@ final class PlayerRunStateNapExtrasTest {
         "cartsBackwardSinceDeath", "travelledCarriageIndex", "mobKills", "distanceBlocks", "containersOpened",
         "booksReadCount", "weaponKills", "playerKills", "damageDealt", "damageTaken", "encounteredMobs",
         "befriendedMobs", "trainTimeTicks");
-    private static final Set<String> IN_NAP_EXTRAS = Set.of("echoesKilled", "carriagesSinceChest",
+    private static final Set<String> IN_NAP_EXTRAS = Set.of("echoesKilled", "echoesMet", "carriagesSinceChest",
         "maxCarriagesNoChest", "killedMobs", "narrativeLetters", "booksWrittenCount", "ownShelfBoostPending",
         "deathNotesWritten", "loveNotesWritten", "photosTaken", "photosTributed", "photosPassengers",
         "photosHostile", "photosAnimals", "photoShots", "photosViewed", "tributesMade", "tributeEmeralds",
@@ -124,6 +124,9 @@ final class PlayerRunStateNapExtrasTest {
         s.recordTame(ResourceLocation.parse("minecraft:cat"));
         s.recordCameraFrame(frame("dt_photo_1"));
         s.recordCameraFrame(frame("dt_photo_2"));
+        s.countEchoMet();
+        s.countEchoMet();
+        s.countEchoMet();
         return s;
     }
 
@@ -141,6 +144,7 @@ final class PlayerRunStateNapExtrasTest {
         PlayerRunState woken = wake(lived());
 
         assertEquals(2, woken.echoesKilled());
+        assertEquals(3, woken.echoesMet());
         assertEquals(10, woken.maxCarriagesNoChest());
         woken.recordCartMovement(7); // 4 carried + 7 = 11 beats the carried high-water mark of 10
         assertEquals(11, woken.maxCarriagesNoChest(), "carriagesSinceChest was carried");

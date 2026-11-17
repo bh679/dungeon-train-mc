@@ -142,7 +142,11 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Respawn anchor row: delta = VariantCharges.toInt() (ranged bit, min, max).
                      SET_CHARGES,
                      // White bed row: delta = VariantBedColours mask (DyeColor id bits).
-                     SET_BED_COLOURS }
+                     SET_BED_COLOURS,
+                     // Plain chest row: step the trapped-chest chance by delta, wrapping 0..100.
+                     BUMP_TRAPPED,
+                     // Plain chest row: set the trapped-chest chance to delta (cmd-click number pad).
+                     SET_TRAPPED }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

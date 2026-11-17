@@ -220,9 +220,10 @@ public final class RotationApplier {
      * redstone toggle. {@code base} is normally {@code entry.state()} after the caller's stage
      * resolution — passed separately so this class stays free of the train package. Use this from
      * any stamp pass that writes a picked {@link VariantState}; writing {@code entry.state()}
-     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers, and the candle count
+     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers, the candle count
      * ({@link VariantCandles}), flower pot plant ({@link VariantPot}), respawn anchor charge
-     * ({@link VariantCharges}) and white bed colour ({@link VariantBedColours}) options.
+     * ({@link VariantCharges}) and white bed colour ({@link VariantBedColours}) options, and a
+     * chest row's trapped-chest chance ({@link TrappedChestRoll}).
      */
     public static BlockState apply(
         BlockState base, VariantState entry,
@@ -235,7 +236,8 @@ public final class RotationApplier {
         placed = entry.pot().apply(placed, key, worldSeed, carriageIndex);
         placed = entry.charges().apply(placed, key, worldSeed, carriageIndex);
         // Keyed on the bed's head cell (not this cell) so both halves roll the same colour.
-        return entry.bedColours().apply(placed, localPos, lockId, worldSeed, carriageIndex);
+        placed = entry.bedColours().apply(placed, localPos, lockId, worldSeed, carriageIndex);
+        return TrappedChestRoll.apply(placed, entry.trapped(), localPos, worldSeed, carriageIndex);
     }
 
     /**

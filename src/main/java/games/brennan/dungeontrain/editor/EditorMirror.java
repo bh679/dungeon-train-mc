@@ -247,7 +247,7 @@ public final class EditorMirror {
             v.linkedLootPrefabId(), v.entityId(),
             reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.connect(),
             flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung(),
-            v.groupStates(), condition, v.candles(), v.pot(), v.charges(), v.bedColours());
+            v.groupStates(), condition, v.candles(), v.pot(), v.trapped(), v.charges(), v.bedColours());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */
