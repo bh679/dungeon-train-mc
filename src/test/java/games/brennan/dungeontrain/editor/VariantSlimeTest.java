@@ -113,4 +113,25 @@ final class VariantSlimeTest {
         assertEquals(opts, parsed.states().get(0).slime());
         assertTrue(parsed.states().get(1).slime().isDefault());
     }
+
+    @Test
+    @DisplayName("the editor ghost shows the lit size and type, stepping through them; egg NBT wins")
+    void ghostNbt() {
+        VariantSlime opts = VariantSlime.NONE.toggledSize(2).toggledSize(4).toggledType(3);
+        VariantState end = VariantState.ofMob(END_SLIME, null, 1, VariantRotation.NONE).withSlime(opts);
+        net.minecraft.nbt.CompoundTag t0 = VariantOverlayRenderer.slimeGhostNbt(end, 0);
+        net.minecraft.nbt.CompoundTag t1 = VariantOverlayRenderer.slimeGhostNbt(end, 1);
+        assertEquals(1, t0.getInt("Size"));
+        assertEquals(3, t1.getInt("Size"));
+        assertEquals(3, t0.getInt("Variant"));
+        assertEquals(3, t1.getInt("Variant"));
+        assertFalse(VariantOverlayRenderer.slimeGhostNbt(
+            VariantState.ofMob(SLIME, null, 1, VariantRotation.NONE).withSlime(opts), 0).contains("Variant"));
+        assertNull(VariantOverlayRenderer.slimeGhostNbt(
+            VariantState.ofMob(ZOMBIE, null, 1, VariantRotation.NONE), 0));
+        net.minecraft.nbt.CompoundTag egg = new net.minecraft.nbt.CompoundTag();
+        egg.putInt("Variant", 1);
+        assertEquals(1, VariantOverlayRenderer.slimeGhostNbt(
+            VariantState.ofMob(END_SLIME, egg, 1, VariantRotation.NONE).withSlime(opts), 0).getInt("Variant"));
+    }
 }
