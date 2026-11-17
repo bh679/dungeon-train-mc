@@ -36440,6 +36440,207 @@
       "released": true,
       "released_in": "v0.1856.0",
       "released_at": "2026-11-17T05:09:40Z"
+    },
+    {
+      "id": "house-rooms-weights",
+      "version": "0.1841.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage rooms",
+      "summary": "Three new rooms to find, and rare rooms no longer vanish after a short stretch of track: they stay rare, but can turn up later in a run.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-abandon-screen",
+      "version": "0.1841.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Step off screen redesign",
+      "summary": "Stepping off the train now shows everything you would lose, most valuable first, and the ways to keep it.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-counter-direction",
+      "version": "0.1841.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-keeps-guest-progress",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer"
+      ],
+      "title": "Naps respect other players' saved progress",
+      "summary": "A world where another player has saved progress no longer offers a nap, so their things are never lost with it.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-replay-fixes",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "pr": 2686,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-train-beds-only",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z",
+      "pr": 2697
+    },
+    {
+      "id": "nap-wake-hardening",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "builder-credits-nov-17",
+      "version": "0.1858.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Builder credits",
+      "summary": "More of the community's builds now credit the players who made them.",
+      "highlights": [
+        "Builder credits added for two rooms"
+      ],
+      "pr": 2708,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "donate-on-behalf-of",
+      "version": "0.1857.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Donate on behalf of a friend",
+      "summary": "Gift a donation in someone else's name, straight from the Contribute screen.",
+      "highlights": [
+        "A small face button next to the currency picks who a gift is for: you, or someone else by their Minecraft name",
+        "Their face shows once the name is found, and the checkout carries their name for the board",
+        "It goes back to you every time the screen opens"
+      ],
+      "pr": 2705,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-farewell-pages",
+      "version": "0.1857.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Sleep Deep. Sleep Safe. Sleep, Save and Quit",
+      "summary": "Rest in a bed aboard the train to save and quit, then come back to your run where you left it.",
+      "highlights": [
+        "Resting in a train bed to save and quit now offers the feedback questions, a way to support the line, and a closing look at the life still underway",
+        "Before you go, the bed shows everything you are carrying and asks if you are willing to risk it",
+        "The death screen's train rides in the top bar, and each page now sits centred under its title"
+      ],
+      "pr": 2704,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z",
+      "major": true,
+      "description": "Its finally here. The most request feature to date.\nTrain beds now let you save and quit.\n\nRest in a bed aboard the train and you can step away from the line, then come back to your run where you left it. But be careful where you use a bed! The nether and end are as unforgiving as ever. Saving isn't impossible there, but done differently. So keep your eyes open for ways to give them a rest.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.gif",
+      "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.mp4",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.loop.mp4",
+      "video_cover": 9.0
+    },
+    {
+      "id": "new-rooms-nov-17",
+      "version": "0.1857.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New rooms to find",
+      "summary": "A handful of new rooms have been added to the train, along with a refreshed take on an old favourite.",
+      "highlights": [
+        "New rooms to discover as you ride",
+        "An existing room has been reworked"
+      ],
+      "pr": 2706,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
     }
   ]
 }
