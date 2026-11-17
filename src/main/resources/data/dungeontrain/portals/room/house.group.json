@@ -208,7 +208,13 @@
     },
     {
       "id": "taslibrary1",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 15
+    },
+    {
+      "id": "tassortinghouse",
+      "weight": 1,
+      "minLevel": 100
     }
   ]
 }

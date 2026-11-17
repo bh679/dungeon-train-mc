@@ -526,7 +526,26 @@
   "taslibrary1": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "void/exact/off/off/mix/cycle"
+    "mode": "bedrock/exact/off/off/mix/day/sealed/0/0/0/0/dungeontrain:skybox_surface"
+  },
+  "tassortinghouse": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/0/0/dungeontrain:skybox_surface/off"
   },
   "terrarium": {
     "weight": 1,
@@ -553,7 +572,7 @@
       "AMPLIFIED",
       "LOST_CITY"
     ],
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/1/0"
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/1/0/dungeontrain:skybox_surface"
   },
   "tntlong": {
     "weight": 1,
