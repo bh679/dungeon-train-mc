@@ -713,7 +713,6 @@
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s lives drew their lines across this sky. This one is still drawing.",
   "gui.dungeontrain.nap.ongoing.totals": "Before this one: %s aboard, %s carriages, %s.",
   "gui.dungeontrain.nap.ongoing.question": "Which way will this life go?",
-  "gui.dungeontrain.nap.ongoing.settled": "This way, for now. It can still change.",
   "gui.dungeontrain.nap.free_play_cause": "Woke from a Free Play run",
   "chat.dungeontrain.nap.tampered.moved": "The train doesn't recognise this bed, it's been tampered with.",
   "chat.dungeontrain.nap.tampered.made": "The train knows a bed of your making from one of its own, this won't work here.",

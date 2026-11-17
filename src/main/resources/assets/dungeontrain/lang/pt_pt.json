@@ -637,7 +637,6 @@
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s vidas traçaram as suas linhas neste céu. Esta ainda está a traçar.",
   "gui.dungeontrain.nap.ongoing.totals": "Antes desta: %s a bordo, %s carruagens, %s.",
   "gui.dungeontrain.nap.ongoing.question": "Que caminho vai esta vida seguir?",
-  "gui.dungeontrain.nap.ongoing.settled": "Este caminho, por agora. Ainda pode mudar.",
   "gui.dungeontrain.nap.free_play_cause": "Acordaste de uma partida em Jogo Livre",
   "chat.dungeontrain.nap.tampered.moved": "O comboio não reconhece esta cama, mexeram nela.",
   "chat.dungeontrain.nap.tampered.made": "O comboio distingue uma cama feita por ti de uma das dele, isto não vai funcionar aqui.",

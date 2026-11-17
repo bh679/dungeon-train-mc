@@ -637,7 +637,6 @@
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s Leben zogen ihre Linien über diesen Himmel. Dieses zeichnet noch.",
   "gui.dungeontrain.nap.ongoing.totals": "Vor diesem: %s an Bord, %s Waggons, %s.",
   "gui.dungeontrain.nap.ongoing.question": "Welchen Weg nimmt dieses Leben?",
-  "gui.dungeontrain.nap.ongoing.settled": "Diesen Weg, vorerst. Er kann sich noch ändern.",
   "gui.dungeontrain.nap.free_play_cause": "Aus einem Lauf im Freien Spiel aufgewacht",
   "chat.dungeontrain.nap.tampered.moved": "Der Zug erkennt dieses Bett nicht, jemand hat daran herumgepfuscht.",
   "chat.dungeontrain.nap.tampered.made": "Der Zug unterscheidet ein Bett aus deiner Hand von einem seiner eigenen, das funktioniert hier nicht.",

@@ -449,6 +449,12 @@ public final class NarrativeDeathScreen extends Screen {
     /** The space under a page's kicker, now that the train rides in the top bar ({@link #drawTopTrain}). */
     private static final int TRAIN_GAP = 10;
     private static final int TOP_TRAIN_MARGIN = 14, TOP_TRAIN_MIN_W = 80;
+    /** Halo behind the nap sky's text: rings out, each ring's alpha, and the eight directions. */
+    private static final int HALO_RINGS = 3;
+    /** Room between the bottom of the donation page's supporter list and the footer's buttons. */
+    private static final int DONATE_LIST_FOOT_GAP = 8;
+    private static final float[] HALO_ALPHA = {1.0f, 0.55f, 0.25f};
+    private static final int[][] HALO_DIRS = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
     /** Set once a nap-mode exit has started, so a second click can't leave twice. */
     private boolean napLeaving = false;
     /** The "a life ongoing" sky (nap mode), made once the lifetime stats arrive. */
@@ -1536,30 +1542,54 @@ public final class NarrativeDeathScreen extends Screen {
      * ({@code RunStatsEvents#napPacket}); a first life has none.
      */
     private int drawOngoing(GuiGraphics g, DeathStatsPacket s, int left, int w, int cx, int y) {
-        drawKicker(g, cx, y, "gui.dungeontrain.nap.ongoing.kicker");
+        // Every line here sits over the sky's star lines, so each gets a halo in the sky's own colour.
+        drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.kicker"), cx, w, y, KICKER);
         y += 14;
         y += TRAIN_GAP;
         if (s == null) return y;
         long past = Math.max(0L, s.lifeDeaths());
         String locale = Minecraft.getInstance().getLanguageManager().getSelected();
         String nth = LocaleOrdinalWords.forLocale(locale, past + 1L, LocaleOrdinalWords.Gender.MASCULINE);
-        y = drawQuestion(g, Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString(), cx, w, y);
+        String headline = Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString();
+        y = drawHaloed(g, styled(headline), cx, w, y + 2, QUESTION) + 2;
         y += 2;
         Component sub = past == 0L ? Component.translatable("gui.dungeontrain.nap.ongoing.subline_first")
             : PluralRules.clause(locale, "gui.dungeontrain.nap.ongoing.subline_past", past);
-        y = drawCentered(g, sub, cx, w, y, NARR);
+        y = drawHaloed(g, sub, cx, w, y, NARR);
 
         int rowY = this.height - 28;
+        // The question asks while the paths cycle; once this life's path settles the sky speaks for itself.
         boolean settled = napSky != null && napSky.settled(pageOpenedAtMs, Util.getMillis());
-        drawCenteredStr(g, Component.translatable(settled
-            ? "gui.dungeontrain.nap.ongoing.settled" : "gui.dungeontrain.nap.ongoing.question"),
-            cx, rowY - 14, NAP_SKY_TEXT);
+        if (!settled) {
+            drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.question"), cx, w, rowY - 14, NAP_SKY_TEXT);
+        }
         if (past > 0L) {
-            drawCenteredStr(g, Component.translatable("gui.dungeontrain.nap.ongoing.totals",
+            drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.totals",
                 fmtAboard(s.lifeTrainTicks()), Long.toString(s.lifeCarriages()), fmtDist(s.lifeDistance())),
-                cx, rowY - 27, KICKER);
+                cx, w, rowY - 27, KICKER);
         }
         return y;
+    }
+
+    /**
+     * {@code text} centred and wrapped like {@link #drawCentered}, over a soft halo in the nap sky's
+     * background colour: rings of copies 1 to {@link #HALO_RINGS} pixels out, fainter further out.
+     * The halo copies are unstyled, so styled figures do not tint it.
+     */
+    private int drawHaloed(GuiGraphics g, Component text, int cx, int w, int y, int color) {
+        Component plain = Component.literal(text.getString());
+        PoseStack ps = g.pose();
+        for (int r = HALO_RINGS; r >= 1; r--) {
+            int a = Math.round(0xFF * HALO_ALPHA[r - 1]);
+            int halo = fade((a << 24) | NapSkyPainter.BG);
+            for (int[] d : HALO_DIRS) {
+                ps.pushPose();
+                ps.translate(d[0] * r, d[1] * r, 0);
+                DeathScreenText.drawCentered(g, this.font, plain, cx, w, y, halo);
+                ps.popPose();
+            }
+        }
+        return drawCentered(g, text, cx, w, y, color);
     }
 
     /**
@@ -1950,7 +1980,10 @@ public final class NarrativeDeathScreen extends Screen {
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
                 rightX + colW / 2, y, KICKER);
         int listTop = y + 12;
-        int listH = Math.max(this.font.lineHeight + 2, leftBottom - listTop); // align to the left block
+        // Down to just above the footer's buttons, so the names use the room under the tiles; never
+        // shorter than the left block.
+        int listBottom = Math.max(leftBottom, this.height - 28 - DONATE_LIST_FOOT_GAP);
+        int listH = Math.max(this.font.lineHeight + 2, listBottom - listTop);
         int rowH = this.font.lineHeight + 2;
         List<DonationSummaryClient.Entry> board = s.monthly();
         donateListMaxScroll = Math.max(0, board.size() * rowH - listH);

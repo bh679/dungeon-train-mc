@@ -613,7 +613,6 @@
   "gui.dungeontrain.nap.ongoing.subline_past.other": "%s kiếp đã vạch đường của mình trên bầu trời này. Kiếp này vẫn đang vẽ.",
   "gui.dungeontrain.nap.ongoing.totals": "Trước kiếp này: %s trên tàu, %s toa, %s.",
   "gui.dungeontrain.nap.ongoing.question": "Kiếp này sẽ đi lối nào?",
-  "gui.dungeontrain.nap.ongoing.settled": "Lối này, lúc này. Vẫn có thể thay đổi.",
   "gui.dungeontrain.nap.free_play_cause": "Tỉnh dậy từ một lượt chơi ở chế độ Chơi Tự do",
   "chat.dungeontrain.nap.tampered.moved": "Đoàn tàu không nhận ra chiếc giường này, nó đã bị can thiệp.",
   "chat.dungeontrain.nap.tampered.made": "Đoàn tàu phân biệt được giường bạn làm với giường của nó, ở đây không được đâu.",

@@ -25,7 +25,9 @@ import java.util.UUID;
 @OnlyIn(Dist.CLIENT)
 public final class NapSkyPainter {
 
-    private static final int BG = 0x070B16, DOT = 0xE8E4D6, DIM = 0x8E94A8;
+    /** The sky's background colour (RGB): also the halo behind the page's text, so it reads over the lines. */
+    public static final int BG = 0x070B16;
+    private static final int DOT = 0xE8E4D6, DIM = 0x8E94A8;
     private static final int PATH = 0xC8D2F0, LIVE = 0xE1E6FA, GOLD = 0xE4B95A, GOLD_STAR = 0xF0D796;
     private static final int FIELD = 140;
     private static final long TWINKLE_MS = 3000, STARS_IN_MS = 600, START_MS = 500;
