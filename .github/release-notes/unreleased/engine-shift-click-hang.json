@@ -1,0 +1,17 @@
+{
+  "id": "engine-shift-click-hang",
+  "version": "0.1854.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train",
+    "ui"
+  ],
+  "title": "Shift-clicking coal into a full engine no longer freezes the game",
+  "summary": "Shift-clicking coal into a Drifting Engine Block that already held all the coal it could take froze the game. Now the coal just stays in your inventory.",
+  "highlights": [],
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
