@@ -73,6 +73,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.advancements.AdvancementHolder;
@@ -128,7 +129,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * page set is rebuilt if the cached questions arrive after the screen opens.</p>
  *
  * <p><b>Nap mode</b> ({@link #afterNap}): after a nap is saved ({@code nap/NapService}) the same
- * screen shows only the feedback questions and the Contribute page, with Main Menu in place of
+ * screen shows "a life ongoing" first, then the feedback questions and the Contribute page, with Main Menu in place of
  * Board anew / Leave. It pauses the world, sends no death photos and no death-funnel analytics, and
  * leaves through {@code NapQuit#leaveNow}, which deletes the napped world.</p>
  */
@@ -289,6 +290,8 @@ public final class NarrativeDeathScreen extends Screen {
     private String openedPage = null;
     private String openedQuestionId = null;
     private long pageOpenedAtMs = 0L;
+    /** "a life ongoing": how far a click has fast-forwarded the page's animation clock, in millis. */
+    private long ongoingSkipMs = 0L;
     // Plea variants shown above the 2nd (and any later) survey question. The 1st question keeps the
     // calm "ledger" intro; the 2nd swaps to one of these urgent pleas, chosen at random per death
     // (see surveyIntro2Choice).
@@ -461,6 +464,8 @@ public final class NarrativeDeathScreen extends Screen {
     private boolean napLeaving = false;
     /** The "a life ongoing" sky (nap mode), made once the lifetime stats arrive. */
     private NapSkyPainter napSky = null;
+    /** The nap sky's band: from this far down the screen to this far above its bottom edge. */
+    private static final int NAP_SKY_TOP = 44, NAP_SKY_BOTTOM_GAP = 34;
     /** The bottom question / answer line under the nap sky. */
     private static final int NAP_SKY_TEXT = 0xFFD8C79A;
 
@@ -476,7 +481,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * The nap farewell: the feedback questions and the Contribute page, shown once the nap is saved
+     * The nap farewell: "a life ongoing", the feedback questions and the Contribute page, shown once the nap is saved
      * and before the player leaves {@code levelId} for the title screen.
      */
     public static NarrativeDeathScreen afterNap(String levelId) {
@@ -576,12 +581,12 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
-    /** Nap mode's deck: the feedback questions (with their answer pages), Contribute, then "a life ongoing". */
+    /** Nap mode's deck: "a life ongoing" first, then the feedback questions (with their answer pages), then Contribute. */
     private List<Page> buildNapPages() {
         List<Page> list = new ArrayList<>();
+        list.add(Page.of(Kind.ONGOING));
         addSurveyPages(list);
         list.add(Page.of(Kind.DONATE));
-        list.add(Page.of(Kind.ONGOING));
         // Kept in step with what tick() compares, so it doesn't rebuild every tick.
         lastPhotoCount = photoSet().size();
         lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
@@ -1097,6 +1102,7 @@ public final class NarrativeDeathScreen extends Screen {
         openedPage = nap() ? null : pageAnalyticsId(page.kind());
         openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
         pageOpenedAtMs = Util.getMillis();
+        ongoingSkipMs = 0L;
         if (openedPage == null) return; // untracked page — leavePageAnalytics skips it too
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId);
     }
@@ -1543,7 +1549,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * The nap farewell's last page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
+     * The nap farewell's first page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
      * and not yet to fall.") over the perks sky ({@link #drawNapSky}): one line per previous life, then
      * this life's, still open. The quiet totals line holds only the lives before this one
      * ({@code RunStatsEvents#napPacket}); a first life has none.
@@ -1566,16 +1572,126 @@ public final class NarrativeDeathScreen extends Screen {
 
         int rowY = this.height - 28;
         // The question asks while the paths cycle; once this life's path settles the sky speaks for itself.
-        boolean settled = napSky != null && napSky.settled(pageOpenedAtMs, Util.getMillis());
+        boolean settled = napSky != null && napSky.settled(ongoingStart(), Util.getMillis());
         if (!settled) {
             drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.question"), cx, w, rowY - 14, NAP_SKY_TEXT);
         }
-        if (past > 0L) {
-            drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.totals",
-                fmtAboard(s.lifeTrainTicks()), Long.toString(s.lifeCarriages()), fmtDist(s.lifeDistance())),
-                cx, w, rowY - 27, KICKER);
-        }
+        if (past > 0L) drawOngoingCards(g, s, y);
         return y;
+    }
+
+    /** Width of one "a life ongoing" totals card, and the gap between cards and to the screen edge. */
+    private static final int ONGOING_CARD_W = 76, ONGOING_CARD_GAP = 4, ONGOING_CARD_EDGE = 12;
+    /** A totals card's height, as {@link #drawCell} draws it. */
+    private static final int ONGOING_CARD_H = 26;
+    /** The cards appear one at a time: the first this long after the sky's path settles, then one per step. */
+    private static final long ONGOING_CARD_DELAY_MS = 300L, ONGOING_CARD_STEP_MS = 450L, ONGOING_CARD_FADE_MS = 500L;
+    /** Next Screen and Main Menu show by this long into "a life ongoing", whatever is still coming. */
+    private static final long ONGOING_REVEAL_CAP_MS = 12_000L;
+    /** Next Screen and Main Menu fade in over this long once the last card is in. */
+    private static final long ONGOING_CONTROLS_FADE_MS = 400L;
+    /** How far a card rises as it fades in, in GUI pixels. */
+    private static final int ONGOING_CARD_RISE = 4;
+    /** Below this a card isn't drawn: the font draws near-zero alpha text fully opaque. */
+    private static final float ONGOING_CARD_MIN_ALPHA = 0.03f;
+
+    /**
+     * The lives before this one, as a column of cards down the right edge of "a life ongoing": how
+     * many lives, time aboard, carriages, distance. Centred on the sky's middle but never above {@code textBottom}
+     * (the headline lines run wide), each card backed by the sky's colour so the star lines don't
+     * show through it. They wait for this life's path to settle on the sky, then fade in one at a
+     * time, top first, each rising a little as it comes.
+     */
+    private void drawOngoingCards(GuiGraphics g, DeathStatsPacket s, int textBottom) {
+        List<String[]> cards = ongoingCards(s);
+        int columnH = cards.size() * ONGOING_CARD_H + (cards.size() - 1) * ONGOING_CARD_GAP;
+        int skyMid = (NAP_SKY_TOP + (this.height - NAP_SKY_BOTTOM_GAP)) / 2;
+        int top = Math.max(textBottom + ONGOING_CARD_GAP * 2, skyMid - columnH / 2);
+        int centerX = this.width - ONGOING_CARD_EDGE - ONGOING_CARD_W / 2;
+        int x = centerX - ONGOING_CARD_W / 2;
+        long from = ongoingCardsFrom();
+        if (from == Long.MAX_VALUE) return; // the sky is still coming
+        long shown = Util.getMillis() - from - ONGOING_CARD_DELAY_MS;
+        float pageAlpha = uiAlpha;
+        try {
+            for (int i = 0; i < cards.size(); i++) {
+                float k = Mth.clamp((shown - i * ONGOING_CARD_STEP_MS) / (float) ONGOING_CARD_FADE_MS, 0.0f, 1.0f);
+                float cardAlpha = pageAlpha * smooth(k);
+                if (cardAlpha < ONGOING_CARD_MIN_ALPHA) continue;
+                uiAlpha = cardAlpha;
+                int y = top + i * (ONGOING_CARD_H + ONGOING_CARD_GAP) + Math.round((1.0f - smooth(k)) * ONGOING_CARD_RISE);
+                g.fill(x, y, x + ONGOING_CARD_W, y + ONGOING_CARD_H, fade(0xFF000000 | NapSkyPainter.BG));
+                drawCell(g, centerX, y, cards.get(i)[0], cards.get(i)[1], ONGOING_CARD_W);
+            }
+        } finally {
+            uiAlpha = pageAlpha;
+        }
+    }
+
+    /** The totals cards, top to bottom, as {value, label key}: lives first, then the lifetime totals. */
+    private List<String[]> ongoingCards(DeathStatsPacket s) {
+        return List.of(
+            new String[] {Long.toString(s.lifeDeaths()), "gui.dungeontrain.nap.ongoing.lbl_lives"},
+            new String[] {fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard"},
+            new String[] {Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages"},
+            new String[] {fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance"});
+    }
+
+    /** True while "a life ongoing" is the page on screen in the nap farewell. */
+    private boolean onOngoingPage() {
+        return nap() && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.ONGOING;
+    }
+
+    /** The start of "a life ongoing"'s animation clock: the page's open time, pulled back by any skip. */
+    private long ongoingStart() {
+        return pageOpenedAtMs - ongoingSkipMs;
+    }
+
+    /**
+     * When the cards start counting: this life's path settling on the sky, or the page opening when no
+     * sky geometry is bundled (nothing will settle). {@link Long#MAX_VALUE} while the sky is still coming.
+     */
+    private long ongoingCardsFrom() {
+        if (napSky != null) return napSky.settledAt(ongoingStart());
+        return NapSky.get() == null ? ongoingStart() : Long.MAX_VALUE;
+    }
+
+    /**
+     * When "a life ongoing" has finished showing itself: the last card fully in, or the path settled
+     * when there are no cards (a first life). Never later than {@link #ONGOING_REVEAL_CAP_MS} into the
+     * page, so missing stats (the server's send can fail) can't leave the farewell with no way out.
+     */
+    private long ongoingRevealDoneAt() {
+        long cap = ongoingStart() + ONGOING_REVEAL_CAP_MS;
+        DeathStatsPacket s = DeathStatsCache.get();
+        long from = ongoingCardsFrom();
+        if (s == null || from == Long.MAX_VALUE) return cap;
+        int cards = s.lifeDeaths() > 0L ? ongoingCards(s).size() : 0;
+        if (cards == 0) return Math.min(cap, from);
+        return Math.min(cap, from + ONGOING_CARD_DELAY_MS + (cards - 1) * ONGOING_CARD_STEP_MS + ONGOING_CARD_FADE_MS);
+    }
+
+    /**
+     * How present Next Screen and Main Menu are: on "a life ongoing" they wait for the cards, then
+     * fade in; on every other page they are simply there.
+     */
+    private float ongoingControlsAlpha() {
+        if (!onOngoingPage()) return 1.0f;
+        long doneAt = ongoingRevealDoneAt();
+        return smooth(Mth.clamp((Util.getMillis() - doneAt) / (float) ONGOING_CONTROLS_FADE_MS, 0.0f, 1.0f));
+    }
+
+    /**
+     * A click on "a life ongoing" before it has finished: jump the sky and the cards to their end, so
+     * the controls fade in now. Returns false when there is nothing left to skip.
+     */
+    private boolean skipOngoingReveal() {
+        if (!onOngoingPage()) return false;
+        long doneAt = ongoingRevealDoneAt();
+        long now = Util.getMillis();
+        if (doneAt <= now) return false;
+        ongoingSkipMs += doneAt - now;
+        return true;
     }
 
     /**
@@ -1613,10 +1729,10 @@ public final class NarrativeDeathScreen extends Screen {
                 ? this.minecraft.getUser().getProfileId() : null;
             napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime());
         }
-        double top = 44, bottom = this.height - 34;
+        double top = NAP_SKY_TOP, bottom = this.height - NAP_SKY_BOTTOM_GAP;
         double size = Math.min(this.width - 24, (bottom - top) * 1.3);
         double cy = (top + bottom) / 2.0 + size * 0.04;
-        napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, pageOpenedAtMs, now, uiAlpha);
+        napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, ongoingStart(), now, uiAlpha);
     }
 
     /** The six lifetime text tiles and the 3×3 icon grid, shared by "all your lives" and "a life ongoing". */
@@ -2362,14 +2478,26 @@ public final class NarrativeDeathScreen extends Screen {
                 12, 10, fade(0xFF7A828C), false);
         if (nap()) {
             // One way out at any point: Main Menu, which leaves the napped run.
+            // On "a life ongoing" it waits, with Next Screen, for the page to finish showing itself.
             Component menu = Component.translatable("gui.dungeontrain.nap.main_menu");
             int menuW = this.font.width(menu) + 16;
-            leaveRect = drawChip(g, this.width - 10 - menuW, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
+            int menuX = this.width - 10 - menuW;
+            leaveRect = null;
+            float controls = ongoingControlsAlpha();
+            if (controls >= ONGOING_CARD_MIN_ALPHA) {
+                float pageAlpha = uiAlpha;
+                uiAlpha = pageAlpha * controls;
+                try {
+                    leaveRect = drawChip(g, menuX, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
+                } finally {
+                    uiAlpha = pageAlpha;
+                }
+            }
             reboardRect = null;
             // "$" beside it, as on a death's last page: jumps to the Contribute page from any question.
             Component dollar = Component.literal("$");
             int dollarW = this.font.width(dollar) + 16;
-            dollarRect = drawChip(g, leaveRect.x() - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
+            dollarRect = drawChip(g, menuX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
             return;
         }
         // Right-aligned: [photos] [reboard] [leave]. leave on the far right. Holding
@@ -2566,38 +2694,53 @@ public final class NarrativeDeathScreen extends Screen {
 
         // Continue (centered) on every page except the platform, where Board anew /
         // Leave live in the page body instead.
-        if (page.kind() != Kind.PLATFORM) {
-            Component cont = Component.translatable(nap() && lastNapPage()
-                    ? "gui.dungeontrain.nap.main_menu" : "gui.dungeontrain.death.continue");
-            int bw = 120, h = 18;
-            int bx = this.width / 2 - bw / 2;
-            continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
-
-            // Right of Next Screen: the bug shortcut (start page) or a per-form "Sent" badge.
-            int slotX = bx + bw + 8;
-            if (page.kind() == Kind.FALL && bugPageIndex() >= 0) {
-                if (bugReported()) {
-                    // Faded-green status — not clickable (bugReportRect stays null).
-                    Component done = Component.translatable("gui.dungeontrain.death.narr.bug_submitted");
-                    int dw = this.font.width(done) + 16;
-                    drawBevel(g, slotX, rowY, dw, h, done, BTN_DONE_BG, BTN_DONE_LIGHT, BTN_DONE_DARK, BTN_DONE_TEXT);
-                } else {
-                    Component submit = Component.translatable("gui.dungeontrain.death.narr.bug_submit");
-                    int sw = this.font.width(submit) + 16;
-                    // Prompt above the button inviting a report (red state only).
-                    drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.bug_prompt"),
-                            slotX + sw / 2, rowY - this.font.lineHeight - 2, BTN_BUG_LIGHT);
-                    bugReportRect = drawBevel(g, slotX, rowY, sw, h, submit, BTN_BUG_BG, BTN_BUG_LIGHT, BTN_DARK, BTN_BUG_TEXT);
-                }
-            } else if (page.kind() == Kind.SURVEY && page.survey() != null
-                    && submitted.contains(page.survey().id())) {
-                // Confirmation that this feedback form was sent (clears if the answer changes).
-                drawChip(g, slotX, rowY + 2, Component.translatable("gui.dungeontrain.death.narr.feedback_sent"),
-                        CHIP_RB_BORDER, CHIP_RB_TEXT);
+        float controls = ongoingControlsAlpha();
+        if (page.kind() != Kind.PLATFORM && controls >= ONGOING_CARD_MIN_ALPHA) {
+            float pageAlpha = uiAlpha;
+            uiAlpha = pageAlpha * controls;
+            try {
+                drawContinueRow(g, page, rowY);
+            } finally {
+                uiAlpha = pageAlpha;
             }
         }
+        drawBackArrow(g, page, rowY, mouseX, mouseY);
+    }
 
-        // Bare back-arrow (icon only), left of the button row — hidden on page 0.
+    /** Next Screen, centred, and what sits to its right (the bug shortcut or a "Sent" badge). */
+    private void drawContinueRow(GuiGraphics g, Page page, int rowY) {
+        Component cont = Component.translatable(nap() && lastNapPage()
+                ? "gui.dungeontrain.nap.main_menu" : "gui.dungeontrain.death.continue");
+        int bw = 120, h = 18;
+        int bx = this.width / 2 - bw / 2;
+        continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+
+        // Right of Next Screen: the bug shortcut (start page) or a per-form "Sent" badge.
+        int slotX = bx + bw + 8;
+        if (page.kind() == Kind.FALL && bugPageIndex() >= 0) {
+            if (bugReported()) {
+                // Faded-green status — not clickable (bugReportRect stays null).
+                Component done = Component.translatable("gui.dungeontrain.death.narr.bug_submitted");
+                int dw = this.font.width(done) + 16;
+                drawBevel(g, slotX, rowY, dw, h, done, BTN_DONE_BG, BTN_DONE_LIGHT, BTN_DONE_DARK, BTN_DONE_TEXT);
+            } else {
+                Component submit = Component.translatable("gui.dungeontrain.death.narr.bug_submit");
+                int sw = this.font.width(submit) + 16;
+                // Prompt above the button inviting a report (red state only).
+                drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.bug_prompt"),
+                        slotX + sw / 2, rowY - this.font.lineHeight - 2, BTN_BUG_LIGHT);
+                bugReportRect = drawBevel(g, slotX, rowY, sw, h, submit, BTN_BUG_BG, BTN_BUG_LIGHT, BTN_DARK, BTN_BUG_TEXT);
+            }
+        } else if (page.kind() == Kind.SURVEY && page.survey() != null
+                && submitted.contains(page.survey().id())) {
+            // Confirmation that this feedback form was sent (clears if the answer changes).
+            drawChip(g, slotX, rowY + 2, Component.translatable("gui.dungeontrain.death.narr.feedback_sent"),
+                    CHIP_RB_BORDER, CHIP_RB_TEXT);
+        }
+    }
+
+    /** Bare back-arrow (icon only), left of the button row; hidden on page 0. */
+    private void drawBackArrow(GuiGraphics g, Page page, int rowY, int mouseX, int mouseY) {
         if (currentPage > 0) {
             int ax = this.width / 2 - (page.kind() == Kind.PLATFORM ? 110 : 60) - 22;
             boolean hover = mouseX >= ax - 4 && mouseX < ax + 14 && mouseY >= rowY && mouseY < rowY + 18;
@@ -2614,7 +2757,14 @@ public final class NarrativeDeathScreen extends Screen {
         // on the fading / hidden controls beneath. Once settled (incl. the slow image
         // rise) clicks fall through, so only the Continue button advances — not empty space.
         if (photoViewer.isOpen()) return photoViewer.mouseClicked(photos(), mx, my, button);
-        if (button == 0 && uiBusy) { skipTransition(); return true; }
+        if (button == 0 && uiBusy) {
+            // One click skips everything: the page's fade, and on "a life ongoing" its sky and cards too.
+            skipTransition();
+            skipOngoingReveal();
+            return true;
+        }
+        // "a life ongoing" still showing itself: a click skips to its end (the "$" chip still works).
+        if (button == 0 && !(dollarRect != null && dollarRect.has(mx, my)) && skipOngoingReveal()) return true;
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
             if (dollarRect != null && dollarRect.has(mx, my)) {
