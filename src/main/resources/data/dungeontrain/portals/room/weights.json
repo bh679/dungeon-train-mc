@@ -354,6 +354,11 @@
     "minLevel": 2,
     "mode": "void"
   },
+  "parkourup": {
+    "weight": 2,
+    "minLevel": 2,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/3/0/11/dungeontrain:skybox_surface"
+  },
   "paths": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/random:10:10"
