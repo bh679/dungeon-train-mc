@@ -4,7 +4,9 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -121,6 +123,12 @@ public final class PlayerRunState {
      * putting one down are different feats, and only the second one is this.
      */
     private int echoesKilled;
+    /**
+     * Echoes met this life that also went into the lifetime echoes-met total (so not on a cheated run).
+     * The nap farewell's "a life ongoing" takes it back out of that total, which accrues live, to show
+     * the lives before this one. In-memory and nap-carried, like {@link #echoesKilled}.
+     */
+    private int echoesMet;
     /** Carriages passed since the last loot container was opened this run. Reset by {@link #openedLootContainer}. */
     private int carriagesSinceChest;
     /** High-water mark of {@link #carriagesSinceChest} this run — the longest stretch gone without looting. */
@@ -309,6 +317,17 @@ public final class PlayerRunState {
      * relog mid-run forgets the shots taken so far (the photographs themselves are unaffected).</p>
      */
     private final List<Frame> cameraFrames = new ArrayList<>();
+    /**
+     * The nap gate: once this life has woken from a nap, the world X it napped at and the way it was
+     * travelling (+1 toward +X, -1 toward -X; 0 = never napped). Behind that point the new world's
+     * carriages are re-rolled copies of ones already cleared, so the count-based counters step DOWN
+     * there instead of up ({@link #counterStep}). Lasts until death.
+     *
+     * <p>Not in {@link #CODEC} (full): carried across a nap by {@link #napExtras}, and across a relog
+     * in the woken world by {@code nap/NapGateData}.</p>
+     */
+    private double napGateX;
+    private int napGateDir;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -328,6 +347,7 @@ public final class PlayerRunState {
         this.killedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
         this.echoesKilled = 0;
+        this.echoesMet = 0;
         this.carriagesSinceChest = 0;
         this.maxCarriagesNoChest = 0;
         this.tamedAnimals = new ArrayList<>();
@@ -369,6 +389,7 @@ public final class PlayerRunState {
         this.killedMobs = new HashSet<>();
         this.trainTimeTicks = trainTimeTicks;
         this.echoesKilled = 0;
+        this.echoesMet = 0;
         this.carriagesSinceChest = 0;
         this.maxCarriagesNoChest = 0;
         this.tamedAnimals = new ArrayList<>();
@@ -385,6 +406,19 @@ public final class PlayerRunState {
      * @return the new tamed total
      */
     public int recordTame(ResourceLocation entityType) {
+        return recordTame(entityType, 1);
+    }
+
+    /**
+     * {@link #recordTame(ResourceLocation)} by a {@link #counterStep}. A step down takes one off the
+     * count and, when the count falls below the named list, the latest name with it.
+     */
+    public int recordTame(ResourceLocation entityType, int step) {
+        if (step < 0) {
+            tamedCount = stepped(tamedCount, step);
+            while (tamedAnimals.size() > tamedCount) tamedAnimals.remove(tamedAnimals.size() - 1);
+            return tamedCount;
+        }
         if (tamedAnimals.size() < TAMED_NAMES_CAP) {
             tamedAnimals.add(entityType);
         }
@@ -411,6 +445,195 @@ public final class PlayerRunState {
     /** Disposable-camera frames taken this run, oldest first — at most {@link #CAMERA_FRAMES_CAP}. */
     public List<Frame> cameraFrames() {
         return List.copyOf(cameraFrames);
+    }
+
+    // --- Nap carry -------------------------------------------------------------------------------
+
+    private static final String X_ECHOES_KILLED = "echoesKilled";
+    private static final String X_ECHOES_MET = "echoesMet";
+    private static final String X_CARRIAGES_SINCE_CHEST = "carriagesSinceChest";
+    private static final String X_MAX_CARRIAGES_NO_CHEST = "maxCarriagesNoChest";
+    private static final String X_KILLED_MOBS = "killedMobs";
+    private static final String X_NARRATIVE_LETTERS = "narrativeLetters";
+    private static final String X_BOOKS_WRITTEN = "booksWritten";
+    private static final String X_OWN_SHELF_BOOST = "ownShelfBoostPending";
+    private static final String X_DEATH_NOTES = "deathNotesWritten";
+    private static final String X_LOVE_NOTES = "loveNotesWritten";
+    private static final String X_PHOTOS_TAKEN = "photosTaken";
+    private static final String X_PHOTOS_TRIBUTED = "photosTributed";
+    private static final String X_PHOTOS_PASSENGERS = "photosPassengers";
+    private static final String X_PHOTOS_HOSTILE = "photosHostile";
+    private static final String X_PHOTOS_ANIMALS = "photosAnimals";
+    private static final String X_PHOTO_SHOTS = "photoShots";
+    private static final String X_PHOTOS_VIEWED = "photosViewed";
+    private static final String X_TRIBUTES_MADE = "tributesMade";
+    private static final String X_TRIBUTE_EMERALDS = "tributeEmeralds";
+    private static final String X_LIVE_STREAM = "liveStreamSeconds";
+    private static final String X_LIVE_WATCH = "liveWatchSeconds";
+    private static final String X_FRIEND = "friendAppearance";
+    private static final String X_FRIEND_FEELING = "friendFeeling";
+    private static final String X_FRIEND_UUID = "friendUuid";
+    private static final String X_KILLED = "killedAppearance";
+    private static final String X_EARNED = "earnedAdvancements";
+    private static final String X_SERVED_BOOKS = "servedBooks";
+    private static final String X_TAMED = "tamedAnimals";
+    private static final String X_TAMED_COUNT = "tamedCount";
+    private static final String X_CAMERA_FRAMES = "cameraFrames";
+    private static final String X_NAP_GATE_X = "napGateX";
+    private static final String X_NAP_GATE_DIR = "napGateDir";
+
+    /**
+     * Every field of this life that {@link #CODEC} leaves out, for a nap: the codec fields already
+     * travel inside the napped player's tag, so between the two the woken life is this one.
+     *
+     * <p>Left out on purpose: {@link #lastOwnShelfPair}, which names a library room of the napped
+     * world. That world is deleted, so the first own-books library of the new one should count as a
+     * visit, exactly as it does after a relog.</p>
+     *
+     * @param registries for the item stacks of the friend/killed portraits and the camera frames;
+     *                   null writes them without registry context (enchantments and other
+     *                   data-driven components may then be dropped)
+     */
+    public CompoundTag napExtras(HolderLookup.Provider registries) {
+        CompoundTag t = new CompoundTag();
+        t.putInt(X_ECHOES_KILLED, echoesKilled);
+        t.putInt(X_ECHOES_MET, echoesMet);
+        t.putInt(X_CARRIAGES_SINCE_CHEST, carriagesSinceChest);
+        t.putInt(X_MAX_CARRIAGES_NO_CHEST, maxCarriagesNoChest);
+        t.put(X_KILLED_MOBS, NapExtrasNbt.uuids(killedMobs));
+        t.put(X_NARRATIVE_LETTERS, NapExtrasNbt.strings(narrativeLetters));
+        t.putInt(X_BOOKS_WRITTEN, booksWrittenCount);
+        t.putBoolean(X_OWN_SHELF_BOOST, ownShelfBoostPending);
+        t.putInt(X_DEATH_NOTES, deathNotesWritten);
+        t.putInt(X_LOVE_NOTES, loveNotesWritten);
+        t.putInt(X_PHOTOS_TAKEN, photosTaken);
+        t.putInt(X_PHOTOS_TRIBUTED, photosTributed);
+        t.putInt(X_PHOTOS_PASSENGERS, photosPassengers);
+        t.putInt(X_PHOTOS_HOSTILE, photosHostile);
+        t.putInt(X_PHOTOS_ANIMALS, photosAnimals);
+        t.putInt(X_PHOTO_SHOTS, photoShots);
+        t.putInt(X_PHOTOS_VIEWED, photosViewed);
+        t.putInt(X_TRIBUTES_MADE, tributesMade);
+        t.putInt(X_TRIBUTE_EMERALDS, tributeEmeralds);
+        t.putLong(X_LIVE_STREAM, liveStreamSeconds);
+        t.putLong(X_LIVE_WATCH, liveWatchSeconds);
+        if (friendAppearance != null) {
+            t.put(X_FRIEND, NapExtrasNbt.appearance(friendAppearance, registries));
+            t.putFloat(X_FRIEND_FEELING, friendFeeling);
+            if (friendUuid != null) t.putUUID(X_FRIEND_UUID, friendUuid);
+        }
+        if (killedAppearance != null) t.put(X_KILLED, NapExtrasNbt.appearance(killedAppearance, registries));
+        t.put(X_EARNED, NapExtrasNbt.ids(earnedAdvancements));
+        t.put(X_SERVED_BOOKS, NapExtrasNbt.intMap(servedBookToCarriage));
+        t.put(X_TAMED, NapExtrasNbt.ids(tamedAnimals));
+        t.putInt(X_TAMED_COUNT, tamedCount);
+        t.put(X_CAMERA_FRAMES, NapExtrasNbt.frames(cameraFrames, registries));
+        if (napGateDir != 0) {
+            t.putDouble(X_NAP_GATE_X, napGateX);
+            t.putInt(X_NAP_GATE_DIR, napGateDir);
+        }
+        return t;
+    }
+
+    /**
+     * Restore what {@link #napExtras} wrote, onto the run state the woken player was just loaded
+     * with. Replaces each field; a key the nap lacks (an older nap) leaves that field at its
+     * fresh-load value. Mutates this attachment in place, as every other run-state writer does.
+     */
+    public void applyNapExtras(CompoundTag t, HolderLookup.Provider registries) {
+        if (t == null || t.isEmpty()) return;
+        echoesKilled = t.getInt(X_ECHOES_KILLED);
+        echoesMet = t.getInt(X_ECHOES_MET);
+        carriagesSinceChest = t.getInt(X_CARRIAGES_SINCE_CHEST);
+        maxCarriagesNoChest = t.getInt(X_MAX_CARRIAGES_NO_CHEST);
+        killedMobs.clear();
+        killedMobs.addAll(NapExtrasNbt.uuids(t, X_KILLED_MOBS));
+        befriendedMobs.removeAll(killedMobs);
+        narrativeLetters.clear();
+        narrativeLetters.addAll(NapExtrasNbt.strings(t, X_NARRATIVE_LETTERS));
+        booksWrittenCount = t.getInt(X_BOOKS_WRITTEN);
+        ownShelfBoostPending = t.getBoolean(X_OWN_SHELF_BOOST);
+        lastOwnShelfPair = NO_OWN_SHELF_PAIR;
+        deathNotesWritten = t.getInt(X_DEATH_NOTES);
+        loveNotesWritten = t.getInt(X_LOVE_NOTES);
+        photosTaken = t.getInt(X_PHOTOS_TAKEN);
+        photosTributed = t.getInt(X_PHOTOS_TRIBUTED);
+        photosPassengers = t.getInt(X_PHOTOS_PASSENGERS);
+        photosHostile = t.getInt(X_PHOTOS_HOSTILE);
+        photosAnimals = t.getInt(X_PHOTOS_ANIMALS);
+        photoShots = t.getInt(X_PHOTO_SHOTS);
+        photosViewed = t.getInt(X_PHOTOS_VIEWED);
+        tributesMade = t.getInt(X_TRIBUTES_MADE);
+        tributeEmeralds = t.getInt(X_TRIBUTE_EMERALDS);
+        liveStreamSeconds = t.getLong(X_LIVE_STREAM);
+        liveWatchSeconds = t.getLong(X_LIVE_WATCH);
+        friendAppearance = NapExtrasNbt.appearance(t, X_FRIEND, registries);
+        friendFeeling = friendAppearance == null ? Float.NEGATIVE_INFINITY : t.getFloat(X_FRIEND_FEELING);
+        friendUuid = friendAppearance != null && t.hasUUID(X_FRIEND_UUID) ? t.getUUID(X_FRIEND_UUID) : null;
+        killedAppearance = NapExtrasNbt.appearance(t, X_KILLED, registries);
+        earnedAdvancements.clear();
+        earnedAdvancements.addAll(NapExtrasNbt.ids(t, X_EARNED));
+        servedBookToCarriage.clear();
+        servedBookToCarriage.putAll(NapExtrasNbt.intMap(t, X_SERVED_BOOKS));
+        tamedAnimals.clear();
+        List<ResourceLocation> tamed = NapExtrasNbt.ids(t, X_TAMED);
+        tamedAnimals.addAll(tamed.subList(0, Math.min(tamed.size(), TAMED_NAMES_CAP)));
+        tamedCount = Math.max(t.getInt(X_TAMED_COUNT), tamedAnimals.size());
+        cameraFrames.clear();
+        List<Frame> frames = NapExtrasNbt.frames(t, X_CAMERA_FRAMES, registries);
+        cameraFrames.addAll(frames.subList(0, Math.min(frames.size(), CAMERA_FRAMES_CAP)));
+        int dir = t.getInt(X_NAP_GATE_DIR);
+        napGateDir = dir == 0 ? 0 : Integer.signum(dir);
+        napGateX = napGateDir == 0 ? 0.0 : t.getDouble(X_NAP_GATE_X);
+    }
+
+    // --- Nap gate --------------------------------------------------------------------------------
+
+    /**
+     * The way a life was going when it napped: the sign of its net carriages travelled
+     * ({@link #travelledCarriageIndex}), or {@code facing} when that is 0. Facing at the bed is only
+     * where the pillow pointed; net travel is where the run was actually heading.
+     */
+    public static int travelDirection(int travelledCarriageIndex, int facing) {
+        if (travelledCarriageIndex != 0) return Integer.signum(travelledCarriageIndex);
+        return facing < 0 ? -1 : 1;
+    }
+
+    /**
+     * Gate this life at a nap taken at {@code x}, heading {@code dir}. A second nap in the same
+     * direction only moves the point further ahead, never back; one heading the other way replaces it.
+     */
+    public void setNapGate(double x, int dir) {
+        int d = dir < 0 ? -1 : 1;
+        if (napGateDir == d && (x - napGateX) * d <= 0) return;
+        napGateX = x;
+        napGateDir = d;
+    }
+
+    /** Drop the nap gate (debug only; a death drops it through {@link #resetDeathStats}). */
+    public void clearNapGate() {
+        napGateX = 0.0;
+        napGateDir = 0;
+    }
+
+    /** True once this life has woken from a nap. */
+    public boolean napGated() { return napGateDir != 0; }
+
+    public double napGateX() { return napGateX; }
+
+    public int napGateDir() { return napGateDir; }
+
+    /**
+     * +1 when a count-based counter should grow for activity at {@code x}, -1 when it should shrink:
+     * -1 only behind the nap point of a gated life.
+     */
+    public int counterStep(double x) {
+        if (napGateDir == 0) return 1;
+        return (x - napGateX) * napGateDir >= 0 ? 1 : -1;
+    }
+
+    private static int stepped(int value, int step) {
+        return Math.max(0, value + (step < 0 ? -1 : 1));
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -468,14 +691,62 @@ public final class PlayerRunState {
         return uniqueChests.add(pos.immutable());
     }
 
-    /** Drop every chest position. */
+    /**
+     * Take one chest off the streak (a chest opened behind the nap point): a carried stand-in first,
+     * else any position. No-op on an empty streak.
+     */
+    public void shrinkChestStreak() {
+        BlockPos drop = null;
+        for (BlockPos pos : uniqueChests) {
+            if (pos.getY() == CARRIED_CHEST_Y) { drop = pos; break; }
+            if (drop == null) drop = pos;
+        }
+        if (drop != null) uniqueChests.remove(drop);
+    }
+
+    /** Drop every chest position, carried-over ones included: the streak is over. */
     public void clearChests() {
         uniqueChests.clear();
     }
 
-    /** Number of distinct chests in the current streak. */
+    /**
+     * Number of chests in the current streak: the distinct positions opened in this world, plus any
+     * the streak carried from a napped world ({@link #forgetChestPositionsKeepingCount}).
+     */
     public int chestStreak() {
         return uniqueChests.size();
+    }
+
+    /**
+     * Y of the stand-in entries a nap leaves in {@link #uniqueChests}. No chest can be opened there,
+     * so a stand-in never matches a real position: it only counts.
+     */
+    static final int CARRIED_CHEST_Y = Integer.MIN_VALUE;
+
+    /**
+     * Keep the streak's count but forget where its chests were: for a nap woken in a new world, where
+     * the old positions mean nothing and could match a new chest, wrongly resetting the streak.
+     *
+     * <p>Each position becomes a stand-in at {@link #CARRIED_CHEST_Y}, so the count is still the set's
+     * size: it persists through the attachment codec on a later relog with no new field (the codec is
+     * full), {@link #chestStreak} and the advancement trigger read it unchanged, and a duplicate open
+     * that {@link #clearChests clears} the streak drops the carried count with it.</p>
+     */
+    public void forgetChestPositionsKeepingCount() {
+        int count = uniqueChests.size();
+        uniqueChests.clear();
+        for (int i = 0; i < count; i++) {
+            uniqueChests.add(new BlockPos(i, CARRIED_CHEST_Y, 0));
+        }
+    }
+
+    /** Chests in the streak carried from a napped world, whose positions were forgotten. */
+    public int uniqueChestsCarried() {
+        int carried = 0;
+        for (BlockPos pos : uniqueChests) {
+            if (pos.getY() == CARRIED_CHEST_Y) carried++;
+        }
+        return carried;
     }
 
     /**
@@ -528,7 +799,12 @@ public final class PlayerRunState {
     }
 
     public int incrementMobKills() {
-        return ++mobKills;
+        return incrementMobKills(1);
+    }
+
+    /** {@link #incrementMobKills()} by a {@link #counterStep}: -1 takes one off, never below 0. */
+    public int incrementMobKills(int step) {
+        return mobKills = stepped(mobKills, step);
     }
 
     /**
@@ -545,9 +821,19 @@ public final class PlayerRunState {
      * distinguished from "no kills yet" in the death-screen item slot.
      */
     public void recordWeaponKill(ItemStack weapon) {
+        recordWeaponKill(weapon, 1);
+    }
+
+    /** {@link #recordWeaponKill(ItemStack)} by a {@link #counterStep}; a weapon stepped to 0 is dropped. */
+    public void recordWeaponKill(ItemStack weapon, int step) {
         Item item = weapon.isEmpty() ? net.minecraft.world.item.Items.AIR : weapon.getItem();
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
-        weaponKills.merge(id.toString(), 1, Integer::sum);
+        stepWeaponKill(BuiltInRegistries.ITEM.getKey(item).toString(), step);
+    }
+
+    void stepWeaponKill(String id, int step) {
+        int next = stepped(weaponKills.getOrDefault(id, 0), step);
+        if (next == 0) weaponKills.remove(id);
+        else weaponKills.put(id, next);
     }
 
     /**
@@ -597,7 +883,12 @@ public final class PlayerRunState {
      * {@link #openedLootContainer()} is the one that ends it.
      */
     public int incrementContainersOpened() {
-        return ++containersOpened;
+        return incrementContainersOpened(1);
+    }
+
+    /** {@link #incrementContainersOpened()} by a {@link #counterStep}. */
+    public int incrementContainersOpened(int step) {
+        return containersOpened = stepped(containersOpened, step);
     }
 
     /**
@@ -611,8 +902,13 @@ public final class PlayerRunState {
      * means what its heading says: chests and barrels.</p>
      */
     public int openedLootContainer() {
+        return openedLootContainer(1);
+    }
+
+    /** {@link #openedLootContainer()} with the tally moved by a {@link #counterStep}. */
+    public int openedLootContainer(int step) {
         carriagesSinceChest = 0; // the streak is over — the high-water mark keeps what it was worth
-        return incrementContainersOpened();
+        return incrementContainersOpened(step);
     }
 
     /** Echoes killed this run. */
@@ -621,7 +917,21 @@ public final class PlayerRunState {
     }
 
     public int incrementEchoesKilled() {
-        return ++echoesKilled;
+        return incrementEchoesKilled(1);
+    }
+
+    /** {@link #incrementEchoesKilled()} by a {@link #counterStep}. */
+    public int incrementEchoesKilled(int step) {
+        return echoesKilled = stepped(echoesKilled, step);
+    }
+
+    /** Echoes met this life that counted toward the lifetime total (see {@link #echoesMet}). */
+    public int echoesMet() {
+        return echoesMet;
+    }
+
+    public void countEchoMet() {
+        echoesMet++;
     }
 
     /** The longest run of carriages passed without opening a container this run. */
@@ -639,7 +949,12 @@ public final class PlayerRunState {
     }
 
     public int incrementBooksRead() {
-        return ++booksReadCount;
+        return incrementBooksRead(1);
+    }
+
+    /** {@link #incrementBooksRead()} by a {@link #counterStep}. */
+    public int incrementBooksRead(int step) {
+        return booksReadCount = stepped(booksReadCount, step);
     }
 
     public int incrementBooksWritten() {
@@ -697,10 +1012,15 @@ public final class PlayerRunState {
 
     /** One shared photo, and what was in it. */
     public void recordPhotoTaken(boolean passengers, boolean hostile, boolean animals) {
-        photosTaken++;
-        if (passengers) photosPassengers++;
-        if (hostile) photosHostile++;
-        if (animals) photosAnimals++;
+        recordPhotoTaken(passengers, hostile, animals, 1);
+    }
+
+    /** {@link #recordPhotoTaken(boolean, boolean, boolean)} by a {@link #counterStep}. */
+    public void recordPhotoTaken(boolean passengers, boolean hostile, boolean animals, int step) {
+        photosTaken = stepped(photosTaken, step);
+        if (passengers) photosPassengers = stepped(photosPassengers, step);
+        if (hostile) photosHostile = stepped(photosHostile, step);
+        if (animals) photosAnimals = stepped(photosAnimals, step);
     }
 
     public int incrementPhotosTributed() {
@@ -710,7 +1030,10 @@ public final class PlayerRunState {
     /** Frames taken this run with any camera. */
     public int photoShots() { return photoShots; }
 
-    public void incrementPhotoShots() { photoShots++; }
+    public void incrementPhotoShots() { incrementPhotoShots(1); }
+
+    /** {@link #incrementPhotoShots()} by a {@link #counterStep}. */
+    public void incrementPhotoShots(int step) { photoShots = stepped(photoShots, step); }
 
     /** Other players' photos and albums looked at this run. */
     public int photosViewed() { return photosViewed; }
@@ -795,6 +1118,11 @@ public final class PlayerRunState {
     /** PlayerMob kills this run (subset of {@link #mobKills}). */
     public int playerKills() {
         return playerKills;
+    }
+
+    /** {@link #incrementPlayerKills()} by a {@link #counterStep}. */
+    public int incrementPlayerKills(int step) {
+        return playerKills = stepped(playerKills, step);
     }
 
     public int incrementPlayerKills() {
@@ -959,8 +1287,11 @@ public final class PlayerRunState {
         friendFeeling = Float.NEGATIVE_INFINITY;
         killedAppearance = null;
         echoesKilled = 0;
+        echoesMet = 0;
         carriagesSinceChest = 0;
         maxCarriagesNoChest = 0;
+        napGateX = 0.0;
+        napGateDir = 0;
     }
 
     /** Reset everything (called on respawn). */

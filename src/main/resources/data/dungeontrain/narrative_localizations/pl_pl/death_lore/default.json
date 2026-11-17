@@ -3,7 +3,7 @@
     "page": "fall",
     "weight": 3,
     "question": "Czym jest Dungeon Train?",
-    "narration": "Wagon {carriage}. Tam właśnie dosięgła cię ciemność. Czy już to rozumiesz? Dungeon Train się nie zatrzymuje — po prostu jedzie dalej, głębiej, na zawsze."
+    "narration": "Wagon {carriage}. Tam właśnie dosięgła cię ciemność. Czy już to rozumiesz? Dungeon Train się nie zatrzymuje, po prostu jedzie dalej, głębiej, na zawsze."
   },
   {
     "page": "fall",
@@ -21,19 +21,19 @@
       "max_carriage": 3
     },
     "question": "Czym jest Dungeon Train?",
-    "narration": "Wagon {carriage}. Ledwie na pokładzie, a ciemność już cię miała. Linia jest cierpliwa — może sobie na to pozwolić."
+    "narration": "Wagon {carriage}. Ledwie na pokładzie, a ciemność już cię miała. Linia jest cierpliwa, może sobie na to pozwolić."
   },
   {
     "page": "deeds",
     "weight": 3,
     "question": "Po co tu jesteś?",
-    "narration": "Powaliłeś {mobs} istot w ciemności i przypłaciłeś to {hearts} sercami.\nZ {met} dusz, które spotkałeś, {slain} skończyłeś — a {friends} nazwałeś przyjacielem."
+    "narration": "Powaliłeś {mobs} istot w ciemności i przypłaciłeś to {hearts} sercami.\nZ {met} dusz, które spotkałeś, {slain} skończyłeś, a {friends} nazwałeś przyjacielem."
   },
   {
     "page": "gear",
     "weight": 3,
     "question": "Co masz właściwie robić?",
-    "narration": "Żelazo i ostrze, zebrane z ciemności i doniesione aż tu. Nic z tego nie wystarczyło — może nigdy nie o to chodziło."
+    "narration": "Żelazo i ostrze, zebrane z ciemności i doniesione aż tu. Nic z tego nie wystarczyło, może nigdy nie o to chodziło."
   },
   {
     "page": "gear",
@@ -69,7 +69,7 @@
       "min_deaths": 2
     },
     "question": "To wszystko dobre pytania",
-    "narration": "To nie są znaki jednego życia. Przez wszystkie {deaths} — każdą ciemność, w którą wsiadłeś, każdy raz, gdy linia cię zabrała, a ty i tak wróciłeś — oto cała twoja podróż."
+    "narration": "To nie są znaki jednego życia. Przez wszystkie {deaths}, każdą ciemność, w którą wsiadłeś, każdy raz, gdy linia cię zabrała, a ty i tak wróciłeś, oto cała twoja podróż."
   },
   {
     "page": "lives",
@@ -80,7 +80,7 @@
     },
     "question": "Czy jedno życie tak łatwo wydać?",
     "subline": "twój pierwszy upadek na linii.",
-    "narration": "Nie ma innych żyć, by je zważyć z tym — jeszcze nie. Oto ty cały: wszystko, co uczynione, odkąd pierwszy raz wsiadłeś. Linia to zapamięta. Ty też powinieneś."
+    "narration": "Nie ma innych żyć, by je zważyć z tym, jeszcze nie. Oto ty cały: wszystko, co uczynione, odkąd pierwszy raz wsiadłeś. Linia to zapamięta. Ty też powinieneś."
   },
   {
     "page": "lives",
@@ -98,7 +98,7 @@
       "min_deaths": 2
     },
     "question": "Wsiądziesz ponownie, czy zejdziesz w ciszę?",
-    "narration": "Peron jest pusty. Gwizd rozlega się daleko na linii. Ona biegnie bez końca — i, jak się zdaje, ty również.",
+    "narration": "Peron jest pusty. Gwizd rozlega się daleko na linii. Ona biegnie bez końca, i, jak się zdaje, ty również.",
     "epitaph": "{deaths}. z upadłych. może nie ostatni."
   },
   {
@@ -108,9 +108,9 @@
       "min_deaths": 1,
       "max_deaths": 1
     },
-    "question": "Wsiądziesz ponownie — teraz, gdy wiesz, jak to się kończy?",
+    "question": "Wsiądziesz ponownie, teraz, gdy wiesz, jak to się kończy?",
     "narration": "Peron jest pusty, tak samo jak wtedy, gdy pierwszy raz wsiadłeś. Gwizd rozlega się daleko na linii. Upadłeś raz. Czy będzie drugi raz, to, jak zawsze, twoja decyzja.",
-    "epitaph": "pierwszy z upadłych. linia jest cierpliwa — poczeka na resztę."
+    "epitaph": "pierwszy z upadłych. linia jest cierpliwa, poczeka na resztę."
   },
   {
     "page": "platform",
@@ -120,13 +120,13 @@
     },
     "question": "Czy w ogóle musisz pytać?",
     "narration": "Peron zna już twoją twarz. Gwizd brzmi tak, jak zawsze brzmi. Już wiesz, co będzie dalej.",
-    "epitaph": "{deaths}. z upadłych — i, jak się zdaje, nie ostatni."
+    "epitaph": "{deaths}. z upadłych, i, jak się zdaje, nie ostatni."
   },
   {
     "page": "fall",
     "weight": 2,
     "question": "Czym jest Dungeon Train?",
-    "narration": "Wagon {carriage}. Ciemność czekała tam od zawsze — ty jedynie przybyłeś, by ją spotkać."
+    "narration": "Wagon {carriage}. Ciemność czekała tam od zawsze, ty jedynie przybyłeś, by ją spotkać."
   },
   {
     "page": "fall",
@@ -168,7 +168,7 @@
     "page": "deeds",
     "weight": 2,
     "question": "Po co tu jesteś?",
-    "narration": "{mobs} istot padło od ciebie i {hearts} serc opadło z ciebie. Skrzyżowałeś się z {met} innymi duszami w ciemności — skończyłeś {slain}, zachowałeś {friends} — a potem przyszła twoja kolej."
+    "narration": "{mobs} istot padło od ciebie i {hearts} serc opadło z ciebie. Skrzyżowałeś się z {met} innymi duszami w ciemności, skończyłeś {slain}, zachowałeś {friends}, a potem przyszła twoja kolej."
   },
   {
     "page": "deeds",
@@ -192,13 +192,13 @@
       "min_slain": 5
     },
     "question": "Czym odpowiedziałeś ciemności?",
-    "narration": "Z {met}, które spotkałeś, {slain} zwaliłeś — i {mobs} istot więcej w ciemności prócz tego — za {hearts} serc, a {friends} oszczędziłeś, by nazwać przyjacielem. Linia nie nazywa tego morderstwem."
+    "narration": "Z {met}, które spotkałeś, {slain} zwaliłeś, i {mobs} istot więcej w ciemności prócz tego, za {hearts} serc, a {friends} oszczędziłeś, by nazwać przyjacielem. Linia nie nazywa tego morderstwem."
   },
   {
     "page": "gear",
     "weight": 2,
     "question": "Co masz właściwie robić?",
-    "narration": "Zebrałeś wszystko, co zdołałeś udźwignąć z wagonów. Linia pozwala ci to zatrzymać — nie ma pożytku z ładunku, tylko z pasażerów."
+    "narration": "Zebrałeś wszystko, co zdołałeś udźwignąć z wagonów. Linia pozwala ci to zatrzymać, nie ma pożytku z ładunku, tylko z pasażerów."
   },
   {
     "page": "gear",
@@ -207,7 +207,7 @@
       "max_loot": 0
     },
     "question": "Co masz właściwie robić?",
-    "narration": "Nie rozłupałeś ani jednej skrzyni na linii — dźwigałeś tylko to, z czym wsiadłeś, i wywijałeś tym aż do końca. Ciemność zatrzymuje to, czego nie chciałeś wziąć."
+    "narration": "Nie rozłupałeś ani jednej skrzyni na linii, dźwigałeś tylko to, z czym wsiadłeś, i wywijałeś tym aż do końca. Ciemność zatrzymuje to, czego nie chciałeś wziąć."
   },
   {
     "page": "gear",
@@ -216,7 +216,7 @@
       "max_loot": 9
     },
     "question": "Co masz właściwie robić?",
-    "narration": "Garść otwartych skrzyń — {loot} w sumie — i ostrze trzymane blisko. Linia jest hojna dla tych, którzy się zatrzymują; ty ledwie przystanąłeś."
+    "narration": "Garść otwartych skrzyń, {loot} w sumie, i ostrze trzymane blisko. Linia jest hojna dla tych, którzy się zatrzymują; ty ledwie przystanąłeś."
   },
   {
     "page": "gear",
@@ -234,7 +234,7 @@
       "max_books": 0
     },
     "question": "Co masz właściwie robić?",
-    "narration": "Ani jednej przewróconej stronicy — tylko stal zebrana i wywijana. Linia chowa swoje historie dla tych, którzy zatrzymują się, by czytać."
+    "narration": "Ani jednej przewróconej stronicy, tylko stal zebrana i wywijana. Linia chowa swoje historie dla tych, którzy zatrzymują się, by czytać."
   },
   {
     "page": "gear",
@@ -279,7 +279,7 @@
       "min_deaths": 5
     },
     "question": "Czemu wciąż wsiadasz?",
-    "narration": "{deaths} śmierci za tobą i ten sam gwizd przed tobą. Nie jesteś już pasażerem — jesteś częścią rozkładu jazdy."
+    "narration": "{deaths} śmierci za tobą i ten sam gwizd przed tobą. Nie jesteś już pasażerem, jesteś częścią rozkładu jazdy."
   },
   {
     "page": "lives",
@@ -297,7 +297,7 @@
       "min_deaths": 2
     },
     "question": "Wsiądziesz ponownie, czy pozwolisz peronowi cię zatrzymać?",
-    "narration": "Gwizd już brzmi, daleko naprzód. Nie czeka na ciebie — nigdy nie czekał — a jednak stoisz tu, postanawiając za nim pójść.",
+    "narration": "Gwizd już brzmi, daleko naprzód. Nie czeka na ciebie, nigdy nie czekał, a jednak stoisz tu, postanawiając za nim pójść.",
     "epitaph": "{deaths}. z upadłych. linia jedzie dalej."
   },
   {
@@ -318,6 +318,6 @@
     },
     "question": "Czy linia w ogóle musi pytać?",
     "narration": "Znasz ciężar drzwi, chłód stopnia. Ciemność to już tylko miejsce, które odwiedzasz.",
-    "epitaph": "{deaths}. z upadłych — bywalec linii."
+    "epitaph": "{deaths}. z upadłych, bywalec linii."
   }
 ]

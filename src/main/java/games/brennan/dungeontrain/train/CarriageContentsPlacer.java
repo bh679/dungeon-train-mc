@@ -718,6 +718,8 @@ public final class CarriageContentsPlacer {
                         games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()), w.localPos(), seed, carriageIndex,
                         lootId);
                     ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
+                    games.brennan.dungeontrain.editor.RotationApplier.stampObeliskGems(level, wWorld, rotated,
+                        w.entry(), entry.localPos(), seed, carriageIndex, lockId);
                     // A Y flip turns the carriage upside down, so an up-growing column grows down.
                     VariantState growthEntry = flip.y() && !w.entry().growth().isDefault()
                         ? w.entry().withGrowth(w.entry().growth().flipped()) : w.entry();
