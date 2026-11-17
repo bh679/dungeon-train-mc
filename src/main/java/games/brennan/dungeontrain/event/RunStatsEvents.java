@@ -245,6 +245,11 @@ public final class RunStatsEvents {
             lifeDeaths = GlobalPlayerStats.addDeaths(id, 1L);
         }
 
+        if (run.napSaves() > 0) {
+            LOGGER.info("[DungeonTrain] Life of {} ended after {} nap save(s)", player.getName().getString(),
+                run.napSaves());
+        }
+
         // Roll the per-death narrative from the data-driven pool, keyed on the
         // killer + this run's depth / social / lifetime context. On a Free Play
         // run we don't persist the death increment, but the narrative should still

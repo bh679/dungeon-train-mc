@@ -219,7 +219,8 @@ public final class NapWake {
         NapWakeGrace.open(player.getUUID());
         WOKEN.put(player.getUUID(), plan.nap());
         PLACE_AT.put(player.getUUID(), plan.nap().x());
-        LOGGER.info("[DungeonTrain] Waking nap {} for {}", plan.nap().napId(), player.getName().getString());
+        LOGGER.info("[DungeonTrain] Waking nap {} for {} (nap save #{} this life)", plan.nap().napId(),
+            player.getName().getString(), PlayerRunState.napSavesIn(plan.nap().runExtras()));
         return Optional.of(loadableTag(plan.nap().player(), server));
     }
 

@@ -1,0 +1,17 @@
+{
+  "id": "nap-save-count-per-life",
+  "version": "0.1861.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "internal"
+  ],
+  "title": "Nap tweak",
+  "summary": "Small behind-the-scenes improvement to naps.",
+  "highlights": [],
+  "pr": 2709,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

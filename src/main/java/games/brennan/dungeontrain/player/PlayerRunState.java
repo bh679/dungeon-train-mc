@@ -328,6 +328,15 @@ public final class PlayerRunState {
      */
     private double napGateX;
     private int napGateDir;
+    /**
+     * How many times this life has been saved by a nap (Save and Quit at a train bed or anchor).
+     * Stored only, for now: nothing shows it, the server log names it. Reset by a death.
+     *
+     * <p>Not in {@link #CODEC} (full): carried across a nap by {@link #napExtras} (the nap being
+     * saved counts itself there, {@link #withNapSaved}), and across a relog in the woken world by
+     * {@code nap/NapGateData}.</p>
+     */
+    private int napSaves;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -481,6 +490,7 @@ public final class PlayerRunState {
     private static final String X_CAMERA_FRAMES = "cameraFrames";
     private static final String X_NAP_GATE_X = "napGateX";
     private static final String X_NAP_GATE_DIR = "napGateDir";
+    private static final String X_NAP_SAVES = "napSaves";
 
     /**
      * Every field of this life that {@link #CODEC} leaves out, for a nap: the codec fields already
@@ -532,7 +542,24 @@ public final class PlayerRunState {
             t.putDouble(X_NAP_GATE_X, napGateX);
             t.putInt(X_NAP_GATE_DIR, napGateDir);
         }
+        t.putInt(X_NAP_SAVES, napSaves);
         return t;
+    }
+
+    /**
+     * A copy of {@code extras} ({@link #napExtras}) counting one more nap save: the nap being written
+     * is this life's next save. The live run state is left alone, so a nap that fails to save does
+     * not count. A nap from before the count existed reads as 0, so its next save is the first.
+     */
+    public static CompoundTag withNapSaved(CompoundTag extras) {
+        CompoundTag out = extras == null ? new CompoundTag() : extras.copy();
+        out.putInt(X_NAP_SAVES, Math.max(0, out.getInt(X_NAP_SAVES)) + 1);
+        return out;
+    }
+
+    /** The nap save count {@code extras} carries ({@link #napExtras}), 0 when it has none. */
+    public static int napSavesIn(CompoundTag extras) {
+        return extras == null ? 0 : Math.max(0, extras.getInt(X_NAP_SAVES));
     }
 
     /**
@@ -585,6 +612,17 @@ public final class PlayerRunState {
         int dir = t.getInt(X_NAP_GATE_DIR);
         napGateDir = dir == 0 ? 0 : Integer.signum(dir);
         napGateX = napGateDir == 0 ? 0.0 : t.getDouble(X_NAP_GATE_X);
+        napSaves = napSavesIn(t);
+    }
+
+    /** Times this life has been saved by a nap ({@link #napSaves}). */
+    public int napSaves() {
+        return napSaves;
+    }
+
+    /** After a relog in a woken world ({@code nap/NapGateData}): the count it holds, never lowering this one. */
+    public void restoreNapSaves(int saves) {
+        napSaves = Math.max(napSaves, saves);
     }
 
     // --- Nap gate --------------------------------------------------------------------------------
@@ -1292,6 +1330,7 @@ public final class PlayerRunState {
         maxCarriagesNoChest = 0;
         napGateX = 0.0;
         napGateDir = 0;
+        napSaves = 0;
     }
 
     /** Reset everything (called on respawn). */
