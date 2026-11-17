@@ -551,12 +551,67 @@
       "name": "AntonioMacarely"
     }
   },
+  "taslibrary1": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "bedrock/exact/off/off/mix/day/sealed/0/0/0/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
+  },
+  "tassortinghouse": {
+    "weight": 0,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/0/0/dungeontrain:skybox_surface/off",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
+  },
   "terrarium": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/day/sealed/0/73/0/19",
     "builder": {
       "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
       "name": "Firefly_on_ytb"
+    }
+  },
+  "thearchivistsociety": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/1/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
     }
   },
   "tntlong": {
