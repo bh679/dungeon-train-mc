@@ -735,6 +735,27 @@ public final class AchievementEvents {
      * earned in another world — counts toward the cross-world story
      * advancements. Lectern selection still reads the per-world data, untouched.
      */
+    /**
+     * Login: re-evaluate the story advancements against the cross-world record, so progress earned in
+     * other worlds (or before that record existed) can complete them here.
+     *
+     * <p>Runs AFTER the profile replay. Every new ride is a fresh world with an empty tree, so before
+     * the replay this pass granted every story set the player already held live, with a chat
+     * announcement, at the start of every ride. After it, banked sets are already restored and only a
+     * genuinely first completion is announced (and banked).</p>
+     *
+     * <p>A Free Play run never banks, so its sets would still be announced every ride: there the pass
+     * runs silently. Nothing is lost, since nothing it grants would be banked anyway.</p>
+     */
+    private static void reevaluateStoryOnLogin(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server != null && RunIntegrity.isCheated(player)) {
+            AdvancementProfiles.grantSilently(server, () -> notifyStoryProgress(player));
+        } else {
+            notifyStoryProgress(player);
+        }
+    }
+
     private static void absorbWorldStoryProgressIntoGlobal(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
@@ -1080,13 +1101,10 @@ public final class AchievementEvents {
         // below — a first-time joiner has an empty sidecar and would otherwise
         // be skipped by the early-return inside AdvancementProfiles.replay.
         awardMultiplayerJoinIfApplicable(player);
-        // Absorb this world's story reads into the cross-world global record,
-        // then re-evaluate the story advancements (which read the global store)
-        // so progress earned in other worlds — or before this store existed —
-        // can complete them here.
+        // Absorb this world's story reads into the cross-world global record. The story advancements
+        // (which read that record) are re-evaluated after the replay below — see reevaluateStoryOnLogin.
         absorbWorldStoryProgressIntoGlobal(player);
         absorbWorldRandomBooksIntoLifetime(player);
-        notifyStoryProgress(player);
         // Absorb this world's already-earned advancements into the cross-world
         // store FIRST, so progress that predates this store — or a freshly-
         // updated player's complete vanilla / other-mod trees, which will never
@@ -1115,6 +1133,7 @@ public final class AchievementEvents {
         // (post-replay) progress and grants normally (replaying is false here).
         AdvancementProfiles.replay(player, AdvancementProfiles.currentKey(player));
         AdvancementProfiles.replayCriteria(player, AdvancementProfiles.currentKey(player));
+        reevaluateStoryOnLogin(player);
         // Tab copies follow their originals as restored above (or revoked by Start Again).
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
