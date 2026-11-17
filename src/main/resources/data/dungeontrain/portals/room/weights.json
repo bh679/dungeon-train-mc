@@ -554,7 +554,11 @@
   "taslibrary1": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "bedrock/exact/off/off/mix/day/sealed/0/0/0/0/dungeontrain:skybox_surface"
+    "mode": "bedrock/exact/off/off/mix/day/sealed/0/0/0/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
   },
   "tassortinghouse": {
     "weight": 0,
@@ -573,7 +577,11 @@
       "AMPLIFIED",
       "LOST_CITY"
     ],
-    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/0/0/dungeontrain:skybox_surface/off"
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/0/0/dungeontrain:skybox_surface/off",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
   },
   "terrarium": {
     "weight": 1,
@@ -600,7 +608,11 @@
       "AMPLIFIED",
       "LOST_CITY"
     ],
-    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/1/0/dungeontrain:skybox_surface"
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/1/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
   },
   "tntlong": {
     "weight": 1,
