@@ -1,0 +1,21 @@
+{
+  "id": "nap-farewell-life-ongoing-first",
+  "version": "0.1864.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Save and quit farewell tweaks",
+  "summary": "Resting in a train bed to save and quit now opens on a look at the life still underway.",
+  "highlights": [
+    "The farewell now starts with the life still underway, with cards for your past lives, time aboard, carriages and distance",
+    "Click anywhere to skip straight to the end",
+    "The warning before you rest now shows what is in your backpack too"
+  ],
+  "pr": 2713,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
