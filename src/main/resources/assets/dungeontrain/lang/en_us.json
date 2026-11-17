@@ -1557,7 +1557,7 @@
   "gui.dungeontrain.death.discarding_world_9": "One world per ride…",
   "gui.dungeontrain.death.discarding_world_10": "Returning the world to the void…",
   "gui.dungeontrain.death.discarding_world_11": "The Dungeon Train keeps no souvenirs…",
-  "gui.dungeontrain.death.leave": "leave the line",
+  "gui.dungeontrain.death.leave": "leave",
   "gui.dungeontrain.death.continue": "Next Screen",
   "gui.dungeontrain.death.board_anew": "Board anew",
   "gui.dungeontrain.abandon_run": "Abandon This Run",

@@ -634,6 +634,7 @@
       "gui.dungeontrain.death.narr.goal_dev_tools",
       "gui.dungeontrain.death.narr.tip_goal_running_costs",
       "gui.dungeontrain.death.narr.tip_goal_dev_tools",
+      "gui.dungeontrain.death.leave",
       "gui.dungeontrain.abandon_confirm.title",
       "gui.dungeontrain.abandon_confirm.line1",
       "gui.dungeontrain.abandon_confirm.line2",

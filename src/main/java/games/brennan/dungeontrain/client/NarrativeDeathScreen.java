@@ -3095,9 +3095,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * The train fading into the dark — solid carriages on the left dissolving
-     * into fainter ones, then the ∞. The solid run grows with the page: a
+     * into fainter ones. The solid run grows with the page: a
      * single carriage on the first screen, filling the whole rail by the last,
-     * where the fade falls away and only the assembled train and its ∞ remain
+     * where the fade falls away and only the assembled train remains
      * — a train that completes itself exactly as the narrative ends.
      */
     /**
