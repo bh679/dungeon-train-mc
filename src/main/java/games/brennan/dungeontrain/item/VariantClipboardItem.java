@@ -151,6 +151,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_CHARGES = "ch";
     /** Per-entry white bed colour mask ({@code VariantBedColours#mask}). Absent when white only. */
     private static final String NBT_BED_COLOURS = "bc";
+    /** Per-entry slime size / End slime type mask ({@code VariantSlime#mask}). Absent when any. */
+    private static final String NBT_SLIME = "sl";
     /** Per-entry trapped-chest chance, 1..100. Absent when 0. */
     private static final String NBT_TRAPPED = "tr";
 
@@ -502,6 +504,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.bedColours().isDefault()) {
                 entry.putInt(NBT_BED_COLOURS, s.bedColours().mask());
             }
+            if (!s.slime().isDefault()) {
+                entry.putInt(NBT_SLIME, s.slime().mask());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -660,7 +665,10 @@ public final class VariantClipboardItem extends Item {
                     continue;
                 }
                 out.add(VariantState.ofMob(eid, beNbt, weight, rotation).withHalf(half).withDifficulty(difficulty)
-                    .withCondition(condition));
+                    .withCondition(condition)
+                    .withSlime(entry.contains(NBT_SLIME, Tag.TAG_INT)
+                        ? new games.brennan.dungeontrain.editor.VariantSlime(entry.getInt(NBT_SLIME))
+                        : games.brennan.dungeontrain.editor.VariantSlime.NONE));
                 continue;
             }
             String stateStr = entry.getString(NBT_STATE);

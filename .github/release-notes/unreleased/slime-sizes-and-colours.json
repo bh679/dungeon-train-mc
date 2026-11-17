@@ -1,0 +1,22 @@
+{
+  "id": "slime-sizes-and-colours",
+  "version": "0.1862.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "content",
+    "editor",
+    "mobs"
+  ],
+  "title": "Slimes in every shade",
+  "summary": "Some far-off carriages now hold slimes in colours you may not have seen before, and builders can choose how big each slime grows.",
+  "highlights": [
+    "New slime rooms, each with its own look.",
+    "Builders: pick slime sizes and colours in the block variant menu."
+  ],
+  "pr": 2710,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

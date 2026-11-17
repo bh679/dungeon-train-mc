@@ -98,6 +98,8 @@ public final class BlockVariantMenu {
         CHARGE_OPTION,
         /** A swatch in a white bed row's Colours popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
         BED_COLOUR_OPTION,
+        /** A button in a slime-type mob row's Slime popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        SLIME_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         /** The row's If pill — opens the condition popup for that row. */
@@ -253,6 +255,19 @@ public final class BlockVariantMenu {
             && games.brennan.dungeontrain.editor.VariantBedColours.isWhiteBed(parsed);
     }
 
+    /**
+     * True when {@code entry} is a slime, magma cube or End slime mob row — it shows the Size pill
+     * and Slime popup in the Grow slot (a mob row has no Grow).
+     */
+    public static boolean isSlimeRow(BlockVariantSyncPacket.Entry entry) {
+        return entry.groupRef() <= 0 && games.brennan.dungeontrain.editor.VariantSlime.isSlime(entry.entityId());
+    }
+
+    /** The row's slime options (any size / type on every other row). */
+    public static games.brennan.dungeontrain.editor.VariantSlime slime(BlockVariantSyncPacket.Entry entry) {
+        return new games.brennan.dungeontrain.editor.VariantSlime(entry.slime());
+    }
+
     /** The row's respawn anchor charge option (as placed on every other row). */
     public static games.brennan.dungeontrain.editor.VariantCharges charges(BlockVariantSyncPacket.Entry entry) {
         return games.brennan.dungeontrain.editor.VariantCharges.fromInt(entry.charges());
@@ -293,6 +308,10 @@ public final class BlockVariantMenu {
     @Nullable
     static SlotPopup slotPopup(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed,
                                double panelW, double halfH) {
+        if (isSlimeRow(entry)) {
+            return new SlotPopup(CellKind.SLIME_OPTION, SlimePopupLayout.rows(
+                games.brennan.dungeontrain.editor.VariantSlime.isEndSlime(entry.entityId()), panelW, halfH));
+        }
         if (isPaintingRow(entry, parsed)) {
             return new SlotPopup(CellKind.PAINTING_OPTION, PaintingPopupLayout.rows(painting(entry), panelW, halfH));
         }

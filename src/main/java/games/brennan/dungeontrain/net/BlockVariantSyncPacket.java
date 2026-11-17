@@ -137,7 +137,8 @@ public record BlockVariantSyncPacket(
      *
      * <p>{@code charges} is a respawn anchor row's packed {@link VariantCharges#toInt} and
      * {@code bedColours} a white bed row's {@link VariantBedColours#mask}; both carry their
-     * defaults on every other row.</p>
+     * defaults on every other row. {@code slime} is a slime-type mob row's
+     * {@link games.brennan.dungeontrain.editor.VariantSlime#mask} (0 elsewhere).</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
@@ -145,7 +146,7 @@ public record BlockVariantSyncPacket(
                         int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
                         int growth, String painting, String condition, boolean conditionLive,
                         String conditionGroupValues, String candles, String pot, int trapped,
-                        int charges, int bedColours) {
+                        int charges, int bedColours, int slime) {
 
         /** Cap on the condition token over the wire: eight namespaced ids and a target. */
         public static final int CONDITION_MAX_LEN = 1024;
@@ -156,6 +157,20 @@ public record BlockVariantSyncPacket(
             if (conditionGroupValues == null) conditionGroupValues = "";
             if (candles == null) candles = "";
             if (pot == null) pot = "";
+        }
+
+        /** Backward-compat constructor for call sites that don't carry slime options (any). */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
+                     int growth, String painting, String condition, boolean conditionLive,
+                     String conditionGroupValues, String candles, String pot, int trapped,
+                     int charges, int bedColours) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode, growth,
+                painting, condition, conditionLive, conditionGroupValues, candles, pot, trapped,
+                charges, bedColours, 0);
         }
 
         /** Cap on the flower pot token over the wire: {@code VariantPot.MAX_PLANTS} namespaced ids. */
@@ -391,6 +406,7 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.trapped());
             buf.writeVarInt(e.charges());
             buf.writeVarInt(e.bedColours());
+            buf.writeVarInt(e.slime());
         }
     }
 
@@ -443,10 +459,11 @@ public record BlockVariantSyncPacket(
             int trapped = Math.max(0, Math.min(VariantState.MAX_TRAPPED, buf.readVarInt()));
             int charges = buf.readVarInt();
             int bedColours = buf.readVarInt();
+            int slime = buf.readVarInt();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
                 activeMode, connectMode, growth, painting, condition, conditionLive, conditionGroupValues,
-                candles, pot, trapped, charges, bedColours));
+                candles, pot, trapped, charges, bedColours, slime));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);
