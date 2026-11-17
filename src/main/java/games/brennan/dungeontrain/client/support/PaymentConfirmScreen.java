@@ -93,8 +93,25 @@ public final class PaymentConfirmScreen extends Screen {
                         ? CommunityRewards.amountFull(reward)
                         : Component.translatable(copy.amountKey()));
         Minecraft.getInstance().setScreen(new PaymentConfirmScreen(
-                parent, surface, target, url, title, Component.translatable(copy.bodyKey())));
+                parent, surface, target, url, title, withRecipient(copy.bodyKey(), target)));
         return true;
+    }
+
+    /**
+     * {@code body} plus a green "On behalf of Steve" line while the player is gifting for someone
+     * else, so they see whose name goes on it before the browser opens. Patreon carries no name, so
+     * it never gets the line.
+     */
+    private static Component withRecipient(String bodyKey, String target) {
+        if (!DonationRecipient.isGifting() || games.brennan.dungeontrain.client.analytics.UiAnalytics.TARGET_PATREON.equals(target)) {
+            return Component.translatable(bodyKey);
+        }
+        // "Your Minecraft name is filled in" would be wrong now: those bodies have a gift wording.
+        boolean hasGift = bodyKey.equals(PaymentConfirmCopy.BODY_STRIPE) || bodyKey.equals(PaymentConfirmCopy.BODY_REVOLUT);
+        Component body = Component.translatable(hasGift ? bodyKey + ".gift" : bodyKey);
+        return body.copy().append("\n\n").append(Component.translatable(
+                "gui.dungeontrain.contribute.recipient.confirm", DonationRecipient.typed())
+                .withStyle(st -> st.withColor(RecipientPicker.COLOUR_GIFTING & 0xFFFFFF)));
     }
 
     @Override
