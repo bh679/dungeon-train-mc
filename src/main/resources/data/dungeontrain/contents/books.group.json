@@ -175,6 +175,14 @@
         "LOST_CITY",
         "DEEPER_DARK"
       ]
+    },
+    {
+      "id": "hiddenbed",
+      "weight": 1
+    },
+    {
+      "id": "bookroom",
+      "weight": 1
     }
   ]
 }

@@ -10,12 +10,18 @@
     {
       "id": "pathssmall",
       "weight": 1,
+      "minLevel": 1,
       "maxLevel": 10
     },
     {
       "id": "backrooms",
       "weight": 8,
       "minLevel": 10
+    },
+    {
+      "id": "vaultchambers",
+      "weight": 2,
+      "minLevel": 30
     }
   ]
 }

@@ -35,6 +35,11 @@
       "id": "housetown",
       "weight": 3,
       "minLevel": 5
+    },
+    {
+      "id": "gridpath",
+      "weight": 1,
+      "minLevel": 36
     }
   ]
 }
