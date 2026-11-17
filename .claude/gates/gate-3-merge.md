@@ -1,4 +1,4 @@
-<!-- gate: gate-3-merge (Dungeon Train add-on) | version: 2.3.0 -->
+<!-- gate: gate-3-merge (Dungeon Train add-on) | version: 2.4.0 -->
 # Gate 3 — Merge Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-3-merge.md` first.** This file only adds the Dungeon Train
@@ -17,6 +17,9 @@ never edit `changelog.json` by hand. The shipped version is computed automatical
   tag, and pass `--tag <tag>` for each yes (or `--no-topical-tags` if only the type-derived tag
   applies — the script refuses to run without one or the other). Tag the subject, not what the
   prose mentions: "rides the train" is not `train`, "other players' books" is not `multiplayer`.
+- **Major entry → Bilibili text:** a `--major` entry also gets its Bilibili video upload (title, description,
+  tags, each in Chinese and English) with `scripts/release-notes/set-bilibili.py --id <id> --file <json>`;
+  the dp-relay Socials page shows it ready to paste. Limits and format: the script's docstring.
 - **Addresses:** if the change fixes or improves a player-reported issue the death-screen bug
   report offers — lag, or the train vanishing / derailing / duplicating — pass
   `--addresses lag` and/or `--addresses train_vanished`. Players who report that issue on an

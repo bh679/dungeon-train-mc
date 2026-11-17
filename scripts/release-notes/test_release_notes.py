@@ -21,6 +21,7 @@ RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
 SET_TAGS = os.path.join(HERE, "set-tags.py")
 SET_MAJOR = os.path.join(HERE, "set-major.py")
+SET_BILIBILI = os.path.join(HERE, "set-bilibili.py")
 sys.path.insert(0, HERE)
 import changelog_io  # noqa: E402
 SCHEMA_FILE = os.path.join(
@@ -1039,6 +1040,59 @@ def test_mentions_merge_validate_and_clear() -> None:
     assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
 
 
+BILIBILI_OK = {
+    "title": {"zh": "地牢列车 更新", "en": "Dungeon Train update"},
+    "description": {"zh": "第一行\n第二行", "en": "Line one\nLine two"},
+    "tags": {"zh": ["我的世界", "模组"], "en": ["Minecraft", "mod"]},
+}
+
+
+def test_validate_bilibili_limits() -> None:
+    assert changelog_io.validate_bilibili(BILIBILI_OK) == BILIBILI_OK
+    bad = [
+        {**BILIBILI_OK, "title": {"zh": "长" * 81, "en": "x"}},
+        {**BILIBILI_OK, "title": {"zh": "a", "en": "x \u2014 y"}},
+        {**BILIBILI_OK, "description": {"zh": "a" * 2001, "en": "x"}},
+        {**BILIBILI_OK, "tags": {"zh": [f"t{i}" for i in range(11)], "en": ["a"]}},
+        {**BILIBILI_OK, "tags": {"zh": ["a" * 21], "en": ["a"]}},
+        {**BILIBILI_OK, "tags": {"zh": ["a", "a"], "en": ["a"]}},
+        {**BILIBILI_OK, "tags": {"zh": [], "en": ["a"]}},
+        {**BILIBILI_OK, "title": {"zh": "a"}},
+        {"title": BILIBILI_OK["title"], "tags": BILIBILI_OK["tags"]},
+        {**BILIBILI_OK, "extra": 1},
+    ]
+    for b in bad:
+        try:
+            changelog_io.validate_bilibili(b)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted {b!r}")
+
+
+def test_set_bilibili_sets_and_clears() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    path = os.path.join(ws, "bili.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(BILIBILI_OK, f, ensure_ascii=False)
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 1 and "not a major entry" in r.stderr, r.stderr
+    assert run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png").returncode == 0
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 0, r.stderr
+    assert read_changelog(ws)["entries"][0]["bilibili"] == BILIBILI_OK
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({**BILIBILI_OK, "title": {"zh": "a" * 81, "en": "x"}}, f)
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 1 and "80" in r.stderr, r.stderr
+    assert read_changelog(ws)["entries"][0]["bilibili"] == BILIBILI_OK, "a refused file must not write"
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--clear")
+    assert r.returncode == 0 and "bilibili" not in read_changelog(ws)["entries"][0], r.stderr
+    r = run(SET_BILIBILI, ws, "--id", "nope", "--clear")
+    assert r.returncode == 1 and "no changelog entry" in r.stderr, r.stderr
+
+
 def test_set_major_milestone_sets_keeps_and_drops() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")
@@ -1317,6 +1371,8 @@ def main() -> int:
         test_loop_never_rendered_into_notes,
         test_set_major_milestone_sets_keeps_and_drops,
         test_set_major_notable_sets_keeps_and_drops,
+        test_validate_bilibili_limits,
+        test_set_bilibili_sets_and_clears,
         test_append_notable_implies_major,
         test_render_full_major_leads_before_notable,
         test_render_tag_line_empty_when_untagged,
