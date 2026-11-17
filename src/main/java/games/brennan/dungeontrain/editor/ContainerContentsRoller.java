@@ -1885,8 +1885,8 @@ public final class ContainerContentsRoller {
         return (int) (unsigned % (long)(max + 1));
     }
 
-    /** Splittable-mix of the deterministic-roll inputs. */
-    private static long mix(BlockPos localPos, long worldSeed, int carriageIndex, int slot, long salt) {
+    /** Splittable-mix of the deterministic-roll inputs. Package-private for {@link TrappedChestRoll}. */
+    static long mix(BlockPos localPos, long worldSeed, int carriageIndex, int slot, long salt) {
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
             ^ ((long) localPos.getY() * MIX_Y)

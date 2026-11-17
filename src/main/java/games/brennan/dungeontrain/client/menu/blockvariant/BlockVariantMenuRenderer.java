@@ -729,8 +729,8 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * The pill a painting, candle, flower pot, respawn anchor or white bed row shows in the Grow
-     * slot: its key word when off, a short read-out ({@code 2×1}, {@code Rnd}, {@code ×3}, a plant,
+     * The pill a painting, candle, flower pot, respawn anchor, white bed or chest row shows in the
+     * Grow slot: its key word when off, a short read-out ({@code 2×1}, {@code Rnd}, {@code ×3}, a plant,
      * {@code 1-4}, {@code 3 col}) in green when on, lit while
      * its popup is open — the Grow pill's look.
      */
@@ -757,6 +757,9 @@ public final class BlockVariantMenuRenderer {
             games.brennan.dungeontrain.editor.VariantBedColours colours = BlockVariantMenu.bedColours(entry);
             on = !colours.isDefault();
             label = BedColourPopupLayout.shortLabel(colours);
+        } else if (BlockVariantMenu.isTrapRow(entry, parsed)) {
+            on = entry.trapped() > 0;
+            label = on ? MenuLang.t("block_variant.trap_pct", entry.trapped()) : MenuLang.t("block_variant.trap");
         } else {
             games.brennan.dungeontrain.editor.VariantPot pot = BlockVariantMenu.pot(entry);
             on = pot.on();

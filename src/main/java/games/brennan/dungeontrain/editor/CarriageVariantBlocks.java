@@ -476,13 +476,15 @@ public final class CarriageVariantBlocks {
             // Additive candle count / flower pot plant. Absent → as placed, so older files spawn unchanged.
             VariantCandles candles = parseCandles(obj.get("candles"), contextId, contextPos);
             VariantPot pot = parsePot(obj.get("pot"), contextId, contextPos);
+            // Additive trapped-chest chance (0-100). Absent → 0, so older files spawn unchanged.
+            int trapped = parseTrapped(obj.get("trapped"), contextId, contextPos);
             // Additive respawn anchor charge range / white bed colours. Absent → as placed / white.
             VariantCharges charges = parseCharges(obj.get("charges"), contextId, contextPos);
             VariantBedColours bedColours = parseBedColours(obj.get("colours"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
                 VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
                 groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
-                condition, candles, pot, charges, bedColours);
+                condition, candles, pot, trapped, charges, bedColours);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -944,6 +946,9 @@ public final class CarriageVariantBlocks {
         if (!s.pot().isDefault()) {
             sb.append(", \"pot\": \"").append(s.pot().id()).append("\"");
         }
+        if (s.trapped() > 0) {
+            sb.append(", \"trapped\": ").append(s.trapped());
+        }
         if (!s.charges().isDefault()) {
             sb.append(", \"charges\": \"").append(s.charges().id()).append("\"");
         }
@@ -1172,6 +1177,17 @@ public final class CarriageVariantBlocks {
             return VariantPot.NONE;
         }
         return pot;
+    }
+
+    /** Parse an optional {@code "trapped"} percent. Absent → 0; malformed → 0 with a warning; clamped to 0..100. */
+    private static int parseTrapped(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return 0;
+        if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isNumber()) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: bad trapped '{}', using 0.",
+                contextId, contextPos, el);
+            return 0;
+        }
+        return Math.max(0, Math.min(VariantState.MAX_TRAPPED, el.getAsInt()));
     }
 
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {

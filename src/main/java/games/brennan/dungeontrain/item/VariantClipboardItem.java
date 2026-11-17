@@ -151,6 +151,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_CHARGES = "ch";
     /** Per-entry white bed colour mask ({@code VariantBedColours#mask}). Absent when white only. */
     private static final String NBT_BED_COLOURS = "bc";
+    /** Per-entry trapped-chest chance, 1..100. Absent when 0. */
+    private static final String NBT_TRAPPED = "tr";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -491,6 +493,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.pot().isDefault()) {
                 entry.putString(NBT_POT, s.pot().id());
             }
+            if (s.trapped() > 0) {
+                entry.putInt(NBT_TRAPPED, s.trapped());
+            }
             if (!s.charges().isDefault()) {
                 entry.putInt(NBT_CHARGES, s.charges().toInt());
             }
@@ -695,6 +700,7 @@ public final class VariantClipboardItem extends Item {
                     entry.contains(NBT_CANDLES, Tag.TAG_STRING) ? entry.getString(NBT_CANDLES) : null),
                 games.brennan.dungeontrain.editor.VariantPot.parse(
                     entry.contains(NBT_POT, Tag.TAG_STRING) ? entry.getString(NBT_POT) : null),
+                entry.contains(NBT_TRAPPED, Tag.TAG_INT) ? entry.getInt(NBT_TRAPPED) : 0,
                 entry.contains(NBT_CHARGES, Tag.TAG_INT)
                     ? games.brennan.dungeontrain.editor.VariantCharges.fromInt(entry.getInt(NBT_CHARGES))
                     : games.brennan.dungeontrain.editor.VariantCharges.AS_PLACED,

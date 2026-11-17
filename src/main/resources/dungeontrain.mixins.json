@@ -34,7 +34,7 @@
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
     "SignalGetterMuteMixin",
-    "PlayerSprintFlyMixin",
+    "LivingEntitySprintFlyMixin",
     "TamableAnimalTameMixin",
     "TamableAnimalFollowTeleportMixin",
     "AbstractHorseTameMixin",

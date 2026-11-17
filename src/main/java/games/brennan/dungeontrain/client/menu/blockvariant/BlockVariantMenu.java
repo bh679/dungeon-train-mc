@@ -263,6 +263,15 @@ public final class BlockVariantMenu {
         return new games.brennan.dungeontrain.editor.VariantBedColours(entry.bedColours());
     }
 
+    /**
+     * True when {@code entry} is a plain chest row: it shows the Trap pill in the Grow slot, a number
+     * cell for the trapped-chest chance (no popup).
+     */
+    public static boolean isTrapRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0 && parsed != null
+            && games.brennan.dungeontrain.editor.TrappedChestRoll.isTrappable(parsed);
+    }
+
     /** The row's candle count option, or as placed when the wire token is blank / malformed. */
     public static games.brennan.dungeontrain.editor.VariantCandles candles(BlockVariantSyncPacket.Entry entry) {
         games.brennan.dungeontrain.editor.VariantCandles c =
@@ -309,7 +318,7 @@ public final class BlockVariantMenu {
     /** True when the row shows an option pill in the Grow slot other than Grow itself. */
     public static boolean usesGrowSlot(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
         return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed)
-            || isAnchorRow(entry, parsed) || isWhiteBedRow(entry, parsed);
+            || isAnchorRow(entry, parsed) || isWhiteBedRow(entry, parsed) || isTrapRow(entry, parsed);
     }
 
     /** The row's painting option, or off when the wire token is blank / malformed. */
