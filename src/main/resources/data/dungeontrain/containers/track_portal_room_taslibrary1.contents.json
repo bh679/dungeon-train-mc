@@ -2,9 +2,9 @@
   "schemaVersion": 3,
   "pools": {},
   "links": {
-    "5,3,3": "fulldiamondarmrendrchest",
-    "24,8,16": "fulldiamondarmrendrchest",
-    "23,16,23": "fulldiamondarmrendrchest",
+    "5,3,3": "loot",
+    "24,8,16": "loot",
+    "23,16,23": "loot",
     "38,3,6": "fish",
     "38,3,9": "fish",
     "42,3,18": "fish",

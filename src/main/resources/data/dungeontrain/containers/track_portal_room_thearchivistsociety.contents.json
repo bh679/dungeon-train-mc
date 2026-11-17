@@ -272,7 +272,7 @@
   "links": {
     "37,1,42": "mining2",
     "36,1,42": "meats",
-    "35,1,42": "fishchest",
+    "35,1,42": "fish",
     "50,5,48": "amorer_chest",
     "48,5,48": "amorer_chest",
     "46,5,48": "amorer_chest",
@@ -297,7 +297,7 @@
     "4,12,28": "fruit_veg",
     "4,12,27": "fruit_veg",
     "5,0,4": "fruit_veg",
-    "12,9,54": "fishingpolechest",
+    "12,9,54": "fish",
     "25,14,26": "horse",
     "25,14,43": "horse",
     "25,14,44": "horse",
