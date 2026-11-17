@@ -96,7 +96,7 @@ public final class PaymentLinks {
         if (!useChinaPayment()) return null;
         String checkout = OfficialLinks.paymentCnCheckout();
         String locale = stripeLocale(selectedLocale());
-        if (checkout != null) return withDisplayName(checkout, playerName(), locale);
+        if (checkout != null) return withGiftFrom(withDisplayName(checkout, playerName(), locale), giftFrom());
         return withLocale(withClientReference(OfficialLinks.paymentCn(), playerName()), locale);
     }
 
@@ -123,7 +123,8 @@ public final class PaymentLinks {
     public static String tierUrl(SupportTier tier) {
         String base = OfficialLinks.paymentCheckout();
         if (base == null || tier == null) return null;
-        return withQuantity(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), tier.quantity());
+        return withGiftFrom(withQuantity(withDisplayName(base, playerName(), stripeLocale(selectedLocale())),
+                tier.quantity()), giftFrom());
     }
 
     /**
@@ -133,7 +134,8 @@ public final class PaymentLinks {
      */
     public static String rewardUrl(String base, String rewardId) {
         if (base == null || rewardId == null) return null;
-        return withRewardId(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), rewardId);
+        return withGiftFrom(withRewardId(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), rewardId),
+                giftFrom());
     }
 
     /** {@code base} with {@code reward=<id>} appended. */
@@ -165,7 +167,7 @@ public final class PaymentLinks {
      * corrupt an unknown URL shape.
      */
     public static String donateUrl() {
-        return withPlayerNote(OfficialLinks.payment(), playerName());
+        return withPlayerNote(OfficialLinks.payment(), revolutNote(playerName(), giftFrom()));
     }
 
     // --- pure logic (unit-tested; no Minecraft on these paths) -------------------------------
@@ -212,6 +214,27 @@ public final class PaymentLinks {
     static String withQuantity(String base, int quantity) {
         if (base == null || quantity < 1) return base;
         return withParam(base, "qty", Integer.toString(quantity));
+    }
+
+    /**
+     * Append {@code giftfrom=<payer>} to a relay checkout URL while the player is donating on behalf
+     * of someone else ({@code displayname} then carries the friend). The relay keeps the two apart:
+     * what the gift buys goes to the friend, the thank-you and announcement name the payer. A null
+     * or blank {@code giftFrom} (a donation for yourself) leaves the URL exactly as before.
+     */
+    static String withGiftFrom(String base, String giftFrom) {
+        if (base == null || giftFrom == null || giftFrom.isBlank()) return base;
+        return withParam(base, "giftfrom",
+                URLEncoder.encode(giftFrom.trim(), StandardCharsets.UTF_8).replace("+", "%20"));
+    }
+
+    /**
+     * The Revolut note: the name to credit, plus "(gift from <payer>)" when gifting, because Revolut
+     * shows the operator the payer's real name and the note alone must say which one to record.
+     */
+    static String revolutNote(String recipient, String giftFrom) {
+        if (giftFrom == null || giftFrom.isBlank()) return recipient;
+        return recipient + " (gift from " + giftFrom.trim() + ")";
     }
 
     /** Append the encoded player name to {@code base} when, and only when, it carries a note field. */
@@ -327,6 +350,13 @@ public final class PaymentLinks {
      * The name every donation link carries: the player's own, or the friend they chose on the
      * Contribute screen's "on behalf of" picker ({@link DonationRecipient}).
      */
+    /** The player's own name while they donate on behalf of someone else, else null. */
+    private static String giftFrom() {
+        if (!DonationRecipient.isGifting()) return null;
+        Minecraft mc = Minecraft.getInstance();
+        return mc != null && mc.getUser() != null ? mc.getUser().getName() : null;
+    }
+
     private static String playerName() {
         Minecraft mc = Minecraft.getInstance();
         String self = mc != null && mc.getUser() != null ? mc.getUser().getName() : "Player";
