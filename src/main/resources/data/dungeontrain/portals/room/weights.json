@@ -558,6 +558,10 @@
       "name": "AntonioMacarely"
     }
   },
+  "vaultchambers": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/random:50:10"
+  },
   "waterparkour": {
     "weight": 2,
     "minLevel": 2,
