@@ -1,0 +1,17 @@
+{
+  "id": "story-advancements-not-reannounced",
+  "version": "0.1856.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "advancements"
+  ],
+  "title": "Advancement fix",
+  "summary": "Advancements you have already earned no longer announce themselves again at the start of every new ride.",
+  "highlights": [],
+  "pr": 2703,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
