@@ -130,6 +130,8 @@ final class ClientOptionsIcons {
             case CREATIVE_MOD_BLOCK_TABS -> FILTER;
             case CREATIVE_MOD_BLOCKS_IN_SEARCH -> SEARCH;
 
+            case DISCORD_STATUS -> DISCORD_LINK;
+
             case DISCORD_ACCOUNT, TWITCH_ACCOUNT, PERFORMANCE_TIPS ->
                     throw new IllegalArgumentException(row + " is expanded into several rows and has no icon of its own");
         };

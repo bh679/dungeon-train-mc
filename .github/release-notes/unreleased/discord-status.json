@@ -1,0 +1,17 @@
+{
+  "id": "discord-status",
+  "version": "0.1847.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "Discord status",
+  "summary": "Show your friends you're playing Dungeon Train. Turn on Discord status in Options \u2192 Account and your Discord profile shows Playing Dungeon Train and where you are. It's off by default and needs the Discord app open on the same computer.",
+  "highlights": [],
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
