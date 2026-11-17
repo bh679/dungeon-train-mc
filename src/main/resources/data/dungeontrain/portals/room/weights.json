@@ -557,7 +557,7 @@
     "mode": "bedrock/exact/off/off/mix/day/sealed/0/0/0/0/dungeontrain:skybox_surface"
   },
   "tassortinghouse": {
-    "weight": 2,
+    "weight": 0,
     "phases": [
       "OVERWORLD",
       "NETHER",
