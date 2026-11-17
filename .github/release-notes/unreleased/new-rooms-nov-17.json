@@ -1,0 +1,20 @@
+{
+  "id": "new-rooms-nov-17",
+  "version": "0.1857.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "train"
+  ],
+  "title": "New rooms to find",
+  "summary": "A handful of new rooms have been added to the train, along with a refreshed take on an old favourite.",
+  "highlights": [
+    "New rooms to discover as you ride",
+    "An existing room has been reworked"
+  ],
+  "pr": 2706,
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
