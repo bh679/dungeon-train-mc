@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.nap;
 
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.nbt.CompoundTag;
 
 import java.nio.charset.StandardCharsets;
@@ -31,12 +32,22 @@ import java.util.UUID;
  *                   for naps saved before it existed
  * @param wakeLevelId the save folder this nap is waking in, written before the train spawns there
  *                   ({@link NapBinding}); empty while unbound, and for naps saved before it existed
+ * @param place      where the train stood in the band layout, and the napped world's reverse-slide state;
+ *                   null for naps saved before it existed (and in worlds with no layout), which wake by X alone
  */
 public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
                           CompoundTag player, double x, int carriage, String band, int direction,
                           int worldDepth, boolean cheated, String difficulty,
                           String advancementsJson, String statsJson, CompoundTag narrative,
-                          CompoundTag runExtras, int difficultyOffset, String wakeLevelId) {
+                          CompoundTag runExtras, int difficultyOffset, String wakeLevelId,
+                          Place place) {
+
+    /**
+     * The train's place in the band layout when the nap was taken ({@link WorldGenCycle#bandPosition}),
+     * with the napped world's reverse-slide state ({@code worldgen.ReverseSlide}): behind spawn the band
+     * at an X depends on that slide, so the woken world takes it too.
+     */
+    public record Place(WorldGenCycle.BandPosition position, long originX, long reachX, long earned, long slide) {}
 
     private static final String TAG_ID = "napId";
     private static final String TAG_SAVED = "savedAt";
@@ -56,6 +67,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     private static final String TAG_RUN_EXTRAS = "runExtras";
     private static final String TAG_DIFFICULTY_OFFSET = "difficultyOffset";
     private static final String TAG_WAKE_LEVEL = "wakeLevelId";
+    private static final String TAG_PLACE = "place";
 
     public NapSnapshot {
         direction = direction < 0 ? -1 : 1;
@@ -66,6 +78,16 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         narrative = narrative == null ? new CompoundTag() : narrative;
         runExtras = runExtras == null ? new CompoundTag() : runExtras;
         wakeLevelId = wakeLevelId == null ? "" : wakeLevelId;
+    }
+
+    /** A nap with no band place (the form naps had before {@link Place}). */
+    public NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
+                       CompoundTag player, double x, int carriage, String band, int direction,
+                       int worldDepth, boolean cheated, String difficulty,
+                       String advancementsJson, String statsJson, CompoundTag narrative,
+                       CompoundTag runExtras, int difficultyOffset, String wakeLevelId) {
+        this(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction, worldDepth,
+            cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset, wakeLevelId, null);
     }
 
     /** An unbound nap (not yet tied to the world it wakes in). */
@@ -87,7 +109,21 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     public NapSnapshot boundTo(String levelId) {
         return new NapSnapshot(napId, savedAtEpochMs, modVersion, this.levelId, player, x, carriage, band, direction,
             worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
-            levelId);
+            levelId, place);
+    }
+
+    /** This nap with its X replaced (the X it wakes at, once resolved from {@link #place}). */
+    public NapSnapshot withX(double newX) {
+        return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, newX, carriage, band, direction,
+            worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
+            wakeLevelId, place);
+    }
+
+    /** This nap with the train's band place {@code place}. */
+    public NapSnapshot withPlace(Place place) {
+        return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction,
+            worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
+            wakeLevelId, place);
     }
 
     /** A nap without the run-state extras or a difficulty offset. */
@@ -128,6 +164,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         if (!runExtras.isEmpty()) tag.put(TAG_RUN_EXTRAS, runExtras.copy());
         if (difficultyOffset != 0) tag.putInt(TAG_DIFFICULTY_OFFSET, difficultyOffset);
         if (!wakeLevelId.isEmpty()) tag.putString(TAG_WAKE_LEVEL, wakeLevelId);
+        if (place != null && place.position() != null) tag.put(TAG_PLACE, placeTag(place));
         return tag;
     }
 
@@ -139,7 +176,29 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
             tag.getString(TAG_BAND), tag.getInt(TAG_DIRECTION), tag.getInt(TAG_DEPTH), tag.getBoolean(TAG_CHEATED),
             tag.getString(TAG_DIFFICULTY), text(tag, TAG_ADVANCEMENTS), text(tag, TAG_STATS),
             tag.getCompound(TAG_NARRATIVE), tag.getCompound(TAG_RUN_EXTRAS), tag.getInt(TAG_DIFFICULTY_OFFSET),
-            tag.getString(TAG_WAKE_LEVEL));
+            tag.getString(TAG_WAKE_LEVEL), tag.contains(TAG_PLACE) ? placeOf(tag.getCompound(TAG_PLACE)) : null);
+    }
+
+    private static CompoundTag placeTag(Place p) {
+        CompoundTag t = new CompoundTag();
+        t.putBoolean("reversed", p.position().reversed());
+        t.putInt("run", p.position().run());
+        t.putInt("slot", p.position().slot());
+        t.putLong("local", p.position().local());
+        t.putLong("originX", p.originX());
+        t.putLong("reachX", p.reachX());
+        t.putLong("earned", p.earned());
+        t.putLong("slide", p.slide());
+        return t;
+    }
+
+    /** Null when the tag is not a whole place (a damaged file): the nap then wakes by X alone. */
+    private static Place placeOf(CompoundTag t) {
+        for (String k : new String[] {"reversed", "run", "slot", "local", "originX", "reachX", "earned", "slide"}) {
+            if (!t.contains(k)) return null;
+        }
+        return new Place(new WorldGenCycle.BandPosition(t.getBoolean("reversed"), t.getInt("run"), t.getInt("slot"),
+            t.getLong("local")), t.getLong("originX"), t.getLong("reachX"), t.getLong("earned"), t.getLong("slide"));
     }
 
     private static String text(CompoundTag tag, String key) {

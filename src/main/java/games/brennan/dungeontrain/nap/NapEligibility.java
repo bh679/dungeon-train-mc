@@ -2,8 +2,12 @@ package games.brennan.dungeontrain.nap;
 
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.editor.EditorWorldLayout;
+import games.brennan.dungeontrain.ship.sable.CarriagePlotResolver;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +18,7 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3d;
 
 /**
  * Whether a bed or respawn anchor offers a nap: save the player, quit, and delete the world
@@ -21,6 +26,8 @@ import net.minecraft.world.phys.Vec3;
  *
  * <p>Singleplayer only for now: the integrated server's owner, alone on it (no LAN guests), in a
  * real run world (one that starts with a train, not the Train Builder or Editor). The spot must be
+ * part of the train ({@link #trainSubLevelAt}): a bed out in the world, in a village, or an anchor or
+ * obelisk off the train sleeps the vanilla way and offers nothing. It must also be
  * natural ({@link PlacedRestTracker}) and must work where it stands now ({@link HostileBandBeds}): a
  * bed that would explode, in a Nether or End core, never offers a nap, and an anchor only offers one
  * in the Nether. A carriage bed asleep as the train rolls into the Nether loses its night prompt.</p>
@@ -54,6 +61,7 @@ public final class NapEligibility {
     }
 
     public static Spot spotAt(ServerLevel level, BlockPos pos) {
+        if (trainSubLevelAt(level, pos) == null) return Spot.NONE;
         BlockState state = level.getBlockState(pos);
         PlacedRestTracker placed = PlacedRestTracker.get(level);
         if (state.getBlock() instanceof BedBlock) {
@@ -92,6 +100,36 @@ public final class NapEligibility {
         return !player.level().getEntitiesOfClass(Monster.class,
             new AABB(c.x - 8.0, c.y - 5.0, c.z - 8.0, c.x + 8.0, c.y + 5.0, c.z + 8.0),
             m -> m.isPreventingPlayerRest(player) && (!(m instanceof EnderMan e) || e.getTarget() == player)).isEmpty();
+    }
+
+    /** The Dungeon Train carriage group whose plot holds {@code pos}, or null when it is not on the train. */
+    public static ServerSubLevel trainSubLevelAt(ServerLevel level, BlockPos pos) {
+        try {
+            ServerSubLevel sub = CarriagePlotResolver.subLevelAt(level, new ChunkPos(pos));
+            return isTrainCarriage(sub != null, sub != null && SableManagedShip.isDungeonTrainManaged(sub)) ? sub : null;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** The rule alone: in some sub-level's plot, and that sub-level is a DT carriage group. */
+    static boolean isTrainCarriage(boolean inSubLevel, boolean dungeonTrainManaged) {
+        return inSubLevel && dungeonTrainManaged;
+    }
+
+    /**
+     * World X of the train bed at plot position {@code pos} as the carriage stands now, or
+     * {@code fallback} when it is not on the train or the pose can't be read.
+     */
+    public static double trainWorldX(ServerLevel level, BlockPos pos, double fallback) {
+        ServerSubLevel sub = trainSubLevelAt(level, pos);
+        if (sub == null) return fallback;
+        try {
+            Vector3d w = sub.logicalPose().transformPosition(new Vector3d(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5));
+            return Double.isFinite(w.x) ? w.x : fallback;
+        } catch (RuntimeException e) {
+            return fallback;
+        }
     }
 
     private static boolean isBuilderWorld(ServerLevel level) {
