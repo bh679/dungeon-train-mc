@@ -36641,6 +36641,45 @@
       "released": true,
       "released_in": "v0.1860.0",
       "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-save-count-per-life",
+      "version": "0.1861.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Nap tweak",
+      "summary": "Small behind-the-scenes improvement to naps.",
+      "highlights": [],
+      "pr": 2709,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1862.0",
+      "released_at": "2026-11-17T13:23:48Z"
+    },
+    {
+      "id": "slime-sizes-and-colours",
+      "version": "0.1862.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "content",
+        "editor",
+        "mobs"
+      ],
+      "title": "Slimes in every shade",
+      "summary": "Some far-off carriages now hold slimes in colours you may not have seen before, and builders can choose how big each slime grows.",
+      "highlights": [
+        "New slime rooms, each with its own look.",
+        "Builders: pick slime sizes and colours in the block variant menu."
+      ],
+      "pr": 2710,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1862.0",
+      "released_at": "2026-11-17T13:23:48Z"
     }
   ]
 }

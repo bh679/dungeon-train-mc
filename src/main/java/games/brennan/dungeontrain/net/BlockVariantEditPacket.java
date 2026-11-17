@@ -146,7 +146,9 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Plain chest row: step the trapped-chest chance by delta, wrapping 0..100.
                      BUMP_TRAPPED,
                      // Plain chest row: set the trapped-chest chance to delta (cmd-click number pad).
-                     SET_TRAPPED }
+                     SET_TRAPPED,
+                     // Slime / magma cube / End slime row: delta = VariantSlime mask (sizes, End slime types).
+                     SET_SLIME }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

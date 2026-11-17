@@ -272,7 +272,8 @@ public final class BlockVariantMenuRaycast {
         // Grow slot (none of them grows).
         boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
             && GrowthShapes.canGrow(parsed))
-            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed));
+            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed))
+            || BlockVariantMenu.isSlimeRow(entry);
         double growthCellR = armsCellL;
         double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they

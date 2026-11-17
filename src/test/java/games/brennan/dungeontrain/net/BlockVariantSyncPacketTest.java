@@ -222,6 +222,23 @@ final class BlockVariantSyncPacketTest {
             decoded.entries().get(1).bedColours());
     }
 
+    @Test
+    @DisplayName("round-trip preserves a slime row's size / type mask; the shorter ctor defaults it to any")
+    void roundTrip_slime() {
+        int mask = games.brennan.dungeontrain.editor.VariantSlime.NONE.toggledSize(4).toggledType(1).mask();
+        BlockVariantSyncPacket.Entry slime = new BlockVariantSyncPacket.Entry(
+            "dungeontrain:variant_placeholder", null, 1, (byte) 1, (byte) 0, null, "betterend:end_slime",
+            (byte) 0, 0, -1, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, 0, 1, mask);
+        BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, 0, 1);
+        BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 2, 3), List.of(slime, plain), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
+        assertEquals(mask, decoded.entries().get(0).slime());
+        assertEquals(0, decoded.entries().get(1).slime());
+    }
+
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);

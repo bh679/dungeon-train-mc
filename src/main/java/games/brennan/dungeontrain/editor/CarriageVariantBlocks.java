@@ -397,7 +397,8 @@ public final class CarriageVariantBlocks {
                 }
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
                 return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab)
-                    .withCondition(parseCondition(obj.get("if"), contextId, contextPos));
+                    .withCondition(parseCondition(obj.get("if"), contextId, contextPos))
+                    .withSlime(parseSlime(obj.get("slime"), contextId, contextPos));
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -881,6 +882,7 @@ public final class CarriageVariantBlocks {
                 sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
             }
             appendConditionJson(sb, s.condition());
+            appendSlimeJson(sb, s.slime());
             sb.append("}");
             return;
         }
@@ -1140,6 +1142,62 @@ public final class CarriageVariantBlocks {
             return VariantCharges.AS_PLACED;
         }
         return charges;
+    }
+
+    /** Emit {@code , "slime": {"sizes": [...], "types": [...]}} when any part is set. */
+    private static void appendSlimeJson(StringBuilder sb, VariantSlime slime) {
+        if (slime.isDefault()) return;
+        sb.append(", \"slime\": {");
+        boolean first = true;
+        if (slime.sizesSet()) {
+            sb.append("\"sizes\": [");
+            List<Integer> sizes = slime.litSizes();
+            for (int i = 0; i < sizes.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(sizes.get(i));
+            }
+            sb.append("]");
+            first = false;
+        }
+        if (slime.typesSet()) {
+            if (!first) sb.append(", ");
+            sb.append("\"types\": [");
+            List<String> names = slime.typeNames();
+            for (int i = 0; i < names.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("\"").append(names.get(i)).append("\"");
+            }
+            sb.append("]");
+        }
+        sb.append("}");
+    }
+
+    /** Parse an optional {@code "slime"} object. Absent or malformed → any size / type. */
+    static VariantSlime parseSlime(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantSlime.NONE;
+        VariantSlime slime = null;
+        try {
+            if (el.isJsonObject()) {
+                JsonObject obj = el.getAsJsonObject();
+                List<Integer> sizes = new ArrayList<>();
+                List<String> types = new ArrayList<>();
+                if (obj.has("sizes")) {
+                    for (JsonElement n : obj.getAsJsonArray("sizes")) sizes.add(n.getAsInt());
+                }
+                if (obj.has("types")) {
+                    for (JsonElement n : obj.getAsJsonArray("types")) types.add(n.getAsString());
+                }
+                slime = VariantSlime.fromLists(sizes, types);
+            }
+        } catch (RuntimeException e) {
+            slime = null;
+        }
+        if (slime == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: bad slime options '{}', using any.",
+                contextId, contextPos, el);
+            return VariantSlime.NONE;
+        }
+        return slime;
     }
 
     /** Parse an optional {@code "colours"} array of dye names. Absent or malformed → white only. */

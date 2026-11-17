@@ -1,0 +1,15 @@
+{
+  "id": "zombified-held-items",
+  "version": "0.1863.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Zombified players see what they hold",
+  "summary": "While Zombified, the item in your hand shows in first person again.",
+  "highlights": [],
+  "date": "2026-11-17",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

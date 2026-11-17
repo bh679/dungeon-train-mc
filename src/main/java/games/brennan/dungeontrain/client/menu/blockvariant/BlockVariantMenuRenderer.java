@@ -399,8 +399,9 @@ public final class BlockVariantMenuRenderer {
             boolean painting = concrete && BlockVariantMenu.growthSupported()
                 && BlockVariantMenu.isPaintingRow(entry, parsed);
             // Candle and flower pot rows do the same with their Candles / Plant pills.
-            boolean slotRow = concrete && BlockVariantMenu.growthSupported()
-                && BlockVariantMenu.usesGrowSlot(entry, parsed);
+            boolean slotRow = (concrete && BlockVariantMenu.growthSupported()
+                && BlockVariantMenu.usesGrowSlot(entry, parsed))
+                || BlockVariantMenu.isSlimeRow(entry);
             boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
                 && GrowthShapes.canGrow(parsed)) || slotRow;
             double growthCellR = armsCellL;
@@ -570,7 +571,11 @@ public final class BlockVariantMenuRenderer {
             BlockState growthState = BlockVariantMenu.parseState(entries.get(growthRow).stateString());
             BlockVariantMenu.SlotPopup slot = growthState == null ? null
                 : BlockVariantMenu.slotPopup(entries.get(growthRow), growthState, panelW, halfH);
-            if (slot != null && slot.kind() == BlockVariantMenu.CellKind.BED_COLOUR_OPTION) {
+            if (slot != null && slot.kind() == BlockVariantMenu.CellKind.SLIME_OPTION) {
+                games.brennan.dungeontrain.editor.VariantSlime slime = BlockVariantMenu.slime(entries.get(growthRow));
+                drawPopupRows(ps, buffer, font, slot.rows(), slot.kind(), hovered,
+                    (row, i) -> SlimePopupLayout.isSelected(slime, row, i));
+            } else if (slot != null && slot.kind() == BlockVariantMenu.CellKind.BED_COLOUR_OPTION) {
                 drawBedColourPopup(ps, buffer, font, slot.rows(),
                     BlockVariantMenu.bedColours(entries.get(growthRow)), hovered);
             } else if (slot != null) {
@@ -741,7 +746,11 @@ public final class BlockVariantMenuRenderer {
                                      BlockVariantMenu.Hit hovered) {
         boolean on;
         String label;
-        if (BlockVariantMenu.isPaintingRow(entry, parsed)) {
+        if (BlockVariantMenu.isSlimeRow(entry)) {
+            games.brennan.dungeontrain.editor.VariantSlime slime = BlockVariantMenu.slime(entry);
+            on = !slime.isDefault();
+            label = SlimePopupLayout.shortLabel(slime);
+        } else if (BlockVariantMenu.isPaintingRow(entry, parsed)) {
             games.brennan.dungeontrain.editor.VariantPainting painting = BlockVariantMenu.painting(entry);
             on = painting.on();
             label = PaintingPopupLayout.shortLabel(painting);
