@@ -36680,6 +36680,62 @@
       "released": true,
       "released_in": "v0.1862.0",
       "released_at": "2026-11-17T13:23:48Z"
+    },
+    {
+      "id": "nap-farewell-life-ongoing-first",
+      "version": "0.1864.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Save and quit farewell tweaks",
+      "summary": "Resting in a train bed to save and quit now opens on a look at the life still underway.",
+      "highlights": [
+        "The farewell now starts with the life still underway, with cards for your past lives, time aboard, carriages and distance",
+        "Click anywhere to skip straight to the end",
+        "The warning before you rest now shows what is in your backpack too"
+      ],
+      "pr": 2713,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1864.0",
+      "released_at": "2026-11-17T14:33:20Z"
+    },
+    {
+      "id": "new-rooms-nikeeta",
+      "version": "0.1863.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New rooms to find",
+      "summary": "Two new rooms built by Nikeeta have joined the train, each stocked with its own finds.",
+      "highlights": [
+        "Two new rooms to discover as you ride",
+        "Built by Nikeeta"
+      ],
+      "pr": 2712,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1864.0",
+      "released_at": "2026-11-17T14:33:20Z"
+    },
+    {
+      "id": "zombified-held-items",
+      "version": "0.1863.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Zombified players see what they hold",
+      "summary": "While Zombified, the item in your hand shows in first person again.",
+      "highlights": [],
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1864.0",
+      "released_at": "2026-11-17T14:33:20Z"
     }
   ]
 }
