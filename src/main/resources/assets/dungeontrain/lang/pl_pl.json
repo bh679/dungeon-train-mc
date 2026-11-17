@@ -661,7 +661,6 @@
   "gui.dungeontrain.nap.ongoing.subline_past.one": "%s życie wyrysowało swoją linię na tym niebie. To wciąż rysuje.",
   "gui.dungeontrain.nap.ongoing.subline_past.few": "%s życia wyrysowały swoje linie na tym niebie. To wciąż rysuje.",
   "gui.dungeontrain.nap.ongoing.subline_past.many": "%s żyć wyrysowało swoje linie na tym niebie. To wciąż rysuje.",
-  "gui.dungeontrain.nap.ongoing.totals": "Przed tym: %s na pokładzie, wagony: %s, %s.",
   "gui.dungeontrain.nap.ongoing.question": "Którędy pójdzie to życie?",
   "gui.dungeontrain.nap.free_play_cause": "Przebudzenie z rozgrywki w Swobodnej Grze",
   "chat.dungeontrain.nap.tampered.moved": "Pociąg nie rozpoznaje tego łóżka, ktoś przy nim majstrował.",

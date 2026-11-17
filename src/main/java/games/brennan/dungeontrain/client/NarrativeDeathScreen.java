@@ -461,6 +461,8 @@ public final class NarrativeDeathScreen extends Screen {
     private boolean napLeaving = false;
     /** The "a life ongoing" sky (nap mode), made once the lifetime stats arrive. */
     private NapSkyPainter napSky = null;
+    /** The nap sky's band: from this far down the screen to this far above its bottom edge. */
+    private static final int NAP_SKY_TOP = 44, NAP_SKY_BOTTOM_GAP = 34;
     /** The bottom question / answer line under the nap sky. */
     private static final int NAP_SKY_TEXT = 0xFFD8C79A;
 
@@ -1570,12 +1572,36 @@ public final class NarrativeDeathScreen extends Screen {
         if (!settled) {
             drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.question"), cx, w, rowY - 14, NAP_SKY_TEXT);
         }
-        if (past > 0L) {
-            drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.totals",
-                fmtAboard(s.lifeTrainTicks()), Long.toString(s.lifeCarriages()), fmtDist(s.lifeDistance())),
-                cx, w, rowY - 27, KICKER);
-        }
+        if (past > 0L) drawOngoingCards(g, s, y);
         return y;
+    }
+
+    /** Width of one "a life ongoing" totals card, and the gap between cards and to the screen edge. */
+    private static final int ONGOING_CARD_W = 76, ONGOING_CARD_GAP = 4, ONGOING_CARD_EDGE = 12;
+    /** A totals card's height, as {@link #drawCell} draws it. */
+    private static final int ONGOING_CARD_H = 26;
+
+    /**
+     * The lives before this one, as a column of cards down the right edge of "a life ongoing": time
+     * aboard, carriages, distance. Centred on the sky's middle but never above {@code textBottom}
+     * (the headline lines run wide), each card backed by the sky's colour so the star lines don't
+     * show through it.
+     */
+    private void drawOngoingCards(GuiGraphics g, DeathStatsPacket s, int textBottom) {
+        List<String[]> cards = List.of(
+            new String[] {fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard"},
+            new String[] {Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages"},
+            new String[] {fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance"});
+        int columnH = cards.size() * ONGOING_CARD_H + (cards.size() - 1) * ONGOING_CARD_GAP;
+        int skyMid = (NAP_SKY_TOP + (this.height - NAP_SKY_BOTTOM_GAP)) / 2;
+        int top = Math.max(textBottom + ONGOING_CARD_GAP * 2, skyMid - columnH / 2);
+        int centerX = this.width - ONGOING_CARD_EDGE - ONGOING_CARD_W / 2;
+        int x = centerX - ONGOING_CARD_W / 2;
+        for (int i = 0; i < cards.size(); i++) {
+            int y = top + i * (ONGOING_CARD_H + ONGOING_CARD_GAP);
+            g.fill(x, y, x + ONGOING_CARD_W, y + ONGOING_CARD_H, fade(0xFF000000 | NapSkyPainter.BG));
+            drawCell(g, centerX, y, cards.get(i)[0], cards.get(i)[1], ONGOING_CARD_W);
+        }
     }
 
     /**
@@ -1613,7 +1639,7 @@ public final class NarrativeDeathScreen extends Screen {
                 ? this.minecraft.getUser().getProfileId() : null;
             napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime());
         }
-        double top = 44, bottom = this.height - 34;
+        double top = NAP_SKY_TOP, bottom = this.height - NAP_SKY_BOTTOM_GAP;
         double size = Math.min(this.width - 24, (bottom - top) * 1.3);
         double cy = (top + bottom) / 2.0 + size * 0.04;
         napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, pageOpenedAtMs, now, uiAlpha);

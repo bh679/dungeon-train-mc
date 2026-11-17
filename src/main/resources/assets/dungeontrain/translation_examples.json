@@ -4783,29 +4783,6 @@
       ]
     }
   },
-  "gui.dungeontrain.nap.ongoing.totals": {
-    "1": {
-      "label": "total time aboard in the lives before this one",
-      "examples": [
-        "3h 12m",
-        "45m"
-      ]
-    },
-    "2": {
-      "label": "carriages passed in the lives before this one (digits)",
-      "examples": [
-        "412",
-        "9"
-      ]
-    },
-    "3": {
-      "label": "distance travelled in the lives before this one, with its unit",
-      "examples": [
-        "18.4 km",
-        "640 m"
-      ]
-    }
-  },
   "gui.dungeontrain.death.narr.photos": {
     "1": {
       "label": "how many photos this ride captured",

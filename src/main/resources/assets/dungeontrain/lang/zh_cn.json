@@ -613,7 +613,6 @@
   "gui.dungeontrain.nap.ongoing.headline": "%s位乘客，尚未倒下。",
   "gui.dungeontrain.nap.ongoing.subline_first": "一条线正在成形，但它的形状仍由你决定。",
   "gui.dungeontrain.nap.ongoing.subline_past.other": "已有 %s 条生命在这片天空画下了线。这一条还在画。",
-  "gui.dungeontrain.nap.ongoing.totals": "此前: 车上 %s，%s 节车厢，%s。",
   "gui.dungeontrain.nap.ongoing.question": "这一生会走向哪条路?",
   "gui.dungeontrain.nap.free_play_cause": "从自由模式的旅程中醒来",
   "chat.dungeontrain.nap.tampered.moved": "列车认不出这张床，它被人动过了。",
