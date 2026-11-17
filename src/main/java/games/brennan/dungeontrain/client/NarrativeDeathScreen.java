@@ -128,7 +128,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * page set is rebuilt if the cached questions arrive after the screen opens.</p>
  *
  * <p><b>Nap mode</b> ({@link #afterNap}): after a nap is saved ({@code nap/NapService}) the same
- * screen shows only the feedback questions and the Contribute page, with Main Menu in place of
+ * screen shows "a life ongoing" first, then the feedback questions and the Contribute page, with Main Menu in place of
  * Board anew / Leave. It pauses the world, sends no death photos and no death-funnel analytics, and
  * leaves through {@code NapQuit#leaveNow}, which deletes the napped world.</p>
  */
@@ -476,7 +476,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * The nap farewell: the feedback questions and the Contribute page, shown once the nap is saved
+     * The nap farewell: "a life ongoing", the feedback questions and the Contribute page, shown once the nap is saved
      * and before the player leaves {@code levelId} for the title screen.
      */
     public static NarrativeDeathScreen afterNap(String levelId) {
@@ -576,12 +576,12 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
-    /** Nap mode's deck: the feedback questions (with their answer pages), Contribute, then "a life ongoing". */
+    /** Nap mode's deck: "a life ongoing" first, then the feedback questions (with their answer pages), then Contribute. */
     private List<Page> buildNapPages() {
         List<Page> list = new ArrayList<>();
+        list.add(Page.of(Kind.ONGOING));
         addSurveyPages(list);
         list.add(Page.of(Kind.DONATE));
-        list.add(Page.of(Kind.ONGOING));
         // Kept in step with what tick() compares, so it doesn't rebuild every tick.
         lastPhotoCount = photoSet().size();
         lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
@@ -1543,7 +1543,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * The nap farewell's last page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
+     * The nap farewell's first page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
      * and not yet to fall.") over the perks sky ({@link #drawNapSky}): one line per previous life, then
      * this life's, still open. The quiet totals line holds only the lives before this one
      * ({@code RunStatsEvents#napPacket}); a first life has none.

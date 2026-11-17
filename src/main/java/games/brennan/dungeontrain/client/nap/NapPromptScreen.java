@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.nap;
 
+import games.brennan.dungeontrain.compat.BackpackContents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NapResponsePacket;
 import net.minecraft.Util;
@@ -130,7 +131,7 @@ public final class NapPromptScreen extends Screen {
         addRenderableWidget(other);
     }
 
-    /** Every non-empty stack the player carries: main inventory and hotbar, then armour, then offhand. */
+    /** Every non-empty stack the player carries: main inventory and hotbar, armour, offhand, then the backpack. */
     private List<ItemStack> carriedItems() {
         if (this.minecraft == null || this.minecraft.player == null) return List.of();
         Inventory inv = this.minecraft.player.getInventory();
@@ -140,6 +141,7 @@ public final class NapPromptScreen extends Screen {
                 if (!stack.isEmpty()) out.add(stack.copy());
             }
         }
+        out.addAll(BackpackContents.stacks(this.minecraft.player));
         return List.copyOf(out);
     }
 

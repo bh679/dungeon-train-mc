@@ -6,7 +6,8 @@ import net.minecraft.client.Minecraft;
 
 /**
  * The client half of taking a nap: the server has saved it ({@code NapSavedPacket}), so the player
- * gets the death screen's feedback questions and Contribute page ({@link NarrativeDeathScreen#afterNap}),
+ * gets "a life ongoing", then the death screen's feedback questions and Contribute page
+ * ({@link NarrativeDeathScreen#afterNap}),
  * then leaves to the title screen with the world deleted. The nap waits in its slot (Free Play or
  * Survival, and difficulty) until a new run of the same kind starts.
  */
