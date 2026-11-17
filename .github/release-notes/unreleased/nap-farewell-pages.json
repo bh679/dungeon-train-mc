@@ -6,7 +6,7 @@
     "feature",
     "ui"
   ],
-  "title": "Save and Quit",
+  "title": "Sleep Deep. Sleep Safe. Sleep, Save and Quit",
   "summary": "Rest in a bed aboard the train to save and quit, then come back to your run where you left it.",
   "highlights": [
     "Resting in a train bed to save and quit now offers the feedback questions, a way to support the line, and a closing look at the life still underway",
@@ -19,7 +19,7 @@
   "released_in": null,
   "released_at": null,
   "major": true,
-  "description": "Train beds now let you save and quit.\n\nRest in a bed aboard the train and you can step away from the line, then come back to your run where you left it. Before you go, the train shows everything you are carrying, asks a few quick questions, and ends on a look at the life still underway: your past lives traced across the stars, and this one still drawing its path.\n\nThis is still in development, so only use it if you are willing to lose what you carry. Keep anything precious in an Ender Chest for your next life.",
+  "description": "Its finally here. The most request feature to date.\nTrain beds now let you save and quit.\n\nRest in a bed aboard the train and you can step away from the line, then come back to your run where you left it. But be careful where you use a bed! The nether and end are as unforgiving as ever. Saving isn't impossible there, but done differently. So keep your eyes open for ways to give them a rest.",
   "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.gif",
   "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.mp4",
   "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.loop.mp4",
