@@ -73,6 +73,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.advancements.AdvancementHolder;
@@ -1580,12 +1581,18 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int ONGOING_CARD_W = 76, ONGOING_CARD_GAP = 4, ONGOING_CARD_EDGE = 12;
     /** A totals card's height, as {@link #drawCell} draws it. */
     private static final int ONGOING_CARD_H = 26;
+    /** The cards appear one at a time: the first this long after the page opens, then one per step. */
+    private static final long ONGOING_CARD_DELAY_MS = 900L, ONGOING_CARD_STEP_MS = 450L, ONGOING_CARD_FADE_MS = 500L;
+    /** How far a card rises as it fades in, in GUI pixels. */
+    private static final int ONGOING_CARD_RISE = 4;
+    /** Below this a card isn't drawn: the font draws near-zero alpha text fully opaque. */
+    private static final float ONGOING_CARD_MIN_ALPHA = 0.03f;
 
     /**
      * The lives before this one, as a column of cards down the right edge of "a life ongoing": time
      * aboard, carriages, distance. Centred on the sky's middle but never above {@code textBottom}
      * (the headline lines run wide), each card backed by the sky's colour so the star lines don't
-     * show through it.
+     * show through it. They fade in one at a time, top first, each rising a little as it comes.
      */
     private void drawOngoingCards(GuiGraphics g, DeathStatsPacket s, int textBottom) {
         List<String[]> cards = List.of(
@@ -1597,10 +1604,20 @@ public final class NarrativeDeathScreen extends Screen {
         int top = Math.max(textBottom + ONGOING_CARD_GAP * 2, skyMid - columnH / 2);
         int centerX = this.width - ONGOING_CARD_EDGE - ONGOING_CARD_W / 2;
         int x = centerX - ONGOING_CARD_W / 2;
-        for (int i = 0; i < cards.size(); i++) {
-            int y = top + i * (ONGOING_CARD_H + ONGOING_CARD_GAP);
-            g.fill(x, y, x + ONGOING_CARD_W, y + ONGOING_CARD_H, fade(0xFF000000 | NapSkyPainter.BG));
-            drawCell(g, centerX, y, cards.get(i)[0], cards.get(i)[1], ONGOING_CARD_W);
+        long shown = Util.getMillis() - pageOpenedAtMs - ONGOING_CARD_DELAY_MS;
+        float pageAlpha = uiAlpha;
+        try {
+            for (int i = 0; i < cards.size(); i++) {
+                float k = Mth.clamp((shown - i * ONGOING_CARD_STEP_MS) / (float) ONGOING_CARD_FADE_MS, 0.0f, 1.0f);
+                float cardAlpha = pageAlpha * smooth(k);
+                if (cardAlpha < ONGOING_CARD_MIN_ALPHA) continue;
+                uiAlpha = cardAlpha;
+                int y = top + i * (ONGOING_CARD_H + ONGOING_CARD_GAP) + Math.round((1.0f - smooth(k)) * ONGOING_CARD_RISE);
+                g.fill(x, y, x + ONGOING_CARD_W, y + ONGOING_CARD_H, fade(0xFF000000 | NapSkyPainter.BG));
+                drawCell(g, centerX, y, cards.get(i)[0], cards.get(i)[1], ONGOING_CARD_W);
+            }
+        } finally {
+            uiAlpha = pageAlpha;
         }
     }
 
