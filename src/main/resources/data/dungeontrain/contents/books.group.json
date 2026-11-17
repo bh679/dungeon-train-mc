@@ -198,6 +198,14 @@
       "phases": [
         "END"
       ]
+    },
+    {
+      "id": "hiddenbed",
+      "weight": 1
+    },
+    {
+      "id": "bookroom",
+      "weight": 1
     }
   ]
 }

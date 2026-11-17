@@ -240,6 +240,10 @@
     "mode": "bedrock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
   "gravityfalls": 1,
+  "gridpath": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/random:64:10/off/none/repeated/-1/1"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock",
@@ -369,6 +373,11 @@
     "weight": 2,
     "minLevel": 2,
     "mode": "void"
+  },
+  "parkourup": {
+    "weight": 2,
+    "minLevel": 2,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/3/0/11/dungeontrain:skybox_surface"
   },
   "paths": {
     "weight": 1,
@@ -572,6 +581,10 @@
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
     }
+  },
+  "vaultchambers": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/random:50:10"
   },
   "waterparkour": {
     "weight": 2,
