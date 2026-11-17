@@ -6,8 +6,8 @@
     "feature",
     "internal"
   ],
-  "title": "Nap tracking",
-  "summary": "Each life now keeps track of how many times it has been saved with a nap, ready for things to come.",
+  "title": "Nap tweak",
+  "summary": "Small behind-the-scenes improvement to naps.",
   "highlights": [],
   "pr": 2709,
   "date": "2026-11-17",
