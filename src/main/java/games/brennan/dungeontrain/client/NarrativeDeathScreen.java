@@ -1586,6 +1586,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int ONGOING_CARD_H = 26;
     /** The cards appear one at a time: the first this long after the sky's path settles, then one per step. */
     private static final long ONGOING_CARD_DELAY_MS = 300L, ONGOING_CARD_STEP_MS = 450L, ONGOING_CARD_FADE_MS = 500L;
+    /** Next Screen and Main Menu show by this long into "a life ongoing", whatever is still coming. */
+    private static final long ONGOING_REVEAL_CAP_MS = 12_000L;
     /** Next Screen and Main Menu fade in over this long once the last card is in. */
     private static final long ONGOING_CONTROLS_FADE_MS = 400L;
     /** How far a card rises as it fades in, in GUI pixels. */
@@ -1656,15 +1658,17 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * When "a life ongoing" has finished showing itself: the last card fully in, or the path settled
-     * when there are no cards (a first life). {@link Long#MAX_VALUE} while the stats or the sky are coming.
+     * when there are no cards (a first life). Never later than {@link #ONGOING_REVEAL_CAP_MS} into the
+     * page, so missing stats (the server's send can fail) can't leave the farewell with no way out.
      */
     private long ongoingRevealDoneAt() {
+        long cap = ongoingStart() + ONGOING_REVEAL_CAP_MS;
         DeathStatsPacket s = DeathStatsCache.get();
         long from = ongoingCardsFrom();
-        if (s == null || from == Long.MAX_VALUE) return Long.MAX_VALUE;
+        if (s == null || from == Long.MAX_VALUE) return cap;
         int cards = s.lifeDeaths() > 0L ? ongoingCards(s).size() : 0;
-        if (cards == 0) return from;
-        return from + ONGOING_CARD_DELAY_MS + (cards - 1) * ONGOING_CARD_STEP_MS + ONGOING_CARD_FADE_MS;
+        if (cards == 0) return Math.min(cap, from);
+        return Math.min(cap, from + ONGOING_CARD_DELAY_MS + (cards - 1) * ONGOING_CARD_STEP_MS + ONGOING_CARD_FADE_MS);
     }
 
     /**
@@ -1674,7 +1678,6 @@ public final class NarrativeDeathScreen extends Screen {
     private float ongoingControlsAlpha() {
         if (!onOngoingPage()) return 1.0f;
         long doneAt = ongoingRevealDoneAt();
-        if (doneAt == Long.MAX_VALUE) return 0.0f;
         return smooth(Mth.clamp((Util.getMillis() - doneAt) / (float) ONGOING_CONTROLS_FADE_MS, 0.0f, 1.0f));
     }
 
@@ -1686,7 +1689,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (!onOngoingPage()) return false;
         long doneAt = ongoingRevealDoneAt();
         long now = Util.getMillis();
-        if (doneAt == Long.MAX_VALUE || doneAt <= now) return false;
+        if (doneAt <= now) return false;
         ongoingSkipMs += doneAt - now;
         return true;
     }
@@ -2754,7 +2757,12 @@ public final class NarrativeDeathScreen extends Screen {
         // on the fading / hidden controls beneath. Once settled (incl. the slow image
         // rise) clicks fall through, so only the Continue button advances — not empty space.
         if (photoViewer.isOpen()) return photoViewer.mouseClicked(photos(), mx, my, button);
-        if (button == 0 && uiBusy) { skipTransition(); return true; }
+        if (button == 0 && uiBusy) {
+            // One click skips everything: the page's fade, and on "a life ongoing" its sky and cards too.
+            skipTransition();
+            skipOngoingReveal();
+            return true;
+        }
         // "a life ongoing" still showing itself: a click skips to its end (the "$" chip still works).
         if (button == 0 && !(dollarRect != null && dollarRect.has(mx, my)) && skipOngoingReveal()) return true;
         if (button == 0) {
