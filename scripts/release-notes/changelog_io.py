@@ -499,6 +499,50 @@ def mentions_from_args(triples: list[list[str]] | None) -> dict | None:
     return out
 
 
+# A major entry's Bilibili video upload (`bilibili`), pasted by hand from the dp-relay Socials page
+# (socials-bilibili.js reads the same field). Limits are Bilibili's upload form's.
+BILIBILI_LANGS = ("zh", "en")
+BILIBILI_TITLE_MAX = 80
+BILIBILI_DESCRIPTION_MAX = 2000
+BILIBILI_TAGS_MAX = 10
+BILIBILI_TAG_MAX = 20
+_LONG_DASH = re.compile(r"[—–]")
+
+
+def _bilibili_text(field: str, lang: str, value: Any, limit: int) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"bilibili {field}.{lang} must be non-empty text")
+    text = value.strip()
+    if len(text) > limit:
+        raise ValueError(f"bilibili {field}.{lang} is {len(text)} characters; Bilibili allows {limit}")
+    if _LONG_DASH.search(text):
+        raise ValueError(f"bilibili {field}.{lang} has a long dash; player-visible text uses none")
+    return text
+
+
+def validate_bilibili(block: Any) -> dict:
+    """The cleaned {title, description, tags} block (each {zh, en}); raise ValueError on anything Bilibili refuses."""
+    if not isinstance(block, dict) or set(block) != {"title", "description", "tags"}:
+        raise ValueError("bilibili must be an object with exactly title, description and tags")
+    out: dict[str, dict] = {"title": {}, "description": {}, "tags": {}}
+    for field in ("title", "description", "tags"):
+        langs = block[field]
+        if not isinstance(langs, dict) or set(langs) != set(BILIBILI_LANGS):
+            raise ValueError(f"bilibili {field} needs exactly {' and '.join(BILIBILI_LANGS)}")
+    for lang in BILIBILI_LANGS:
+        out["title"][lang] = _bilibili_text("title", lang, block["title"][lang], BILIBILI_TITLE_MAX)
+        out["description"][lang] = _bilibili_text(
+            "description", lang, block["description"][lang], BILIBILI_DESCRIPTION_MAX)
+        tags = block["tags"][lang]
+        if not isinstance(tags, list) or not 1 <= len(tags) <= BILIBILI_TAGS_MAX:
+            raise ValueError(f"bilibili tags.{lang} must list 1 to {BILIBILI_TAGS_MAX} tags")
+        cleaned = [_bilibili_text("tag", lang, t, BILIBILI_TAG_MAX) for t in tags]
+        if len(set(cleaned)) != len(cleaned):
+            raise ValueError(f"bilibili tags.{lang} repeats a tag")
+        out["tags"][lang] = cleaned
+    return out
+
+
 # The clips a major entry may carry one of each (`videos`): Facebook and Instagram's feed post, a story, TikTok. Each is
 # recorded for that post's visible area; a format without one uses the entry's `video`.
 VIDEO_FORMATS = ("feed", "story", "tiktok")

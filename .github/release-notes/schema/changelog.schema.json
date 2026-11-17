@@ -95,6 +95,40 @@
             }
           }
         },
+        "loop": {
+          "type": "string",
+          "pattern": "^https://\\S+\\.[mM][pP]4$",
+          "description": "Major release only: a silent .mp4 of the animated image (gif-to-loop.sh) the website plays in place of the GIF."
+        },
+        "bilibili": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "description", "tags"],
+          "description": "Major release only: the Bilibili video upload (投稿) the Socials page prepares to paste by hand, in Chinese and English. Limits are Bilibili's: title 80 characters, description 2000, at most 10 tags of 20. Set with scripts/release-notes/set-bilibili.py.",
+          "properties": {
+            "title": {
+              "type": "object", "additionalProperties": false, "required": ["zh", "en"],
+              "properties": {
+                "zh": { "type": "string", "minLength": 1, "maxLength": 80 },
+                "en": { "type": "string", "minLength": 1, "maxLength": 80 }
+              }
+            },
+            "description": {
+              "type": "object", "additionalProperties": false, "required": ["zh", "en"],
+              "properties": {
+                "zh": { "type": "string", "minLength": 1, "maxLength": 2000 },
+                "en": { "type": "string", "minLength": 1, "maxLength": 2000 }
+              }
+            },
+            "tags": {
+              "type": "object", "additionalProperties": false, "required": ["zh", "en"],
+              "properties": {
+                "zh": { "type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 20 } },
+                "en": { "type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 20 } }
+              }
+            }
+          }
+        },
         "video_cover": {
           "type": "number",
           "minimum": 0,
