@@ -523,6 +523,11 @@
       "name": "AntonioMacarely"
     }
   },
+  "taslibrary1": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "void/exact/off/off/mix/cycle"
+  },
   "terrarium": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/day/sealed/0/73/0/19",

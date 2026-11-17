@@ -205,6 +205,10 @@
       "id": "thearchivistsociety",
       "weight": 1,
       "minLevel": 25
+    },
+    {
+      "id": "taslibrary1",
+      "weight": 1
     }
   ]
 }
