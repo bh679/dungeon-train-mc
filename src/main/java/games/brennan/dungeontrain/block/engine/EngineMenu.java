@@ -58,7 +58,11 @@ public class EngineMenu extends AbstractContainerMenu {
         this.carriageId = carriageId == null ? "" : carriageId;
         engine.startOpen(inventory.player);
         addSlot(new Slot(engine, 0, COAL_X, COAL_Y) {
-            @Override public boolean mayPlace(ItemStack stack) { return EngineBlockEntity.isFuel(stack); }
+            // A full engine (banked coal at the cap) takes nothing: without the room check, a shift-click
+            // "moves" 0 coal, reports success, and vanilla's quick-move loop spins forever.
+            @Override public boolean mayPlace(ItemStack stack) {
+                return EngineBlockEntity.isFuel(stack) && getMaxStackSize() > 0;
+            }
             @Override public int getMaxStackSize() { return Math.max(0, DriftEngine.MAX_COAL - banked()); }
             @Override public int getMaxStackSize(ItemStack stack) { return getMaxStackSize(); }
         });
@@ -118,6 +122,8 @@ public class EngineMenu extends AbstractContainerMenu {
         } else {
             return ItemStack.EMPTY;
         }
+        // Nothing actually moved: say so, or vanilla's quick-move loop calls us again forever.
+        if (stack.getCount() == before.getCount()) return ItemStack.EMPTY;
         if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
         else slot.setChanged();
         return before;
