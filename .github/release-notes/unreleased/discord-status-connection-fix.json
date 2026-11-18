@@ -1,0 +1,17 @@
+{
+  "id": "discord-status-connection-fix",
+  "version": "0.1886.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "community"
+  ],
+  "title": "Discord status fix",
+  "summary": "Your Discord status now only connects to your own Discord app, and gives up on a connection that stops answering instead of getting stuck.",
+  "highlights": [],
+  "pr": 2736,
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
