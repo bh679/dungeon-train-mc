@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import games.brennan.dungeontrain.util.StrictBase64;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Predicate;
@@ -167,7 +168,7 @@ public final class NoteAuthorGear {
     public static CompoundTag decode(String encoded) {
         if (encoded == null || encoded.isBlank() || encoded.length() > MAX_ENCODED_CHARS) return null;
         try {
-            byte[] raw = Base64.getDecoder().decode(encoded.trim());
+            byte[] raw = StrictBase64.decode(encoded.trim());
             return NbtIo.readCompressed(new ByteArrayInputStream(raw),
                     NbtAccounter.create(MAX_DECODED_BYTES));
         } catch (IOException | RuntimeException e) {
