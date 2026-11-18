@@ -1,0 +1,16 @@
+{
+  "id": "breathlessness-ends-on-save",
+  "version": "0.1869.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "balance"
+  ],
+  "title": "Totem of Breathlessness fix",
+  "summary": "The Totem of Breathlessness curse now ends when the totem saves you, instead of drowning you on land after the save.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
