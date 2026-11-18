@@ -18561,5 +18561,36 @@
         "Multiplayer is coming"
       ]
     }
+  },
+  "chat.dungeontrain.live_bot_report.confirm": {
+    "1": {
+      "label": "the name of the Kick or Twitch account being reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    },
+    "2": {
+      "label": "the streaming site the message came from",
+      "examples": [
+        "Kick",
+        "Twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.done": {
+    "1": {
+      "label": "the name of the Kick or Twitch account that was reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.relink": {
+    "1": {
+      "label": "the in-game command that gives a link code",
+      "examples": [
+        "/discord"
+      ]
+    }
   }
 }
