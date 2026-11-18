@@ -76,6 +76,7 @@ public final class MobEffectOffsets {
             Map.entry("betterend:shadow_walker", 7),
             Map.entry("creeperoverhaul:spruce_creeper", 7),
             Map.entry("creeperoverhaul:swamp_creeper", 7),
+            Map.entry("luminous_monsters:sunken_skeleton", 7),
             Map.entry("creeperoverhaul:desert_creeper", 9),
             Map.entry("piglinproliferation:piglin_alchemist", 9),
             Map.entry("creeperoverhaul:dark_oak_creeper", 10),
