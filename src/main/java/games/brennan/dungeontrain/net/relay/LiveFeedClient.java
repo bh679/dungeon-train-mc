@@ -1134,6 +1134,28 @@ public final class LiveFeedClient {
         return post(base, "/live/gift/offer", body);
     }
 
+    /**
+     * The holder sat idle ({@code LiveEyeAfkOffer}): the same offer to every viewer as {@link #giftOfferAll}, marked
+     * {@code auto} so {@link #giftWithdraw} can take it back when they return. An older relay ignores the mark.
+     */
+    public static CompletableFuture<Result> giftOfferAway(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("all", true);
+        body.addProperty("auto", true);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The holder is back: take back this stream's unclaimed away offers ({@link #giftOfferAway}); hand-made and
+     * accepted ones stand. 200 {@code {count}}; 403 not on air; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> giftWithdraw(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post(base, "/live/gift/withdraw", body);
+    }
+
     /** A {@link #giftViewers} reply's names, cleaned and capped; empty on any failure. */
     public static List<String> parseGiftViewers(Result r) {
         if (!r.ok() || !r.body().has("viewers") || !r.body().get("viewers").isJsonArray()) return List.of();

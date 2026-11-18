@@ -28,7 +28,10 @@ import org.slf4j.Logger;
  * <p><b>Once, then every {@link #REOFFER_MS} while still away.</b> The repeat reaches viewers who tuned
  * in during the absence; the relay skips anyone whose offer is still open. Only the first successful
  * offer of an absence tells the holder; the repeats and the "nobody watching" / "already offered"
- * replies stay quiet. Any input starts a new absence. An auto-offer is not a gift the holder chose, so
+ * replies stay quiet. Any input starts a new absence and takes the away offers back (relay
+ * {@code /live/gift/withdraw}): unclaimed ones only, so a viewer who already accepted keeps it, and never one the
+ * holder made by hand. Going off air needs no withdraw: an offer from a stream no longer on air cannot be
+ * redeemed. An auto-offer is not a gift the holder chose, so
  * it does not send {@code gifted_live_eye}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -87,12 +90,15 @@ public final class LiveEyeAfkOffer {
             return;
         }
         long idleMs = AfkAutoPause.idleMs();
-        if (newAbsence(idleMs, offeredAtIdleMs)) reset();
+        if (newAbsence(idleMs, offeredAtIdleMs)) {
+            reset();
+            withdraw(token);
+        }
         if (!shouldOffer(true, idleMs, mc.screen != null, ClientActivityReporter.onGameMenu(), offeredAtIdleMs)) return;
 
         offeredAtIdleMs = idleMs;
         LOGGER.info("[DungeonTrain] Live Eye holder away {} s: offering the eye to all viewers", idleMs / 1000L);
-        LiveFeedClient.giftOfferAll(DungeonTrain.relayBaseUrl(), token).thenAcceptAsync(r -> {
+        LiveFeedClient.giftOfferAway(DungeonTrain.relayBaseUrl(), token).thenAcceptAsync(r -> {
             if (r.ok()) {
                 if (!announced && offeredAtIdleMs >= 0L) {
                     announced = true;
@@ -108,6 +114,17 @@ public final class LiveEyeAfkOffer {
                     r.error());
             }
         }, mc);
+    }
+
+    /** The holder is back: take back the away offers. Quiet; an older relay (404) just lets them expire. */
+    private static void withdraw(String token) {
+        LiveFeedClient.giftWithdraw(DungeonTrain.relayBaseUrl(), token).thenAccept(r -> {
+            if (r.ok()) {
+                LOGGER.info("[DungeonTrain] Live Eye holder back: withdrew {} away offer(s)", r.str("count"));
+            } else if (r.status() != 404) {
+                LOGGER.warn("[DungeonTrain] Live Eye away-offer withdraw refused: HTTP {} {}", r.status(), r.str("error"), r.error());
+            }
+        });
     }
 
     private static void reset() {
