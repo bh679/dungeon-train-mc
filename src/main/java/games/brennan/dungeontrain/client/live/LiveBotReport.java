@@ -197,7 +197,8 @@ public final class LiveBotReport {
     private static void send(String uuid, String key, @Nullable String fallback, Flagged f, long seq) {
         Minecraft mc = Minecraft.getInstance();
         LiveFeedClient.chatReport(LiveChatBridge.currentBase(), uuid, key, f.room(), seq).thenAcceptAsync(r -> {
-            Outcome o = outcome(r.status(), r.str("error"), fallback != null);
+            // The per-IP budget answers {error: rate_limited, scope: hook}: not this player's hourly report cap.
+            Outcome o = outcome(r.status(), "hook".equals(r.str("scope")) ? "hook" : r.str("error"), fallback != null);
             if (o == Outcome.RETRY_PENDING) {
                 send(uuid, fallback, null, f, seq);
                 return;
