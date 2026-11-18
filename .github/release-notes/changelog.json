@@ -36840,6 +36840,113 @@
       "released": true,
       "released_in": "v0.1869.0",
       "released_at": "2026-11-18T04:36:01Z"
+    },
+    {
+      "id": "dtp-seed-force-load",
+      "version": "0.1873.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "echo-reaction-channels",
+      "version": "0.1871.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Echoes react at your speed for each thing they do",
+      "summary": "An echo now fights, shoots, builds and moves as quickly as you did each of those things in that life. A sharp swordsman who fumbled the bow leaves an echo that swings fast but is slow to shoot.",
+      "highlights": [
+        "Shooting speed follows how often your arrows hit and how often you loosed them fully drawn",
+        "Anything you never did, your echo does at your usual pace"
+      ],
+      "pr": 2721,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "echo-reaction-zero-default",
+      "version": "0.1872.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Echoes are slow at what you never did",
+      "summary": "An echo is now only quick at the things you actually did quickly in that life. Anything you never did, it does slowly. Echoes from older lives each come back with reflexes of their own.",
+      "highlights": [
+        "A skill you never used leaves your echo at its slowest",
+        "Older echoes get different reflexes every time they return"
+      ],
+      "pr": 2722,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "mob-name-endings-nica-leighly",
+      "version": "0.1875.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Two more mob name endings",
+      "summary": "Invented mob names can now end in -nica or -leighly, like Hinica and Doleighly.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "more-mob-name-sounds",
+      "version": "0.1870.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "More mob name sounds",
+      "summary": "Invented mob names get new sounds and endings, so you'll meet names like Wamathon, Feiboard and Moewitle.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "nap-shift-quit-game",
+      "version": "0.1873.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Quit Game straight from a nap",
+      "summary": "After you save and quit at a train bed, hold Shift on the farewell screens to quit the game instead of going to the main menu.",
+      "highlights": [],
+      "pr": 2723,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
     }
   ]
 }
