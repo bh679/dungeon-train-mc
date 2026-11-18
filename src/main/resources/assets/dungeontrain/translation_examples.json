@@ -18562,7 +18562,7 @@
       ]
     }
   },
-  "chat.dungeontrain.live_report.confirm": {
+  "chat.dungeontrain.live_bot_report.confirm": {
     "1": {
       "label": "the name of the Kick or Twitch account being reported",
       "examples": [
@@ -18577,7 +18577,7 @@
       ]
     }
   },
-  "chat.dungeontrain.live_report.done": {
+  "chat.dungeontrain.live_bot_report.done": {
     "1": {
       "label": "the name of the Kick or Twitch account that was reported",
       "examples": [
@@ -18585,7 +18585,7 @@
       ]
     }
   },
-  "chat.dungeontrain.live_report.relink": {
+  "chat.dungeontrain.live_bot_report.relink": {
     "1": {
       "label": "the in-game command that gives a link code",
       "examples": [

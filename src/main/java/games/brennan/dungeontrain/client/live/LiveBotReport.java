@@ -38,21 +38,21 @@ public final class LiveBotReport {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final String ACTION = "live-report";
+    static final String ACTION = "live-bot-report";
     static final String ASK = "ask";
     static final String GO = "go";
     static final String CANCEL = "cancel";
     static final String FLAG = "[⚑]";
 
-    static final String HOVER_KEY = "chat.dungeontrain.live_report.hover";
-    static final String CONFIRM_KEY = "chat.dungeontrain.live_report.confirm";
-    static final String YES_KEY = "chat.dungeontrain.live_report.yes";
-    static final String CANCEL_KEY = "chat.dungeontrain.live_report.cancel";
-    static final String DONE_KEY = "chat.dungeontrain.live_report.done";
-    static final String GONE_KEY = "chat.dungeontrain.live_report.gone";
-    static final String RELINK_KEY = "chat.dungeontrain.live_report.relink";
-    static final String LIMIT_KEY = "chat.dungeontrain.live_report.limit";
-    static final String FAILED_KEY = "chat.dungeontrain.live_report.failed";
+    static final String HOVER_KEY = "chat.dungeontrain.live_bot_report.hover";
+    static final String CONFIRM_KEY = "chat.dungeontrain.live_bot_report.confirm";
+    static final String YES_KEY = "chat.dungeontrain.live_bot_report.yes";
+    static final String CANCEL_KEY = "chat.dungeontrain.live_bot_report.cancel";
+    static final String DONE_KEY = "chat.dungeontrain.live_bot_report.done";
+    static final String GONE_KEY = "chat.dungeontrain.live_bot_report.gone";
+    static final String RELINK_KEY = "chat.dungeontrain.live_bot_report.relink";
+    static final String LIMIT_KEY = "chat.dungeontrain.live_bot_report.limit";
+    static final String FAILED_KEY = "chat.dungeontrain.live_bot_report.failed";
 
     /** How long a missing Discord answer waits before this asks the relay again. */
     private static final long STATUS_RETRY_MS = 5 * 60 * 1000;

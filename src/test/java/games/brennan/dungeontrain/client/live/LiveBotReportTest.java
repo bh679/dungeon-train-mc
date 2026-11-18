@@ -30,10 +30,16 @@ final class LiveBotReportTest {
     void clicks() {
         ClickEvent ask = LiveBotReport.click(LiveBotReport.ASK, 42);
         assertEquals(ClickEvent.Action.RUN_COMMAND, ask.getAction());
-        assertEquals("dungeontrain:live-report/ask/42", ask.getValue());
+        assertEquals("dungeontrain:live-bot-report/ask/42", ask.getValue());
         assertFalse(ask.getValue().startsWith("/"));
-        assertEquals("dungeontrain:live-report/go/7", LiveBotReport.click(LiveBotReport.GO, 7).getValue());
+        assertEquals("dungeontrain:live-bot-report/go/7", LiveBotReport.click(LiveBotReport.GO, 7).getValue());
         assertEquals(ask, LiveBotReport.chipComponent(42).getStyle().getClickEvent());
+    }
+
+    @Test
+    @DisplayName("its click action is its own: the [Report streamer] button's must not be replaced")
+    void ownAction() {
+        assertFalse(LiveBotReport.ACTION.equals(LiveReportButton.CLICK_ACTION));
     }
 
     @Test
