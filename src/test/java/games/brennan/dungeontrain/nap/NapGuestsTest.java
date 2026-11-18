@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -17,14 +18,14 @@ class NapGuestsTest {
 
     @TempDir Path dir;
 
-    @Test void hostConnectionAloneIsNotAGuest() {
-        assertFalse(NapGuests.othersConnected(0));
-        assertFalse(NapGuests.othersConnected(1));
+    @Test void hostMemoryConnectionsAreNotGuests() {
+        // The integrated server keeps two in-memory connections for its host (seen in-game).
+        assertFalse(NapGuests.othersConnected(List.of()));
+        assertFalse(NapGuests.othersConnected(List.of(false, false)));
     }
 
-    @Test void anySecondConnectionIsAGuest() {
-        assertTrue(NapGuests.othersConnected(2));
-        assertTrue(NapGuests.othersConnected(5));
+    @Test void anOpenNetworkConnectionIsAGuest() {
+        assertTrue(NapGuests.othersConnected(List.of(false, false, true)));
     }
 
     @Test void missingFolderHasNoGuests() {
