@@ -26,6 +26,7 @@
       "chat.dungeontrain.twitch.save_offer",
       "chat.dungeontrain.twitch.saved",
       "chat.dungeontrain.twitch.saved_verify",
+      "gui.dungeontrain.ai_policy.explainers.names.desc",
       "gui.dungeontrain.editor_screen.layout.weight_tip",
       "advancements.dungeontrain.dungeon_train.fully_developed.hint",
       "gui.dungeontrain.options.stream_audio.hint",

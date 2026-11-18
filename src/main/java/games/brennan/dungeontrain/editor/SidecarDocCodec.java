@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import games.brennan.dungeontrain.util.StrictBase64;
 import java.util.Base64;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -57,7 +58,7 @@ final class SidecarDocCodec {
         JsonObject root = JsonParser.parseString(doc).getAsJsonObject();
         JsonElement gz = root.get(K_GZ);
         if (gz == null || !gz.isJsonPrimitive()) return root;
-        byte[] packed = Base64.getDecoder().decode(gz.getAsString());
+        byte[] packed = StrictBase64.decode(gz.getAsString());
         return JsonParser.parseString(inflate(packed)).getAsJsonObject();
     }
 

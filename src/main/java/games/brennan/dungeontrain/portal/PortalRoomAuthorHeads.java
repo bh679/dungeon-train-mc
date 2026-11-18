@@ -18,7 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import games.brennan.dungeontrain.util.StrictBase64;
 import java.util.Optional;
 
 /**
@@ -90,7 +90,7 @@ public final class PortalRoomAuthorHeads {
     static Optional<Skin> fromTextures(String base64) {
         if (base64 == null || base64.isBlank()) return Optional.empty();
         try {
-            String json = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+            String json = new String(StrictBase64.decode(base64), StandardCharsets.UTF_8);
             JsonElement root = JsonParser.parseString(json);
             if (!root.isJsonObject()) return Optional.empty();
             JsonObject textures = root.getAsJsonObject().getAsJsonObject("textures");

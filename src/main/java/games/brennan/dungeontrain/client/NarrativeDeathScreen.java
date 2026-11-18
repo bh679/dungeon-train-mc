@@ -500,11 +500,20 @@ public final class NarrativeDeathScreen extends Screen {
         return napLevelId != null;
     }
 
-    /** Leave the napped run for the title screen (world deleted); nap mode only. */
+    /**
+     * Leave the napped run (world deleted); nap mode only. To the title screen, or with Shift held
+     * out to the desktop: render and click both poll {@link Screen#hasShiftDown()}, so the action
+     * matches the drawn "Main Menu" / "Quit Game" label ({@link #napLeaveLabel}).
+     */
     private void leaveNap() {
         if (napLeaving) return;
         napLeaving = true;
-        NapQuit.leaveNow(napLevelId);
+        NapQuit.leaveNow(napLevelId, Screen.hasShiftDown());
+    }
+
+    /** The nap farewell's way out: "Quit Game" while Shift is held, else "Main Menu". */
+    private static Component napLeaveLabel() {
+        return Component.translatable(Screen.hasShiftDown() ? "menu.quit" : "gui.dungeontrain.nap.main_menu");
     }
 
     /** Dev builds only: a death screen telling {@code lifeId}'s Live Eye pages, opened on "the broadcast". */
@@ -2514,9 +2523,11 @@ public final class NarrativeDeathScreen extends Screen {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
         if (nap()) {
-            // One way out at any point: Main Menu, which leaves the napped run.
+            // One way out at any point: Main Menu, which leaves the napped run. Holding Shift turns
+            // it into the death screen's darker "Quit Game" chip, which quits to the desktop.
             // On "a life ongoing" it waits, with Next Screen, for the page to finish showing itself.
-            Component menu = Component.translatable("gui.dungeontrain.nap.main_menu");
+            boolean quit = Screen.hasShiftDown();
+            Component menu = napLeaveLabel();
             int menuW = this.font.width(menu) + 16;
             int menuX = this.width - 10 - menuW;
             leaveRect = null;
@@ -2525,7 +2536,9 @@ public final class NarrativeDeathScreen extends Screen {
                 float pageAlpha = uiAlpha;
                 uiAlpha = pageAlpha * controls;
                 try {
-                    leaveRect = drawChip(g, menuX, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
+                    leaveRect = quit
+                            ? drawChip(g, menuX, 8, menu, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
+                            : drawChip(g, menuX, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
                 } finally {
                     uiAlpha = pageAlpha;
                 }
@@ -2746,8 +2759,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Next Screen, centred, and what sits to its right (the bug shortcut or a "Sent" badge). */
     private void drawContinueRow(GuiGraphics g, Page page, int rowY) {
-        Component cont = Component.translatable(nap() && lastNapPage()
-                ? "gui.dungeontrain.nap.main_menu" : "gui.dungeontrain.death.continue");
+        Component cont = nap() && lastNapPage()
+                ? napLeaveLabel() : Component.translatable("gui.dungeontrain.death.continue");
         int bw = 120, h = 18;
         int bx = this.width / 2 - bw / 2;
         continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);

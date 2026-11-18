@@ -32,8 +32,8 @@ class KnownFeatureDetectorTest {
             "把存档功能加上",
             "Как сохранить прогресс?",
     })
-    void saveQuit(String comment) {
-        assertEquals(List.of(KnownFeature.SAVE_QUIT), detect(comment), comment);
+    void savingHasShippedSoEarnsNoNote(String comment) {
+        assertTrue(detect(comment).isEmpty(), comment);
     }
 
     @ParameterizedTest
@@ -122,7 +122,7 @@ class KnownFeatureDetectorTest {
 
     @Test
     void atMostTwoNotesInTableOrder() {
-        assertEquals(List.of(KnownFeature.SAVE_QUIT, KnownFeature.BACKPACK),
+        assertEquals(List.of(KnownFeature.BACKPACK, KnownFeature.TRASH_SLOT),
                 detect("trash slot, JEI, backpacks and a save button"));
     }
 }

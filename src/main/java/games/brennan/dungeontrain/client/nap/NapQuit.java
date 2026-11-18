@@ -20,8 +20,11 @@ public final class NapQuit {
         Minecraft.getInstance().setScreen(NarrativeDeathScreen.afterNap(levelId));
     }
 
-    /** Leave the napped run for the title screen, deleting its world. */
-    public static void leaveNow(String levelId) {
-        DeathScreenLayoutHandler.leaveNappedRun(levelId);
+    /**
+     * Leave the napped run, deleting its world: for the title screen, or with {@code quitGame}
+     * (Shift held on the farewell) straight out to the desktop.
+     */
+    public static void leaveNow(String levelId, boolean quitGame) {
+        DeathScreenLayoutHandler.leaveNappedRun(levelId, quitGame);
     }
 }
