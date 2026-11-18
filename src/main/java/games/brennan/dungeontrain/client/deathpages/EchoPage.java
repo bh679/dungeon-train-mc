@@ -38,38 +38,39 @@ public final class EchoPage {
     private static final int SKILL_STEP = SLOT + 2;
     private static final int EDGE = 6;
 
-    /** Portrait height range: the smallest GUI (240 px tall) gets the minimum. */
-    private static final int MIN_PORTRAIT_H = 87;
-    private static final int MAX_PORTRAIT_H = 170;
-    /** Text column base spacing at the minimum height: name, personality, three bars, icons. */
+    /** The right column's width: offhand, a gap, then the nine-slot hotbar (its widest row). */
+    private static final int HOTBAR_W = SLOT + OFFHAND_GAP + (1 + EchoSummary.MAX_CARRIED) * (SLOT + GAP) - GAP;
+    /** Content height range: the smallest GUI (240 px tall) gets the minimum. */
+    private static final int MIN_CONTENT_H = 120;
+    private static final int MAX_CONTENT_H = 200;
     private static final int BASE_STEP = 11;
     private static final int BAR_LABEL = 9;
     private static final int BASE_BAR_H = 3;
     private static final int BASE_BAR_GAP = 3;
-    /** Rows in the text column that take a share of any extra height. */
-    private static final int SPACED_ROWS = 6;
+    /** Rows in the right column that take a share of any extra height. */
+    private static final int SPACED_ROWS = 7;
     /** Head room the idle animation needs above the model, in model heights (looks, helmet). */
     private static final float PORTRAIT_FIT = 2.25F;
 
     /**
-     * The panel's measurements for the room it has. The card grows to fill the space down to the
-     * footer: a taller portrait (and a proportionally wider one), and the text column's rows
-     * spread out to match. On the smallest GUI (240 px tall) it is at its minimum.
+     * The panel's measurements for the room it has. Left: the armour slots and a portrait as tall
+     * as the whole card. Right: the name line, then the armour bar and hotbar, then personality,
+     * the trait bars and the skill icons. The card fills the room down to the footer; extra height
+     * goes to the portrait and spreads the right column's rows.
      */
-    private record Layout(int pad, int portraitH, int portraitW, int portraitSize, int textW,
+    private record Layout(int pad, int contentH, int portraitW, int portraitSize, int textW,
                           int step, int barH) {
         static Layout fit(int room, int width) {
-            int pad = room >= 150 ? EDGE : 3;
-            int bottom = ARMOR_ICON + 2 + SLOT;
-            int portraitH = Math.max(MIN_PORTRAIT_H, Math.min(MAX_PORTRAIT_H, room - 3 * pad - bottom));
-            int portraitW = Math.max(60, Math.min(100, Math.round(portraitH * 0.62F)));
+            int pad = room >= 160 ? EDGE : 3;
+            int contentH = Math.max(MIN_CONTENT_H, Math.min(MAX_CONTENT_H, room - 2 * pad));
+            int portraitW = Math.max(60, Math.min(110, Math.round(contentH * 0.55F)));
             int fixed = EDGE + SLOT + EDGE + portraitW + EDGE + EDGE;
-            int textW = Math.max(128, Math.min(200, width - fixed));
-            int extra = Math.max(0, portraitH - MIN_PORTRAIT_H);
+            int textW = Math.max(HOTBAR_W, Math.min(240, width - fixed));
+            int extra = contentH - MIN_CONTENT_H;
             int step = extra / SPACED_ROWS;
             int barH = BASE_BAR_H + Math.min(2, extra / 30);
-            int size = Math.round((portraitH - 6) / PORTRAIT_FIT);
-            return new Layout(pad, portraitH, portraitW, size, textW, step, barH);
+            int size = Math.round((contentH - 6) / PORTRAIT_FIT);
+            return new Layout(pad, contentH, portraitW, size, textW, step, barH);
         }
 
         int panelW() {
@@ -77,7 +78,7 @@ public final class EchoPage {
         }
 
         int panelH() {
-            return pad + portraitH + pad + ARMOR_ICON + 2 + SLOT + pad;
+            return pad + contentH + pad;
         }
     }
 
@@ -147,11 +148,10 @@ public final class EchoPage {
         Layout l = Layout.fit(maxY - y, width);
         int pad = l.pad();
         int panelW = l.panelW();
-        int x0 = cx - panelW / 2;
-        int topH = l.portraitH();
-        int armourBarY = y + pad + topH + pad;
-        int hotbarY = armourBarY + ARMOR_ICON + 2;
         int panelH = l.panelH();
+        int x0 = cx - panelW / 2;
+        int top = y + pad;
+        int topH = l.contentH();
 
         g.fill(x0, y, x0 + panelW, y + panelH, chrome.fade(PANEL_BG));
         outline(g, x0, y, panelW, panelH, PANEL_BORDER);
@@ -159,7 +159,7 @@ public final class EchoPage {
         // ---- Armour column, vertically centred on the portrait.
         int colX = x0 + EDGE;
         int armourColH = 4 * SLOT + 3 * GAP;
-        int colY = y + pad + (topH - armourColH) / 2;
+        int colY = top + (topH - armourColH) / 2;
         ItemStack[] worn = {
             echo.appearance().head(), echo.appearance().chest(), echo.appearance().legs(), echo.appearance().feet()
         };
@@ -167,24 +167,43 @@ public final class EchoPage {
             slot(g, colX, colY + i * (SLOT + GAP), worn[i], settled, false);
         }
 
-        // ---- Portrait window.
+        // ---- Portrait window, the card's full height.
         int portX = colX + SLOT + EDGE;
-        int portY = y + pad;
         int portW = l.portraitW();
-        g.fill(portX, portY, portX + portW, portY + topH, chrome.fade(PORTRAIT_BG));
-        outline(g, portX, portY, portW, topH, SLOT_LIGHT);
+        g.fill(portX, top, portX + portW, top + topH, chrome.fade(PORTRAIT_BG));
+        outline(g, portX, top, portW, topH, SLOT_LIGHT);
         if (settled && portrait.available()) {
-            g.enableScissor(portX + 1, portY + 1, portX + portW - 1, portY + topH - 1);
-            portrait.render(g, echo.appearance(), 1, portX + portW / 2, portY + topH - 4,
+            g.enableScissor(portX + 1, top + 1, portX + portW - 1, top + topH - 1);
+            portrait.render(g, echo.appearance(), 1, portX + portW / 2, top + topH - 4,
                     partialTick, l.portraitSize());
             g.disableScissor();
         }
 
-        // ---- Text column.
+        // ---- Right column: name line first.
         int tx = portX + portW + EDGE;
-        int ty = portY + 2;
+        int ty = top + 2;
         drawNameLine(g, font, echoName(), depth, tx, ty);
         ty += BASE_STEP + l.step();
+
+        // ---- Armour bar over the main hand, then offhand + hotbar (main hand, then the backpack).
+        int hotbarX = tx + SLOT + OFFHAND_GAP;
+        armourPoints = echo.armour();
+        armourX = hotbarX;
+        armourY = ty;
+        armourW = (ARMOR_ICONS - 1) * ARMOR_STEP + ARMOR_ICON;
+        if (settled) {
+            drawArmourBar(g, hotbarX, ty, armourPoints);
+        }
+        ty += ARMOR_ICON + 2;
+        slot(g, tx, ty, echo.appearance().offHand(), settled, false);
+        slot(g, hotbarX, ty, echo.appearance().mainHand(), settled, true);
+        for (int i = 0; i < EchoSummary.MAX_CARRIED; i++) {
+            ItemStack stack = i < echo.carried().size() ? echo.carried().get(i) : ItemStack.EMPTY;
+            slot(g, hotbarX + (i + 1) * (SLOT + GAP), ty, stack, settled, false);
+        }
+        ty += SLOT + 4 + l.step();
+
+        // ---- Personality, the three trait bars, then the reaction skill icons.
         Component label = Component.translatable("gui.dungeontrain.death.echo.personality");
         g.drawString(font, label, tx, ty, chrome.fade(LABEL), false);
         g.drawString(font, Component.translatable(echo.personality().langKey()),
@@ -194,24 +213,6 @@ public final class EchoPage {
         ty = traitBar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), tx, ty, l);
         skillRow(g, font, echo, tx, ty + l.step(), settled);
-
-        // ---- Armour bar, over the hotbar's first slot like the in-game HUD.
-        int hotbarX = colX + SLOT + OFFHAND_GAP;
-        armourPoints = echo.armour();
-        armourX = hotbarX;
-        armourY = armourBarY;
-        armourW = (ARMOR_ICONS - 1) * ARMOR_STEP + ARMOR_ICON;
-        if (settled) {
-            drawArmourBar(g, hotbarX, armourBarY, armourPoints);
-        }
-
-        // ---- Offhand, then the hotbar: main hand first, then the backpack.
-        slot(g, colX, hotbarY, echo.appearance().offHand(), settled, false);
-        slot(g, hotbarX, hotbarY, echo.appearance().mainHand(), settled, true);
-        for (int i = 0; i < EchoSummary.MAX_CARRIED; i++) {
-            ItemStack stack = i < echo.carried().size() ? echo.carried().get(i) : ItemStack.EMPTY;
-            slot(g, hotbarX + (i + 1) * (SLOT + GAP), hotbarY, stack, settled, false);
-        }
         return y + panelH;
     }
 
