@@ -8,7 +8,7 @@ import java.util.Locale;
  * <p>{@link #TWO_WAY} is how every room has always behaved: turn round in the entrance hallway and
  * you are back on the train. {@link #ONE_WAY} closes that way back the moment the hallway swaps a
  * traveller into its twin — turning round leaves them in the twin, facing its plugged dummy door
- * ({@code PortalBuilder#plugBehindDoor}), so the only way on is to find the exit.</p>
+ * ({@code PortalCarriageBuilder}'s {@code PLUG}, bedrock in a sealed room), so the only way on is to find the exit.</p>
  *
  * <h2>What it does not close</h2>
  * <ul>

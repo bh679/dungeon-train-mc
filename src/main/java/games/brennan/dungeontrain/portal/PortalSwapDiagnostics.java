@@ -92,7 +92,7 @@ public final class PortalSwapDiagnostics {
          * crossed into the entrance hallway's twin cannot turn back onto the train. By design, not
          * a breakage — never counted toward {@link PortalWalkThrough} or the connection stats.
          */
-        ONE_WAY_ENTRANCE("this room's entrance is one-way — the way back is closed, the exit is the "
+        ONE_WAY_ENTRANCE(true, "this room's entrance is one-way — the way back is closed, the exit is the "
             + "way out"),
 
         /**

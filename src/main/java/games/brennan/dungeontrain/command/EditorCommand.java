@@ -7360,7 +7360,11 @@ public final class EditorCommand {
             ? ", ground: " + settings.ground().level().displayName()
                 + (settings.ground().below() ? " and everything below" : "")
             : "";
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock + ground, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
+        // Same rule again: two-way is what every entrance did before this could be chosen.
+        String entrance = settings.entrance().oneWay()
+            ? ", entrance: " + settings.entrance().displayName()
+            : "";
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock + ground + entrance, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
