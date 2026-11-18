@@ -74,6 +74,8 @@ public final class DungeonTrainBackup {
             .dataRoot(dataRoot)
             .rootLabel(ROOT_LABEL)
             .excludeTopLevel(PlayerDataPaths.BACKUPS)
+            // A credential, not progress: kept out of archives people hand over for help.
+            .excludeTopLevel(PlayerDataPaths.REPORT_KEY)
             // A player's saved packages are their builds too, and they live outside the data root.
             .alsoBackUp("dtpacks", dtpacks)
             // Keeps <AppData>/DungeonTrain/backups — where every existing mirror already is.
