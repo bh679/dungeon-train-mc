@@ -187,7 +187,7 @@ public final class AiPolicyScreen extends Screen {
 
         List<AiPolicyContent.Explainer> explainers = AiPolicyContent.explainers();
         Component readLabel = Component.translatable("gui.dungeontrain.ai_policy.explainers.read");
-        int readW = Math.min(textW, this.font.width(readLabel) + READ_PAD * 2);
+        int readW = Math.min(textW / 2, this.font.width(readLabel) + READ_PAD * 2);
         for (int i = 0; i < explainers.size(); i++) {
             AiPolicyContent.Explainer explainer = explainers.get(i);
             if (i > 0) {
@@ -200,16 +200,20 @@ public final class AiPolicyScreen extends Screen {
             y = canvas.addWrappedAt(Component.translatable(explainer.titleKey()), textX, textW, y,
                     CardCanvas.COLOUR_HEADER);
             y = Math.max(y, iconTop + CardCanvas.ICON);
-            y += CardCanvas.PARA_GAP / 2;
-            y = canvas.addWrappedAt(Component.translatable(explainer.descKey()), textX, textW, y,
-                    CardCanvas.COLOUR_DESC);
-            y += CardCanvas.ROW_GAP;
+            y += CardCanvas.PARA_GAP;
 
+            // The description and the Read it button share a line: the text wraps short of the
+            // button, which sits at the card's right edge, centred on the text's first line.
             String url = explainer.url();
-            DarkTintedButton read = new DarkTintedButton(textX, 0, readW, READ_H, readLabel, b -> openLink(url));
+            int buttonX = innerX + innerW - readW;
+            int descW = Math.max(1, buttonX - CardCanvas.ICON_GAP - textX);
+            int buttonY = y - (READ_H - lh) / 2;
+            DarkTintedButton read = new DarkTintedButton(buttonX, 0, readW, READ_H, readLabel, b -> openLink(url));
             addWidget(read);
-            buttonSlots.add(new ButtonSlot(read, y));
-            y += READ_H;
+            buttonSlots.add(new ButtonSlot(read, buttonY));
+            int descBottom = canvas.addWrappedAt(Component.translatable(explainer.descKey()), textX, descW, y,
+                    CardCanvas.COLOUR_DESC);
+            y = Math.max(descBottom, buttonY + READ_H);
         }
 
         y += CardCanvas.CARD_PAD;
