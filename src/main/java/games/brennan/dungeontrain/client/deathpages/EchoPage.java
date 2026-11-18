@@ -12,6 +12,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.world.effect.MobEffects;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,10 +90,13 @@ public final class EchoPage {
         }
     }
 
-    /** The item that stands for each reaction skill, in {@link EchoPersonality.Skill} order. */
+    /**
+     * The item that stands for each reaction skill, in {@link EchoPersonality.Skill} order. Movement
+     * has none: it uses the Speed effect's icon instead (see {@link #drawSkillIcon}).
+     */
     private static final ItemStack[] SKILL_ICONS = {
         new ItemStack(Items.IRON_SWORD), new ItemStack(Items.BOW), new ItemStack(Items.SHIELD),
-        new ItemStack(Items.SCAFFOLDING), new ItemStack(Items.MINECART), new ItemStack(Items.CHEST)
+        new ItemStack(Items.DIRT), ItemStack.EMPTY, new ItemStack(Items.BUCKET)
     };
 
     private static final int PANEL_BG = 0xCC1B1A17;
@@ -286,7 +291,7 @@ public final class EchoPage {
             int sx = x + i * SKILL_STEP;
             int value = echo.skill(skills[i]);
             if (settled) {
-                g.renderItem(SKILL_ICONS[i], sx, y);
+                drawSkillIcon(g, skills[i], sx, y);
             }
             g.fill(sx, barY, sx + SKILL_ICON, barY + SKILL_BAR_H, chrome.fade(BAR_TRACK));
             int fillW = Math.round(SKILL_ICON * EchoPersonality.clamp(value) / (float) EchoPersonality.MAX);
@@ -295,6 +300,16 @@ public final class EchoPage {
             }
             skillHits.add(new SkillHit(sx, y, skills[i], value));
         }
+    }
+
+    /** A skill's icon: its item, or for movement the Speed effect's icon, both 16 px. */
+    private static void drawSkillIcon(GuiGraphics g, EchoPersonality.Skill skill, int x, int y) {
+        if (skill == EchoPersonality.Skill.MOVEMENT) {
+            TextureAtlasSprite speed = Minecraft.getInstance().getMobEffectTextures().get(MobEffects.MOVEMENT_SPEED);
+            g.blit(x - 1, y - 1, 0, 18, 18, speed);
+            return;
+        }
+        g.renderItem(SKILL_ICONS[skill.ordinal()], x, y);
     }
 
     /** The HUD armour bar ({@code Gui.renderArmor}): 10 icons, 2 points each, half icons for odd points. */
