@@ -938,6 +938,24 @@ public final class LiveFeedClient {
         return post(base, "/live/chat/send", chatSendBody(uuid, name, content, room));
     }
 
+    /**
+     * {@code POST /live/chat/report}: this Discord-linked player reports line {@code seq} of {@code room} (a Kick or
+     * Twitch line) as a bot. {@code key} is the report key from their link ({@code ReportKeyStore}); the relay checks it
+     * and deletes the line as an admin's delete does.
+     */
+    public static CompletableFuture<Result> chatReport(String base, String uuid, String key, @Nullable String room, long seq) {
+        return post(base, "/live/chat/report", chatReportBody(uuid, key, room, seq));
+    }
+
+    static JsonObject chatReportBody(String uuid, String key, @Nullable String room, long seq) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid);
+        body.addProperty("key", key);
+        if (room != null) body.addProperty("room", room);
+        body.addProperty("line", seq);
+        return body;
+    }
+
     static JsonObject chatSendBody(UUID uuid, String name, String content, @Nullable String room) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
@@ -1132,6 +1150,28 @@ public final class LiveFeedClient {
         body.addProperty("token", token);
         body.addProperty("all", true);
         return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The holder sat idle ({@code LiveEyeAfkOffer}): the same offer to every viewer as {@link #giftOfferAll}, marked
+     * {@code auto} so {@link #giftWithdraw} can take it back when they return. An older relay ignores the mark.
+     */
+    public static CompletableFuture<Result> giftOfferAway(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("all", true);
+        body.addProperty("auto", true);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The holder is back: take back this stream's unclaimed away offers ({@link #giftOfferAway}); hand-made and
+     * accepted ones stand. 200 {@code {count}}; 403 not on air; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> giftWithdraw(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post(base, "/live/gift/withdraw", body);
     }
 
     /** A {@link #giftViewers} reply's names, cleaned and capped; empty on any failure. */

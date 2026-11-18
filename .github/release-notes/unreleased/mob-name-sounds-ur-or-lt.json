@@ -1,0 +1,16 @@
+{
+  "id": "mob-name-sounds-ur-or-lt",
+  "version": "0.1880.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs"
+  ],
+  "title": "New mob name sounds",
+  "summary": "Invented mob names get new sounds, like Kurdock, Jorfoot, Joltsmith and Hakswit.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
