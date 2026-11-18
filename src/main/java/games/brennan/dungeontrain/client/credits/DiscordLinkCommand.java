@@ -119,6 +119,7 @@ public final class DiscordLinkCommand {
                 if (err == null && s != null && s.ok() && s.linked()) {
                     onClient(() -> {
                         DiscordAccountState.invalidate();
+                        DiscordAccountState.refresh(() -> {}); // the Live chat's report flags read it at once
                         if (generation == watchGeneration) {
                             say(Component.translatable("chat.dungeontrain.discord.linked_now").withStyle(ChatFormatting.GREEN));
                             say(optionsHint());
