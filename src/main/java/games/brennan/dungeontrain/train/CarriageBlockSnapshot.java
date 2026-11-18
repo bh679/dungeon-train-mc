@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import games.brennan.dungeontrain.util.StrictBase64;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -551,8 +552,19 @@ public final class CarriageBlockSnapshot {
         return Base64.getEncoder().encodeToString(baos.toByteArray());
     }
 
+    /**
+     * The tag a relay blob encodes. The blob may come from another player, so it is decoded with
+     * {@link StrictBase64}, never the JDK decoder (CVE-2026-114938).
+     *
+     * @throws IOException when {@code base64} is not canonical Base64 or not compressed NBT
+     */
     public static CompoundTag decode(String base64) throws IOException {
-        byte[] raw = Base64.getDecoder().decode(base64);
+        byte[] raw;
+        try {
+            raw = StrictBase64.decode(base64);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("shared-carriage blob is not canonical base64: " + e.getMessage(), e);
+        }
         return NbtIo.readCompressed(new ByteArrayInputStream(raw), NbtAccounter.unlimitedHeap());
     }
 
