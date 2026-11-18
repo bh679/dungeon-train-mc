@@ -265,7 +265,11 @@ public final class EchoPage {
         g.drawString(font, name, x, y, chrome.fade(NAME), false);
         int sx = x + font.width(name) + 4;
         g.drawString(font, "|", sx, y, chrome.fade(LABEL), false);
-        g.drawString(font, Integer.toString(depth), sx + font.width("|") + 4, y, chrome.fade(NAME), false);
+        // The fall page's own "carriage" label, so both pages name the number the same way.
+        Component label = Component.translatable("gui.dungeontrain.death.narr.lbl_carriage").append(": ");
+        int lx = sx + font.width("|") + 4;
+        g.drawString(font, label, lx, y, chrome.fade(LABEL), false);
+        g.drawString(font, Integer.toString(depth), lx + font.width(label), y, chrome.fade(NAME), false);
     }
 
     private int traitBar(GuiGraphics g, Font font, EchoPersonality.Trait trait, int value, int x, int y, Layout l) {
