@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.nap;
 
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ReverseSlide;
@@ -72,6 +73,11 @@ public final class NapWake {
     private static final Map<UUID, Double> PLACE_AT = new HashMap<>();
     /** Owners whose waiting nap was refused at this server start, to be told at login. Server thread. */
     private static final java.util.Set<UUID> NOT_WOKEN = new java.util.HashSet<>();
+    /**
+     * Owners waking a nap whose file was changed outside the game, and whether this start put the
+     * session's profile-tamper mark on them ({@link ProfileIntegrity#markTampered}). Server thread.
+     */
+    private static final Map<UUID, Boolean> TAMPERED_WAKE = new HashMap<>();
 
     private NapWake() {}
 
@@ -96,10 +102,13 @@ public final class NapWake {
         if (wakeBoundHere(server, store, uuid, here)) return;
         if (!isFreshRunWorld(server, uuid)) return;
         String slot = NapSlot.forNewWorld(server);
-        Optional<NapSnapshot> nap = store.load(uuid, slot);
+        Optional<NapStore.Loaded> loaded = store.loadChecked(uuid, slot);
+        Optional<NapSnapshot> nap = loaded.map(NapStore.Loaded::nap);
+        boolean tampered = loaded.map(NapStore.Loaded::tampered).orElse(false);
         if (nap.isEmpty() && store.hasFile(uuid, slot)) NOT_WOKEN.add(uuid); // refused and kept: say so
         if (nap.isEmpty() || nap.get().levelId().equals(here)) return;
-        if (!NapSlot.matches(slot, nap.get())) {
+        // A tampered nap now reads as Free Play wherever it sat, so only its difficulty is held to the slot.
+        if (!NapSlot.matches(slot, nap.get(), !tampered)) {
             NOT_WOKEN.add(uuid);
             LOGGER.warn("[DungeonTrain] Nap {} is a {} {} run but sits in slot {}; not waking it.", nap.get().napId(),
                 nap.get().cheated() ? "freeplay" : "survival", nap.get().difficulty(), slot);
@@ -119,7 +128,7 @@ public final class NapWake {
             LOGGER.warn("[DungeonTrain] Nap {} could not be bound to '{}'; not waking it.", nap.get().napId(), here, e);
             return;
         }
-        plan(server, uuid, slot, bound);
+        plan(server, uuid, slot, bound, tampered);
     }
 
     /**
@@ -142,13 +151,18 @@ public final class NapWake {
             }
             LOGGER.info("[DungeonTrain] Nap {} never finished loading into '{}'; waking it again.",
                 p.nap().napId(), here);
-            plan(server, owner, p.slot(), p.nap());
+            plan(server, owner, p.slot(), p.nap(), p.tampered());
             return true;
         }
         return false;
     }
 
-    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot napped) {
+    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot napped, boolean tampered) {
+        if (tampered) {
+            // Free Play from now, not from login: what the nap carries (its player, advancements, stats)
+            // reaches this world before the login event, and every persistence gate reads this mark.
+            TAMPERED_WAKE.put(owner, ProfileIntegrity.markTampered(owner, "The rest file " + slot));
+        }
         NapSnapshot nap = napped.withX(wakeX(server, napped));
         planned = new Plan(owner, slot, nap);
         RunRestore.raiseWorldProgress(server.overworld(), nap.worldDepth());
@@ -293,6 +307,14 @@ public final class NapWake {
         return NOT_WOKEN.remove(player);
     }
 
+    /**
+     * Whether {@code player} is waking a tampered nap, once: present when so, holding whether this start
+     * put the profile-tamper mark on them (so it can be lifted once the run itself carries Free Play).
+     */
+    static Optional<Boolean> takeTamperedWake(UUID player) {
+        return Optional.ofNullable(TAMPERED_WAKE.remove(player));
+    }
+
     static Optional<NapSnapshot> takeWoken(UUID player) {
         return Optional.ofNullable(WOKEN.remove(player));
     }
@@ -304,6 +326,7 @@ public final class NapWake {
         WOKEN.clear();
         PLACE_AT.clear();
         NOT_WOKEN.clear();
+        TAMPERED_WAKE.clear();
     }
 
     /** The nap's player tag with the old world's whereabouts removed, standing at this world's spawn. */
