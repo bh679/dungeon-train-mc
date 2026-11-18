@@ -36947,6 +36947,55 @@
       "released": true,
       "released_in": "v0.1875.0",
       "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "ai-policy-explainers",
+      "version": "0.1876.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Explainers on the AI Policy",
+      "summary": "The AI Policy page now ends with an Explainers section, starting with a look at how Dungeon Train's names are made without AI. Each one opens in your browser.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1878.0",
+      "released_at": "2026-11-18T11:39:05Z"
+    },
+    {
+      "id": "smoother-mob-names",
+      "version": "0.1877.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Smoother mob names",
+      "summary": "Invented mob names no longer pile up vowels, so they're easier to read and say.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1878.0",
+      "released_at": "2026-11-18T11:39:05Z"
+    },
+    {
+      "id": "strict-base64-decode",
+      "version": "0.1876.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Security fix",
+      "summary": "Shared content from other players is now checked more strictly before your game reads it.",
+      "highlights": [],
+      "pr": 2726,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1878.0",
+      "released_at": "2026-11-18T11:39:05Z"
     }
   ]
 }
