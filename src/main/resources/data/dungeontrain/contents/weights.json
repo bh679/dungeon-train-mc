@@ -100,6 +100,11 @@
     "weight": 9,
     "name": "Odd ones"
   },
+  "enemies_outside": {
+    "weight": 1,
+    "name": "Enemies Outside",
+    "optIn": true
+  },
   "enemies_path": {
     "weight": 1,
     "minLevel": 1,
