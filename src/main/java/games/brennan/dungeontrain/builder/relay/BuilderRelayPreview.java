@@ -150,9 +150,13 @@ public final class BuilderRelayPreview {
     private static Attempt convertFrame(ServerLevel level, int relayId, SharedCarriageClient.HistoryFrame frame) {
         CompoundTag tag;
         try {
-            CompoundTag folded = CarriageBlockSnapshot.decode(frame.base());
+            // One budget for the frame's base and its deltas, as a lease fold has.
+            games.brennan.dungeontrain.train.RelayBlobLimits.FoldBudget budget =
+                    new games.brennan.dungeontrain.train.RelayBlobLimits.FoldBudget();
+            games.brennan.dungeontrain.train.RelayBlobLimits.checkDeltaCount(frame.deltas().size());
+            CompoundTag folded = CarriageBlockSnapshot.decode(frame.base(), budget);
             for (String cells : frame.deltas()) {
-                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(cells));
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(cells, budget));
             }
             HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
             tag = CarriageSnapshotTemplate.toTemplate(folded, blocks).save(new CompoundTag());
@@ -171,7 +175,7 @@ public final class BuilderRelayPreview {
      */
     static StructureTemplate templateOf(ServerLevel level, SharedCarriageClient.BuildFetch build)
             throws java.io.IOException {
-        CompoundTag snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
+        CompoundTag snapshot = BuilderRelayDownload.decodeAndFold(build);
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         return CarriageSnapshotTemplate.toTemplate(snapshot, blocks);
     }
