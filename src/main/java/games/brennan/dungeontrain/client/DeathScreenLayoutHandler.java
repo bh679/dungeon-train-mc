@@ -509,8 +509,12 @@ public final class DeathScreenLayoutHandler {
      * the world goes the way a finished run's does (no chunk save, folder deleted) and the title
      * screen comes up. Deleted whatever the reboard toggle says, since a nap and its world must
      * never both exist; {@code levelId} must still be an auto-generated name and the current world.
+     *
+     * <p>With {@code quitGame} (the farewell's Shift-held "Quit Game") it ends in {@link Minecraft#stop()}
+     * instead of the title screen. A delete that fails on a locked file and is still retrying when the
+     * game stops is picked up by the next title screen's nap sweep.</p>
      */
-    public static void leaveNappedRun(String levelId) {
+    public static void leaveNappedRun(String levelId, boolean quitGame) {
         PendingInventory.clear();
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
@@ -535,7 +539,11 @@ public final class DeathScreenLayoutHandler {
             LOGGER.warn("DeathScreenLayout: napped world '{}' is not the current auto-generated save ({}); leaving it to the sweep.",
                     levelId, current);
         }
-        mc.setScreen(new TitleScreen());
+        if (quitGame) {
+            mc.stop();
+        } else {
+            mc.setScreen(new TitleScreen());
+        }
     }
 
     private static String currentLevelId(MinecraftServer server) {
