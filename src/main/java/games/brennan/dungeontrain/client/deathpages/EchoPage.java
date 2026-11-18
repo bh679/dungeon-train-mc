@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +22,9 @@ import java.util.List;
  * column (name and depth, personality, trait bars) on top; the in-game armour bar; then the offhand
  * slot and a hotbar-style row — main hand first, then what the echo carries in its backpack.
  *
- * <p>The text column keeps an empty band under the trait bars for a reaction speed bar, which
- * arrives once PlayerMob scores that trait from the player's life.</p>
+ * <p>The text column ends with reaction speed: one bar for the overall score, then a row of six
+ * item icons, one per PlayerMob reaction skill (melee, ranged, defence, building, movement,
+ * items), each showing its 0–10 score where a stack count sits; hover names the skill.</p>
  *
  * <p>Items, sprites and the portrait can't take the page fade's alpha, so they draw only once the
  * page has settled (the screen passes {@code settled}). Owns its portrait renderer: call
@@ -35,23 +37,39 @@ public final class EchoPage {
     private static final int PORTRAIT_W = 60;
     private static final int TEXT_W = 128;
     private static final int OFFHAND_GAP = 10;
-    private static final int BAR_H = 4;
+    private static final int SKILL_STEP = SLOT + 2;
 
     /**
      * Vertical spacing. The roomy layout has the large portrait; the compact one fits the
      * smallest GUI (240 px tall, the dev window at auto scale) and is picked when the roomy
-     * panel would run into the footer. {@code reserved} is the band kept under the trait bars
-     * for the reaction speed bar to come.
+     * panel would run into the footer. The portrait is as tall as the text column beside it:
+     * name, personality, three trait bars and the skill icon row.
      */
-    private record Layout(int pad, int portraitH, int portraitSize, int nameStep, int classStep,
-                          int barLabelStep, int barGap, int reserved) {
+    private record Layout(int pad, int portraitSize, int nameStep, int classStep,
+                          int barLabelStep, int barH, int barGap) {
+        int textH() {
+            return 2 + nameStep + classStep + 3 * (barLabelStep + barH + barGap) + SLOT;
+        }
+
+        int portraitH() {
+            return textH() + 2;
+        }
+
         int panelH() {
-            return pad + portraitH + pad + ARMOR_ICON + 2 + SLOT + pad;
+            return pad + portraitH() + pad + ARMOR_ICON + 2 + SLOT + pad;
         }
     }
 
-    private static final Layout ROOMY = new Layout(6, 94, 48, 14, 16, 10, 7, 20);
-    private static final Layout COMPACT = new Layout(4, 78, 40, 12, 12, 9, 6, 16);
+    private static final Layout ROOMY = new Layout(6, 56, 14, 16, 10, 4, 7);
+    private static final Layout COMPACT = new Layout(3, 42, 10, 10, 9, 3, 3);
+
+    /** The item that stands for each reaction skill, in {@link EchoPersonality.Skill} order. */
+    private static final ItemStack[] SKILL_ICONS = {
+        new ItemStack(Items.IRON_SWORD), new ItemStack(Items.BOW), new ItemStack(Items.SHIELD),
+        new ItemStack(Items.SCAFFOLDING), new ItemStack(Items.MINECART), new ItemStack(Items.CHEST)
+    };
+    private static final int SKILL_SCORE = 0xFFFFFFFF;
+    private static final int SKILL_ZERO = 0xFF6B6553;
 
     private static final int PANEL_BG = 0xCC1B1A17;
     private static final int PANEL_BORDER = 0xFF4A4538;
@@ -80,9 +98,16 @@ public final class EchoPage {
         }
     }
 
+    private record SkillHit(int x, int y, EchoPersonality.Skill skill, int value) {
+        boolean has(double mx, double my) {
+            return mx >= x && mx < x + SLOT && my >= y && my < y + SLOT;
+        }
+    }
+
     private final LiveDeathChrome chrome;
     private final DeathPortraitRenderer portrait = new DeathPortraitRenderer();
     private final List<SlotHit> slotHits = new ArrayList<>();
+    private final List<SkillHit> skillHits = new ArrayList<>();
     private int armourX, armourY, armourW;
     private int armourPoints;
 
@@ -104,6 +129,7 @@ public final class EchoPage {
                     boolean settled, float partialTick) {
         Font font = chrome.font();
         slotHits.clear();
+        skillHits.clear();
         armourW = 0;
         Layout l = y + ROOMY.panelH() <= maxY ? ROOMY : COMPACT;
         int pad = l.pad();
@@ -152,7 +178,8 @@ public final class EchoPage {
         ty += l.classStep();
         ty = traitBar(g, font, EchoPersonality.Trait.FIGHT_FLIGHT, echo.fightFlight(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), tx, ty, l);
-        // The next l.reserved() px stay empty until reaction speed is scored.
+        ty = traitBar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), tx, ty, l);
+        skillRow(g, font, echo, tx, ty, settled);
 
         // ---- Armour bar, over the hotbar's first slot like the in-game HUD.
         int hotbarX = colX + SLOT + OFFHAND_GAP;
@@ -181,6 +208,13 @@ public final class EchoPage {
             if (hit.has(mouseX, mouseY)) {
                 g.renderTooltip(font, Screen.getTooltipFromItem(Minecraft.getInstance(), hit.stack()),
                         hit.stack().getTooltipImage(), mouseX, mouseY);
+                return;
+            }
+        }
+        for (SkillHit hit : skillHits) {
+            if (hit.has(mouseX, mouseY)) {
+                g.renderTooltip(font, Component.translatable("gui.dungeontrain.death.echo.skill_tip",
+                        Component.translatable(hit.skill().langKey()), hit.value()), mouseX, mouseY);
                 return;
             }
         }
@@ -214,12 +248,35 @@ public final class EchoPage {
         g.drawString(font, label, x, y, chrome.fade(LABEL), false);
         g.drawString(font, word, x + TEXT_W - font.width(word), y, chrome.fade(WORD), false);
         int by = y + l.barLabelStep();
-        g.fill(x, by, x + TEXT_W, by + BAR_H, chrome.fade(BAR_TRACK));
+        g.fill(x, by, x + TEXT_W, by + l.barH(), chrome.fade(BAR_TRACK));
         int fillW = Math.round(TEXT_W * EchoPersonality.clamp(value) / (float) EchoPersonality.MAX);
         if (fillW > 0) {
-            g.fill(x, by, x + fillW, by + BAR_H, chrome.fade(BAR_FILL));
+            g.fill(x, by, x + fillW, by + l.barH(), chrome.fade(BAR_FILL));
         }
-        return by + BAR_H + l.barGap();
+        return by + l.barH() + l.barGap();
+    }
+
+    /**
+     * One slot per reaction skill: its item, with the skill's 0–10 score where a stack count sits.
+     * A skill the player never showed scores 0 and its number is dimmed.
+     */
+    private void skillRow(GuiGraphics g, Font font, EchoSummary echo, int x, int y, boolean settled) {
+        EchoPersonality.Skill[] skills = EchoPersonality.Skill.values();
+        for (int i = 0; i < skills.length; i++) {
+            int sx = x + i * SKILL_STEP;
+            int value = echo.skill(skills[i]);
+            slotFrame(g, sx, y, false);
+            if (settled) {
+                g.renderItem(SKILL_ICONS[i], sx + 1, y + 1);
+                String text = Integer.toString(value);
+                g.pose().pushPose();
+                g.pose().translate(0.0F, 0.0F, 200.0F);
+                g.drawString(font, text, sx + SLOT - 1 - font.width(text), y + SLOT - 9,
+                        value == 0 ? SKILL_ZERO : SKILL_SCORE, true);
+                g.pose().popPose();
+            }
+            skillHits.add(new SkillHit(sx, y, skills[i], value));
+        }
     }
 
     /** The HUD armour bar ({@code Gui.renderArmor}): 10 icons, 2 points each, half icons for odd points. */
@@ -233,16 +290,20 @@ public final class EchoPage {
     }
 
     private void slot(GuiGraphics g, int x, int y, ItemStack stack, boolean settled, boolean highlight) {
-        g.fill(x, y, x + SLOT, y + SLOT, chrome.fade(SLOT_BG));
-        g.fill(x, y, x + SLOT, y + 1, chrome.fade(highlight ? MAIN_HAND : SLOT_DARK));
-        g.fill(x, y, x + 1, y + SLOT, chrome.fade(highlight ? MAIN_HAND : SLOT_DARK));
-        g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, chrome.fade(highlight ? MAIN_HAND : SLOT_LIGHT));
-        g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, chrome.fade(highlight ? MAIN_HAND : SLOT_LIGHT));
+        slotFrame(g, x, y, highlight);
         if (!stack.isEmpty() && settled) {
             g.renderItem(stack, x + 1, y + 1);
             g.renderItemDecorations(chrome.font(), stack, x + 1, y + 1);
         }
         slotHits.add(new SlotHit(x, y, stack));
+    }
+
+    private void slotFrame(GuiGraphics g, int x, int y, boolean highlight) {
+        g.fill(x, y, x + SLOT, y + SLOT, chrome.fade(SLOT_BG));
+        g.fill(x, y, x + SLOT, y + 1, chrome.fade(highlight ? MAIN_HAND : SLOT_DARK));
+        g.fill(x, y, x + 1, y + SLOT, chrome.fade(highlight ? MAIN_HAND : SLOT_DARK));
+        g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, chrome.fade(highlight ? MAIN_HAND : SLOT_LIGHT));
+        g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, chrome.fade(highlight ? MAIN_HAND : SLOT_LIGHT));
     }
 
     private void outline(GuiGraphics g, int x, int y, int w, int h, int argb) {

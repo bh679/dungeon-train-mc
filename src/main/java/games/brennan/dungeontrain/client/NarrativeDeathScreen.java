@@ -1340,7 +1340,7 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.echo.question").getString(), cx, w, y);
         y += 3;
         if (s == null || s.echo() == null) return y;
-        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - CENTRE_FOOT_Y + contentShift,
+        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - 32 + contentShift,
                 settled(), partialTick);
     }
 

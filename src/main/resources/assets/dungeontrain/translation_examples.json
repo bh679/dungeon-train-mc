@@ -3949,6 +3949,22 @@
       ]
     }
   },
+  "gui.dungeontrain.death.echo.skill_tip": {
+    "1": {
+      "label": "the reaction skill's name",
+      "examples": [
+        "Ranged",
+        "Building"
+      ]
+    },
+    "2": {
+      "label": "the echo's reaction speed for that skill, 0 to 10",
+      "examples": [
+        "7",
+        "0"
+      ]
+    }
+  },
   "gui.dungeontrain.death.echo.armour_tip": {
     "1": {
       "label": "the echo's armour points, as the armour bar shows them",

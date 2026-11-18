@@ -64,5 +64,9 @@ final class EchoPersonalityTest {
         assertEquals("gui.dungeontrain.death.echo.word.wary", EchoPersonality.wordKey(FRIENDLINESS, 4));
         assertEquals("gui.dungeontrain.death.echo.word.amiable", EchoPersonality.wordKey(FRIENDLINESS, 6));
         assertEquals("gui.dungeontrain.death.echo.word.warm", EchoPersonality.wordKey(FRIENDLINESS, 9));
+        assertEquals("gui.dungeontrain.death.echo.word.sluggish",
+                EchoPersonality.wordKey(EchoPersonality.Trait.REACTION, 0));
+        assertEquals("gui.dungeontrain.death.echo.word.lightning",
+                EchoPersonality.wordKey(EchoPersonality.Trait.REACTION, 9));
     }
 }

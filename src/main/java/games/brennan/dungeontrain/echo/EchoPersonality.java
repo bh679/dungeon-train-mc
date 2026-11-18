@@ -55,7 +55,8 @@ public final class EchoPersonality {
     /** Which trait a word or bar describes. */
     public enum Trait {
         FIGHT_FLIGHT("fight", new String[] {"measured", "willing", "aggressive", "ferocious"}),
-        FRIENDLINESS("friend", new String[] {"hostile", "wary", "amiable", "warm"});
+        FRIENDLINESS("friend", new String[] {"hostile", "wary", "amiable", "warm"}),
+        REACTION("reaction", new String[] {"sluggish", "steady", "quick", "lightning"});
 
         private final String key;
         private final String[] words;
@@ -68,6 +69,30 @@ public final class EchoPersonality {
         /** Lang key of the trait's label ("fight / flight"). */
         public String labelKey() {
             return "gui.dungeontrain.death.echo.trait." + key;
+        }
+    }
+
+    /**
+     * PlayerMob's per-skill reaction speeds ({@code ReactionChannel.SPECIFIC}), in the order the
+     * echo page draws them. Each carries its lang-key suffix; the page picks the item icon.
+     */
+    public enum Skill {
+        MELEE("melee"),
+        RANGED("ranged"),
+        DEFENCE("defence"),
+        BUILDING("building"),
+        MOVEMENT("movement"),
+        ITEMS("items");
+
+        private final String key;
+
+        Skill(String key) {
+            this.key = key;
+        }
+
+        /** Lang key of this skill's name. */
+        public String langKey() {
+            return "gui.dungeontrain.death.echo.skill." + key;
         }
     }
 

@@ -6,6 +6,7 @@ import games.brennan.playermob.PlayerMobRegistry;
 import games.brennan.playermob.compat.ReincarnationCaptureGate;
 import games.brennan.playermob.entity.DispositionTraits;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import games.brennan.playermob.entity.ReactionChannel;
 import games.brennan.playermob.player.GlobalLifeStore;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -73,14 +74,21 @@ public final class EchoSummaryReader {
         PlayerMobEntity ghost = new PlayerMobEntity(PlayerMobRegistry.PLAYER_MOB, player.serverLevel());
         ghost.applyCustomData(snapshot.copy());
         PlayerMobAppearance appearance = PlayerMobAppearance.capture(ghost);
-        int fightFlight = traitOr(snapshot, DispositionTraits.TAG_FIGHT_FLIGHT);
-        int friendliness = traitOr(snapshot, DispositionTraits.TAG_FRIENDLINESS);
-        return new EchoSummary(appearance, fightFlight, friendliness, carried(ghost), armour(ghost));
+        DispositionTraits traits = new DispositionTraits();
+        traits.load(snapshot);
+        List<Integer> skills = new ArrayList<>();
+        for (ReactionChannel channel : SKILL_CHANNELS) {
+            skills.add(traits.reactionSpeed(channel));
+        }
+        return new EchoSummary(appearance, traits.fightFlight(), traits.friendliness(),
+                traits.reactionSpeed(), skills, carried(ghost), armour(ghost));
     }
 
-    private static int traitOr(CompoundTag snapshot, String key) {
-        return snapshot.contains(key) ? snapshot.getInt(key) : DispositionTraits.DEFAULT;
-    }
+    /** PlayerMob's channel for each {@link EchoPersonality.Skill}, in the same order. */
+    private static final ReactionChannel[] SKILL_CHANNELS = {
+        ReactionChannel.MELEE, ReactionChannel.RANGED, ReactionChannel.DEFENCE,
+        ReactionChannel.BUILDING, ReactionChannel.MOVEMENT, ReactionChannel.ITEMS
+    };
 
     /** The backpack's non-empty stacks, in slot order (food first, as PlayerMob packs it). */
     private static List<ItemStack> carried(PlayerMobEntity ghost) {
