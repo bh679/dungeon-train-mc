@@ -1,0 +1,16 @@
+{
+  "id": "remove-saving-coming-note",
+  "version": "0.1866.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Feedback note fix",
+  "summary": "Sending feedback about saving no longer tells you saving is coming. Save and quit is already here.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

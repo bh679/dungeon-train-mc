@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Leggi la Politica sull'IA",
   "gui.dungeontrain.nps_ai_note.button.close": "Chiudi",
   "gui.dungeontrain.known_feature.kicker": "una nota del creatore",
-  "gui.dungeontrain.known_feature.save_quit.title": "Il salvataggio sta arrivando",
-  "gui.dungeontrain.known_feature.save_quit.body": "Salvare e uscire a metà partita arriverà presto. Guarda a che punto è nella roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "Hai già gli zaini",
   "gui.dungeontrain.known_feature.backpack.body.1": "Gli Edible Backpacks compaiono nel bottino. Mangiane uno per avere uno slot in più nell'inventario.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Esistono anche zaini più grandi.",

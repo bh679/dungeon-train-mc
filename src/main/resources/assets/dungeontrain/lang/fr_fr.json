@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Lire la politique IA",
   "gui.dungeontrain.nps_ai_note.button.close": "Fermer",
   "gui.dungeontrain.known_feature.kicker": "une note du créateur",
-  "gui.dungeontrain.known_feature.save_quit.title": "La sauvegarde arrive",
-  "gui.dungeontrain.known_feature.save_quit.body": "Sauvegarder et quitter en pleine partie arrive bientôt. Regarde où ça en est sur la feuille de route.",
   "gui.dungeontrain.known_feature.backpack.title": "Tu as déjà des sacs à dos",
   "gui.dungeontrain.known_feature.backpack.body.1": "Les Edible Backpacks se trouvent dans le butin. Mange-en un pour gagner un emplacement d'inventaire en plus.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Il existe aussi de plus grands sacs à dos.",

@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "阅读 AI 政策",
   "gui.dungeontrain.nps_ai_note.button.close": "关闭",
   "gui.dungeontrain.known_feature.kicker": "来自作者的一句话",
-  "gui.dungeontrain.known_feature.save_quit.title": "存档功能即将到来",
-  "gui.dungeontrain.known_feature.save_quit.body": "在一局中途保存并退出的功能即将推出。看看它在路线图上的位置。",
   "gui.dungeontrain.known_feature.backpack.title": "你已经有背包了",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks 会出现在战利品里。吃掉一个，就能多一个物品栏格子。",
   "gui.dungeontrain.known_feature.backpack.body.2": "还有更大的背包。",

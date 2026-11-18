@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a39f5e7402d1728e"},
   "gui.dungeontrain.nps_ai_note.button.close": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7d9eb7acb13e2462"},
   "gui.dungeontrain.known_feature.kicker": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "51b979ed57f46ec1"},
-  "gui.dungeontrain.known_feature.save_quit.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "20f7c346361dfb93"},
-  "gui.dungeontrain.known_feature.save_quit.body": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "174c36c19ab86ac6"},
   "gui.dungeontrain.known_feature.backpack.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "13f77b8a65c97a49"},
   "gui.dungeontrain.known_feature.backpack.body.1": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6b9ccdaebc19d4e9"},
   "gui.dungeontrain.known_feature.backpack.body.2": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ae14190fafae782e"},

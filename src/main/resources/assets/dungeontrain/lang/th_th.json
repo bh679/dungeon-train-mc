@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "อ่านนโยบาย AI",
   "gui.dungeontrain.nps_ai_note.button.close": "ปิด",
   "gui.dungeontrain.known_feature.kicker": "โน้ตจากผู้สร้าง",
-  "gui.dungeontrain.known_feature.save_quit.title": "ระบบเซฟกำลังจะมา",
-  "gui.dungeontrain.known_feature.save_quit.body": "การเซฟและออกกลางรันกำลังจะมาเร็วๆ นี้ ดูได้ว่าอยู่ตรงไหนบนแผนงาน",
   "gui.dungeontrain.known_feature.backpack.title": "คุณมีเป้อยู่แล้ว",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks จะโผล่ในของที่เก็บได้ กินหนึ่งใบเพื่อรับช่องเก็บของเพิ่ม",
   "gui.dungeontrain.known_feature.backpack.body.2": "ยังมีเป้ที่ใหญ่กว่านี้อีกด้วย",

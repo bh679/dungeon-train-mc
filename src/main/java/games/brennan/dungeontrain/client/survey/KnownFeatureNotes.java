@@ -49,7 +49,7 @@ public final class KnownFeatureNotes {
 
     /** The features this install can answer. */
     public static Set<KnownFeature> available() {
-        Set<KnownFeature> out = EnumSet.of(KnownFeature.AI, KnownFeature.SAVE_QUIT,
+        Set<KnownFeature> out = EnumSet.of(KnownFeature.AI,
                 KnownFeature.BACKPACK, KnownFeature.MULTIPLAYER);
         ModList mods = ModList.get();
         if (mods.isLoaded(MOD_TRASH_SLOT)) out.add(KnownFeature.TRASH_SLOT);
@@ -74,7 +74,7 @@ public final class KnownFeatureNotes {
                     Component.translatable(KEY + "backpack.body.2"));
             case SORTING -> packMod(feature, MOD_SORTING, "Nemo's Inventory Sorting");
             case JEI -> packMod(feature, MOD_JEI, "Just Enough Items");
-            case SAVE_QUIT, MULTIPLAYER, TRASH_SLOT -> List.of(Component.translatable(KEY + feature.id() + ".body"));
+            case MULTIPLAYER, TRASH_SLOT -> List.of(Component.translatable(KEY + feature.id() + ".body"));
         };
     }
 

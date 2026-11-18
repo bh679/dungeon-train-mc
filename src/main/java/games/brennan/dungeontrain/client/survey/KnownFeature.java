@@ -11,8 +11,6 @@ package games.brennan.dungeontrain.client.survey;
 public enum KnownFeature {
     /** A low NPS score that blames AI. Matched by {@link AiMentionDetector}, not by text alone. */
     AI("ai", Action.AI_POLICY),
-    /** Two months of "let me save", which is coming. */
-    SAVE_QUIT("save_quit", Action.ROADMAP),
     /** Edible Backpacks. The note hints at the bigger ones and never gives the recipe. */
     BACKPACK("backpack", Action.NONE),
     /** Coming: official multiplayer support. */

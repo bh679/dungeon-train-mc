@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Leer la política de IA",
   "gui.dungeontrain.nps_ai_note.button.close": "Cerrar",
   "gui.dungeontrain.known_feature.kicker": "una nota del creador",
-  "gui.dungeontrain.known_feature.save_quit.title": "El guardado está en camino",
-  "gui.dungeontrain.known_feature.save_quit.body": "Guardar y salir en mitad de una partida llegará pronto. Mira en qué punto está en la hoja de ruta.",
   "gui.dungeontrain.known_feature.backpack.title": "Ya tienes mochilas",
   "gui.dungeontrain.known_feature.backpack.body.1": "Las Edible Backpacks aparecen en el botín. Cómete una para tener un hueco extra de inventario.",
   "gui.dungeontrain.known_feature.backpack.body.2": "También hay mochilas más grandes.",

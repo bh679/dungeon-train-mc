@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Ler a Política de IA",
   "gui.dungeontrain.nps_ai_note.button.close": "Fechar",
   "gui.dungeontrain.known_feature.kicker": "uma nota do criador",
-  "gui.dungeontrain.known_feature.save_quit.title": "A gravação está a chegar",
-  "gui.dungeontrain.known_feature.save_quit.body": "Gravar e sair a meio de uma run chega em breve. Vê onde está no roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "Já tens mochilas",
   "gui.dungeontrain.known_feature.backpack.body.1": "As mochilas comestíveis (Edible Backpacks) aparecem no espólio. Come uma para ganhares um espaço extra no inventário.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Também existem mochilas maiores.",

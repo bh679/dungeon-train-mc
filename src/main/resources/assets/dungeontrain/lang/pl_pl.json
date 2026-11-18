@@ -2688,8 +2688,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Przeczytaj Zasady AI",
   "gui.dungeontrain.nps_ai_note.button.close": "Zamknij",
   "gui.dungeontrain.known_feature.kicker": "wiadomość od twórcy",
-  "gui.dungeontrain.known_feature.save_quit.title": "Zapis już wkrótce",
-  "gui.dungeontrain.known_feature.save_quit.body": "Zapis i wyjście w trakcie runu pojawią się wkrótce. Zobacz, w którym miejscu jest na mapie drogowej.",
   "gui.dungeontrain.known_feature.backpack.title": "Masz już plecaki",
   "gui.dungeontrain.known_feature.backpack.body.1": "Jadalne plecaki (Edible Backpacks) trafiają się w łupach. Zjedz jeden, a dostaniesz dodatkowe miejsce w ekwipunku.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Są też większe plecaki.",

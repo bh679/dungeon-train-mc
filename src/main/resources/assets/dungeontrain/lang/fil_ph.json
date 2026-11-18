@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Basahin ang Patakaran sa AI",
   "gui.dungeontrain.nps_ai_note.button.close": "Isara",
   "gui.dungeontrain.known_feature.kicker": "isang tala mula sa lumikha",
-  "gui.dungeontrain.known_feature.save_quit.title": "Paparating na ang pag-save",
-  "gui.dungeontrain.known_feature.save_quit.body": "Malapit nang dumating ang pag-save at paglabas sa gitna ng run. Tingnan kung nasaan ito sa roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "May mga backpack ka na",
   "gui.dungeontrain.known_feature.backpack.body.1": "Lumalabas ang Edible Backpacks sa loot. Kainin ang isa para sa dagdag na slot sa inventory.",
   "gui.dungeontrain.known_feature.backpack.body.2": "May mas malalaking backpack din.",

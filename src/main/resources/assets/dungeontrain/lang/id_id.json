@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Baca Kebijakan AI",
   "gui.dungeontrain.nps_ai_note.button.close": "Tutup",
   "gui.dungeontrain.known_feature.kicker": "catatan dari pembuatnya",
-  "gui.dungeontrain.known_feature.save_quit.title": "Fitur simpan akan hadir",
-  "gui.dungeontrain.known_feature.save_quit.body": "Menyimpan dan keluar di tengah permainan akan segera hadir. Lihat posisinya di roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "Kamu sudah punya ransel",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks muncul di jarahan. Makan satu untuk mendapat slot inventaris tambahan.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Ada juga ransel yang lebih besar.",

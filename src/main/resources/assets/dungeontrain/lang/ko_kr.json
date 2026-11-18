@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "AI 정책 읽기",
   "gui.dungeontrain.nps_ai_note.button.close": "닫기",
   "gui.dungeontrain.known_feature.kicker": "제작자의 한마디",
-  "gui.dungeontrain.known_feature.save_quit.title": "저장 기능이 곧 나옵니다",
-  "gui.dungeontrain.known_feature.save_quit.body": "런 도중 저장하고 나가기는 곧 추가됩니다. 로드맵에서 어디쯤인지 확인해 보세요.",
   "gui.dungeontrain.known_feature.backpack.title": "이미 배낭이 있습니다",
   "gui.dungeontrain.known_feature.backpack.body.1": "먹을 수 있는 배낭이 전리품에서 나옵니다. 먹으면 인벤토리 칸이 하나 늘어납니다.",
   "gui.dungeontrain.known_feature.backpack.body.2": "더 큰 배낭도 있습니다.",

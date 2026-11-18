@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "KI-Richtlinie lesen",
   "gui.dungeontrain.nps_ai_note.button.close": "Schließen",
   "gui.dungeontrain.known_feature.kicker": "eine Notiz vom Schöpfer",
-  "gui.dungeontrain.known_feature.save_quit.title": "Speichern kommt",
-  "gui.dungeontrain.known_feature.save_quit.body": "Speichern und Beenden mitten im Run kommt bald. Schau auf der Roadmap, wo es steht.",
   "gui.dungeontrain.known_feature.backpack.title": "Du hast schon Rucksäcke",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks tauchen in der Beute auf. Iss einen, um einen zusätzlichen Inventarplatz zu bekommen.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Es gibt auch größere Rucksäcke.",
