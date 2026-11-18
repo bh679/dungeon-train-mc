@@ -384,6 +384,7 @@ public final class TrainAssembler {
             velocity, origin);
 
         ManagedShip seedShip = spawnGroup(level, seedGroupOrigin, velocity, seedAnchor, groupSize, dims, trainId);
+        TrainCarriageAppender.holdSpawnedSeed(level, trainId, seedShip);
         if (seedShip.getKinematicDriver() instanceof TrainTransformProvider seedProvider) {
             seedProvider.setTrackGeometry(geometry);
             TrackGenerator.bootstrapPendingChunks(level, seedShip, seedProvider);
