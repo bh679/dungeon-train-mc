@@ -1,0 +1,16 @@
+{
+  "id": "one-way-room-entrance",
+  "version": "0.1881.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor"
+  ],
+  "title": "One-way entrances in the editor",
+  "summary": "Dimensional carriages can now be set to a one-way entrance in the editor: once you are in, the way you came is closed and you have to find the way out.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
