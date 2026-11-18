@@ -1,0 +1,17 @@
+{
+  "id": "nap-shift-quit-game",
+  "version": "0.1873.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Quit Game straight from a nap",
+  "summary": "After you save and quit at a train bed, hold Shift on the farewell screens to quit the game instead of going to the main menu.",
+  "highlights": [],
+  "pr": 2723,
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
