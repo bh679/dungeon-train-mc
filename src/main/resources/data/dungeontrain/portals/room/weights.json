@@ -30,7 +30,7 @@
   },
   "backrooms": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:20:10"
+    "mode": "endless_repetition/dynamic/off/random:20:10/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way"
   },
   "beam": {
     "weight": 3,
@@ -268,7 +268,7 @@
   "kfc": 1,
   "labrynth": {
     "weight": 2,
-    "mode": "endless_repetition/dynamic/off/random:20:8"
+    "mode": "endless_repetition/dynamic/off/random:20:8/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way"
   },
   "largerlibrary": {
     "weight": 1,
@@ -277,7 +277,7 @@
   "library_dimension": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
+    "mode": "endless_repetition/dynamic/off/random:25:4/off/none/repeated/0/0/0/0/minecraft:bedrock/off"
   },
   "lowkeyabridge": {
     "weight": 1,
@@ -385,7 +385,7 @@
   },
   "paths": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:10:10"
+    "mode": "endless_repetition/dynamic/off/random:10:10/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way"
   },
   "pathsforever": {
     "weight": 1,
@@ -643,7 +643,7 @@
   },
   "vaultchambers": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:50:10",
+    "mode": "endless_repetition/dynamic/off/random:50:10/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way",
     "builder": {
       "uuid": "7b7774bd61fc44b59b8b3f38ce70a443",
       "name": "AshSeven"

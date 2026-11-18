@@ -114,6 +114,8 @@ public final class EditorPlotLabelsRenderer {
         ROOM_FOG_CYCLE,
         /** The drift row — whether a Bedrock room is shared through the relay. */
         ROOM_DRIFT_CYCLE,
+        /** The entrance row — whether the entrance hallway leads back to the train. */
+        ENTRANCE_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
         /** The Edit half of that row — the weights and the band, which only a stocking room has. */
@@ -139,7 +141,7 @@ public final class EditorPlotLabelsRenderer {
     public enum RowKind {
         NAME, NOTE, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
         DOOR_WALL,
-        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        DOOR_OFFSET, ENTRANCE, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS
     }
 
@@ -173,6 +175,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasGroundBelowRow(entry)) buf[n++] = RowKind.GROUND_BELOW;
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
         if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
+        if (hasEntranceRow(entry)) buf[n++] = RowKind.ENTRANCE;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
@@ -587,6 +590,22 @@ public final class EditorPlotLabelsRenderer {
         String up = height == 0 ? MenuLang.t("plot.door_at_floor")
             : MenuLang.plural("plot.door_up", height);
         return MenuLang.t("plot.door_position", across, up);
+    }
+
+    /**
+     * Whether the Entrance row shows: any portal room, directly under Door Position — whether the
+     * way in also leads back out is a question every room can answer, whatever its walls do.
+     */
+    public static boolean hasEntranceRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Entrance row reads, e.g. {@code "Entrance: One-way"}. */
+    public static String entranceLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomEntrance entrance =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).entrance();
+        return MenuLang.t("plot.entrance",
+            MenuLang.named("portal.entrance", entrance.id(), entrance.displayName()));
     }
 
     /**
@@ -1026,6 +1045,7 @@ public final class EditorPlotLabelsRenderer {
             // Read-only — there is nothing to click. The door offset is detected from a placed door,
             // not dialled in here; see PortalRoomDoorDetection.
             case DOOR_OFFSET -> CellKind.NONE;
+            case ENTRANCE -> CellKind.ENTRANCE_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -1289,6 +1309,12 @@ public final class EditorPlotLabelsRenderer {
                 // set here — so there is nothing to draw but the text.
                 case DOOR_OFFSET ->
                     drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                // Entrance — whether the way in also leads back out. Same one-cell cycle as Sky.
+                case ENTRANCE -> {
+                    int bg = hovered == CellKind.ENTRANCE_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, entranceLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.
                 case ROOM_SKY -> {

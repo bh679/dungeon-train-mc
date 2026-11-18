@@ -70,6 +70,18 @@ public final class PortalEntityTransit {
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
                            int carriageIndex, boolean disconnected,
                            PortalFrames.Origin twinOverride) {
+        run(level, frames, entities, carriageIndex, disconnected, twinOverride, false);
+    }
+
+    /**
+     * As {@link #run(ServerLevel, PortalFrames, List, int, boolean, PortalFrames.Origin)}, refusing
+     * every move back to the carriage when {@code noWayBack} — a one-way room's entrance hallway
+     * ({@link PortalRoomEntrance}). Without it a thrown pearl or a led mob would carry the way back
+     * open that the player swap closes.
+     */
+    public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
+                           int carriageIndex, boolean disconnected,
+                           PortalFrames.Origin twinOverride, boolean noWayBack) {
         for (Entity entity : entities) {
             if (!eligible(entity)) continue;
 
@@ -82,6 +94,8 @@ public final class PortalEntityTransit {
             // room can still come back out. Without this a villager led in before the break would be
             // walled off from the train while its player walked back through.
             if (PortalSever.blocksMove(move.toFrame(), disconnected)) continue;
+            // A one-way entrance: nothing crosses back onto the train through it.
+            if (noWayBack && move.toFrame() == PortalFrames.FRAME_CARRIAGE) continue;
 
             // Grounded entities land on the destination floor's surface rather than the
             // carried-across local Y, for the reason the player swap does it: the two frames' block

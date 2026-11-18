@@ -1,0 +1,19 @@
+{
+  "id": "one-way-room-entrance",
+  "version": "0.1884.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "One-way dimensional carriages",
+  "summary": "Some dimensional carriages now only open one way. Once you step in, the way you came is closed, so you will have to find the way out.",
+  "highlights": [
+    "Builders can make any dimensional carriage one-way from the editor."
+  ],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
