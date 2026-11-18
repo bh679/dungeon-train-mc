@@ -1335,12 +1335,12 @@ public final class NarrativeDeathScreen extends Screen {
     /** "The echo": kicker, question, then the inventory-style panel ({@link EchoPage}). */
     private int drawEcho(GuiGraphics g, DeathStatsPacket s, int cx, int w, int y, float partialTick) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.echo.kicker");
+        // No train gap here: the card takes that room to grow (it fills down to the footer).
         y += 14;
-        y += TRAIN_GAP;
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.echo.question").getString(), cx, w, y);
-        y += 3;
+        y += 1;
         if (s == null || s.echo() == null) return y;
-        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - 32 + contentShift,
+        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - 32 + contentShift, w,
                 settled(), partialTick);
     }
 

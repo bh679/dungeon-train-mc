@@ -34,34 +34,52 @@ public final class EchoPage {
 
     private static final int SLOT = 18;
     private static final int GAP = 2;
-    private static final int PORTRAIT_W = 60;
-    private static final int TEXT_W = 128;
     private static final int OFFHAND_GAP = 10;
     private static final int SKILL_STEP = SLOT + 2;
+    private static final int EDGE = 6;
+
+    /** Portrait height range: the smallest GUI (240 px tall) gets the minimum. */
+    private static final int MIN_PORTRAIT_H = 87;
+    private static final int MAX_PORTRAIT_H = 170;
+    /** Text column base spacing at the minimum height: name, personality, three bars, icons. */
+    private static final int BASE_STEP = 11;
+    private static final int BAR_LABEL = 9;
+    private static final int BASE_BAR_H = 3;
+    private static final int BASE_BAR_GAP = 3;
+    /** Rows in the text column that take a share of any extra height. */
+    private static final int SPACED_ROWS = 6;
+    /** Head room the idle animation needs above the model, in model heights (looks, helmet). */
+    private static final float PORTRAIT_FIT = 2.25F;
 
     /**
-     * Vertical spacing. The roomy layout has the large portrait; the compact one fits the
-     * smallest GUI (240 px tall, the dev window at auto scale) and is picked when the roomy
-     * panel would run into the footer. The portrait is as tall as the text column beside it:
-     * name, personality, three trait bars and the skill icon row.
+     * The panel's measurements for the room it has. The card grows to fill the space down to the
+     * footer: a taller portrait (and a proportionally wider one), and the text column's rows
+     * spread out to match. On the smallest GUI (240 px tall) it is at its minimum.
      */
-    private record Layout(int pad, int portraitSize, int nameStep, int classStep,
-                          int barLabelStep, int barH, int barGap) {
-        int textH() {
-            return 2 + nameStep + classStep + 3 * (barLabelStep + barH + barGap) + SLOT;
+    private record Layout(int pad, int portraitH, int portraitW, int portraitSize, int textW,
+                          int step, int barH) {
+        static Layout fit(int room, int width) {
+            int pad = room >= 150 ? EDGE : 3;
+            int bottom = ARMOR_ICON + 2 + SLOT;
+            int portraitH = Math.max(MIN_PORTRAIT_H, Math.min(MAX_PORTRAIT_H, room - 3 * pad - bottom));
+            int portraitW = Math.max(60, Math.min(100, Math.round(portraitH * 0.62F)));
+            int fixed = EDGE + SLOT + EDGE + portraitW + EDGE + EDGE;
+            int textW = Math.max(128, Math.min(200, width - fixed));
+            int extra = Math.max(0, portraitH - MIN_PORTRAIT_H);
+            int step = extra / SPACED_ROWS;
+            int barH = BASE_BAR_H + Math.min(2, extra / 30);
+            int size = Math.round((portraitH - 6) / PORTRAIT_FIT);
+            return new Layout(pad, portraitH, portraitW, size, textW, step, barH);
         }
 
-        int portraitH() {
-            return textH() + 2;
+        int panelW() {
+            return EDGE + SLOT + EDGE + portraitW + EDGE + textW + EDGE;
         }
 
         int panelH() {
-            return pad + portraitH() + pad + ARMOR_ICON + 2 + SLOT + pad;
+            return pad + portraitH + pad + ARMOR_ICON + 2 + SLOT + pad;
         }
     }
-
-    private static final Layout ROOMY = new Layout(6, 56, 14, 16, 10, 4, 7);
-    private static final Layout COMPACT = new Layout(3, 42, 10, 10, 9, 3, 3);
 
     /** The item that stands for each reaction skill, in {@link EchoPersonality.Skill} order. */
     private static final ItemStack[] SKILL_ICONS = {
@@ -115,25 +133,20 @@ public final class EchoPage {
         this.chrome = chrome;
     }
 
-    /** Total panel width, for centring. */
-    public static int panelWidth() {
-        return 6 + SLOT + 6 + PORTRAIT_W + 6 + TEXT_W + 6;
-    }
-
     /**
      * Draw the panel with its top at {@code y}, centred on {@code cx}; returns the y below it.
-     * {@code depth} is the fall page's carriage count; {@code maxY} is where the footer begins,
-     * which picks the roomy or compact layout.
+     * {@code depth} is the fall page's carriage count; the card grows to fill the room down to
+     * {@code maxY} (where the footer begins) and up to {@code width} across.
      */
-    public int draw(GuiGraphics g, EchoSummary echo, int depth, int cx, int y, int maxY,
+    public int draw(GuiGraphics g, EchoSummary echo, int depth, int cx, int y, int maxY, int width,
                     boolean settled, float partialTick) {
         Font font = chrome.font();
         slotHits.clear();
         skillHits.clear();
         armourW = 0;
-        Layout l = y + ROOMY.panelH() <= maxY ? ROOMY : COMPACT;
+        Layout l = Layout.fit(maxY - y, width);
         int pad = l.pad();
-        int panelW = panelWidth();
+        int panelW = l.panelW();
         int x0 = cx - panelW / 2;
         int topH = l.portraitH();
         int armourBarY = y + pad + topH + pad;
@@ -144,7 +157,7 @@ public final class EchoPage {
         outline(g, x0, y, panelW, panelH, PANEL_BORDER);
 
         // ---- Armour column, vertically centred on the portrait.
-        int colX = x0 + 6;
+        int colX = x0 + EDGE;
         int armourColH = 4 * SLOT + 3 * GAP;
         int colY = y + pad + (topH - armourColH) / 2;
         ItemStack[] worn = {
@@ -155,31 +168,32 @@ public final class EchoPage {
         }
 
         // ---- Portrait window.
-        int portX = colX + SLOT + 6;
+        int portX = colX + SLOT + EDGE;
         int portY = y + pad;
-        g.fill(portX, portY, portX + PORTRAIT_W, portY + topH, chrome.fade(PORTRAIT_BG));
-        outline(g, portX, portY, PORTRAIT_W, topH, SLOT_LIGHT);
+        int portW = l.portraitW();
+        g.fill(portX, portY, portX + portW, portY + topH, chrome.fade(PORTRAIT_BG));
+        outline(g, portX, portY, portW, topH, SLOT_LIGHT);
         if (settled && portrait.available()) {
-            g.enableScissor(portX + 1, portY + 1, portX + PORTRAIT_W - 1, portY + topH - 1);
-            portrait.render(g, echo.appearance(), 1, portX + PORTRAIT_W / 2, portY + topH - 4,
+            g.enableScissor(portX + 1, portY + 1, portX + portW - 1, portY + topH - 1);
+            portrait.render(g, echo.appearance(), 1, portX + portW / 2, portY + topH - 4,
                     partialTick, l.portraitSize());
             g.disableScissor();
         }
 
         // ---- Text column.
-        int tx = portX + PORTRAIT_W + 6;
+        int tx = portX + portW + EDGE;
         int ty = portY + 2;
         drawNameLine(g, font, echoName(), depth, tx, ty);
-        ty += l.nameStep();
+        ty += BASE_STEP + l.step();
         Component label = Component.translatable("gui.dungeontrain.death.echo.personality");
         g.drawString(font, label, tx, ty, chrome.fade(LABEL), false);
         g.drawString(font, Component.translatable(echo.personality().langKey()),
                 tx + font.width(label) + 4, ty, chrome.fade(CLASS), false);
-        ty += l.classStep();
+        ty += BASE_STEP + l.step();
         ty = traitBar(g, font, EchoPersonality.Trait.FIGHT_FLIGHT, echo.fightFlight(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), tx, ty, l);
-        skillRow(g, font, echo, tx, ty, settled);
+        skillRow(g, font, echo, tx, ty + l.step(), settled);
 
         // ---- Armour bar, over the hotbar's first slot like the in-game HUD.
         int hotbarX = colX + SLOT + OFFHAND_GAP;
@@ -246,14 +260,15 @@ public final class EchoPage {
         Component label = Component.translatable(trait.labelKey());
         Component word = Component.translatable(EchoPersonality.wordKey(trait, value));
         g.drawString(font, label, x, y, chrome.fade(LABEL), false);
-        g.drawString(font, word, x + TEXT_W - font.width(word), y, chrome.fade(WORD), false);
-        int by = y + l.barLabelStep();
-        g.fill(x, by, x + TEXT_W, by + l.barH(), chrome.fade(BAR_TRACK));
-        int fillW = Math.round(TEXT_W * EchoPersonality.clamp(value) / (float) EchoPersonality.MAX);
+        int textW = l.textW();
+        g.drawString(font, word, x + textW - font.width(word), y, chrome.fade(WORD), false);
+        int by = y + BAR_LABEL;
+        g.fill(x, by, x + textW, by + l.barH(), chrome.fade(BAR_TRACK));
+        int fillW = Math.round(textW * EchoPersonality.clamp(value) / (float) EchoPersonality.MAX);
         if (fillW > 0) {
             g.fill(x, by, x + fillW, by + l.barH(), chrome.fade(BAR_FILL));
         }
-        return by + l.barH() + l.barGap();
+        return by + l.barH() + BASE_BAR_GAP + l.step();
     }
 
     /**
