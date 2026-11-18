@@ -17,6 +17,16 @@ class NapGuestsTest {
 
     @TempDir Path dir;
 
+    @Test void hostConnectionAloneIsNotAGuest() {
+        assertFalse(NapGuests.othersConnected(0));
+        assertFalse(NapGuests.othersConnected(1));
+    }
+
+    @Test void anySecondConnectionIsAGuest() {
+        assertTrue(NapGuests.othersConnected(2));
+        assertTrue(NapGuests.othersConnected(5));
+    }
+
     @Test void missingFolderHasNoGuests() {
         assertFalse(NapGuests.othersSaved(dir.resolve("playerdata"), HOST));
     }

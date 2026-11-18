@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.nap;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerConnectionListener;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 
@@ -30,6 +31,27 @@ public final class NapGuests {
             LOGGER.warn("[DungeonTrain] Nap: could not locate playerdata; refusing", e);
             return true;
         }
+    }
+
+    /**
+     * Whether any network connection besides the host's own is open: a LAN guest still logging in or
+     * configuring, whom {@code getPlayerCount()} doesn't count yet. Checked on the server thread right
+     * before a nap is saved; after the save {@code mixin/PlayerListNapWorldRefuseMixin} refuses new
+     * logins, so no guest can get in between. A connection that can't be counted counts as yes.
+     */
+    public static boolean othersConnected(MinecraftServer server) {
+        try {
+            ServerConnectionListener listener = server.getConnection();
+            return listener != null && othersConnected(listener.getConnections().size());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Nap: could not count connections; refusing", e);
+            return true;
+        }
+    }
+
+    /** More than the host's own (in-memory) connection. */
+    static boolean othersConnected(int connections) {
+        return connections > 1;
     }
 
     /** Any {@code <uuid>.dat} for a uuid other than {@code owner}. Unreadable folder counts as yes. */
