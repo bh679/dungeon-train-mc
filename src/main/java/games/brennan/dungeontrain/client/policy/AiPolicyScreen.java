@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.policy;
 
+import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.ui.CardCanvas;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -15,6 +16,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,8 +48,20 @@ public final class AiPolicyScreen extends Screen {
     private static final String UPDATES_URL =
             "https://discord.com/channels/680177367381049356/693919099876671508/1541810418274668724";
 
+    /** The Explainers card's "Read it" buttons: 14 tall, sized to their label. */
+    private static final int READ_H = 14;
+    private static final int READ_PAD = 12;
+
+    /**
+     * A button and the canvas Y it sits at. A real widget for input, drawn by hand after the canvas so
+     * it scrolls with its section and sits on top of the card (the Credits page's Edit buttons, the
+     * same way).
+     */
+    private record ButtonSlot(DarkTintedButton button, int canvasY) {}
+
     private final Screen parent;
     private final CardCanvas canvas;
+    private final List<ButtonSlot> buttonSlots = new ArrayList<>();
 
     public AiPolicyScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.ai_policy.title"));
@@ -60,6 +74,7 @@ public final class AiPolicyScreen extends Screen {
         int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
         canvas.beginLayout((this.width - colW) / 2, colW);
 
+        buttonSlots.clear();
         int y = 0;
 
         // Title + subtitle, centred.
@@ -84,6 +99,8 @@ public final class AiPolicyScreen extends Screen {
                 y += CardCanvas.CARD_GAP;
             }
         }
+        y += CardCanvas.CARD_GAP;
+        y = addExplainersCard(y);
         y += CardCanvas.SECTION_GAP;
 
         y = canvas.addLeftWrapped(Component.translatable("gui.dungeontrain.ai_policy.closing"),
@@ -142,6 +159,57 @@ public final class AiPolicyScreen extends Screen {
                     y += CardCanvas.ROW_GAP;
                 }
             }
+        }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /**
+     * The Explainers card: posts on the website that go deeper than this page, one section each
+     * (glyph + title, a grey line, a Read it button), sections split by a divider. Returns the canvas Y
+     * just below the card.
+     */
+    private int addExplainersCard(int top) {
+        int lh = canvas.lineHeight();
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int textX = innerX + CardCanvas.ICON + CardCanvas.ICON_GAP;
+        int textW = Math.max(1, innerW - CardCanvas.ICON - CardCanvas.ICON_GAP);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.ai_policy.explainers.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), AiPolicyContent.ACCENT_EXPLAINERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        List<AiPolicyContent.Explainer> explainers = AiPolicyContent.explainers();
+        Component readLabel = Component.translatable("gui.dungeontrain.ai_policy.explainers.read");
+        int readW = Math.min(textW, this.font.width(readLabel) + READ_PAD * 2);
+        for (int i = 0; i < explainers.size(); i++) {
+            AiPolicyContent.Explainer explainer = explainers.get(i);
+            if (i > 0) {
+                y += CardCanvas.ROW_GAP;
+                y = canvas.addDivider(innerX, y, innerW);
+                y += CardCanvas.ROW_GAP;
+            }
+            int iconTop = y - (CardCanvas.ICON - lh) / 2;
+            canvas.addIcon(new ItemStack(explainer.glyph()), innerX, iconTop);
+            y = canvas.addWrappedAt(Component.translatable(explainer.titleKey()), textX, textW, y,
+                    CardCanvas.COLOUR_HEADER);
+            y = Math.max(y, iconTop + CardCanvas.ICON);
+            y += CardCanvas.PARA_GAP / 2;
+            y = canvas.addWrappedAt(Component.translatable(explainer.descKey()), textX, textW, y,
+                    CardCanvas.COLOUR_DESC);
+            y += CardCanvas.ROW_GAP;
+
+            String url = explainer.url();
+            DarkTintedButton read = new DarkTintedButton(textX, 0, readW, READ_H, readLabel, b -> openLink(url));
+            addWidget(read);
+            buttonSlots.add(new ButtonSlot(read, y));
+            y += READ_H;
         }
 
         y += CardCanvas.CARD_PAD;
@@ -210,6 +278,32 @@ public final class AiPolicyScreen extends Screen {
         // Draws the background (with our panel) and the Done widget.
         super.render(g, mouseX, mouseY, partialTick);
         canvas.render(g, this.width);
+        renderSlotButtons(g, mouseX, mouseY, partialTick);
+    }
+
+    /**
+     * The card's buttons, placed at their sections for the current scroll and clipped to the viewport
+     * like the canvas's own content. A button scrolled out of view is hidden so it can't be clicked
+     * through the Done row or the title.
+     */
+    private void renderSlotButtons(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (buttonSlots.isEmpty()) {
+            return;
+        }
+        int top = canvas.viewportTop();
+        int bottom = canvas.viewportBottom();
+        g.enableScissor(canvas.colX() - CardCanvas.PANEL_PAD, top,
+                canvas.colX() + canvas.colW() + CardCanvas.PANEL_PAD, bottom);
+        for (ButtonSlot slot : buttonSlots) {
+            int y = canvas.screenY(slot.canvasY());
+            slot.button().setY(y);
+            boolean visible = y + READ_H > top && y < bottom;
+            slot.button().visible = visible;
+            if (visible) {
+                slot.button().render(g, mouseX, mouseY, partialTick);
+            }
+        }
+        g.disableScissor();
     }
 
     @Override
