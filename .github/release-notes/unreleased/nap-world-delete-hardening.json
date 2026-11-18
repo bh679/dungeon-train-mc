@@ -1,0 +1,17 @@
+{
+  "id": "nap-world-delete-hardening",
+  "version": "0.1887.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "multiplayer"
+  ],
+  "title": "Save and Quit fix",
+  "summary": "Save and Quit at train beds is safer when your world is open to LAN, and never clears away a world you named yourself.",
+  "highlights": [],
+  "pr": 2739,
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

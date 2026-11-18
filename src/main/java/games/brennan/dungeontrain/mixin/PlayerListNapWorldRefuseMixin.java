@@ -19,6 +19,9 @@ import java.net.SocketAddress;
  * the nap, and the nap always wins. Refused through vanilla's own login check, before the player is
  * loaded from disk, so nothing in the world or the nap changes; the client goes back to the title
  * screen, which deletes the world. The server stops with it. See {@link NapWake#isNappedWorld}.
+ *
+ * <p>Anyone else is refused too while the owner's nap for this world is pending (a LAN guest joining
+ * during the farewell pages), without stopping the server.</p>
  */
 @Mixin(PlayerList.class)
 public abstract class PlayerListNapWorldRefuseMixin {
@@ -35,6 +38,11 @@ public abstract class PlayerListNapWorldRefuseMixin {
             // session lock (the title sweep can't delete the world) and its Sable physics, which
             // wedges the next world's server at 33% when it starts beside it.
             server.halt(false);
+        } else if (NapWake.isNappedWorld(server)) {
+            // A LAN guest arriving after the host's nap was saved: the world is deleted once the host
+            // leaves the farewell pages, so let nobody in. Refused before the player loads, so nothing of
+            // theirs is written here. The server keeps running: the host's leave still needs it.
+            cir.setReturnValue(Component.translatable("multiplayer.disconnect.server_shutdown"));
         }
     }
 }
