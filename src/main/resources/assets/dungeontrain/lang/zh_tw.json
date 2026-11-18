@@ -817,6 +817,7 @@
   "chat.dungeontrain.live_gift.offered": "正在把你的直播攝影機送給 %s…",
   "chat.dungeontrain.live_gift.give_failed": "沒能把你的直播攝影機送給 %s，他們可能已經離開了。",
   "chat.dungeontrain.live_gift.give_expired": "這份禮物已經無法送出。",
+  "chat.dungeontrain.live_gift.afk_offered": "你離開了一段時間，所以你的直播攝影機正在送給所有觀眾，先接受的人得到它。",
   "chat.dungeontrain.live_gift.offer": "%s 想把直播交給你。要接過直播攝影機嗎？",
   "chat.dungeontrain.live_gift.offer_all": "%s 把直播攝影機送給所有觀眾，先接受的人得到它。",
   "chat.dungeontrain.live.close_call.prompt": "%s 正在接近一項罕見挑戰。",

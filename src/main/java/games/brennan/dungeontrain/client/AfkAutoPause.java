@@ -102,6 +102,14 @@ public final class AfkAutoPause {
             || Math.abs(pitch - prevPitch) > LOOK_EPSILON_DEG;
     }
 
+    /**
+     * How long since the last real input, by the same clock the pause uses; {@code 0} when not in a
+     * world yet. Read by {@link games.brennan.dungeontrain.client.live.LiveEyeAfkOffer}. Client thread.
+     */
+    public static long idleMs() {
+        return lastInputMs == 0L ? 0L : Math.max(0L, System.currentTimeMillis() - lastInputMs);
+    }
+
     // ------------------------------------------------------------------ input
 
     /** The player did something: restart the idle clock and re-arm the pause. */

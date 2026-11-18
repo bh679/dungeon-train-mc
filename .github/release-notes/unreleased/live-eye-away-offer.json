@@ -1,0 +1,16 @@
+{
+  "id": "live-eye-away-offer",
+  "version": "0.1881.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "Live Eye passes on when you step away",
+  "summary": "Step away from the game for 2 minutes while wearing the Live Eye and it is offered to everyone watching, so the stream doesn't sit still. Come back before anyone takes it and the offer is withdrawn.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

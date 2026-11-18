@@ -851,6 +851,7 @@
   "chat.dungeontrain.live_gift.offered": "%s krijgt jouw Live-oog aangeboden…",
   "chat.dungeontrain.live_gift.give_failed": "Kon %s jouw Live-oog niet aanbieden. Misschien is die al weg.",
   "chat.dungeontrain.live_gift.give_expired": "Dat cadeau kan niet meer worden verstuurd.",
+  "chat.dungeontrain.live_gift.afk_offered": "Je bent een tijdje weg geweest, dus je Live-oog wordt aan alle kijkers aangeboden. Wie het eerst aanneemt, krijgt het.",
   "chat.dungeontrain.live_gift.offer": "%s biedt je de livestream aan. Het Live-oog aannemen?",
   "chat.dungeontrain.live_gift.offer_all": "%s biedt alle kijkers het Live-oog aan. Wie het eerst aanneemt, krijgt het.",
   "chat.dungeontrain.live.close_call.prompt": "%s nadert een zeldzame uitdaging.",

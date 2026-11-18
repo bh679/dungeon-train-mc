@@ -961,6 +961,7 @@
   "chat.dungeontrain.live_gift.offered": "Se oferă camera ta video de transmisie lui %s…",
   "chat.dungeontrain.live_gift.give_failed": "Nu s-a putut oferi camera ta video de transmisie lui %s. Poate a plecat.",
   "chat.dungeontrain.live_gift.give_expired": "Cadoul acela nu mai poate fi trimis.",
+  "chat.dungeontrain.live_gift.afk_offered": "Ai lipsit o vreme, așa că camera ta video de transmisie este oferită tuturor spectatorilor. Primul care acceptă o primește.",
   "chat.dungeontrain.live_gift.offer": "%s îți oferă transmisiunea live. Iei camera video de transmisie?",
   "chat.dungeontrain.live_gift.offer_all": "%s oferă camera video de transmisie tuturor spectatorilor. Acceptă primul ca s-o primești.",
   "chat.dungeontrain.live.close_call.prompt": "%s se apropie de o provocare rară.",
