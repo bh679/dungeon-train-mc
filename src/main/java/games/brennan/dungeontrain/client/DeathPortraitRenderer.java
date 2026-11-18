@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import games.brennan.dungeontrain.echo.EchoPersonality;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.playermob.PlayerMobRegistry;
 import games.brennan.playermob.entity.PlayerMobEntity;
@@ -103,6 +104,29 @@ public final class DeathPortraitRenderer {
         drawEntity(g, mob, centerX, renderY, size);
     }
 
+    /**
+     * Draw an echo's portrait acting out its personality ({@code kind}), at a tempo set by its
+     * reaction speed (0–10): half speed at 0, true speed at 5, double at 10.
+     */
+    public void renderEcho(GuiGraphics g, PlayerMobAppearance appearance, EchoPersonality.Kind kind,
+                           int reactionSpeed, int centerX, int feetY, int size) {
+        if (appearance == null) return;
+        PlayerMobEntity mob = obtain(appearance);
+        if (mob == null) return;
+        float tempo = (float) Math.pow(2.0, (EchoPersonality.clamp(reactionSpeed) - 5) / 5.0);
+        float t = tempo * (Util.getMillis() - animStartMillis) / 1000.0f;
+        switch (kind) {
+            case GUARDIAN -> animateGuardian(mob, t);
+            case GENTLE_SOUL -> animateFriend(mob, t);
+            case SENTINEL -> animateSentinel(mob, t);
+            case SKEPTIC -> animateSkeptic(mob, t);
+            case BRUTE -> animateKilled(mob, t);
+            case RECLUSE -> animateRecluse(mob, t);
+        }
+        int renderY = feetY - Math.round(size * mob.getBbHeight() / 2.0f);
+        drawEntity(g, mob, centerX, renderY, size);
+    }
+
     /** Lazily build / refresh the cached entity (skin + equipment). */
     private PlayerMobEntity obtain(PlayerMobAppearance appearance) {
         Level level = Minecraft.getInstance().level;
@@ -197,6 +221,59 @@ public final class DeathPortraitRenderer {
         if (wantBlock && !blocking) { mob.raiseShieldIfHeld(); blocking = true; }
         else if (!wantBlock && blocking) { mob.lowerShield(); blocking = false; }
         if (swing > 0.0f) setSwing(mob, swing); else clearSwing(mob);
+    }
+
+    /**
+     * Guardian: the friendly crouch-bob, broken now and then by a swing past you — at whatever
+     * would hurt a friend.
+     */
+    private void animateGuardian(PlayerMobEntity mob, float t) {
+        float cycle = 6.0f;
+        float local = t % cycle;
+        if (local > 4.6f) {
+            mob.setCrouching(false);
+            if (blocking) { mob.lowerShield(); blocking = false; }
+            setFacing(mob, FACE_YOU + 20.0f, FACE_YOU + 35.0f, 0.0f);
+            float swing = strike(local - 4.6f, 0.2f);
+            if (swing > 0.0f) setSwing(mob, swing); else clearSwing(mob);
+            return;
+        }
+        animateFriend(mob, t);
+    }
+
+    /** Sentinel: squared up and staring, shield raised for half of each beat, barely moving. */
+    private void animateSentinel(PlayerMobEntity mob, float t) {
+        clearSwing(mob);
+        mob.setCrouching(false);
+        setFacing(mob, FACE_YOU, FACE_YOU + 12.0f * Mth.sin(t * 0.5f), 4.0f);
+        boolean wantBlock = (t % 4.0f) < 2.0f;
+        if (wantBlock && !blocking) { mob.raiseShieldIfHeld(); blocking = true; }
+        else if (!wantBlock && blocking) { mob.lowerShield(); blocking = false; }
+    }
+
+    /** Skeptic: mostly looks away, with brief wary glances at you behind a raised shield. */
+    private void animateSkeptic(PlayerMobEntity mob, float t) {
+        clearSwing(mob);
+        mob.setCrouching(false);
+        float cycle = 3.5f;
+        float local = t % cycle;
+        boolean glance = local > 2.6f;
+        float away = (((int) (t / cycle)) & 1) == 0 ? 55.0f : -55.0f;
+        setFacing(mob, FACE_YOU + away * 0.3f, glance ? FACE_YOU : FACE_YOU + away, glance ? 0.0f : 8.0f);
+        if (glance && !blocking) { mob.raiseShieldIfHeld(); blocking = true; }
+        else if (!glance && blocking) { mob.lowerShield(); blocking = false; }
+    }
+
+    /** Recluse: turned away, head down, often crouched, with a quick nervous glance now and then. */
+    private void animateRecluse(PlayerMobEntity mob, float t) {
+        clearSwing(mob);
+        if (blocking) { mob.lowerShield(); blocking = false; }
+        float cycle = 4.0f;
+        float local = t % cycle;
+        boolean glance = local > 3.3f;
+        float body = FACE_YOU + 35.0f;
+        setFacing(mob, body, glance ? FACE_YOU : body + 15.0f * Mth.sin(t * 0.7f), glance ? 5.0f : 28.0f);
+        mob.setCrouching(!glance && local > 1.0f);
     }
 
     /** A sharp 0→1 weapon-swing ramp lasting {@link #SWING_SECONDS}s from {@code start} (seconds into the beat). */

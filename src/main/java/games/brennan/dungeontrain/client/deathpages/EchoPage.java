@@ -99,14 +99,13 @@ public final class EchoPage {
         new ItemStack(Items.DIRT), ItemStack.EMPTY, new ItemStack(Items.BUCKET)
     };
 
-    private static final int PANEL_BG = 0xCC1B1A17;
-    private static final int PANEL_BORDER = 0xFF4A4538;
-    private static final int PORTRAIT_BG = 0xFF0E0E0D;
-    private static final int SLOT_BG = 0xFF211E1A;
-    private static final int SLOT_LIGHT = 0xFF3A352D;
-    private static final int SLOT_DARK = 0xFF100E0B;
+    private static final int PANEL_BG = 0xB80E0F12;
+    private static final int PORTRAIT_BG = 0xFF08090B;
+    private static final int SLOT_BG = 0xFF1B1C20;
+    private static final int SLOT_LIGHT = 0xFF34363C;
+    private static final int SLOT_DARK = 0xFF0A0B0D;
     private static final int MAIN_HAND = 0xFFC9A24A;
-    private static final int BAR_TRACK = 0xFF2A2620;
+    private static final int BAR_TRACK = 0xFF2A2C31;
     private static final int BAR_FILL = 0xFFC9A24A;
     private static final int NAME = 0xFFFFFFFF;
     private static final int LABEL = 0xFF9A8F74;
@@ -131,6 +130,9 @@ public final class EchoPage {
             return mx >= x && mx < x + SKILL_ICON && my >= y && my < y + SKILL_H;
         }
     }
+
+    /** TEMP: live preview override, set by the Gate 2 harness. Removed before merge. */
+    public static volatile EchoPersonality.Kind TEMP_PREVIEW_KIND;
 
     private final LiveDeathChrome chrome;
     private final DeathPortraitRenderer portrait = new DeathPortraitRenderer();
@@ -162,8 +164,8 @@ public final class EchoPage {
         int top = y + pad;
         int topH = l.contentH();
 
+        // A plain dark backing, no frame: only the portrait window and the slots are outlined.
         g.fill(x0, y, x0 + panelW, y + panelH, chrome.fade(PANEL_BG));
-        outline(g, x0, y, panelW, panelH, PANEL_BORDER);
 
         // ---- Armour column with the offhand under it, vertically centred on the portrait.
         int colX = x0 + EDGE;
@@ -184,8 +186,9 @@ public final class EchoPage {
         outline(g, portX, top, portW, topH, SLOT_LIGHT);
         if (settled && portrait.available()) {
             g.enableScissor(portX + 1, top + 1, portX + portW - 1, top + topH - 1);
-            portrait.render(g, echo.appearance(), 1, portX + portW / 2, top + topH - 4,
-                    partialTick, l.portraitSize());
+            // The echo acts out its personality, at the tempo of its reaction speed.
+            portrait.renderEcho(g, echo.appearance(), TEMP_PREVIEW_KIND != null ? TEMP_PREVIEW_KIND : echo.personality(), echo.reactionSpeed(),
+                    portX + portW / 2, top + topH - 4, l.portraitSize());
             g.disableScissor();
         }
 
