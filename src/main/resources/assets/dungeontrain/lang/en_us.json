@@ -918,6 +918,7 @@
   "chat.dungeontrain.live_gift.offered": "Offering %s your Live Eye…",
   "chat.dungeontrain.live_gift.give_failed": "Couldn't offer %s your Live Eye. They may have left.",
   "chat.dungeontrain.live_gift.give_expired": "That gift can't be sent any more.",
+  "chat.dungeontrain.live_gift.afk_offered": "You've been away for a while, so your Live Eye is on offer to everyone watching. The first to accept gets it.",
   "chat.dungeontrain.live_gift.offer": "%s offers you the livestream. Take the Live Eye?",
   "chat.dungeontrain.live_gift.offer_all": "%s offers the Live Eye to everyone watching. Accept first to get it.",
   "chat.dungeontrain.live.close_call.prompt": "%s is approaching a rare challenge.",

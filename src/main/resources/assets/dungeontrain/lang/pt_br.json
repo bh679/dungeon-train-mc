@@ -842,6 +842,7 @@
   "chat.dungeontrain.live_gift.offered": "Oferecendo a sua filmadora de transmissão para %s…",
   "chat.dungeontrain.live_gift.give_failed": "Não foi possível oferecer a sua filmadora de transmissão para %s. Talvez tenha saído.",
   "chat.dungeontrain.live_gift.give_expired": "Esse presente não pode mais ser enviado.",
+  "chat.dungeontrain.live_gift.afk_offered": "Você ficou um tempo ausente, então sua filmadora de transmissão está sendo oferecida a todos os espectadores. Quem aceitar primeiro fica com ela.",
   "chat.dungeontrain.live_gift.offer": "%s está te oferecendo a transmissão. Pegar a filmadora de transmissão?",
   "chat.dungeontrain.live_gift.offer_all": "%s oferece a filmadora de transmissão a todos os espectadores. Aceite primeiro para ficar com ela.",
   "chat.dungeontrain.live.close_call.prompt": "%s está chegando perto de um desafio raro.",

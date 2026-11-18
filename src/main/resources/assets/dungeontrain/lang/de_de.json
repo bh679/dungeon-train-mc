@@ -842,6 +842,7 @@
   "chat.dungeontrain.live_gift.offered": "%s wird dein Sende-Camcorder angeboten …",
   "chat.dungeontrain.live_gift.give_failed": "%s konnte dein Sende-Camcorder nicht angeboten werden. Vielleicht ist die Person schon weg.",
   "chat.dungeontrain.live_gift.give_expired": "Dieses Geschenk kann nicht mehr verschickt werden.",
+  "chat.dungeontrain.live_gift.afk_offered": "Du warst eine Weile weg, darum wird dein Sende-Camcorder allen Zuschauern angeboten. Wer zuerst annimmt, bekommt ihn.",
   "chat.dungeontrain.live_gift.offer": "%s bietet dir den Livestream an. Den Sende-Camcorder nehmen?",
   "chat.dungeontrain.live_gift.offer_all": "%s bietet allen Zuschauern den Sende-Camcorder an. Wer zuerst annimmt, bekommt ihn.",
   "chat.dungeontrain.live.close_call.prompt": "%s nähert sich einer seltenen Herausforderung.",

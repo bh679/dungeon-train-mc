@@ -876,6 +876,7 @@
   "chat.dungeontrain.live_gift.offered": "Oferowanie twojej kamery transmisyjnej graczowi %s…",
   "chat.dungeontrain.live_gift.give_failed": "Nie udało się zaoferować twojej kamery transmisyjnej graczowi %s. Może już wyszedł.",
   "chat.dungeontrain.live_gift.give_expired": "Tego prezentu nie da się już wysłać.",
+  "chat.dungeontrain.live_gift.afk_offered": "Nie było cię przez chwilę, więc twoja kamera transmisyjna jest oferowana wszystkim widzom. Dostanie ją ten, kto przyjmie pierwszy.",
   "chat.dungeontrain.live_gift.offer": "%s oddaje ci transmisję. Wziąć kamerę transmisyjną?",
   "chat.dungeontrain.live_gift.offer_all": "%s oferuje kamerę transmisyjną wszystkim widzom. Przyjmij pierwszy, aby ją dostać.",
   "chat.dungeontrain.live.close_call.prompt": "%s zbliża się do rzadkiego wyzwania.",

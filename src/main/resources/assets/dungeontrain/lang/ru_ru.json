@@ -881,6 +881,7 @@
   "chat.dungeontrain.live_gift.offered": "Предлагаем твой Live Eye игроку %s…",
   "chat.dungeontrain.live_gift.give_failed": "Не удалось предложить твой Live Eye игроку %s. Возможно, он ушёл.",
   "chat.dungeontrain.live_gift.give_expired": "Этот подарок уже нельзя отправить.",
+  "chat.dungeontrain.live_gift.afk_offered": "Тебя давно нет, поэтому твой Live Eye предлагается всем зрителям. Его получит тот, кто примет первым.",
   "chat.dungeontrain.live_gift.offer": "%s передаёт тебе трансляцию. Взять Live Eye?",
   "chat.dungeontrain.live_gift.offer_all": "%s предлагает Live Eye всем зрителям. Прими первым, чтобы его получить.",
   "chat.dungeontrain.live.close_call.prompt": "%s приближается к редкому испытанию.",

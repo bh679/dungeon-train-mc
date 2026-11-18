@@ -808,6 +808,7 @@
   "chat.dungeontrain.live_gift.offered": "Menawarkan Live Eye-mu kepada %s…",
   "chat.dungeontrain.live_gift.give_failed": "Tidak bisa menawarkan Live Eye-mu kepada %s. Mungkin mereka sudah pergi.",
   "chat.dungeontrain.live_gift.give_expired": "Hadiah itu sudah tidak bisa dikirim.",
+  "chat.dungeontrain.live_gift.afk_offered": "Kamu sudah lama pergi, jadi Live Eye-mu ditawarkan kepada semua penonton. Yang pertama menerima akan mendapatkannya.",
   "chat.dungeontrain.live_gift.offer": "%s menawarkan siaran langsung kepadamu. Ambil Live Eye?",
   "chat.dungeontrain.live_gift.offer_all": "%s menawarkan Live Eye kepada semua penonton. Terima lebih dulu untuk mendapatkannya.",
   "chat.dungeontrain.live.close_call.prompt": "%s hampir mencapai tantangan langka.",

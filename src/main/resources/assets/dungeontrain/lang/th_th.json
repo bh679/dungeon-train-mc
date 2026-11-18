@@ -808,6 +808,7 @@
   "chat.dungeontrain.live_gift.offered": "กำลังมอบกล้องวิดีโอถ่ายทอดของคุณให้ %s…",
   "chat.dungeontrain.live_gift.give_failed": "มอบกล้องวิดีโอถ่ายทอดของคุณให้ %s ไม่ได้ เขาอาจออกไปแล้ว",
   "chat.dungeontrain.live_gift.give_expired": "ของขวัญนั้นส่งไม่ได้แล้ว",
+  "chat.dungeontrain.live_gift.afk_offered": "คุณไม่อยู่มาสักพักแล้ว จึงกำลังมอบกล้องวิดีโอถ่ายทอดของคุณให้ผู้ชมทุกคน คนแรกที่ตอบรับจะได้ไป",
   "chat.dungeontrain.live_gift.offer": "%s เสนอให้คุณไลฟ์สตรีมต่อ รับกล้องวิดีโอถ่ายทอดไหม?",
   "chat.dungeontrain.live_gift.offer_all": "%s มอบกล้องวิดีโอถ่ายทอดให้ผู้ชมทุกคน ตอบรับก่อนเพื่อรับไป",
   "chat.dungeontrain.live.close_call.prompt": "%s ใกล้จะถึงความท้าทายหายากแล้ว",

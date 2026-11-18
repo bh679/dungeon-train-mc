@@ -842,6 +842,7 @@
   "chat.dungeontrain.live_gift.offered": "A oferecer a tua câmara de filmar de emissão a %s…",
   "chat.dungeontrain.live_gift.give_failed": "Não foi possível oferecer a tua câmara de filmar de emissão a %s. Talvez tenha saído.",
   "chat.dungeontrain.live_gift.give_expired": "Esse presente já não pode ser enviado.",
+  "chat.dungeontrain.live_gift.afk_offered": "Estiveste ausente durante algum tempo, por isso a tua câmara de filmar de emissão está a ser oferecida a todos os espetadores. Quem aceitar primeiro fica com ela.",
   "chat.dungeontrain.live_gift.offer": "%s oferece-te a emissão. Ficar com a câmara de filmar de emissão?",
   "chat.dungeontrain.live_gift.offer_all": "%s oferece a câmara de filmar de emissão a todos os espetadores. Aceita primeiro para ficares com ela.",
   "chat.dungeontrain.live.close_call.prompt": "%s está a aproximar-se de um desafio raro.",

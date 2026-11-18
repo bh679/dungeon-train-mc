@@ -842,6 +842,7 @@
   "chat.dungeontrain.live_gift.offered": "Proposition de ton caméscope de diffusion à %s…",
   "chat.dungeontrain.live_gift.give_failed": "Impossible de proposer ton caméscope de diffusion à %s. Il est peut-être parti.",
   "chat.dungeontrain.live_gift.give_expired": "Ce cadeau ne peut plus être envoyé.",
+  "chat.dungeontrain.live_gift.afk_offered": "Tu es absent depuis un moment, alors ton caméscope de diffusion est proposé à tous les spectateurs. Le premier qui accepte le prend.",
   "chat.dungeontrain.live_gift.offer": "%s te propose le direct. Prendre le caméscope de diffusion ?",
   "chat.dungeontrain.live_gift.offer_all": "%s propose le caméscope de diffusion à tous les spectateurs. Accepte le premier pour l'avoir.",
   "chat.dungeontrain.live.close_call.prompt": "%s approche d'un défi rare.",

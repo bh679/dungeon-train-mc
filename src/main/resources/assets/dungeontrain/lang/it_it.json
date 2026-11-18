@@ -842,6 +842,7 @@
   "chat.dungeontrain.live_gift.offered": "Offerta della tua videocamera da trasmissione a %s…",
   "chat.dungeontrain.live_gift.give_failed": "Impossibile offrire la tua videocamera da trasmissione a %s. Forse se n'è andato.",
   "chat.dungeontrain.live_gift.give_expired": "Quel regalo non può più essere inviato.",
+  "chat.dungeontrain.live_gift.afk_offered": "Sei via da un po', quindi la tua videocamera da trasmissione è offerta a tutti gli spettatori. Il primo che accetta la prende.",
   "chat.dungeontrain.live_gift.offer": "%s ti offre la diretta. Prendi la videocamera da trasmissione?",
   "chat.dungeontrain.live_gift.offer_all": "%s offre la videocamera da trasmissione a tutti gli spettatori. Accetta per primo per averla.",
   "chat.dungeontrain.live.close_call.prompt": "%s si sta avvicinando a una sfida rara.",

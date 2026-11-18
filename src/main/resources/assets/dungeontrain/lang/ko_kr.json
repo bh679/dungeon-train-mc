@@ -808,6 +808,7 @@
   "chat.dungeontrain.live_gift.offered": "%s 님에게 내 방송 캠코더를 넘기는 중…",
   "chat.dungeontrain.live_gift.give_failed": "%s 님에게 방송 캠코더를 넘기지 못했어요. 이미 나갔을 수도 있어요.",
   "chat.dungeontrain.live_gift.give_expired": "그 선물은 더 이상 보낼 수 없어요.",
+  "chat.dungeontrain.live_gift.afk_offered": "한동안 자리를 비워서 방송 캠코더를 모든 시청자에게 넘기는 중이에요. 먼저 받는 사람이 가져가요.",
   "chat.dungeontrain.live_gift.offer": "%s 님이 라이브 방송을 넘겨주려 해요. 방송 캠코더를 받을까요?",
   "chat.dungeontrain.live_gift.offer_all": "%s 님이 모든 시청자에게 방송 캠코더를 넘기려 해요. 먼저 받으면 가져갈 수 있어요.",
   "chat.dungeontrain.live.close_call.prompt": "%s 님이 희귀한 도전에 다가가고 있어요.",

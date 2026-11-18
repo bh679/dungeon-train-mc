@@ -808,6 +808,7 @@
   "chat.dungeontrain.live_gift.offered": "%sにあなたのライブアイを譲ろうとしています…",
   "chat.dungeontrain.live_gift.give_failed": "%sにライブアイを譲れませんでした。もういないのかもしれません。",
   "chat.dungeontrain.live_gift.give_expired": "そのプレゼントはもう送れません。",
+  "chat.dungeontrain.live_gift.afk_offered": "しばらく離れていたので、ライブアイを視聴者全員に譲ろうとしています。最初に受け取った人のものになります。",
   "chat.dungeontrain.live_gift.offer": "%sがライブ配信を譲ろうとしています。ライブアイを受け取りますか？",
   "chat.dungeontrain.live_gift.offer_all": "%sが視聴者全員にライブアイを譲ろうとしています。最初に受け取った人のものになります。",
   "chat.dungeontrain.live.close_call.prompt": "%sが珍しいチャレンジに近づいています。",

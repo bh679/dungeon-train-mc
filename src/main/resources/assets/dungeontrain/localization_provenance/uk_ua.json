@@ -858,6 +858,7 @@
       "chat.dungeontrain.live_gift.offered",
       "chat.dungeontrain.live_gift.give_failed",
       "chat.dungeontrain.live_gift.give_expired",
+      "chat.dungeontrain.live_gift.afk_offered",
       "chat.dungeontrain.live_gift.offer",
       "chat.dungeontrain.live_gift.offer_all",
       "chat.dungeontrain.live.close_call.prompt",

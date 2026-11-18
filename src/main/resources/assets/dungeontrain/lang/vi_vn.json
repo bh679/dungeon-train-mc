@@ -808,6 +808,7 @@
   "chat.dungeontrain.live_gift.offered": "Đang tặng máy quay phát sóng của bạn cho %s…",
   "chat.dungeontrain.live_gift.give_failed": "Không thể tặng máy quay phát sóng của bạn cho %s. Có thể họ đã rời đi.",
   "chat.dungeontrain.live_gift.give_expired": "Món quà đó không thể gửi nữa.",
+  "chat.dungeontrain.live_gift.afk_offered": "Bạn đã vắng mặt một lúc, nên máy quay phát sóng của bạn đang được tặng cho tất cả người xem. Ai nhận trước sẽ có nó.",
   "chat.dungeontrain.live_gift.offer": "%s muốn trao buổi phát trực tiếp cho bạn. Nhận máy quay phát sóng?",
   "chat.dungeontrain.live_gift.offer_all": "%s tặng máy quay phát sóng cho mọi người xem. Nhận trước để có nó.",
   "chat.dungeontrain.live.close_call.prompt": "%s đang tiến gần một thử thách hiếm.",
