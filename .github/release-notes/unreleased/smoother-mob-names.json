@@ -1,0 +1,16 @@
+{
+  "id": "smoother-mob-names",
+  "version": "0.1877.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs"
+  ],
+  "title": "Smoother mob names",
+  "summary": "Invented mob names no longer pile up vowels, so they're easier to read and say.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
