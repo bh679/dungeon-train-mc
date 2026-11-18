@@ -78,6 +78,15 @@ public final class DeathPortraitRenderer {
      */
     public void render(GuiGraphics g, PlayerMobAppearance appearance, int side,
                        int centerX, int feetY, float partialTick) {
+        render(g, appearance, side, centerX, feetY, partialTick, SIZE);
+    }
+
+    /**
+     * As {@link #render(GuiGraphics, PlayerMobAppearance, int, int, int, float)}, at {@code size}
+     * GUI pixels per block — the echo page draws its portrait larger than DEEDS does.
+     */
+    public void render(GuiGraphics g, PlayerMobAppearance appearance, int side,
+                       int centerX, int feetY, float partialTick, int size) {
         if (appearance == null) return;
         PlayerMobEntity mob = obtain(appearance);
         if (mob == null) return;
@@ -90,8 +99,8 @@ public final class DeathPortraitRenderer {
         else animateKilled(mob, t);
 
         // Feet pinned at feetY; the figure (~SIZE*bbHeight tall) rises above it.
-        int renderY = feetY - Math.round(SIZE * mob.getBbHeight() / 2.0f);
-        drawEntity(g, mob, centerX, renderY);
+        int renderY = feetY - Math.round(size * mob.getBbHeight() / 2.0f);
+        drawEntity(g, mob, centerX, renderY, size);
     }
 
     /** Lazily build / refresh the cached entity (skin + equipment). */
@@ -216,12 +225,12 @@ public final class DeathPortraitRenderer {
 
     // ---- Render: vanilla renderEntityInInventory transform, minus the scissor ----
 
-    private void drawEntity(GuiGraphics g, PlayerMobEntity mob, int x, int y) {
+    private void drawEntity(GuiGraphics g, PlayerMobEntity mob, int x, int y, int size) {
         float bb = mob.getBbHeight();
         PoseStack pose = g.pose();
         pose.pushPose();
         pose.translate(x, y, 50.0);
-        pose.scale(SIZE, SIZE, -SIZE);
+        pose.scale(size, size, -size);
         pose.translate(0.0, bb / 2.0, 0.0);
         pose.mulPose(new Quaternionf().rotateZ((float) Math.PI));
         Lighting.setupForEntityInInventory();

@@ -3949,6 +3949,15 @@
       ]
     }
   },
+  "gui.dungeontrain.death.echo.armour_tip": {
+    "1": {
+      "label": "the echo's armour points, as the armour bar shows them",
+      "examples": [
+        "14",
+        "7"
+      ]
+    }
+  },
   "echo.dungeontrain.mob_name": {
     "1": {
       "label": "the player this echo is a copy of",
