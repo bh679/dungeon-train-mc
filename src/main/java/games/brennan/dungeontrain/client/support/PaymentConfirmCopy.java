@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.links.LinkPolicy;
 
 /**
  * Which words {@link PaymentConfirmScreen} says for a given analytics target, or nothing at all
@@ -20,8 +21,10 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
  * @param bodyKey  lang key of the one-line explanation under it
  * @param amountKey lang key of the tier's price (e.g. "$30 AUD"), or null when the provider has no
  *                  fixed amount
+ * @param linkKey  the relay link key the URL was built from ({@link LinkPolicy}), whose host
+ *                 allowlist the screen re-checks before opening anything
  */
-public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountKey) {
+public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountKey, String linkKey) {
 
     static final String PREFIX = "gui.dungeontrain.support.confirm.";
 
@@ -40,9 +43,6 @@ public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountK
     static final String COPY_LINK = PREFIX + "copy_link";
     static final String COPIED = PREFIX + "copied";
 
-    /** The host the relay's checkout route lives on; anything else is a provider's own page. */
-    private static final String RELAY_HOST = "brennan.games";
-
     /**
      * The copy for {@code analyticsTarget}, or null when it is not a payment link (Discord,
      * affiliate, translate, an inline URL, or nothing at all) and the caller should keep vanilla's
@@ -60,34 +60,32 @@ public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountK
     public static PaymentConfirmCopy forTarget(String analyticsTarget, String url) {
         PaymentConfirmCopy copy = resolve(analyticsTarget);
         if (copy == null || !BODY_STRIPE.equals(copy.bodyKey()) || url == null || onRelay(url)) return copy;
-        return new PaymentConfirmCopy(copy.titleKey(), BODY_STRIPE_DIRECT, copy.amountKey());
+        return new PaymentConfirmCopy(copy.titleKey(), BODY_STRIPE_DIRECT, copy.amountKey(), copy.linkKey());
     }
 
-    /** Whether {@code url}'s host is the relay's (or a subdomain of it). */
+    /** Whether {@code url}'s host is one of ours (brennan.games, dungeon.training or a subdomain). */
     static boolean onRelay(String url) {
-        try {
-            String host = java.net.URI.create(url).getHost();
-            return host != null && (host.equals(RELAY_HOST) || host.endsWith("." + RELAY_HOST));
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+        return LinkPolicy.isFirstParty(LinkPolicy.hostOf(url));
     }
 
     private static PaymentConfirmCopy resolve(String analyticsTarget) {
         if (analyticsTarget == null) return null;
         for (SupportTier tier : SupportTier.values()) {
             if (tier.analyticsTarget().equals(analyticsTarget)) {
-                return new PaymentConfirmCopy(TITLE_STRIPE, BODY_STRIPE, tier.amountKey());
+                return new PaymentConfirmCopy(TITLE_STRIPE, BODY_STRIPE, tier.amountKey(),
+                        LinkPolicy.KEY_PAYMENT_CHECKOUT);
             }
         }
         // A gift to a community reward is one whole Stripe checkout, named by its amount like a tier.
         CommunityRewards.Reward reward = CommunityRewards.Reward.byTarget(analyticsTarget);
-        if (reward != null) return new PaymentConfirmCopy(TITLE_STRIPE, BODY_STRIPE, reward.amountKey());
+        if (reward != null) {
+            return new PaymentConfirmCopy(TITLE_STRIPE, BODY_STRIPE, reward.amountKey(), LinkPolicy.KEY_REWARDS_PAY);
+        }
         return switch (analyticsTarget) {
             // The China route is a Stripe checkout too, so it shares Stripe's explanation line.
-            case UiAnalytics.TARGET_DONATE_CN -> new PaymentConfirmCopy(TITLE_WECHAT, BODY_STRIPE, null);
-            case UiAnalytics.TARGET_PATREON -> new PaymentConfirmCopy(TITLE_PATREON, BODY_PATREON, null);
-            case UiAnalytics.TARGET_DONATE -> new PaymentConfirmCopy(TITLE_REVOLUT, BODY_REVOLUT, null);
+            case UiAnalytics.TARGET_DONATE_CN -> new PaymentConfirmCopy(TITLE_WECHAT, BODY_STRIPE, null, LinkPolicy.KEY_PAYMENT_CN);
+            case UiAnalytics.TARGET_PATREON -> new PaymentConfirmCopy(TITLE_PATREON, BODY_PATREON, null, LinkPolicy.KEY_PATREON);
+            case UiAnalytics.TARGET_DONATE -> new PaymentConfirmCopy(TITLE_REVOLUT, BODY_REVOLUT, null, LinkPolicy.KEY_PAYMENT);
             default -> null;
         };
     }
