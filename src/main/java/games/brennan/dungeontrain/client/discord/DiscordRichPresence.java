@@ -8,7 +8,8 @@ import java.util.Objects;
 
 /**
  * Optional Discord status: while the player's Discord status switch is on, their Discord profile shows
- * "Playing Dungeon Train" with one line of where they are ({@link PresenceSnapshot}). Off by default.
+ * "Playing Dungeon Train" with one line of where they are ({@link PresenceSnapshot}). On by default
+ * (Options → Account turns it off; never in Kid mode).
  *
  * <p>All Discord IO runs on one daemon thread, started the first time the switch is on, so a slow or
  * missing Discord can never stall a frame. The client thread only calls {@link #setEnabled} and

@@ -340,7 +340,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue EVENT_REMINDERS;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
-    /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. Off by default. */
+    /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. On by default. */
     public static final ModConfigSpec.BooleanValue DISCORD_RICH_PRESENCE;
     /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
     public static final ModConfigSpec.BooleanValue DEV_HUD;
@@ -1593,8 +1593,8 @@ public final class ClientDisplayConfig {
 
     /**
      * The Discord status switch (Options row, Account tab): whether this client shows its game on the
-     * player's Discord profile through the local Discord app. Off by default, pre-load included, so
-     * nothing reaches Discord until the player turns it on.
+     * player's Discord profile through the local Discord app. On by default, but off until the config has
+     * loaded, so nothing reaches Discord before the player's own setting is known.
      */
     public static boolean isDiscordRichPresence() {
         return isLoaded() && DISCORD_RICH_PRESENCE.get();
