@@ -136,7 +136,7 @@ public final class NapWake {
                     store.consume(owner, p.slot(), p.nap());
                     LOGGER.info("[DungeonTrain] Nap {} already loaded into '{}'; used up.", p.nap().napId(), here);
                 } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] Nap {} could not be marked used", p.nap().napId(), e);
+                    LOGGER.error("[DungeonTrain] Nap {} could not be marked used; its file is removed anyway", p.nap().napId(), e);
                 }
                 continue;
             }
@@ -275,7 +275,7 @@ public final class NapWake {
             NapStore.local().consume(plan.owner(), plan.slot(), plan.nap());
             LOGGER.info("[DungeonTrain] Nap {} loaded in and used up", plan.nap().napId());
         } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Nap {} could not be marked used", plan.nap().napId(), e);
+            LOGGER.error("[DungeonTrain] Nap {} could not be marked used; its file is removed anyway", plan.nap().napId(), e);
         }
     }
 
