@@ -2,8 +2,8 @@
   "locale": "ja_jp",
   "name": "人間のレビューなしのAI",
   "human_reviewed": false,
-  "total_keys": 5888,
-  "ai_authored": 5888,
-  "ai_unreviewed": 5888,
-  "counted_keys": 3934
+  "total_keys": 5897,
+  "ai_authored": 5897,
+  "ai_unreviewed": 5897,
+  "counted_keys": 3943
 }

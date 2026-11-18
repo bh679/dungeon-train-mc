@@ -938,6 +938,24 @@ public final class LiveFeedClient {
         return post(base, "/live/chat/send", chatSendBody(uuid, name, content, room));
     }
 
+    /**
+     * {@code POST /live/chat/report}: this Discord-linked player reports line {@code seq} of {@code room} (a Kick or
+     * Twitch line) as a bot. {@code key} is the report key from their link ({@code ReportKeyStore}); the relay checks it
+     * and deletes the line as an admin's delete does.
+     */
+    public static CompletableFuture<Result> chatReport(String base, String uuid, String key, @Nullable String room, long seq) {
+        return post(base, "/live/chat/report", chatReportBody(uuid, key, room, seq));
+    }
+
+    static JsonObject chatReportBody(String uuid, String key, @Nullable String room, long seq) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid);
+        body.addProperty("key", key);
+        if (room != null) body.addProperty("room", room);
+        body.addProperty("line", seq);
+        return body;
+    }
+
     static JsonObject chatSendBody(UUID uuid, String name, String content, @Nullable String room) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
