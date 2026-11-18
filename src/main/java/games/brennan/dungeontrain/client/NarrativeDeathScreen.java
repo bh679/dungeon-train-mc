@@ -544,12 +544,6 @@ public final class NarrativeDeathScreen extends Screen {
         if (nap()) return buildNapPages();
         List<Page> list = new ArrayList<>();
         list.add(Page.of(Kind.FALL));
-        // "The echo" — the echo this death left behind, straight after the fall, when PlayerMob
-        // captured one (the death packet carries it; it can land a tick after the screen opens).
-        lastHasEcho = hasEcho();
-        if (lastHasEcho) {
-            list.add(Page.of(Kind.ECHO));
-        }
         // "The broadcast" and "the crowd" — straight after the fall, on a life that went out on the
         // Live Eye at all (any stint, even one that ended long before the death).
         if (liveStats().broadcast()) {
@@ -558,6 +552,12 @@ public final class NarrativeDeathScreen extends Screen {
         }
         list.add(Page.of(Kind.DEEDS));
         list.add(Page.of(Kind.GEAR));
+        // "The echo" — the echo this death left behind, after the cargo it now carries, when
+        // PlayerMob captured one (the death packet carries it; it can land a tick after the screen opens).
+        lastHasEcho = hasEcho();
+        if (lastHasEcho) {
+            list.add(Page.of(Kind.ECHO));
+        }
         list.add(Page.of(Kind.LIVES));
         addSurveyPages(list);
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
@@ -1329,9 +1329,10 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         y += TRAIN_GAP;
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.echo.question").getString(), cx, w, y);
-        y += 6;
+        y += 3;
         if (s == null || s.echo() == null) return y;
-        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, settled(), partialTick);
+        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - CENTRE_FOOT_Y + contentShift,
+                settled(), partialTick);
     }
 
     /** Whether the death packet carries this death's echo (the echo page's subject). */
