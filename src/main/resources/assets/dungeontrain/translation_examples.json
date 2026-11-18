@@ -7050,6 +7050,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.entrance": {
+    "1": {
+      "label": "the Entrance setting, already translated",
+      "examples": [
+        "Two-way",
+        "One-way"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.room_walls": {
     "1": {
       "label": "the Room Walls setting, already translated",
@@ -11700,6 +11709,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_drift_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_entrance_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [
