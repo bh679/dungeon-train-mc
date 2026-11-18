@@ -24,8 +24,8 @@ import java.util.List;
  * then what the echo carries in its backpack).
  *
  * <p>The text column ends with reaction speed: one bar for the overall score, then a row of six
- * item icons, one per PlayerMob reaction skill (melee, ranged, defence, building, movement,
- * items), each showing its 0–10 score where a stack count sits; hover names the skill.</p>
+ * bare item icons, one per PlayerMob reaction skill (melee, ranged, defence, building, movement,
+ * items), each over a mini bar of its 0–10 score; hover names the skill and gives the number.</p>
  *
  * <p>Items, sprites and the portrait can't take the page fade's alpha, so they draw only once the
  * page has settled (the screen passes {@code settled}). Owns its portrait renderer: call
@@ -36,13 +36,18 @@ public final class EchoPage {
     private static final int SLOT = 18;
     private static final int GAP = 2;
     private static final int OFFHAND_GAP = 10;
-    private static final int SKILL_STEP = SLOT + 2;
+    /** A reaction skill: a bare 16 px item icon over a mini bar, with this much room between them. */
+    private static final int SKILL_ICON = 16;
+    private static final int SKILL_BAR_GAP = 2;
+    private static final int SKILL_BAR_H = 2;
+    private static final int SKILL_H = SKILL_ICON + SKILL_BAR_GAP + SKILL_BAR_H;
+    private static final int SKILL_STEP = SKILL_ICON + 10;
     private static final int EDGE = 6;
 
     /** The right column's widest row: the nine-slot hotbar. */
     private static final int HOTBAR_W = (1 + EchoSummary.MAX_CARRIED) * (SLOT + GAP) - GAP;
     /** Content height range: the smallest GUI (240 px tall) gets the minimum. */
-    private static final int MIN_CONTENT_H = 120;
+    private static final int MIN_CONTENT_H = 122;
     private static final int MAX_CONTENT_H = 200;
     private static final int BASE_STEP = 11;
     private static final int BAR_LABEL = 9;
@@ -88,8 +93,6 @@ public final class EchoPage {
         new ItemStack(Items.IRON_SWORD), new ItemStack(Items.BOW), new ItemStack(Items.SHIELD),
         new ItemStack(Items.SCAFFOLDING), new ItemStack(Items.MINECART), new ItemStack(Items.CHEST)
     };
-    private static final int SKILL_SCORE = 0xFFFFFFFF;
-    private static final int SKILL_ZERO = 0xFF6B6553;
 
     private static final int PANEL_BG = 0xCC1B1A17;
     private static final int PANEL_BORDER = 0xFF4A4538;
@@ -120,7 +123,7 @@ public final class EchoPage {
 
     private record SkillHit(int x, int y, EchoPersonality.Skill skill, int value) {
         boolean has(double mx, double my) {
-            return mx >= x && mx < x + SLOT && my >= y && my < y + SLOT;
+            return mx >= x && mx < x + SKILL_ICON && my >= y && my < y + SKILL_H;
         }
     }
 
@@ -278,18 +281,17 @@ public final class EchoPage {
      */
     private void skillRow(GuiGraphics g, Font font, EchoSummary echo, int x, int y, boolean settled) {
         EchoPersonality.Skill[] skills = EchoPersonality.Skill.values();
+        int barY = y + SKILL_ICON + SKILL_BAR_GAP;
         for (int i = 0; i < skills.length; i++) {
             int sx = x + i * SKILL_STEP;
             int value = echo.skill(skills[i]);
-            slotFrame(g, sx, y, false);
             if (settled) {
-                g.renderItem(SKILL_ICONS[i], sx + 1, y + 1);
-                String text = Integer.toString(value);
-                g.pose().pushPose();
-                g.pose().translate(0.0F, 0.0F, 200.0F);
-                g.drawString(font, text, sx + SLOT - 1 - font.width(text), y + SLOT - 9,
-                        value == 0 ? SKILL_ZERO : SKILL_SCORE, true);
-                g.pose().popPose();
+                g.renderItem(SKILL_ICONS[i], sx, y);
+            }
+            g.fill(sx, barY, sx + SKILL_ICON, barY + SKILL_BAR_H, chrome.fade(BAR_TRACK));
+            int fillW = Math.round(SKILL_ICON * EchoPersonality.clamp(value) / (float) EchoPersonality.MAX);
+            if (fillW > 0) {
+                g.fill(sx, barY, sx + fillW, barY + SKILL_BAR_H, chrome.fade(BAR_FILL));
             }
             skillHits.add(new SkillHit(sx, y, skills[i], value));
         }
