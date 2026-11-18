@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "dirttunnel",
+      "weight": 1
+    },
+    {
+      "id": "dirtentrance",
+      "weight": 1
+    },
+    {
+      "id": "unsure",
+      "weight": 1
+    },
+    {
+      "id": "open",
+      "weight": 1
+    }
+  ]
+}
