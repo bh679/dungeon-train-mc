@@ -3234,8 +3234,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Читати політику щодо ШІ",
   "gui.dungeontrain.nps_ai_note.button.close": "Закрити",
   "gui.dungeontrain.known_feature.kicker": "нотатка від автора",
-  "gui.dungeontrain.known_feature.save_quit.title": "Збереження скоро з'явиться",
-  "gui.dungeontrain.known_feature.save_quit.body": "Збереження та вихід посеред забігу скоро з'являться. Подивіться, де це на дорожній карті.",
   "gui.dungeontrain.known_feature.backpack.title": "Рюкзаки у вас уже є",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks трапляються у здобичі. З'їжте один, щоб отримати додатковий слот в інвентарі.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Є також більші рюкзаки.",

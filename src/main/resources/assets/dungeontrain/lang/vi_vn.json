@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Đọc Chính sách AI",
   "gui.dungeontrain.nps_ai_note.button.close": "Đóng",
   "gui.dungeontrain.known_feature.kicker": "lời nhắn từ người tạo game",
-  "gui.dungeontrain.known_feature.save_quit.title": "Tính năng lưu game sắp ra mắt",
-  "gui.dungeontrain.known_feature.save_quit.body": "Lưu và thoát giữa chừng một lượt chơi sắp có. Xem nó nằm ở đâu trên lộ trình.",
   "gui.dungeontrain.known_feature.backpack.title": "Bạn đã có ba lô rồi",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks xuất hiện trong chiến lợi phẩm. Ăn một cái để có thêm một ô trong túi đồ.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Cũng có những ba lô lớn hơn.",

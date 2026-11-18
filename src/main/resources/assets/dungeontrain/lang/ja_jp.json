@@ -2586,8 +2586,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "AIポリシーを読む",
   "gui.dungeontrain.nps_ai_note.button.close": "閉じる",
   "gui.dungeontrain.known_feature.kicker": "制作者からのひとこと",
-  "gui.dungeontrain.known_feature.save_quit.title": "セーブ機能は準備中です",
-  "gui.dungeontrain.known_feature.save_quit.body": "ラン中のセーブして終了は近日登場します。ロードマップでの位置を確認できます。",
   "gui.dungeontrain.known_feature.backpack.title": "バックパックはもうあります",
   "gui.dungeontrain.known_feature.backpack.body.1": "食べられるバックパックは戦利品の中に出てきます。食べると、インベントリ枠がひとつ増えます。",
   "gui.dungeontrain.known_feature.backpack.body.2": "もっと大きなバックパックもあります。",

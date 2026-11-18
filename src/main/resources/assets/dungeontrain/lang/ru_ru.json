@@ -2693,8 +2693,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Читать политику об ИИ",
   "gui.dungeontrain.nps_ai_note.button.close": "Закрыть",
   "gui.dungeontrain.known_feature.kicker": "заметка от автора",
-  "gui.dungeontrain.known_feature.save_quit.title": "Сохранение скоро появится",
-  "gui.dungeontrain.known_feature.save_quit.body": "Сохранение и выход посреди забега скоро появятся. Посмотрите, где это в дорожной карте.",
   "gui.dungeontrain.known_feature.backpack.title": "Рюкзаки у вас уже есть",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks попадаются в добыче. Съешьте один, чтобы получить дополнительную ячейку в инвентаре.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Есть и рюкзаки побольше.",

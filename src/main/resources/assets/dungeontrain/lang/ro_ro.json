@@ -3237,8 +3237,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Citește Politica AI",
   "gui.dungeontrain.nps_ai_note.button.close": "Închide",
   "gui.dungeontrain.known_feature.kicker": "o notă de la creator",
-  "gui.dungeontrain.known_feature.save_quit.title": "Salvarea e pe drum",
-  "gui.dungeontrain.known_feature.save_quit.body": "Salvarea și ieșirea în mijlocul unei partide vin în curând. Vezi unde se află pe foaia de parcurs.",
   "gui.dungeontrain.known_feature.backpack.title": "Ai deja rucsaci",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks apar în pradă. Mănâncă unul pentru un slot în plus în inventar.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Există și rucsaci mai mari.",

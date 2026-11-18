@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Ler a Política de IA",
   "gui.dungeontrain.nps_ai_note.button.close": "Fechar",
   "gui.dungeontrain.known_feature.kicker": "um recado do criador",
-  "gui.dungeontrain.known_feature.save_quit.title": "O salvamento está chegando",
-  "gui.dungeontrain.known_feature.save_quit.body": "Salvar e sair no meio de uma run chega em breve. Veja onde isso está no roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "Você já tem mochilas",
   "gui.dungeontrain.known_feature.backpack.body.1": "Mochilas comestíveis (Edible Backpacks) aparecem no saque. Coma uma para ganhar um espaço extra no inventário.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Também existem mochilas maiores.",

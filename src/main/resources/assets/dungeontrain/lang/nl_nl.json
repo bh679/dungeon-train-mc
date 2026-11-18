@@ -2637,8 +2637,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "AI-beleid lezen",
   "gui.dungeontrain.nps_ai_note.button.close": "Sluiten",
   "gui.dungeontrain.known_feature.kicker": "een bericht van de maker",
-  "gui.dungeontrain.known_feature.save_quit.title": "Opslaan komt eraan",
-  "gui.dungeontrain.known_feature.save_quit.body": "Opslaan en afsluiten midden in een run komt binnenkort. Kijk waar het staat op de roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "Je hebt al rugzakken",
   "gui.dungeontrain.known_feature.backpack.body.1": "Eetbare rugzakken (Edible Backpacks) duiken op in de buit. Eet er een op voor een extra inventarisvakje.",
   "gui.dungeontrain.known_feature.backpack.body.2": "Er bestaan ook grotere rugzakken.",

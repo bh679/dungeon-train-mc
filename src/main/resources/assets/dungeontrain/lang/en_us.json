@@ -3181,8 +3181,6 @@
   "gui.dungeontrain.nps_ai_note.button.policy": "Read the AI Policy",
   "gui.dungeontrain.nps_ai_note.button.close": "Close",
   "gui.dungeontrain.known_feature.kicker": "a note from the creator",
-  "gui.dungeontrain.known_feature.save_quit.title": "Saving is coming",
-  "gui.dungeontrain.known_feature.save_quit.body": "Saving and quitting mid-run is coming soon. See where it sits on the roadmap.",
   "gui.dungeontrain.known_feature.backpack.title": "You already have backpacks",
   "gui.dungeontrain.known_feature.backpack.body.1": "Edible Backpacks turn up in the loot. Eat one for an extra inventory slot.",
   "gui.dungeontrain.known_feature.backpack.body.2": "There are also bigger backpacks.",
