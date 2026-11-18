@@ -1,0 +1,16 @@
+{
+  "id": "mob-name-endings-nica-leighly",
+  "version": "0.1875.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs"
+  ],
+  "title": "Two more mob name endings",
+  "summary": "Invented mob names can now end in -nica or -leighly, like Hinica and Doleighly.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
