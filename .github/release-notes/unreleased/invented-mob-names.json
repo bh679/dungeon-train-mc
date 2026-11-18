@@ -1,0 +1,17 @@
+{
+  "id": "invented-mob-names",
+  "version": "0.1867.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "loot"
+  ],
+  "title": "Freshly invented mob names",
+  "summary": "Mobs can now get names nobody has heard before, like Dongik or Kinkleberry, and those names also turn up as makers on gear. Player-like mobs still mostly look like real players. Dyed armour now credits whoever dyed it.",
+  "highlights": [],
+  "date": "2026-11-18",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
