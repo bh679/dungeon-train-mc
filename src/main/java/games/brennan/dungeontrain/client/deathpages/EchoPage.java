@@ -18,9 +18,10 @@ import java.util.List;
 
 /**
  * "The echo": the death page about the echo this death left behind, laid out like the vanilla
- * inventory in the death screen's own colours. Armour column, a large animated portrait and a text
- * column (name and depth, personality, trait bars) on top; the in-game armour bar; then the offhand
- * slot and a hotbar-style row — main hand first, then what the echo carries in its backpack.
+ * inventory in the death screen's own colours. Left: the armour slots with the offhand under them,
+ * and a large animated portrait as tall as the card. Right: name and depth, personality and the
+ * trait bars, then along the bottom the in-game armour bar over a hotbar-style row (main hand first,
+ * then what the echo carries in its backpack).
  *
  * <p>The text column ends with reaction speed: one bar for the overall score, then a row of six
  * item icons, one per PlayerMob reaction skill (melee, ranged, defence, building, movement,
@@ -38,8 +39,8 @@ public final class EchoPage {
     private static final int SKILL_STEP = SLOT + 2;
     private static final int EDGE = 6;
 
-    /** The right column's width: offhand, a gap, then the nine-slot hotbar (its widest row). */
-    private static final int HOTBAR_W = SLOT + OFFHAND_GAP + (1 + EchoSummary.MAX_CARRIED) * (SLOT + GAP) - GAP;
+    /** The right column's widest row: the nine-slot hotbar. */
+    private static final int HOTBAR_W = (1 + EchoSummary.MAX_CARRIED) * (SLOT + GAP) - GAP;
     /** Content height range: the smallest GUI (240 px tall) gets the minimum. */
     private static final int MIN_CONTENT_H = 120;
     private static final int MAX_CONTENT_H = 200;
@@ -53,9 +54,9 @@ public final class EchoPage {
     private static final float PORTRAIT_FIT = 2.25F;
 
     /**
-     * The panel's measurements for the room it has. Left: the armour slots and a portrait as tall
-     * as the whole card. Right: the name line, then the armour bar and hotbar, then personality,
-     * the trait bars and the skill icons. The card fills the room down to the footer; extra height
+     * The panel's measurements for the room it has. Left: the armour slots with the offhand under
+     * them, and a portrait as tall as the whole card. Right: the name line, personality, the trait
+     * bars and the skill icons, with the armour bar and hotbar along the bottom. The card fills the room down to the footer; extra height
      * goes to the portrait and spreads the right column's rows.
      */
     private record Layout(int pad, int contentH, int portraitW, int portraitSize, int textW,
@@ -156,16 +157,17 @@ public final class EchoPage {
         g.fill(x0, y, x0 + panelW, y + panelH, chrome.fade(PANEL_BG));
         outline(g, x0, y, panelW, panelH, PANEL_BORDER);
 
-        // ---- Armour column, vertically centred on the portrait.
+        // ---- Armour column with the offhand under it, vertically centred on the portrait.
         int colX = x0 + EDGE;
-        int armourColH = 4 * SLOT + 3 * GAP;
-        int colY = top + (topH - armourColH) / 2;
+        int columnH = 5 * SLOT + 3 * GAP + OFFHAND_GAP;
+        int colY = top + (topH - columnH) / 2;
         ItemStack[] worn = {
             echo.appearance().head(), echo.appearance().chest(), echo.appearance().legs(), echo.appearance().feet()
         };
         for (int i = 0; i < worn.length; i++) {
             slot(g, colX, colY + i * (SLOT + GAP), worn[i], settled, false);
         }
+        slot(g, colX, colY + 4 * SLOT + 3 * GAP + OFFHAND_GAP, echo.appearance().offHand(), settled, false);
 
         // ---- Portrait window, the card's full height.
         int portX = colX + SLOT + EDGE;
@@ -185,24 +187,6 @@ public final class EchoPage {
         drawNameLine(g, font, echoName(), depth, tx, ty);
         ty += BASE_STEP + l.step();
 
-        // ---- Armour bar over the main hand, then offhand + hotbar (main hand, then the backpack).
-        int hotbarX = tx + SLOT + OFFHAND_GAP;
-        armourPoints = echo.armour();
-        armourX = hotbarX;
-        armourY = ty;
-        armourW = (ARMOR_ICONS - 1) * ARMOR_STEP + ARMOR_ICON;
-        if (settled) {
-            drawArmourBar(g, hotbarX, ty, armourPoints);
-        }
-        ty += ARMOR_ICON + 2;
-        slot(g, tx, ty, echo.appearance().offHand(), settled, false);
-        slot(g, hotbarX, ty, echo.appearance().mainHand(), settled, true);
-        for (int i = 0; i < EchoSummary.MAX_CARRIED; i++) {
-            ItemStack stack = i < echo.carried().size() ? echo.carried().get(i) : ItemStack.EMPTY;
-            slot(g, hotbarX + (i + 1) * (SLOT + GAP), ty, stack, settled, false);
-        }
-        ty += SLOT + 4 + l.step();
-
         // ---- Personality, the three trait bars, then the reaction skill icons.
         Component label = Component.translatable("gui.dungeontrain.death.echo.personality");
         g.drawString(font, label, tx, ty, chrome.fade(LABEL), false);
@@ -213,6 +197,22 @@ public final class EchoPage {
         ty = traitBar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), tx, ty, l);
         skillRow(g, font, echo, tx, ty + l.step(), settled);
+
+        // ---- Along the bottom: the armour bar over the hotbar (main hand, then the backpack).
+        int hotbarY = top + topH - SLOT;
+        int barY = hotbarY - ARMOR_ICON - 2;
+        armourPoints = echo.armour();
+        armourX = tx;
+        armourY = barY;
+        armourW = (ARMOR_ICONS - 1) * ARMOR_STEP + ARMOR_ICON;
+        if (settled) {
+            drawArmourBar(g, tx, barY, armourPoints);
+        }
+        slot(g, tx, hotbarY, echo.appearance().mainHand(), settled, true);
+        for (int i = 0; i < EchoSummary.MAX_CARRIED; i++) {
+            ItemStack stack = i < echo.carried().size() ? echo.carried().get(i) : ItemStack.EMPTY;
+            slot(g, tx + (i + 1) * (SLOT + GAP), hotbarY, stack, settled, false);
+        }
         return y + panelH;
     }
 
