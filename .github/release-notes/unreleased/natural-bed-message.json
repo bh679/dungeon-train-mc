@@ -1,0 +1,16 @@
+{
+  "id": "natural-bed-message",
+  "version": "0.1906.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "Clearer bed messages",
+  "summary": "Using a bed you placed, or one you moved, now tells you in chat that the train only lets you rest in a naturally spawning bed.",
+  "highlights": [],
+  "pr": 2756,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
