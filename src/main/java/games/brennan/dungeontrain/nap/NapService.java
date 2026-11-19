@@ -55,6 +55,11 @@ public final class NapService {
     /** Server-thread only. */
     private static final Map<UUID, Offer> OFFERS = new HashMap<>();
 
+    /** Ticks before the same player is told again why a bed offers no nap (3 s). */
+    static final long REFUSAL_REPEAT_TICKS = 60;
+    /** Game time each player was last told why a bed offers no nap. Server-thread only. */
+    private static final Map<UUID, Long> LAST_REFUSAL = new HashMap<>();
+
     private NapService() {}
 
     /** What a bed or anchor use came to, for the caller's feedback. */
@@ -91,7 +96,7 @@ public final class NapService {
         return Outcome.OFFERED;
     }
 
-    /** The action-bar line for a tampered bed or a world holding another player, or null for any other outcome. */
+    /** The line for a tampered bed or a world holding another player, or null for any other outcome. */
     public static Component tamperedMessage(Outcome outcome) {
         return switch (outcome) {
             case MOVED -> Component.translatable("chat.dungeontrain.nap.tampered.moved");
@@ -101,12 +106,35 @@ public final class NapService {
         };
     }
 
+    /**
+     * Tells {@code player} why a bed offers no nap. A made or moved bed's line goes to chat, in the
+     * train's grey italic like the other bed lines: it names what works (a naturally spawning bed) and
+     * runs too long for the action bar in most languages, which does not wrap. A repeat within
+     * {@link #REFUSAL_REPEAT_TICKS} is dropped so clicking a bed again does not fill the chat. Another
+     * player's saved things stay a short action-bar line. Any other outcome says nothing.
+     */
+    public static void tellRefusal(ServerPlayer player, Outcome outcome) {
+        Component line = tamperedMessage(outcome);
+        if (line == null) return;
+        if (outcome == Outcome.GUESTS) {
+            player.displayClientMessage(line, true);
+            return;
+        }
+        long now = player.serverLevel().getGameTime();
+        Long last = LAST_REFUSAL.get(player.getUUID());
+        if (last != null && now - last >= 0 && now - last < REFUSAL_REPEAT_TICKS) return;
+        LAST_REFUSAL.put(player.getUUID(), now);
+        player.sendSystemMessage(line.copy().withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+    }
+
     public static void forget(UUID player) {
         OFFERS.remove(player);
+        LAST_REFUSAL.remove(player);
     }
 
     static void clear() {
         OFFERS.clear();
+        LAST_REFUSAL.clear();
     }
 
     public static void onResponse(ServerPlayer player, boolean accepted) {
