@@ -220,8 +220,8 @@ public final class JavaRcePromptScreen extends Screen {
             case UPDATE -> {
                 // Blue is the step the page asks for first. Every update ends in a restart, so Quit is
                 // always here; for a launcher-managed Java quitting IS the step (the launcher updates
-                // its Java on the next start). Own Java leaves Use Arguments to the main card: never
-                // more than three controls on a page.
+                // its Java on the next start). The arguments fix lives on its own page, reached from
+                // the main card, never from here.
                 if (setup.manager() == JavaSetup.Manager.OWN) {
                     addRow(left, y, inner,
                         (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H,
@@ -230,9 +230,7 @@ public final class JavaRcePromptScreen extends Screen {
                         (x, w) -> Button.builder(QUIT, b -> quitGame()).bounds(x, y, w, BUTTON_H).build());
                 } else {
                     addRow(left, y, inner,
-                        (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H, QUIT, b -> quitGame(), 0.45F, 0.60F, 1.25F),
-                        (x, w) -> Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
-                            .bounds(x, y, w, BUTTON_H).build());
+                        (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H, QUIT, b -> quitGame(), 0.45F, 0.60F, 1.25F));
                 }
             }
             case ARGS -> addRow(left, y, inner,
