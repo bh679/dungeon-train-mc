@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
+import games.brennan.dungeontrain.client.ChatClickTokens;
 import games.brennan.dungeontrain.client.LogCollector;
 import games.brennan.dungeontrain.client.SystemSpecCollector;
 import games.brennan.dungeontrain.net.BugReportLogsPacket;
@@ -18,6 +19,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -43,8 +45,16 @@ import java.util.List;
 public final class LagReportPrompt {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    /** The buttons' action ({@link ChatClick}): {@code lag-log/send|decline/<prompt id>}. */
+    /**
+     * The buttons' action ({@link ChatClick}): {@code lag-log/send|decline/<prompt id>/<token>}. Any sender can print
+     * a {@code dungeontrain:} click and the prompt id is a small count, so the buttons carry a {@link ChatClickTokens}
+     * token minted when this client printed the line: a copy from anyone else sends nothing.
+     */
     static final String CLICK_ACTION = "lag-log";
+    /** The buttons' {@link ChatClickTokens} scope. */
+    static final String TOKEN_SCOPE = CLICK_ACTION;
+    /** How long the buttons work. */
+    static final long TOKEN_TTL_MS = 10L * 60L * 1000L;
     /** No prompt until the player has been in the world this long: a short visit is not asked about. */
     static final long JOIN_GRACE_MS = 10 * 60_000;
     /** At most one prompt this often. */
@@ -97,6 +107,7 @@ public final class LagReportPrompt {
         lastPromptAt = now;
         pendingId = nextId++;
         pendingFreezeMs = freezeMs;
+        ChatClickTokens.clear(TOKEN_SCOPE); // an earlier prompt's buttons stop working
         mc.gui.getChat().addMessage(promptLine(pendingId));
         String autoClick = DungeonTrain.isDevBuild() ? System.getProperty(AUTO_CLICK_PROPERTY) : null;
         if (autoClick != null) {
@@ -108,19 +119,41 @@ public final class LagReportPrompt {
     /** Wire the [Yes] / [No] buttons ({@code DungeonTrainClient.clientSetup}). */
     public static void registerClicks() {
         ChatClickActions.register(CLICK_ACTION, args -> {
-            if (args.size() < 2) return;
-            int id;
-            try {
-                id = Integer.parseInt(args.get(1));
-            } catch (NumberFormatException ex) {
+            int id = idOf(args);
+            if (id < 1) return;
+            boolean send = "send".equals(args.get(0));
+            if (!send && !"decline".equals(args.get(0))) return;
+            // The token before anything else: a refused click leaves the prompt as it was.
+            if (!clickAllowed(id, pendingId, args.get(2))) {
+                expired();
                 return;
             }
-            switch (args.get(0)) {
-                case "send" -> respond(id, true);
-                case "decline" -> respond(id, false);
-                default -> { }
-            }
+            respond(id, send);
         });
+    }
+
+    /** {@code [step, id, token]} → the id, or -1 for any other shape (an older click among them). Pure. */
+    static int idOf(List<String> args) {
+        if (args.size() != 3 || args.get(2).isEmpty()) return -1;
+        try {
+            int id = Integer.parseInt(args.get(1));
+            return id >= 1 ? id : -1;
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+    }
+
+    /**
+     * Whether a click on prompt {@code id}'s buttons may answer it: still the open prompt, and {@code token} is the
+     * one its line was printed with. Uses the token up. Changes nothing else.
+     */
+    static boolean clickAllowed(int id, int pending, @Nullable String token) {
+        return id >= 1 && id == pending && ChatClickTokens.consume(TOKEN_SCOPE, id, token);
+    }
+
+    private static void expired() {
+        Minecraft.getInstance().gui.getChat().addMessage(Component.translatable("chat.dungeontrain.lag_report.expired")
+            .withStyle(ChatFormatting.GRAY));
     }
 
     @SubscribeEvent
@@ -132,6 +165,7 @@ public final class LagReportPrompt {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         joinedAt = NEVER;
         pendingId = -1;
+        ChatClickTokens.clear(TOKEN_SCOPE);
     }
 
     private static void respond(int id, boolean send) {
@@ -168,13 +202,14 @@ public final class LagReportPrompt {
         });
     }
 
-    private static Component promptLine(int id) {
+    static Component promptLine(int id) {
+        String token = ChatClickTokens.mint(TOKEN_SCOPE, id, TOKEN_TTL_MS);
         MutableComponent line = Component.translatable("chat.dungeontrain.lag_report.prompt")
             .withStyle(ChatFormatting.YELLOW)
             .append(Component.literal(" "));
-        line.append(button("chat.dungeontrain.lag_report.send", ChatClick.event(CLICK_ACTION, "send", Integer.toString(id)), ChatFormatting.GREEN));
+        line.append(button("chat.dungeontrain.lag_report.send", ChatClick.event(CLICK_ACTION, "send", Integer.toString(id), token), ChatFormatting.GREEN));
         line.append(Component.literal(" "));
-        line.append(button("chat.dungeontrain.lag_report.decline", ChatClick.event(CLICK_ACTION, "decline", Integer.toString(id)), ChatFormatting.GRAY));
+        line.append(button("chat.dungeontrain.lag_report.decline", ChatClick.event(CLICK_ACTION, "decline", Integer.toString(id), token), ChatFormatting.GRAY));
         return line;
     }
 

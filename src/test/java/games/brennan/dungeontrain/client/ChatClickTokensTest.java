@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** One-time chat button tokens: once, only the right one, only while fresh, never in their first moment. */
@@ -109,5 +110,40 @@ final class ChatClickTokensTest {
 
         for (int i = 0; i < ChatClickTokens.MAX * 2; i++) ChatClickTokens.mint("s", i);
         assertEquals(ChatClickTokens.MAX, ChatClickTokens.size());
+    }
+
+    @Test
+    @DisplayName("a longer-lived token outlasts the default, then runs out at its own time")
+    void customTtl() {
+        long ttl = 10 * 60 * 1000;
+        String t = ChatClickTokens.mint("s", 1, ttl);
+        now.addAndGet(ChatClickTokens.TTL_MS + 1);
+        assertTrue(ChatClickTokens.consume("s", 1, t), "still good past the default two minutes");
+
+        String u = ChatClickTokens.mint("s", 2, ttl);
+        now.addAndGet(ttl + 1);
+        assertFalse(ChatClickTokens.consume("s", 2, u), "gone past its own ttl");
+    }
+
+    @Test
+    @DisplayName("a longer-lived token still refuses its first moment")
+    void customTtlKeepsMinAge() {
+        String t = ChatClickTokens.mint("s", 1, 10 * 60 * 1000);
+        now.addAndGet(ChatClickTokens.MIN_AGE_MS - 1);
+        assertFalse(ChatClickTokens.consume("s", 1, t));
+    }
+
+    @Test
+    @DisplayName("the default mint keeps the two-minute ttl")
+    void defaultTtlUnchanged() {
+        String t = ChatClickTokens.mint("s", 1);
+        now.addAndGet(ChatClickTokens.TTL_MS + 1);
+        assertFalse(ChatClickTokens.consume("s", 1, t));
+    }
+
+    @Test
+    @DisplayName("a ttl no longer than the refusal window is a mistake")
+    void ttlMustOutliveMinAge() {
+        assertThrows(IllegalArgumentException.class, () -> ChatClickTokens.mint("s", 1, ChatClickTokens.MIN_AGE_MS));
     }
 }
