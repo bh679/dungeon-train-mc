@@ -206,7 +206,7 @@ public final class NapBedEvents {
             case MONSTERS -> event.setProblem(Player.BedSleepingProblem.NOT_SAFE);
             case MOVED, MADE, GUESTS -> {
                 event.setProblem(Player.BedSleepingProblem.OTHER_PROBLEM);
-                player.displayClientMessage(NapService.tamperedMessage(outcome), true);
+                NapService.tellRefusal(player, outcome);
             }
             case NONE -> { }
         }
@@ -220,10 +220,7 @@ public final class NapBedEvents {
             return;
         }
         if (!player.isSleepingLongEnough() || !OFFERED_THIS_SLEEP.add(player.getUUID())) return;
-        player.getSleepingPos().ifPresent(bed -> {
-            Component tampered = NapService.tamperedMessage(NapService.offer(player, bed, true));
-            if (tampered != null) player.displayClientMessage(tampered, true);
-        });
+        player.getSleepingPos().ifPresent(bed -> NapService.tellRefusal(player, NapService.offer(player, bed, true)));
     }
 
     @SubscribeEvent
