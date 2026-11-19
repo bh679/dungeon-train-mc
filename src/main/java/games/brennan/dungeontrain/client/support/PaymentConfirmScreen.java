@@ -30,8 +30,9 @@ import java.util.List;
  * affiliate link and everything else keep the vanilla screen, because a plain URL is what those
  * players expect to see.</p>
  *
- * <p>The words come from the analytics target, not the URL, so before showing them the link is
- * re-checked against its key's host allowlist ({@link LinkPolicy}); a link that fails opens nothing.
+ * <p>The words come from the analytics target, not the URL, so before showing them the link's shape
+ * is re-checked ({@link LinkPolicy}); a link that fails opens nothing. (Where a relay payment link
+ * came from was already checked by its signature when it arrived, in {@code OfficialLinks}.)
  * The host line shows where Open really goes.</p>
  *
  * <p>Analytics are the same as before: the caller records the {@code click}; this screen records
@@ -97,7 +98,7 @@ public final class PaymentConfirmScreen extends Screen {
      * (and nothing opened) when it is not, so the caller falls through to vanilla's
      * {@link ConfirmLinkScreen}. The caller has already recorded the {@code click}.
      *
-     * <p>A payment link whose host is not on its key's allowlist is refused: true is returned so
+     * <p>A payment link that fails {@link LinkPolicy#allowed} is refused: true is returned so
      * the caller opens nothing either, and the player stays on the calling screen.</p>
      */
     public static boolean tryOpen(Screen parent, String surface, String target, String url) {

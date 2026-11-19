@@ -21,8 +21,8 @@ import games.brennan.dungeontrain.client.links.LinkPolicy;
  * @param bodyKey  lang key of the one-line explanation under it
  * @param amountKey lang key of the tier's price (e.g. "$30 AUD"), or null when the provider has no
  *                  fixed amount
- * @param linkKey  the relay link key the URL was built from ({@link LinkPolicy}), whose host
- *                 allowlist the screen re-checks before opening anything
+ * @param linkKey  the relay link key the URL was built from ({@link LinkPolicy}), whose
+ *                 shape the screen re-checks before opening anything
  */
 public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountKey, String linkKey) {
 
