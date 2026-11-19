@@ -17,8 +17,8 @@ final class SizeBar {
     static final int AMBER = 0xFFE8A33A;
     static final int RED = 0xFFE0524A;
     private static final int TRACK = 0xB0000000;
-    private static final int HEIGHT = 3;
-    private static final int INSET = 3;
+    private static final int HEIGHT = 1;
+    private static final int INSET = 2;
 
     private SizeBar() {}
 
