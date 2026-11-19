@@ -6004,7 +6004,7 @@
   "gui.dungeontrain.java_rce.copied": "Copiado!",
   "gui.dungeontrain.java_rce.info": "Mais informações",
   "gui.dungeontrain.java_rce.ok": "Continuar",
-  "gui.dungeontrain.java_rce.dont_show": "Não mostrar de novo para este Java",
+  "gui.dungeontrain.java_rce.dont_show": "Ocultar para este Java",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Neste mundo, \"Manter inventário\" está ligado.",
   "chat.dungeontrain.free_play.cause.profile_tampered": "Seus arquivos de progresso salvos foram alterados fora do jogo.",
   "chat.dungeontrain.free_play.cause.player": "%s entrou no Jogo Livre, então todos neste mundo agora estão no Jogo Livre.",

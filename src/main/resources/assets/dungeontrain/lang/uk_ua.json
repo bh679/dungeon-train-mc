@@ -4174,7 +4174,7 @@
   "gui.dungeontrain.java_rce.copied": "Скопійовано!",
   "gui.dungeontrain.java_rce.info": "Докладніше",
   "gui.dungeontrain.java_rce.ok": "Продовжити",
-  "gui.dungeontrain.java_rce.dont_show": "Більше не показувати для цієї Java",
+  "gui.dungeontrain.java_rce.dont_show": "Сховати для цієї Java",
   "gui.dungeontrain.options.snapshot_chat_log": "Рядок у чаті про фото",
   "gui.dungeontrain.options.snapshot_chat_log.hint": "Рядок у чаті за кожне автофото",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Виводити рядок у чат при кожному автознімку поїздки з тегом і причиною.",

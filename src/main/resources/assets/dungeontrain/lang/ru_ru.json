@@ -6073,7 +6073,7 @@
   "gui.dungeontrain.java_rce.copied": "Скопировано!",
   "gui.dungeontrain.java_rce.info": "Подробнее",
   "gui.dungeontrain.java_rce.ok": "Продолжить",
-  "gui.dungeontrain.java_rce.dont_show": "Больше не показывать для этой Java",
+  "gui.dungeontrain.java_rce.dont_show": "Скрыть для этой Java",
   "chat.dungeontrain.free_play.cause.keep_inventory": "В мире включено сохранение инвентаря.",
   "chat.dungeontrain.free_play.cause.profile_tampered": "Ваши сохранённые файлы прогресса были изменены вне игры.",
   "chat.dungeontrain.free_play.cause.player": "%s перешёл в свободную игру, поэтому теперь все в этом мире в свободной игре.",

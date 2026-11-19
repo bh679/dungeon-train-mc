@@ -36,15 +36,17 @@ public final class JavaRcePromptScreen extends Screen {
     private static final String KEY_OK = "gui.dungeontrain.java_rce.ok";
     private static final String KEY_DONT_SHOW = "gui.dungeontrain.java_rce.dont_show";
 
-    private static final int CARD_W = 320;
-    private static final int PAD = 14;
-    private static final int LINE_STEP = 12;
+    /** Wider than the sibling cards: this one carries more text, and must still fit a small window. */
+    private static final int CARD_MAX_W = 440;
+    private static final int CARD_MIN_W = 300;
+    private static final int PAD = 12;
+    private static final int LINE_STEP = 11;
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 8;
 
-    private static final int GAP_TITLE = 9;
-    private static final int GAP_SECTION = 8;
-    private static final int GAP_FOOTNOTE = 12;
+    private static final int GAP_TITLE = 8;
+    private static final int GAP_SECTION = 6;
+    private static final int GAP_FOOTNOTE = 10;
 
     private static final int BACKDROP_DIM = 0x99000000;
     private static final int CARD_BG = 0xF01A1A1E;
@@ -85,26 +87,25 @@ public final class JavaRcePromptScreen extends Screen {
 
     @Override
     protected void init() {
-        int innerWidth = CARD_W - 2 * PAD;
+        int cardW = Math.max(CARD_MIN_W, Math.min(CARD_MAX_W, width - 16));
+        int innerWidth = cardW - 2 * PAD;
         bodyLines = font.split(Component.translatable(KEY_BODY), innerWidth);
         // Launcher paths keep the launchers' own (English) menu labels; the instruction around them is translated.
         whereLines = font.split(Component.translatable(whereKey).append(" ").append(Component.translatable(KEY_PASTE)), innerWidth);
         updateLines = font.split(Component.translatable(KEY_UPDATE, fixedVersion), innerWidth);
         footnoteLines = font.split(Component.translatable(KEY_FOOTNOTE), innerWidth);
 
-        int argBoxH = font.lineHeight + 8;
-        int contentH = font.lineHeight + GAP_TITLE
-                + bodyLines.size() * LINE_STEP + GAP_SECTION
-                + argBoxH + GAP_SECTION
-                + whereLines.size() * LINE_STEP + GAP_SECTION
-                + updateLines.size() * LINE_STEP + GAP_SECTION
-                + footnoteLines.size() * LINE_STEP + GAP_FOOTNOTE
-                + 3 * BUTTON_H + 2 * BUTTON_GAP;
+        int contentH = contentHeight();
+        // A small window or a long language: drop the footnote before the buttons fall off-screen.
+        if (contentH + 2 * PAD > height - 8) {
+            footnoteLines = List.of();
+            contentH = contentHeight();
+        }
 
-        panelW = CARD_W;
+        panelW = cardW;
         panelH = PAD + contentH + PAD;
         panelX = (width - panelW) / 2;
-        panelY = Math.max(8, (height - panelH) / 2);
+        panelY = Math.max(4, (height - panelH) / 2);
         centerX = panelX + panelW / 2;
 
         int cursor = panelY + PAD;
@@ -113,7 +114,7 @@ public final class JavaRcePromptScreen extends Screen {
         bodyY = cursor;
         cursor += bodyLines.size() * LINE_STEP + GAP_SECTION;
         argY = cursor;
-        cursor += argBoxH + GAP_SECTION;
+        cursor += font.lineHeight + 8 + GAP_SECTION;
         whereY = cursor;
         cursor += whereLines.size() * LINE_STEP + GAP_SECTION;
         updateY = cursor;
@@ -121,22 +122,35 @@ public final class JavaRcePromptScreen extends Screen {
         footnoteY = cursor;
         cursor += footnoteLines.size() * LINE_STEP + GAP_FOOTNOTE;
 
+        // Row 1: the fix and where to read more. Row 2: the two ways out.
         int innerLeft = panelX + PAD;
-        copyButton = addRenderableWidget(Button.builder(Component.translatable(KEY_COPY), b -> copyArgument())
-                .bounds(innerLeft, cursor, innerWidth, BUTTON_H)
-                .build());
-        cursor += BUTTON_H + BUTTON_GAP;
         int buttonW = (innerWidth - BUTTON_GAP) / 2;
-        addRenderableWidget(Button.builder(Component.translatable(KEY_INFO), b -> openInfo())
+        int rightX = innerLeft + buttonW + BUTTON_GAP;
+        int rightW = innerWidth - buttonW - BUTTON_GAP;
+        copyButton = addRenderableWidget(Button.builder(Component.translatable(KEY_COPY), b -> copyArgument())
                 .bounds(innerLeft, cursor, buttonW, BUTTON_H)
                 .build());
-        addRenderableWidget(Button.builder(Component.translatable(KEY_OK), b -> dismiss(false))
-                .bounds(innerLeft + buttonW + BUTTON_GAP, cursor, innerWidth - buttonW - BUTTON_GAP, BUTTON_H)
+        addRenderableWidget(Button.builder(Component.translatable(KEY_INFO), b -> openInfo())
+                .bounds(rightX, cursor, rightW, BUTTON_H)
                 .build());
         cursor += BUTTON_H + BUTTON_GAP;
-        addRenderableWidget(Button.builder(Component.translatable(KEY_DONT_SHOW), b -> dismiss(true))
-                .bounds(innerLeft, cursor, innerWidth, BUTTON_H)
+        addRenderableWidget(Button.builder(Component.translatable(KEY_OK), b -> dismiss(false))
+                .bounds(innerLeft, cursor, buttonW, BUTTON_H)
                 .build());
+        addRenderableWidget(Button.builder(Component.translatable(KEY_DONT_SHOW), b -> dismiss(true))
+                .bounds(rightX, cursor, rightW, BUTTON_H)
+                .build());
+    }
+
+    private int contentHeight() {
+        int argBoxH = font.lineHeight + 8;
+        return font.lineHeight + GAP_TITLE
+                + bodyLines.size() * LINE_STEP + GAP_SECTION
+                + argBoxH + GAP_SECTION
+                + whereLines.size() * LINE_STEP + GAP_SECTION
+                + updateLines.size() * LINE_STEP + GAP_SECTION
+                + footnoteLines.size() * LINE_STEP + GAP_FOOTNOTE
+                + 2 * BUTTON_H + BUTTON_GAP;
     }
 
     private void copyArgument() {

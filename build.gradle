@@ -240,6 +240,11 @@ neoForge {
             if (project.hasProperty('quickPlayBlock')) {
                 systemProperty 'dungeontrain.quickPlayBlock', 'force'
             }
+            // Java security warning card on any machine, ignoring "don't show again":
+            // ./gradlew runClient -PjavaRceWarning (client/JavaRceNotice).
+            if (project.hasProperty('javaRceWarning')) {
+                systemProperty 'dungeontrain.javaRceWarning', 'force'
+            }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
             }
@@ -442,6 +447,11 @@ neoForge {
             // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
             if (project.hasProperty('quickPlayBlock')) {
                 systemProperty 'dungeontrain.quickPlayBlock', 'force'
+            }
+            // Java security warning card on any machine, ignoring "don't show again":
+            // ./gradlew runClient -PjavaRceWarning (client/JavaRceNotice).
+            if (project.hasProperty('javaRceWarning')) {
+                systemProperty 'dungeontrain.javaRceWarning', 'force'
             }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
