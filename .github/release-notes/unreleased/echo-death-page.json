@@ -1,0 +1,22 @@
+{
+  "id": "echo-death-page",
+  "version": "0.1901.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "ui"
+  ],
+  "title": "Meet your echo",
+  "summary": "A new page on the death screen shows the echo you left behind: how it looks, the personality your play gave it, how quickly it reacts, and the gear it carries.",
+  "highlights": [
+    "Your echo's personality and traits, shaped by how you played",
+    "A skill chart of how quick you were at melee, ranged, blocking, placing, movement and quickswap",
+    "Look through the gear your echo carries, item by item"
+  ],
+  "pr": 2751,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
