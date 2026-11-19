@@ -70,7 +70,7 @@ class OfficialLinksTest {
 
     @Test
     void theGeneralCheckoutKeyWinsOverTheChinaOne() {
-        OfficialLinks.accept(Map.of(
+        OfficialLinks.accept(Map.of(), Map.of(
                 "payment_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn",
                 "payment_cn_checkout", "https://brennan.games/api/dp-relay/othercap/pay/cn"));
         assertEquals("https://brennan.games/api/dp-relay/cap/pay/cn", OfficialLinks.paymentCheckout());
@@ -78,7 +78,7 @@ class OfficialLinksTest {
 
     @Test
     void aRelayPredatingTheGeneralKeyStillLightsUpThePricePoints() {
-        OfficialLinks.accept(Map.of("payment_cn_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn"));
+        OfficialLinks.accept(Map.of(), Map.of("payment_cn_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn"));
         assertEquals("https://brennan.games/api/dp-relay/cap/pay/cn", OfficialLinks.paymentCheckout());
     }
 
@@ -94,10 +94,10 @@ class OfficialLinksTest {
     void invalidRelayValueKeepsFallbackForThatKey() {
         Map<String, String> raw = new HashMap<>();
         raw.put("discord", "javascript:alert(1)");
-        raw.put("patreon", "https://www.patreon.com/other");
+        raw.put("affiliate", "https://example.com/other");
         OfficialLinks.accept(raw);
         assertEquals(OfficialLinks.FALLBACK_DISCORD, OfficialLinks.discord());
-        assertEquals("https://www.patreon.com/other", OfficialLinks.patreon());
+        assertEquals("https://example.com/other", OfficialLinks.affiliate());
     }
 
     // --- payment_cn: relay-only, no baked fallback ---------------------------------------------
@@ -110,7 +110,7 @@ class OfficialLinksTest {
 
     @Test
     void paymentCnServedFromRelay() {
-        OfficialLinks.accept(Map.of("payment_cn", "https://buy.stripe.com/test_abc123"));
+        OfficialLinks.accept(Map.of(), Map.of("payment_cn", "https://buy.stripe.com/test_abc123"));
         assertEquals("https://buy.stripe.com/test_abc123", OfficialLinks.paymentCn());
     }
 
@@ -130,44 +130,56 @@ class OfficialLinksTest {
         assertEquals("https://example.com/aff", OfficialLinks.affiliate());
     }
 
-    // --- payment host allowlist ----------------------------------------------------------------
+    // --- payment keys: signed links only ------------------------------------------------------
 
     @Test
-    void theLinksTheRelayServesTodayAllPass() {
-        Map<String, String> live = Map.of(
-                "patreon", "https://www.patreon.com/brennanhatton",
-                "payment", "https://revolut.me/brennacg7?currency=AUD&amount=2500&note=Dungeon%20Train%20",
-                "payment_cn", "https://buy.stripe.com/00w5kDgTL9M31TDc6d8N202",
-                "payment_cn_checkout", "https://brennan.games/api/dp-relay/55800db4/pay/cn",
-                "payment_checkout", "https://brennan.games/api/dp-relay/55800db4/pay/cn",
-                "rewards_pay", "https://brennan.games/api/dp-relay/adc3dc43/rewards/pay",
-                "discord", "https://discord.gg/eH9by3bWjw",
-                "affiliate", "https://billing.kinetichosting.com/aff.php?aff=1461");
-        assertEquals(live, OfficialLinks.sanitize(live));
-    }
-
-    @Test
-    void anOffListPaymentHostIsDroppedAndTheKeyDegrades() {
+    void anUnsignedPaymentLinkIsIgnoredAndTheKeyDegrades() {
+        // The relay's plain `links` map is what old jars read; for a payment key it is never trusted.
         OfficialLinks.accept(Map.of(
-                "patreon", "https://evil.example/patreon",
-                "payment", "https://www.patreon.com/brennanhatton",
+                "patreon", "https://www.patreon.com/brennanhatton",
+                "payment", "https://revolut.me/someone-else",
                 "payment_checkout", "https://evil.example/pay",
-                "rewards_pay", "http://brennan.games/rewards/pay",
-                "payment_cn", "https://brennan.games.evil.example/x"));
+                "rewards_pay", "https://brennan.games/api/dp-relay/cap/rewards/pay",
+                "payment_cn", "https://buy.stripe.com/x"));
         assertEquals(OfficialLinks.FALLBACK_PATREON, OfficialLinks.patreon());
-        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment(), "a Patreon host is not Revolut's");
+        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment());
         assertNull(OfficialLinks.paymentCheckout(), "price points hide, as offline");
         assertNull(OfficialLinks.rewardsPay(), "Give reads Soon, as offline");
         assertNull(OfficialLinks.paymentCn());
     }
 
     @Test
-    void aFirstPartyRedirectServesAnyPaymentKey() {
-        // The relay's /go/<key> redirect is how a new provider reaches already-shipped jars.
-        String go = "https://brennan.games/api/dp-relay/cap/go/payment?currency=AUD&note=Dungeon%20Train%20";
-        OfficialLinks.accept(Map.of("payment", go, "patreon", "https://dungeon.training/go/patreon"));
-        assertEquals(go, OfficialLinks.payment());
-        assertEquals("https://dungeon.training/go/patreon", OfficialLinks.patreon());
+    void aSignedPaymentLinkOnAnyHostIsUsed() {
+        // Signed, so a new provider needs no release.
+        OfficialLinks.accept(
+                Map.of("payment", "https://revolut.me/ignored"),
+                Map.of("payment", "https://pay.example.com/brennan?note=Dungeon%20Train%20"));
+        assertEquals("https://pay.example.com/brennan?note=Dungeon%20Train%20", OfficialLinks.payment());
+    }
+
+    @Test
+    void aSignedLinkThatIsNotHttpsIsStillDropped() {
+        OfficialLinks.accept(Map.of(), Map.of("payment", "http://pay.example.com/x"));
+        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment());
+    }
+
+    @Test
+    void signedEntriesNeverSetNonPaymentKeys() {
+        OfficialLinks.accept(Map.of(), Map.of("discord", "https://discord.gg/sneaky"));
+        assertEquals(OfficialLinks.FALLBACK_DISCORD, OfficialLinks.discord());
+    }
+
+    @Test
+    void aLocalTestRelayMayServeLoopbackPaymentLinksUnsigned() {
+        String local = "http://127.0.0.1:8787/cap/pay/cn";
+        try {
+            LinkPolicy.setLocalRelayForTest(true);
+            OfficialLinks.accept(Map.of("payment_checkout", local, "payment_cn", "https://buy.stripe.com/x"));
+            assertEquals(local, OfficialLinks.paymentCheckout());
+            assertNull(OfficialLinks.paymentCn(), "only loopback is taken unsigned");
+        } finally {
+            LinkPolicy.setLocalRelayForTest(null);
+        }
     }
 
     // --- sanitize ----------------------------------------------------------------------------

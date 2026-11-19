@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** {@link LinkPolicy}: https only everywhere, plus a host allowlist on the payment keys. */
+/** {@link LinkPolicy}: the shape check every outbound link must pass (payment provenance is signed). */
 class LinkPolicyTest {
 
     @BeforeEach
@@ -39,47 +39,22 @@ class LinkPolicyTest {
     }
 
     @Test
-    void eachProviderOnlyOnItsOwnKeys() {
-        assertTrue(LinkPolicy.allowed("patreon", "https://www.patreon.com/x"));
-        assertTrue(LinkPolicy.allowed("patreon", "https://patreon.com/x"));
-        assertTrue(LinkPolicy.allowed("payment", "https://revolut.me/x"));
-        for (String k : new String[]{"payment_cn", "payment_cn_checkout", "payment_checkout", "rewards_pay"}) {
-            assertTrue(LinkPolicy.allowed(k, "https://buy.stripe.com/x"), k);
-            assertTrue(LinkPolicy.allowed(k, "https://checkout.stripe.com/c/pay/cs_1"), k);
-            assertFalse(LinkPolicy.allowed(k, "https://revolut.me/x"), k);
-        }
-        assertFalse(LinkPolicy.allowed("payment", "https://www.patreon.com/x"));
-        assertFalse(LinkPolicy.allowed("patreon", "https://buy.stripe.com/x"));
-    }
-
-    @Test
-    void firstPartyHostsAndSubdomainsServeEveryPaymentKey() {
-        for (String k : LinkPolicy.PAYMENT_HOSTS.keySet()) {
-            assertTrue(LinkPolicy.allowed(k, "https://brennan.games/api/dp-relay/c/go/" + k), k);
-            assertTrue(LinkPolicy.allowed(k, "https://x.brennan.games/pay"), k);
-            assertTrue(LinkPolicy.allowed(k, "https://dungeon.training/pay"), k);
+    void theShapeCheckIsTheSameForEveryKey() {
+        // Where a payment link came from is its signature's job (PaymentLinkSignature); this only
+        // judges shape, so any well-formed https host passes for every key.
+        for (String k : LinkPolicy.PAYMENT_KEYS) {
+            assertTrue(LinkPolicy.allowed(k, "https://pay.example.com/new-provider"), k);
             assertTrue(LinkPolicy.allowed(k, "https://brennan.games:443/pay"), k);
         }
     }
 
     @Test
-    void hostCaseDoesNotMatter() {
-        assertTrue(LinkPolicy.allowed("patreon", "HTTPS://WWW.PATREON.COM/x"));
-    }
-
-    @Test
-    void lookalikesAndTricksAreRejectedOnPaymentKeys() {
+    void malformedAndTrickLinksAreRejectedForEveryKey() {
         String[] bad = {
                 "http://brennan.games/pay",
-                "https://evil.com/pay",
-                "https://brennan.games.evil.com/pay",
                 "https://brennan.games@evil.com/pay",
                 "https://user:pw@brennan.games/pay",
-                "https://evil.com/brennan.games",
-                "https://evil.com/?h=brennan.games",
                 "https://brennan.games:8443/pay",
-                "https://revolut.me.evil.com/x",
-                "https://notbrennan.games/x",
                 "https://brennan.games\\@evil.com/",
                 "https://bréñnan.games/x",
                 "javascript:alert(1)",
@@ -88,9 +63,25 @@ class LinkPolicyTest {
                 "",
                 null,
         };
-        for (String k : LinkPolicy.PAYMENT_HOSTS.keySet()) {
+        for (String k : new String[]{"payment", "patreon", "rewards_pay", "discord", null}) {
             for (String url : bad) assertFalse(LinkPolicy.allowed(k, url), k + " " + url);
         }
+    }
+
+    @Test
+    void paymentKeysAreExactlyTheMoneyButtons() {
+        assertEquals(java.util.Set.of("patreon", "payment", "payment_cn", "payment_cn_checkout",
+                "payment_checkout", "rewards_pay"), LinkPolicy.PAYMENT_KEYS);
+        assertFalse(LinkPolicy.isPaymentKey("discord"));
+        assertFalse(LinkPolicy.isPaymentKey(null));
+    }
+
+    @Test
+    void firstPartyIsOurDomainsAndTheirSubdomains() {
+        assertTrue(LinkPolicy.isFirstParty("brennan.games"));
+        assertTrue(LinkPolicy.isFirstParty("x.dungeon.training"));
+        assertFalse(LinkPolicy.isFirstParty("brennan.games.evil.com"));
+        assertFalse(LinkPolicy.isFirstParty("notbrennan.games"));
     }
 
     @Test
@@ -111,6 +102,10 @@ class LinkPolicyTest {
         assertTrue(LinkPolicy.allowed("rewards_pay", "http://localhost:8787/rewards/pay"));
         assertFalse(LinkPolicy.allowed("payment_checkout", "http://evil.com/pay"), "not loopback");
         assertFalse(LinkPolicy.allowed("discord", "http://evil.com/"), "http stays loopback-only");
+        assertTrue(LinkPolicy.isLocalRelayLoopback(local));
+        assertFalse(LinkPolicy.isLocalRelayLoopback("https://buy.stripe.com/x"));
+        LinkPolicy.setLocalRelayForTest(false);
+        assertFalse(LinkPolicy.isLocalRelayLoopback(local));
     }
 
     @Test
