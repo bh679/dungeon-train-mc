@@ -125,6 +125,10 @@ public final class NapService {
             refuse(player, "another player is saved in this world");
             return;
         }
+        if (NapGuests.othersConnected(player.getServer())) {
+            refuse(player, "another player is connecting");
+            return;
+        }
         NapSnapshot nap = capture(player, levelId, offer.bedPos());
         try {
             NapStore.local().save(player.getUUID(), NapSlot.key(nap.cheated(), player.serverLevel().getDifficulty()), nap);

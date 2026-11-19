@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -355,12 +356,29 @@ public final class NapWake {
         if (server == null || server.isDedicatedServer() || profile == null || profile.getId() == null) return false;
         GameProfile owner = server.getSingleplayerProfile();
         if (owner == null || !profile.getId().equals(owner.getId())) return false;
+        return isNappedWorld(server);
+    }
+
+    /**
+     * True when this integrated server's owner has a pending nap taken in this world. From the moment
+     * a nap is saved until the host leaves the farewell pages the server still runs, so a LAN guest
+     * could join a world that is about to be deleted; {@code mixin/PlayerListNapWorldRefuseMixin}
+     * refuses them on this.
+     */
+    public static boolean isNappedWorld(MinecraftServer server) {
+        if (server == null || server.isDedicatedServer()) return false;
+        GameProfile owner = server.getSingleplayerProfile();
+        if (owner == null || owner.getId() == null) return false;
         String here = NapService.levelIdOf(server);
         if (here == null) return false;
-        for (NapStore.Pending p : NapStore.local().pending(owner.getId())) {
-            if (here.equals(p.nap().levelId())) return true;
-        }
-        return false;
+        List<String> napped = NapStore.local().pending(owner.getId()).stream()
+            .map(p -> p.nap().levelId()).toList();
+        return napNames(here, napped);
+    }
+
+    /** True when {@code here} is one of the worlds the pending naps were taken in. */
+    static boolean napNames(String here, Collection<String> pendingLevelIds) {
+        return here != null && pendingLevelIds.contains(here);
     }
 
     /** A run world nobody has played yet: DT generated its name, it has a train, and no saved player. */
