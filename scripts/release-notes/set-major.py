@@ -22,6 +22,7 @@ Usage:
     --mention AshSeven instagram @ashyseven7 --mention AshSeven tiktok @ashseventh
   python3 scripts/release-notes/set-major.py --id release-approved-on-modrinth --milestone
   python3 scripts/release-notes/set-major.py --id release-advancement-tabs --notable
+  python3 scripts/release-notes/set-major.py --id echo-death-page --feed fit
 
 Path honours the CHANGELOG_FILE env override.
 """
@@ -50,6 +51,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="https:// URL of a silent .mp4 of an animated image (scripts/release-notes/gif-to-loop.sh): "
                         "the website plays it in place of the GIF.")
     p.add_argument("--clear-loop", action="store_true", help="Remove the loop.")
+    p.add_argument("--feed", choices=changelog_io.FEED_FITS, default=None,
+                   help="How the picture sits in the Instagram feed card: crop (fill the 4:5 card, the default) or fit "
+                        "(the whole picture over a blurred copy of itself, as the story shows it).")
     p.add_argument("--mention", nargs=3, action="append", default=None, metavar=("TEXT", "PLATFORM", "HANDLE"),
                    help="A description link whose text is TEXT shows as HANDLE (@name) in that PLATFORM's caption "
                         "(instagram or tiktok, which can't hold links). Repeat for each.")
@@ -93,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
                                     video_cover=args.video_cover, videos=videos or None,
                                     mentions=changelog_io.mentions_from_args(args.mention),
                                     clear_mentions=args.clear_mentions,
-                                    loop=args.loop, clear_loop=args.clear_loop)
+                                    loop=args.loop, clear_loop=args.clear_loop, feed=args.feed)
             if e["id"] == args.id else e
             for e in entries
         ]

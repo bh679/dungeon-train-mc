@@ -37341,7 +37341,8 @@
             "echo"
           ]
         }
-      }
+      },
+      "feed": "fit"
     },
     {
       "id": "editor-oversized-builds",

@@ -987,6 +987,33 @@ def test_set_major_attaches_and_clears_loop() -> None:
     assert r.returncode == 0 and "loop" not in e and e["image"] == "https://x.test/p.gif", (r.stderr, e)
 
 
+def test_set_major_feed_fit_and_back_to_crop() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png", "--feed", "fit")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["feed"] == "fit" and e["image"] == "https://x.test/p.png", e
+    r = run(SET_MAJOR, ws, "--id", "drop", "--feed", "stretch")
+    assert r.returncode == 2 and "feed" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--notable")
+    assert r.returncode == 0 and read_changelog(ws)["entries"][0]["feed"] == "fit", "other flags keep it"
+    r = run(SET_MAJOR, ws, "--id", "drop", "--feed", "crop")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "feed" not in e, (r.stderr, e)
+    try:
+        changelog_io.validate_major_fields(None, None, feed="stretch")
+        raise AssertionError("a bad feed passed")
+    except ValueError as err:
+        assert "feed" in str(err)
+
+
+def test_feed_never_rendered_into_notes() -> None:
+    entry = {"id": "x", "title": "T", "type": "feature", "major": True, "image": "https://x.test/p.png", "feed": "fit"}
+    assert "fit" not in changelog_io._render_major(entry)
+
+
 def test_loop_never_rendered_into_notes() -> None:
     entry = {"id": "x", "title": "T", "type": "feature", "major": True, "image": "https://x.test/p.gif",
              "loop": "https://x.test/p.loop.mp4"}
@@ -1368,6 +1395,8 @@ def main() -> int:
         test_append_major_with_video,
         test_set_major_attaches_and_clears_video,
         test_set_major_attaches_and_clears_loop,
+        test_set_major_feed_fit_and_back_to_crop,
+        test_feed_never_rendered_into_notes,
         test_loop_never_rendered_into_notes,
         test_set_major_milestone_sets_keeps_and_drops,
         test_set_major_notable_sets_keeps_and_drops,

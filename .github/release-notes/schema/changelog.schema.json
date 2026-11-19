@@ -100,6 +100,10 @@
           "pattern": "^https://\\S+\\.[mM][pP]4$",
           "description": "Major release only: a silent .mp4 of the animated image (gif-to-loop.sh) the website plays in place of the GIF."
         },
+        "feed": {
+          "enum": ["fit", "crop"],
+          "description": "Major release only: how the picture sits in the Instagram feed card. fit shows it whole over a blurred copy; crop (the default, same as absent) fills the card."
+        },
         "bilibili": {
           "type": "object",
           "additionalProperties": false,
