@@ -2,160 +2,223 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.JavaRceCheck;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Checkbox;
+import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Java security warning card (see {@link JavaRceNotice} for who sees it). Same flat card as
- * {@link LowMemoryPromptScreen}, so every title-screen notice reads as one family.
- *
- * <p>Leads with the fix that works on every Java today, the JVM argument, shown verbatim with a
- * Copy button and the one line of directions for the player's own launcher. Updating Java comes
- * second, because the launchers' bundled Java may not have a fixed build yet.</p>
+ * The Java security warning (see {@link JavaRceNotice} for who sees it). Same flat card as
+ * {@link LowMemoryPromptScreen}, in four pages:
+ * <ul>
+ *   <li>{@link Page#MAIN}: what's wrong in a sentence, then the two fixes as buttons and a
+ *       "Continue anyway" text link;</li>
+ *   <li>{@link Page#UPDATE}: how to update Java;</li>
+ *   <li>{@link Page#ARGS}: the JVM argument, a Copy button and the player's own launcher's path;</li>
+ *   <li>{@link Page#CONFIRM}: a second warning before playing unfixed, with "Don't show me again"
+ *       (remembered per Java runtime, so a different Java is warned afresh).</li>
+ * </ul>
+ * Esc steps back a page; on the main page it opens the confirmation, so the warning can't be
+ * skipped with one key press.
  *
  * <p>Client-only: never class-loaded on a dedicated server.</p>
  */
 public final class JavaRcePromptScreen extends Screen {
 
-    private static final String KEY_TITLE = "gui.dungeontrain.java_rce.title";
-    private static final String KEY_BODY = "gui.dungeontrain.java_rce.body";
-    private static final String KEY_PASTE = "gui.dungeontrain.java_rce.paste";
-    private static final String KEY_UPDATE ="gui.dungeontrain.java_rce.update";
-    private static final String KEY_FOOTNOTE = "gui.dungeontrain.java_rce.footnote";
-    private static final String KEY_COPY = "gui.dungeontrain.java_rce.copy";
-    private static final String KEY_COPIED = "gui.dungeontrain.java_rce.copied";
-    private static final String KEY_INFO = "gui.dungeontrain.java_rce.info";
-    private static final String KEY_OK = "gui.dungeontrain.java_rce.ok";
-    private static final String KEY_DONT_SHOW = "gui.dungeontrain.java_rce.dont_show";
+    enum Page { MAIN, UPDATE, ARGS, CONFIRM }
 
-    /** Wider than the sibling cards: this one carries more text, and must still fit a small window. */
-    private static final int CARD_MAX_W = 440;
-    private static final int CARD_MIN_W = 300;
+    private static final String K = "gui.dungeontrain.java_rce.";
+
+    private static final int CARD_MAX_W = 400;
+    private static final int CARD_MIN_W = 280;
     private static final int PAD = 12;
     private static final int LINE_STEP = 11;
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 8;
-
+    private static final int CHECKBOX_H = 20;
     private static final int GAP_TITLE = 8;
-    private static final int GAP_SECTION = 6;
-    private static final int GAP_FOOTNOTE = 10;
+    private static final int GAP_SECTION = 7;
+    private static final int GAP_BUTTONS = 12;
 
     private static final int BACKDROP_DIM = 0x99000000;
     private static final int CARD_BG = 0xF01A1A1E;
     private static final int CARD_BORDER = 0xFF3A3A42;
     private static final int COLOR_TITLE = 0xFFFF6B5B;
     private static final int COLOR_BODY = 0xFFE0E0E0;
+    private static final int COLOR_NOTE = 0xFF909090;
     private static final int COLOR_ARG = 0xFFFFE066;
     private static final int COLOR_ARG_BG = 0xFF0E0E10;
-    private static final int COLOR_FOOTNOTE = 0xFF808080;
+
+    /** One block of centred text, or the argument box when {@code lines} is null. */
+    private record Block(List<FormattedCharSequence> lines, int color, int y) {}
+
+    /** A part of a page: a text block in a colour, or the argument box. */
+    private record Part(Component text, int color) {
+        static final Part ARG_BOX = new Part(null, COLOR_ARG);
+    }
 
     private final Screen previousScreen;
     private final String whereKey;
     private final String fixedVersion;
+
+    private Page page = Page.MAIN;
+    private boolean dontShowAgain;
 
     private int panelX;
     private int panelY;
     private int panelW;
     private int panelH;
     private int centerX;
-    private List<FormattedCharSequence> bodyLines = List.of();
-    private List<FormattedCharSequence> whereLines = List.of();
-    private List<FormattedCharSequence> updateLines = List.of();
-    private List<FormattedCharSequence> footnoteLines = List.of();
     private int titleY;
-    private int bodyY;
-    private int argY;
-    private int whereY;
-    private int updateY;
-    private int footnoteY;
+    private Component title = Component.empty();
+    private final List<Block> blocks = new ArrayList<>();
+    private Checkbox dontShowBox;
     private Button copyButton;
 
     public JavaRcePromptScreen(Screen previousScreen, String whereKey, String fixedVersion) {
-        super(Component.translatable(KEY_TITLE));
+        super(Component.translatable(K + "title"));
         this.previousScreen = previousScreen;
         this.whereKey = whereKey;
         this.fixedVersion = fixedVersion;
     }
 
+    private void show(Page next) {
+        if (dontShowBox != null) dontShowAgain = dontShowBox.selected();
+        page = next;
+        rebuildWidgets();
+    }
+
+    private List<Part> parts() {
+        return switch (page) {
+            case MAIN -> List.of(new Part(Component.translatable(K + "intro"), COLOR_BODY));
+            case UPDATE -> List.of(
+                new Part(Component.translatable(K + "update.body", fixedVersion), COLOR_BODY),
+                new Part(Component.translatable(K + "update.note"), COLOR_NOTE));
+            case ARGS -> List.of(
+                new Part(Component.translatable(K + "args.body"), COLOR_BODY),
+                Part.ARG_BOX,
+                new Part(Component.translatable(whereKey).append(" ").append(Component.translatable(K + "paste")), COLOR_BODY),
+                new Part(Component.translatable(K + "args.note"), COLOR_NOTE));
+            case CONFIRM -> List.of(new Part(Component.translatable(K + "confirm.body"), COLOR_BODY));
+        };
+    }
+
+    private Component pageTitle() {
+        return Component.translatable(K + switch (page) {
+            case MAIN -> "title";
+            case UPDATE -> "update.title";
+            case ARGS -> "args.title";
+            case CONFIRM -> "confirm.title";
+        });
+    }
+
     @Override
     protected void init() {
+        blocks.clear();
+        dontShowBox = null;
+        copyButton = null;
+        title = pageTitle();
         int cardW = Math.max(CARD_MIN_W, Math.min(CARD_MAX_W, width - 16));
-        int innerWidth = cardW - 2 * PAD;
-        bodyLines = font.split(Component.translatable(KEY_BODY), innerWidth);
-        // Launcher paths keep the launchers' own (English) menu labels; the instruction around them is translated.
-        whereLines = font.split(Component.translatable(whereKey).append(" ").append(Component.translatable(KEY_PASTE)), innerWidth);
-        updateLines = font.split(Component.translatable(KEY_UPDATE, fixedVersion), innerWidth);
-        footnoteLines = font.split(Component.translatable(KEY_FOOTNOTE), innerWidth);
+        int inner = cardW - 2 * PAD;
 
-        int contentH = contentHeight();
-        // A small window or a long language: drop the footnote before the buttons fall off-screen.
-        if (contentH + 2 * PAD > height - 8) {
-            footnoteLines = List.of();
-            contentH = contentHeight();
+        // Measure first so the card can be centred, then place.
+        List<Part> parts = parts();
+        List<List<FormattedCharSequence>> split = new ArrayList<>();
+        int h = font.lineHeight + GAP_TITLE;
+        for (Part part : parts) {
+            List<FormattedCharSequence> lines = part.text() == null ? null : font.split(part.text(), inner);
+            split.add(lines);
+            h += (lines == null ? argBoxH() : lines.size() * LINE_STEP) + GAP_SECTION;
         }
+        h += GAP_BUTTONS - GAP_SECTION + controlsHeight();
 
         panelW = cardW;
-        panelH = PAD + contentH + PAD;
+        panelH = PAD + h + PAD;
         panelX = (width - panelW) / 2;
         panelY = Math.max(4, (height - panelH) / 2);
         centerX = panelX + panelW / 2;
 
-        int cursor = panelY + PAD;
-        titleY = cursor;
-        cursor += font.lineHeight + GAP_TITLE;
-        bodyY = cursor;
-        cursor += bodyLines.size() * LINE_STEP + GAP_SECTION;
-        argY = cursor;
-        cursor += font.lineHeight + 8 + GAP_SECTION;
-        whereY = cursor;
-        cursor += whereLines.size() * LINE_STEP + GAP_SECTION;
-        updateY = cursor;
-        cursor += updateLines.size() * LINE_STEP + GAP_SECTION;
-        footnoteY = cursor;
-        cursor += footnoteLines.size() * LINE_STEP + GAP_FOOTNOTE;
-
-        // Row 1: the fix and where to read more. Row 2: the two ways out.
-        int innerLeft = panelX + PAD;
-        int buttonW = (innerWidth - BUTTON_GAP) / 2;
-        int rightX = innerLeft + buttonW + BUTTON_GAP;
-        int rightW = innerWidth - buttonW - BUTTON_GAP;
-        copyButton = addRenderableWidget(Button.builder(Component.translatable(KEY_COPY), b -> copyArgument())
-                .bounds(innerLeft, cursor, buttonW, BUTTON_H)
-                .build());
-        addRenderableWidget(Button.builder(Component.translatable(KEY_INFO), b -> openInfo())
-                .bounds(rightX, cursor, rightW, BUTTON_H)
-                .build());
-        cursor += BUTTON_H + BUTTON_GAP;
-        addRenderableWidget(Button.builder(Component.translatable(KEY_OK), b -> dismiss(false))
-                .bounds(innerLeft, cursor, buttonW, BUTTON_H)
-                .build());
-        addRenderableWidget(Button.builder(Component.translatable(KEY_DONT_SHOW), b -> dismiss(true))
-                .bounds(rightX, cursor, rightW, BUTTON_H)
-                .build());
+        int y = panelY + PAD;
+        titleY = y;
+        y += font.lineHeight + GAP_TITLE;
+        for (int i = 0; i < parts.size(); i++) {
+            List<FormattedCharSequence> lines = split.get(i);
+            blocks.add(new Block(lines, parts.get(i).color(), y));
+            y += (lines == null ? argBoxH() : lines.size() * LINE_STEP) + GAP_SECTION;
+        }
+        y += GAP_BUTTONS - GAP_SECTION;
+        addControls(panelX + PAD, y, inner);
     }
 
-    private int contentHeight() {
-        int argBoxH = font.lineHeight + 8;
-        return font.lineHeight + GAP_TITLE
-                + bodyLines.size() * LINE_STEP + GAP_SECTION
-                + argBoxH + GAP_SECTION
-                + whereLines.size() * LINE_STEP + GAP_SECTION
-                + updateLines.size() * LINE_STEP + GAP_SECTION
-                + footnoteLines.size() * LINE_STEP + GAP_FOOTNOTE
-                + 2 * BUTTON_H + BUTTON_GAP;
+    private int argBoxH() {
+        return font.lineHeight + 8;
+    }
+
+    private int controlsHeight() {
+        return switch (page) {
+            case MAIN -> BUTTON_H + BUTTON_GAP + font.lineHeight;
+            case UPDATE, ARGS -> BUTTON_H;
+            case CONFIRM -> CHECKBOX_H + BUTTON_GAP + BUTTON_H;
+        };
+    }
+
+    private void addControls(int left, int y, int inner) {
+        int half = (inner - BUTTON_GAP) / 2;
+        int rightX = left + half + BUTTON_GAP;
+        int rightW = inner - half - BUTTON_GAP;
+        switch (page) {
+            case MAIN -> {
+                addRenderableWidget(Button.builder(Component.translatable(K + "opt_update"), b -> show(Page.UPDATE))
+                    .bounds(left, y, half, BUTTON_H).build());
+                addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
+                    .bounds(rightX, y, rightW, BUTTON_H).build());
+                Component link = Component.translatable(K + "continue")
+                    .withStyle(ChatFormatting.GRAY, ChatFormatting.UNDERLINE);
+                int linkW = font.width(link);
+                addRenderableWidget(new PlainTextButton(centerX - linkW / 2, y + BUTTON_H + BUTTON_GAP, linkW,
+                    font.lineHeight, link, b -> show(Page.CONFIRM), font));
+            }
+            case UPDATE -> {
+                addRenderableWidget(Button.builder(Component.translatable(K + "info"), b -> openInfo())
+                    .bounds(left, y, half, BUTTON_H).build());
+                addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
+                    .bounds(rightX, y, rightW, BUTTON_H).build());
+            }
+            case ARGS -> {
+                copyButton = addRenderableWidget(Button.builder(Component.translatable(K + "copy"), b -> copyArgument())
+                    .bounds(left, y, half, BUTTON_H).build());
+                addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
+                    .bounds(rightX, y, rightW, BUTTON_H).build());
+            }
+            case CONFIRM -> {
+                Component label = Component.translatable(K + "dont_show_again");
+                int boxW = Checkbox.getBoxSize(font) + 4 + font.width(label);
+                dontShowBox = addRenderableWidget(Checkbox.builder(label, font)
+                    .pos(centerX - boxW / 2, y)
+                    .selected(dontShowAgain)
+                    .build());
+                int by = y + CHECKBOX_H + BUTTON_GAP;
+                addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
+                    .bounds(left, by, half, BUTTON_H).build());
+                addRenderableWidget(Button.builder(Component.translatable(K + "continue"), b -> continueAnyway())
+                    .bounds(rightX, by, rightW, BUTTON_H).build());
+            }
+        }
     }
 
     private void copyArgument() {
         this.minecraft.keyboardHandler.setClipboard(JavaRceCheck.JVM_ARGUMENT);
-        copyButton.setMessage(Component.translatable(KEY_COPIED));
+        if (copyButton != null) copyButton.setMessage(Component.translatable(K + "copied"));
     }
 
     private void openInfo() {
@@ -166,9 +229,11 @@ public final class JavaRcePromptScreen extends Screen {
         }, url, true));
     }
 
-    /** Close; "don't show again" remembers this Java, so another Java is warned afresh. */
-    private void dismiss(boolean optOut) {
-        if (optOut) ClientDisplayConfig.setJavaRceWarningDismissedFor(JavaRceNotice.runtimeVersion());
+    /** Play unfixed. "Don't show me again" remembers this Java, so another Java is warned afresh. */
+    private void continueAnyway() {
+        if (dontShowBox != null && dontShowBox.selected()) {
+            ClientDisplayConfig.setJavaRceWarningDismissedFor(JavaRceNotice.runtimeVersion());
+        }
         this.minecraft.setScreen(previousScreen);
     }
 
@@ -184,29 +249,31 @@ public final class JavaRcePromptScreen extends Screen {
         graphics.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, CARD_BORDER);
 
         int argW = font.width(JavaRceCheck.JVM_ARGUMENT) + 16;
-        int argBoxH = font.lineHeight + 8;
-        graphics.fill(centerX - argW / 2, argY, centerX + argW / 2, argY + argBoxH, COLOR_ARG_BG);
+        for (Block block : blocks) {
+            if (block.lines() == null) {
+                graphics.fill(centerX - argW / 2, block.y(), centerX + argW / 2, block.y() + argBoxH(), COLOR_ARG_BG);
+            }
+        }
 
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawCenteredString(font, Component.translatable(KEY_TITLE), centerX, titleY, COLOR_TITLE);
-        drawLines(graphics, bodyLines, bodyY, COLOR_BODY);
-        graphics.drawCenteredString(font, Component.literal(JavaRceCheck.JVM_ARGUMENT), centerX, argY + 4, COLOR_ARG);
-        drawLines(graphics, whereLines, whereY, COLOR_BODY);
-        drawLines(graphics, updateLines, updateY, COLOR_BODY);
-        drawLines(graphics, footnoteLines, footnoteY, COLOR_FOOTNOTE);
-    }
-
-    private void drawLines(GuiGraphics graphics, List<FormattedCharSequence> lines, int y, int color) {
-        for (FormattedCharSequence line : lines) {
-            graphics.drawCenteredString(font, line, centerX, y, color);
-            y += LINE_STEP;
+        graphics.drawCenteredString(font, title, centerX, titleY, COLOR_TITLE);
+        for (Block block : blocks) {
+            if (block.lines() == null) {
+                graphics.drawCenteredString(font, Component.literal(JavaRceCheck.JVM_ARGUMENT), centerX, block.y() + 4, COLOR_ARG);
+                continue;
+            }
+            int y = block.y();
+            for (FormattedCharSequence line : block.lines()) {
+                graphics.drawCenteredString(font, line, centerX, y, block.color());
+                y += LINE_STEP;
+            }
         }
     }
 
-    /** Esc is "Continue": an unread warning stays unread. */
+    /** Esc steps back: a fix page or the confirmation returns to the main page; the main page asks first. */
     @Override
     public void onClose() {
-        dismiss(false);
+        show(page == Page.MAIN ? Page.CONFIRM : Page.MAIN);
     }
 }

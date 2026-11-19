@@ -1255,7 +1255,7 @@
       ]
     }
   },
-  "gui.dungeontrain.java_rce.update": {
+  "gui.dungeontrain.java_rce.update.body": {
     "1": {
       "label": "the first fixed Java version for the player's Java (a version number)",
       "examples": [
