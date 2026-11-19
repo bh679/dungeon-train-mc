@@ -33,6 +33,26 @@ class WorkbenchTestScratchTest {
     }
 
     @Test
+    @DisplayName("Two staged ids with the same String.hashCode still get different scratch ids")
+    void scratchId_survivesHashCodeCollision() {
+        assertEquals("Aa".hashCode(), "BB".hashCode());
+        assertNotEquals(WorkbenchTestScratch.scratchIdFor("Aa"), WorkbenchTestScratch.scratchIdFor("BB"));
+    }
+
+    @Test
+    @DisplayName("A room's sidecars are filed as a portal room whatever relay kind it arrived under")
+    void sidecarKind_roomIsPortalRoom() {
+        assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM,
+            WorkbenchTestScratch.sidecarKindFor(BuilderPhotoPaths.Kind.TRACK, Scene.PORTAL_ROOM));
+        assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM,
+            WorkbenchTestScratch.sidecarKindFor(BuilderPhotoPaths.Kind.PORTAL_ROOM, Scene.PORTAL_ROOM));
+        assertEquals(BuilderPhotoPaths.Kind.TRACK,
+            WorkbenchTestScratch.sidecarKindFor(BuilderPhotoPaths.Kind.TRACK, Scene.TRACK));
+        assertEquals(BuilderPhotoPaths.Kind.CARRIAGE,
+            WorkbenchTestScratch.sidecarKindFor(BuilderPhotoPaths.Kind.CARRIAGE, Scene.CARRIAGE));
+    }
+
+    @Test
     @DisplayName("Ordinary template names are never taken for scratch")
     void ordinaryNames_notScratch() {
         assertFalse(WorkbenchTestScratch.isScratchId("pen"));

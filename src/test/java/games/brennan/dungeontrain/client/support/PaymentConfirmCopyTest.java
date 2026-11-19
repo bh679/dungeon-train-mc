@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.links.LinkPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,12 +23,12 @@ class PaymentConfirmCopyTest {
 
     @Test
     void openEndedProvidersHaveNoAmount() {
-        assertEquals(new PaymentConfirmCopy(PaymentConfirmCopy.TITLE_PATREON, PaymentConfirmCopy.BODY_PATREON, null),
+        assertEquals(new PaymentConfirmCopy(PaymentConfirmCopy.TITLE_PATREON, PaymentConfirmCopy.BODY_PATREON, null, LinkPolicy.KEY_PATREON),
                 PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON));
-        assertEquals(new PaymentConfirmCopy(PaymentConfirmCopy.TITLE_REVOLUT, PaymentConfirmCopy.BODY_REVOLUT, null),
+        assertEquals(new PaymentConfirmCopy(PaymentConfirmCopy.TITLE_REVOLUT, PaymentConfirmCopy.BODY_REVOLUT, null, LinkPolicy.KEY_PAYMENT),
                 PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE));
         // The China route is a Stripe checkout, so it borrows Stripe's explanation line.
-        assertEquals(new PaymentConfirmCopy(PaymentConfirmCopy.TITLE_WECHAT, PaymentConfirmCopy.BODY_STRIPE, null),
+        assertEquals(new PaymentConfirmCopy(PaymentConfirmCopy.TITLE_WECHAT, PaymentConfirmCopy.BODY_STRIPE, null, LinkPolicy.KEY_PAYMENT_CN),
                 PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_CN));
     }
 
@@ -43,6 +44,21 @@ class PaymentConfirmCopyTest {
         assertEquals(PaymentConfirmCopy.BODY_PATREON, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, raw).bodyKey());
         assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DISCORD, raw));
         assertEquals(false, PaymentConfirmCopy.onRelay("not a url"));
+        assertEquals(true, PaymentConfirmCopy.onRelay("https://dungeon.training/pay"));
+        assertEquals(false, PaymentConfirmCopy.onRelay("https://brennan.games.evil.com/pay"));
+    }
+
+    @Test
+    void everyPaymentTargetNamesTheLinkKeyItsUrlCameFrom() {
+        for (SupportTier tier : SupportTier.values()) {
+            assertEquals(LinkPolicy.KEY_PAYMENT_CHECKOUT, PaymentConfirmCopy.forTarget(tier.analyticsTarget()).linkKey());
+        }
+        for (CommunityRewards.Reward reward : CommunityRewards.Reward.values()) {
+            assertEquals(LinkPolicy.KEY_REWARDS_PAY, PaymentConfirmCopy.forTarget(reward.analyticsTarget()).linkKey());
+        }
+        assertEquals(LinkPolicy.KEY_PAYMENT_CN, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_CN).linkKey());
+        assertEquals(LinkPolicy.KEY_PATREON, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON).linkKey());
+        assertEquals(LinkPolicy.KEY_PAYMENT, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE).linkKey());
     }
 
     @Test

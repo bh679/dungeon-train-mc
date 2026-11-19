@@ -3,16 +3,11 @@ package games.brennan.dungeontrain.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -44,10 +39,8 @@ import java.util.UUID;
  */
 public final class SealedJson {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     static final String SEAL = "seal";
     static final String TAINTED = "tainted";
-    private static final String ALGORITHM = "HmacSHA256";
 
     public enum Provenance { VERIFIED, UNVERIFIED, TAMPERED }
 
@@ -121,17 +114,7 @@ public final class SealedJson {
     }
 
     private static String mac(String scope, String canonical) {
-        try {
-            Mac mac = Mac.getInstance(ALGORITHM);
-            mac.init(new SecretKeySpec(InstallKey.key(), ALGORITHM));
-            mac.update(scope.getBytes(StandardCharsets.UTF_8));
-            mac.update((byte) '\n');
-            mac.update(canonical.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(mac.doFinal());
-        } catch (GeneralSecurityException e) {
-            LOGGER.error("[DungeonTrain] SealedJson: {} unavailable", ALGORITHM, e);
-            return "";
-        }
+        return HexFormat.of().formatHex(SealedBytes.mac(scope, canonical.getBytes(StandardCharsets.UTF_8)));
     }
 
     /** The object with every key sorted, so formatting and field order never change the seal. */

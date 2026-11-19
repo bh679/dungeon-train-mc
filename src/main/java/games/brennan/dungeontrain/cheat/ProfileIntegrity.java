@@ -52,11 +52,13 @@ public final class ProfileIntegrity {
         return TAINTED.contains(uuid);
     }
 
-    /** A store found {@code what} edited: mark the player for this session. Idempotent. */
-    public static void markTampered(UUID uuid, String what) {
+    /** A store found {@code what} edited: mark the player for this session. Idempotent; true when newly marked. */
+    public static boolean markTampered(UUID uuid, String what) {
         if (TAINTED.add(uuid)) {
             LOGGER.warn("[DungeonTrain] {} for {} was changed outside the game; their run is Free Play.", what, uuid);
+            return true;
         }
+        return false;
     }
 
     /** A profile reset deleted the files: forget the mark. Files still tainted re-mark on their next read. */

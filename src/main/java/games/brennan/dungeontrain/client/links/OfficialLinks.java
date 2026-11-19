@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.client.links;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,8 +18,9 @@ import java.util.Map;
  * attempt failed, in which case the next title-screen build retries. All writes happen on the
  * fetcher's HTTP completion thread; readers only touch {@code volatile} fields.</p>
  *
- * <p>Each relay value is validated independently ({@link #isValidUrl}) — a missing or malformed
- * key degrades to that key's baked fallback rather than breaking the link.</p>
+ * <p>Each relay value is validated independently ({@link LinkPolicy#allowed}) — a missing,
+ * malformed or off-list key degrades to that key's baked fallback (or to null for the relay-only
+ * payment keys) rather than breaking the link. Payment keys also have a host allowlist.</p>
  */
 public final class OfficialLinks {
 
@@ -59,7 +63,7 @@ public final class OfficialLinks {
     static final String FALLBACK_MOD_WHITELIST =
             "https://dungeon.training/mods/";
 
-    private static final int MAX_URL = 500;
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Sanitized relay overlay — only ever swapped whole, never mutated. */
     private static volatile Map<String, String> relay = Map.of();
@@ -147,30 +151,33 @@ public final class OfficialLinks {
         return v != null ? v : fallback;
     }
 
-    /** New map holding only the entries whose values pass {@link #isValidUrl}, trimmed. */
+    /**
+     * New map holding only the entries whose values pass {@link LinkPolicy#allowed} for their own
+     * key, trimmed. A rejected value is logged by key and host only (never the query string, which
+     * can carry a player name).
+     */
     static Map<String, String> sanitize(Map<String, String> raw) {
         if (raw == null || raw.isEmpty()) return Map.of();
         Map<String, String> out = new HashMap<>();
         for (Map.Entry<String, String> e : raw.entrySet()) {
-            if (isValidUrl(e.getValue())) out.put(e.getKey(), e.getValue().trim());
+            String v = e.getValue();
+            if (LinkPolicy.allowed(e.getKey(), v)) {
+                out.put(e.getKey(), v.trim());
+            } else if (v != null && !v.isBlank()) {
+                LOGGER.warn("[DungeonTrain] relay link '{}' rejected (host {}); using the fallback",
+                        e.getKey(), LinkPolicy.hostOf(v));
+            }
         }
         return Map.copyOf(out);
     }
 
     /**
-     * True when {@code v} is a plausible outbound link: non-empty after trim, http(s) scheme, sane
-     * length, no embedded whitespace. Anything else keeps that key's baked fallback — the relay is
-     * trusted, but a typo'd server-side value must never yield a dead or dangerous URI.
+     * True when {@code v} is a plausible outbound link for a non-payment key: https, well-formed,
+     * no user-info, sane length, no whitespace. Payment keys are judged by {@link LinkPolicy#allowed}
+     * with their key, which adds a host allowlist.
      */
     static boolean isValidUrl(String v) {
-        if (v == null) return false;
-        String s = v.trim();
-        if (s.isEmpty() || s.length() > MAX_URL) return false;
-        if (!(s.startsWith("https://") || s.startsWith("http://"))) return false;
-        for (int i = 0; i < s.length(); i++) {
-            if (Character.isWhitespace(s.charAt(i))) return false;
-        }
-        return true;
+        return LinkPolicy.allowed(null, v);
     }
 
     /** Test seam — reset to the pristine no-overlay state. */
