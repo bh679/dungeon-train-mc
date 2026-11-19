@@ -37,6 +37,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_BOOKS;
     public static final ModConfigSpec.BooleanValue TWITCH_SHOUTOUT_HINT;
     public static final ModConfigSpec.BooleanValue MIC_HINT;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> STREAM_MUTED_NOTICE_SEEN;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -139,6 +140,9 @@ public final class LiveFeedClientConfig {
         MIC_HINT = b
             .comment("When you go live with your microphone off (on a stream with sound), say in chat where to turn it on. Turned on mid-stream, the voice joins that stream.")
             .define("micHint", true);
+        STREAM_MUTED_NOTICE_SEEN = b
+            .comment("Music mods you asked not to be told about again: the title-screen notice that their music and lyrics stay off your Live Eye stream. It shows again when a new one is installed. Managed automatically; empty it to see the notice again.")
+            .defineListAllowEmpty("streamMutedNoticeSeen", () -> java.util.List.<String>of(), () -> "", o -> o instanceof String);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
@@ -380,6 +384,23 @@ public final class LiveFeedClientConfig {
         if (!loaded() || TWITCH_SHOUTOUT_HINT.get() == value) return;
         TWITCH_SHOUTOUT_HINT.set(value);
         TWITCH_SHOUTOUT_HINT.save();
+    }
+
+    /** Music mods whose stream-muted notice the player ticked "Don't show again" for. */
+    public static java.util.Set<String> streamMutedNoticeSeen() {
+        if (!loaded()) return java.util.Set.of();
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (Object o : STREAM_MUTED_NOTICE_SEEN.get()) if (o instanceof String id && !id.isBlank()) out.add(id);
+        return java.util.Set.copyOf(out);
+    }
+
+    /** Remember {@code ids} as seen, keeping any already there. */
+    public static void addStreamMutedNoticeSeen(java.util.Collection<String> ids) {
+        if (!loaded() || ids.isEmpty()) return;
+        java.util.TreeSet<String> merged = new java.util.TreeSet<>(streamMutedNoticeSeen());
+        if (!merged.addAll(ids)) return;
+        STREAM_MUTED_NOTICE_SEEN.set(java.util.List.copyOf(merged));
+        STREAM_MUTED_NOTICE_SEEN.save();
     }
 
     /** The "your mic is off" reminder at stream start ({@code LiveMicHint}). */

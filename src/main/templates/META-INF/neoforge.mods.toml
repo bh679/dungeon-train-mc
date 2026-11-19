@@ -555,3 +555,10 @@ logoFile="logo.png"
 # wind (client/wind/WindVisuals). @Pseudo, so DT has no compile dependency on Windy.
 [[mixins]]
     config="${mod_id}.windy.mixins.json"
+
+# Stream-muted music mods (Show the Lyrics, Dango Music, Concerto: ApprovedModList#streamMuted). Their lyrics
+# are drawn into the frame Live Eye captures, so dungeontrain.musicmods.mixins.json (gated by
+# MusicModsMixinPlugin: each mixin only when its mod is installed) skips them while this client streams.
+# @Pseudo, so DT has no compile dependency on any of them.
+[[mixins]]
+    config="${mod_id}.musicmods.mixins.json"

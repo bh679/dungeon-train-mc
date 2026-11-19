@@ -12,6 +12,11 @@ import java.util.function.Predicate;
  * (or a server's) cannot swap a song or clip into the broadcast, and a mod that is not on the
  * approved list cannot play one. Fails closed: a sound whose origin is unknown stays off the stream.
  *
+ * <p>"Approved" means approved for the stream: {@code AudioMirror} passes
+ * {@code ApprovedModList::isStreamSoundApproved}, which leaves out the stream-muted music mods (approved
+ * for runs, never heard on the stream). {@link #unapproved} is still asked with plain approval, so a
+ * stream-muted mod does not switch the whole stream's sound off.</p>
+ *
  * <p>Pack ids are NeoForge 21.1's: {@code vanilla}, {@code mod/<modid>} for each mod jar,
  * {@code file/<name>} for a resource pack, {@code server/<serial>/<id>} for a server's pack. Pure —
  * no Minecraft types — so it is unit-tested on a bare JVM.</p>
