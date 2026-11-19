@@ -119,6 +119,13 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
             wakeLevelId, place);
     }
 
+    /** This nap as a Free Play run (its file couldn't be vouched for: {@link NapStore.Loaded#tampered}). */
+    public NapSnapshot asFreePlay() {
+        return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction,
+            worldDepth, true, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
+            wakeLevelId, place);
+    }
+
     /** This nap with the train's band place {@code place}. */
     public NapSnapshot withPlace(Place place) {
         return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction,
