@@ -1,0 +1,21 @@
+{
+  "id": "dungeon-train-flags",
+  "version": "0.1898.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor"
+  ],
+  "title": "Dungeon Train flags",
+  "summary": "Builders get eight new Dungeon Train flags for their carriages. Each one turns into a Dungeon Train banner when the carriage appears, with a new design for every carriage.",
+  "highlights": [
+    "Flag 1 to Flag 8 in the Stage Blocks tab, placed on the floor or on a wall",
+    "Every copy of the same flag number in a carriage matches, and different numbers never repeat a design",
+    "Break one to keep it as a Dungeon Train banner"
+  ],
+  "pr": 2749,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
