@@ -1255,6 +1255,15 @@
       ]
     }
   },
+  "gui.dungeontrain.java_rce.update": {
+    "1": {
+      "label": "the first fixed Java version for the player's Java (a version number)",
+      "examples": [
+        "21.0.13.1",
+        "17.0.21.1"
+      ]
+    }
+  },
   "gui.dungeontrain.low_memory.body": {
     "1": {
       "label": "how much memory Minecraft has been given, in GB (a plain number)",

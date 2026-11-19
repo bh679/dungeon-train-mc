@@ -340,6 +340,11 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue EVENT_REMINDERS;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /**
+     * The Java runtime ({@code java.runtime.version}) the player said "don't show again" to on the
+     * Java security warning ({@code JavaRceNotice}). A different Java shows it again. Empty = never.
+     */
+    public static final ModConfigSpec.ConfigValue<String> JAVA_RCE_WARNING_DISMISSED_FOR;
     /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. On by default. */
     public static final ModConfigSpec.BooleanValue DISCORD_RICH_PRESENCE;
     /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
@@ -504,6 +509,7 @@ public final class ClientDisplayConfig {
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         EVENT_REMINDERS = pair.getLeft().eventReminders;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        JAVA_RCE_WARNING_DISMISSED_FOR = pair.getLeft().javaRceWarningDismissedFor;
         DISCORD_RICH_PRESENCE = pair.getLeft().discordRichPresence;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
@@ -995,6 +1001,11 @@ public final class ClientDisplayConfig {
                          "has been given less than 5 GB of memory on a computer with 8 GB or more, suggesting you",
                          "allocate 6 GB or more in your launcher. Nothing is sent anywhere. On by default.")
                 .define("lowMemoryNoticeChat", true);
+        ModConfigSpec.ConfigValue<String> javaRceWarningDismissedFor = b
+                .comment("Internal: the Java version you chose \"Don't show again\" for on the Java security",
+                         "warning (CVE-2026-114938). The warning comes back if you switch to a different Java.",
+                         "Empty = never dismissed. Clear it by hand to see the warning again.")
+                .define("javaRceWarningDismissedFor", "");
         b.pop();
 
         b.push("discord");
@@ -1060,7 +1071,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat, eventReminders,
-                lowMemoryNoticeChat, discordRichPresence, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
+                lowMemoryNoticeChat, javaRceWarningDismissedFor, discordRichPresence, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme, placeholderCollision,
@@ -1644,6 +1655,16 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         LOW_MEMORY_NOTICE_CHAT.set(value);
         LOW_MEMORY_NOTICE_CHAT.save();
+    }
+
+    public static String getJavaRceWarningDismissedFor() {
+        return isLoaded() ? JAVA_RCE_WARNING_DISMISSED_FOR.get() : "";
+    }
+
+    public static void setJavaRceWarningDismissedFor(String runtimeVersion) {
+        if (!isLoaded()) return;
+        JAVA_RCE_WARNING_DISMISSED_FOR.set(runtimeVersion);
+        JAVA_RCE_WARNING_DISMISSED_FOR.save();
     }
 
     /** Whether a dev build draws its top-left developer read-out. On by default, and before the config loads. */
@@ -2534,6 +2555,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue eventReminders,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.ConfigValue<String> javaRceWarningDismissedFor,
             ModConfigSpec.BooleanValue discordRichPresence,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
