@@ -2072,11 +2072,6 @@ public final class PortalCarriageBuilder {
                 BlockPos local = entry.localPos();
                 BlockPos world = roomOrigin.offset(local);
                 if (mask.covers(world)) continue;
-                // Scoped out of this tile: leave the cell completely alone, so what the room's own
-                // template stamped there stands. Skipped BEFORE the roll, the eviction and the write —
-                // "does not apply here" has to mean untouched, not cleared and then not refilled.
-                if (!sidecar.copyScopeAt(local).appliesTo(baseTile)) continue;
-
                 // Which index this cell rolls at: the room's own (follow it), the base tile's (one
                 // roll every copy shares, whatever the room does), or the base tile's mixed with this
                 // copy's place on the grid (a fresh roll per copy, whatever the room does).
@@ -2085,7 +2080,13 @@ public final class PortalCarriageBuilder {
                     case EXACT -> exactIndex;
                     case VARY -> perCopyIndex(exactIndex, tile);
                 };
-                VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
+                // Scoped out of this tile: an empty pick, written as air by the branch below. NOT
+                // left to the template: a variant cell's template block is whichever entry the
+                // editor preview was cycling through when the room was saved (VariantCopyScope's
+                // javadoc), so "untouched" put a random entry — often a stage block — in every
+                // copy. The roll is skipped, so the cell draws nothing from the seed here.
+                VariantState picked = sidecar.copyScopeAt(local).pickFor(baseTile,
+                    () -> sidecar.resolve(local, worldSeed, cellIndex));
                 if (picked == null) continue;
                 // Every write below goes through the entry's authored facing / half / toggle, as the
                 // carriage stamp does — writing the captured state alone ignored the menu's T/B pick.

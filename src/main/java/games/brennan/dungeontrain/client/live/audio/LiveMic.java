@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -20,8 +21,12 @@ import java.util.function.Supplier;
  * two audio tracks for its whole length (the game with the mic over it, and the game alone), so
  * switching the mic off and on never restarts the encoder: while it is off the mic's half is silence.
  * The mic starts the stream in whatever state the option is in. Switched on during a stream that
- * started without a track, the option is saved but the voice joins from the next stream
- * ({@link Toggle#NEXT_STREAM}); the icon keeps its waiting look.</p>
+ * started without a track, the stream gains one ({@link Toggle#JOINING}): the controller swaps its
+ * encoder for one with a mic track ({@link #setMidStreamJoin}), and the voice is held silent
+ * ({@link #held}) until the relay's heartbeat reply says it counts the track ({@link #relayTrack}) and
+ * {@link #KID_SWITCH_GRACE_MS} more have passed, so viewers in Kid mode have already moved to the
+ * game-only track. Where that cannot happen (no stream
+ * sound, a relay too old to say) the voice joins from the next stream ({@link Toggle#NEXT_STREAM}).</p>
  *
  * <p>The capture device opens when the mic goes on and closes when it goes off, so a streamer who
  * never switches it on never meets the system's microphone permission prompt. With push to talk set,
@@ -47,6 +52,24 @@ public final class LiveMic {
     private static volatile Supplier<@Nullable MicCapture> opener = () -> MicCapture.open(LiveFeedClientConfig.micDevice());
     /** The stream on air carries a mic track. */
     private static volatile boolean enabled;
+    /**
+     * After the relay counts a mid-stream track, how long the voice stays silent: one viewer status poll
+     * ({@code LiveStatusPoller.INTERVAL_MS}, 15 s) plus 10 s for a Kid-mode TV to start its game-only
+     * session. Measured end to end: the TV moved 15 s after the relay counted the track.
+     */
+    static final long KID_SWITCH_GRACE_MS = 25_000;
+    /** A mic track added mid-stream, silent until the relay counts it and the grace has passed. */
+    private static volatile boolean held;
+    /** When the relay counted a held track (ms, {@link #clock}); 0 = not yet. */
+    private static volatile long countedAtMs;
+    /** The time {@link #held} is measured against (tests stand in for it). */
+    private static volatile LongSupplier clock = System::currentTimeMillis;
+    /** A relay too old to count a mid-stream track answered: say once that the voice joins next stream. */
+    private static volatile boolean heldNotice;
+    /** That line has been asked for this stream; later heartbeats from the same relay say nothing new. */
+    private static volatile boolean heldTold;
+    /** Render thread: adds a mic track to the stream on air, or says why not ({@code LiveStreamController}). */
+    private static volatile Supplier<Toggle> midStreamJoin = () -> Toggle.NEXT_STREAM;
     private static volatile boolean pttHeld;
     /** The relay barred the mic mid-stream (uploader thread writes, render and pump threads read). */
     private static volatile boolean barred;
@@ -67,11 +90,16 @@ public final class LiveMic {
     private LiveMic() {}
 
     /**
-     * What a switch did. {@code NEXT_STREAM}: the option went on, but this stream carries no mic track,
-     * so the voice joins from the next one. {@code BARRED}: the relay has the mic turned off for this
-     * streamer. {@code NO_DEVICE}: the option went on but no capture device would open.
+     * What a switch did. {@code JOINING}: the option went on during a stream without a mic track, and
+     * the stream is gaining one; viewers hear the voice once the relay counts it. {@code NEXT_STREAM}:
+     * the option went on, but this stream cannot gain a track, so the voice joins from the next one.
+     * {@code BARRED}: the relay has the mic turned off for this streamer. {@code NO_DEVICE}: the option
+     * went on but no capture device would open.
      */
-    public enum Toggle { ON, OFF, NEXT_STREAM, NO_DEVICE, BARRED }
+    public enum Toggle { ON, OFF, JOINING, NEXT_STREAM, NO_DEVICE, BARRED }
+
+    /** What a heartbeat reply says of the mic track: counted, not counted, or not said (an older relay). */
+    public enum TrackWord { YES, NO, UNSAID }
 
     /** Where a switch came from, for the log. */
     public enum Source { KEY, INVENTORY, OPTIONS }
@@ -84,6 +112,10 @@ public final class LiveMic {
     /** A stream starts: with a mic track or without one. With one, the mic is in whatever state the option is. */
     public static void startStream(boolean withMic) {
         enabled = withMic;
+        held = false;
+        countedAtMs = 0;
+        heldNotice = false;
+        heldTold = false;
         barred = false;
         barredNotice = false;
         gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
@@ -94,9 +126,78 @@ public final class LiveMic {
     /** The stream is over (or carries no mic track after all): the capture device is let go. The option stays. */
     public static void endStream() {
         enabled = false;
+        held = false;
+        countedAtMs = 0;
+        heldNotice = false;
+        heldTold = false;
         barred = false;
         barredNotice = false;
         closeCapture();
+    }
+
+    /**
+     * Render thread: the encoder now writes a mic track, added mid-stream. The voice stays silent until
+     * the relay counts the track ({@link #relayTrack}); the device opens now if the option is on.
+     */
+    public static void joinMidStream() {
+        enabled = true;
+        held = true;
+        countedAtMs = 0;
+        heldNotice = false;
+        heldTold = false;
+        gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
+        agc = new MicDsp.Agc(MicCapture.RATE);
+        if (option.getAsBoolean()) openCapture();
+        LOGGER.info("[DungeonTrain] live mic: track added mid-stream, voice held until the relay counts it");
+    }
+
+    /** Who adds a mic track mid-stream; the controller sets it once. Tests stand in for it. */
+    public static void setMidStreamJoin(Supplier<Toggle> join) {
+        midStreamJoin = join;
+    }
+
+    /**
+     * Any thread: a heartbeat reply's word on the track. A held voice is let through once the relay
+     * counts the track; an older relay that never says leaves it held and asks for the "next stream"
+     * line once ({@link #takeHeldNotice}). True when this reply let the voice through.
+     */
+    public static boolean relayTrack(TrackWord word) {
+        if (!enabled || !held) return false;
+        if (word == TrackWord.YES) {
+            if (countedAtMs != 0) return false;
+            countedAtMs = clock.getAsLong();
+            LOGGER.info("[DungeonTrain] live mic: the relay counts the mid-stream track; voice on in {} s, once Kid-mode TVs have switched",
+                KID_SWITCH_GRACE_MS / 1000);
+            return true;
+        }
+        if (word == TrackWord.UNSAID && !heldTold) {
+            heldTold = true;
+            heldNotice = true;
+            LOGGER.info("[DungeonTrain] live mic: the relay does not count a mid-stream track; voice joins next stream");
+        }
+        return false;
+    }
+
+    /** Render thread: true once, when an older relay left a mid-stream track's voice held. */
+    public static boolean takeHeldNotice() {
+        if (!heldNotice) return false;
+        heldNotice = false;
+        return true;
+    }
+
+    /** The heartbeat's {@code mic}: this stream carries a mic track (from the start or added since). */
+    public static boolean heartbeatMicTrack() {
+        return enabled;
+    }
+
+    /** A mid-stream track still silent: waiting on the relay, or on the grace after it counted the track. */
+    public static boolean held() {
+        if (!held) return false;
+        long counted = countedAtMs;
+        if (counted == 0 || clock.getAsLong() < counted + KID_SWITCH_GRACE_MS) return true;
+        held = false;
+        LOGGER.info("[DungeonTrain] live mic: Kid-mode grace over; voice on");
+        return false;
     }
 
     /** True while the stream on air carries a mic track. */
@@ -106,7 +207,7 @@ public final class LiveMic {
 
     /** The mic on this stream, as far as the relay lets it count: the option on, a mic track, not barred. */
     public static boolean on() {
-        return enabled && option.getAsBoolean() && !barred;
+        return enabled && option.getAsBoolean() && !barred && !held();
     }
 
     /** Whether the mic is heard right now: on, allowed, and push to talk held when that is set. */
@@ -179,7 +280,7 @@ public final class LiveMic {
         }
         if (enabled && barred) return Toggle.BARRED;
         saveOption.accept(true);
-        if (!enabled) return Toggle.NEXT_STREAM;
+        if (!enabled) return midStreamJoin.get();
         return openCapture() ? Toggle.ON : Toggle.NO_DEVICE;
     }
 
@@ -255,6 +356,11 @@ public final class LiveMic {
      * Tests: stand in for the saved Microphone option, and open no real capture device (a test box may
      * well have one); {@code null} both puts the real ones back.
      */
+    /** Tests: stand in for the clock the Kid-mode grace is measured on; {@code null} puts the real one back. */
+    static void setClockForTests(@Nullable LongSupplier now) {
+        clock = now == null ? System::currentTimeMillis : now;
+    }
+
     static void setOptionForTests(@Nullable BooleanSupplier read, @Nullable Consumer<Boolean> write) {
         option = read == null ? LiveFeedClientConfig::micSupport : read;
         saveOption = write == null ? LiveFeedClientConfig::setMicSupport : write;

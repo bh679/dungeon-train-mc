@@ -115,6 +115,8 @@ public enum ClientOptionsTab {
         PROTECT_OWN_PETS("gui.dungeontrain.options.protect_own_pets"),
         /** "Dungeon Train X is out" chat line when a release lands mid-session. */
         UPDATE_NOTICE_CHAT("gui.dungeontrain.options.update_notice_chat"),
+        /** Chat countdown before community events — see {@code EventCountdownTicker}. Synced to the server. */
+        EVENT_REMINDERS("gui.dungeontrain.options.event_reminders"),
         /** Once-a-session "give Minecraft more memory" boot card + chat line — see {@code LowMemoryNotice}. */
         LOW_MEMORY_NOTICE_CHAT("gui.dungeontrain.options.low_memory_notice_chat"),
         /** Minecraft's and other mods' tabs on the advancements screen — hidden by default, see {@code AdvancementTabGate}. */
@@ -155,6 +157,12 @@ public enum ClientOptionsTab {
          * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
          */
         TWITCH_ACCOUNT(null),
+        /**
+         * Show "Playing Dungeon Train" and where you are on your Discord profile, through the Discord app on
+         * this computer — see {@code client.discord.DiscordRichPresence}. Off by default; hidden in Kid mode
+         * by the screen at draw time.
+         */
+        DISCORD_STATUS("gui.dungeontrain.options.discord_status"),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -202,6 +210,8 @@ public enum ClientOptionsTab {
         STREAM_AUDIO("gui.dungeontrain.options.stream_audio"),
         /** Whether the mic may join streams (it still starts each stream off). */
         MIC_SUPPORT("gui.dungeontrain.options.mic_support"),
+        /** The "your mic is off" line at stream start ({@code LiveMicHint}). */
+        MIC_HINT("gui.dungeontrain.options.mic_hint"),
         /** Which capture device the mic uses. */
         MIC_DEVICE("gui.dungeontrain.options.mic_device"),
         /** How loud live streams play from TVs; also on Music &amp; Sounds. */
@@ -364,6 +374,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.PUBLIC_POSTS);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
+                rows.add(Row.EVENT_REMINDERS);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.OTHER_ADVANCEMENT_CARDS);
                 rows.add(Row.PROTECT_OWN_PETS);
@@ -391,6 +402,7 @@ public enum ClientOptionsTab {
             }
             case ACCOUNT -> {
                 rows.add(Row.DISCORD_ACCOUNT);
+                rows.add(Row.DISCORD_STATUS);
                 rows.add(Row.TWITCH_ACCOUNT);
             }
             case BACKUPS -> {
@@ -439,6 +451,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.MIC_SUPPORT);
                 rows.add(Row.MIC_DEVICE);
                 rows.add(Row.MIC_MODE);
+                rows.add(Row.MIC_HINT);
                 rows.add(Row.STREAM_SECTION_PICTURE);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);

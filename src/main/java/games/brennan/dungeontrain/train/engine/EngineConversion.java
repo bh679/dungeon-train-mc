@@ -89,6 +89,7 @@ public final class EngineConversion {
                     provider.getTrainId(), pIdx, origin, dims, cand.variantId(), false, false, "", null, null, 0,
                     cand.stageId(), SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY);
             inst.setFuel(coal);
+            inst.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, pIdx));
             // Queue the whole box: the carriage has never been uploaded, and the first flush must carry all of it.
             inst.enqueue(pos);
             inst.markBlockEdited();

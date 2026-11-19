@@ -119,6 +119,8 @@ public final class SharedCarriageRegistry {
         private volatile boolean culled;
         /** Coal in this build's Drifting Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
         private volatile int fuel = -1;
+        /** The name id; see {@link SharedBuild#nameId}. */
+        private volatile String nameId = "";
         /** Set when the relay asked for a re-baseline (delta log near/at full) — flusher does a full save. */
         private volatile boolean rebaseline;
         /** Guards against overlapping submit/save/delta calls for this carriage. */
@@ -195,6 +197,8 @@ public final class SharedCarriageRegistry {
         @Override public String stageId() { return stageId; }
         @Override public int fuel() { return fuel; }
         @Override public void setFuel(int fuel) { this.fuel = fuel; }
+        @Override public String nameId() { return nameId; }
+        @Override public void setNameId(String nameId) { this.nameId = nameId == null ? "" : nameId; }
         @Override public String describe() { return "pIdx=" + pIdx; }
         public boolean isCallInFlight() { return callInFlight; }
         public long lastContactMs() { return lastContactMs; }

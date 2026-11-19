@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.support;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.links.LinkPolicy;
 import games.brennan.dungeontrain.client.menu.CopyLinkIconButton;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -11,14 +13,15 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import org.slf4j.Logger;
 
 import java.net.URI;
 import java.util.List;
 
 /**
  * The confirm shown before a <b>payment</b> link opens the browser: "Open Stripe checkout for
- * $30 AUD?", one line on where the browser goes and why the player's name is attached, Open and
- * Cancel. No URL.
+ * $30 AUD?", one line on where the browser goes and why the player's name is attached, the bare
+ * destination host in grey, Open and Cancel. No path or query string.
  *
  * <p>Replaces vanilla's {@link ConfirmLinkScreen} for payment targets only. That screen prints the
  * whole checkout URL ({@code …/pay/cn?displayname=Steve&locale=en&qty=3}) above Open / Copy /
@@ -26,6 +29,10 @@ import java.util.List;
  * a query string with their name in it looks like something to back away from. Discord, the
  * affiliate link and everything else keep the vanilla screen, because a plain URL is what those
  * players expect to see.</p>
+ *
+ * <p>The words come from the analytics target, not the URL, so before showing them the link is
+ * re-checked against its key's host allowlist ({@link LinkPolicy}); a link that fails opens nothing.
+ * The host line shows where Open really goes.</p>
  *
  * <p>Analytics are the same as before: the caller records the {@code click}; this screen records
  * {@link UiAnalytics#confirm} as {@code yes} on Open and {@code no} on Cancel or ESC, once, and
@@ -45,6 +52,10 @@ public final class PaymentConfirmScreen extends Screen {
     private static final int COLOUR_TITLE = 0xFFE0B56A;
     private static final int COLOUR_BODY = 0xFFC7BDA7;
     private static final int COLOUR_SEPARATOR = 0x40FFFFFF;
+    private static final int COLOUR_HOST = 0xFF808080;
+    private static final int BODY_HOST_GAP = 6;
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int MAX_PANEL_W = 260;
     private static final int PADDING = 12;
@@ -60,31 +71,42 @@ public final class PaymentConfirmScreen extends Screen {
     private final String target;
     private final String url;
     private final Component body;
+    private final String linkKey;
+    private final String host;
     private boolean responded = false;
 
     private int panelX, panelY, panelW, panelH;
-    private int titleRelY, bodyRelY;
+    private int titleRelY, bodyRelY, hostRelY;
     private List<FormattedCharSequence> titleLines = List.of();
     private List<FormattedCharSequence> bodyLines = List.of();
 
     PaymentConfirmScreen(Screen parent, String surface, String target, String url,
-                         Component title, Component body) {
+                         Component title, Component body, String linkKey) {
         super(title);
         this.parent = parent;
         this.surface = surface;
         this.target = target;
         this.url = url;
         this.body = body;
+        this.linkKey = linkKey;
+        this.host = LinkPolicy.hostOf(url);
     }
 
     /**
      * Open this screen for {@code url} when {@code target} is a payment link, returning true; false
      * (and nothing opened) when it is not, so the caller falls through to vanilla's
      * {@link ConfirmLinkScreen}. The caller has already recorded the {@code click}.
+     *
+     * <p>A payment link whose host is not on its key's allowlist is refused: true is returned so
+     * the caller opens nothing either, and the player stays on the calling screen.</p>
      */
     public static boolean tryOpen(Screen parent, String surface, String target, String url) {
         PaymentConfirmCopy copy = PaymentConfirmCopy.forTarget(target, url);
         if (copy == null || url == null) return false;
+        if (!LinkPolicy.allowed(copy.linkKey(), url)) {
+            LOGGER.warn("[DungeonTrain] payment link for '{}' refused (host {})", target, LinkPolicy.hostOf(url));
+            return true;
+        }
         // A Community Reward names the relay's amount, which other rewards being on may have raised.
         CommunityRewards.Reward reward = CommunityRewards.Reward.byTarget(target);
         Component title = copy.amountKey() == null
@@ -93,8 +115,25 @@ public final class PaymentConfirmScreen extends Screen {
                         ? CommunityRewards.amountFull(reward)
                         : Component.translatable(copy.amountKey()));
         Minecraft.getInstance().setScreen(new PaymentConfirmScreen(
-                parent, surface, target, url, title, Component.translatable(copy.bodyKey())));
+                parent, surface, target, url, title, withRecipient(copy.bodyKey(), target), copy.linkKey()));
         return true;
+    }
+
+    /**
+     * {@code body} plus a green "On behalf of Steve" line while the player is gifting for someone
+     * else, so they see whose name goes on it before the browser opens. Patreon carries no name, so
+     * it never gets the line.
+     */
+    private static Component withRecipient(String bodyKey, String target) {
+        if (!DonationRecipient.isGifting() || games.brennan.dungeontrain.client.analytics.UiAnalytics.TARGET_PATREON.equals(target)) {
+            return Component.translatable(bodyKey);
+        }
+        // "Your Minecraft name is filled in" would be wrong now: those bodies have a gift wording.
+        boolean hasGift = bodyKey.equals(PaymentConfirmCopy.BODY_STRIPE) || bodyKey.equals(PaymentConfirmCopy.BODY_REVOLUT);
+        Component body = Component.translatable(hasGift ? bodyKey + ".gift" : bodyKey);
+        return body.copy().append("\n\n").append(Component.translatable(
+                "gui.dungeontrain.contribute.recipient.confirm", DonationRecipient.typed())
+                .withStyle(st -> st.withColor(RecipientPicker.COLOUR_GIFTING & 0xFFFFFF)));
     }
 
     @Override
@@ -108,7 +147,9 @@ public final class PaymentConfirmScreen extends Screen {
 
         int y = PADDING;
         titleRelY = y;  y += titleLines.size() * (lh + LINE_GAP) + TITLE_SEP_GAP;
-        bodyRelY = y;   y += bodyLines.size() * (lh + LINE_GAP) + BODY_BUTTON_GAP;
+        bodyRelY = y;   y += bodyLines.size() * (lh + LINE_GAP);
+        if (host != null) { y += BODY_HOST_GAP; hostRelY = y; y += lh; }
+        y += BODY_BUTTON_GAP;
         int buttonRelY = y; y += BUTTON_H + PADDING;
         panelH = y;
 
@@ -137,7 +178,7 @@ public final class PaymentConfirmScreen extends Screen {
         if (responded) return;
         responded = true;
         UiAnalytics.confirm(surface, target, open);
-        if (open) {
+        if (open && LinkPolicy.allowed(linkKey, url)) {
             Util.getPlatform().openUri(URI.create(url));
         }
         Minecraft.getInstance().setScreen(parent);
@@ -173,6 +214,9 @@ public final class PaymentConfirmScreen extends Screen {
         for (FormattedCharSequence line : bodyLines) {
             g.drawCenteredString(this.font, line, cx, y, COLOUR_BODY);
             y += lh + LINE_GAP;
+        }
+        if (host != null) {
+            g.drawCenteredString(this.font, Component.literal(host), cx, panelY + hostRelY, COLOUR_HOST);
         }
     }
 

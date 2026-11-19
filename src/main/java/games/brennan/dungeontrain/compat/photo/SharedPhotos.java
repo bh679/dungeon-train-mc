@@ -220,7 +220,8 @@ public final class SharedPhotos {
         PhotoSubjectTally.Subjects subjects = shot.subjects();
         // This life's tally, for the Faulthurst note that twins the one-life photo boards.
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
+                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals(),
+                        games.brennan.dungeontrain.nap.NapGateData.step(player));
         // A Free Play photo stays with its photographer: it is never sent to be found by other players.
         if (RunIntegrity.isCheated(player)) return;
         String key = newKey();
@@ -784,7 +785,7 @@ public final class SharedPhotos {
 
     // ---- found photo ----------------------------------------------------------
 
-    private static String exposureIdFor(String base, int photoId) {
+    static String exposureIdFor(String base, int photoId) {
         return "dt_shared_" + Integer.toHexString(base.hashCode()) + "_" + photoId;
     }
 

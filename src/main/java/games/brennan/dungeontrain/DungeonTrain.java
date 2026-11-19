@@ -17,7 +17,9 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.compat.PlayerMobNaturalGearBridge;
 import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
+import games.brennan.dungeontrain.compat.ZombifiedBackpackLockBridge;
 import games.brennan.dungeontrain.client.ContentModeSyncClient;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
@@ -703,6 +705,17 @@ public class DungeonTrain {
             }
         }
 
+        // Zombified (Dungeon Totems) locks the main inventory; lock the bundled Edible Backpacks
+        // backpack with it: no clicks in or out, no pickups into it, and greyed out like the pack.
+        if (ModList.get().isLoaded("dungeontotems") && ModList.get().isLoaded("ediblebackpacks")) {
+            try {
+                ZombifiedBackpackLockBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("Zombified backpack lock unavailable ({}); the backpack stays usable while "
+                        + "Zombified.", t.toString());
+            }
+        }
+
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
         // item gifts. PlayerMob's feeling-tiered gift rewrite removed the
         // giveItemTo method the old mixins hooked, so subscribe to its
@@ -757,6 +770,15 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but rig-surface seam unavailable ({}); "
                         + "PlayerMobs cannot rig End Crystals on carriages.", t.toString());
+            }
+            // Wild-spawn items: standalone PlayerMob gives a natural spawn items at the nearest
+            // player's gear tier (NaturalSpawnGear, playermob 0.123.0+). DT gears PlayerMobs by
+            // difficulty itself, so switch it off. A build predating the seam has no such items.
+            try {
+                PlayerMobNaturalGearBridge.install();
+            } catch (Throwable t) {
+                LOGGER.info("PlayerMob predates the wild-spawn items seam ({}); nothing to turn off.",
+                        t.toString());
             }
         }
 

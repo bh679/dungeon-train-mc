@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveFeedClientMicTest {
@@ -49,10 +50,30 @@ class LiveFeedClientMicTest {
 
     @Test
     void theHeartbeatCarriesTheMicSwitch() {
-        assertTrue(LiveFeedClient.presignBody("tok", List.of("seg00001.ts"), true).get("micOn").getAsBoolean());
-        JsonObject off = LiveFeedClient.presignBody("tok", List.of("seg00001.ts"), false);
+        assertTrue(LiveFeedClient.presignBody("tok", List.of("seg00001.ts"), true, true).get("micOn").getAsBoolean());
+        JsonObject off = LiveFeedClient.presignBody("tok", List.of("seg00001.ts"), false, false);
         assertFalse(off.get("micOn").getAsBoolean());
+        assertFalse(off.has("mic"), "no track: nothing said, so an older relay sees the same body");
         assertEquals("tok", off.get("token").getAsString());
         assertEquals(1, off.getAsJsonArray("files").size());
+    }
+
+    @Test
+    void theHeartbeatSaysWhenTheStreamCarriesAMicTrack() {
+        assertTrue(LiveFeedClient.presignBody("tok", List.of("seg00001.ts"), false, true).get("mic").getAsBoolean());
+    }
+
+    private static Boolean track(String json) {
+        JsonObject body = JsonParser.parseString(json).getAsJsonObject();
+        return LiveFeedClient.parseMicTrack(new LiveFeedClient.Result(200, body, null));
+    }
+
+    @Test
+    void theReplySaysWhetherTheRelayCountsTheTrack() {
+        assertEquals(Boolean.TRUE, track("{\"mic\":{\"allowed\":true,\"track\":true}}"));
+        assertEquals(Boolean.FALSE, track("{\"mic\":{\"allowed\":true,\"track\":false}}"));
+        assertNull(track("{\"mic\":{\"allowed\":true}}"), "an older relay never says");
+        assertNull(track("{\"urls\":{}}"));
+        assertNull(track("{\"mic\":{\"track\":\"yes\"}}"));
     }
 }

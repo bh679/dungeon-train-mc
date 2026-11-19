@@ -544,15 +544,19 @@ public final class GlobalPlayerStats {
         }
         Data data = result.result().orElse(Data.EMPTY);
         // Verified as written, before the legacy migration reshapes it: a migrated file is unsealed.
-        SealedJson.Verdict verdict = SealedJson.verify(raw.getAsJsonObject(), scope(uuid));
+        SealedJson.Verdict verdict = SealedJson.verify(raw.getAsJsonObject(), scope(uuid), path);
         switch (verdict.provenance()) {
             case TAMPERED -> taint(uuid, path, data);
             case UNVERIFIED -> {
                 UNVERIFIED.add(uuid);
-                LOGGER.warn("[DungeonTrain] GlobalPlayerStats: {} has no seal on an install that has sealed "
-                    + "before; its totals are kept but not vouched for.", path.getFileName());
+                LOGGER.error("[DungeonTrain] GlobalPlayerStats: {} has no seal and was written after this install "
+                    + "began sealing; its totals are kept but not vouched for.", path.getFileName());
             }
-            default -> { if (verdict.tainted()) taint(uuid, path, data); }
+            default -> {
+                if (verdict.tainted()) taint(uuid, path, data);
+                // This install's own history from before it sealed: seal it now, while it still is.
+                else if (verdict.unsealed()) saveToDisk(uuid, data);
+            }
         }
         return data;
     }

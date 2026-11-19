@@ -400,8 +400,10 @@ public final class PlayerMobAdvancementEvents {
         // the advancements split own-vs-remote, the tally does not. Cheated runs freeze the
         // cross-world total the same way every other lifetime counter does.
         if (own || EchoIdentity.sourcePlayer(victim).isPresent()) {
-            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementEchoesKilled();
-            if (!RunIntegrity.isCheated(player)) {
+            int step = games.brennan.dungeontrain.nap.NapGateData.step(player);
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementEchoesKilled(step);
+            // Behind a nap point the echo is a re-rolled copy: the lifetime total doesn't grow.
+            if (step > 0 && !RunIntegrity.isCheated(player)) {
                 GlobalPlayerStats.addEchoesKilled(player.getUUID(), 1L);
             }
         }

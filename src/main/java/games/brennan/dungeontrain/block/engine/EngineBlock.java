@@ -96,7 +96,7 @@ public class EngineBlock extends BaseEntityBlock {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
         if (level.isClientSide) return InteractionResult.SUCCESS;
-        if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) player.openMenu(engine);
+        if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) player.openMenu(engine, engine::writeMenuExtra);
         return InteractionResult.CONSUME;
     }
 

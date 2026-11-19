@@ -688,6 +688,40 @@ public record WorldGenCycle(long startX, int owGap,
         return i < 0 ? Long.MIN_VALUE : worldOf(worldX, layout.start(i) + local);
     }
 
+    /**
+     * Where {@code worldX} sits in the band layout: which side of the anchor, which doubling run, which
+     * slot and how far into it. Ahead of the anchor this follows from X alone; behind it the same X
+     * lands in a different band once {@link #reverseSlide} differs, so a nap keeps this as well as X.
+     *
+     * @param reversed true behind the anchor (the reversed cycle)
+     * @param run      doubling run index {@code k}
+     * @param slot     layout slot index
+     * @param local    base blocks into the slot (world blocks over {@code 2^run})
+     */
+    public record BandPosition(boolean reversed, int run, int slot, long local) {}
+
+    /** {@link BandPosition} of {@code worldX}, or null with no layout or inside the overworld buffer. */
+    public BandPosition bandPosition(long worldX) {
+        if (layout == null) return null;
+        int i = slotAt(worldX);
+        if (i < 0) return null;
+        return new BandPosition(worldX < startX, runAt(worldX), i, baseAt(worldX) - layout.start(i));
+    }
+
+    /**
+     * The world X at {@code p} under this cycle and the live {@link #reverseSlide}, or
+     * {@link Long#MIN_VALUE} when {@code p} does not fit this layout (no layout, a slot or depth it does
+     * not have, an absurd run). The inverse of {@link #bandPosition}.
+     */
+    public long worldXOf(BandPosition p) {
+        if (layout == null || p == null) return Long.MIN_VALUE;
+        if (p.slot() < 0 || p.slot() >= layout.count() || p.run() < 0 || p.run() > 40) return Long.MIN_VALUE;
+        if (p.local() < 0L || p.local() >= layout.length(p.slot())) return Long.MIN_VALUE;
+        long u = layout.start(p.slot()) + p.local();
+        long low = p.reversed() ? reversedRunLowX(p.run()) : startX + CycleLayout.runStart(p.run(), layout.period());
+        return low + (u << p.run());
+    }
+
     /** Doubling scale ({@code 2^run}) at {@code worldX}: world blocks per base block. 1 without a layout. */
     public long runScaleAt(int worldX) {
         return layout == null ? 1L : 1L << runAt(worldX);
@@ -2648,6 +2682,44 @@ public record WorldGenCycle(long startX, int owGap,
         if (u < 0L) return false;
         long farU = layout.start(fs) + layout.eraCoreStart(fs, fe) - layout.fadeBefore(fs, fe) / 2;
         return u >= farU;
+    }
+
+    /**
+     * One era of a legacy run in world blocks: where the fade into it begins, and where its core begins and
+     * ends. See {@link #legacyRunOf}.
+     */
+    public record LegacyRunEra(LegacyBandKind kind, long fadeStartX, long coreStartX, long coreEndX) {}
+
+    /**
+     * A legacy run laid out in world blocks for one lap's doubling.
+     *
+     * @param eras     the run's eras in riding order
+     * @param endX     one past the run's exit fade, where the overworld after it begins
+     * @param lapEndX  one past the last block of that lap, where the next lap begins
+     */
+    public record LegacyRun(java.util.List<LegacyRunEra> eras, long endX, long lapEndX) {}
+
+    /**
+     * The legacy run holding era {@code kind} on the lap {@code worldX} is in, from anywhere on that lap, so a
+     * caller can see the eras ahead of where it stands and the stretch after them. {@code null} behind spawn,
+     * in the overworld buffer, with no layout, or when {@code kind} is not in the order. Pure.
+     */
+    public LegacyRun legacyRunOf(LegacyBandKind kind, int worldX) {
+        if (layout == null || isMirroredAt(worldX) || baseAt(worldX) < 0L) return null;
+        int i = layout.legacySlotOf(kind);
+        if (i < 0) return null;
+        LegacySpan[] eras = layout.eras(i);
+        java.util.List<LegacyRunEra> out = new java.util.ArrayList<>(eras.length);
+        long at = layout.start(i);
+        for (int e = 0; e < eras.length; e++) {
+            long fadeStart = at;
+            long coreStart = fadeStart + layout.fadeBefore(i, e);
+            at = coreStart + eras[e].holdLen();
+            out.add(new LegacyRunEra(eras[e].kind(),
+                    worldOf(worldX, fadeStart), worldOf(worldX, coreStart), worldOf(worldX, at)));
+        }
+        return new LegacyRun(java.util.List.copyOf(out), worldOf(worldX, layout.start(i) + layout.length(i)),
+                worldOf(worldX, layout.period()));
     }
 
     /**

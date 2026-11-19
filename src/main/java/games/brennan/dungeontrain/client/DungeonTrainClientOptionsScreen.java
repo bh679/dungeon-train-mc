@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.discord.DiscordRichPresence;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
@@ -382,14 +383,24 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
             case TWITCH_ACCOUNT -> addTwitchAccount(list);
+            // Discord is 13+: no Discord status in Kid mode, like the Twitch block.
+            case DISCORD_STATUS -> {
+                if (ClientDisplayConfig.isKidMode()) return null;
+                return addSettingRow(list, row);
+            }
             default -> {
-                Setting setting = build(row);
-                return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
-                        setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
-                        setting.control, setting.tooltip);
+                return addSettingRow(list, row);
             }
         }
         return null;
+    }
+
+    /** One ordinary setting row: icon, caption, hint and the control {@link #build} makes for it. */
+    private SettingsRowList.Entry addSettingRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        Setting setting = build(row);
+        return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
+                setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
+                setting.control, setting.tooltip);
     }
 
     /**
@@ -778,6 +789,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // the next stream starts; the balance and mode apply at once.
             case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
                     LiveMicHotkeys::setFromOptions), key + ".tip");
+            case MIC_HINT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micHint(),
+                    LiveFeedClientConfig::setMicHint), key + ".tip");
             case MIC_DEVICE -> {
                 List<String> devices = new ArrayList<>();
                 devices.add("");
@@ -977,6 +990,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // "Dungeon Train X is out" when a real release lands mid-session.
             case UPDATE_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isUpdateNoticeChatEnabled(),
                     ClientDisplayConfig::setUpdateNoticeChat), key + ".tip");
+
+            // Community-event countdown lines. The server sends them, so a flip re-syncs it.
+            case EVENT_REMINDERS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isEventReminders(), on -> {
+                    ClientDisplayConfig.setEventReminders(on);
+                    ContentModeSyncClient.syncNow();
+                }), key + ".tip");
+
+            // "Playing Dungeon Train" on the player's Discord profile, through the local Discord app.
+            case DISCORD_STATUS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDiscordRichPresence(), on -> {
+                    ClientDisplayConfig.setDiscordRichPresence(on);
+                    DiscordRichPresence.setEnabled(on);
+                }), key + ".tip");
 
             // "Minecraft only has N GB of memory" — title-screen card + chat line, once a session each.
             case LOW_MEMORY_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isLowMemoryNoticeChatEnabled(),

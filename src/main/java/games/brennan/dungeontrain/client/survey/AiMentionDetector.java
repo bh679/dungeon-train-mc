@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 /**
  * Whether an NPS answer is a low score that blames AI, which earns the player a note from Brennan
- * ({@link NpsAiNoteScreen}). Pure, so it can be tested without a client.
+ * ({@link KnownFeature#AI}, shown by {@link KnownFeatureNotes}). Pure, so it can be tested without a client.
  *
  * <p>A misfire only shows a polite note, so this leans towards matching, with three guards against
  * the misfires that would be common:</p>

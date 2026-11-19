@@ -70,8 +70,6 @@ public final class VersionInfo {
      * know about "when was the last update" without asking anyone.
      */
     public static final String LAST_UPDATE_DATE;
-    /** The Distant Horizons build the modpack pins ({@code distant_horizons_version}); empty when unknown. */
-    public static final String MODPACK_DISTANT_HORIZONS_VERSION;
 
     static {
         String version = UNKNOWN;
@@ -84,7 +82,6 @@ public final class VersionInfo {
         int updatesDay = 0;
         int updatesYear = 0;
         String lastUpdateDate = "";
-        String dhVersion = "";
         try (InputStream in = VersionInfo.class.getResourceAsStream(PROPERTIES_PATH)) {
             if (in != null) {
                 Properties props = new Properties();
@@ -99,7 +96,6 @@ public final class VersionInfo {
                 updatesWeek = parseCount(props.getProperty("updates_week"), "updates_week");
                 updatesDay = parseCount(props.getProperty("updates_day"), "updates_day");
                 updatesYear = parseCount(props.getProperty("updates_year"), "updates_year");
-                dhVersion = props.getProperty("distant_horizons_version", "").trim();
                 String day = props.getProperty("last_update_date");
                 lastUpdateDate = day == null ? "" : day.trim();
             } else {
@@ -118,7 +114,6 @@ public final class VersionInfo {
         UPDATES_DAY = updatesDay;
         UPDATES_YEAR = updatesYear;
         LAST_UPDATE_DATE = lastUpdateDate;
-        MODPACK_DISTANT_HORIZONS_VERSION = dhVersion;
         DISPLAY = "Dungeon Train v" + VERSION + " (" + BRANCH + ")";
     }
 

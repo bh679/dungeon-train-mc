@@ -40,6 +40,7 @@
     }
   },
   "links": {
-    "11,4,10": "loot_irongold"
+    "11,4,10": "loot_irongold",
+    "13,12,12": "loot"
   }
 }

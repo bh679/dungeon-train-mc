@@ -49,7 +49,7 @@
     },
     {
       "id": "craftshrine2",
-      "weight": 2,
+      "weight": 1,
       "minLevel": 5
     },
     {
@@ -76,15 +76,15 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV",
-        "CLASSIC",
         "SKYLANDS",
+        "INFDEV",
         "FLOATING",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -103,6 +103,14 @@
     {
       "id": "craft4",
       "weight": 3
+    },
+    {
+      "id": "crafty",
+      "weight": 1
+    },
+    {
+      "id": "craftagain",
+      "weight": 1
     }
   ]
 }

@@ -28,14 +28,15 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.EnumValue<StreamerBoxStreams> STREAMER_BOX_STREAMS;
     public static final ModConfigSpec.EnumValue<LiveChatTranslation> LIVE_CHAT_TRANSLATION;
 
-    /** Where a Live chat line's translation goes while the Live Translations reward is on. */
-    public enum LiveChatTranslation { UNDER, REPLACE, FIRST }
+    /** Where a Live chat line's translation goes while the Live Translations reward is on; OFF shows lines as written. */
+    public enum LiveChatTranslation { UNDER, REPLACE, FIRST, OFF }
     public static final ModConfigSpec.BooleanValue POPUPS_OVER_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_PHOTOS;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_BOOKS;
     public static final ModConfigSpec.BooleanValue TWITCH_SHOUTOUT_HINT;
+    public static final ModConfigSpec.BooleanValue MIC_HINT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -90,7 +91,7 @@ public final class LiveFeedClientConfig {
             .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is its own switch (micSupport). On by default; takes effect from your next stream.")
             .define("streamAudio", true);
         MIC_SUPPORT = b
-            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the voice joins from your next stream. Off by default.")
+            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the stream gains a mic track and the voice joins it in about half a minute (once Kid-mode viewers have moved to the game-only track). Off by default.")
             .define("micSupport", MIC_SUPPORT_DEFAULT);
         MIC_DEVICE = b
             .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
@@ -120,7 +121,7 @@ public final class LiveFeedClientConfig {
             .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
         LIVE_CHAT_TRANSLATION = b
-            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original, click it to flip), UNDER the original in grey, or FIRST with the original under it.")
+            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original, click it to flip), UNDER the original in grey, or FIRST with the original under it. OFF shows every line as written and asks for no translations.")
             // Renamed from liveChatTranslation: the old default, UNDER, was saved in every player's file, so a new default never reached them.
             .defineEnum("liveChatTranslationMode", LiveChatTranslation.REPLACE);
         LIVE_MOMENT_ADVANCEMENTS = b
@@ -135,6 +136,9 @@ public final class LiveFeedClientConfig {
         TWITCH_SHOUTOUT_HINT = b
             .comment("When you go live without a Twitch saved, say in chat that dropping your Twitch username or URL there gets you a shout-out on the official Dungeon Train Twitch. Never shown once a Twitch is saved, or in Kid mode.")
             .define("twitchShoutoutHint", true);
+        MIC_HINT = b
+            .comment("When you go live with your microphone off (on a stream with sound), say in chat where to turn it on. Turned on mid-stream, the voice joins that stream.")
+            .define("micHint", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
@@ -378,6 +382,15 @@ public final class LiveFeedClientConfig {
         TWITCH_SHOUTOUT_HINT.save();
     }
 
+    /** The "your mic is off" reminder at stream start ({@code LiveMicHint}). */
+    public static boolean micHint() { return !loaded() || MIC_HINT.get(); }
+
+    public static void setMicHint(boolean value) {
+        if (!loaded() || MIC_HINT.get() == value) return;
+        MIC_HINT.set(value);
+        MIC_HINT.save();
+    }
+
     /** The Discord live chat switch as set; {@code LiveChatBridge} still forces it off in Kid mode. */
     public static boolean liveChat() { return !loaded() || LIVE_CHAT.get(); }
 
@@ -389,6 +402,9 @@ public final class LiveFeedClientConfig {
 
     /** Where a translated Live chat line goes; UNDER until the config loads. */
     public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.REPLACE; }
+
+    /** Whether Live chat lines are translated for this reader at all (any mode but OFF). */
+    public static boolean liveChatTranslationOn() { return liveChatTranslation() != LiveChatTranslation.OFF; }
 
     public static void setLiveChatTranslation(LiveChatTranslation value) {
         if (!loaded() || LIVE_CHAT_TRANSLATION.get() == value) return;

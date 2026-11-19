@@ -5890,6 +5890,12 @@
  "item.dungeontrain.random_bad_potion": [
   "item"
  ],
+ "item.dungeontrain.random_pottery_sherd": [
+  "item"
+ ],
+ "item.dungeontrain.random_goat_horn": [
+  "item"
+ ],
  "gui.dungeontrain.prefab_tab.variants": [
   "screen",
   "tooltip"

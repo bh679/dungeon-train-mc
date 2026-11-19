@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.block.engine;
 
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.train.engine.DriftEngine;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -17,39 +18,71 @@ import net.minecraft.world.item.ItemStack;
  * banked coal and the whole carriage's coal (every engine in it) synced as menu data, so the gauge and
  * the "more worlds" line read them without a packet of their own. The input takes coal or charcoal only, up to what the banked coal leaves of
  * {@link DriftEngine#MAX_COAL}, and gives it back on request. The screen draws the faded coal an empty input shows.
+ *
+ * <p>The drifting carriage the engine stands in rides the open-screen packet ({@link #writeExtra} /
+ * {@link #fromNetwork}): whether there is one, and its name id. Read once, when the screen opens.</p>
  */
 public class EngineMenu extends AbstractContainerMenu {
 
+    /** How far the carriage line under the title pushes everything below it down the screen. */
+    public static final int CARRIAGE_LINE_H = 10;
     /** Where the coal slot sits on the screen texture. */
-    public static final int COAL_X = 13, COAL_Y = 20;
+    public static final int COAL_X = 13, COAL_Y = 20 + CARRIAGE_LINE_H;
 
     private final Container engine;
     private final ContainerData data;
+    private final boolean inCarriage;
+    private final String carriageId;
 
-    /** Client side: a stand-in container, filled by the menu's own slot sync. */
-    public EngineMenu(int id, Inventory inventory) {
-        this(id, inventory, new SimpleContainer(1), new SimpleContainerData(2));
+    /** Client side: rebuilt from {@link #writeExtra}'s data, with a stand-in container filled by the slot sync. */
+    public static EngineMenu fromNetwork(int id, Inventory inventory, RegistryFriendlyByteBuf buf) {
+        boolean inCarriage = buf.readBoolean();
+        String carriageId = buf.readUtf(64);
+        return new EngineMenu(id, inventory, new SimpleContainer(1), new SimpleContainerData(2), inCarriage, carriageId);
     }
 
-    public EngineMenu(int id, Inventory inventory, Container engine, ContainerData data) {
+    /** The open-screen data {@link #fromNetwork} reads: whether the engine is in a drifting carriage, then its name id. */
+    public static void writeExtra(RegistryFriendlyByteBuf buf, boolean inCarriage, String carriageId) {
+        buf.writeBoolean(inCarriage);
+        buf.writeUtf(carriageId == null ? "" : carriageId, 64);
+    }
+
+    public EngineMenu(int id, Inventory inventory, Container engine, ContainerData data,
+                      boolean inCarriage, String carriageId) {
         super(ModMenuTypes.ENGINE_BLOCK.get(), id);
         checkContainerSize(engine, 1);
         checkContainerDataCount(data, 2);
         this.engine = engine;
         this.data = data;
+        this.inCarriage = inCarriage;
+        this.carriageId = carriageId == null ? "" : carriageId;
         engine.startOpen(inventory.player);
         addSlot(new Slot(engine, 0, COAL_X, COAL_Y) {
-            @Override public boolean mayPlace(ItemStack stack) { return EngineBlockEntity.isFuel(stack); }
+            // A full engine (banked coal at the cap) takes nothing: without the room check, a shift-click
+            // "moves" 0 coal, reports success, and vanilla's quick-move loop spins forever.
+            @Override public boolean mayPlace(ItemStack stack) {
+                return EngineBlockEntity.isFuel(stack) && getMaxStackSize() > 0;
+            }
             @Override public int getMaxStackSize() { return Math.max(0, DriftEngine.MAX_COAL - banked()); }
             @Override public int getMaxStackSize(ItemStack stack) { return getMaxStackSize(); }
         });
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(inventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                addSlot(new Slot(inventory, col + row * 9 + 9, 8 + col * 18, 84 + CARRIAGE_LINE_H + row * 18));
             }
         }
-        for (int col = 0; col < 9; col++) addSlot(new Slot(inventory, col, 8 + col * 18, 142));
+        for (int col = 0; col < 9; col++) addSlot(new Slot(inventory, col, 8 + col * 18, 142 + CARRIAGE_LINE_H));
         addDataSlots(data);
+    }
+
+    /** True when the engine stands in a drifting carriage (or dimensional room); its fuel only matters then. */
+    public boolean inCarriage() {
+        return inCarriage;
+    }
+
+    /** The drifting carriage's name id, {@code ""} when it has none or there is no carriage. */
+    public String carriageId() {
+        return carriageId;
     }
 
     /** Coal the engine arrived with, as last synced: shown, never taken out. */
@@ -89,6 +122,8 @@ public class EngineMenu extends AbstractContainerMenu {
         } else {
             return ItemStack.EMPTY;
         }
+        // Nothing actually moved: say so, or vanilla's quick-move loop calls us again forever.
+        if (stack.getCount() == before.getCount()) return ItemStack.EMPTY;
         if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
         else slot.setChanged();
         return before;

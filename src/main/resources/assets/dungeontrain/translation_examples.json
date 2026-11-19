@@ -1,4 +1,16 @@
 {
+  "chat.dungeontrain.event.in_24h": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.in_1h": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.in_10m": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
+  "chat.dungeontrain.event.now": {
+    "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
+  },
   "chat.dungeontrain.public_posts.death.two": {
     "1": {
       "label": "the carriage number the player died at",
@@ -1467,6 +1479,23 @@
       "examples": [
         "3",
         "27"
+      ]
+    }
+  },
+  "chat.dungeontrain.nap.obelisk_needs.one": {
+    "1": {
+      "label": "how many more Amber Gems the obelisk needs (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.nap.obelisk_needs.other": {
+    "1": {
+      "label": "how many more Amber Gems the obelisk needs, 2 to 6",
+      "examples": [
+        "3",
+        "6"
       ]
     }
   },
@@ -4727,6 +4756,33 @@
       ]
     }
   },
+  "gui.dungeontrain.nap.ongoing.headline": {
+    "1": {
+      "label": "which ride this is, as an ordinal in your language (previous deaths + 1)",
+      "examples": [
+        "fifth",
+        "37th"
+      ]
+    }
+  },
+  "gui.dungeontrain.nap.ongoing.subline_past.one": {
+    "1": {
+      "label": "how many lives came before this one (digits)",
+      "examples": [
+        "1",
+        "21"
+      ]
+    }
+  },
+  "gui.dungeontrain.nap.ongoing.subline_past.other": {
+    "1": {
+      "label": "how many lives came before this one (digits)",
+      "examples": [
+        "4",
+        "37"
+      ]
+    }
+  },
   "gui.dungeontrain.death.narr.photos": {
     "1": {
       "label": "how many photos this ride captured",
@@ -6614,6 +6670,42 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.undead_commuter.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.heart_of_stone.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.seeing_red.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.party_of_one.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "500",
+        "250"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.no_container_100.description": {
     "1": {
       "label": "carriages to travel, from the requirement",
@@ -6955,6 +7047,15 @@
       "examples": [
         "On",
         "Off"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.entrance": {
+    "1": {
+      "label": "the Entrance setting, already translated",
+      "examples": [
+        "Two-way",
+        "One-way"
       ]
     }
   },
@@ -7382,6 +7483,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.block_variant.bed_colours_count": {
+    "1": {
+      "label": "how many bed colours are switched on",
+      "examples": [
+        "2",
+        "16"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.container.title_at": {
     "1": {
       "label": "the container's x,y,z inside the plot",
@@ -7427,6 +7537,15 @@
       "examples": [
         "Trial Key",
         "Ominous Trial Key"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.trap_pct": {
+    "1": {
+      "label": "the percent chance the chest spawns as a trapped chest (a whole number, the % sign follows)",
+      "examples": [
+        "25",
+        "100"
       ]
     }
   },
@@ -11590,6 +11709,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_drift_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_entrance_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [
@@ -16219,6 +16348,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live.mic_off_hint": {
+    "1": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live.mic_off_hint.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Microphone"
+      ]
+    }
+  },
   "chat.dungeontrain.live.needs_internet": {
     "1": {
       "label": "the clickable link that opens the internet consent card, already translated (chat.dungeontrain.live.needs_internet.link)",
@@ -17777,6 +17914,15 @@
       ]
     }
   },
+  "gui.dungeontrain.contribute.recipient.self": {
+    "1": { "label": "the player's own Minecraft name", "examples": ["Brennan", "Steve"] }
+  },
+  "gui.dungeontrain.contribute.recipient.gifting": {
+    "1": { "label": "the Minecraft name the player typed to donate on behalf of", "examples": ["Steve", "Alex_42"] }
+  },
+  "gui.dungeontrain.contribute.recipient.confirm": {
+    "1": { "label": "the Minecraft name the player typed to donate on behalf of", "examples": ["Steve", "Alex_42"] }
+  },
   "gui.dungeontrain.currency.approx": {
     "1": {
       "label": "the name of the currency amounts are shown in",
@@ -18413,6 +18559,92 @@
       "examples": [
         "8",
         "30"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.carriage_id": {
+    "1": {
+      "label": "the drifting carriage's id, letters and digits, never translated",
+      "examples": [
+        "MZXW K 0C9-3",
+        "NOPI 3F L4 0C9P-7"
+      ]
+    }
+  },
+
+  "gui.dungeontrain.known_feature.off": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.curseforge": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.modrinth": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "gui.dungeontrain.known_feature.enable.other": {
+    "1": {
+      "label": "a mod's name, never translated",
+      "examples": [
+        "Nemo's Inventory Sorting",
+        "Just Enough Items"
+      ]
+    }
+  },
+  "chat.dungeontrain.known_feature.line": {
+    "1": {
+      "label": "the note's title, already translated",
+      "examples": [
+        "You already have a trash slot",
+        "Multiplayer is coming"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.confirm": {
+    "1": {
+      "label": "the name of the Kick or Twitch account being reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    },
+    "2": {
+      "label": "the streaming site the message came from",
+      "examples": [
+        "Kick",
+        "Twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.done": {
+    "1": {
+      "label": "the name of the Kick or Twitch account that was reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.relink": {
+    "1": {
+      "label": "the in-game command that gives a link code",
+      "examples": [
+        "/discord"
       ]
     }
   }

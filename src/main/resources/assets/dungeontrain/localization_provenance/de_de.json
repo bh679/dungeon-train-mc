@@ -8,30 +8,7 @@
     "discordpresence": "*"
   },
   "source_changed": {
-    "dungeontrain": [
-      "chat.dungeontrain.live.headpiece_burns",
-      "chat.dungeontrain.live.censored",
-      "chat.dungeontrain.live.censored_book",
-      "chat.dungeontrain.live.burns_moderated",
-      "chat.dungeontrain.live.burns_banned",
-      "chat.dungeontrain.live.appeal_hint",
-      "command.dungeontrain.live_appeal.usage",
-      "command.dungeontrain.live_appeal.sent",
-      "chat.dungeontrain.twitch.shoutout_hint",
-      "chat.dungeontrain.twitch.save_offer",
-      "chat.dungeontrain.twitch.saved",
-      "chat.dungeontrain.twitch.saved_verify",
-      "gui.dungeontrain.editor_screen.layout.weight_tip",
-      "gui.dungeontrain.options.catch_up_burst.hint",
-      "item.dungeontrain.live_headpiece",
-      "item.dungeontrain.random_live_headpiece",
-      "gui.dungeontrain.options.stream_audio.hint",
-      "gui.dungeontrain.options.stream_audio.tip",
-      "gui.dungeontrain.options.mic_support.hint",
-      "gui.dungeontrain.unsupported_mods.live_hint",
-      "gui.dungeontrain.custom_content.card.default.tag",
-      "gui.dungeontrain.custom_content.dev_ignore.tip"
-    ],
+    "dungeontrain": [],
     "adventureitemnames": [],
     "playermob": [],
     "discordpresence": []

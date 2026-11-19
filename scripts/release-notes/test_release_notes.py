@@ -21,6 +21,7 @@ RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
 SET_TAGS = os.path.join(HERE, "set-tags.py")
 SET_MAJOR = os.path.join(HERE, "set-major.py")
+SET_BILIBILI = os.path.join(HERE, "set-bilibili.py")
 sys.path.insert(0, HERE)
 import changelog_io  # noqa: E402
 SCHEMA_FILE = os.path.join(
@@ -968,6 +969,58 @@ def test_set_major_attaches_and_clears_video() -> None:
     assert r.returncode == 0 and "video" not in e and "video_cover" not in e, (r.stderr, e)
 
 
+def test_set_major_attaches_and_clears_loop() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.gif", "--loop", "https://x.test/p.loop.mp4")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["loop"] == "https://x.test/p.loop.mp4" and e["image"] == "https://x.test/p.gif", e
+    for bad in ("http://x.test/p.mp4", "https://x.test/p.gif", "https://x.test/a b.mp4"):
+        r = run(SET_MAJOR, ws, "--id", "drop", "--loop", bad)
+        assert r.returncode == 1 and "loop" in r.stderr, (bad, r.stderr)
+    r = run(SET_MAJOR, ws, "--id", "drop", "--loop", "https://x.test/q.mp4", "--clear-loop")
+    assert r.returncode == 1 and "contradicts" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--clear-loop")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "loop" not in e and e["image"] == "https://x.test/p.gif", (r.stderr, e)
+
+
+def test_loop_never_rendered_into_notes() -> None:
+    entry = {"id": "x", "title": "T", "type": "feature", "major": True, "image": "https://x.test/p.gif",
+             "loop": "https://x.test/p.loop.mp4"}
+    assert "loop.mp4" not in changelog_io._render_major(entry)
+
+
+def test_videos_per_format_append_set_and_clear() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "site", "--major", "--image", "https://x.test/p.jpg",
+               "--video-feed", "https://x.test/feed.mp4", "--video-tiktok", "https://x.test/tt.mp4", "--video-cover", "0.5")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    # A cover time needs only a clip per format, not the single video.
+    assert e["videos"] == {"feed": "https://x.test/feed.mp4", "tiktok": "https://x.test/tt.mp4"} and "video" not in e, e
+    r = append(ws, "small", "--video-story", "https://x.test/s.mp4")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+    r = append(ws, "bad", "--major", "--video-story", "https://x.test/s.gif")
+    assert r.returncode == 1 and "story video" in r.stderr, r.stderr
+    # set-major merges a format in over the others, and --clear-video drops every clip.
+    r = run(SET_MAJOR, ws, "--id", "site", "--video-story", "https://x.test/st.mp4")
+    assert r.returncode == 0, r.stderr
+    assert set(read_changelog(ws)["entries"][0]["videos"]) == {"feed", "story", "tiktok"}
+    r = run(SET_MAJOR, ws, "--id", "site", "--clear-video")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "videos" not in e and "video_cover" not in e, (r.stderr, e)
+    try:
+        changelog_io.validate_major_fields(None, None, videos={"square": "https://x.test/q.mp4"})
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("accepted an unknown format")
+
+
 def test_mentions_merge_validate_and_clear() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")
@@ -985,6 +1038,59 @@ def test_mentions_merge_validate_and_clear() -> None:
     assert r.returncode == 0 and "mentions" not in read_changelog(ws)["entries"][0], r.stderr
     r = append(ws, "small", "--mention", "A", "tiktok", "@a")
     assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+
+
+BILIBILI_OK = {
+    "title": {"zh": "地牢列车 更新", "en": "Dungeon Train update"},
+    "description": {"zh": "第一行\n第二行", "en": "Line one\nLine two"},
+    "tags": {"zh": ["我的世界", "模组"], "en": ["Minecraft", "mod"]},
+}
+
+
+def test_validate_bilibili_limits() -> None:
+    assert changelog_io.validate_bilibili(BILIBILI_OK) == BILIBILI_OK
+    bad = [
+        {**BILIBILI_OK, "title": {"zh": "长" * 81, "en": "x"}},
+        {**BILIBILI_OK, "title": {"zh": "a", "en": "x \u2014 y"}},
+        {**BILIBILI_OK, "description": {"zh": "a" * 2001, "en": "x"}},
+        {**BILIBILI_OK, "tags": {"zh": [f"t{i}" for i in range(11)], "en": ["a"]}},
+        {**BILIBILI_OK, "tags": {"zh": ["a" * 21], "en": ["a"]}},
+        {**BILIBILI_OK, "tags": {"zh": ["a", "a"], "en": ["a"]}},
+        {**BILIBILI_OK, "tags": {"zh": [], "en": ["a"]}},
+        {**BILIBILI_OK, "title": {"zh": "a"}},
+        {"title": BILIBILI_OK["title"], "tags": BILIBILI_OK["tags"]},
+        {**BILIBILI_OK, "extra": 1},
+    ]
+    for b in bad:
+        try:
+            changelog_io.validate_bilibili(b)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted {b!r}")
+
+
+def test_set_bilibili_sets_and_clears() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    path = os.path.join(ws, "bili.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(BILIBILI_OK, f, ensure_ascii=False)
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 1 and "not a major entry" in r.stderr, r.stderr
+    assert run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png").returncode == 0
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 0, r.stderr
+    assert read_changelog(ws)["entries"][0]["bilibili"] == BILIBILI_OK
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({**BILIBILI_OK, "title": {"zh": "a" * 81, "en": "x"}}, f)
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 1 and "80" in r.stderr, r.stderr
+    assert read_changelog(ws)["entries"][0]["bilibili"] == BILIBILI_OK, "a refused file must not write"
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--clear")
+    assert r.returncode == 0 and "bilibili" not in read_changelog(ws)["entries"][0], r.stderr
+    r = run(SET_BILIBILI, ws, "--id", "nope", "--clear")
+    assert r.returncode == 1 and "no changelog entry" in r.stderr, r.stderr
 
 
 def test_set_major_milestone_sets_keeps_and_drops() -> None:
@@ -1261,8 +1367,12 @@ def main() -> int:
         test_validate_major_fields_video_and_cover,
         test_append_major_with_video,
         test_set_major_attaches_and_clears_video,
+        test_set_major_attaches_and_clears_loop,
+        test_loop_never_rendered_into_notes,
         test_set_major_milestone_sets_keeps_and_drops,
         test_set_major_notable_sets_keeps_and_drops,
+        test_validate_bilibili_limits,
+        test_set_bilibili_sets_and_clears,
         test_append_notable_implies_major,
         test_render_full_major_leads_before_notable,
         test_render_tag_line_empty_when_untagged,

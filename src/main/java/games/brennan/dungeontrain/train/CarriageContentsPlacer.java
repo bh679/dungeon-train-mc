@@ -718,6 +718,8 @@ public final class CarriageContentsPlacer {
                         games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()), w.localPos(), seed, carriageIndex,
                         lootId);
                     ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
+                    games.brennan.dungeontrain.editor.RotationApplier.stampObeliskGems(level, wWorld, rotated,
+                        w.entry(), entry.localPos(), seed, carriageIndex, lockId);
                     // A Y flip turns the carriage upside down, so an up-growing column grows down.
                     VariantState growthEntry = flip.y() && !w.entry().growth().isDefault()
                         ? w.entry().withGrowth(w.entry().growth().flipped()) : w.entry();
@@ -1585,6 +1587,22 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * The NBT to create {@code picked}'s mob from: its own egg NBT, plus — for BetterEnd's End slime
+     * whose egg did not bake a {@code Variant} — one of the row's lit types (any of the four when none
+     * is lit). The variant path skips {@code finalizeSpawn}, where BetterEnd would pick the type, and
+     * the entity reads {@code Variant} back in {@code readAdditionalSaveData}, so no BetterEnd class
+     * is touched here.
+     */
+    private static CompoundTag withEndSlimeType(VariantState picked, ServerLevel level) {
+        CompoundTag mobNbt = picked.blockEntityNbt();
+        if (!games.brennan.dungeontrain.editor.VariantSlime.isEndSlime(picked.entityId())) return mobNbt;
+        if (mobNbt != null && mobNbt.contains("Variant")) return mobNbt;
+        CompoundTag out = mobNbt == null ? new CompoundTag() : mobNbt.copy();
+        out.putInt("Variant", picked.slime().rollType(level.getRandom()));
+        return out;
+    }
+
+    /**
      * {@link #spawnVariantMob(ServerLevel, BlockPos, VariantState, int, long, boolean)} returning what
      * it put in the level: the mob (its riders already added with it), the onboarding substitute, or
      * {@code null} when nothing was added. Public for {@code /dungeontrain debug spider-jockey}.
@@ -1602,7 +1620,7 @@ public final class CarriageContentsPlacer {
         EntityType<?> type = typeOpt.get();
         Entity entity;
         try {
-            CompoundTag mobNbt = picked.blockEntityNbt();
+            CompoundTag mobNbt = withEndSlimeType(picked, level);
             if (mobNbt != null) {
                 CompoundTag spawnNbt = games.brennan.dungeontrain.editor.FrozenMobs.thaw(mobNbt.copy());
                 spawnNbt.putString("id", picked.entityId().toString());
@@ -1656,7 +1674,8 @@ public final class CarriageContentsPlacer {
             CompoundTag mobNbt = picked.blockEntityNbt();
             boolean authoredSize = mobNbt != null && mobNbt.contains("Size");
             if (!authoredSize) {
-                int size = 1 + level.getRandom().nextInt(4); // 1, 2, 3, or 4
+                // One of the row's lit sizes (Z menu Size option); any of 1–4 when none is lit.
+                int size = picked.slime().rollSize(level.getRandom());
                 slime.setSize(size, true); // resizes bbox + resets health/damage
             }
         }

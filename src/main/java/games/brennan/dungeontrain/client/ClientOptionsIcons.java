@@ -56,6 +56,7 @@ final class ClientOptionsIcons {
             case BOOK_AUTHOR_CHAT -> Icon.item(Items.BOOK);
             case PROTECT_OWN_PETS -> Icon.item(Items.BONE);
             case UPDATE_NOTICE_CHAT -> NEWS;
+            case EVENT_REMINDERS -> Icon.item(Items.BELL);
             case LOW_MEMORY_NOTICE_CHAT -> Icon.item(Items.REDSTONE);
             case OTHER_ADVANCEMENT_TABS -> Icon.item(Items.EXPERIENCE_BOTTLE);
             case OTHER_ADVANCEMENT_CARDS -> Icon.item(Items.PAPER);
@@ -95,6 +96,7 @@ final class ClientOptionsIcons {
             case STREAM_VOLUME -> Icon.item(Items.MUSIC_DISC_13);
             case MIC_MIX -> Icon.item(Items.GOAT_HORN);
             case MIC_MODE -> Icon.item(Items.STONE_BUTTON);
+            case MIC_HINT -> Icon.item(Items.TRIPWIRE_HOOK);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
             case LIVE_CHAT -> Icon.item(Items.BELL);
@@ -127,6 +129,8 @@ final class ClientOptionsIcons {
             case MENU_SPACE_BLOCK_VARIANT -> Icon.item(Items.CRAFTING_TABLE);
             case CREATIVE_MOD_BLOCK_TABS -> FILTER;
             case CREATIVE_MOD_BLOCKS_IN_SEARCH -> SEARCH;
+
+            case DISCORD_STATUS -> DISCORD_LINK;
 
             case DISCORD_ACCOUNT, TWITCH_ACCOUNT, PERFORMANCE_TIPS ->
                     throw new IllegalArgumentException(row + " is expanded into several rows and has no icon of its own");

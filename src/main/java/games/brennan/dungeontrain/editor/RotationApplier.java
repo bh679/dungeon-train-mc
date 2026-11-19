@@ -220,8 +220,10 @@ public final class RotationApplier {
      * redstone toggle. {@code base} is normally {@code entry.state()} after the caller's stage
      * resolution — passed separately so this class stays free of the train package. Use this from
      * any stamp pass that writes a picked {@link VariantState}; writing {@code entry.state()}
-     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers, and the candle count
-     * ({@link VariantCandles}) and flower pot plant ({@link VariantPot}) options.
+     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers, the candle count
+     * ({@link VariantCandles}), flower pot plant ({@link VariantPot}), respawn anchor charge
+     * ({@link VariantCharges}) and white bed colour ({@link VariantBedColours}) options, and a
+     * chest row's trapped-chest chance ({@link TrappedChestRoll}).
      */
     public static BlockState apply(
         BlockState base, VariantState entry,
@@ -231,7 +233,26 @@ public final class RotationApplier {
             localPos, worldSeed, carriageIndex, lockId);
         long key = posOrLockKey(localPos, lockId);
         placed = entry.candles().apply(placed, key, worldSeed, carriageIndex);
-        return entry.pot().apply(placed, key, worldSeed, carriageIndex);
+        placed = entry.pot().apply(placed, key, worldSeed, carriageIndex);
+        placed = entry.charges().apply(placed, key, worldSeed, carriageIndex);
+        // Keyed on the bed's head cell (not this cell) so both halves roll the same colour.
+        placed = entry.bedColours().apply(placed, localPos, lockId, worldSeed, carriageIndex);
+        return TrappedChestRoll.apply(placed, entry.trapped(), localPos, worldSeed, carriageIndex);
+    }
+
+    /**
+     * After a stamp pass writes {@code placed} at {@code world}: when it is a Respawn Obelisk's bottom
+     * part, set the gems it holds from {@code entry}'s range ({@link VariantCharges#rollCount}, rolled
+     * like the anchor's charge; none for the as-placed default). An obelisk has no state to keep them,
+     * so they go in {@code nap/RespawnObeliskGems}; a re-stamp overwrites what was there.
+     */
+    public static void stampObeliskGems(net.minecraft.server.level.ServerLevel level, BlockPos world,
+                                        BlockState placed, VariantState entry,
+                                        BlockPos localPos, long worldSeed, int carriageIndex, int lockId) {
+        if (!games.brennan.dungeontrain.nap.RespawnObelisks.isBottom(placed)) return;
+        int gems = entry.charges().rollCount(posOrLockKey(localPos, lockId), worldSeed, carriageIndex,
+            VariantCharges.MAX_GEMS);
+        games.brennan.dungeontrain.nap.RespawnObeliskGems.get(level).set(world, gems);
     }
 
     /** The cell's roll key: its lock group when it has one (so the group rolls as one), else its position. */

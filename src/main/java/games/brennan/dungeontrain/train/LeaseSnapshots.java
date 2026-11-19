@@ -1,9 +1,12 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.photo.CarriagePhotos;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.PoolLease;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -30,7 +33,23 @@ public final class LeaseSnapshots {
      * @throws IOException when the base blob itself cannot be decoded — the lease is unusable
      */
     public static CompoundTag fold(PoolLease lease) throws IOException {
-        return foldDeltas(CarriageBlockSnapshot.decode(lease.blocks()), lease);
+        return adoptPhotos(foldDeltas(CarriageBlockSnapshot.decode(lease.blocks()), lease), lease);
+    }
+
+    /**
+     * Point the build's photos at the relay's pictures where this world has none of its own, and send
+     * for those pictures ({@link CarriagePhotos#adopt}). Both lease sites fold on the server thread.
+     */
+    private static CompoundTag adoptPhotos(CompoundTag snapshot, PoolLease lease) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return snapshot;
+        try {
+            return CarriagePhotos.adopt(snapshot, lease.photos(), server, server.registryAccess());
+        } catch (RuntimeException e) {
+            // A photo that cannot be adopted stays blank; the build itself still stands.
+            LOGGER.warn("[DungeonTrain] leased build id={} photos could not be adopted: {}", lease.id(), e.toString());
+            return snapshot;
+        }
     }
 
     /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */

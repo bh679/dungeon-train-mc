@@ -102,6 +102,15 @@ public interface SharedBuild {
 
     void setFuel(int fuel);
 
+    /**
+     * The build's name id: its carriage id from the world it was first built in, which the relay keeps
+     * and hands back on every lease, so it reads the same in every world. Empty until it is set at
+     * registration. Shown on the Drifting Engine Block.
+     */
+    String nameId();
+
+    void setNameId(String nameId);
+
     /** A short label for log lines, e.g. {@code pIdx=12} or {@code pair=30}. */
     String describe();
 }

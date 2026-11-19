@@ -1,0 +1,78 @@
+name: Daily dev-hours refresh
+
+# Re-runs scripts/dev-hours/collect.py against every repo in scripts/dev-hours/repos.json,
+# cloned (blobless) from GitHub, and commits docs/dev-hours/hour-index.json to main when the
+# figure moved. That file is the ONE place the hours figure lives: the jar bakes it at build
+# time (build.gradle devHours) and the website reads its totalHours straight off main.
+#
+# GH_TOKEN reaches the private dp-relay repo. It reuses RELAY_REPO_TOKEN (fine-grained PAT,
+# dp-relay Contents read). Without it dp-relay is skipped, the total drops, and collect.py's
+# never-shrink guard fails the run rather than publishing a smaller number.
+#
+# Pushed with GITHUB_TOKEN, which never triggers other workflows (version-bump, cascade);
+# `[skip ci]` is a second guard should that ever change.
+
+on:
+  schedule:
+    - cron: '0 3 * * *'      # daily 03:00 UTC (free: public repo; ~1 min, 22 MB)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the totals only; commit nothing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dev-hours
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Collect hours
+        env:
+          GH_TOKEN: ${{ secrets.RELAY_REPO_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::warning::RELAY_REPO_TOKEN is not set — dp-relay will be skipped"
+          fi
+          python3 scripts/dev-hours/collect.py --clone-dir "${RUNNER_TEMP}/dev-hours-clones" ${DRY_RUN}
+
+      - name: Commit to main
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          INDEX=docs/dev-hours/hour-index.json
+          if git diff --quiet -- "$INDEX"; then
+            echo "No change in the hour index."
+            exit 0
+          fi
+          TOTAL=$(python3 -c "import json;print(json.load(open('$INDEX'))['totalHours'])")
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$INDEX"
+          git commit -m "chore(dev-hours): daily refresh, ${TOTAL} hours [skip ci]"
+          # main moves under us often (merges, version bumps); rebase and retry a few times.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "Pushed: ${TOTAL} hours"
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}); rebasing on main"
+            sleep $((attempt * 5))
+            git pull --rebase origin main
+          done
+          echo "::error::Could not push the hour index after 5 attempts"
+          exit 1

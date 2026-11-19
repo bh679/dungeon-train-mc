@@ -29,6 +29,8 @@ public final class AiPolicyContent {
     public static final int ACCENT_USED = 0xFFE0B56A;
     /** The page's own link blue, for the closing "which AI" note. */
     public static final int ACCENT_WHICH = 0xFF5B9BFF;
+    /** Cyan for the Explainers card: posts on the website that go deeper than this page. */
+    public static final int ACCENT_EXPLAINERS = 0xFF55D6D6;
 
     private AiPolicyContent() {}
 
@@ -84,5 +86,22 @@ public final class AiPolicyContent {
     /** The cards, in render order. */
     public static List<Section> sections() {
         return SECTIONS;
+    }
+
+    /**
+     * One explainer: a post on the website that goes deeper into something this page says. Drawn as
+     * its own section of the Explainers card: glyph and title, a one-line description, then a button
+     * that opens {@code url}. Baked here like the screen's Discord link: these are fixed pages.
+     */
+    public record Explainer(String titleKey, String descKey, String url, Item glyph) {}
+
+    private static final List<Explainer> EXPLAINERS = List.of(
+            new Explainer("gui.dungeontrain.ai_policy.explainers.names.title",
+                    "gui.dungeontrain.ai_policy.explainers.names.desc",
+                    "https://dungeon.training/blog/names-without-ai/", Items.NAME_TAG));
+
+    /** The Explainers card's sections, in render order. */
+    public static List<Explainer> explainers() {
+        return EXPLAINERS;
     }
 }

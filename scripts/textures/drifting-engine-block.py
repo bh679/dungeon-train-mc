@@ -197,26 +197,34 @@ def slot(d, x, y, w=18, h=18):
     d.line([x + w - 1, y + 1, x + w - 1, y + h - 1], fill=LIGHT)
 
 
+# Height of the carriage line under the title ("Carriage: <id>"); everything below it sits this much lower.
+# Matches EngineMenu.CARRIAGE_LINE_H.
+CARRIAGE_LINE_H = 10
+# Gauge fill sprites live under the panel: banked coal, then this world's input.
+GAUGE_FILL_V, GAUGE_INPUT_V = 180, 186
+
+
 def write_screen(path):
     """The panel, slots, gauge trough and gauge fill: the coal slot and the gauge share a row."""
     im = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    panel(d, 0, 0, 176, 166)
-    slot(d, 12, 19)                       # coal slot: item at (13, 20)
-    slot(d, 36, 24, 132, 7)               # gauge trough, centred on the slot: fill at (37, 25) 130x5
+    dy = CARRIAGE_LINE_H
+    panel(d, 0, 0, 176, 166 + dy)
+    slot(d, 12, 19 + dy)                  # coal slot: item at (13, 30)
+    slot(d, 36, 24 + dy, 132, 7)          # gauge trough, centred on the slot: fill at (37, 35) 130x5
     for row in range(3):
         for col in range(9):
-            slot(d, 7 + col * 18, 83 + row * 18)
+            slot(d, 7 + col * 18, 83 + dy + row * 18)
     for col in range(9):
-        slot(d, 7 + col * 18, 141)
-    for x in range(130):                  # gauge fill sprites: banked (row 170), this world's input (row 176)
+        slot(d, 7 + col * 18, 141 + dy)
+    for x in range(130):                  # gauge fill sprites: banked, then this world's input
         t = x / 129
         c = (int(168 + (255 - 168) * t), int(50 + (191 - 50) * t), int(26 + (60 - 26) * t))
         light = tuple(int(v + (p - v) * .55) for v, p in zip(c, (255, 226, 143)))
         for y in range(5):
             edge = y in (0, 4)
-            d.point((x, 170 + y), fill=c if not edge else tuple(int(v * .8) for v in c))
-            d.point((x, 176 + y), fill=light if not edge else tuple(int(v * .85) for v in light))
+            d.point((x, GAUGE_FILL_V + y), fill=c if not edge else tuple(int(v * .8) for v in c))
+            d.point((x, GAUGE_INPUT_V + y), fill=light if not edge else tuple(int(v * .85) for v in light))
     os.makedirs(os.path.dirname(path), exist_ok=True)
     im.save(path)
 

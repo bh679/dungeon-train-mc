@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "185";
+    public static final String PROTOCOL_VERSION = "193";
 
     private DungeonTrainNet() {}
 
@@ -286,6 +286,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(ShowDifficultyConfirmPacket.TYPE, ShowDifficultyConfirmPacket.STREAM_CODEC, ShowDifficultyConfirmPacket::handle);
         registrar.playToServer(DifficultyConfirmResponsePacket.TYPE, DifficultyConfirmResponsePacket.STREAM_CODEC, DifficultyConfirmResponsePacket::handle);
 
+        // Nap beds: a natural bed asks to save and quit (nap/NapService); the client answers.
+        registrar.playToClient(ShowNapPromptPacket.TYPE, ShowNapPromptPacket.STREAM_CODEC, ShowNapPromptPacket::handle);
+        registrar.playToServer(NapResponsePacket.TYPE, NapResponsePacket.STREAM_CODEC, NapResponsePacket::handle);
+        registrar.playToClient(NapSavedPacket.TYPE, NapSavedPacket.STREAM_CODEC, NapSavedPacket::handle);
+
         // Pause-menu "Abandon This Run": client → server kill request, ending the run via the death screen.
         registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
         registrar.playToServer(BuilderSetupPacket.TYPE, BuilderSetupPacket.STREAM_CODEC, BuilderSetupPacket::handle);
@@ -309,6 +314,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderSuggestionPacket.TYPE, BuilderSuggestionPacket.STREAM_CODEC, BuilderSuggestionPacket::handle);
         registrar.playToServer(BuilderProfileDeletePacket.TYPE, BuilderProfileDeletePacket.STREAM_CODEC, BuilderProfileDeletePacket::handle);
         registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -18,16 +19,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LiveMicTest {
 
     private final AtomicBoolean option = new AtomicBoolean();
+    private final AtomicLong now = new AtomicLong(1_000_000);
 
     @BeforeEach
     void standInForTheOption() {
         LiveMic.setOptionForTests(option::get, option::set);
+        LiveMic.setClockForTests(now::get);
     }
 
     @AfterEach
     void endStream() {
         LiveMic.endStream();
         LiveMic.setOptionForTests(null, null);
+        LiveMic.setMidStreamJoin(() -> LiveMic.Toggle.NEXT_STREAM);
+        LiveMic.setClockForTests(null);
     }
 
     @Test
@@ -130,5 +135,86 @@ class LiveMicTest {
         assertFalse(LiveMic.on());
         LiveMic.endStream();
         assertTrue(option.get(), "a stream ending leaves the option alone");
+    }
+
+    @Test
+    void switchedOnMidStreamWhereATrackCanBeAddedTheStreamIsJoining() {
+        LiveMic.startStream(false);
+        LiveMic.setMidStreamJoin(() -> LiveMic.Toggle.JOINING);
+        assertEquals(LiveMic.Toggle.JOINING, LiveMic.set(true, LiveMic.Source.KEY));
+        assertTrue(option.get(), "saved before the track is added, so the new track opens the mic");
+        assertFalse(LiveMic.heartbeatMicTrack(), "nothing told to the relay until the encoder writes the track");
+    }
+
+    @Test
+    void aTrackAddedMidStreamIsSilentUntilTheRelayCountsIt() {
+        option.set(true);
+        LiveMic.startStream(false);
+        LiveMic.joinMidStream();
+        assertTrue(LiveMic.enabled());
+        assertTrue(LiveMic.held());
+        assertTrue(LiveMic.heartbeatMicTrack(), "the heartbeat now says the stream carries a mic track");
+        assertFalse(LiveMic.on(), "held: Kid-mode viewers have not moved to the game-only track yet");
+        assertFalse(LiveMic.heartbeatMicOn());
+
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.NO), "not counted yet: still held");
+        assertTrue(LiveMic.held());
+        assertTrue(LiveMic.relayTrack(LiveMic.TrackWord.YES), "counted");
+        assertTrue(LiveMic.held(), "but Kid-mode TVs have not had time to switch tracks yet");
+        assertFalse(LiveMic.on());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.YES), "a later heartbeat does not restart the wait");
+
+        now.addAndGet(LiveMic.KID_SWITCH_GRACE_MS - 1);
+        assertTrue(LiveMic.held(), "a moment before the grace is over");
+        assertFalse(LiveMic.transmitting());
+        now.addAndGet(1);
+        assertFalse(LiveMic.held(), "the grace is over: the voice goes through");
+        assertTrue(LiveMic.on());
+        assertTrue(LiveMic.transmitting());
+        assertFalse(LiveMic.takeHeldNotice(), "nothing to say on a relay that counts it");
+    }
+
+    @Test
+    void theGraceCoversOneViewerPollAndASessionSwitch() {
+        assertTrue(LiveMic.KID_SWITCH_GRACE_MS >= 15_000 + 10_000,
+            "a Kid-mode TV polls status every 15 s, then needs seconds to start its game-only session");
+    }
+
+    @Test
+    void aRelayTooOldToCountTheTrackKeepsTheVoiceHeldAndSaysSoOnce() {
+        option.set(true);
+        LiveMic.startStream(false);
+        LiveMic.joinMidStream();
+        now.addAndGet(10 * LiveMic.KID_SWITCH_GRACE_MS);
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID));
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID));
+        assertTrue(LiveMic.held(), "never heard on this stream");
+        assertFalse(LiveMic.on());
+        assertTrue(LiveMic.takeHeldNotice(), "the next-stream line, once");
+        assertFalse(LiveMic.takeHeldNotice());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID), "the next heartbeat after the line was said");
+        assertFalse(LiveMic.takeHeldNotice(), "is not said again (every heartbeat repeated it before)");
+    }
+
+    @Test
+    void aStreamWithATrackFromTheStartIsNeverHeld() {
+        option.set(true);
+        LiveMic.startStream(true);
+        assertFalse(LiveMic.held());
+        assertFalse(LiveMic.relayTrack(LiveMic.TrackWord.UNSAID), "an older relay's silence is nothing to act on");
+        assertFalse(LiveMic.takeHeldNotice());
+        assertTrue(LiveMic.on());
+    }
+
+    @Test
+    void theNextStreamDropsAHeldTrack() {
+        option.set(true);
+        LiveMic.startStream(false);
+        LiveMic.joinMidStream();
+        LiveMic.endStream();
+        assertFalse(LiveMic.held());
+        assertFalse(LiveMic.heartbeatMicTrack());
+        LiveMic.startStream(false);
+        assertFalse(LiveMic.held());
     }
 }

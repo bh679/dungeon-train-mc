@@ -499,21 +499,80 @@ def mentions_from_args(triples: list[list[str]] | None) -> dict | None:
     return out
 
 
+# A major entry's Bilibili video upload (`bilibili`), pasted by hand from the dp-relay Socials page
+# (socials-bilibili.js reads the same field). Limits are Bilibili's upload form's.
+BILIBILI_LANGS = ("zh", "en")
+BILIBILI_TITLE_MAX = 80
+BILIBILI_DESCRIPTION_MAX = 2000
+BILIBILI_TAGS_MAX = 10
+BILIBILI_TAG_MAX = 20
+_LONG_DASH = re.compile(r"[—–]")
+
+
+def _bilibili_text(field: str, lang: str, value: Any, limit: int) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"bilibili {field}.{lang} must be non-empty text")
+    text = value.strip()
+    if len(text) > limit:
+        raise ValueError(f"bilibili {field}.{lang} is {len(text)} characters; Bilibili allows {limit}")
+    if _LONG_DASH.search(text):
+        raise ValueError(f"bilibili {field}.{lang} has a long dash; player-visible text uses none")
+    return text
+
+
+def validate_bilibili(block: Any) -> dict:
+    """The cleaned {title, description, tags} block (each {zh, en}); raise ValueError on anything Bilibili refuses."""
+    if not isinstance(block, dict) or set(block) != {"title", "description", "tags"}:
+        raise ValueError("bilibili must be an object with exactly title, description and tags")
+    out: dict[str, dict] = {"title": {}, "description": {}, "tags": {}}
+    for field in ("title", "description", "tags"):
+        langs = block[field]
+        if not isinstance(langs, dict) or set(langs) != set(BILIBILI_LANGS):
+            raise ValueError(f"bilibili {field} needs exactly {' and '.join(BILIBILI_LANGS)}")
+    for lang in BILIBILI_LANGS:
+        out["title"][lang] = _bilibili_text("title", lang, block["title"][lang], BILIBILI_TITLE_MAX)
+        out["description"][lang] = _bilibili_text(
+            "description", lang, block["description"][lang], BILIBILI_DESCRIPTION_MAX)
+        tags = block["tags"][lang]
+        if not isinstance(tags, list) or not 1 <= len(tags) <= BILIBILI_TAGS_MAX:
+            raise ValueError(f"bilibili tags.{lang} must list 1 to {BILIBILI_TAGS_MAX} tags")
+        cleaned = [_bilibili_text("tag", lang, t, BILIBILI_TAG_MAX) for t in tags]
+        if len(set(cleaned)) != len(cleaned):
+            raise ValueError(f"bilibili tags.{lang} repeats a tag")
+        out["tags"][lang] = cleaned
+    return out
+
+
+# The clips a major entry may carry one of each (`videos`): Facebook and Instagram's feed post, a story, TikTok. Each is
+# recorded for that post's visible area; a format without one uses the entry's `video`.
+VIDEO_FORMATS = ("feed", "story", "tiktok")
+
+
 def validate_major_fields(
     description: str | None,
     image: str | None,
     video: str | None = None,
     video_cover: float | None = None,
     mentions: dict | None = None,
+    videos: dict | None = None,
+    loop: str | None = None,
 ) -> None:
-    """Raise ValueError for a blank description, an image or video that is not a plain https URL (the video an
-    .mp4), a negative video cover time, or malformed mentions."""
+    """Raise ValueError for a blank description, an image, video or loop that is not a plain https URL (the video
+    and loop an .mp4), a `videos` format other than feed / story / tiktok or a clip there that is not one, a negative video
+    cover time, or malformed mentions."""
     if description is not None and not description.strip():
         raise ValueError("major description must not be blank")
     if image is not None and not _plain_https(image):
         raise ValueError(f"major image must be an https:// URL with no spaces, got {image!r}")
     if video is not None and not (_plain_https(video) and video.lower().endswith(".mp4")):
         raise ValueError(f"major video must be an https:// URL of an .mp4 with no spaces, got {video!r}")
+    if loop is not None and not (_plain_https(loop) and loop.lower().endswith(".mp4")):
+        raise ValueError(f"major loop must be an https:// URL of an .mp4 with no spaces, got {loop!r}")
+    for fmt, url in (videos or {}).items():
+        if fmt not in VIDEO_FORMATS:
+            raise ValueError(f"videos format must be one of {', '.join(VIDEO_FORMATS)}, got {fmt!r}")
+        if not (isinstance(url, str) and _plain_https(url) and url.lower().endswith(".mp4")):
+            raise ValueError(f"{fmt} video must be an https:// URL of an .mp4 with no spaces, got {url!r}")
     if video_cover is not None and not (isinstance(video_cover, (int, float)) and video_cover >= 0):
         raise ValueError(f"video cover must be a time in seconds, 0 or more, got {video_cover!r}")
     if mentions is not None:
@@ -532,6 +591,9 @@ def with_major(
     video_cover: float | None = None,
     mentions: dict | None = None,
     clear_mentions: bool = False,
+    videos: dict | None = None,
+    loop: str | None = None,
+    clear_loop: bool = False,
 ) -> dict:
     """Return a copy of `entry` marked as a major release.
 
@@ -542,16 +604,20 @@ def with_major(
     "Notable update" card on the update page). An entry is never both a
     milestone and notable. `video` (an .mp4 with sound) replaces the clip the
     social posts are built from and `video_cover` the second of its cover frame;
-    `clear_video` drops both. `mentions` ({link text: {platform: "@handle"}}) is
+    `videos` ({feed|story|tiktok: .mp4}) sets a clip per format, merged over the
+    entry's own (a format without one uses `video`); `clear_video` drops them all. `loop` (a silent .mp4 of an
+    animated `image`, made by gif-to-loop.sh) is what the website shows in place of that GIF, many times lighter;
+    `clear_loop` drops it. `mentions` ({link text: {platform: "@handle"}}) is
     merged over the entry's own, per link text; `clear_mentions` drops them first.
     Raises ValueError (see validate_major_fields), and for a cover time with no video.
     """
-    validate_major_fields(description, image, video, video_cover, mentions)
+    validate_major_fields(description, image, video, video_cover, mentions, videos, loop)
     out = {
         k: v for k, v in entry.items()
         if not (clear_image and k == "image")
-        and not (clear_video and k in ("video", "video_cover"))
+        and not (clear_video and k in ("video", "videos", "video_cover"))
         and not (clear_mentions and k == "mentions")
+        and not (clear_loop and k == "loop")
         and not (milestone is False and k == "milestone")
         and not (notable is False and k == "notable")
     }
@@ -568,14 +634,18 @@ def with_major(
         out["image"] = image
     if video is not None:
         out["video"] = video
+    if loop is not None:
+        out["loop"] = loop
     if video_cover is not None:
         out["video_cover"] = video_cover
+    if videos:
+        out["videos"] = {**out.get("videos", {}), **videos}
     if mentions:
         merged = {k: dict(v) for k, v in out.get("mentions", {}).items()}
         for text, handles in mentions.items():
             merged[text] = {**merged.get(text, {}), **handles}
         out["mentions"] = merged
-    if "video_cover" in out and "video" not in out:
+    if "video_cover" in out and "video" not in out and "videos" not in out:
         raise ValueError("a video cover time needs a video")
     return out
 

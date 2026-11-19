@@ -8,10 +8,11 @@ import java.util.List;
 /**
  * Client-side cache of where the standing twin corridors are, fed by {@link PortalTwinBoxesPacket}.
  *
- * <p>Read by {@link ClientShulkerBoxPrediction} alone, and for one purpose: to decline predicting a
- * shulker box into a twin, so a box the server is about to refuse never appears. Nothing here is
+ * <p>Read by {@link ClientPortalContainerPrediction} alone, and for one purpose: to decline predicting a
+ * chest, barrel, hopper or shulker box into a twin, so a block the server is about to refuse never
+ * appears. Nothing here is
  * authoritative — the server refuses independently in
- * {@code games.brennan.dungeontrain.event.PortalShulkerBoxEvents}, and a stale or missing cache costs
+ * {@code games.brennan.dungeontrain.event.PortalContainerPlacementEvents}, and a stale or missing cache costs
  * a flicker rather than a wrong answer.</p>
  *
  * <p>Unlike its neighbours in this package it holds a <b>box</b> and is happy to, for the reason

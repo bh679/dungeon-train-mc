@@ -165,6 +165,11 @@ neoForge {
             if (project.hasProperty('jitterDebug')) {
                 systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
             }
+            // Event-countdown seam: read update-page events from a local file server instead of
+            // dungeon.training, e.g. ./gradlew runClient -PeventsUrl=http://127.0.0.1:8765/events.json
+            if (project.hasProperty('eventsUrl')) {
+                systemProperty 'dungeontrain.eventsUrl', project.property('eventsUrl').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
@@ -836,6 +841,10 @@ tasks.named('test', Test).configure {
     doFirst {
         def dd = configurations.compileClasspath.files.find { it.name.startsWith('deeperdarker-') }
         systemProperty 'dungeontrain.test.deeperdarkerJar', dd != null ? dd.absolutePath : ''
+        // BiomeNamesTest checks every biome these mods add has a name in some language file.
+        def biomeMods = ['betterend-neoforge-', 'betternether-neoforge-', 'biomes-o-plenty-', 'deeperdarker-', 'vanillabackport-']
+        def biomeJars = biomeMods.collect { prefix -> configurations.compileClasspath.files.find { it.name.startsWith(prefix) } }
+        systemProperty 'dungeontrain.test.biomeModJars', biomeJars.collect { it != null ? it.absolutePath : '' }.join(File.pathSeparator)
     }
     // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
     // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
@@ -1098,9 +1107,6 @@ tasks.register('generateModMetadata', ProcessResources) {
         dpibypassdetect_min_version      : dpibypassdetect_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
-        // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
-        // update prompt for players who are on exactly that build (see DistantHorizonsUpdatePromptSuppression).
-        distant_horizons_version         : distant_horizons_version,
         // Declared-minimum floors for the EXTERNAL sibling deps (with the three above). Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.

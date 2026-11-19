@@ -1,0 +1,400 @@
+{
+  "parent": "dungeontrain:dungeon_train/totem_pole",
+  "display": {
+    "icon": {
+      "id": "dungeontotems:morphing_totem"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.menagerie_of_one.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.menagerie_of_one.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "minecraft:allay": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:allay"
+      }
+    },
+    "minecraft:armadillo": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:armadillo"
+      }
+    },
+    "minecraft:axolotl": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:axolotl"
+      }
+    },
+    "minecraft:bat": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:bat"
+      }
+    },
+    "minecraft:bee": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:bee"
+      }
+    },
+    "minecraft:camel": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:camel"
+      }
+    },
+    "minecraft:cat": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:cat"
+      }
+    },
+    "minecraft:chicken": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:chicken"
+      }
+    },
+    "minecraft:cod": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:cod"
+      }
+    },
+    "minecraft:cow": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:cow"
+      }
+    },
+    "minecraft:dolphin": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:dolphin"
+      }
+    },
+    "minecraft:donkey": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:donkey"
+      }
+    },
+    "minecraft:fox": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:fox"
+      }
+    },
+    "minecraft:frog": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:frog"
+      }
+    },
+    "minecraft:glow_squid": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:glow_squid"
+      }
+    },
+    "minecraft:goat": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:goat"
+      }
+    },
+    "minecraft:horse": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:horse"
+      }
+    },
+    "minecraft:iron_golem": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:iron_golem"
+      }
+    },
+    "minecraft:llama": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:llama"
+      }
+    },
+    "minecraft:mooshroom": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:mooshroom"
+      }
+    },
+    "minecraft:mule": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:mule"
+      }
+    },
+    "minecraft:ocelot": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:ocelot"
+      }
+    },
+    "minecraft:panda": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:panda"
+      }
+    },
+    "minecraft:parrot": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:parrot"
+      }
+    },
+    "minecraft:pig": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:pig"
+      }
+    },
+    "minecraft:polar_bear": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:polar_bear"
+      }
+    },
+    "minecraft:pufferfish": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:pufferfish"
+      }
+    },
+    "minecraft:rabbit": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:rabbit"
+      }
+    },
+    "minecraft:salmon": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:salmon"
+      }
+    },
+    "minecraft:sheep": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:sheep"
+      }
+    },
+    "minecraft:skeleton_horse": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:skeleton_horse"
+      }
+    },
+    "minecraft:sniffer": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:sniffer"
+      }
+    },
+    "minecraft:snow_golem": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:snow_golem"
+      }
+    },
+    "minecraft:squid": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:squid"
+      }
+    },
+    "minecraft:strider": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:strider"
+      }
+    },
+    "minecraft:tadpole": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:tadpole"
+      }
+    },
+    "minecraft:trader_llama": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:trader_llama"
+      }
+    },
+    "minecraft:tropical_fish": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:tropical_fish"
+      }
+    },
+    "minecraft:turtle": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:turtle"
+      }
+    },
+    "minecraft:wolf": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:wolf"
+      }
+    },
+    "minecraft:zombie_horse": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:zombie_horse"
+      }
+    },
+    "minecraft:zombified_piglin": {
+      "trigger": "dungeontotems:became_form",
+      "conditions": {
+        "form": "minecraft:zombified_piglin"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "minecraft:allay"
+    ],
+    [
+      "minecraft:armadillo"
+    ],
+    [
+      "minecraft:axolotl"
+    ],
+    [
+      "minecraft:bat"
+    ],
+    [
+      "minecraft:bee"
+    ],
+    [
+      "minecraft:camel"
+    ],
+    [
+      "minecraft:cat"
+    ],
+    [
+      "minecraft:chicken"
+    ],
+    [
+      "minecraft:cod"
+    ],
+    [
+      "minecraft:cow"
+    ],
+    [
+      "minecraft:dolphin"
+    ],
+    [
+      "minecraft:donkey"
+    ],
+    [
+      "minecraft:fox"
+    ],
+    [
+      "minecraft:frog"
+    ],
+    [
+      "minecraft:glow_squid"
+    ],
+    [
+      "minecraft:goat"
+    ],
+    [
+      "minecraft:horse"
+    ],
+    [
+      "minecraft:iron_golem"
+    ],
+    [
+      "minecraft:llama"
+    ],
+    [
+      "minecraft:mooshroom"
+    ],
+    [
+      "minecraft:mule"
+    ],
+    [
+      "minecraft:ocelot"
+    ],
+    [
+      "minecraft:panda"
+    ],
+    [
+      "minecraft:parrot"
+    ],
+    [
+      "minecraft:pig"
+    ],
+    [
+      "minecraft:polar_bear"
+    ],
+    [
+      "minecraft:pufferfish"
+    ],
+    [
+      "minecraft:rabbit"
+    ],
+    [
+      "minecraft:salmon"
+    ],
+    [
+      "minecraft:sheep"
+    ],
+    [
+      "minecraft:skeleton_horse"
+    ],
+    [
+      "minecraft:sniffer"
+    ],
+    [
+      "minecraft:snow_golem"
+    ],
+    [
+      "minecraft:squid"
+    ],
+    [
+      "minecraft:strider"
+    ],
+    [
+      "minecraft:tadpole"
+    ],
+    [
+      "minecraft:trader_llama"
+    ],
+    [
+      "minecraft:tropical_fish"
+    ],
+    [
+      "minecraft:turtle"
+    ],
+    [
+      "minecraft:wolf"
+    ],
+    [
+      "minecraft:zombie_horse"
+    ],
+    [
+      "minecraft:zombified_piglin"
+    ]
+  ]
+}

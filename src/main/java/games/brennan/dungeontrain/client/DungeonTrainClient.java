@@ -5,7 +5,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseChatNotifier;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
-import games.brennan.dungeontrain.client.survey.NpsAiNoteHandler;
+import games.brennan.dungeontrain.client.survey.KnownFeatureChatHint;
+import games.brennan.dungeontrain.client.survey.KnownFeatureNoteHandler;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import org.slf4j.Logger;
 import net.neoforged.api.distmarker.Dist;
@@ -16,9 +17,11 @@ import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import games.brennan.dungeontrain.client.live.FfmpegHint;
 import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
 import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
+import games.brennan.dungeontrain.client.live.LiveBotReport;
 import games.brennan.dungeontrain.client.live.LiveChatFlip;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
 import games.brennan.dungeontrain.client.live.LiveReportButton;
+import games.brennan.dungeontrain.client.live.LiveMicHint;
 import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import games.brennan.dungeontrain.client.perf.LagReportPrompt;
@@ -50,13 +53,16 @@ public final class DungeonTrainClient {
         LiveTakeoverChat.registerClicks();
         LiveGiftClient.registerClicks();
         LiveChatFlip.registerClicks();
+        LiveBotReport.registerClicks();
         LiveReportButton.registerClicks();
         LiveOptionsCommand.registerClicks();
+        LiveMicHint.registerClicks();
         LogRequestClient.registerClicks();
         LagReportPrompt.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
         FfmpegHint.registerClicks();
+        KnownFeatureChatHint.registerClicks();
 
         // Falling blocks rise in the upside-down band on the client too (FallingBlockEntityUpsideDownMixin).
         UpsideDownGravity.setClientBand(ClientUpsideDownBand::isInBand);
@@ -87,12 +93,10 @@ public final class DungeonTrainClient {
                 LOGGER.warn("[DungeonTrain] Recording the NPS answer failed: {}", ex.toString());
             }
             try {
-                if (entry.scaleMax() >= entry.scaleMin() && SurveyRegistry.NPS_ID.equals(entry.id())) {
-                    NpsAiNoteHandler.onNpsAnswered(score,
-                            BugResponseChatNotifier.surveyComment(net.minecraft.client.Minecraft.getInstance()));
-                }
+                KnownFeatureNoteHandler.onAnswered(entry.id(), entry.scaleMax() >= entry.scaleMin() ? score : -1,
+                        BugResponseChatNotifier.surveyComment(net.minecraft.client.Minecraft.getInstance()));
             } catch (Exception ex) {
-                LOGGER.warn("[DungeonTrain] The NPS AI note failed: {}", ex.toString());
+                LOGGER.warn("[DungeonTrain] The known-feature note failed: {}", ex.toString());
             }
         });
 

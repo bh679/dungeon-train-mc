@@ -337,8 +337,11 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue PROTECT_OWN_PETS;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
+    public static final ModConfigSpec.BooleanValue EVENT_REMINDERS;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. On by default. */
+    public static final ModConfigSpec.BooleanValue DISCORD_RICH_PRESENCE;
     /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
@@ -499,7 +502,9 @@ public final class ClientDisplayConfig {
         BOOK_COPY_BUTTON = pair.getLeft().bookCopyButton;
         PROTECT_OWN_PETS = pair.getLeft().protectOwnPets;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
+        EVENT_REMINDERS = pair.getLeft().eventReminders;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        DISCORD_RICH_PRESENCE = pair.getLeft().discordRichPresence;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
         HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
@@ -980,11 +985,24 @@ public final class ClientDisplayConfig {
                          "announced, never the small automatic patch releases. Checks update.json on GitHub",
                          "every 10 minutes while you are in a world; nothing about you is sent. On by default.")
                 .define("updateNoticeChat", true);
+        ModConfigSpec.BooleanValue eventReminders = b
+                .comment("Event reminders: chat lines 24 hours, 1 hour and 10 minutes before a community event on",
+                         "dungeon.training/update, and when it starts. Synced to the server, which skips you when",
+                         "this is off. On by default.")
+                .define("eventReminders", true);
         ModConfigSpec.BooleanValue lowMemoryNoticeChat = b
                 .comment("Once per game session, show a notice on the title screen and one chat line when Minecraft",
                          "has been given less than 5 GB of memory on a computer with 8 GB or more, suggesting you",
                          "allocate 6 GB or more in your launcher. Nothing is sent anywhere. On by default.")
                 .define("lowMemoryNoticeChat", true);
+        b.pop();
+
+        b.push("discord");
+        ModConfigSpec.BooleanValue discordRichPresence = b
+                .comment("Discord status: show \"Playing Dungeon Train\" and where you are (the Overworld, the Nether,",
+                         "the End, or riding the train) on your Discord profile. Talks only to the Discord app",
+                         "running on this computer; nothing is sent anywhere else. On by default; turn it off in Options → Account.")
+                .define("richPresence", true);
         b.pop();
 
         b.push("dev");
@@ -1041,8 +1059,8 @@ public final class ClientDisplayConfig {
                 npsRecommendedHigh, motyNominated, motyVoted, motyModNominated, motyModVoted,
                 politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat, eventReminders,
+                lowMemoryNoticeChat, discordRichPresence, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme, placeholderCollision,
@@ -1555,6 +1573,38 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         UPDATE_NOTICE_CHAT.set(value);
         UPDATE_NOTICE_CHAT.save();
+    }
+
+    /**
+     * The Event reminders switch (Options row): whether the server sends this player the community-event
+     * countdown lines. Defaults on, including pre-load, so the countdown keeps reaching everyone who has
+     * not opted out.
+     */
+    public static boolean isEventReminders() {
+        return !isLoaded() || EVENT_REMINDERS.get();
+    }
+
+    /** Persist the Event reminders switch. Idempotent; no-op pre-load. */
+    public static void setEventReminders(boolean value) {
+        if (!isLoaded() || EVENT_REMINDERS.get() == value) return;
+        EVENT_REMINDERS.set(value);
+        EVENT_REMINDERS.save();
+    }
+
+    /**
+     * The Discord status switch (Options row, Account tab): whether this client shows its game on the
+     * player's Discord profile through the local Discord app. On by default, but off until the config has
+     * loaded, so nothing reaches Discord before the player's own setting is known.
+     */
+    public static boolean isDiscordRichPresence() {
+        return isLoaded() && DISCORD_RICH_PRESENCE.get();
+    }
+
+    /** Persist the Discord status switch. Idempotent; no-op pre-load. */
+    public static void setDiscordRichPresence(boolean value) {
+        if (!isLoaded() || DISCORD_RICH_PRESENCE.get() == value) return;
+        DISCORD_RICH_PRESENCE.set(value);
+        DISCORD_RICH_PRESENCE.save();
     }
 
     /**
@@ -2482,7 +2532,9 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue bookCopyButton,
             ModConfigSpec.BooleanValue protectOwnPets,
             ModConfigSpec.BooleanValue updateNoticeChat,
+            ModConfigSpec.BooleanValue eventReminders,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.BooleanValue discordRichPresence,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
             ModConfigSpec.BooleanValue hideOtherAdvancementCards,

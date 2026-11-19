@@ -94,6 +94,12 @@ public final class BlockVariantMenu {
         CANDLE_OPTION,
         /** A button in a flower pot row's Plant popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
         POT_OPTION,
+        /** A button in a respawn anchor row's Charge popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        CHARGE_OPTION,
+        /** A swatch in a white bed row's Colours popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        BED_COLOUR_OPTION,
+        /** A button in a slime-type mob row's Slime popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        SLIME_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         /** The row's If pill — opens the condition popup for that row. */
@@ -234,6 +240,53 @@ public final class BlockVariantMenu {
             && games.brennan.dungeontrain.editor.FlowerPots.isPot(parsed);
     }
 
+    /**
+     * True when {@code entry} is a respawn anchor row (Charge) or a Respawn Obelisk row (Gems) — it shows
+     * that pill and popup in the Grow slot.
+     */
+    public static boolean isAnchorRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.VariantCharges.isChargeable(parsed);
+    }
+
+    /** True when {@code entry} is a white bed row — it shows the Colours pill and popup in the Grow slot. */
+    public static boolean isWhiteBedRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.VariantBedColours.isWhiteBed(parsed);
+    }
+
+    /**
+     * True when {@code entry} is a slime, magma cube or End slime mob row — it shows the Size pill
+     * and Slime popup in the Grow slot (a mob row has no Grow).
+     */
+    public static boolean isSlimeRow(BlockVariantSyncPacket.Entry entry) {
+        return entry.groupRef() <= 0 && games.brennan.dungeontrain.editor.VariantSlime.isSlime(entry.entityId());
+    }
+
+    /** The row's slime options (any size / type on every other row). */
+    public static games.brennan.dungeontrain.editor.VariantSlime slime(BlockVariantSyncPacket.Entry entry) {
+        return new games.brennan.dungeontrain.editor.VariantSlime(entry.slime());
+    }
+
+    /** The row's respawn anchor charge option (as placed on every other row). */
+    public static games.brennan.dungeontrain.editor.VariantCharges charges(BlockVariantSyncPacket.Entry entry) {
+        return games.brennan.dungeontrain.editor.VariantCharges.fromInt(entry.charges());
+    }
+
+    /** The row's white bed colours (white only on every other row). */
+    public static games.brennan.dungeontrain.editor.VariantBedColours bedColours(BlockVariantSyncPacket.Entry entry) {
+        return new games.brennan.dungeontrain.editor.VariantBedColours(entry.bedColours());
+    }
+
+    /**
+     * True when {@code entry} is a plain chest row: it shows the Trap pill in the Grow slot, a number
+     * cell for the trapped-chest chance (no popup).
+     */
+    public static boolean isTrapRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0 && parsed != null
+            && games.brennan.dungeontrain.editor.TrappedChestRoll.isTrappable(parsed);
+    }
+
     /** The row's candle count option, or as placed when the wire token is blank / malformed. */
     public static games.brennan.dungeontrain.editor.VariantCandles candles(BlockVariantSyncPacket.Entry entry) {
         games.brennan.dungeontrain.editor.VariantCandles c =
@@ -250,11 +303,15 @@ public final class BlockVariantMenu {
 
     /**
      * The popup the Grow pill slot opens for a row that uses the slot for something else than
-     * Grow (painting, candles, flower pot), or {@code null} for a growable row's own Grow popup.
+     * Grow (painting, candles, flower pot, respawn anchor, white bed), or {@code null} for a growable row's own Grow popup.
      */
     @Nullable
     static SlotPopup slotPopup(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed,
                                double panelW, double halfH) {
+        if (isSlimeRow(entry)) {
+            return new SlotPopup(CellKind.SLIME_OPTION, SlimePopupLayout.rows(
+                games.brennan.dungeontrain.editor.VariantSlime.isEndSlime(entry.entityId()), panelW, halfH));
+        }
         if (isPaintingRow(entry, parsed)) {
             return new SlotPopup(CellKind.PAINTING_OPTION, PaintingPopupLayout.rows(painting(entry), panelW, halfH));
         }
@@ -264,6 +321,13 @@ public final class BlockVariantMenu {
         if (isPotRow(entry, parsed)) {
             return new SlotPopup(CellKind.POT_OPTION, PotPopupLayout.rows(pot(entry), panelW, halfH));
         }
+        if (isAnchorRow(entry, parsed)) {
+            return new SlotPopup(CellKind.CHARGE_OPTION, ChargePopupLayout.rows(charges(entry),
+                games.brennan.dungeontrain.editor.VariantCharges.maxFor(parsed), panelW, halfH));
+        }
+        if (isWhiteBedRow(entry, parsed)) {
+            return new SlotPopup(CellKind.BED_COLOUR_OPTION, BedColourPopupLayout.rows(panelW, halfH));
+        }
         return null;
     }
 
@@ -272,7 +336,8 @@ public final class BlockVariantMenu {
 
     /** True when the row shows an option pill in the Grow slot other than Grow itself. */
     public static boolean usesGrowSlot(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
-        return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed);
+        return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed)
+            || isAnchorRow(entry, parsed) || isWhiteBedRow(entry, parsed) || isTrapRow(entry, parsed);
     }
 
     /** The row's painting option, or off when the wire token is blank / malformed. */

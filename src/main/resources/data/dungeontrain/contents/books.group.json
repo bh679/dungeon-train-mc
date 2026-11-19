@@ -84,7 +84,8 @@
       "weight": 8,
       "phases": [
         "END",
-        "UPSIDE_DOWN"
+        "UPSIDE_DOWN",
+        "AMPLIFIED"
       ]
     },
     {
@@ -175,6 +176,36 @@
         "LOST_CITY",
         "DEEPER_DARK"
       ]
+    },
+    {
+      "id": "respawnanchor",
+      "weight": 4,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "id": "bed2",
+      "weight": 1
+    },
+    {
+      "id": "bed3",
+      "weight": 1
+    },
+    {
+      "id": "respawnoblisk",
+      "weight": 1,
+      "phases": [
+        "END"
+      ]
+    },
+    {
+      "id": "hiddenbed",
+      "weight": 1
+    },
+    {
+      "id": "bookroom",
+      "weight": 1
     }
   ]
 }

@@ -1181,6 +1181,9 @@ public final class TrainTickEvents {
                 && !(e instanceof ItemEntity
                     && train_aabb.inflate(ITEM_SPARE_INFLATE).contains(e.getX(), e.getY(), e.getZ()))
                 && !isCarriageContentsEntity(e)
+                // Spare items a player tossed, dropped on death, or earned from a kill: they
+                // stay on the track to be picked up. See PlayerDropMarker.
+                && !PlayerDropMarker.isPlayerDrop(e)
                 // Spare train passengers (e.g. PlayerMob): they fall off
                 // carriages by design and recover, so kill-ahead must not
                 // discard them on contact. See isTrainPassenger.

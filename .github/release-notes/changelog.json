@@ -1,6 +1,44 @@
 {
   "entries": [
     {
+      "id": "release-dungeon-train-mc-begins",
+      "version": "0.1.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Dungeon Train MC begins",
+      "summary": "Work starts on Dungeon Train as a Minecraft mod: the endless train from the VR game, rebuilt in Minecraft.",
+      "highlights": [],
+      "date": "2026-04-20",
+      "released": true,
+      "released_in": "v0.1.0",
+      "released_at": "2026-04-20T00:00:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Work starts on Dungeon Train as a Minecraft mod: the endless train from the VR game, rebuilt in Minecraft."
+    },
+    {
+      "id": "release-switch-to-sable-physics",
+      "version": "0.83.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Switched to the Sable physics engine",
+      "summary": "The train now runs on Sable, a new physics engine for moving ships, and Dungeon Train moved to Minecraft 1.21.1 on NeoForge.",
+      "highlights": [],
+      "pr": 120,
+      "date": "2026-05-01",
+      "released": true,
+      "released_in": "v0.83.0",
+      "released_at": "2026-05-01T06:55:53Z",
+      "major": true,
+      "notable": true,
+      "description": "The train now runs on Sable, a new physics engine for moving ships, in place of Valkyrien Skies. Dungeon Train moved to Minecraft 1.21.1 on NeoForge with it."
+    },
+    {
       "id": "release-launched-on-curseforge",
       "version": "0.95.0",
       "type": "docs",
@@ -23686,7 +23724,8 @@
       "major": true,
       "milestone": true,
       "description": "Dungeon Train now has a website, complete with roadmaps and update history.\n\n[https://brennan.games/dungeontrain/](https://brennan.games/dungeontrain/)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.loop.mp4"
     },
     {
       "id": "tribute-photos-own-channel",
@@ -24273,7 +24312,8 @@
       "released_at": "2026-10-09T05:31:06Z",
       "major": true,
       "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.loop.mp4"
     },
     {
       "id": "viewfinder-selfie-hint",
@@ -26396,7 +26436,8 @@
       "major": true,
       "notable": true,
       "description": "Dungeon Train TV keeps going. The Live Eye now passes from player to player instead of just cutting off.\n\nDie live and your stream carries on. Your viewers watch the death screens with you while your last few seconds loop behind them, and anyone watching on a TV can take the Live Eye and go live in your place. First click wins.\n\nPut on a Live Eye while someone else is streaming and you're asked whether to take over. Early in their stream the viewers vote in chat; after that it's your call. And if a newcomer tunes in on a TV while you're live, you can gift them yours.\n\n## Other significant updates\n\n- Lose a takeover, or choose to stay a viewer, and your Live Eye turns into a TV instead of burning\n- Live chat has emoji: react to messages from the Live page's new emoji button, see Discord reactions on chat lines in-game, and Discord emoji now show in colour\n- Developer pings stay out of Live chat\n- Move your old advancements to the difficulty you earned them on, when the developer sends you the offer\n- Settings tooltips show their current text\n- Bug fixes",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.loop.mp4"
     },
     {
       "id": "photo-album-from-disposable-camera",
@@ -31744,7 +31785,8 @@
       "major": true,
       "notable": true,
       "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.loop.mp4"
     },
     {
       "id": "editor-three-tier-store",
@@ -34534,7 +34576,8 @@
       "released_in": "v0.1747.0",
       "released_at": "2026-11-09T12:57:53Z",
       "major": true,
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.loop.mp4"
     },
     {
       "id": "contents-touch-sees-carriage",
@@ -35049,7 +35092,8 @@
       "major": true,
       "notable": true,
       "description": "It burns to keep your carriages alive. Taking them beyond your world, into the world of others. Let it extinguish, the train forgets it. Move it to a new carriage, and move which carriage drifts with the train.",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif"
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.loop.mp4"
     },
     {
       "id": "gear-shift-details",
@@ -35418,7 +35462,8 @@
           "instagram": "@ashyseven7",
           "tiktok": "@ashseventh"
         }
-      }
+      },
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dungeon-totems-of-undying.loop.mp4"
     },
     {
       "id": "fresh-room-gear",
@@ -35663,6 +35708,1408 @@
       "released": true,
       "released_in": "v0.1806.0",
       "released_at": "2026-11-13T15:39:28Z"
+    },
+    {
+      "id": "random-sherd-goat-horn-loot",
+      "version": "0.1801.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Goat horns with every sound, and the odd decorated pot",
+      "summary": "Goat horns found in loot now always carry one of the eight horn sounds, so every horn can be found. Now and then a pot on the train turns up decorated with pottery sherds.",
+      "highlights": [
+        "All eight goat horns can be found in loot",
+        "Some pots are decorated with sherds, and a lucky few with more than one"
+      ],
+      "pr": 2637,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1807.0",
+      "released_at": "2026-11-13T16:50:40Z"
+    },
+    {
+      "id": "known-feature-notes",
+      "version": "0.1809.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Answers to your feedback",
+      "summary": "Ask in your feedback or in chat for something the game already has, like a trash slot, backpacks, inventory sorting or recipe lookup, and a short note now shows you how to find it. Asking for saving mid-run or multiplayer brings a note that both are coming, with a link to the roadmap.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1810.0",
+      "released_at": "2026-11-13T18:10:02Z"
+    },
+    {
+      "id": "livestream-mic-reminder",
+      "version": "0.1807.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Mic reminder when you go live",
+      "summary": "Going live with your mic off now shows a reminder in chat, with a link straight to the Microphone setting. Turning your mic on mid-stream now joins that stream within about half a minute, no need to wait for your next stream. Turn the reminder off from the message itself or in the Stream settings.",
+      "highlights": [],
+      "pr": 2644,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1810.0",
+      "released_at": "2026-11-13T18:10:02Z"
+    },
+    {
+      "id": "drifting-carriage-name-id",
+      "version": "0.1811.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train",
+        "ui"
+      ],
+      "title": "Drifting carriages have an ID",
+      "summary": "Open a Drifting Engine Block to see which drifting carriage it belongs to. The carriage keeps the same ID in every world it drifts into.",
+      "highlights": [
+        "The engine's screen shows the carriage's ID under its name",
+        "An engine that isn't in a drifting carriage says so"
+      ],
+      "pr": 2647,
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1812.0",
+      "released_at": "2026-11-14T03:34:11Z"
+    },
+    {
+      "id": "live-chat-translations-off",
+      "version": "0.1811.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Turn off Live chat translations",
+      "summary": "Chat translations in Options, Stream now has an Off choice, so Live chat shows every line exactly as it was written.",
+      "highlights": [],
+      "date": "2026-11-13",
+      "released": true,
+      "released_in": "v0.1812.0",
+      "released_at": "2026-11-14T03:34:11Z"
+    },
+    {
+      "id": "bug-full-logs",
+      "version": "0.1816.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "pr": 2652,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "event-countdown-chat",
+      "version": "0.1817.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Event reminders in chat",
+      "summary": "Community events now show up in chat: a reminder a day before, an hour before, 10 minutes before and as they start, with a link to join.",
+      "highlights": [],
+      "pr": 2653,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "live-chat-skip-read-languages",
+      "version": "0.1813.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "No translations for languages you read",
+      "summary": "Live chat lines written in one of your Book languages now show as written, without a translation.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "small-tweak-2026-11-14",
+      "version": "0.1813.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Small tweak",
+      "summary": "A small tweak.",
+      "highlights": [],
+      "pr": 2649,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1817.0",
+      "released_at": "2026-11-14T06:40:34Z"
+    },
+    {
+      "id": "event-reminders-switch",
+      "version": "0.1818.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Event reminders switch",
+      "summary": "A new Options switch turns the community event reminders in chat on or off.",
+      "highlights": [],
+      "pr": 2654,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1818.0",
+      "released_at": "2026-11-14T07:19:43Z"
+    },
+    {
+      "id": "repair-keeps-item-name",
+      "version": "0.1819.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Repaired items keep their name",
+      "summary": "Combining two worn items in a crafting grid now keeps the name and description of the left item (or the top one, if they share a column), the same item whose stats are kept. A repair no longer adds a new crafted by line.",
+      "highlights": [],
+      "pr": 2655,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1819.0",
+      "released_at": "2026-11-14T09:42:51Z"
+    },
+    {
+      "id": "release-new-homepage",
+      "version": "0.1819.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "A Brand New Homepage",
+      "summary": "dungeon.training has a brand new homepage: the whole train at a glance, live, from the books written to who is streaming right now.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1819.0",
+      "released_at": "2026-11-14T14:00:58Z",
+      "major": true,
+      "description": "dungeon.training has a brand new homepage. Scroll down and the whole train is there at a glance, and it's all live:\n\n- How many riders, books, shared carriages and photos the community has made\n- The Live Feed, with the Live Eye chat beside the stream whenever someone is on air\n- The latest updates, stacked up to flip through\n- Everyone who has helped build the train, wearing their own skin\n- What riders think, straight from the in-game survey\n\n[Visit the new homepage](https://dungeon.training/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage.gif",
+      "video_cover": 0.5,
+      "videos": {
+        "feed": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-feed.mp4",
+        "story": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-story.mp4",
+        "tiktok": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-homepage-tiktok.mp4"
+      },
+      "milestone": true
+    },
+    {
+      "id": "echo-discord-pings",
+      "version": "0.1822.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Echo pings",
+      "summary": "Linked your Discord? You can now get tagged whenever another player meets your echo and their story is posted.",
+      "highlights": [
+        "New \"Your echo\" switch in Options, Account tab"
+      ],
+      "pr": 2659,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "new-carriage-rooms-crafty-maze-zombie",
+      "version": "0.1826.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New carriage rooms",
+      "summary": "Three new rooms can turn up in carriages: another crafting room, a new maze and a new undead room.",
+      "highlights": [
+        "A new crafting room",
+        "A new maze to find your way through",
+        "A new room of undead"
+      ],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "new-dimensional-carriage-water",
+      "version": "0.1821.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "A new dimensional carriage",
+      "summary": "A new dimensional carriage to find, and fresh looks and better loot in a few others.",
+      "highlights": [
+        "A new dimensional carriage, with water to cross",
+        "New variations of an existing dimensional carriage",
+        "Richer loot tucked away in another"
+      ],
+      "pr": 2657,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "release-notes-video-per-format",
+      "version": "0.1820.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Social clips per format",
+      "summary": "A major update can carry its own clip for each social post shape (feed, story, TikTok).",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "website-update-pictures-load-fast",
+      "version": "0.1825.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Faster update pictures on the website",
+      "summary": "Clicking through the updates on the website's homepage now shows each update's picture straight away. The moving pictures are a fraction of their old size.",
+      "highlights": [],
+      "pr": 2661,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1826.0",
+      "released_at": "2026-11-14T16:45:46Z"
+    },
+    {
+      "id": "echo-mine-build-reach",
+      "version": "0.1828.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Echoes come and get you",
+      "summary": "Hiding out of reach no longer keeps you safe from an echo. They will dig and build their way to you.",
+      "highlights": [],
+      "pr": 2664,
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1831.0",
+      "released_at": "2026-11-14T18:20:02Z"
+    },
+    {
+      "id": "tribute-live-affordability",
+      "version": "0.1830.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Tribute updates while a photo is open",
+      "summary": "If you receive emeralds while a photo is open, you can pay its Tribute straight away. You no longer have to close the photo and open it again.",
+      "highlights": [],
+      "date": "2026-11-14",
+      "released": true,
+      "released_in": "v0.1831.0",
+      "released_at": "2026-11-14T18:20:02Z"
+    },
+    {
+      "id": "fair-play-fix-profile-records",
+      "version": "0.1835.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Fair play fix",
+      "summary": "Fair play fix.",
+      "highlights": [],
+      "pr": 2671,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1835.0",
+      "released_at": "2026-11-15T05:21:09Z"
+    },
+    {
+      "id": "photo-biome-caption-names",
+      "version": "0.1834.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Photo caption fix",
+      "summary": "Every photo in your albums now shows a proper place name under it.",
+      "highlights": [],
+      "pr": 2670,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1835.0",
+      "released_at": "2026-11-15T05:21:09Z"
+    },
+    {
+      "id": "train-keeps-player-drops",
+      "version": "0.1833.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Your drops stay on the tracks",
+      "summary": "Items you drop, items you lose when you die, and loot from mobs you kill are no longer wiped away by the train passing over them.",
+      "highlights": [],
+      "pr": 2669,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1835.0",
+      "released_at": "2026-11-15T05:21:09Z"
+    },
+    {
+      "id": "dungeon-totem-advancements",
+      "version": "0.1836.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Totem advancements",
+      "summary": "New advancements for the Dungeon Totems: be saved by them, collect every kind, try every animal form, cure yourself of zombification and stack them. Four new challenges ask you to carry a full stack, or ride the train as a zombie, for the long haul, and you can track them.",
+      "highlights": [
+        "Totems now only stack when you place one on top of another",
+        "The Totem of Loneliness is now the Totem of Generosity"
+      ],
+      "pr": 2672,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1836.0",
+      "released_at": "2026-11-15T07:03:21Z"
+    },
+    {
+      "id": "dh-update-popup-blocked",
+      "version": "0.1836.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "No more Distant Horizons update popup",
+      "summary": "Distant Horizons no longer interrupts the game at launch with a popup asking you to update it.",
+      "highlights": [],
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1839.0",
+      "released_at": "2026-11-15T08:18:00Z"
+    },
+    {
+      "id": "new-advancement",
+      "version": "0.1839.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New advancement",
+      "summary": "A new advancement is waiting to be found.",
+      "highlights": [],
+      "pr": 2675,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1839.0",
+      "released_at": "2026-11-15T08:18:00Z"
+    },
+    {
+      "id": "photos-drift-with-their-carriage",
+      "version": "0.1837.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photos drift with their carriage",
+      "summary": "A photo you hang in a drifting carriage now goes with it, and every world the carriage drifts into shows the picture. While it hangs there it keeps its picture even after its last view, until someone takes it down.",
+      "highlights": [
+        "Works in drifting dimensional carriages too",
+        "A photo you take down from a drifting carriage works like any photo you find on the train, credited to whoever took it"
+      ],
+      "pr": 2673,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1839.0",
+      "released_at": "2026-11-15T08:18:00Z"
+    },
+    {
+      "id": "smaller-saves-keep-dimensional-carriages",
+      "version": "0.1840.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "With Smaller saves turned on, what you leave in a dimensional carriage now stays there after you walk away.",
+      "highlights": [],
+      "pr": 2676,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1840.0",
+      "released_at": "2026-11-15T09:00:57Z"
+    },
+    {
+      "id": "sprint-fly-boost-fix",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Faster creative sprint-flying is back",
+      "summary": "Sprint-flying in creative is 3\u00d7 faster again, and /dt flyspeed changes its speed again. Normal flight and flying up or down are unchanged.",
+      "highlights": [],
+      "pr": 2677,
+      "date": "2026-11-15",
+      "released": true,
+      "released_in": "v0.1842.0",
+      "released_at": "2026-11-16T00:56:18Z"
+    },
+    {
+      "id": "curseforge-pack-playermob-fix",
+      "version": "0.1842.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "CurseForge modpack starts again",
+      "summary": "The last few CurseForge modpack versions stopped at an error loading mods. The pack now ships the right version of Interactive Player Mobs.",
+      "highlights": [],
+      "pr": 2678,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1842.0",
+      "released_at": "2026-11-16T00:56:18Z"
+    },
+    {
+      "id": "life-as-a-zombie",
+      "version": "0.1844.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "ui"
+      ],
+      "title": "Life as a zombie",
+      "summary": "Turning into a zombie changes how you live. You eat like one, read like one and write like one, your pack is out of reach, and villagers, animals, illagers and other players' echoes all treat you like one.",
+      "highlights": [],
+      "pr": 2682,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1844.0",
+      "released_at": "2026-11-16T04:30:22Z"
+    },
+    {
+      "id": "trap-chest-variants",
+      "version": "0.1842.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Trapped chests in the editor",
+      "summary": "Chests in the editor can now be set to spawn as trapped chests, anywhere from 0 to 100% of the time. Some chests on the train now come trapped.",
+      "highlights": [
+        "New Trap button on chest variants in the editor"
+      ],
+      "pr": 2679,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1844.0",
+      "released_at": "2026-11-16T04:30:22Z"
+    },
+    {
+      "id": "zombified-backpack-lock",
+      "version": "0.1846.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui",
+        "balance"
+      ],
+      "title": "Zombified players can no longer reach their backpack",
+      "summary": "While Zombified, your backpack is locked just like the rest of your pack: greyed out, nothing goes in or comes out, and pickups skip it.",
+      "highlights": [
+        "The cure hint no longer pops up over items in your backpack; it shows only on the effect itself."
+      ],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1846.0",
+      "released_at": "2026-11-16T10:47:54Z"
+    },
+    {
+      "id": "darkroom-music-disc-reward",
+      "version": "0.1848.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "advancements"
+      ],
+      "title": "A music disc for a hidden achievement",
+      "summary": "One of the hidden achievements now rewards you with a music disc. Already earned it? Your disc is waiting the next time you join.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "dimensional-carriage-editor-variant-scope",
+      "version": "0.1849.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriage editor fix",
+      "summary": "Block variants you limit to part of a dimensional carriage now stay out of the rest of it.",
+      "highlights": [],
+      "pr": 2692,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "dimensional-carriage-item-fix",
+      "version": "0.1849.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Item fix",
+      "summary": "Fixed an item issue in dimensional carriages.",
+      "highlights": [],
+      "pr": 2693,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "tnt-trap-plates-unpressed",
+      "version": "0.1847.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "TNT traps no longer go off by themselves",
+      "summary": "The TNT dimensional carriage and the TNT and easy-trap carriages could explode the moment they appeared, before anyone stepped on a pressure plate. Their plates now start unpressed, so the traps only fire when you step on them.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "traineditor-dimensional-room",
+      "version": "0.1849.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "A new dimensional carriage room",
+      "summary": "A new room can now turn up behind a dimensional carriage door. See how far it goes.",
+      "highlights": [],
+      "pr": 2691,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1851.0",
+      "released_at": "2026-11-16T13:40:33Z"
+    },
+    {
+      "id": "housetown-dimensional-room",
+      "version": "0.1852.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Another new dimensional carriage room",
+      "summary": "One more room can now turn up behind a dimensional carriage door, once you've made it a little way down the line.",
+      "highlights": [],
+      "pr": 2698,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1852.0",
+      "released_at": "2026-11-16T15:32:07Z"
+    },
+    {
+      "id": "discord-status",
+      "version": "0.1847.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Discord status",
+      "summary": "Your Discord profile now shows you're playing Dungeon Train and where you are. Needs the Discord app open on the same computer. Turn it off any time in Options \u2192 Account.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1855.0",
+      "released_at": "2026-11-17T04:48:47Z"
+    },
+    {
+      "id": "engine-shift-click-hang",
+      "version": "0.1854.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "ui"
+      ],
+      "title": "Shift-clicking coal into a full engine no longer freezes the game",
+      "summary": "Shift-clicking coal into a Drifting Engine Block that already held all the coal it could take froze the game. Now the coal just stays in your inventory.",
+      "highlights": [],
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1855.0",
+      "released_at": "2026-11-17T04:48:47Z"
+    },
+    {
+      "id": "story-advancements-not-reannounced",
+      "version": "0.1856.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancements you have already earned no longer announce themselves again at the start of every new ride.",
+      "highlights": [],
+      "pr": 2703,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1856.0",
+      "released_at": "2026-11-17T05:09:40Z"
+    },
+    {
+      "id": "house-rooms-weights",
+      "version": "0.1841.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage rooms",
+      "summary": "Three new rooms to find, and rare rooms no longer vanish after a short stretch of track: they stay rare, but can turn up later in a run.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-abandon-screen",
+      "version": "0.1841.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Step off screen redesign",
+      "summary": "Stepping off the train now shows everything you would lose, most valuable first, and the ways to keep it.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-counter-direction",
+      "version": "0.1841.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-keeps-guest-progress",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer"
+      ],
+      "title": "Naps respect other players' saved progress",
+      "summary": "A world where another player has saved progress no longer offers a nap, so their things are never lost with it.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-replay-fixes",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "pr": 2686,
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-train-beds-only",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z",
+      "pr": 2697
+    },
+    {
+      "id": "nap-wake-hardening",
+      "version": "0.1841.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Fair play tweak",
+      "summary": "A small fair play improvement.",
+      "highlights": [],
+      "date": "2026-11-16",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "builder-credits-nov-17",
+      "version": "0.1858.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Builder credits",
+      "summary": "More of the community's builds now credit the players who made them.",
+      "highlights": [
+        "Builder credits added for two rooms"
+      ],
+      "pr": 2708,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "donate-on-behalf-of",
+      "version": "0.1857.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Donate on behalf of a friend",
+      "summary": "Gift a donation in someone else's name, straight from the Contribute screen.",
+      "highlights": [
+        "A small face button next to the currency picks who a gift is for: you, or someone else by their Minecraft name",
+        "Their face shows once the name is found, and the checkout carries their name for the board",
+        "It goes back to you every time the screen opens"
+      ],
+      "pr": 2705,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-farewell-pages",
+      "version": "0.1857.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Sleep Deep. Sleep Safe. Sleep, Save and Quit",
+      "summary": "Rest in a bed aboard the train to save and quit, then come back to your run where you left it.",
+      "highlights": [
+        "Resting in a train bed to save and quit now offers the feedback questions, a way to support the line, and a closing look at the life still underway",
+        "Before you go, the bed shows everything you are carrying and asks if you are willing to risk it",
+        "The death screen's train rides in the top bar, and each page now sits centred under its title"
+      ],
+      "pr": 2704,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z",
+      "major": true,
+      "description": "Its finally here. The most request feature to date.\nTrain beds now let you save and quit.\n\nRest in a bed aboard the train and you can step away from the line, then come back to your run where you left it. But be careful where you use a bed! The nether and end are as unforgiving as ever. Saving isn't impossible there, but done differently. So keep your eyes open for ways to give them a rest.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.gif",
+      "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.mp4",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/save-and-quit.loop.mp4",
+      "video_cover": 9.0,
+      "bilibili": {
+        "title": {
+          "zh": "\u5730\u7262\u5217\u8f66 \u91cd\u5927\u66f4\u65b0\uff1a\u5728\u5217\u8f66\u5e8a\u4e0a\u5b58\u6863\u9000\u51fa v0.1860.0 | \u6211\u7684\u4e16\u754c\u6a21\u7ec4",
+          "en": "Dungeon Train Update: Save and Quit in Train Beds v0.1860.0 | Minecraft Mod"
+        },
+        "description": {
+          "zh": "\u7ec8\u4e8e\u6765\u4e86\uff01\u8fd9\u662f\u76ee\u524d\u547c\u58f0\u6700\u9ad8\u7684\u529f\u80fd\u3002\n\u73b0\u5728\u53ef\u4ee5\u5728\u5217\u8f66\u4e0a\u7684\u5e8a\u91cc\u4f11\u606f\uff0c\u5b58\u6863\u5e76\u9000\u51fa\u4e86\u3002\n\n\u5728\u5217\u8f66\u4e0a\u7684\u5e8a\u91cc\u7761\u4e0b\uff0c\u4f60\u5c31\u80fd\u6682\u65f6\u79bb\u5f00\u8fd9\u6761\u7ebf\u8def\uff0c\u56de\u6765\u65f6\u4ece\u79bb\u5f00\u7684\u5730\u65b9\u7ee7\u7eed\u4f60\u8fd9\u4e00\u5c40\u3002\u4e0d\u8fc7\u7528\u5e8a\u7684\u5730\u65b9\u8981\u5c0f\u5fc3\uff01\u4e0b\u754c\u548c\u672b\u5730\u4f9d\u65e7\u6b8b\u9177\u3002\u5728\u90a3\u91cc\u5b58\u6863\u5e76\u975e\u4e0d\u53ef\u80fd\uff0c\u53ea\u662f\u65b9\u5f0f\u4e0d\u540c\u3002\u6240\u4ee5\u7559\u610f\u8ba9\u5b83\u4eec\u4e5f\u80fd\u6b47\u4e00\u6b47\u7684\u529e\u6cd5\u3002\n\n\u66f4\u65b0\u4eae\u70b9\uff1a\n\u00b7 \u5728\u5217\u8f66\u5e8a\u4e0a\u4f11\u606f\u5b58\u6863\u9000\u51fa\u65f6\uff0c\u4f1a\u63d0\u4f9b\u53cd\u9988\u95ee\u9898\u3001\u652f\u6301\u8fd9\u6761\u7ebf\u8def\u7684\u65b9\u5f0f\uff0c\u4ee5\u53ca\u56de\u987e\u8fd9\u4e00\u5c40\u4ecd\u5728\u8fdb\u884c\u7684\u751f\u547d\n\u00b7 \u79bb\u5f00\u524d\uff0c\u5e8a\u4f1a\u5c55\u793a\u4f60\u8eab\u4e0a\u643a\u5e26\u7684\u4e00\u5207\uff0c\u5e76\u95ee\u4f60\u662f\u5426\u613f\u610f\u5192\u8fd9\u4e2a\u9669\n\u00b7 \u6b7b\u4ea1\u754c\u9762\u7684\u9876\u90e8\u680f\u6709\u5217\u8f66\u9a76\u8fc7\uff0c\u6bcf\u4e00\u9875\u90fd\u5c45\u4e2d\u5728\u6807\u9898\u4e0b\u65b9\n\n\u5b8c\u6574\u66f4\u65b0\u8bf4\u660e\uff1adungeon.training/update\n\u4e0b\u8f7d\uff1a\u5728 CurseForge \u6216 Modrinth \u641c\u7d22 Dungeon Train\n\u5730\u7262\u5217\u8f66\u662f\u4e00\u4e2a Minecraft\uff08\u6211\u7684\u4e16\u754c\uff09NeoForge 1.21.1 \u6a21\u7ec4\uff1a\u5728\u4e00\u5217\u6c38\u4e0d\u505c\u6b47\u7684\u5217\u8f66\u4e0a\u5192\u9669\u3001\u641c\u522e\u3001\u751f\u5b58\u3002",
+          "en": "It's finally here. The most requested feature to date.\nTrain beds now let you save and quit.\n\nRest in a bed aboard the train and you can step away from the line, then come back to your run where you left it. But be careful where you use a bed! The Nether and the End are as unforgiving as ever. Saving isn't impossible there, but done differently. So keep your eyes open for ways to give them a rest.\n\nHighlights:\n\u00b7 Resting in a train bed to save and quit now offers the feedback questions, a way to support the line, and a closing look at the life still underway\n\u00b7 Before you go, the bed shows everything you are carrying and asks if you are willing to risk it\n\u00b7 The death screen's train rides in the top bar, and each page now sits centred under its title\n\nFull notes: dungeon.training/update\nDownload: search Dungeon Train on CurseForge or Modrinth\nDungeon Train is a Minecraft NeoForge 1.21.1 mod: loot, fight and survive aboard a train that never stops."
+        },
+        "tags": {
+          "zh": [
+            "\u6211\u7684\u4e16\u754c",
+            "Minecraft",
+            "\u6a21\u7ec4",
+            "\u5730\u7262\u5217\u8f66",
+            "\u5b58\u6863",
+            "\u751f\u5b58",
+            "\u6e38\u620f\u66f4\u65b0",
+            "\u8089\u9e3d",
+            "NeoForge",
+            "MOD"
+          ],
+          "en": [
+            "Minecraft",
+            "mod",
+            "Dungeon Train",
+            "roguelike",
+            "survival",
+            "game update",
+            "NeoForge",
+            "save and quit"
+          ]
+        }
+      }
+    },
+    {
+      "id": "new-rooms-nov-17",
+      "version": "0.1857.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New rooms to find",
+      "summary": "A handful of new rooms have been added to the train, along with a refreshed take on an old favourite.",
+      "highlights": [
+        "New rooms to discover as you ride",
+        "An existing room has been reworked"
+      ],
+      "pr": 2706,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1860.0",
+      "released_at": "2026-11-17T10:34:40Z"
+    },
+    {
+      "id": "nap-save-count-per-life",
+      "version": "0.1861.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Nap tweak",
+      "summary": "Small behind-the-scenes improvement to naps.",
+      "highlights": [],
+      "pr": 2709,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1862.0",
+      "released_at": "2026-11-17T13:23:48Z"
+    },
+    {
+      "id": "slime-sizes-and-colours",
+      "version": "0.1862.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "content",
+        "editor",
+        "mobs"
+      ],
+      "title": "Slimes in every shade",
+      "summary": "Some far-off carriages now hold slimes in colours you may not have seen before, and builders can choose how big each slime grows.",
+      "highlights": [
+        "New slime rooms, each with its own look.",
+        "Builders: pick slime sizes and colours in the block variant menu."
+      ],
+      "pr": 2710,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1862.0",
+      "released_at": "2026-11-17T13:23:48Z"
+    },
+    {
+      "id": "nap-farewell-life-ongoing-first",
+      "version": "0.1864.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Save and quit farewell tweaks",
+      "summary": "Resting in a train bed to save and quit now opens on a look at the life still underway.",
+      "highlights": [
+        "The farewell now starts with the life still underway, with cards for your past lives, time aboard, carriages and distance",
+        "Click anywhere to skip straight to the end",
+        "The warning before you rest now shows what is in your backpack too"
+      ],
+      "pr": 2713,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1864.0",
+      "released_at": "2026-11-17T14:33:20Z"
+    },
+    {
+      "id": "new-rooms-nikeeta",
+      "version": "0.1863.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New rooms to find",
+      "summary": "Two new rooms built by Nikeeta have joined the train, each stocked with its own finds.",
+      "highlights": [
+        "Two new rooms to discover as you ride",
+        "Built by Nikeeta"
+      ],
+      "pr": 2712,
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1864.0",
+      "released_at": "2026-11-17T14:33:20Z"
+    },
+    {
+      "id": "zombified-held-items",
+      "version": "0.1863.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Zombified players see what they hold",
+      "summary": "While Zombified, the item in your hand shows in first person again.",
+      "highlights": [],
+      "date": "2026-11-17",
+      "released": true,
+      "released_in": "v0.1864.0",
+      "released_at": "2026-11-17T14:33:20Z"
+    },
+    {
+      "id": "echo-reaction-speed-from-reflexes",
+      "version": "0.1866.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Echoes inherit your reflexes",
+      "summary": "An echo now reacts as quickly as you did in that life. Quick hands leave a quick echo, and a slow life leaves a sluggish one.",
+      "highlights": [
+        "Striking back fast and landing the first hit count most",
+        "Dodging arrows, keeping your hands busy and pushing on down the train count too"
+      ],
+      "pr": 2717,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1868.0",
+      "released_at": "2026-11-18T03:37:59Z"
+    },
+    {
+      "id": "invented-mob-names",
+      "version": "0.1867.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot"
+      ],
+      "title": "Freshly invented mob names",
+      "summary": "Mobs can now get names nobody has heard before, like Dongik or Kinkleberry, and those names also turn up as makers on gear. Player-like mobs still mostly look like real players. Dyed armour now credits whoever dyed it.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1868.0",
+      "released_at": "2026-11-18T03:37:59Z"
+    },
+    {
+      "id": "remove-saving-coming-note",
+      "version": "0.1866.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Feedback note fix",
+      "summary": "Sending feedback about saving no longer tells you saving is coming. Save and quit is already here.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1868.0",
+      "released_at": "2026-11-18T03:37:59Z"
+    },
+    {
+      "id": "breathlessness-ends-on-save",
+      "version": "0.1869.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "balance"
+      ],
+      "title": "Totem of Breathlessness fix",
+      "summary": "The Totem of Breathlessness curse now ends when the totem saves you, instead of drowning you on land after the save.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1869.0",
+      "released_at": "2026-11-18T04:36:01Z"
+    },
+    {
+      "id": "dtp-seed-force-load",
+      "version": "0.1873.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "echo-reaction-channels",
+      "version": "0.1871.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Echoes react at your speed for each thing they do",
+      "summary": "An echo now fights, shoots, builds and moves as quickly as you did each of those things in that life. A sharp swordsman who fumbled the bow leaves an echo that swings fast but is slow to shoot.",
+      "highlights": [
+        "Shooting speed follows how often your arrows hit and how often you loosed them fully drawn",
+        "Anything you never did, your echo does at your usual pace"
+      ],
+      "pr": 2721,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "echo-reaction-zero-default",
+      "version": "0.1872.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Echoes are slow at what you never did",
+      "summary": "An echo is now only quick at the things you actually did quickly in that life. Anything you never did, it does slowly. Echoes from older lives each come back with reflexes of their own.",
+      "highlights": [
+        "A skill you never used leaves your echo at its slowest",
+        "Older echoes get different reflexes every time they return"
+      ],
+      "pr": 2722,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "mob-name-endings-nica-leighly",
+      "version": "0.1875.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Two more mob name endings",
+      "summary": "Invented mob names can now end in -nica or -leighly, like Hinica and Doleighly.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "more-mob-name-sounds",
+      "version": "0.1870.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "More mob name sounds",
+      "summary": "Invented mob names get new sounds and endings, so you'll meet names like Wamathon, Feiboard and Moewitle.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "nap-shift-quit-game",
+      "version": "0.1873.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Quit Game straight from a nap",
+      "summary": "After you save and quit at a train bed, hold Shift on the farewell screens to quit the game instead of going to the main menu.",
+      "highlights": [],
+      "pr": 2723,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1875.0",
+      "released_at": "2026-11-18T07:19:02Z"
+    },
+    {
+      "id": "ai-policy-explainers",
+      "version": "0.1876.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Explainers on the AI Policy",
+      "summary": "The AI Policy page now ends with an Explainers section, starting with a look at how Dungeon Train's names are made without AI. Each one opens in your browser.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1878.0",
+      "released_at": "2026-11-18T11:39:05Z"
+    },
+    {
+      "id": "smoother-mob-names",
+      "version": "0.1877.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Smoother mob names",
+      "summary": "Invented mob names no longer pile up vowels, so they're easier to read and say.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1878.0",
+      "released_at": "2026-11-18T11:39:05Z"
+    },
+    {
+      "id": "strict-base64-decode",
+      "version": "0.1876.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Security fix",
+      "summary": "Shared content from other players is now checked more strictly before your game reads it.",
+      "highlights": [],
+      "pr": 2726,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1878.0",
+      "released_at": "2026-11-18T11:39:05Z"
+    },
+    {
+      "id": "enemies-outside-pen-rooms",
+      "version": "0.1884.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "Outdoor rooms in pen carriages",
+      "summary": "Some pen carriages now open onto patches of the outdoors, and whatever lives there isn't friendly.",
+      "highlights": [
+        "New outdoor rooms in pen carriages, with enemies waiting in the grass",
+        "A new crafting room",
+        "Some zombie rooms now have stone pillars"
+      ],
+      "pr": 2735,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1885.0",
+      "released_at": "2026-11-18T14:37:39Z"
+    },
+    {
+      "id": "flooded-ruins-item-lag",
+      "version": "0.1879.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "Less lag in some flooded places",
+      "summary": "Some flooded places along the line no longer fill the water with loose items as the train passes, so the ride stays smooth there.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2729,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1885.0",
+      "released_at": "2026-11-18T14:37:39Z"
+    },
+    {
+      "id": "live-chat-bot-reports",
+      "version": "0.1881.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Report bots in the Live chat",
+      "summary": "Linked your Discord? You can now report bot spam from Kick and Twitch right from the Live chat, and the message disappears for everyone.",
+      "highlights": [
+        "A small flag sits after each Kick and Twitch message; click it, confirm, and the message is gone in game, on the website and on the stream.",
+        "Linked before today? Type /discord once more to start reporting."
+      ],
+      "pr": 2732,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1885.0",
+      "released_at": "2026-11-18T14:37:39Z"
+    },
+    {
+      "id": "live-eye-away-offer",
+      "version": "0.1881.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye passes on when you step away",
+      "summary": "Step away from the game for 2 minutes while wearing the Live Eye and it is offered to everyone watching, so the stream doesn't sit still. Come back before anyone takes it and the offer is withdrawn.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1885.0",
+      "released_at": "2026-11-18T14:37:39Z"
+    },
+    {
+      "id": "mob-name-sounds-ur-or-lt",
+      "version": "0.1880.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "New mob name sounds",
+      "summary": "Invented mob names get new sounds, like Kurdock, Jorfoot, Joltsmith and Hakswit.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1885.0",
+      "released_at": "2026-11-18T14:37:39Z"
+    },
+    {
+      "id": "one-way-room-entrance",
+      "version": "0.1884.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "One-way dimensional carriages",
+      "summary": "Some dimensional carriages now only open one way. Once you step in, the way you came is closed, so you will have to find the way out.",
+      "highlights": [
+        "Builders can make any dimensional carriage one-way from the editor."
+      ],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1885.0",
+      "released_at": "2026-11-18T14:37:39Z"
     }
   ]
 }

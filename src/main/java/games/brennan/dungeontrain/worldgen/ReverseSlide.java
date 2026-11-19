@@ -291,6 +291,20 @@ public final class ReverseSlide {
         return CarriageDeck.isOnTrainFootprint(carriages(level), player) ? earned : 0L;
     }
 
+    /**
+     * Give a fresh world the reverse-slide state of the world a nap was taken in ({@code nap.NapWake}),
+     * before its train spawns, so the bands behind spawn sit where they did there. Only ever moves the
+     * state the one way {@link DungeonTrainWorldData#setReverseSlideState} allows.
+     */
+    public static void seed(ServerLevel overworld, long originX, long reachX, long earned, long slide) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        long before = data.getReverseSlide();
+        data.setReverseSlideState(originX, reachX, earned, slide);
+        State now = new State(data.getReverseOriginX(), data.getReverseReachX(), data.getReverseEarned(),
+                data.getReverseSlide());
+        if (now.slide() != WorldGenCycle.reverseSlide()) applyChange(before, now);
+    }
+
     private static void applyChange(long before, State now) {
         WorldGenCycle.setReverseSlide(now.slide());
         StacksBand.invalidateCache();

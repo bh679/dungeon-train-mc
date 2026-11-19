@@ -17,7 +17,9 @@ public enum PingType {
     /** A milestone advancement of theirs, with its screenshot. */
     MILESTONE("milestone"),
     /** The review thread opened when a translation they submitted needs a look. */
-    TRANSLATION_REVIEW("translation_review");
+    TRANSLATION_REVIEW("translation_review"),
+    /** Another player met their echo, and the encounter story is posted. */
+    ECHO("echo");
 
     private final String wireId;
 

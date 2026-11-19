@@ -12,9 +12,9 @@ import java.util.Locale;
  *
  * <p>The unit is <b>clock hours in which a commit landed</b>, unioned across every repo the project
  * spans (Dungeon Train, the sibling mods, the relay) so an hour spent committing to two of them
- * counts once. Computed at build time — a committed snapshot of the sibling repos' hours plus this
- * checkout's live git history — and baked into the jar as {@link VersionInfo#DEV_HOURS}. See
- * {@code scripts/dev-hours/README.md}.</p>
+ * counts once. Computed at build time — the committed {@code docs/dev-hours/hour-index.json}, which
+ * a CI workflow refreshes daily and the website reads too, plus this checkout's live git history —
+ * and baked into the jar as {@link VersionInfo#DEV_HOURS}. See {@code scripts/dev-hours/README.md}.</p>
  *
  * <p>A build that could read no history bakes {@code 0}. That is <b>unknown</b>, not "no work":
  * {@link #takesGoalSlot} then keeps the ledger in the layout it had before this tile existed,

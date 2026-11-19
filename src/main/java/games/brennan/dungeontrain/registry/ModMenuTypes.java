@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.registry;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.engine.EngineMenu;
 import games.brennan.dungeontrain.player.FreePlayEnderChestMenu;
-import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -29,7 +28,7 @@ public final class ModMenuTypes {
 
     /** The Drifting Engine Block's coal screen — see {@link EngineMenu}. */
     public static final DeferredHolder<MenuType<?>, MenuType<EngineMenu>> ENGINE_BLOCK =
-        MENU_TYPES.register("drifting_engine_block", () -> new MenuType<>(EngineMenu::new, FeatureFlags.DEFAULT_FLAGS));
+        MENU_TYPES.register("drifting_engine_block", () -> IMenuTypeExtension.create(EngineMenu::fromNetwork));
 
     private ModMenuTypes() {}
 

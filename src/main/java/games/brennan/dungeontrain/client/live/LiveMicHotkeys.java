@@ -59,8 +59,8 @@ public final class LiveMicHotkeys {
     /**
      * Flips the one mic switch from the key or the inventory button, with a click to hear and a line
      * over the hotbar; a mic that would not open says so in chat, and so does a switch-on during a
-     * stream without a mic track (the voice joins from the next stream). Nothing is said outside a
-     * stream: the option is simply saved.
+     * stream without a mic track (the stream gains one, or where it cannot, the voice joins from the next
+     * stream). Nothing is said outside a stream: the option is simply saved.
      */
     static void toggle(LiveMic.Source source) {
         apply(LiveMic.toggle(source));
@@ -79,6 +79,12 @@ public final class LiveMicHotkeys {
             case BARRED -> LiveStreamController.sayMicBarred();
             case NO_DEVICE -> mc.player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.live.mic_no_device").withStyle(ChatFormatting.RED), false);
+            // A stream without a mic track gains one: the voice is heard once the relay counts it.
+            case JOINING -> {
+                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.4f));
+                mc.player.displayClientMessage(
+                    Component.translatable("chat.dungeontrain.live.mic_joining").withStyle(ChatFormatting.YELLOW), false);
+            }
             case NEXT_STREAM -> {
                 if (LiveStreamController.get().streaming()) mc.player.displayClientMessage(
                     Component.translatable("chat.dungeontrain.live.mic_next_stream").withStyle(ChatFormatting.YELLOW), false);

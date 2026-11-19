@@ -34,6 +34,20 @@ class LiveFeedClientLogRequestTest {
     }
 
     @Test
+    @DisplayName("a full request says so; anything but boolean true is an ordinary one")
+    void full() {
+        ChatPage p = parse("""
+            {"live":true,"seq":3,"messages":[
+              {"seq":1,"author":"Developer","content":"x","source":"admin","cmd":"log_request","target":"","reqId":"lr-1","full":true},
+              {"seq":2,"author":"Developer","content":"x","source":"admin","cmd":"log_request","target":"","reqId":"lr-2"},
+              {"seq":3,"author":"Developer","content":"x","source":"admin","cmd":"log_request","target":"","reqId":"lr-3","full":"yes"}
+            ]}""");
+        assertTrue(p.lines().get(0).logRequest().full());
+        assertFalse(p.lines().get(1).logRequest().full(), "an older relay sends no flag");
+        assertFalse(p.lines().get(2).logRequest().full());
+    }
+
+    @Test
     @DisplayName("no target asks the streamer; a target asks only that player, case-insensitively")
     void targeting() {
         LogRequest streamer = new LogRequest("", "a");

@@ -172,9 +172,12 @@
     "minecraft:villager": "skip",
     "minecraft:wandering_trader": "skip",
     "minecraft:armor_stand": "skip",
-    "minecraft:item_frame": "skip",
+    "minecraft:glow_item_frame": "skip",
+    "minecraft:painting": "skip",
     "minecraft:end_crystal": "skip",
+    "minecraft:item_frame": "skip",
     "minecraft:hopper_minecart": "skip",
+    "minecraft:minecart": "skip",
     "playermob:player_mob": "skip",
 
     "betterend:end_slime": "hostile",

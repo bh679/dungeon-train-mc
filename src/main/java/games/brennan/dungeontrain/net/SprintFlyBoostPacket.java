@@ -11,7 +11,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /**
  * Server → client: the local player's creative sprint-fly multiplier ({@code /dt flyspeed}). Sent
  * on login and whenever the command changes it; the client applies it in
- * {@code mixin/PlayerSprintFlyMixin}. See {@link SprintFlyBoost}.
+ * {@code mixin/LivingEntitySprintFlyMixin}. See {@link SprintFlyBoost}.
  */
 public record SprintFlyBoostPacket(float multiplier) implements CustomPacketPayload {
 

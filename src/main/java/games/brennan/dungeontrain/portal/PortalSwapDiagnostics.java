@@ -88,6 +88,14 @@ public final class PortalSwapDiagnostics {
             + "and the group can be walked straight through"),
 
         /**
+         * The room's entrance is one-way ({@link PortalRoomEntrance#ONE_WAY}): a traveller who has
+         * crossed into the entrance hallway's twin cannot turn back onto the train. By design, not
+         * a breakage — never counted toward {@link PortalWalkThrough} or the connection stats.
+         */
+        ONE_WAY_ENTRANCE(true, "this room's entrance is one-way — the way back is closed, the exit is the "
+            + "way out"),
+
+        /**
          * The destination corridor's chunks are not present.
          *
          * <p>The one to look for first when a portal "sometimes" fails: it means the twin is stamped

@@ -361,9 +361,14 @@ public final class LiveFeedClient {
     /**
      * A Developer log request the relay attached to a chat line ({@code cmd: "log_request"}). The relay
      * only issues one for a verified Developer account. {@code target} is the player name asked, or
-     * empty for "whoever is streaming"; {@code id} dedupes repeats across polls.
+     * empty for "whoever is streaming"; {@code id} dedupes repeats across polls. {@code full} asks for
+     * the whole session's logs ({@code /bug full}) rather than the usual tails.
      */
-    public record LogRequest(String target, String id) {
+    public record LogRequest(String target, String id, boolean full) {
+        public LogRequest(String target, String id) {
+            this(target, id, false);
+        }
+
         /** Whether this request is for the player {@code myName}, who is {@code streaming} or not. */
         public boolean isFor(String myName, boolean streaming) {
             if (target.isBlank()) return streaming;
@@ -378,7 +383,9 @@ public final class LiveFeedClient {
         String id = m.has("reqId") && !m.get("reqId").isJsonNull() ? m.get("reqId").getAsString() : "";
         if (id.isBlank()) return null;
         String target = m.has("target") && !m.get("target").isJsonNull() ? m.get("target").getAsString().trim() : "";
-        return new LogRequest(target, id);
+        boolean full = m.has("full") && m.get("full").isJsonPrimitive() && m.get("full").getAsJsonPrimitive().isBoolean()
+                && m.get("full").getAsBoolean();
+        return new LogRequest(target, id, full);
     }
 
     /**
@@ -695,6 +702,19 @@ public final class LiveFeedClient {
         return new MicPolicy(bool(m, "allowed", true), bool(m, "twitch", false));
     }
 
+    /**
+     * A heartbeat reply's {@code mic.track}: whether the relay counts this stream's mic track. Null from a
+     * relay too old to say (or a reply without {@code mic}).
+     */
+    @Nullable
+    public static Boolean parseMicTrack(Result r) {
+        JsonObject body = r.body();
+        if (body == null || !body.has("mic") || !body.get("mic").isJsonObject()) return null;
+        JsonObject m = body.getAsJsonObject("mic");
+        if (!m.has("track") || !m.get("track").isJsonPrimitive() || !m.getAsJsonPrimitive("track").isBoolean()) return null;
+        return m.get("track").getAsBoolean();
+    }
+
     private static boolean bool(JsonObject o, String key, boolean absent) {
         if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.getAsJsonPrimitive(key).isBoolean()) return absent;
         return o.get(key).getAsBoolean();
@@ -732,21 +752,27 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> presign(String token, List<String> files) {
-        return presign(token, files, false);
+        return presign(token, files, false, false);
     }
 
-    /** The heartbeat too: {@code micOn} is whether the streamer's mic is switched on right now. */
-    public static CompletableFuture<Result> presign(String token, List<String> files, boolean micOn) {
-        return post("/live/presign", presignBody(token, files, micOn));
+    /**
+     * The heartbeat too: {@code micOn} is whether the streamer's mic is heard right now, {@code micTrack}
+     * whether the stream carries a mic track (from the start, or added mid-stream: the relay then counts
+     * it and says so in the reply's {@code mic.track}, {@link #parseMicTrack}).
+     */
+    public static CompletableFuture<Result> presign(String token, List<String> files, boolean micOn, boolean micTrack) {
+        return post("/live/presign", presignBody(token, files, micOn, micTrack));
     }
 
-    static JsonObject presignBody(String token, List<String> files, boolean micOn) {
+    static JsonObject presignBody(String token, List<String> files, boolean micOn, boolean micTrack) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
         JsonArray arr = new JsonArray();
         files.forEach(arr::add);
         body.add("files", arr);
         body.addProperty("micOn", micOn);
+        // Only ever true here: the relay counts a track once and never takes it back.
+        if (micTrack) body.addProperty("mic", true);
         return body;
     }
 
@@ -839,7 +865,16 @@ public final class LiveFeedClient {
      * Translations); null, or anything not a locale code, sends none.
      */
     public static CompletableFuture<Result> chat(String base, long since, @Nullable String room, @Nullable String lang) {
-        String path = chatPath(since, room, lang);
+        return chat(base, since, room, lang, null);
+    }
+
+    /**
+     * As {@link #chat(String, long, String, String)}, also naming the other languages this reader reads
+     * ({@code reads}, comma-separated locale codes) so the relay skips translating lines written in them.
+     */
+    public static CompletableFuture<Result> chat(String base, long since, @Nullable String room, @Nullable String lang,
+                                                 @Nullable String reads) {
+        String path = chatPath(since, room, lang, reads);
         HttpRequest req = HttpRequest.newBuilder(URI.create(base + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -862,6 +897,11 @@ public final class LiveFeedClient {
 
     /** {@link #chatPath(long, String)} plus {@code lang=} when {@code lang} is a locale code. Pure. */
     static String chatPath(long since, @Nullable String room, @Nullable String lang) {
+        return chatPath(since, room, lang, null);
+    }
+
+    /** {@link #chatPath(long, String, String)} plus {@code reads=}: only the locale codes in it, and only with a {@code lang}. Pure. */
+    static String chatPath(long since, @Nullable String room, @Nullable String lang, @Nullable String reads) {
         StringBuilder path = new StringBuilder("/live/chat");
         char sep = '?';
         if (since >= 0) {
@@ -874,6 +914,10 @@ public final class LiveFeedClient {
         }
         if (lang != null && LOCALE_KEY.matcher(lang).matches()) {
             path.append(sep).append("lang=").append(lang);
+            String codes = reads == null ? "" : java.util.Arrays.stream(reads.split(","))
+                .map(String::strip).filter(c -> LOCALE_KEY.matcher(c).matches()).distinct()
+                .collect(java.util.stream.Collectors.joining(","));
+            if (!codes.isEmpty()) path.append("&reads=").append(codes);
         }
         return path.toString();
     }
@@ -892,6 +936,24 @@ public final class LiveFeedClient {
     /** {@link #chatSend(String, UUID, String, String)} into one stream's room ({@link #chat(String, long, String)}). */
     public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, @Nullable String room) {
         return post(base, "/live/chat/send", chatSendBody(uuid, name, content, room));
+    }
+
+    /**
+     * {@code POST /live/chat/report}: this Discord-linked player reports line {@code seq} of {@code room} (a Kick or
+     * Twitch line) as a bot. {@code key} is the report key from their link ({@code ReportKeyStore}); the relay checks it
+     * and deletes the line as an admin's delete does.
+     */
+    public static CompletableFuture<Result> chatReport(String base, String uuid, String key, @Nullable String room, long seq) {
+        return post(base, "/live/chat/report", chatReportBody(uuid, key, room, seq));
+    }
+
+    static JsonObject chatReportBody(String uuid, String key, @Nullable String room, long seq) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid);
+        body.addProperty("key", key);
+        if (room != null) body.addProperty("room", room);
+        body.addProperty("line", seq);
+        return body;
     }
 
     static JsonObject chatSendBody(UUID uuid, String name, String content, @Nullable String room) {
@@ -1088,6 +1150,28 @@ public final class LiveFeedClient {
         body.addProperty("token", token);
         body.addProperty("all", true);
         return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The holder sat idle ({@code LiveEyeAfkOffer}): the same offer to every viewer as {@link #giftOfferAll}, marked
+     * {@code auto} so {@link #giftWithdraw} can take it back when they return. An older relay ignores the mark.
+     */
+    public static CompletableFuture<Result> giftOfferAway(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("all", true);
+        body.addProperty("auto", true);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The holder is back: take back this stream's unclaimed away offers ({@link #giftOfferAway}); hand-made and
+     * accepted ones stand. 200 {@code {count}}; 403 not on air; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> giftWithdraw(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post(base, "/live/gift/withdraw", body);
     }
 
     /** A {@link #giftViewers} reply's names, cleaned and capped; empty on any failure. */

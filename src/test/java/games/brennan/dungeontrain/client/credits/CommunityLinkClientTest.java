@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The /dtlink handshake's request body and the reading of the relay's two answers — pure, no relay. */
 final class CommunityLinkClientTest {
@@ -28,6 +30,10 @@ final class CommunityLinkClientTest {
         assertEquals(new Start(true, "ABCD23", 900, Error.NONE),
             CommunityLinkClient.parseStart(200, "{\"ok\":true,\"code\":\" ABCD23 \",\"expiresInSec\":900,\"command\":\"/dtlink\"}"));
         assertEquals(new Start(true, "ABCD23", 0, Error.NONE), CommunityLinkClient.parseStart(200, "{\"code\":\"ABCD23\"}"));
+        assertEquals("K".repeat(43), CommunityLinkClient.parseStart(200,
+            "{\"code\":\"ABCD23\",\"reportKey\":\"" + "K".repeat(43) + "\"}").reportKey(), "the report key comes with the code");
+        assertEquals("", CommunityLinkClient.parseStart(200, "{\"code\":\"ABCD23\"}").reportKey(), "an older relay sends none");
+        assertFalse(new Start(true, "ABCD23", 0, Error.NONE, "SECRET").toString().contains("SECRET"), "never printed");
         assertEquals(Start.of(Error.FAILED), CommunityLinkClient.parseStart(200, "{\"ok\":true}"));
         assertEquals(Start.of(Error.FAILED), CommunityLinkClient.parseStart(200, "junk"));
         assertEquals(Start.of(Error.RATE_LIMITED), CommunityLinkClient.parseStart(429, "{\"error\":\"rate_limited\"}"));
@@ -44,6 +50,9 @@ final class CommunityLinkClientTest {
         assertEquals(new Status(true, true, true, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"pings\":true}"));
         assertEquals(new Status(true, false, false, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false,\"pings\":true}"));
         assertEquals(new Status(true, false, false, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false}"));
+        assertTrue(CommunityLinkClient.parseStatus(200, "{\"linked\":true,\"reportReady\":true}").reportReady());
+        assertFalse(CommunityLinkClient.parseStatus(200, "{\"linked\":true}").reportReady(), "a link from before report keys");
+        assertFalse(CommunityLinkClient.parseStatus(200, "{\"linked\":false,\"reportReady\":true}").reportReady());
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "{\"linked\":\"true\"}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "{}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "junk"));

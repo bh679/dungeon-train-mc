@@ -268,10 +268,12 @@ public final class BlockVariantMenuRaycast {
             && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
         double armsCellR = connectCellL;
         double armsCellL = showArms ? armsCellR - BlockVariantMenuRenderer.ARMS_CELL_WIDTH : armsCellR;
-        // A painting, candle or flower pot row puts its own pill in the Grow slot (none of them grows).
+        // A painting, candle, flower pot, respawn anchor or white bed row puts its own pill in the
+        // Grow slot (none of them grows).
         boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
             && GrowthShapes.canGrow(parsed))
-            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed));
+            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed))
+            || BlockVariantMenu.isSlimeRow(entry);
         double growthCellR = armsCellL;
         double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they

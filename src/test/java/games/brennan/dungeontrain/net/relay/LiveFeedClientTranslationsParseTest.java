@@ -72,6 +72,15 @@ class LiveFeedClientTranslationsParseTest {
     }
 
     @Test
+    @DisplayName("the poll names the reader's other languages, only with a language and only locale codes")
+    void chatPathWithReads() {
+        assertEquals("/live/chat?since=5&lang=en_us&reads=fr_fr,uk_ua", LiveFeedClient.chatPath(5, null, "en_us", "fr_fr, uk_ua,fr_fr"));
+        assertEquals("/live/chat?lang=en_us&reads=de_de", LiveFeedClient.chatPath(-1, null, "en_us", "de_de,x&y=1"));
+        assertEquals("/live/chat?lang=en_us", LiveFeedClient.chatPath(-1, null, "en_us", ""));
+        assertEquals("/live/chat?since=5", LiveFeedClient.chatPath(5, null, null, "fr_fr"));
+    }
+
+    @Test
     @DisplayName("translatedBy: a short id is kept; missing or odd values are nothing")
     void translatedBy() {
         assertEquals("azure", parse("{\"ok\":true,\"seq\":1,\"translatedBy\":\"azure\"}").translatedBy());

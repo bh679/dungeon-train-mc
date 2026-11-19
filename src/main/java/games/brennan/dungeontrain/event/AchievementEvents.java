@@ -4,8 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.AdvancementAwards;
+import games.brennan.dungeontrain.advancement.AdvancementVouch;
 import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
+import games.brennan.dungeontrain.advancement.TotemJourneyAdvancements;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.DeferredCapstoneGrants;
@@ -237,7 +239,8 @@ public final class AchievementEvents {
         // position — AND ends the chest-free streak. Decorated-pot breaks feed
         // the counter from RunStatsEvents.onPotBreak but leave the streak alone,
         // which is the rule the advancement below has always used.
-        run.openedLootContainer();
+        int step = games.brennan.dungeontrain.nap.NapGateData.step(player);
+        run.openedLootContainer(step);
         AllAtOnceAdvancement.markLost(player);
         // Break the "no chest or barrel" streak: the next milestone is measured
         // from this carriage reading onward. Decorated pots never reach here —
@@ -247,6 +250,11 @@ public final class AchievementEvents {
         // already in the streak is ignored outright. One already counted still resets the streak
         // when reopened, emptied or not.
         if (!run.uniqueChests().contains(pos) && !hasLoot(event.getLevel(), pos, state)) return;
+        if (step < 0) {
+            // Behind a nap point: a re-rolled chest takes one off the streak instead of adding one.
+            run.shrinkChestStreak();
+            return;
+        }
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.
@@ -323,7 +331,7 @@ public final class AchievementEvents {
         // leaderboard) and feeds the containers-opened tally. The unique-chest streak stays
         // right-click-only: smashing a chest is not "opening a distinct chest".
         if (!isLootContainer(event.getState().getBlock())) return;
-        run.openedLootContainer();
+        run.openedLootContainer(games.brennan.dungeontrain.nap.NapGateData.step(player));
         resetContainerStreak(player, run);
     }
 
@@ -733,6 +741,27 @@ public final class AchievementEvents {
      * earned in another world — counts toward the cross-world story
      * advancements. Lectern selection still reads the per-world data, untouched.
      */
+    /**
+     * Login: re-evaluate the story advancements against the cross-world record, so progress earned in
+     * other worlds (or before that record existed) can complete them here.
+     *
+     * <p>Runs AFTER the profile replay. Every new ride is a fresh world with an empty tree, so before
+     * the replay this pass granted every story set the player already held live, with a chat
+     * announcement, at the start of every ride. After it, banked sets are already restored and only a
+     * genuinely first completion is announced (and banked).</p>
+     *
+     * <p>A Free Play run never banks, so its sets would still be announced every ride: there the pass
+     * runs silently. Nothing is lost, since nothing it grants would be banked anyway.</p>
+     */
+    private static void reevaluateStoryOnLogin(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server != null && RunIntegrity.isCheated(player)) {
+            AdvancementProfiles.grantSilently(server, () -> notifyStoryProgress(player));
+        } else {
+            notifyStoryProgress(player);
+        }
+    }
+
     private static void absorbWorldStoryProgressIntoGlobal(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
@@ -1078,13 +1107,10 @@ public final class AchievementEvents {
         // below — a first-time joiner has an empty sidecar and would otherwise
         // be skipped by the early-return inside AdvancementProfiles.replay.
         awardMultiplayerJoinIfApplicable(player);
-        // Absorb this world's story reads into the cross-world global record,
-        // then re-evaluate the story advancements (which read the global store)
-        // so progress earned in other worlds — or before this store existed —
-        // can complete them here.
+        // Absorb this world's story reads into the cross-world global record. The story advancements
+        // (which read that record) are re-evaluated after the replay below — see reevaluateStoryOnLogin.
         absorbWorldStoryProgressIntoGlobal(player);
         absorbWorldRandomBooksIntoLifetime(player);
-        notifyStoryProgress(player);
         // Absorb this world's already-earned advancements into the cross-world
         // store FIRST, so progress that predates this store — or a freshly-
         // updated player's complete vanilla / other-mod trees, which will never
@@ -1101,6 +1127,9 @@ public final class AchievementEvents {
         // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
         // finished advancements, so without this a new world started them from zero.
         AdvancementProfiles.absorbCriteria(player, AdvancementProfiles.currentKey(player));
+        // Advancements held on trust that the relay saw this player claim cleanly go back to earned,
+        // so the burrito and the tab-completes can make their records again (AdvancementVouch).
+        AdvancementVouch.onLogin(player);
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -1110,10 +1139,13 @@ public final class AchievementEvents {
         // (post-replay) progress and grants normally (replaying is false here).
         AdvancementProfiles.replay(player, AdvancementProfiles.currentKey(player));
         AdvancementProfiles.replayCriteria(player, AdvancementProfiles.currentKey(player));
+        reevaluateStoryOnLogin(player);
         // Tab copies follow their originals as restored above (or revoked by Start Again).
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Fully Developed's disc, once: backfills anyone who held it before the reward existed.
+        games.brennan.dungeontrain.advancement.DarkroomDiscReward.onLogin(player);
         // Advancements the developer gave this player (relay awards): granted as real earns once the
         // relay answers, after the replay above so one already held elsewhere is just "already done".
         AdvancementAwards.fetchAndApply(player);
@@ -1196,6 +1228,8 @@ public final class AchievementEvents {
         if (player.tickCount % 20 != 0) return;
         NothingButBooksAdvancement.checkAndGrant(player);
         LeatherOverDiamondAdvancement.checkAndGrant(player);
+        TotemJourneyAdvancements.checkHeldStack(player);
+        TotemJourneyAdvancements.checkZombieRide(player);
     }
 
     /**
@@ -1283,6 +1317,8 @@ public final class AchievementEvents {
         // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
         // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
+        // Fully Developed pays its disc as an advancement reward; record the earn so login won't backfill it.
+        games.brennan.dungeontrain.advancement.DarkroomDiscReward.onEarned(player, id);
         if (TabGateways.isLinked(id)) return;
         // The Live Eye streamer's earn, told to their client for the stream's Live chat (LiveMomentEvents).
         if (!AdvancementProfiles.isReplaying()) LiveMomentEvents.onAdvancement(player, advancement);
@@ -1331,6 +1367,9 @@ public final class AchievementEvents {
                 long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
                         ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
                 FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
+            } else {
+                // Not lost either: the relay keeps it for review, and hears that this profile needs a look.
+                FirstEverAdvancements.onUnverifiedEarn(player, advancement, CompletionistAdvancement.heldOnTrust(player));
             }
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside

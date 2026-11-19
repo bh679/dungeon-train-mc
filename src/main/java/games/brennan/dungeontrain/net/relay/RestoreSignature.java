@@ -5,7 +5,7 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
+import games.brennan.dungeontrain.util.StrictBase64;
 
 /**
  * Checks that an admin inventory restore really came from the relay.
@@ -37,7 +37,7 @@ public final class RestoreSignature {
             Signature v = Signature.getInstance("Ed25519");
             v.initVerify(key);
             v.update(signed.getBytes(StandardCharsets.UTF_8));
-            return v.verify(Base64.getDecoder().decode(sigB64));
+            return v.verify(StrictBase64.decode(sigB64));
         } catch (Exception e) {
             return false;
         }
@@ -45,7 +45,7 @@ public final class RestoreSignature {
 
     static PublicKey decode(String b64) {
         try {
-            return KeyFactory.getInstance("Ed25519").generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(b64)));
+            return KeyFactory.getInstance("Ed25519").generatePublic(new X509EncodedKeySpec(StrictBase64.decode(b64)));
         } catch (Exception e) {
             return null;
         }
