@@ -51,16 +51,18 @@ public final class EchoPage {
     private enum Tab { STATS, INVENTORY }
 
     /**
-     * The panel's measurements for the room it has: the right column is as wide as its widest tab
-     * needs, the echo's column takes the rest, and the card fills the room down to the footer.
+     * The panel's measurements for the room it has: the echo's column is sized to the model, the
+     * tabs take the rest of the width, and the card fills the room down to the footer.
      */
     private record Layout(int pad, int contentH, int portraitW, int portraitSize, int textW) {
         static Layout fit(int room, int width, int minTextW) {
             int pad = room >= 160 ? EDGE : 3;
             int contentH = Math.max(MIN_CONTENT_H, Math.min(MAX_CONTENT_H, room - 2 * pad));
-            int textW = Math.max(EchoInventoryTab.MIN_W, minTextW);
-            int portraitW = Math.max(60, Math.min(190, width - (EDGE + EDGE + textW + EDGE)));
             int size = Math.round((contentH - NAME_TAG_H - 6) / PORTRAIT_FIT * PORTRAIT_SCALE);
+            // The echo's column is about as wide as the model and its swings need; the tabs take
+            // the rest of the width.
+            int portraitW = Math.max(60, Math.min(120, Math.round(size * 1.7F)));
+            int textW = Math.max(Math.max(EchoInventoryTab.MIN_W, minTextW), width - (EDGE + portraitW + EDGE + EDGE));
             return new Layout(pad, contentH, portraitW, size, textW);
         }
 
