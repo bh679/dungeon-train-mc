@@ -18,8 +18,9 @@ never edit `changelog.json` by hand. The shipped version is computed automatical
   applies — the script refuses to run without one or the other). Tag the subject, not what the
   prose mentions: "rides the train" is not `train`, "other players' books" is not `multiplayer`.
 - **Major entry → Bilibili text:** a `--major` entry also gets its Bilibili video upload (title, description,
-  tags, each in Chinese and English) with `scripts/release-notes/set-bilibili.py --id <id> --file <json>`;
-  the dp-relay Socials page shows it ready to paste. Limits and format: the script's docstring.
+  tags, each in Chinese and English) with `scripts/release-notes/set-bilibili.py --id <id> --file <json>
+  --by "<your model, e.g. Claude Opus 5.5>"`; the dp-relay Bilibili posts page shows it ready to paste, with who
+  wrote it. Limits and format: the script's docstring.
 - **Addresses:** if the change fixes or improves a player-reported issue the death-screen bug
   report offers — lag, or the train vanishing / derailing / duplicating — pass
   `--addresses lag` and/or `--addresses train_vanished`. Players who report that issue on an

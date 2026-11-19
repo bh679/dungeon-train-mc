@@ -1103,17 +1103,21 @@ def test_set_bilibili_sets_and_clears() -> None:
     path = os.path.join(ws, "bili.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(BILIBILI_OK, f, ensure_ascii=False)
-    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    by = ("--by", "Claude Opus 5.5")
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path, *by)
     assert r.returncode == 1 and "not a major entry" in r.stderr, r.stderr
     assert run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png").returncode == 0
     r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    assert r.returncode == 2 and "--by is required" in r.stderr, r.stderr
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path, *by)
     assert r.returncode == 0, r.stderr
-    assert read_changelog(ws)["entries"][0]["bilibili"] == BILIBILI_OK
+    written = {**BILIBILI_OK, "by": "Claude Opus 5.5"}
+    assert read_changelog(ws)["entries"][0]["bilibili"] == written
     with open(path, "w", encoding="utf-8") as f:
         json.dump({**BILIBILI_OK, "title": {"zh": "a" * 81, "en": "x"}}, f)
-    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path)
+    r = run(SET_BILIBILI, ws, "--id", "drop", "--file", path, *by)
     assert r.returncode == 1 and "80" in r.stderr, r.stderr
-    assert read_changelog(ws)["entries"][0]["bilibili"] == BILIBILI_OK, "a refused file must not write"
+    assert read_changelog(ws)["entries"][0]["bilibili"] == written, "a refused file must not write"
     r = run(SET_BILIBILI, ws, "--id", "drop", "--clear")
     assert r.returncode == 0 and "bilibili" not in read_changelog(ws)["entries"][0], r.stderr
     r = run(SET_BILIBILI, ws, "--id", "nope", "--clear")
