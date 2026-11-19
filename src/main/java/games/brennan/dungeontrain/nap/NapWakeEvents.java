@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.nap;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.PlayerJoinEvents;
 import net.minecraft.network.chat.Component;
@@ -39,6 +40,20 @@ public final class NapWakeEvents {
     private static final Set<UUID> TURNING = new HashSet<>();
 
     private NapWakeEvents() {}
+
+    /**
+     * A nap whose file was changed outside the game: its run is Free Play for good, with that cause. First,
+     * so the session mark put on at server start ({@link NapWake#takeTamperedWake}) can be lifted before the
+     * login notices read it: the permanent mark covers the run from here, and the player is told once.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLoginTampered(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        NapWake.takeTamperedWake(player.getUUID()).ifPresent(markedHere -> {
+            RunIntegrity.markCheated(player, ProfileIntegrity.cause());
+            if (markedHere) ProfileIntegrity.clear(player.getUUID());
+        });
+    }
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {

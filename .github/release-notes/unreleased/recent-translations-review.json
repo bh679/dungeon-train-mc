@@ -1,0 +1,17 @@
+{
+  "id": "recent-translations-review",
+  "version": "0.1889.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "translations"
+  ],
+  "title": "Translation fixes",
+  "summary": "Recently added text reads better in all 21 languages, and the Live Eye now carries its new name in 14 more of them.",
+  "highlights": [],
+  "pr": 2741,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

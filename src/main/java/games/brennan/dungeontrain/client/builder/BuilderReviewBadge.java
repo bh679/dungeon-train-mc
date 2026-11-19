@@ -45,6 +45,9 @@ record BuilderReviewBadge(int borderColour, ResourceLocation icon) {
                     new BuilderReviewBadge(BuilderReviewState.BORDER_FEEDBACK, FEEDBACK);
             case BuilderReviewState.RESUBMIT ->
                     new BuilderReviewBadge(BuilderReviewState.BORDER_RESUBMIT, RESUBMIT);
+            // An edit sent back is a note with blocks attached: the feedback icon, in its own colour.
+            case BuilderReviewState.EDITED ->
+                    new BuilderReviewBadge(BuilderReviewState.BORDER_EDITED, FEEDBACK);
             default -> null;
         };
     }
