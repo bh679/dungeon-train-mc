@@ -188,7 +188,7 @@ public final class JavaRcePromptScreen extends Screen {
     private int controlsHeight() {
         return switch (page) {
             case MAIN -> font.lineHeight + 2 + BUTTON_H + BUTTON_GAP + font.lineHeight;
-            case UPDATE, ARGS -> BUTTON_H;
+            case UPDATE, ARGS -> BUTTON_H + BUTTON_GAP + BUTTON_H;
             case CONFIRM -> CHECKBOX_H + BUTTON_GAP + BUTTON_H;
         };
     }
@@ -218,23 +218,35 @@ public final class JavaRcePromptScreen extends Screen {
                     font.lineHeight, link, b -> show(Page.CONFIRM), font));
             }
             case UPDATE -> {
-                // Their own Java: the vendor's download page. A launcher's Java: the other fix.
+                // Blue is the step the page asks for first. Every update ends in a restart, so Quit is
+                // always here; for a launcher-managed Java quitting IS the step (the launcher updates
+                // its Java on the next start).
+                int row2 = y + BUTTON_H + BUTTON_GAP;
                 if (setup.manager() == JavaSetup.Manager.OWN) {
                     addRenderableWidget(new DarkTintedButton(left, y, half, BUTTON_H,
                         Component.translatable(K + "download", setup.vendor().displayName),
                         b -> openLink(setup.vendor().downloadUrl(setup.feature())), 0.45F, 0.60F, 1.25F));
-                } else {
+                    addRenderableWidget(Button.builder(QUIT, b -> quitGame()).bounds(rightX, y, rightW, BUTTON_H).build());
                     addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
-                        .bounds(left, y, half, BUTTON_H).build());
+                        .bounds(left, row2, half, BUTTON_H).build());
+                    addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
+                        .bounds(rightX, row2, rightW, BUTTON_H).build());
+                } else {
+                    addRenderableWidget(new DarkTintedButton(left, y, half, BUTTON_H, QUIT, b -> quitGame(),
+                        0.45F, 0.60F, 1.25F));
+                    addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
+                        .bounds(rightX, y, rightW, BUTTON_H).build());
+                    addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
+                        .bounds(left, row2, inner, BUTTON_H).build());
                 }
-                addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
-                    .bounds(rightX, y, rightW, BUTTON_H).build());
             }
             case ARGS -> {
+                // Copy, paste into the launcher, restart: Quit sits beside Copy for the last step.
                 copyButton = addRenderableWidget(Button.builder(Component.translatable(K + "copy"), b -> copyArgument())
                     .bounds(left, y, half, BUTTON_H).build());
+                addRenderableWidget(Button.builder(QUIT, b -> quitGame()).bounds(rightX, y, rightW, BUTTON_H).build());
                 addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
-                    .bounds(rightX, y, rightW, BUTTON_H).build());
+                    .bounds(left, y + BUTTON_H + BUTTON_GAP, inner, BUTTON_H).build());
             }
             case CONFIRM -> {
                 Component label = Component.translatable(K + "dont_show_again");
@@ -250,6 +262,14 @@ public final class JavaRcePromptScreen extends Screen {
                     .bounds(rightX, by, rightW, BUTTON_H).build());
             }
         }
+    }
+
+    /** Vanilla's own "Quit Game", already translated in every language. */
+    private static final Component QUIT = Component.translatable("menu.quit");
+
+    /** Shown only over the title screen, so there is no world to save first. */
+    private void quitGame() {
+        this.minecraft.stop();
     }
 
     private void copyArgument() {
