@@ -10,7 +10,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Positive control first: if A fails, every later "failed" result is meaningless.
-"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf eb dp sp bt blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
+"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv jsc dbd pv lctf eb dp sp bt blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
 "$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
 "$HERE/run-case.sh" "C - missing all five siblings (upgrade path)"      dt sable fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
 "$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sp blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
@@ -33,7 +33,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch vb pf dd ppro exp expp vista lm co gl rlib rcfg
 # What Are They Up To + CoroUtil are modpack companions (on by default), needed on client AND
 # server. O = a server that runs the pack's set; P = WATUT without its library.
-"$HERE/run-case.sh" "O - modpack companions WATUT + CoroUtil"          dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf sp blc vb pf dd ppro exp expp vista watut coro lm co gl rlib rcfg
+"$HERE/run-case.sh" "O - modpack companions WATUT + CoroUtil"          dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv jsc dbd pv lctf sp blc vb pf dd ppro exp expp vista watut coro lm co gl rlib rcfg
 "$HERE/run-case.sh" "P - WATUT without CoroUtil"                       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf dd ppro exp expp vista watut lm co gl rlib rcfg
 # Exposure and its Polaroid add-on are required with `[x,)` floors; Q is the only case without them.
 "$HERE/run-case.sh" "Q - missing Exposure + Polaroid"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf dd ppro vista lm co gl rlib rcfg
@@ -41,12 +41,12 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "R - missing TerraBlender"                         dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop glitch blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
 # The CurseForge-only jar leaves Stream Detect + DPI Bypass Detect out of jarJar (both stay `optional`).
 # S = the CurseForge-app layout (L's set, top-level sd/dbd); T = a manual CurseForge download without them.
-"$HERE/run-case.sh" "S - CurseForge jar, CurseForge-app layout"        dtcf sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf eb dp blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
-"$HERE/run-case.sh" "T - CurseForge jar without Stream/DPI Detect"     dtcf sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch dmv pv lctf eb dp blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
+"$HERE/run-case.sh" "S - CurseForge jar, CurseForge-app layout"        dtcf sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv jsc dbd pv lctf eb dp blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
+"$HERE/run-case.sh" "T - CurseForge jar without Stream/DPI Detect"     dtcf sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch dmv jsc pv lctf eb dp blc vb pf dd ppro exp expp vista lm co gl rlib rcfg
 # Deeper Darker is required with a `[x,)` floor (the Deeper Dark pass copies its Otherside); U is the only case without it.
 "$HERE/run-case.sh" "U - missing Deeper Darker"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf exp expp vista lm co gl rlib rcfg
 # Luminous Monsters is required with a `[x,)` floor (its mobs are natural spawns); V is the only case without it.
-"$HERE/run-case.sh" "V - missing Luminous Monsters"                    dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf eb dp sp blc vb pf dd ppro exp expp vista co gl rlib rcfg
+"$HERE/run-case.sh" "V - missing Luminous Monsters"                    dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv jsc dbd pv lctf eb dp sp blc vb pf dd ppro exp expp vista co gl rlib rcfg
 # Creeper Overhaul is required with a `[x,)` floor (its creepers stand in carriages); W is the only case without it
 # (its three libraries stay, so the failure names `creeperoverhaul` alone).
-"$HERE/run-case.sh" "W - missing Creeper Overhaul"                      dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf eb dp sp blc vb pf dd ppro exp expp vista lm gl rlib rcfg
+"$HERE/run-case.sh" "W - missing Creeper Overhaul"                      dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv jsc dbd pv lctf eb dp sp blc vb pf dd ppro exp expp vista lm gl rlib rcfg

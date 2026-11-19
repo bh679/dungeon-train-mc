@@ -341,8 +341,9 @@ public final class ClientDisplayConfig {
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
     /**
-     * The Java runtime ({@code java.runtime.version}) the player said "don't show again" to on the
-     * Java security warning ({@code JavaRceNotice}). A different Java shows it again. Empty = never.
+     * LEGACY: the Java runtime the player said "don't show again" to on DT's own Java security
+     * warning, before it moved to the bundled MC Java Safety Check mod. Kept only so
+     * {@code compat/MCJavaSafetyCheckBridge} can hand the value over and clear it. Empty = nothing to hand over.
      */
     public static final ModConfigSpec.ConfigValue<String> JAVA_RCE_WARNING_DISMISSED_FOR;
     /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. On by default. */
@@ -1002,9 +1003,8 @@ public final class ClientDisplayConfig {
                          "allocate 6 GB or more in your launcher. Nothing is sent anywhere. On by default.")
                 .define("lowMemoryNoticeChat", true);
         ModConfigSpec.ConfigValue<String> javaRceWarningDismissedFor = b
-                .comment("Internal: the Java version you chose \"Don't show again\" for on the Java security",
-                         "warning (CVE-2026-114938). The warning comes back if you switch to a different Java.",
-                         "Empty = never dismissed. Clear it by hand to see the warning again.")
+                .comment("Legacy: moved to config/mcjavasafetycheck-client.toml (warningDismissedFor).",
+                         "Dungeon Train hands this value over once and then empties it.")
                 .define("javaRceWarningDismissedFor", "");
         b.pop();
 
