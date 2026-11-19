@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import net.neoforged.fml.loading.FMLPaths;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -14,6 +15,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -24,13 +29,22 @@ import java.util.regex.Pattern;
  * newest code, which only becomes the link's key if the player runs that code with {@code /dtlink}. A report tries
  * {@code current} first, then {@code pending}; whichever the relay accepts becomes {@code current}.</p>
  *
- * <p>One small JSON file in the config folder, never logged, never sent anywhere but the relay. Not part of any config
- * integrity check (those read only named {@code .toml} files). No-throw: a file fault reads as no key.</p>
+ * <p>One small JSON file, {@code <gameDir>/dungeontrain/.live-report-key.json} ({@link PlayerDataPaths#REPORT_KEY}),
+ * beside the install key. Never logged, never sent anywhere but the relay. Owner read/write only where the disk has
+ * POSIX permissions (on Windows the user profile's own ACL applies). Dungeon Backup leaves it out of its archives:
+ * those zips get handed over for help, and a lost key costs only another {@code /discord}.</p>
+ *
+ * <p>It used to be {@code config/dungeontrain/live-report-key.json}, and config folders travel in modpack exports and
+ * support zips. The first read of a session moves a key found there and deletes the old file; a failed write leaves
+ * the old file for the next try. No-throw: a file fault reads as no key.</p>
  */
 public final class ReportKeyStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String FILE = "live-report-key.json";
+    /** The pre-move name, under {@code config/dungeontrain/}. */
+    static final String LEGACY_FILE = "live-report-key.json";
+    static final String FILE = PlayerDataPaths.REPORT_KEY;
+    private static final Set<PosixFilePermission> OWNER_ONLY = PosixFilePermissions.fromString("rw-------");
     private static final Pattern KEY = Pattern.compile("^[A-Za-z0-9_-]{43}$");
     private static final Pattern UUID = Pattern.compile("^[0-9a-f]{32}$");
 
@@ -44,6 +58,8 @@ public final class ReportKeyStore {
     }
 
     @Nullable private static Path override;
+    @Nullable private static Path legacyOverride;
+    private static boolean migrated;
 
     private ReportKeyStore() {}
 
@@ -77,9 +93,16 @@ public final class ReportKeyStore {
         write(uuid, new Keys(key, key.equals(was.pending()) ? null : was.pending()));
     }
 
-    /** Test seam: read and write {@code file} instead of the config folder's. Null restores it. */
+    /** Test seam: read and write {@code file}, with no old location. Null restores both. */
     static synchronized void useFile(@Nullable Path file) {
+        useFiles(file, null);
+    }
+
+    /** Test seam: read and write {@code file}, migrating from {@code legacy}. Also forgets this session's migration. */
+    static synchronized void useFiles(@Nullable Path file, @Nullable Path legacy) {
         override = file;
+        legacyOverride = legacy;
+        migrated = false;
     }
 
     private static boolean validUuid(@Nullable String uuid) {
@@ -94,10 +117,48 @@ public final class ReportKeyStore {
     }
 
     private static Path path() {
-        return override != null ? override : FMLPaths.CONFIGDIR.get().resolve(DungeonTrain.MOD_ID).resolve(FILE);
+        return override != null ? override : PlayerDataPaths.root().resolve(FILE);
+    }
+
+    @Nullable
+    private static Path legacyPath() {
+        if (override != null) return legacyOverride;
+        return FMLPaths.CONFIGDIR.get().resolve(DungeonTrain.MOD_ID).resolve(LEGACY_FILE);
+    }
+
+    /** Once a session: a key still in {@code config/} moves to the new file, then the old one goes. */
+    private static void migrateOnce() {
+        if (migrated) return;
+        migrated = true;
+        Path old = legacyPath();
+        if (old == null || !Files.isRegularFile(old)) return;
+        try {
+            Path p = path();
+            if (!Files.isRegularFile(p)) {
+                JsonObject keys = parse(old);
+                if (keys != null && !keys.isEmpty() && !writeAll(keys)) return; // keep the old file for the next try
+            }
+            Files.deleteIfExists(old);
+            Files.deleteIfExists(old.resolveSibling(LEGACY_FILE + ".tmp"));
+            LOGGER.info("[DungeonTrain] Live report key: moved out of the config folder");
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Live report key: could not move the old key file ({})", e.getClass().getSimpleName());
+        }
+    }
+
+    /** {@code file}'s JSON object, or null when it can't be read as one. */
+    @Nullable
+    private static JsonObject parse(Path file) {
+        try {
+            JsonElement root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
+            return root.isJsonObject() ? root.getAsJsonObject() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static JsonObject read() {
+        migrateOnce();
         try {
             Path p = path();
             if (!Files.isRegularFile(p)) return new JsonObject();
@@ -116,14 +177,28 @@ public final class ReportKeyStore {
         if (keys.pending() != null) o.addProperty("pending", keys.pending());
         JsonObject next = all.deepCopy();
         next.add(uuid, o);
+        writeAll(next);
+    }
+
+    /** Replace the file with {@code all}, owner-only where the disk allows. Whether it was written. */
+    private static boolean writeAll(JsonObject all) {
         try {
             Path p = path();
             Files.createDirectories(p.getParent());
             Path tmp = p.resolveSibling(FILE + ".tmp");
-            Files.writeString(tmp, next.toString(), StandardCharsets.UTF_8);
+            Files.deleteIfExists(tmp);
+            boolean posix = Files.getFileStore(p.getParent()).supportsFileAttributeView("posix");
+            if (posix) {
+                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(OWNER_ONLY);
+                Files.createFile(tmp, attr);
+            }
+            Files.writeString(tmp, all.toString(), StandardCharsets.UTF_8);
             Files.move(tmp, p, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            if (posix) Files.setPosixFilePermissions(p, OWNER_ONLY);
+            return true;
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Live report key: could not save the key file ({})", e.getClass().getSimpleName());
+            return false;
         }
     }
 }
