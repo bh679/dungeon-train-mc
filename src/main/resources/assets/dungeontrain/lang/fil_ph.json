@@ -1999,6 +1999,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Grupo ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Grupo ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Mga Block",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Mga Block · Data",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entity",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s container",
   "gui.dungeontrain.editor_screen.sheet.lights": "Mga ilaw",

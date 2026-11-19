@@ -2582,6 +2582,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Group ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Group ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Blocks",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Blocks · Data",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entities",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s containers",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lights",

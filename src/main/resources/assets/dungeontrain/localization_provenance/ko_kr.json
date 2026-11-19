@@ -2002,6 +2002,7 @@
       "gui.dungeontrain.editor_screen.layout.group",
       "gui.dungeontrain.editor_screen.layout.group.name",
       "gui.dungeontrain.editor_screen.sheet.blocks",
+      "gui.dungeontrain.editor_screen.sheet.blocks_data",
       "gui.dungeontrain.editor_screen.sheet.entities",
       "gui.dungeontrain.editor_screen.sheet.containers",
       "gui.dungeontrain.editor_screen.sheet.lights",

@@ -1999,6 +1999,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Grup ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Grup ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Balok",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Balok · Data",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entitas",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s wadah",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lampu",
