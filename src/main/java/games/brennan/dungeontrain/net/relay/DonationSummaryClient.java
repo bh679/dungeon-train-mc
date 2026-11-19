@@ -104,9 +104,10 @@ public final class DonationSummaryClient {
      * {@code youBookCredits} is the Priority Books waiting for this player (0 when none, or unnamed).
      * {@code goals} is empty (and {@code activeGoalId} null) against a relay that predates the
      * ladder, or when there is no cost snapshot to build the first rung from — the screen falls
-     * back to {@code percentCovered} then. {@code youSupporterAud} is what counts towards the
-     * supporter perks once gift splits are counted (relay donation-shares.js): -1 when the relay left
-     * it out, which it does for everyone no split touches, so {@code youTotalUsd} stands.
+     * back to {@code percentCovered} then. {@code youSupporter} is whether the relay counts this player
+     * a supporter, gift splits included (relay donation-shares.js): a yes/no, so a gifted perk never
+     * puts the gift's amount on the friend's name. Null against a relay that predates it, when
+     * {@code youTotalUsd} decides instead.
      */
     public record Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
                           int percentCovered, int patronCount, int patronMonthlyUsd,
@@ -114,7 +115,7 @@ public final class DonationSummaryClient {
                           boolean hasYou, int youMonthlyUsd, int youTotalUsd,
                           List<Goal> goals, String activeGoalId, Updates updates,
                           Activity activity, Experiment experiment, int youBookCredits,
-                          int youSupporterAud) {
+                          Boolean youSupporter) {
 
         /** The pre-gift-split shape: no supporter override. */
         public Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
@@ -125,13 +126,9 @@ public final class DonationSummaryClient {
                        Activity activity, Experiment experiment, int youBookCredits) {
             this(monthlyRaisedUsd, totalRaisedUsd, monthlyCostUsd, percentCovered, patronCount,
                     patronMonthlyUsd, monthly, allTime, hasYou, youMonthlyUsd, youTotalUsd, goals,
-                    activeGoalId, updates, activity, experiment, youBookCredits, -1);
+                    activeGoalId, updates, activity, experiment, youBookCredits, null);
         }
 
-        /** What counts towards the supporter perks: the split-aware figure when sent, else the total. */
-        public int youSupporterTotalAud() {
-            return youSupporterAud >= 0 ? youSupporterAud : youTotalUsd;
-        }
 
         /** The pre-Priority-Book shape: no books waiting. */
         public Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
@@ -233,7 +230,7 @@ public final class DonationSummaryClient {
                 parseActivity(o),
                 parseExperiment(o),
                 you != null ? optInt(you, "bookCredits", 0) : 0,
-                you != null ? optInt(you, "supporterAud", -1) : -1);
+                you != null ? optBoolean(you, "supporter") : null);
     }
 
     /**
@@ -348,6 +345,12 @@ public final class DonationSummaryClient {
             out.add(new Entry(name, optInt(e, "amountUsd", 0), source));
         }
         return out;
+    }
+
+    /** A boolean field, or null when it is missing or not a boolean. */
+    private static Boolean optBoolean(JsonObject o, String k) {
+        if (!o.has(k) || !o.get(k).isJsonPrimitive() || !o.get(k).getAsJsonPrimitive().isBoolean()) return null;
+        return o.get(k).getAsBoolean();
     }
 
     private static int optInt(JsonObject o, String k, int fallback) {

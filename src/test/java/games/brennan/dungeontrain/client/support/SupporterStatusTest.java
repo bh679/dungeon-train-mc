@@ -22,19 +22,20 @@ class SupporterStatusTest {
         assertTrue(SupporterStatus.qualifies(summary(true, 0, 250)));
     }
 
-    private static DonationSummaryClient.Summary split(int total, int supporterAud) {
+    private static DonationSummaryClient.Summary split(int total, Boolean supporter) {
         return new DonationSummaryClient.Summary(0, 0, -1, -1, 0, 0, List.of(), List.of(),
-                true, 0, total, List.of(), null, null, null, null, 0, supporterAud);
+                true, 0, total, List.of(), null, null, null, null, 0, supporter);
     }
 
     @Test
-    void giftSplitSupporterTotalWinsWhenSent() {
-        // A friend gifted the perks of a A$30 payment, having given nothing themself.
-        assertTrue(SupporterStatus.qualifies(split(0, 30)));
+    void relaysSupporterYesNoWinsWhenSent() {
+        // A friend gifted the perks of a payment: a yes, with no amount on their name.
+        assertTrue(SupporterStatus.qualifies(split(0, true)));
         // The payer who gave the perks away keeps the funding total but not the perk.
-        assertFalse(SupporterStatus.qualifies(split(30, 0)));
-        // Not sent (-1): the all-time total stands, as on an older relay.
-        assertTrue(SupporterStatus.qualifies(split(30, -1)));
+        assertFalse(SupporterStatus.qualifies(split(30, false)));
+        // Not sent: the all-time total stands, as on an older relay.
+        assertTrue(SupporterStatus.qualifies(split(30, null)));
+        assertFalse(SupporterStatus.qualifies(split(10, null)));
     }
 
     @Test

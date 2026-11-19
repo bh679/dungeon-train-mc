@@ -68,15 +68,22 @@ final class DonationSummaryClientTest {
     }
 
     @Test
-    @DisplayName("you.supporterAud: read when a gift split sends it, -1 (use the total) when not")
-    void parsesTheSupporterTotal() {
-        Summary plain = DonationSummaryClient.parse(realRelayBody());
-        assertEquals(-1, plain.youSupporterAud());
-        assertEquals(105, plain.youSupporterTotalAud());
-        Summary split = DonationSummaryClient.parse("""
-        {"ok":true,"you":{"monthlyUsd":0,"totalUsd":0,"supporterAud":30}}
+    @DisplayName("you.supporter: read as a yes/no when sent, null (use the total) when not")
+    void parsesTheSupporterFlag() {
+        assertNull(DonationSummaryClient.parse(realRelayBody()).youSupporter());
+        Summary gifted = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":0,"totalUsd":0,"supporter":true}}
         """);
-        assertEquals(30, split.youSupporterTotalAud());
+        assertEquals(Boolean.TRUE, gifted.youSupporter());
+        assertEquals(0, gifted.youTotalUsd());
+        Summary no = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":30,"totalUsd":30,"supporter":false}}
+        """);
+        assertEquals(Boolean.FALSE, no.youSupporter());
+        Summary odd = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":0,"totalUsd":0,"supporter":"yes"}}
+        """);
+        assertNull(odd.youSupporter());
     }
 
     @Test
