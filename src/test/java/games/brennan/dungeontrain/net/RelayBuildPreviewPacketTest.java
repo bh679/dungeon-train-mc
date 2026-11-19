@@ -56,4 +56,16 @@ final class RelayBuildPreviewPacketTest {
         assertArrayEquals(new int[]{1, 3, 5}, decoded.seqs());
         assertEquals(size, BuilderRelayPreview.Oversize.fromArray(decoded.oversize()));
     }
+
+    @Test
+    @DisplayName("a lighter picture of a big build still carries its oversize, so Load can ask first")
+    void pictureWithOversize() {
+        byte[] bytes = {4, 5, 6};
+        BuilderRelayPreview.Oversize size = new BuilderRelayPreview.Oversize(63_669, 64, 64, 64);
+        RelayBuildPreviewPacket decoded = roundTrip(RelayBuildPreviewPacket.of(43234, 0, new int[0],
+            new BuilderRelayPreview.Attempt(bytes, false, size)));
+        assertTrue(decoded.found());
+        assertArrayEquals(bytes, decoded.template());
+        assertEquals(size, BuilderRelayPreview.Oversize.fromArray(decoded.oversize()));
+    }
 }

@@ -77,7 +77,8 @@ public final class BuilderRelayPreview {
      * @param bytes     the structure NBT to send, or null when there is no picture
      * @param retryable whether the failure was the moment rather than the build
      * @param oversize  set when the build read fine but is over the preview caps, so the X menu can say
-     *                  "Oversized" and ask before loading it; null for every other outcome
+     *                  "Oversized" and ask before loading it; null otherwise. It may come with
+     *                  {@code bytes} (a lighter picture of a big build) or without (no picture at all).
      */
     public record Attempt(byte[] bytes, boolean retryable, Oversize oversize) {
         static final Attempt GONE = new Attempt(null, false, null);

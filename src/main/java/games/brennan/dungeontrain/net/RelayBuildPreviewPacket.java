@@ -65,12 +65,21 @@ public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean 
     }
 
     /**
-     * The "no picture" answer for a build that read fine but is over the preview caps: the X menu
-     * says "Oversized" with its size, and asks before loading it.
+     * The answer for one preview attempt: its picture when there is one, and its size when the build
+     * is over the preview caps. The two travel together: a big build may still come with a lighter
+     * picture, and the X menu asks before loading it either way.
      */
+    public static RelayBuildPreviewPacket of(int relayId, int seq, int[] seqs, BuilderRelayPreview.Attempt attempt) {
+        byte[] bytes = attempt.bytes();
+        int[] oversize = attempt.oversize() == null ? new int[0] : attempt.oversize().toArray();
+        return new RelayBuildPreviewPacket(relayId, seq, seqs, bytes != null, attempt.retryable(),
+            bytes == null ? new byte[0] : bytes, oversize);
+    }
+
+    /** A build over the preview caps with no picture at all: its size, and nothing to draw. */
     public static RelayBuildPreviewPacket oversized(int relayId, int seq, int[] seqs,
                                                     BuilderRelayPreview.Oversize oversize) {
-        return new RelayBuildPreviewPacket(relayId, seq, seqs, false, false, new byte[0], oversize.toArray());
+        return of(relayId, seq, seqs, new BuilderRelayPreview.Attempt(null, false, oversize));
     }
 
     @Override
