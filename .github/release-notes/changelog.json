@@ -37244,6 +37244,241 @@
       "released": true,
       "released_in": "v0.1892.0",
       "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "chat-button-fix",
+      "version": "0.1896.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Chat button fix",
+      "summary": "Chat buttons for Live Eye gifts, log requests and stream takeovers are better protected.",
+      "highlights": [],
+      "pr": 2748,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "dungeon-train-flags",
+      "version": "0.1898.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Dungeon Train flags",
+      "summary": "Builders get eight new Dungeon Train flags for their carriages. Each one turns into a Dungeon Train banner when the carriage appears, with a new design for every carriage.",
+      "highlights": [
+        "Flag 1 to Flag 8 in the Stage Blocks tab, placed on the floor or on a wall",
+        "Every copy of the same flag number in a carriage matches, and different numbers never repeat a design",
+        "Break one to keep it as a Dungeon Train banner",
+        "Dungeon Train flags can now turn up in the shop and dressing room carriages"
+      ],
+      "pr": 2749,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "echo-death-page",
+      "version": "0.1901.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "ui"
+      ],
+      "title": "Echo Preview",
+      "summary": "Preview your echo in the death screen, see the items, stats and personality you are leaving with it.",
+      "highlights": [
+        "Your echo's personality and traits, shaped by how you played",
+        "A skill chart of how quick you were at melee, ranged, blocking, placing, movement and quickswap",
+        "Look through the gear your echo carries, item by item"
+      ],
+      "pr": 2751,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z",
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/meet-your-echo.png",
+      "bilibili": {
+        "title": {
+          "zh": "\u5730\u7262\u5217\u8f66 \u66f4\u65b0\uff1a\u56de\u54cd\u9884\u89c8 | \u6211\u7684\u4e16\u754c\u6a21\u7ec4",
+          "en": "Dungeon Train Update: Echo Preview | Minecraft Mod"
+        },
+        "description": {
+          "zh": "\u5728\u6b7b\u4ea1\u754c\u9762\u9884\u89c8\u4f60\u7684\u56de\u54cd\uff0c\u770b\u770b\u4f60\u7559\u7ed9\u5b83\u7684\u7269\u54c1\u3001\u5c5e\u6027\u548c\u6027\u683c\u3002\n\n\u66f4\u65b0\u4eae\u70b9\uff1a\n\u00b7 \u56de\u54cd\u7684\u6027\u683c\u548c\u7279\u8d28\uff0c\u7531\u4f60\u7684\u73a9\u6cd5\u5851\u9020\n\u00b7 \u6280\u80fd\u56fe\u8868\u5c55\u793a\u4f60\u5728\u8fd1\u6218\u3001\u8fdc\u7a0b\u3001\u683c\u6321\u3001\u653e\u7f6e\u3001\u79fb\u52a8\u548c\u5feb\u901f\u5207\u6362\u4e0a\u6709\u591a\u5feb\n\u00b7 \u9010\u4ef6\u67e5\u770b\u56de\u54cd\u643a\u5e26\u7684\u88c5\u5907\n\n\u5b8c\u6574\u66f4\u65b0\u8bf4\u660e\uff1adungeon.training/update\n\u4e0b\u8f7d\uff1a\u5728 CurseForge \u6216 Modrinth \u641c\u7d22 Dungeon Train\n\u5730\u7262\u5217\u8f66\u662f\u4e00\u4e2a Minecraft\uff08\u6211\u7684\u4e16\u754c\uff09NeoForge 1.21.1 \u6a21\u7ec4\uff1a\u5728\u4e00\u5217\u6c38\u4e0d\u505c\u6b47\u7684\u5217\u8f66\u4e0a\u5192\u9669\u3001\u641c\u522e\u3001\u751f\u5b58\u3002",
+          "en": "Preview your echo in the death screen, see the items, stats and personality you are leaving with it.\n\nHighlights:\n\u00b7 Your echo's personality and traits, shaped by how you played\n\u00b7 A skill chart of how quick you were at melee, ranged, blocking, placing, movement and quickswap\n\u00b7 Look through the gear your echo carries, item by item\n\nFull notes: dungeon.training/update\nDownload: search Dungeon Train on CurseForge or Modrinth\nDungeon Train is a Minecraft NeoForge 1.21.1 mod: loot, fight and survive aboard a train that never stops."
+        },
+        "tags": {
+          "zh": [
+            "\u6211\u7684\u4e16\u754c",
+            "Minecraft",
+            "\u6a21\u7ec4",
+            "\u5730\u7262\u5217\u8f66",
+            "\u56de\u54cd",
+            "\u751f\u5b58",
+            "\u6e38\u620f\u66f4\u65b0",
+            "\u8089\u9e3d",
+            "NeoForge",
+            "MOD"
+          ],
+          "en": [
+            "Minecraft",
+            "mod",
+            "Dungeon Train",
+            "roguelike",
+            "survival",
+            "game update",
+            "NeoForge",
+            "echo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "editor-oversized-builds",
+      "version": "0.1893.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Big builds flagged in the editor",
+      "summary": "In the editor's build browser, a build too big to preview now says Oversized with its block count, and loading it into your world asks you to confirm first.",
+      "highlights": [],
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "gift-split-thanks-page",
+      "version": "0.1898.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Choose what your gift gives",
+      "summary": "Donating for a friend? After paying, the thank-you page lets you choose which rewards go to them and which you keep. Your name stays on the boards unless you give that too.",
+      "highlights": [
+        "Turn a donation you just made into a gift, for up to a day after paying",
+        "Pick which rewards your friend gets: Book Boosts, supporter perks, photo albums",
+        "The name box suggests players who have ridden the train, so the gift reaches the right person"
+      ],
+      "pr": 2750,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "music-mods-off-live-eye",
+      "version": "0.1901.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Music player mods allowed",
+      "summary": "Concerto, Dango Music and Show the Lyrics no longer put your run in Free Play. Their music and lyrics stay off your Live Eye stream, and a one-time notice tells you so.",
+      "highlights": [
+        "Play with Concerto, Dango Music or Show the Lyrics and keep your run ranked",
+        "Their songs and lyrics never reach your Live Eye stream; your game sound and voice still do"
+      ],
+      "pr": 2752,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "shared-carriage-stability",
+      "version": "0.1893.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Shared carriage stability",
+      "summary": "Shared carriages and builds from other players load more reliably.",
+      "highlights": [],
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "wover-shell-save-folders",
+      "version": "0.1894.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Leftover save folders cleaned up",
+      "summary": "Runs you nap out of or reboard from no longer come back as nearly empty save folders, and any already left behind are cleared away when you reach the title screen.",
+      "highlights": [],
+      "pr": 2747,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "x-menu-build-pictures",
+      "version": "0.1895.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Build pictures load faster in the X menu",
+      "summary": "Browsing a builder's creations in the train editor's X menu now fills every picture on screen first, shows the big builds too, and keeps the pictures while you scroll.",
+      "highlights": [
+        "Every build on screen gets its current picture before older versions start downloading. The build you select jumps the queue.",
+        "Big builds that only showed their name now show a picture.",
+        "Pictures stay loaded while you scroll and when you reopen the menu, and only download again when the build has changed.",
+        "A small arrow marks the build that is downloading."
+      ],
+      "pr": 2744,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
+    },
+    {
+      "id": "x-menu-build-size",
+      "version": "0.1893.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "See how big each build is",
+      "summary": "The editor's build browser now shows how big each uploaded build is. A thin bar on every tile shows how close it is to the size limit, and the details panel lists its dimensions and data size as soon as you pick it.",
+      "highlights": [
+        "Size bar on every build tile: green, amber, then red near the limit",
+        "Dimensions and data size shown before the preview finishes loading"
+      ],
+      "pr": 2745,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1903.0",
+      "released_at": "2026-11-19T12:57:15Z"
     }
   ]
 }
