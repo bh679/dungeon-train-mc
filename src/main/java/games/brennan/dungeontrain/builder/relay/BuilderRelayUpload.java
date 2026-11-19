@@ -52,7 +52,7 @@ public final class BuilderRelayUpload {
      * player is told their build is too big by the game, in the builder, rather than by a 400 from a
      * server they can't see.
      */
-    static final int MAX_BLOCKS_CHARS = 690_000;
+    public static final int MAX_BLOCKS_CHARS = 690_000;
 
     private BuilderRelayUpload() {}
 
