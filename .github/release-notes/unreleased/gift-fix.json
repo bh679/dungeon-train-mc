@@ -1,0 +1,17 @@
+{
+  "id": "gift-fix",
+  "version": "0.1911.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "community"
+  ],
+  "title": "Gift fix",
+  "summary": "Gifts for friends now arrive in full.",
+  "highlights": [],
+  "pr": 2759,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
