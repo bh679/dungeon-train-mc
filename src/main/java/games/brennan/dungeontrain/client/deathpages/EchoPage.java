@@ -59,6 +59,12 @@ public final class EchoPage {
     private static final int SPACED_ROWS = 7;
     /** Head room the idle animation needs above the model, in model heights (looks, helmet). */
     private static final float PORTRAIT_FIT = 2.25F;
+    /** The echo is drawn a little smaller than the column allows, leaving room for its name tag. */
+    private static final float PORTRAIT_SCALE = 0.9F;
+    /** Room the name tag takes at the top of the echo's column. */
+    private static final int NAME_TAG_H = 12;
+    /** The in-game name tag's backing: a quarter-black strip, as vanilla draws it. */
+    private static final int NAME_TAG_BG = 0x40000000;
 
     /**
      * The panel's measurements for the room it has. Left: the armour slots with the offhand under
@@ -77,7 +83,8 @@ public final class EchoPage {
             int extra = contentH - MIN_CONTENT_H;
             int step = extra / SPACED_ROWS;
             int barH = BASE_BAR_H + Math.min(2, extra / 30);
-            int size = Math.round((contentH - 6) / PORTRAIT_FIT);
+            // The name tag takes the top NAME_TAG_H px; the echo stands below it with head room.
+            int size = Math.round((contentH - NAME_TAG_H - 6) / PORTRAIT_FIT * PORTRAIT_SCALE);
             return new Layout(pad, contentH, portraitW, size, textW, step, barH);
         }
 
@@ -100,7 +107,6 @@ public final class EchoPage {
     };
 
     private static final int PANEL_BG = 0xB80E0F12;
-    private static final int PORTRAIT_BG = 0xFF08090B;
     private static final int SLOT_BG = 0xFF1B1C20;
     private static final int SLOT_LIGHT = 0xFF34363C;
     private static final int SLOT_DARK = 0xFF0A0B0D;
@@ -179,31 +185,31 @@ public final class EchoPage {
         }
         slot(g, colX, colY + 4 * SLOT + 3 * GAP + OFFHAND_GAP, echo.appearance().offHand(), settled, false);
 
-        // ---- Portrait window, the card's full height.
+        // ---- The echo itself, standing on the card (no window), the card's full height, with its
+        // name floating above its head like an in-game name tag.
         int portX = colX + SLOT + EDGE;
         int portW = l.portraitW();
-        g.fill(portX, top, portX + portW, top + topH, chrome.fade(PORTRAIT_BG));
-        outline(g, portX, top, portW, topH, SLOT_LIGHT);
+        int feetY = top + topH - 4;
         if (settled && portrait.available()) {
-            g.enableScissor(portX + 1, top + 1, portX + portW - 1, top + topH - 1);
+            g.enableScissor(portX, top, portX + portW, top + topH);
             // The echo acts out its personality, at the tempo of its reaction speed.
             portrait.renderEcho(g, echo.appearance(), TEMP_PREVIEW_KIND != null ? TEMP_PREVIEW_KIND : echo.personality(), echo.reactionSpeed(),
-                    portX + portW / 2, top + topH - 4, l.portraitSize());
+                    portX + portW / 2, feetY, l.portraitSize());
             g.disableScissor();
         }
+        drawNameTag(g, font, echoName(), portX + portW / 2, top + 2);
 
-        // ---- Right column: name line first.
+        // ---- Right column: personality, with the carriage number at the right edge.
         int tx = portX + portW + EDGE;
         int ty = top + 2;
-        drawNameLine(g, font, echoName(), depth, tx, ty);
-        ty += BASE_STEP + l.step();
-
-        // ---- Personality, the three trait bars, then the reaction skill icons.
         Component label = Component.translatable("gui.dungeontrain.death.echo.personality");
         g.drawString(font, label, tx, ty, chrome.fade(LABEL), false);
         g.drawString(font, Component.translatable(echo.personality().langKey()),
                 tx + font.width(label) + 4, ty, chrome.fade(CLASS), false);
+        drawCarriage(g, font, depth, tx + l.textW(), ty);
         ty += BASE_STEP + l.step();
+
+        // ---- The three trait bars, then the reaction skill icons.
         ty = traitBar(g, font, EchoPersonality.Trait.FIGHT_FLIGHT, echo.fightFlight(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), tx, ty, l);
         ty = traitBar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), tx, ty, l);
@@ -261,23 +267,33 @@ public final class EchoPage {
         return Component.translatable("echo.dungeontrain.mob_name", Minecraft.getInstance().getUser().getName());
     }
 
-    private void drawNameLine(GuiGraphics g, Font font, Component name, int depth, int x, int y) {
+    /** The echo's name as an in-game name tag: white text on a quarter-black strip, centred on {@code cx}. */
+    private void drawNameTag(GuiGraphics g, Font font, Component name, int cx, int y) {
+        int w = font.width(name);
+        int x = cx - w / 2;
+        g.pose().pushPose();
+        g.pose().translate(0.0F, 0.0F, 300.0F);
+        g.fill(x - 2, y - 1, x + w + 1, y + 9, chrome.fade(NAME_TAG_BG));
         g.drawString(font, name, x, y, chrome.fade(NAME), false);
-        int sx = x + font.width(name) + 4;
-        g.drawString(font, "|", sx, y, chrome.fade(LABEL), false);
-        // The fall page's own "carriage" label, so both pages name the number the same way.
+        g.pose().popPose();
+    }
+
+    /** "carriage: #", right-aligned to {@code right}, using the fall page's own "carriage" label. */
+    private void drawCarriage(GuiGraphics g, Font font, int depth, int right, int y) {
         Component label = Component.translatable("gui.dungeontrain.death.narr.lbl_carriage").append(": ");
-        int lx = sx + font.width("|") + 4;
-        g.drawString(font, label, lx, y, chrome.fade(LABEL), false);
-        g.drawString(font, Integer.toString(depth), lx + font.width(label), y, chrome.fade(NAME), false);
+        String number = Integer.toString(depth);
+        int x = right - font.width(number);
+        g.drawString(font, number, x, y, chrome.fade(NAME), false);
+        g.drawString(font, label, x - font.width(label), y, chrome.fade(LABEL), false);
     }
 
     private int traitBar(GuiGraphics g, Font font, EchoPersonality.Trait trait, int value, int x, int y, Layout l) {
-        Component label = Component.translatable(trait.labelKey());
+        // "trait name: Value", left-justified: the label muted, its value bright.
+        Component label = Component.translatable(trait.labelKey()).append(": ");
         Component word = Component.translatable(EchoPersonality.wordKey(trait, value));
         g.drawString(font, label, x, y, chrome.fade(LABEL), false);
+        g.drawString(font, word, x + font.width(label), y, chrome.fade(WORD), false);
         int textW = l.textW();
-        g.drawString(font, word, x + textW - font.width(word), y, chrome.fade(WORD), false);
         int by = y + BAR_LABEL;
         g.fill(x, by, x + textW, by + l.barH(), chrome.fade(BAR_TRACK));
         int fillW = Math.round(textW * EchoPersonality.clamp(value) / (float) EchoPersonality.MAX);
