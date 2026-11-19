@@ -120,9 +120,11 @@ final class NapSingleUseTest {
         Path copy = keep(n);
         store.consume(player, SLOT, n);
 
-        CompoundTag tag = NbtIo.readCompressed(copy, NbtAccounter.unlimitedHeap());
+        CompoundTag root = NbtIo.readCompressed(copy, NbtAccounter.unlimitedHeap());
+        CompoundTag tag = NapSeal.fromBytes(root.getByteArray(NapSeal.TAG_BODY));
         tag.putUUID("napId", UUID.randomUUID());
-        NbtIo.writeCompressed(tag, store.fileFor(player, SLOT));
+        root.putByteArray(NapSeal.TAG_BODY, NapSeal.toBytes(tag));
+        NbtIo.writeCompressed(root, store.fileFor(player, SLOT));
         assertFalse(store.load(player, SLOT).isPresent());
     }
 

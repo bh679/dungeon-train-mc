@@ -943,7 +943,7 @@ public final class SharedCarriageClient {
     }
 
     /** What a note (or review) write came back with. */
-    private static CallStatus noteStatus(HttpResponse<String> resp) {
+    static CallStatus noteStatus(HttpResponse<String> resp) {
         if (resp == null) {
             logFailure("/carriages/note", null);
             return CallStatus.ERROR;
@@ -1179,7 +1179,7 @@ public final class SharedCarriageClient {
     }
 
     /** Read a fetch response into a result — the HTTP status first, then the body's shape. */
-    private static FetchResult parseFetch(HttpResponse<String> resp) {
+    static FetchResult parseFetch(HttpResponse<String> resp) {
         int sc = resp.statusCode();
         if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
         if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
@@ -1598,7 +1598,7 @@ public final class SharedCarriageClient {
      * second parse. Silence (null/blank/unparseable) sends nothing, which the relay reads as
      * "leave the links alone".
      */
-    private static void addLootPrefabs(JsonObject body, String lootPrefabs) {
+    static void addLootPrefabs(JsonObject body, String lootPrefabs) {
         if (lootPrefabs == null || lootPrefabs.isBlank()) return;
         try {
             JsonElement doc = JsonParser.parseString(lootPrefabs);
@@ -1749,7 +1749,7 @@ public final class SharedCarriageClient {
 
     // ---- transport ----
 
-    private static JsonObject dims(int l, int h, int w) {
+    static JsonObject dims(int l, int h, int w) {
         JsonObject d = new JsonObject();
         d.addProperty("l", l);
         d.addProperty("h", h);
@@ -1769,7 +1769,7 @@ public final class SharedCarriageClient {
      * production pool from a dev build. Everything else goes through {@link #post(String, JsonObject)}
      * and cannot address another relay by accident.</p>
      */
-    private static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
+    static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
         return postAttempt(baseUrl, path, body, REQUEST_TIMEOUT).thenApply(RelayRetry.Transport::resp);
     }
 
@@ -1862,7 +1862,7 @@ public final class SharedCarriageClient {
     }
 
     /** Parse a 2xx JSON object with {@code ok:true}, or null. */
-    private static JsonObject okJson(HttpResponse<String> resp) {
+    static JsonObject okJson(HttpResponse<String> resp) {
         if (resp == null || resp.statusCode() / 100 != 2) return null;
         try {
             JsonElement root = JsonParser.parseString(resp.body());

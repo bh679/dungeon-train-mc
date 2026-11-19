@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.relay.BuilderNoteEdits;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelaySubVariant;
 import games.brennan.dungeontrain.builder.relay.WorkbenchCommit;
@@ -123,6 +124,12 @@ public final class WorkbenchCommitScreen implements MenuScreen {
             () -> replace = !replace, replace));
         out.add(new CommandMenuEntry.TypeArg(EditorScreenLang.text(EditorScreenLang.COMMIT_GO), "name",
             commandPrefix(), commandSuffix(category), defaultName));
+        // The developer's other way out for somebody else's build: send the edits back to its author.
+        // The server refuses it on the developer's own builds, which this screen cannot tell apart.
+        if (BuilderNoteEdits.isDeveloper()) {
+            out.add(new CommandMenuEntry.ClientAction(EditorScreenLang.text(EditorScreenLang.COMMIT_SEND),
+                () -> WorkbenchSendEditsScreen.open(stagedId), false));
+        }
         out.add(new CommandMenuEntry.Back(EditorScreenLang.text(EditorScreenLang.MOVE_BACK)));
         return out;
     }
