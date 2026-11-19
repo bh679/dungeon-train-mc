@@ -210,6 +210,7 @@ public final class PortalExitCopyTiler {
         // are: the copy is stamped from the same `portal` template, and outside a scope the
         // placeholders are left as authored, so an unscoped copy stood beside a resolved original.
         StagePlacementScope.run(PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)),
             () -> PortalCarriageBuilder.stampExitCopy(level, structure, dims, pairKey, site));
         LOGGER.debug("[DungeonTrain] Portal exit copy laid at {} ({})", site.tile(), site.role());
         return structure.withExitCopies(structure.exitCopies().with(site));

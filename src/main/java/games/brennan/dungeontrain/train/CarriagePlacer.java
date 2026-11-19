@@ -1903,6 +1903,8 @@ public final class CarriagePlacer {
                                           StructureTemplate template, StructurePlaceSettings settings) {
         // Stage placeholders first — the block must be its real self before anything reads it.
         settings.addProcessor(new StagePlaceholderProcessor());
+        // Dungeon Train flags roll into their banners (play-side only, scope-gated).
+        settings.addProcessor(new FlagPlaceholderProcessor(level));
         // Then any stray variant placeholder goes to air — play-side only (scope-gated).
         settings.addProcessor(new VariantPlaceholderAirProcessor());
         // Before the capture processor, which returns null for every cell and so ends the chain.
@@ -1934,6 +1936,7 @@ public final class CarriagePlacer {
         // The portal room's own path. Vanilla loads each block entity from the processed tag here, so
         // this is where a template that was saved holding impossible gear gets it rolled again.
         settings.addProcessor(new StagePlaceholderProcessor());
+        settings.addProcessor(new FlagPlaceholderProcessor(level));
         settings.addProcessor(new VariantPlaceholderAirProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
         template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);

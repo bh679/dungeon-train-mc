@@ -509,6 +509,11 @@ public final class CarriageBlockSnapshot {
                 // leasing train is the first place that knows which stage they land in.
                 BlockState state = StagePlacementScope.resolve(
                         NbtUtils.readBlockState(blocks, cell.getCompound("s")));
+                // Dungeon Train flags in an uploaded build roll into banners for the leasing train.
+                games.brennan.dungeontrain.block.flag.FlagPlaceholders.Resolved flag =
+                        games.brennan.dungeontrain.block.flag.FlagPlaceholders.resolveInScope(
+                                state, registries, level.getSeed());
+                if (flag != null) state = flag.state();
                 if (state.isAir()) {
                     // An unresolvable state decodes to air — placing it would silently punch a hole.
                     LOGGER.warn("[DungeonTrain] shared-carriage cell at {} decoded to AIR from {} — skipping.",
@@ -517,7 +522,13 @@ public final class CarriageBlockSnapshot {
                 }
                 wanted++;
                 level.setBlock(abs, state, PLACE_FLAGS);
-                if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                if (flag != null) {
+                    BlockEntity be = level.getBlockEntity(abs);
+                    if (be != null) {
+                        be.loadWithComponents(flag.nbt(), registries);
+                        be.setChanged();
+                    }
+                } else if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
                     BlockEntity be = level.getBlockEntity(abs);
                     if (be != null) {
                         be.loadCustomOnly(cell.getCompound("b"), registries);
