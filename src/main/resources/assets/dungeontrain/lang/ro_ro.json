@@ -2630,6 +2630,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Grup ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Grup ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Blocuri",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Blocuri · Date",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entități",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s containere",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lumini",

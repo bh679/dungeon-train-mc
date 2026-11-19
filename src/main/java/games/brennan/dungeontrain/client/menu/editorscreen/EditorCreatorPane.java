@@ -442,20 +442,47 @@ public final class EditorCreatorPane {
         if (!entry.stage().isEmpty()) {
             out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_STAGE), entry.stage()});
         }
-        // The numbers come from the blocks the relay sent for the picture, so they appear with it
-        // rather than being asked for separately.
+        // The counted numbers come from the blocks the relay sent for the picture, so they appear
+        // with it. Until then the listing's own dims and blob length stand in: they cost nothing to
+        // show, and how big a build is matters most BEFORE anything has been brought down.
         TemplateSummary summary = RelayBuildPreviews.summary(entry.relayId(), seq);
-        if (summary != null) {
-            out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_SIZE),
-                summary.declaredSize().getX() + " × " + summary.declaredSize().getY()
-                    + " × " + summary.declaredSize().getZ()});
-            out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS),
-                Integer.toString(summary.blocks())});
+        String dims = summary != null
+            ? dims(summary.declaredSize().getX(), summary.declaredSize().getY(), summary.declaredSize().getZ())
+            : entry.l() > 0 && entry.h() > 0 && entry.w() > 0 ? dims(entry.l(), entry.h(), entry.w()) : "";
+        if (!dims.isEmpty()) out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_SIZE), dims});
+        String blocksData = blocksData(summary == null ? -1 : summary.blocks(), entry.blocksChars());
+        if (!blocksData.isEmpty()) {
+            out.add(new String[] {EditorScreenLang.text(entry.blocksChars() > 0
+                ? EditorScreenLang.SHEET_BLOCKS_DATA : EditorScreenLang.SHEET_BLOCKS), blocksData});
         }
         out.add(new String[] {EditorScreenLang.text(EditorScreenLang.CREATOR_CHANGES),
             Integer.toString(entry.changes())});
         out.add(new String[] {EditorScreenLang.text(EditorScreenLang.CREATOR_STATUS),
             EditorScreenLang.text(EditorCreatorBuilds.reviewKey(entry.review()))});
         return out;
+    }
+
+    private static String dims(int l, int h, int w) {
+        return l + " × " + h + " × " + w;
+    }
+
+    /**
+     * The Blocks / Data value: {@code "63669 · 530 KB"}, the count alone, the size alone until the
+     * picture has been baked, or empty when there is neither. {@code blocks} is -1 when not counted.
+     */
+    static String blocksData(int blocks, long blobChars) {
+        String size = blobChars > 0 ? dataSize(blobChars) : "";
+        if (blocks < 0) return size;
+        return size.isEmpty() ? Integer.toString(blocks) : blocks + " · " + size;
+    }
+
+    /**
+     * A blob's stored length as KB or MB, base 1024 — e.g. {@code "530 KB"}, {@code "1.2 MB"}. The
+     * blob is Base64 text, so a character is a byte on the wire; the relay's admin page counts it the
+     * same way. Never "0 KB" for a blob that exists.
+     */
+    static String dataSize(long chars) {
+        if (chars >= 1024L * 1024L) return String.format(java.util.Locale.ROOT, "%.1f MB", chars / (1024.0 * 1024.0));
+        return Math.max(1L, chars / 1024L) + " KB";
     }
 }

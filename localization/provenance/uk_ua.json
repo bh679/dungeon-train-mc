@@ -2627,6 +2627,7 @@
   "gui.dungeontrain.editor_screen.layout.group": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4d001d2a7c92484d"},
   "gui.dungeontrain.editor_screen.layout.group.name": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "cb7ec64da298727a"},
   "gui.dungeontrain.editor_screen.sheet.blocks": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "1cd5a6687bb76e39"},
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7c48dedfb25094d0"},
   "gui.dungeontrain.editor_screen.sheet.entities": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "63d31825a13fd6ea"},
   "gui.dungeontrain.editor_screen.sheet.containers": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "231538b1e1a655dc"},
   "gui.dungeontrain.editor_screen.sheet.lights": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "18786940ec538ef1"},

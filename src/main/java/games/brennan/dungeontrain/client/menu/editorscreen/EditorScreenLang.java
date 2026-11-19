@@ -195,6 +195,8 @@ public final class EditorScreenLang {
     public static final String SHEET_SHELL_WINS_ON = PREFIX + "sheet.shell_wins.on";
     public static final String SHEET_SHELL_WINS_TIP = PREFIX + "sheet.shell_wins.tip";
     public static final String SHEET_BLOCKS = PREFIX + "sheet.blocks";
+    /** A relay build's block count and stored size on one line — see {@link EditorCreatorPane#lines}. */
+    public static final String SHEET_BLOCKS_DATA = PREFIX + "sheet.blocks_data";
     public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
     public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";
     public static final String SHEET_LIGHTS = PREFIX + "sheet.lights";

@@ -2049,6 +2049,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Gruppo ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Gruppo ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Blocchi",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Blocchi · Dati",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entità",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s contenitori",
   "gui.dungeontrain.editor_screen.sheet.lights": "Luci",

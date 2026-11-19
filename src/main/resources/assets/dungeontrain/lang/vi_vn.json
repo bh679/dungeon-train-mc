@@ -1999,6 +1999,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Nhóm ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Nhóm ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Khối",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Khối · Dữ liệu",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s thực thể",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s vật chứa",
   "gui.dungeontrain.editor_screen.sheet.lights": "Đèn",

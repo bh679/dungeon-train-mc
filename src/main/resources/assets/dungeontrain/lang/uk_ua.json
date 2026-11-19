@@ -2627,6 +2627,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "Група ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "Група ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "Блоки",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "Блоки · Дані",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s сутностей",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s контейнерів",
   "gui.dungeontrain.editor_screen.sheet.lights": "Світло",
