@@ -20,7 +20,8 @@ import static games.brennan.dungeontrain.client.deathpages.EchoPaint.TRACK;
  * the echo itself: a large animated model acting out its personality, under an in-game name tag.
  * On the right, two tabs: Statistics ({@link EchoStatsTab}: personality, the trait bars and the
  * reaction-skill hexagon) and Inventory ({@link EchoInventoryTab}: armour, offhand, the armour bar,
- * a 3×3 grid and an item details panel). The carriage number sits at the right end of the tab bar.
+ * a 3×3 grid and an item details panel). On Statistics, the carriage number sits under the echo's
+ * feet, where the armour bar stands on Inventory.
  *
  * <p>Items, sprites and the model can't take the page fade's alpha, so they draw only once the page
  * has settled (the screen passes {@code settled}). Owns its model renderer: call {@link #clear()}
@@ -100,8 +101,7 @@ public final class EchoPage {
         Component statsLabel = Component.translatable("gui.stats");
         Component inventoryLabel = Component.translatable("container.inventory");
         Component carriageLabel = Component.translatable("gui.dungeontrain.death.narr.lbl_carriage").append(": ");
-        int tabRowW = font.width(statsLabel) + 12 + font.width(inventoryLabel) + 16
-                + font.width(carriageLabel) + font.width(Integer.toString(depth));
+        int tabRowW = font.width(statsLabel) + 12 + font.width(inventoryLabel);
         Layout l = Layout.fit(maxY - y, width, Math.max(tabRowW, EchoStatsTab.minWidth(font, echo)));
         int panelW = l.panelW();
         int panelH = l.panelH();
@@ -129,6 +129,15 @@ public final class EchoPage {
                     portX + portW / 2, feetY, l.portraitSize());
             g.disableScissor();
         }
+        String number = Integer.toString(depth);
+        if (!wornAround) {
+            // Statistics: "carriage: X" under the echo's feet, where the armour bar sits on Inventory.
+            int cw = font.width(carriageLabel) + font.width(number);
+            int cxl = portX + (portW - cw) / 2;
+            int cy = top + topH - EchoPaint.ARMOR_ICON;
+            g.drawString(font, carriageLabel, cxl, cy, chrome.fade(LABEL), false);
+            g.drawString(font, number, cxl + font.width(carriageLabel), cy, chrome.fade(NAME), false);
+        }
         if (wornAround) {
             int columnH = 4 * EchoPaint.SLOT + 3 * EchoPaint.GAP;
             int colY = feetY - columnH;
@@ -137,7 +146,7 @@ public final class EchoPage {
         }
         drawNameTag(g, font, echoName(), portX + portW / 2, top + 2);
 
-        // ---- Tab bar: Statistics | Inventory, the carriage number at the right end.
+        // ---- Tab bar: Statistics | Inventory.
         int tx = portX + portW + EDGE;
         int tw = l.textW();
         tabY = top + 2;
@@ -147,10 +156,6 @@ public final class EchoPage {
         inventoryTabW = font.width(inventoryLabel);
         drawTab(g, font, statsLabel, statsTabX, tab == Tab.STATS);
         drawTab(g, font, inventoryLabel, inventoryTabX, tab == Tab.INVENTORY);
-        String number = Integer.toString(depth);
-        int nx = tx + tw - font.width(number);
-        g.drawString(font, number, nx, tabY, chrome.fade(NAME), false);
-        g.drawString(font, carriageLabel, nx - font.width(carriageLabel), tabY, chrome.fade(LABEL), false);
         g.fill(tx, tabY + TAB_BAR_H - 1, tx + tw, tabY + TAB_BAR_H, chrome.fade(TRACK));
 
         // ---- The open tab.
