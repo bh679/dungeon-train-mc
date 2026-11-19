@@ -23,7 +23,8 @@ import java.util.List;
  * The Java security warning (see {@link JavaRceNotice} for who sees it). Same flat card as
  * {@link LowMemoryPromptScreen}, in four pages:
  * <ul>
- *   <li>{@link Page#MAIN}: what's wrong in a sentence with a link to the CERT-EU advisory, then
+ *   <li>{@link Page#MAIN}: who checked (Dungeon Train), what it found, a link to the CERT-EU
+ *       advisory and a line saying nothing was sent and nothing will be asked for, then
  *       the two fixes as buttons (Update Java in blue, the one that removes the flaw) and a
  *       "Continue anyway" text link;</li>
  *   <li>{@link Page#UPDATE}: how to update the Java this player actually runs, from
@@ -59,7 +60,8 @@ public final class JavaRcePromptScreen extends Screen {
     private static final int BACKDROP_DIM = 0x99000000;
     private static final int CARD_BG = 0xF01A1A1E;
     private static final int CARD_BORDER = 0xFF3A3A42;
-    private static final int COLOR_TITLE = 0xFFFF6B5B;
+    /** Yellow, not alarm red: a calm notice reads as information, a red one reads like a scam pop-up. */
+    private static final int COLOR_TITLE = 0xFFFFD866;
     private static final int COLOR_BODY = 0xFFE0E0E0;
     private static final int COLOR_NOTE = 0xFF909090;
     private static final int COLOR_ARG = 0xFFFFE066;
@@ -71,6 +73,8 @@ public final class JavaRcePromptScreen extends Screen {
     /** A part of a page: a text block in a colour, or the argument box. */
     private record Part(Component text, int color) {
         static final Part ARG_BOX = new Part(null, COLOR_ARG);
+        /** The official-advisory link, one line high. */
+        static final Part SOURCE_LINK = new Part(null, 0);
     }
 
     private final Screen previousScreen;
@@ -93,7 +97,7 @@ public final class JavaRcePromptScreen extends Screen {
     private Button copyButton;
 
     public JavaRcePromptScreen(Screen previousScreen, String whereKey, JavaSetup.Setup setup) {
-        super(Component.translatable(K + "title"));
+        super(Component.translatable(K + "main.title"));
         this.previousScreen = previousScreen;
         this.whereKey = whereKey;
         this.setup = setup;
@@ -121,7 +125,12 @@ public final class JavaRcePromptScreen extends Screen {
 
     private List<Part> parts() {
         return switch (page) {
-            case MAIN -> List.of(new Part(Component.translatable(K + "summary"), COLOR_BODY));
+            // Says who checked, what it found and where to verify it, before asking for anything:
+            // an unsigned "your PC is affected" with a big button is what a scam looks like.
+            case MAIN -> List.of(
+                new Part(Component.translatable(K + "main.body"), COLOR_BODY),
+                Part.SOURCE_LINK,
+                new Part(Component.translatable(K + "main.trust"), COLOR_NOTE));
             case UPDATE -> List.of(
                 new Part(updateHow(setup), COLOR_BODY),
                 new Part(Component.translatable(K + "update.need", fixedVersion), COLOR_BODY),
@@ -141,7 +150,7 @@ public final class JavaRcePromptScreen extends Screen {
 
     private Component pageTitle() {
         return Component.translatable(K + switch (page) {
-            case MAIN -> "title";
+            case MAIN -> "main.title";
             case UPDATE -> "update.title";
             case ARGS -> "args.title";
             case EXPLAIN -> "explain.title";
@@ -163,9 +172,10 @@ public final class JavaRcePromptScreen extends Screen {
         List<List<FormattedCharSequence>> split = new ArrayList<>();
         int h = font.lineHeight + GAP_TITLE;
         for (Part part : parts) {
-            List<FormattedCharSequence> lines = part.text() == null ? null : font.split(part.text(), inner);
+            List<FormattedCharSequence> lines = part == Part.SOURCE_LINK ? List.of()
+                : part.text() == null ? null : font.split(part.text(), inner);
             split.add(lines);
-            h += (lines == null ? argPartH() : lines.size() * LINE_STEP) + GAP_SECTION;
+            h += partH(part, lines) + GAP_SECTION;
         }
         h += GAP_BUTTONS - GAP_SECTION + controlsHeight();
 
@@ -180,12 +190,26 @@ public final class JavaRcePromptScreen extends Screen {
         y += font.lineHeight + GAP_TITLE;
         for (int i = 0; i < parts.size(); i++) {
             List<FormattedCharSequence> lines = split.get(i);
-            blocks.add(new Block(lines, parts.get(i).color(), y));
-            if (lines == null) addLearnMoreLink(y + argBoxH() + 3);
-            y += (lines == null ? argPartH() : lines.size() * LINE_STEP) + GAP_SECTION;
+            Part part = parts.get(i);
+            blocks.add(new Block(lines, part.color(), y));
+            if (part == Part.ARG_BOX) addLearnMoreLink(y + argBoxH() + 3);
+            if (part == Part.SOURCE_LINK) addSourceLink(y - 3);
+            y += partH(part, lines) + GAP_SECTION;
         }
         y += GAP_BUTTONS - GAP_SECTION;
         addControls(panelX + PAD, y, inner);
+    }
+
+    private int partH(Part part, List<FormattedCharSequence> lines) {
+        if (part == Part.SOURCE_LINK) return font.lineHeight - 3;
+        return lines == null ? argPartH() : lines.size() * LINE_STEP;
+    }
+
+    private void addSourceLink(int y) {
+        Component link = Component.translatable(K + "main.source").withStyle(ChatFormatting.AQUA, ChatFormatting.UNDERLINE);
+        int w = font.width(link);
+        addRenderableWidget(new PlainTextButton(centerX - w / 2, y, w, font.lineHeight, link,
+            b -> openLink(JavaRceCheck.ADVISORY_URL), font));
     }
 
     private int argBoxH() {
@@ -205,7 +229,7 @@ public final class JavaRcePromptScreen extends Screen {
 
     private int controlsHeight() {
         return switch (page) {
-            case MAIN -> font.lineHeight + 2 + BUTTON_H + BUTTON_GAP + font.lineHeight;
+            case MAIN -> BUTTON_H + BUTTON_GAP + font.lineHeight;
             case UPDATE, ARGS, EXPLAIN -> BUTTON_H;
             case CONFIRM -> CHECKBOX_H + BUTTON_GAP + BUTTON_H;
         };
@@ -217,13 +241,7 @@ public final class JavaRcePromptScreen extends Screen {
         int rightW = inner - half - BUTTON_GAP;
         switch (page) {
             case MAIN -> {
-                // The advisory link sits right under the sentence that names the flaw.
-                Component about = Component.translatable(K + "about")
-                    .withStyle(ChatFormatting.AQUA, ChatFormatting.UNDERLINE);
-                int aboutW = font.width(about);
-                addRenderableWidget(new PlainTextButton(centerX - aboutW / 2, y - GAP_BUTTONS + 2, aboutW,
-                    font.lineHeight, about, b -> openLink(JavaRceCheck.ADVISORY_URL), font));
-                int by = y + font.lineHeight + 2;
+                int by = y;
                 // Blue: updating Java is the fix that removes the flaw itself.
                 addRenderableWidget(new DarkTintedButton(left, by, half, BUTTON_H,
                     Component.translatable(K + "opt_update"), b -> show(Page.UPDATE), 0.45F, 0.60F, 1.25F));
