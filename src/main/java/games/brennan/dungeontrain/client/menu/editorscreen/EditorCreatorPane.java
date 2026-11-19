@@ -130,11 +130,14 @@ public final class EditorCreatorPane {
             editNoteRect = sheetButtons.edit();
         } else {
             int y = body.y();
-            for (String[] line : lines(entry, seq)) {
+            List<String[]> rows = lines(entry, seq);
+            int labelW = labelColumn(font, rows, body.w());
+            for (String[] line : rows) {
                 if (y + LINE_H > body.bottom()) break;
-                g.drawString(font, line[0], body.x() + 2, y, MenuRowPainter.TEXT_HEADER, false);
-                g.drawString(font, font.plainSubstrByWidth(line[1], body.w() - LABEL_W - 6),
-                    body.x() + LABEL_W, y, 0xFFFFFFFF, false);
+                g.drawString(font, font.plainSubstrByWidth(line[0], labelW - 4), body.x() + 2, y,
+                    MenuRowPainter.TEXT_HEADER, false);
+                g.drawString(font, font.plainSubstrByWidth(line[1], body.w() - labelW - 6),
+                    body.x() + labelW, y, 0xFFFFFFFF, false);
                 y += LINE_H;
             }
         }
@@ -460,6 +463,17 @@ public final class EditorCreatorPane {
         out.add(new String[] {EditorScreenLang.text(EditorScreenLang.CREATOR_STATUS),
             EditorScreenLang.text(EditorCreatorBuilds.reviewKey(entry.review()))});
         return out;
+    }
+
+    /**
+     * Where the values start: past the widest label, never less than {@link #LABEL_W} and never more
+     * than half the sheet. "Blocks · Data" and some translations are wider than the fixed column, and
+     * a label running into its value reads as neither.
+     */
+    private static int labelColumn(Font font, List<String[]> rows, int bodyWidth) {
+        int widest = 0;
+        for (String[] row : rows) widest = Math.max(widest, font.width(row[0]));
+        return Math.max(LABEL_W, Math.min(widest + 8, bodyWidth / 2));
     }
 
     private static String dims(int l, int h, int w) {
