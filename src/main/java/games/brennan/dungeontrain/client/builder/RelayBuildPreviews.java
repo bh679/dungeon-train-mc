@@ -238,7 +238,9 @@ public final class RelayBuildPreviews {
             return;
         }
         RETRY_AFTER.remove(key);
-        // Still in flight until baked, or every waiting tile re-asks each frame until its turn.
+        // Still in flight until baked, or every waiting tile re-asks each frame until its turn. An
+        // index answer arrives under the seq it resolved to, which was never asked for by name.
+        IN_FLIGHT.add(key);
         PENDING.add(new Pending(key, template));
     }
 
