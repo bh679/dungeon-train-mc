@@ -238,6 +238,16 @@ tasks.register('generateApprovedMods') {
         }
         result.carrierApproved = carrierApproved
         result.carrierApprovedWhy = curated.carrierApprovedWhy ?: []
+        // Ids approved for runs but kept off the Live Eye stream (ApprovedModList.isStreamMuted). Same rule as
+        // carrierApproved: a listed id must be approved, or the mute would sit on a mod that is Free Play anyway.
+        def streamMuted = (curated.streamMuted ?: []).collect { it as String }
+        def mutedNotApproved = streamMuted.findAll { id -> !(id in seen) }
+        if (mutedNotApproved) {
+            throw new GradleException("streamMuted ids that are not approved ids: ${mutedNotApproved.sort().join(', ')}. "
+                + 'Approve them in approved_mods.curated.json first.')
+        }
+        result.streamMuted = streamMuted
+        result.streamMutedWhy = curated.streamMutedWhy ?: []
         result.groups = groups
         result.hashesWhy = 'SHA-1 of every file the modpack pins, every jar embedded in ours, and every published ' +
             '1.21.1 NeoForge file of each approved mod — approved as files offline. GENERATED from modpack.config.json ' +

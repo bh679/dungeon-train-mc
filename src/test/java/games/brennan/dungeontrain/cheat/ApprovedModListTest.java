@@ -397,4 +397,38 @@ class ApprovedModListTest {
             }
         }
     }
+
+    // ---- stream-muted music mods -------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Stream-muted ids are baked, approved for runs, and never approved for stream sound")
+    void bakedStreamMutedModsAreApprovedButNotStreamSafe() throws Exception {
+        JsonObject root;
+        try (var in = ApprovedModList.class.getResourceAsStream(ApprovedModList.RESOURCE)) {
+            assertNotNull(in);
+            root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        Set<String> muted = ApprovedModList.parseStreamMuted(root);
+        assertTrue(muted.containsAll(Set.of("concerto", "dangomusic", "showthelyrics")), "muted: " + muted);
+        Set<String> approved = ApprovedModList.parseBaked(root);
+        for (String id : muted) {
+            assertTrue(approved.contains(id), id + " is stream-muted but not approved");
+            assertTrue(ApprovedModList.isApproved(id), id + " should count as approved for runs");
+            assertTrue(ApprovedModList.isStreamMuted(id));
+            assertFalse(ApprovedModList.isStreamSoundApproved(id), id + " must never be stream-safe sound");
+        }
+        assertTrue(ApprovedModList.isStreamMuted("DangoMusic "), "matched like every other id");
+        assertTrue(ApprovedModList.isStreamSoundApproved("sable"), "an ordinary approved mod stays stream-safe");
+        assertFalse(ApprovedModList.isStreamMuted("sable"));
+        assertEquals(Set.of(), ApprovedModList.parseStreamMuted(JsonParser.parseString("{}").getAsJsonObject()),
+            "absent: empty, never null");
+    }
+
+    @Test
+    @DisplayName("A relay revocation of a stream-muted id unapproves it everywhere")
+    void revokedStreamMutedModIsNotStreamSafe() {
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of("dangomusic"), null));
+        assertFalse(ApprovedModList.isApproved("dangomusic"));
+        assertFalse(ApprovedModList.isStreamSoundApproved("dangomusic"));
+    }
 }
