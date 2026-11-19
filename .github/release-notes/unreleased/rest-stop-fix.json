@@ -1,0 +1,17 @@
+{
+  "id": "rest-stop-fix",
+  "version": "0.1910.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "Rest stop fix",
+  "summary": "Rest stop fix.",
+  "highlights": [],
+  "pr": 2760,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
