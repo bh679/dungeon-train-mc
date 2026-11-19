@@ -29,7 +29,8 @@ import java.util.List;
  *   <li>{@link Page#UPDATE}: how to update the Java this player actually runs, from
  *       {@link JavaSetup}: restart the launcher that manages it, re-download it in the launcher,
  *       or download a newer build from the vendor they installed it from;</li>
- *   <li>{@link Page#ARGS}: the JVM argument, a Copy button and the player's own launcher's path;</li>
+ *   <li>{@link Page#ARGS}: the JVM argument, a Copy button and the player's own launcher's path,
+ *       with a "Learn more" link to {@link Page#EXPLAIN}: what the argument does, in plain words;</li>
  *   <li>{@link Page#CONFIRM}: a second warning before playing unfixed, with "Don't show me again"
  *       (remembered per Java runtime, so a different Java is warned afresh).</li>
  * </ul>
@@ -40,7 +41,7 @@ import java.util.List;
  */
 public final class JavaRcePromptScreen extends Screen {
 
-    enum Page { MAIN, UPDATE, ARGS, CONFIRM }
+    enum Page { MAIN, UPDATE, ARGS, EXPLAIN, CONFIRM }
 
     private static final String K = "gui.dungeontrain.java_rce.";
 
@@ -130,6 +131,10 @@ public final class JavaRcePromptScreen extends Screen {
                 Part.ARG_BOX,
                 new Part(Component.translatable(whereKey).append(" ").append(Component.translatable(K + "paste")), COLOR_BODY),
                 new Part(Component.translatable(K + "args.note"), COLOR_NOTE));
+            case EXPLAIN -> List.of(
+                new Part(Component.translatable(K + "explain.shortcut"), COLOR_BODY),
+                new Part(Component.translatable(K + "explain.does"), COLOR_BODY),
+                new Part(Component.translatable(K + "explain.cost"), COLOR_NOTE));
             case CONFIRM -> List.of(new Part(Component.translatable(K + "confirm.body"), COLOR_BODY));
         };
     }
@@ -139,6 +144,7 @@ public final class JavaRcePromptScreen extends Screen {
             case MAIN -> "title";
             case UPDATE -> "update.title";
             case ARGS -> "args.title";
+            case EXPLAIN -> "explain.title";
             case CONFIRM -> "confirm.title";
         });
     }
@@ -159,7 +165,7 @@ public final class JavaRcePromptScreen extends Screen {
         for (Part part : parts) {
             List<FormattedCharSequence> lines = part.text() == null ? null : font.split(part.text(), inner);
             split.add(lines);
-            h += (lines == null ? argBoxH() : lines.size() * LINE_STEP) + GAP_SECTION;
+            h += (lines == null ? argPartH() : lines.size() * LINE_STEP) + GAP_SECTION;
         }
         h += GAP_BUTTONS - GAP_SECTION + controlsHeight();
 
@@ -175,7 +181,8 @@ public final class JavaRcePromptScreen extends Screen {
         for (int i = 0; i < parts.size(); i++) {
             List<FormattedCharSequence> lines = split.get(i);
             blocks.add(new Block(lines, parts.get(i).color(), y));
-            y += (lines == null ? argBoxH() : lines.size() * LINE_STEP) + GAP_SECTION;
+            if (lines == null) addLearnMoreLink(y + argBoxH() + 3);
+            y += (lines == null ? argPartH() : lines.size() * LINE_STEP) + GAP_SECTION;
         }
         y += GAP_BUTTONS - GAP_SECTION;
         addControls(panelX + PAD, y, inner);
@@ -185,10 +192,21 @@ public final class JavaRcePromptScreen extends Screen {
         return font.lineHeight + 8;
     }
 
+    /** The argument box plus the "Learn more" link right under it. */
+    private int argPartH() {
+        return argBoxH() + 3 + font.lineHeight;
+    }
+
+    private void addLearnMoreLink(int y) {
+        Component link = Component.translatable(K + "learn_more").withStyle(ChatFormatting.AQUA, ChatFormatting.UNDERLINE);
+        int w = font.width(link);
+        addRenderableWidget(new PlainTextButton(centerX - w / 2, y, w, font.lineHeight, link, b -> show(Page.EXPLAIN), font));
+    }
+
     private int controlsHeight() {
         return switch (page) {
             case MAIN -> font.lineHeight + 2 + BUTTON_H + BUTTON_GAP + font.lineHeight;
-            case UPDATE, ARGS -> BUTTON_H;
+            case UPDATE, ARGS, EXPLAIN -> BUTTON_H;
             case CONFIRM -> CHECKBOX_H + BUTTON_GAP + BUTTON_H;
         };
     }
@@ -223,17 +241,18 @@ public final class JavaRcePromptScreen extends Screen {
                 // its Java on the next start). The arguments fix lives on its own page, reached from
                 // the main card, never from here.
                 if (setup.manager() == JavaSetup.Manager.OWN) {
-                    addRow(left, y, inner,
+                    addRow(left, y, inner, Page.MAIN,
                         (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H,
                             Component.translatable(K + "download", setup.vendor().displayName),
                             b -> openLink(setup.vendor().downloadUrl(setup.feature())), 0.45F, 0.60F, 1.25F),
                         (x, w) -> Button.builder(QUIT, b -> quitGame()).bounds(x, y, w, BUTTON_H).build());
                 } else {
-                    addRow(left, y, inner,
+                    addRow(left, y, inner, Page.MAIN,
                         (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H, QUIT, b -> quitGame(), 0.45F, 0.60F, 1.25F));
                 }
             }
-            case ARGS -> addRow(left, y, inner,
+            case EXPLAIN -> addRow(left, y, inner, Page.ARGS);
+            case ARGS -> addRow(left, y, inner, Page.MAIN,
                 (x, w) -> copyButton = Button.builder(Component.translatable(K + "copy"), b -> copyArgument())
                     .bounds(x, y, w, BUTTON_H).build(),
                 (x, w) -> Button.builder(QUIT, b -> quitGame()).bounds(x, y, w, BUTTON_H).build());
@@ -245,7 +264,7 @@ public final class JavaRcePromptScreen extends Screen {
                     .selected(dontShowAgain)
                     .build());
                 int by = y + CHECKBOX_H + BUTTON_GAP;
-                addRow(left, by, inner,
+                addRow(left, by, inner, Page.MAIN,
                     (x, w) -> Button.builder(Component.translatable(K + "continue"), b -> continueAnyway())
                         .bounds(x, by, w, BUTTON_H).build());
             }
@@ -262,17 +281,19 @@ public final class JavaRcePromptScreen extends Screen {
      * One row: the wide buttons share the width equally, then a compact Back sized to its label at
      * the right end. Every page except the main card ends in exactly one of these.
      */
-    private void addRow(int left, int y, int inner, Slot... wide) {
+    private void addRow(int left, int y, int inner, Page backTo, Slot... wide) {
         Component back = Component.translatable(K + "back");
         int backW = font.width(back) + 12;
         int wideTotal = inner - backW - wide.length * BUTTON_GAP;
+        if (wide.length == 0) wideTotal = 0;
         int x = left;
         for (int i = 0; i < wide.length; i++) {
             int w = i == wide.length - 1 ? wideTotal - (wide.length - 1) * (wideTotal / wide.length) : wideTotal / wide.length;
             addRenderableWidget(wide[i].make(x, w));
             x += w + BUTTON_GAP;
         }
-        addRenderableWidget(Button.builder(back, b -> show(Page.MAIN)).bounds(x, y, backW, BUTTON_H).build());
+        int backX = wide.length == 0 ? centerX - backW / 2 : x;
+        addRenderableWidget(Button.builder(back, b -> show(backTo)).bounds(backX, y, backW, BUTTON_H).build());
     }
 
     /** Vanilla's own "Quit Game", already translated in every language. */
@@ -337,9 +358,13 @@ public final class JavaRcePromptScreen extends Screen {
         }
     }
 
-    /** Esc steps back: a fix page or the confirmation returns to the main page; the main page asks first. */
+    /** Esc steps back: the explanation returns to Use Arguments, other pages to the main card, and the main card asks first. */
     @Override
     public void onClose() {
-        show(page == Page.MAIN ? Page.CONFIRM : Page.MAIN);
+        show(switch (page) {
+            case MAIN -> Page.CONFIRM;
+            case EXPLAIN -> Page.ARGS;
+            default -> Page.MAIN;
+        });
     }
 }
