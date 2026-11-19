@@ -102,7 +102,7 @@ public final class EchoPage {
         Component inventoryLabel = Component.translatable("container.inventory");
         Component carriageLabel = Component.translatable("gui.dungeontrain.death.narr.lbl_carriage").append(": ");
         int tabRowW = font.width(statsLabel) + 12 + font.width(inventoryLabel);
-        Layout l = Layout.fit(maxY - y, width, Math.max(tabRowW, EchoStatsTab.minWidth(font, echo)));
+        Layout l = Layout.fit(maxY - y, width, Math.max(tabRowW, stats.minWidth(font, echo)));
         int panelW = l.panelW();
         int panelH = l.panelH();
         int x0 = cx - panelW / 2;
@@ -162,8 +162,7 @@ public final class EchoPage {
         int by = tabY + TAB_BAR_H + TAB_GAP;
         int bh = top + topH - by;
         if (tab == Tab.STATS) {
-            EchoPersonality.Kind kind = TEMP_PREVIEW_KIND != null ? TEMP_PREVIEW_KIND : echo.personality();
-            stats.draw(g, echo, kind, tx, by, tw, bh, settled);
+            stats.draw(g, echo, tx, by, tw, bh, settled);
         } else {
             inventory.drawGrid(g, echo, tx, by, tw, bh, mouseX, mouseY, settled);
         }

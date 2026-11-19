@@ -3949,6 +3949,22 @@
       ]
     }
   },
+  "gui.dungeontrain.death.echo.mood_pair": {
+    "1": {
+      "label": "how friendly the echo is, as a personality word",
+      "examples": [
+        "Very Friendly",
+        "Skeptical"
+      ]
+    },
+    "2": {
+      "label": "how ready the echo is to fight, as a personality word",
+      "examples": [
+        "Shy",
+        "Very Aggressive"
+      ]
+    }
+  },
   "gui.dungeontrain.death.echo.skill_tip": {
     "1": {
       "label": "the reaction skill's name",

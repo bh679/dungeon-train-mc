@@ -40,19 +40,38 @@ final class EchoStatsTab {
 
     private final LiveDeathChrome chrome;
     private final List<SkillHit> skillHits = new ArrayList<>();
+    /** Which of the three words each trait shows; rolled once, so it holds while the page is open. */
+    private final int[] variants = new int[EchoPersonality.Trait.values().length];
 
     EchoStatsTab(LiveDeathChrome chrome) {
         this.chrome = chrome;
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < variants.length; i++) {
+            variants[i] = random.nextInt(EchoPersonality.WORDS_PER_SCORE);
+        }
+    }
+
+    /** The echo's personality name: its egg-word pair ("Friendly, Shy"), or Passive. */
+    static Component personalityName(EchoSummary echo) {
+        String[] keys = EchoPersonality.personalityKeys(echo.fightFlight(), echo.friendliness());
+        if (keys.length == 1) {
+            return Component.translatable(keys[0]);
+        }
+        return Component.translatable(EchoPersonality.PAIR_KEY,
+                Component.translatable(keys[0]), Component.translatable(keys[1]));
+    }
+
+    private Component word(EchoPersonality.Trait trait, int value) {
+        return Component.translatable(EchoPersonality.wordKey(trait, value, variants[trait.ordinal()]));
     }
 
     /** Draw the tab into the box at ({@code x}, {@code y}), {@code w} × {@code h}. */
-    void draw(GuiGraphics g, EchoSummary echo, EchoPersonality.Kind kind, int x, int y, int w, int h,
-              boolean settled) {
+    void draw(GuiGraphics g, EchoSummary echo, int x, int y, int w, int h, boolean settled) {
         Font font = chrome.font();
         skillHits.clear();
         Component label = Component.translatable("gui.dungeontrain.death.echo.personality");
         g.drawString(font, label, x, y, chrome.fade(LABEL), false);
-        g.drawString(font, Component.translatable(kind.langKey()), x + font.width(label) + 4, y,
+        g.drawString(font, personalityName(echo), x + font.width(label) + 4, y,
                 chrome.fade(CLASS), false);
         int top = y + ROW + 4;
         int bodyH = Math.max(0, y + h - top);
@@ -90,20 +109,20 @@ final class EchoStatsTab {
     }
 
     /** The widest "trait: Value" label among the three, for the bar column's width. */
-    static int barsWidth(Font font, EchoSummary echo) {
+    int barsWidth(Font font, EchoSummary echo) {
         int w = 0;
         int[] values = {echo.fightFlight(), echo.friendliness(), echo.reactionSpeed()};
         EchoPersonality.Trait[] traits = EchoPersonality.Trait.values();
         for (int i = 0; i < traits.length; i++) {
             Component label = Component.translatable(traits[i].labelKey()).append(": ")
-                    .append(Component.translatable(EchoPersonality.wordKey(traits[i], values[i])));
+                    .append(word(traits[i], values[i]));
             w = Math.max(w, font.width(label));
         }
         return w;
     }
 
     /** Width the tab needs: the bar column plus a hexagon of radius {@code 28} with its corner icons. */
-    static int minWidth(Font font, EchoSummary echo) {
+    int minWidth(Font font, EchoSummary echo) {
         return barsWidth(font, echo) + 6 + Math.round(2 * (28 * 0.87F + ICON + 2));
     }
 
@@ -111,7 +130,7 @@ final class EchoStatsTab {
     private int bar(GuiGraphics g, Font font, EchoPersonality.Trait trait, int value, int x, int y, int w) {
         Component label = Component.translatable(trait.labelKey()).append(": ");
         g.drawString(font, label, x, y, chrome.fade(LABEL), false);
-        g.drawString(font, Component.translatable(EchoPersonality.wordKey(trait, value)),
+        g.drawString(font, word(trait, value),
                 x + font.width(label), y, chrome.fade(WORD), false);
         int ly = y + ROW - 2 + BAR_GAP;
         g.fill(x, ly, x + w, ly + 1, chrome.fade(TRACK));
