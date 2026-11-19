@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "community package",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Sobrang laki",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s block, masyadong malaki para i-preview",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s block",
   "gui.dungeontrain.editor_screen.icon.save": "I-save",
   "gui.dungeontrain.editor_screen.icon.rename": "Palitan ang Pangalan",
   "gui.dungeontrain.editor_screen.icon.remove": "Alisin",

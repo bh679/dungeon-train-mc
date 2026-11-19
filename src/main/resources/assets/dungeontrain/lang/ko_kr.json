@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "커뮤니티 패키지",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "크기 초과",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "블록 %s개, 미리 보기에는 너무 큽니다",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "블록 %s개",
   "gui.dungeontrain.editor_screen.icon.save": "저장",
   "gui.dungeontrain.editor_screen.icon.rename": "이름 바꾸기",
   "gui.dungeontrain.editor_screen.icon.remove": "제거",

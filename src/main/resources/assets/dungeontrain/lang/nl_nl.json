@@ -2082,7 +2082,7 @@
   "gui.dungeontrain.editor_screen.source.community": "communitypakket",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Te groot",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blokken, te groot voor een voorbeeld",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blokken",
   "gui.dungeontrain.editor_screen.icon.save": "Opslaan",
   "gui.dungeontrain.editor_screen.icon.rename": "Hernoemen",
   "gui.dungeontrain.editor_screen.icon.remove": "Verwijderen",

@@ -5911,6 +5911,7 @@
       "chat.dungeontrain.twitch.saved_verify",
       "gui.dungeontrain.ai_policy.explainers.names.desc",
       "gui.dungeontrain.editor_screen.layout.weight_tip",
+      "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "gui.dungeontrain.options.catch_up_burst.hint",
       "item.dungeontrain.live_headpiece",
       "item.dungeontrain.random_live_headpiece",

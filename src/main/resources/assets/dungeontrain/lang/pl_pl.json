@@ -2132,7 +2132,7 @@
   "gui.dungeontrain.editor_screen.source.community": "pakiet społeczności",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Za duża",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s bloków, za duża na podgląd",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s bloków",
   "gui.dungeontrain.editor_screen.icon.save": "Zapisz",
   "gui.dungeontrain.editor_screen.icon.rename": "Zmień nazwę",
   "gui.dungeontrain.editor_screen.icon.remove": "Usuń",

@@ -5,8 +5,11 @@ import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 import java.text.NumberFormat;
+import java.util.List;
 
 /** The rotating model of the selected template, above the data sheet. */
 public final class PreviewPane {
@@ -115,11 +118,19 @@ public final class PreviewPane {
         BuilderRelayPreview.Oversize o = relayId > 0 ? RelayBuildPreviews.oversized(relayId, seq) : null;
         if (o == null) return false;
         String title = EditorScreenLang.text(EditorScreenLang.SHEET_OVERSIZED);
-        String detail = font.plainSubstrByWidth(EditorScreenLang.text(EditorScreenLang.SHEET_OVERSIZED_BLOCKS,
-            NumberFormat.getIntegerInstance().format(o.blocks())), r.w() - 6);
-        int top = r.y() + (r.h() - font.lineHeight * 2 - 3) / 2;
+        List<FormattedCharSequence> detail = font.split(Component.literal(EditorScreenLang.text(
+            EditorScreenLang.SHEET_OVERSIZED_BLOCKS, NumberFormat.getIntegerInstance().format(o.blocks()))),
+            Math.max(20, r.w() - 8));
+        int lineStep = font.lineHeight + 2;
+        int blockH = font.lineHeight + 3 + detail.size() * lineStep;
+        // Centred in the pane, but never up under the name caption drawn at its top-left.
+        int top = Math.max(r.y() + 2 + font.lineHeight + 3, r.y() + (r.h() - blockH) / 2);
         g.drawString(font, title, r.x() + (r.w() - font.width(title)) / 2, top, OVERSIZED, true);
-        g.drawString(font, detail, r.x() + (r.w() - font.width(detail)) / 2, top + font.lineHeight + 3, HINT, false);
+        int y = top + font.lineHeight + 3;
+        for (FormattedCharSequence line : detail) {
+            g.drawString(font, line, r.x() + (r.w() - font.width(line)) / 2, y, HINT, false);
+            y += lineStep;
+        }
         return true;
     }
 }

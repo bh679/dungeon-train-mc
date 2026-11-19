@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "コミュニティパッケージ",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "サイズ超過",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s ブロック、プレビューするには大きすぎます",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s ブロック",
   "gui.dungeontrain.editor_screen.icon.save": "保存",
   "gui.dungeontrain.editor_screen.icon.rename": "名前を変更",
   "gui.dungeontrain.editor_screen.icon.remove": "削除",

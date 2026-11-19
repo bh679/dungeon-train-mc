@@ -2663,7 +2663,7 @@
   "gui.dungeontrain.editor_screen.source.community": "pachet al comunității",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Prea mare",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blocuri, prea mare pentru previzualizare",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blocuri",
   "gui.dungeontrain.editor_screen.icon.save": "Salvează",
   "gui.dungeontrain.editor_screen.icon.rename": "Redenumește",
   "gui.dungeontrain.editor_screen.icon.remove": "Elimină",

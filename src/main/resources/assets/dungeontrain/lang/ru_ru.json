@@ -2137,7 +2137,7 @@
   "gui.dungeontrain.editor_screen.source.community": "пакет сообщества",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Слишком большая",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "Блоков: %s, слишком большая для предпросмотра",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "Блоков: %s",
   "gui.dungeontrain.editor_screen.icon.save": "Сохранить",
   "gui.dungeontrain.editor_screen.icon.rename": "Переименовать",
   "gui.dungeontrain.editor_screen.icon.remove": "Удалить",

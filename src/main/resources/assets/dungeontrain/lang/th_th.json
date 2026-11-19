@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "แพ็กเกจชุมชน",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "ขนาดใหญ่เกิน",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s บล็อก ใหญ่เกินกว่าจะแสดงตัวอย่าง",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s บล็อก",
   "gui.dungeontrain.editor_screen.icon.save": "บันทึก",
   "gui.dungeontrain.editor_screen.icon.rename": "เปลี่ยนชื่อ",
   "gui.dungeontrain.editor_screen.icon.remove": "ลบ",

@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "paket komunitas",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Terlalu besar",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blok, terlalu besar untuk pratinjau",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blok",
   "gui.dungeontrain.editor_screen.icon.save": "Simpan",
   "gui.dungeontrain.editor_screen.icon.rename": "Ganti nama",
   "gui.dungeontrain.editor_screen.icon.remove": "Hapus",

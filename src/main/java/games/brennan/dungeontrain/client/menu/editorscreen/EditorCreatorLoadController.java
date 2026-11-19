@@ -195,7 +195,7 @@ final class EditorCreatorLoadController {
     private boolean confirmOversized(BuilderProfilePacket.Entry entry, Runnable press) {
         BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.oversized(entry.relayId(), 0);
         if (oversize == null) return false;
-        host.modal().open(new OversizedLoadConfirmScreen(entry.buildName(), oversize, () -> {
+        host.modal().open(new OversizedLoadConfirmScreen(EditorCreatorBuilds.label(entry), oversize, () -> {
             host.modal().pop();
             if (!loading && entry.equals(selected())) press.run();
         }));

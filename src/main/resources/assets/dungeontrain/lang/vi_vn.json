@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "gói cộng đồng",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Quá lớn",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s khối, quá lớn để xem trước",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s khối",
   "gui.dungeontrain.editor_screen.icon.save": "Lưu",
   "gui.dungeontrain.editor_screen.icon.rename": "Đổi tên",
   "gui.dungeontrain.editor_screen.icon.remove": "Gỡ bỏ",

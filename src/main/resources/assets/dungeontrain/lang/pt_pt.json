@@ -2082,7 +2082,7 @@
   "gui.dungeontrain.editor_screen.source.community": "pacote da comunidade",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Demasiado grande",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blocos, demasiado grande para pré-visualizar",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blocos",
   "gui.dungeontrain.editor_screen.icon.save": "Guardar",
   "gui.dungeontrain.editor_screen.icon.rename": "Renomear",
   "gui.dungeontrain.editor_screen.icon.remove": "Remover",

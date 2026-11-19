@@ -2604,7 +2604,7 @@
   "gui.dungeontrain.editor_screen.source.community": "community package",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "Oversized",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blocks, too big to preview",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s blocks",
   "gui.dungeontrain.editor_screen.icon.save": "Save",
   "gui.dungeontrain.editor_screen.icon.rename": "Rename",
   "gui.dungeontrain.editor_screen.icon.remove": "Remove",

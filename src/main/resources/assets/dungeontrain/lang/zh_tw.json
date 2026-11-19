@@ -2032,7 +2032,7 @@
   "gui.dungeontrain.editor_screen.source.community": "社群套件",
   "gui.dungeontrain.editor_screen.sheet.pending": "—",
   "gui.dungeontrain.editor_screen.sheet.oversized": "過大",
-  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s 個方塊，太大無法預覽",
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": "%s 個方塊",
   "gui.dungeontrain.editor_screen.icon.save": "儲存",
   "gui.dungeontrain.editor_screen.icon.rename": "重新命名",
   "gui.dungeontrain.editor_screen.icon.remove": "移除",

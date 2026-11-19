@@ -5943,6 +5943,7 @@
       "chat.dungeontrain.twitch.saved_verify",
       "gui.dungeontrain.ai_policy.explainers.names.desc",
       "gui.dungeontrain.editor_screen.layout.weight_tip",
+      "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "item.dungeontrain.live_headpiece",
       "item.dungeontrain.random_live_headpiece",
       "advancements.dungeontrain.dungeon_train.fully_developed.hint",
