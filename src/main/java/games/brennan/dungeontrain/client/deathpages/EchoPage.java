@@ -74,12 +74,16 @@ public final class EchoPage {
      */
     private record Layout(int pad, int contentH, int portraitW, int portraitSize, int textW,
                           int step, int barH) {
-        static Layout fit(int room, int width) {
+        /**
+         * {@code minTextW} is the widest row the right column must hold (the personality row with
+         * the carriage number); the column is otherwise just the hotbar's width, and the echo's
+         * side takes everything else.
+         */
+        static Layout fit(int room, int width, int minTextW) {
             int pad = room >= 160 ? EDGE : 3;
             int contentH = Math.max(MIN_CONTENT_H, Math.min(MAX_CONTENT_H, room - 2 * pad));
-            int portraitW = Math.max(60, Math.min(110, Math.round(contentH * 0.55F)));
-            int fixed = EDGE + SLOT + EDGE + portraitW + EDGE + EDGE;
-            int textW = Math.max(HOTBAR_W, Math.min(240, width - fixed));
+            int textW = Math.max(HOTBAR_W, minTextW);
+            int portraitW = Math.max(60, Math.min(170, width - (EDGE + SLOT + EDGE + EDGE + textW + EDGE)));
             int extra = contentH - MIN_CONTENT_H;
             int step = extra / SPACED_ROWS;
             int barH = BASE_BAR_H + Math.min(2, extra / 30);
@@ -162,7 +166,12 @@ public final class EchoPage {
         slotHits.clear();
         skillHits.clear();
         armourW = 0;
-        Layout l = Layout.fit(maxY - y, width);
+        Component personalityLabel = Component.translatable("gui.dungeontrain.death.echo.personality");
+        Component carriageLabel = Component.translatable("gui.dungeontrain.death.narr.lbl_carriage").append(": ");
+        int firstRowW = font.width(personalityLabel) + 4
+                + font.width(Component.translatable(echo.personality().langKey())) + 12
+                + font.width(carriageLabel) + font.width(Integer.toString(depth));
+        Layout l = Layout.fit(maxY - y, width, firstRowW);
         int pad = l.pad();
         int panelW = l.panelW();
         int panelH = l.panelH();
