@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
+import games.brennan.dungeontrain.train.RelayBlobLimits;
+import games.brennan.dungeontrain.train.RelayBlobTooLargeException;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.HolderGetter;
@@ -266,7 +268,7 @@ public final class BuilderRelayDownload {
 
         CompoundTag snapshot;
         try {
-            snapshot = fold(CarriageBlockSnapshot.decode(build.blocks()), build);
+            snapshot = decodeAndFold(build);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Builder relay download: id={} would not decode: {}", build.id(), t.toString());
             return Result.of(Outcome.FAILED);
@@ -451,14 +453,30 @@ public final class BuilderRelayDownload {
         data.markBuilderRelayBuildsDirty();
     }
 
-    /** Fold the build's delta log onto its base blob — the lease path's rule, on a fetched build. */
-    static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
+    /**
+     * The build's base blob decoded and its delta log folded on — the lease path's rule, on a fetched
+     * build. Base and deltas share one {@link RelayBlobLimits.FoldBudget}.
+     *
+     * @throws java.io.IOException when the base cannot be read, or the build is over its size limits
+     */
+    static CompoundTag decodeAndFold(SharedCarriageClient.BuildFetch build) throws java.io.IOException {
+        RelayBlobLimits.FoldBudget budget = new RelayBlobLimits.FoldBudget();
+        return fold(CarriageBlockSnapshot.decode(build.blocks(), budget), build, budget);
+    }
+
+    private static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build,
+                                    RelayBlobLimits.FoldBudget budget) throws RelayBlobTooLargeException {
         List<SharedCarriageClient.DeltaRec> pending =
                 SharedCarriageClient.pendingDeltas(build.deltas(), build.baseSeq());
+        RelayBlobLimits.checkDeltaCount(pending.size());
         CompoundTag folded = base;
         for (SharedCarriageClient.DeltaRec d : pending) {
             try {
-                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells(), budget));
+            } catch (RelayBlobTooLargeException e) {
+                if (e.wholeBuild()) throw e;
+                LOGGER.warn("[DungeonTrain] Builder relay download: id={} delta seq={} is over the size limit — skipped",
+                        build.id(), d.seq());
             } catch (Exception e) {
                 LOGGER.warn("[DungeonTrain] Builder relay download: id={} delta seq={} decode failed: {}",
                         build.id(), d.seq(), e.toString());

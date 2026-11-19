@@ -2005,6 +2005,8 @@
       "gui.dungeontrain.editor_screen.source.mine",
       "gui.dungeontrain.editor_screen.source.community",
       "gui.dungeontrain.editor_screen.sheet.pending",
+      "gui.dungeontrain.editor_screen.sheet.oversized",
+      "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "gui.dungeontrain.editor_screen.icon.save",
       "gui.dungeontrain.editor_screen.icon.rename",
       "gui.dungeontrain.editor_screen.icon.remove",
@@ -2129,6 +2131,10 @@
       "gui.dungeontrain.editor_screen.creator.loaded_shift_hint",
       "gui.dungeontrain.editor_screen.creator.load_sub_variant",
       "gui.dungeontrain.editor_screen.creator.parent_title",
+      "gui.dungeontrain.editor_screen.creator.oversized_title",
+      "gui.dungeontrain.editor_screen.creator.oversized_size",
+      "gui.dungeontrain.editor_screen.creator.oversized_warning",
+      "gui.dungeontrain.editor_screen.creator.oversized_confirm",
       "gui.dungeontrain.editor_screen.creator.parent_new",
       "gui.dungeontrain.editor_screen.creator.parent_whole_room",
       "gui.dungeontrain.editor_screen.creator.parent_whole_half",
@@ -5904,7 +5910,9 @@
     "discordpresence": "*"
   },
   "source_changed": {
-    "dungeontrain": [],
+    "dungeontrain": [
+      "gui.dungeontrain.editor_screen.sheet.oversized_blocks"
+    ],
     "adventureitemnames": [],
     "playermob": [],
     "discordpresence": []
