@@ -150,6 +150,7 @@ public final class EditorScreenLang {
     public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
     /** The Whole-pool destination in the "Load under" picker, and the top-level row a carriage gets. */
     public static final String CREATOR_PARENT_WHOLE_ROOM = PREFIX + "creator.parent_whole_room";
+    public static final String CREATOR_PARENT_WHOLE_HALF = PREFIX + "creator.parent_whole_half";
     public static final String CREATOR_PARENT_TOP_LEVEL = PREFIX + "creator.parent_top_level";
     public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
@@ -295,6 +296,7 @@ public final class EditorScreenLang {
     public static final String COMMIT_REPLACE_ON = PREFIX + "commit.replace_on";
     public static final String COMMIT_REPLACE_OFF = PREFIX + "commit.replace_off";
     public static final String COMMIT_GO = PREFIX + "commit.go";
+    public static final String COMMIT_SEND = PREFIX + "commit.send";
     /** The submit icon wears My Builds' own two words, so one decision reads the same in both. */
     public static final String ICON_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";

@@ -145,7 +145,7 @@ public final class TemplateLootPrefabs {
     }
 
     /** The wire document for {@code prefabs}, or {@code ""} for none or for one too big to carry. */
-    static String encode(Map<String, String> prefabs) {
+    public static String encode(Map<String, String> prefabs) {
         if (prefabs.isEmpty()) return "";
         JsonObject doc = new JsonObject();
         for (Map.Entry<String, String> e : prefabs.entrySet()) doc.add(e.getKey(), new JsonPrimitive(e.getValue()));
