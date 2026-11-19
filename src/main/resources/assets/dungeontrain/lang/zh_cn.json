@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.support.confirm.body.stripe": "将在浏览器中打开 brennan.games。你的 Minecraft 名字会自动填入，用于登记赞助名单。",
   "gui.dungeontrain.support.confirm.body.patreon": "将在浏览器中打开 patreon.com。金额随意，随时可取消。",
   "gui.dungeontrain.support.confirm.body.revolut": "将在浏览器中打开 revolut.me。你的 Minecraft 名字会附在付款备注中，用于登记赞助名单。",
-  "gui.dungeontrain.support.confirm.body.stripe.gift": "将在浏览器中打开 brennan.games。你选择的名字会自动填入，用于登记赞助名单。",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "将在浏览器中打开 brennan.games。奖励归你选择的名字所有。付款后你可以选择赠送哪些奖励。",
   "gui.dungeontrain.support.confirm.body.revolut.gift": "将在浏览器中打开 revolut.me。你选择的名字会附在付款备注中，用于登记赞助名单。",
   "gui.dungeontrain.support.confirm.open": "打开",
   "gui.dungeontrain.support.confirm.cancel": "取消",

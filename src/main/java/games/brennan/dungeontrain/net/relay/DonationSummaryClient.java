@@ -104,14 +104,34 @@ public final class DonationSummaryClient {
      * {@code youBookCredits} is the Priority Books waiting for this player (0 when none, or unnamed).
      * {@code goals} is empty (and {@code activeGoalId} null) against a relay that predates the
      * ladder, or when there is no cost snapshot to build the first rung from — the screen falls
-     * back to {@code percentCovered} then.
+     * back to {@code percentCovered} then. {@code youSupporterAud} is what counts towards the
+     * supporter perks once gift splits are counted (relay donation-shares.js): -1 when the relay left
+     * it out, which it does for everyone no split touches, so {@code youTotalUsd} stands.
      */
     public record Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
                           int percentCovered, int patronCount, int patronMonthlyUsd,
                           List<Entry> monthly, List<Entry> allTime,
                           boolean hasYou, int youMonthlyUsd, int youTotalUsd,
                           List<Goal> goals, String activeGoalId, Updates updates,
-                          Activity activity, Experiment experiment, int youBookCredits) {
+                          Activity activity, Experiment experiment, int youBookCredits,
+                          int youSupporterAud) {
+
+        /** The pre-gift-split shape: no supporter override. */
+        public Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
+                       int percentCovered, int patronCount, int patronMonthlyUsd,
+                       List<Entry> monthly, List<Entry> allTime,
+                       boolean hasYou, int youMonthlyUsd, int youTotalUsd,
+                       List<Goal> goals, String activeGoalId, Updates updates,
+                       Activity activity, Experiment experiment, int youBookCredits) {
+            this(monthlyRaisedUsd, totalRaisedUsd, monthlyCostUsd, percentCovered, patronCount,
+                    patronMonthlyUsd, monthly, allTime, hasYou, youMonthlyUsd, youTotalUsd, goals,
+                    activeGoalId, updates, activity, experiment, youBookCredits, -1);
+        }
+
+        /** What counts towards the supporter perks: the split-aware figure when sent, else the total. */
+        public int youSupporterTotalAud() {
+            return youSupporterAud >= 0 ? youSupporterAud : youTotalUsd;
+        }
 
         /** The pre-Priority-Book shape: no books waiting. */
         public Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
@@ -212,7 +232,8 @@ public final class DonationSummaryClient {
                 parseUpdates(o),
                 parseActivity(o),
                 parseExperiment(o),
-                you != null ? optInt(you, "bookCredits", 0) : 0);
+                you != null ? optInt(you, "bookCredits", 0) : 0,
+                you != null ? optInt(you, "supporterAud", -1) : -1);
     }
 
     /**

@@ -1808,7 +1808,7 @@
   "gui.dungeontrain.support.confirm.body.stripe": "In your browser, at brennan.games. Your Minecraft name is filled in for the board.",
   "gui.dungeontrain.support.confirm.body.patreon": "In your browser, at patreon.com. Pledge any amount, cancel anytime.",
   "gui.dungeontrain.support.confirm.body.revolut": "In your browser, at revolut.me. Your Minecraft name is added as the note for the board.",
-  "gui.dungeontrain.support.confirm.body.stripe.gift": "In your browser, at brennan.games. The name you chose is filled in for the board.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "In your browser, at brennan.games. The rewards go to the name you chose. After paying you can choose which.",
   "gui.dungeontrain.support.confirm.body.revolut.gift": "In your browser, at revolut.me. The name you chose is added as the note for the board.",
   "gui.dungeontrain.support.confirm.open": "Open",
   "gui.dungeontrain.support.confirm.cancel": "Cancel",

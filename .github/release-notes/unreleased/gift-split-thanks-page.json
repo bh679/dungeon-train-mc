@@ -1,0 +1,21 @@
+{
+  "id": "gift-split-thanks-page",
+  "version": "0.1898.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "Choose what your gift gives",
+  "summary": "Donating for a friend? After paying, the thank-you page lets you choose which rewards go to them and which you keep. Your name stays on the boards unless you give that too.",
+  "highlights": [
+    "Turn a donation you just made into a gift, for up to a day after paying",
+    "Pick which rewards your friend gets: Book Boosts, supporter perks, photo albums",
+    "The name box suggests players who have ridden the train, so the gift reaches the right person"
+  ],
+  "pr": 2750,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
