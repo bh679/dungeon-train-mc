@@ -985,7 +985,7 @@ public final class NarrativeDeathScreen extends Screen {
             int y = CONTENT_TOP_Y + contentShift;
             switch (page.kind()) {
                 case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
-                case ECHO -> y = drawEcho(g, stats, cx, contentW, y, partialTick);
+                case ECHO -> y = drawEcho(g, stats, cx, contentW, y, mouseX, mouseY);
                 case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, partialTick);
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
@@ -1333,7 +1333,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /** "The echo": kicker, question, then the inventory-style panel ({@link EchoPage}). */
-    private int drawEcho(GuiGraphics g, DeathStatsPacket s, int cx, int w, int y, float partialTick) {
+    private int drawEcho(GuiGraphics g, DeathStatsPacket s, int cx, int w, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.echo.kicker");
         // No train gap here: the card takes that room to grow (it fills down to the footer).
         y += 14;
@@ -1341,7 +1341,7 @@ public final class NarrativeDeathScreen extends Screen {
         y += 1;
         if (s == null || s.echo() == null) return y;
         return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - 32 + contentShift, w,
-                settled(), partialTick);
+                mouseX, mouseY, settled());
     }
 
     /** Whether the death packet carries this death's echo (the echo page's subject). */
@@ -2858,6 +2858,8 @@ public final class NarrativeDeathScreen extends Screen {
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+            // The echo page's tabs and inventory slots.
+            if (page.kind() == Kind.ECHO && echoPage != null && echoPage.mouseClicked(mx, my)) return true;
             if (bugReportRect != null && bugReportRect.has(mx, my)) {
                 // Jump straight to the bug-report question; Next Screen there returns here.
                 returnToStartAfterBug = true;
