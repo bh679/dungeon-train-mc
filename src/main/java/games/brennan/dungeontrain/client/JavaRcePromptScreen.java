@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.JavaRceCheck;
+import games.brennan.dungeontrain.util.JavaSetup;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,9 +23,12 @@ import java.util.List;
  * The Java security warning (see {@link JavaRceNotice} for who sees it). Same flat card as
  * {@link LowMemoryPromptScreen}, in four pages:
  * <ul>
- *   <li>{@link Page#MAIN}: what's wrong in a sentence, then the two fixes as buttons and a
+ *   <li>{@link Page#MAIN}: what's wrong in a sentence with a link to the CERT-EU advisory, then
+ *       the two fixes as buttons (Update Java in blue, the one that removes the flaw) and a
  *       "Continue anyway" text link;</li>
- *   <li>{@link Page#UPDATE}: how to update Java;</li>
+ *   <li>{@link Page#UPDATE}: how to update the Java this player actually runs, from
+ *       {@link JavaSetup}: restart the launcher that manages it, re-download it in the launcher,
+ *       or download a newer build from the vendor they installed it from;</li>
  *   <li>{@link Page#ARGS}: the JVM argument, a Copy button and the player's own launcher's path;</li>
  *   <li>{@link Page#CONFIRM}: a second warning before playing unfixed, with "Don't show me again"
  *       (remembered per Java runtime, so a different Java is warned afresh).</li>
@@ -70,6 +75,7 @@ public final class JavaRcePromptScreen extends Screen {
     private final Screen previousScreen;
     private final String whereKey;
     private final String fixedVersion;
+    private final JavaSetup.Setup setup;
 
     private Page page = Page.MAIN;
     private boolean dontShowAgain;
@@ -85,11 +91,25 @@ public final class JavaRcePromptScreen extends Screen {
     private Checkbox dontShowBox;
     private Button copyButton;
 
-    public JavaRcePromptScreen(Screen previousScreen, String whereKey, String fixedVersion) {
+    public JavaRcePromptScreen(Screen previousScreen, String whereKey, JavaSetup.Setup setup) {
         super(Component.translatable(K + "title"));
         this.previousScreen = previousScreen;
         this.whereKey = whereKey;
-        this.fixedVersion = fixedVersion;
+        this.setup = setup;
+        this.fixedVersion = JavaRceCheck.fixedVersionFor(setup.feature());
+    }
+
+    /** The update instructions for this player's Java: who manages it decides what to do. */
+    static Component updateHow(JavaSetup.Setup setup) {
+        return switch (setup.manager()) {
+            case MINECRAFT_LAUNCHER -> Component.translatable(K + "update.how.minecraft_launcher");
+            case CURSEFORGE -> Component.translatable(K + "update.how.curseforge");
+            case ATLAUNCHER -> Component.translatable(K + "update.how.atlauncher");
+            case MODRINTH -> Component.translatable(K + "update.how.modrinth", String.valueOf(setup.feature()));
+            case PRISM -> Component.translatable(K + "update.how.prism", String.valueOf(setup.feature()));
+            case OWN -> Component.translatable(K + "update.how.own",
+                setup.vendor().displayName, String.valueOf(setup.feature()));
+        };
     }
 
     private void show(Page next) {
@@ -100,9 +120,10 @@ public final class JavaRcePromptScreen extends Screen {
 
     private List<Part> parts() {
         return switch (page) {
-            case MAIN -> List.of(new Part(Component.translatable(K + "intro"), COLOR_BODY));
+            case MAIN -> List.of(new Part(Component.translatable(K + "summary"), COLOR_BODY));
             case UPDATE -> List.of(
-                new Part(Component.translatable(K + "update.body", fixedVersion), COLOR_BODY),
+                new Part(updateHow(setup), COLOR_BODY),
+                new Part(Component.translatable(K + "update.need", fixedVersion), COLOR_BODY),
                 new Part(Component.translatable(K + "update.note"), COLOR_NOTE));
             case ARGS -> List.of(
                 new Part(Component.translatable(K + "args.body"), COLOR_BODY),
@@ -166,7 +187,7 @@ public final class JavaRcePromptScreen extends Screen {
 
     private int controlsHeight() {
         return switch (page) {
-            case MAIN -> BUTTON_H + BUTTON_GAP + font.lineHeight;
+            case MAIN -> font.lineHeight + 2 + BUTTON_H + BUTTON_GAP + font.lineHeight;
             case UPDATE, ARGS -> BUTTON_H;
             case CONFIRM -> CHECKBOX_H + BUTTON_GAP + BUTTON_H;
         };
@@ -178,19 +199,34 @@ public final class JavaRcePromptScreen extends Screen {
         int rightW = inner - half - BUTTON_GAP;
         switch (page) {
             case MAIN -> {
-                addRenderableWidget(Button.builder(Component.translatable(K + "opt_update"), b -> show(Page.UPDATE))
-                    .bounds(left, y, half, BUTTON_H).build());
+                // The advisory link sits right under the sentence that names the flaw.
+                Component about = Component.translatable(K + "about")
+                    .withStyle(ChatFormatting.AQUA, ChatFormatting.UNDERLINE);
+                int aboutW = font.width(about);
+                addRenderableWidget(new PlainTextButton(centerX - aboutW / 2, y - GAP_BUTTONS + 2, aboutW,
+                    font.lineHeight, about, b -> openLink(JavaRceCheck.ADVISORY_URL), font));
+                int by = y + font.lineHeight + 2;
+                // Blue: updating Java is the fix that removes the flaw itself.
+                addRenderableWidget(new DarkTintedButton(left, by, half, BUTTON_H,
+                    Component.translatable(K + "opt_update"), b -> show(Page.UPDATE), 0.45F, 0.60F, 1.25F));
                 addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
-                    .bounds(rightX, y, rightW, BUTTON_H).build());
+                    .bounds(rightX, by, rightW, BUTTON_H).build());
                 Component link = Component.translatable(K + "continue")
                     .withStyle(ChatFormatting.GRAY, ChatFormatting.UNDERLINE);
                 int linkW = font.width(link);
-                addRenderableWidget(new PlainTextButton(centerX - linkW / 2, y + BUTTON_H + BUTTON_GAP, linkW,
+                addRenderableWidget(new PlainTextButton(centerX - linkW / 2, by + BUTTON_H + BUTTON_GAP, linkW,
                     font.lineHeight, link, b -> show(Page.CONFIRM), font));
             }
             case UPDATE -> {
-                addRenderableWidget(Button.builder(Component.translatable(K + "info"), b -> openInfo())
-                    .bounds(left, y, half, BUTTON_H).build());
+                // Their own Java: the vendor's download page. A launcher's Java: the other fix.
+                if (setup.manager() == JavaSetup.Manager.OWN) {
+                    addRenderableWidget(new DarkTintedButton(left, y, half, BUTTON_H,
+                        Component.translatable(K + "download", setup.vendor().displayName),
+                        b -> openLink(setup.vendor().downloadUrl(setup.feature())), 0.45F, 0.60F, 1.25F));
+                } else {
+                    addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
+                        .bounds(left, y, half, BUTTON_H).build());
+                }
                 addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
                     .bounds(rightX, y, rightW, BUTTON_H).build());
             }
@@ -221,8 +257,7 @@ public final class JavaRcePromptScreen extends Screen {
         if (copyButton != null) copyButton.setMessage(Component.translatable(K + "copied"));
     }
 
-    private void openInfo() {
-        String url = JavaRceCheck.ADVISORY_URL;
+    private void openLink(String url) {
         this.minecraft.setScreen(new ConfirmLinkScreen(yes -> {
             if (yes) Util.getPlatform().openUri(URI.create(url));
             this.minecraft.setScreen(this);

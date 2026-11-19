@@ -1255,12 +1255,55 @@
       ]
     }
   },
-  "gui.dungeontrain.java_rce.update.body": {
+  "gui.dungeontrain.java_rce.update.how.modrinth": {
+    "1": {
+      "label": "the player's Java major version (a number)",
+      "examples": [
+        "21",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.java_rce.update.how.prism": {
+    "1": {
+      "label": "the player's Java major version (a number)",
+      "examples": [
+        "21",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.java_rce.update.how.own": {
+    "1": {
+      "label": "the Java vendor's product name (a proper noun, keep as is)",
+      "examples": [
+        "Eclipse Temurin",
+        "Microsoft"
+      ]
+    },
+    "2": {
+      "label": "the player's Java major version (a number)",
+      "examples": [
+        "21",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.java_rce.update.need": {
     "1": {
       "label": "the first fixed Java version for the player's Java (a version number)",
       "examples": [
         "21.0.13.1",
         "17.0.21.1"
+      ]
+    }
+  },
+  "gui.dungeontrain.java_rce.download": {
+    "1": {
+      "label": "the Java vendor's product name (a proper noun, keep as is)",
+      "examples": [
+        "Eclipse Temurin",
+        "Oracle"
       ]
     }
   },

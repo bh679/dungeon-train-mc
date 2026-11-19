@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.JavaRceCheck;
+import games.brennan.dungeontrain.util.JavaSetup;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -102,7 +103,6 @@ public final class JavaRceNotice {
         }
         boolean forced = "force".equals(System.getProperty(FORCE_PROPERTY));
         if (!shouldShow(verdict, runtimeVersion(), ClientDisplayConfig.getJavaRceWarningDismissedFor(), forced)) return;
-        mc.setScreen(new JavaRcePromptScreen(parent, whereKey(LauncherDetector.launcher()),
-            JavaRceCheck.fixedVersionFor(Runtime.version().feature())));
+        mc.setScreen(new JavaRcePromptScreen(parent, whereKey(LauncherDetector.launcher()), JavaSetup.current()));
     }
 }

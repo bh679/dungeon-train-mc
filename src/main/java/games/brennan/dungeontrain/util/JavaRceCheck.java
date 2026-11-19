@@ -33,8 +33,13 @@ public final class JavaRceCheck {
     /** The JVM argument that closes the hole on any build. Shown to players verbatim. */
     public static final String JVM_ARGUMENT = "-XX:-UseBASE64Intrinsics";
 
-    /** Advisory linked from the warning: affected versions, fixes, workaround. */
-    public static final String ADVISORY_URL = "https://tuxcare.com/blog/java4shell-cve-2026-114938/";
+    /**
+     * Advisory linked from the warning: CERT-EU, the EU institutions' official computer emergency
+     * response team. Names the CVE, the affected and fixed versions and the workaround, in fairly
+     * plain words. (The OpenJDK Vulnerability Group's own advisory is the primary source, but it is
+     * a bare table; NVD/CVE.org had no published record when this shipped.)
+     */
+    public static final String ADVISORY_URL = "https://cert.europa.eu/publications/security-advisories/2026-021";
 
     public static final String CVE = "CVE-2026-114938";
 
