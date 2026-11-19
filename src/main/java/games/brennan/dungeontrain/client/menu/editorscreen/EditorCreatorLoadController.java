@@ -193,7 +193,7 @@ final class EditorCreatorLoadController {
      * Unknown size (its preview has not answered) loads without asking.
      */
     private boolean confirmOversized(BuilderProfilePacket.Entry entry, Runnable press) {
-        BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.oversized(entry.relayId(), 0);
+        BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.tooBigToSend(entry.relayId());
         if (oversize == null) return false;
         host.modal().open(new OversizedLoadConfirmScreen(EditorCreatorBuilds.label(entry), oversize, () -> {
             host.modal().pop();

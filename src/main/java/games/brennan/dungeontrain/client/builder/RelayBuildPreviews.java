@@ -377,6 +377,21 @@ public final class RelayBuildPreviews {
         return OVERSIZED.get(new Key(relayId, seq));
     }
 
+    /**
+     * This build's size when it is too big to send whole, for the confirm before loading it: too big
+     * to preview at all, or previewed only from a lighter copy ({@link PreviewSlimmer}). Null when
+     * it is not, or nobody knows yet.
+     */
+    public static BuilderRelayPreview.Oversize tooBigToSend(int relayId) {
+        BuilderRelayPreview.Oversize oversize = oversized(relayId, 0);
+        if (oversize != null) return oversize;
+        Entry entry = CACHE.get(new Key(relayId, 0));
+        if (entry == null || !entry.simplified()) return null;
+        TemplateSummary summary = entry.summary();
+        Vec3i size = summary.declaredSize();
+        return new BuilderRelayPreview.Oversize(summary.blocks(), size.getX(), size.getY(), size.getZ());
+    }
+
     /** Draw this build, or answer false while it is still coming — the caller draws its slate. */
     public static boolean draw(GuiGraphics g, int relayId, int x, int y, int w, int h,
                                float yaw, float fill) {
