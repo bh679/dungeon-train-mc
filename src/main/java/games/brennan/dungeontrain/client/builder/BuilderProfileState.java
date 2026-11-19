@@ -180,7 +180,7 @@ public final class BuilderProfileState {
                 updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
                         e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
                         e.favourite(), e.ownerUuid(), e.ownerName(), e.templateCopy(), note, e.reviewComment(),
-                        e.reviewVersion(), e.reviewVersionOp()));
+                        e.reviewVersion(), e.reviewVersionOp(), e.l(), e.h(), e.w(), e.blocksChars()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -236,7 +236,8 @@ public final class BuilderProfileState {
             if (e.relayId() == relayId && e.favourite() != favourite) {
                 updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
                         e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
-                        favourite, e.ownerUuid(), e.ownerName(), e.templateCopy(), e.note()));
+                        favourite, e.ownerUuid(), e.ownerName(), e.templateCopy(), e.note(), e.reviewComment(),
+                        e.reviewVersion(), e.reviewVersionOp(), e.l(), e.h(), e.w(), e.blocksChars()));
                 changed = true;
             } else {
                 updated.add(e);

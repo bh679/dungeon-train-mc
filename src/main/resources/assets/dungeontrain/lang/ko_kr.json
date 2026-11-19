@@ -1999,6 +1999,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "그룹 ×1: %s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "그룹 ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "블록",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "블록 · 데이터",
   "gui.dungeontrain.editor_screen.sheet.entities": "엔티티 %s개",
   "gui.dungeontrain.editor_screen.sheet.containers": "컨테이너 %s개",
   "gui.dungeontrain.editor_screen.sheet.lights": "조명",

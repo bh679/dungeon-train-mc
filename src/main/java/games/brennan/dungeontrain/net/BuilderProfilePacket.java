@@ -86,16 +86,36 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
      * @param reviewComment what the reviewer told the author alongside the verdict — read with
      *                   {@code review}, and empty when nothing was said. Only a profile listing
      *                   carries it, like {@code note}
+     * @param l          the build's length as the relay recorded it on upload; 0 when it did not say
+     * @param h          its height, as {@code l}
+     * @param w          its width, as {@code l}
+     * @param blocksChars how long the stored blocks blob is, in characters — what the build costs to
+     *                   bring down. 0 from a relay that did not say
      */
     public record Entry(int relayId, String kind, String subKind, String buildName, boolean published,
                         String flag, String review, String stage, int changes,
                         boolean favourite, String ownerUuid, String ownerName, boolean templateCopy,
-                        SubmitNote note, String reviewComment, String reviewVersion, String reviewVersionOp) {
+                        SubmitNote note, String reviewComment, String reviewVersion, String reviewVersionOp,
+                        int l, int h, int w, long blocksChars) {
         public Entry {
             note = note == null ? SubmitNote.EMPTY : note;
             reviewComment = reviewComment == null ? "" : reviewComment;
             reviewVersion = reviewVersion == null ? "" : reviewVersion;
             reviewVersionOp = reviewVersionOp == null ? "" : reviewVersionOp;
+            l = Math.max(0, l);
+            h = Math.max(0, h);
+            w = Math.max(0, w);
+            blocksChars = Math.max(0L, blocksChars);
+        }
+
+        /** An entry with no size — the shape from before the relay's dims and blob length rode along. */
+        public Entry(int relayId, String kind, String subKind, String buildName, boolean published,
+                     String flag, String review, String stage, int changes,
+                     boolean favourite, String ownerUuid, String ownerName, boolean templateCopy,
+                     SubmitNote note, String reviewComment, String reviewVersion, String reviewVersionOp) {
+            this(relayId, kind, subKind, buildName, published, flag, review, stage, changes, favourite,
+                    ownerUuid, ownerName, templateCopy, note, reviewComment, reviewVersion, reviewVersionOp,
+                    0, 0, 0, 0L);
         }
 
         /** An entry with a comment but no resubmit rule. */
@@ -119,7 +139,8 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
         /** This entry with a different verdict, comment and rule — the optimistic flip after a review press. */
         public Entry withReview(String newReview, String newComment, String newVersion, String newOp) {
             return new Entry(relayId, kind, subKind, buildName, published, flag, newReview, stage, changes,
-                    favourite, ownerUuid, ownerName, templateCopy, note, newComment, newVersion, newOp);
+                    favourite, ownerUuid, ownerName, templateCopy, note, newComment, newVersion, newOp,
+                    l, h, w, blocksChars);
         }
 
         /** An entry with no submission answers — every listing but a profile's. */
@@ -189,6 +210,10 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
             buf.writeUtf(e.reviewComment(), BuilderProfileActionPacket.NOTE_MAX);
             buf.writeUtf(e.reviewVersion(), MAX_STRING);
             buf.writeUtf(e.reviewVersionOp(), MAX_STRING);
+            buf.writeVarInt(e.l());
+            buf.writeVarInt(e.h());
+            buf.writeVarInt(e.w());
+            buf.writeVarLong(e.blocksChars());
         }
     }
 
@@ -204,7 +229,8 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
                     buf.readBoolean(), new SubmitNote(buf.readUtf(BuilderProfileActionPacket.NOTE_MAX),
                         buf.readUtf(BuilderProfileActionPacket.NOTE_MAX),
                         buf.readUtf(BuilderProfileActionPacket.NOTE_MAX)),
-                    buf.readUtf(BuilderProfileActionPacket.NOTE_MAX), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING)));
+                    buf.readUtf(BuilderProfileActionPacket.NOTE_MAX), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING),
+                    buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarLong()));
         }
         return List.copyOf(out);
     }
@@ -232,7 +258,8 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
         return new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
                 "published".equals(r.visibility()), r.flag(), BuilderReviewState.of(r.review()),
                 r.stage(), r.changeCount(), r.favourite(), r.ownerUuid(), r.ownerName(),
-                r.templateCopy(), r.note(), r.reviewComment(), r.reviewVersion(), r.reviewVersionOp());
+                r.templateCopy(), r.note(), r.reviewComment(), r.reviewVersion(), r.reviewVersionOp(),
+                r.l(), r.h(), r.w(), r.blocksChars());
     }
 
     /** How many entries a listing packet will carry — shared with {@link BuilderFavouritesPacket}. */

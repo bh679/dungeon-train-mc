@@ -1999,6 +1999,7 @@
   "gui.dungeontrain.editor_screen.layout.group": "车厢组 ×1：%s (%s%%)",
   "gui.dungeontrain.editor_screen.layout.group.name": "车厢组 ×1 — %s%%",
   "gui.dungeontrain.editor_screen.sheet.blocks": "方块",
+  "gui.dungeontrain.editor_screen.sheet.blocks_data": "方块 · 数据",
   "gui.dungeontrain.editor_screen.sheet.entities": "%s 个实体",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s 个容器",
   "gui.dungeontrain.editor_screen.sheet.lights": "光源",
