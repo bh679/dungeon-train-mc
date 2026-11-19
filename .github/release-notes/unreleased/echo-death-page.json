@@ -18,5 +18,8 @@
   "date": "2026-11-19",
   "released": false,
   "released_in": null,
-  "released_at": null
+  "released_at": null,
+  "major": true,
+  "notable": true,
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/meet-your-echo.png"
 }
