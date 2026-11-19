@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
+import games.brennan.dungeontrain.client.ChatClickTokens;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.net.LiveTakeoverPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -23,6 +24,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -34,14 +36,21 @@ import java.util.UUID;
  * and the ticket carries the claim past the relay's tenure check ({@link #takeTicket}). The dead
  * streamer is cut off by that claim. No vote and no second confirmation: first click wins.
  *
+ * <p>The offer id is no secret (the relay's status poll hands it to anyone), and any sender can print a
+ * {@code dungeontrain:} click. So the chat button carries a {@link ChatClickTokens} token minted when this client
+ * printed it: a copy from anyone else takes nothing. The button under the TV box calls {@link #accept} itself.</p>
+ *
  * <p>Render thread, except where noted.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveTakeoverOffer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    /** The chat button's action ({@link ChatClick}): {@code live-takeover/<offer id>}. */
+    /** The chat button's action ({@link ChatClick}): {@code live-takeover/<offer id>/<token>}. */
     static final String CLICK_ACTION = "live-takeover";
+    /** The chat button's {@link ChatClickTokens} scope and key: one offer is announced at a time. */
+    static final String TOKEN_SCOPE = CLICK_ACTION;
+    static final long TOKEN_KEY = 1;
     /** How long a won ticket waits for the Live Eye to land and its claim to go out. */
     static final long TICKET_TTL_MS = 55_000;
 
@@ -104,7 +113,7 @@ public final class LiveTakeoverOffer {
     static Component promptLine(Takeover t) {
         MutableComponent button = Component.literal("[").append(Component.translatable("chat.dungeontrain.live.takeover.button")).append("]")
             .withStyle(s -> s.withColor(ChatFormatting.GREEN).withBold(true)
-                .withClickEvent(ChatClick.event(CLICK_ACTION, t.id()))
+                .withClickEvent(ChatClick.event(CLICK_ACTION, t.id(), ChatClickTokens.mint(TOKEN_SCOPE, TOKEN_KEY)))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("chat.dungeontrain.live.takeover.button.tip"))));
         return Component.translatable(offerKey(t), t.from().isEmpty() ? "?" : t.from(), button)
             .withStyle(ChatFormatting.YELLOW);
@@ -162,9 +171,8 @@ public final class LiveTakeoverOffer {
     /** Wire the "[Take the Live Eye]" button ({@code DungeonTrainClient.clientSetup}). */
     public static void registerClicks() {
         ChatClickActions.register(CLICK_ACTION, args -> {
-            String id = args.isEmpty() ? "" : args.get(0);
             Takeover t = offer;
-            if (t != null && !t.id().equals(id)) {
+            if (!clickAllowed(args, t == null ? null : t.id())) {
                 say(Component.translatable("chat.dungeontrain.live.takeover.gone").withStyle(ChatFormatting.GRAY));
                 return;
             }
@@ -172,10 +180,20 @@ public final class LiveTakeoverOffer {
         });
     }
 
+    /**
+     * Whether a chat click {@code [offer id, token]} may take the offer: {@code offerId} is still the open offer and
+     * the token is the one this client printed its button with. Uses the token up.
+     */
+    static boolean clickAllowed(List<String> args, @Nullable String offerId) {
+        if (args.size() != 2 || offerId == null || !offerId.equals(args.get(0))) return false;
+        return ChatClickTokens.consume(TOKEN_SCOPE, TOKEN_KEY, args.get(1));
+    }
+
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         offer = null;
         accepting = false;
+        ChatClickTokens.clear(TOKEN_SCOPE);
     }
 
     private static void say(Component line) {
