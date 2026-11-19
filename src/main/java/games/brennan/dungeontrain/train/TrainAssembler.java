@@ -613,7 +613,7 @@ public final class TrainAssembler {
             // resolved in the anchor's stage — one build, one stage, as the editor authored it.
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
             String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
-            blocks.addAll(StagePlacementScope.with(anchorStage,
+            blocks.addAll(StagePlacementScope.with(anchorStage, games.brennan.dungeontrain.block.flag.FlagRoll.scopeKey(level, anchorPIdx),
                 () -> WholeGroupSelection.place(level, runOrigin, groupPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
         final FullCarriageSelection.FullPick fullPick = wholeGroup ? null : drawnFull;
@@ -639,7 +639,7 @@ public final class TrainAssembler {
                 if (pick != null) {
                     // Stamped verbatim like a slot's lease, under the anchor's stage so a placeholder
                     // block the author's world uploaded never reaches a live train.
-                    RelayPlacement placement = StagePlacementScope.with(fullStage,
+                    RelayPlacement placement = StagePlacementScope.with(fullStage, games.brennan.dungeontrain.block.flag.FlagRoll.scopeKey(level, anchorPIdx),
                         () -> placeRelayLease(level, runOrigin, pick.lease(), groupBox));
                     if (placement == null) {
                         SharedGroupPool.returnLease(pick.lease()); // failed → the Group carriage stands instead
@@ -653,7 +653,7 @@ public final class TrainAssembler {
                 if (groupLease == null) SharedGroupDrift.logFresh(anchorPIdx);
             }
             if (groupLease == null) {
-                blocks.addAll(StagePlacementScope.with(fullStage,
+                blocks.addAll(StagePlacementScope.with(fullStage, games.brennan.dungeontrain.block.flag.FlagRoll.scopeKey(level, anchorPIdx),
                     () -> FullCarriageSelection.place(level, runOrigin, fullPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
             }
         }
@@ -666,7 +666,7 @@ public final class TrainAssembler {
         if (halfGroup) {
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
             String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
-            blocks.addAll(StagePlacementScope.with(anchorStage,
+            blocks.addAll(StagePlacementScope.with(anchorStage, games.brennan.dungeontrain.block.flag.FlagRoll.scopeKey(level, anchorPIdx),
                 () -> HalfCarriageSelection.place(level, runOrigin, halfPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
 
@@ -735,7 +735,7 @@ public final class TrainAssembler {
                 ? null : tryLeaseShared(level, variant, carriagePIdx, dims, genCfg, stageId, onlineUuids);
             if (pick != null) {
                 SharedCarriageClient.PoolLease lease = pick.lease();
-                RelayPlacement placement = StagePlacementScope.with(stageId,
+                RelayPlacement placement = StagePlacementScope.with(stageId, games.brennan.dungeontrain.block.flag.FlagRoll.scopeKey(level, carriagePIdx),
                         () -> placeRelayLease(level, carriageOrigin, lease, dims));
                 if (placement == null) {               // decode/dims/place failure → hand the lease back
                     SharedCarriagePool.returnLease(lease);
@@ -762,7 +762,7 @@ public final class TrainAssembler {
                 WholeCarriageSelection.RoomPick room = WholeCarriageSelection.pickRoom(
                     level, variant, carriagePIdx, dims, genCfg.seed(), gateCtx);
                 if (room != null) {
-                    carriageBlocks = StagePlacementScope.with(stageId,
+                    carriageBlocks = StagePlacementScope.with(stageId, games.brennan.dungeontrain.block.flag.FlagRoll.scopeKey(level, carriagePIdx),
                         () -> WholeCarriageSelection.place(level, carriageOrigin, room, dims, genCfg.seed(), carriagePIdx));
                     roomBySlot[slot] = room;
                     PortalRegistry.get(level).noteStamped(carriagePIdx, false);

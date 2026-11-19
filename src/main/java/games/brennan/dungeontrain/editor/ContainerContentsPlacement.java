@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.block.flag.FlagPlaceholders;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -84,6 +85,11 @@ public final class ContainerContentsPlacement {
                              @Nullable CompoundTag baseBeNbt, String plotKey,
                              BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                              @Nullable String variantLinkedLootPrefabId) {
+        FlagPlaceholders.Resolved flag = FlagPlaceholders.resolveInScope(state, level.registryAccess(), level.getSeed());
+        if (flag != null) {
+            state = flag.state();
+            baseBeNbt = flag.nbt();
+        }
         state = TrappedChestRoll.matchPartner(level, worldPos, state);
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, level);
@@ -124,6 +130,11 @@ public final class ContainerContentsPlacement {
                                      @Nullable String variantLinkedLootPrefabId) {
         // WorldGenLevel is not a Level, so pass null for the optional roll
         // context (used only by the furnace-slot path for recipe lookups).
+        FlagPlaceholders.Resolved flag = FlagPlaceholders.resolveInScope(state, level.registryAccess(), level.getSeed());
+        if (flag != null) {
+            state = flag.state();
+            baseBeNbt = flag.nbt();
+        }
         state = TrappedChestRoll.matchPartner(level, worldPos, state);
         CompoundTag finalNbt = TrappedChestRoll.nbtFor(state, rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null));

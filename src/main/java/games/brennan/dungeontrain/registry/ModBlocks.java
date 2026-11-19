@@ -213,6 +213,7 @@ public final class ModBlocks {
      */
     static {
         StagePlaceholderBlocks.register(BLOCKS, BLOCK_ITEMS);
+        games.brennan.dungeontrain.block.flag.FlagPlaceholders.register(BLOCKS, BLOCK_ITEMS);
     }
 
     private ModBlocks() {}

@@ -2805,6 +2805,7 @@ public final class PortalCarriageEvents {
         }
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)),
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
         // Smaller saves must write where the room now stands: DT's stamp is not a player change, and
