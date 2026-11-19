@@ -2608,7 +2608,7 @@
   "gui.dungeontrain.known_feature.sorting.title": "Penyusunan inventori sudah ada dalam pek",
   "gui.dungeontrain.known_feature.sorting.on": "Ia sudah dihidupkan: guna butang susun pada inventori anda.",
   "gui.dungeontrain.known_feature.trash_slot.title": "Anda sudah ada slot sampah",
-  "gui.dungeontrain.known_feature.trash_slot.body": "Ia disembunyikan pada mulanya. Dalam Pilihan, Kawalan, Kekunci Pintas, tetapkan satu kekunci untuk tunjuk/sembunyi TrashSlot, kemudian tekan kekunci itu semasa inventori dibuka.",
+  "gui.dungeontrain.known_feature.trash_slot.body": "Ia disembunyikan pada mulanya. Dalam Tetapan, Kawalan, Kekunci Pintas, tetapkan satu kekunci untuk tunjuk/sembunyi TrashSlot, kemudian tekan kekunci itu semasa inventori dibuka.",
   "gui.dungeontrain.known_feature.jei.title": "JEI sudah ada dalam pek",
   "gui.dungeontrain.known_feature.jei.on": "Ia sudah dihidupkan: halakan kursor pada item dan tekan R untuk resipi, atau U untuk kegunaannya.",
   "gui.dungeontrain.known_feature.off": "%s disertakan dalam keadaan dimatikan.",

@@ -2608,7 +2608,7 @@
   "gui.dungeontrain.known_feature.sorting.title": "Nasa pack na ang pag-aayos ng inventory",
   "gui.dungeontrain.known_feature.sorting.on": "Naka-on na ito: gamitin ang mga sort button sa inventory mo.",
   "gui.dungeontrain.known_feature.trash_slot.title": "May trash slot ka na",
-  "gui.dungeontrain.known_feature.trash_slot.body": "Nakatago ito sa simula. Sa Mga Opsyon, Mga Kontrol, Ayos ng Pindutan, bigyan ng pindutan ang show/hide key ng TrashSlot, tapos pindutin ito habang bukas ang inventory mo.",
+  "gui.dungeontrain.known_feature.trash_slot.body": "Nakatago ito sa simula. Sa Mga Opsiyon, Mga Kontrol, Ayos ng Pindutan, bigyan ng pindutan ang show/hide key ng TrashSlot, tapos pindutin ito habang bukas ang inventory mo.",
   "gui.dungeontrain.known_feature.jei.title": "Nasa pack na ang JEI",
   "gui.dungeontrain.known_feature.jei.on": "Naka-on na ito: ituro ang cursor sa isang item at pindutin ang R para sa recipe nito, o U para sa gamit nito.",
   "gui.dungeontrain.known_feature.off": "Naka-off ang %s bilang default.",

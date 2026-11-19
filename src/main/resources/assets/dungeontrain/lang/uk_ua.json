@@ -4417,7 +4417,7 @@
   "gui.dungeontrain.options.clear_backups": "Видалити копії",
   "gui.dungeontrain.options.clear_backups.hint": "Видалити всі архіви (%s)",
   "gui.dungeontrain.options.clear_backups.tip": "Видалити всі копії, щоб звільнити місце. Ваші збереження не зачіпаються, але якщо втратите їх пізніше, відновлювати буде нічого.",
-  "gui.dungeontrain.options.confirm_build_restore.tip": "Відновлювати будівлі з локальної копії, якщо на сервері проблеми.",
+  "gui.dungeontrain.options.confirm_build_restore.tip": "Зберігати будівлі з локальної копії, якщо в сервера проблеми.",
   "gui.dungeontrain.backup.data_description": "будівлі та поступ",
   "gui.dungeontrain.options.menu_backdrop": "Фон головного меню",
   "gui.dungeontrain.options.menu_backdrop.hint": "Що видно за головним меню",

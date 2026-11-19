@@ -2613,7 +2613,7 @@
   "gui.dungeontrain.known_feature.jei.on": "Sudah aktif: arahkan kursor ke item lalu tekan R untuk resepnya, atau U untuk kegunaannya.",
   "gui.dungeontrain.known_feature.off": "%s bawaannya nonaktif.",
   "gui.dungeontrain.known_feature.enable.curseforge": "Di aplikasi CurseForge, buka Dungeon Train, lalu Mods, dan aktifkan %s. Setelah itu mulai ulang game.",
-  "gui.dungeontrain.known_feature.enable.modrinth": "Di aplikasi Modrinth, buka Dungeon Train, lalu Content, dan aktifkan %s. Setelah itu mulai ulang game.",
+  "gui.dungeontrain.known_feature.enable.modrinth": "Di aplikasi Modrinth, buka Dungeon Train, lalu Konten, dan aktifkan %s. Setelah itu mulai ulang game.",
   "gui.dungeontrain.known_feature.enable.other": "Aktifkan %s di daftar mod launcher-mu, lalu mulai ulang game.",
   "gui.dungeontrain.known_feature.button.key_binds": "Buka Tombol Pintas",
   "gui.dungeontrain.known_feature.button.roadmap": "Lihat roadmap",

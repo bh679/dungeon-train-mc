@@ -4219,7 +4219,7 @@
   "gui.dungeontrain.editor_menu.block_variant.bed_colours_count": "%s cores",
   "gui.dungeontrain.editor_menu.block_variant.slime_size": "Tamanho",
   "gui.dungeontrain.editor_menu.block_variant.slime_type": "Tipo",
-  "gui.dungeontrain.editor_menu.block_variant.slime_type.chorus": "Chorus",
+  "gui.dungeontrain.editor_menu.block_variant.slime_type.chorus": "Coro",
   "gui.dungeontrain.editor_menu.block_variant.slime_type.mossy": "Musgoso",
   "gui.dungeontrain.editor_menu.block_variant.slime_type.lake": "Lago",
   "gui.dungeontrain.editor_menu.block_variant.slime_type.amber": "Âmbar",
