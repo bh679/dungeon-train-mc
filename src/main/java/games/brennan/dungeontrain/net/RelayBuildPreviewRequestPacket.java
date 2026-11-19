@@ -62,8 +62,10 @@ public record RelayBuildPreviewRequestPacket(int relayId, String ownerUuid, bool
                 BuilderRelayPreview.fetchVersion(player, level, packet.relayId, live, Math.max(0, packet.seq))
                     .thenAccept(v -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
+                        // An index ask with no history answers as -1, never 0: 0 is the build as it
+                        // is now, and a "no picture" there would blank the tile's current picture.
                         int shown = packet.seq > 0 ? packet.seq
-                            : (v.seqs().isEmpty() ? 0 : v.seqs().get(v.seqs().size() - 1));
+                            : (v.seqs().isEmpty() ? -1 : v.seqs().get(v.seqs().size() - 1));
                         DungeonTrainNet.sendTo(player, new RelayBuildPreviewPacket(packet.relayId, shown,
                             v.seqs().stream().mapToInt(Integer::intValue).toArray(),
                             v.attempt().bytes() != null, v.attempt().retryable(),

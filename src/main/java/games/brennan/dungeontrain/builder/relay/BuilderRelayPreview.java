@@ -129,17 +129,28 @@ public final class BuilderRelayPreview {
                 || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
         }
+        if (seq > 0) {
+            // The client names a seq only from the index it already holds, so asking the relay for
+            // the index again would double the cost of every past version. No seqs in the answer:
+            // the client keeps the index it has.
+            return frameOf(level, relayId, seq, live, List.of());
+        }
         return SharedCarriageClient.historyIndex(relayId, live).thenCompose(seqs -> {
             if (seqs == null || seqs.isEmpty()) {
                 return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
             }
-            int want = seq > 0 ? seq : seqs.get(seqs.size() - 1);
-            return SharedCarriageClient.historyFrame(relayId, want, live).thenCompose(frame -> {
-                if (frame == null) {
-                    return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, seqs));
-                }
-                return level.getServer().submit(() -> new Versioned(convertFrame(level, relayId, frame), seqs));
-            });
+            return frameOf(level, relayId, seqs.get(seqs.size() - 1), live, seqs);
+        });
+    }
+
+    /** Fetch and convert one history frame, answering with {@code seqs} as the index. */
+    private static CompletableFuture<Versioned> frameOf(ServerLevel level, int relayId, int seq, boolean live,
+                                                        List<Integer> seqs) {
+        return SharedCarriageClient.historyFrame(relayId, seq, live).thenCompose(frame -> {
+            if (frame == null) {
+                return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, seqs));
+            }
+            return level.getServer().submit(() -> new Versioned(convertFrame(level, relayId, frame), seqs));
         });
     }
 
