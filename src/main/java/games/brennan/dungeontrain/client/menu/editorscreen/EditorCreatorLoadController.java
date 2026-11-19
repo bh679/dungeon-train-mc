@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayPreview;
 import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
@@ -11,6 +12,7 @@ import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
+import games.brennan.dungeontrain.client.menu.OversizedLoadConfirmScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
@@ -181,6 +183,26 @@ final class EditorCreatorLoadController {
         // One fetch at a time: the pane withholds the button while a Load is out, and nothing else
         // should get to send the same build down twice either.
         if (entry == null || loading) return;
+        if (confirmOversized(entry, () -> loadNow(entry))) return;
+        loadNow(entry);
+    }
+
+    /**
+     * Ask first when {@code entry} is known to be too big to preview: opens the confirm and answers
+     * true, so the caller sends nothing yet. "Load anyway" pops the confirm and runs {@code press}.
+     * Unknown size (its preview has not answered) loads without asking.
+     */
+    private boolean confirmOversized(BuilderProfilePacket.Entry entry, Runnable press) {
+        BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.tooBigToSend(entry.relayId());
+        if (oversize == null) return false;
+        host.modal().open(new OversizedLoadConfirmScreen(EditorCreatorBuilds.label(entry), oversize, () -> {
+            host.modal().pop();
+            if (!loading && entry.equals(selected())) press.run();
+        }));
+        return true;
+    }
+
+    private void loadNow(BuilderProfilePacket.Entry entry) {
         boolean live = BuilderProfileState.live();
         // The row's own owner, not the builder being viewed: the pooled listing spans them.
         String owner = EditorCreatorBuilds.ownerOf(entry);
@@ -240,6 +262,11 @@ final class EditorCreatorLoadController {
     void stageSelected() {
         BuilderProfilePacket.Entry entry = selected();
         if (entry == null || loading) return;
+        if (confirmOversized(entry, () -> stageNow(entry))) return;
+        stageNow(entry);
+    }
+
+    private void stageNow(BuilderProfilePacket.Entry entry) {
         lastDownload = null;
         lastStageRelayId = entry.relayId();
         DungeonTrainNet.sendToServer(new WorkbenchStagePacket(entry.relayId(),
@@ -385,32 +412,27 @@ final class EditorCreatorLoadController {
      * has of it.
      *
      * <p>A change of selection resets to the build as it is now, because a seq belongs to one relay
-     * row and means nothing in another's history. The index ask goes out once per build — the cache
-     * remembers the answer, including "no versions", so this costs a map lookup a frame after
-     * that.</p>
+     * row and means nothing in another's history. Naming the build as selected every frame is what
+     * puts its picture, its version index and its whole history ahead of every other build's — the
+     * cache remembers each answer, "no versions" included, so a frame after that costs lookups.</p>
      */
     void trackVersionsOf(int relayId, String ownerUuid) {
         if (relayId != previewRelayId) {
             previewRelayId = relayId;
             previewSeq = 0;
         }
-        if (relayId > 0 && RelayBuildPreviews.versions(relayId) == null) {
-            // -1: the newest recorded frame, and the index of every seq with it.
-            RelayBuildPreviews.request(relayId, ownerUuid, BuilderProfileState.live(), -1);
-        }
+        RelayBuildPreviews.select(relayId, ownerUuid, BuilderProfileState.live(), previewSeq);
     }
 
-    /** Step the preview one version older or newer, and fetch it if it is not here yet. */
+    /**
+     * Step the preview one version older or newer. The selected build's history is already on its
+     * way at the front of the queue, and the version paged to goes to the very front next frame.
+     */
     void pageVersion(boolean older) {
         int[] seqs = RelayBuildPreviews.versions(previewRelayId);
         if (seqs == null || seqs.length == 0) return;
         int next = older ? VersionStrip.older(seqs, previewSeq) : VersionStrip.newer(seqs, previewSeq);
         if (next == previewSeq) return;
         previewSeq = next;
-        if (next != 0) {
-            RelayBuildPreviews.request(previewRelayId,
-                EditorCreatorBuilds.active() ? EditorCreatorBuilds.ownerOf(selected()) : "",
-                BuilderProfileState.live(), next);
-        }
     }
 }

@@ -182,7 +182,8 @@ public final class PortalChunkDimension {
         // This runs from the level tick, outside the stamp's stage scope — open it again so the
         // frame's stage placeholders resolve as they would have inside the stamp.
         games.brennan.dungeontrain.train.StagePlacementScope.run(
-            PortalCarriageBuilder.stageIdFor(level, pairKey, dims), () -> dress(level, structure, dims, pour.slice(), pairKey));
+            PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> dress(level, structure, dims, pour.slice(), pairKey));
         // A sample decorated before its room was stamped needs no second pass: this was it.
         if (PortalChunkTerrain.decorated().contains(pairKey) && PortalChunkTerrain.peek(pairKey) == pour.slice()) {
             spawnOccupants(level, structure, dims, pour.slice(), pairKey);

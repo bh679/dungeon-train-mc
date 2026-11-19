@@ -1,0 +1,17 @@
+{
+  "id": "editor-oversized-builds",
+  "version": "0.1893.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "ui"
+  ],
+  "title": "Big builds flagged in the editor",
+  "summary": "In the editor's build browser, a build too big to preview now says Oversized with its block count, and loading it into your world asks you to confirm first.",
+  "highlights": [],
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

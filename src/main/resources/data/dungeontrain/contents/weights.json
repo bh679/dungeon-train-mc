@@ -100,6 +100,31 @@
     "weight": 9,
     "name": "Odd ones"
   },
+  "enemies_outside": {
+    "weight": 1,
+    "minLevel": 5,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "name": "Enemies Outside",
+    "optIn": true
+  },
   "enemies_path": {
     "weight": 1,
     "minLevel": 1,

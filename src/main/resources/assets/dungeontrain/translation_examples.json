@@ -5120,6 +5120,34 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.creator.oversized_size": {
+    "1": {
+      "label": "the build's name, as its creator typed it",
+      "examples": [
+        "Grand Hall"
+      ]
+    },
+    "2": {
+      "label": "the build's size in blocks, length by height by width",
+      "examples": [
+        "64×64×64"
+      ]
+    },
+    "3": {
+      "label": "how many blocks the build holds, already formatted with thousands separators",
+      "examples": [
+        "63,669"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": {
+    "1": {
+      "label": "how many blocks the build holds, already formatted with thousands separators",
+      "examples": [
+        "63,669"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sub_variants_of": {
     "1": {
       "label": "the name of the group template whose sub-variants are listed",
@@ -7088,6 +7116,15 @@
       "examples": [
         "On",
         "Off"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.entrance": {
+    "1": {
+      "label": "the Entrance setting, already translated",
+      "examples": [
+        "Two-way",
+        "One-way"
       ]
     }
   },
@@ -11741,6 +11778,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_drift_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_entrance_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [
@@ -16989,6 +17036,22 @@
       ]
     }
   },
+  "chat.dungeontrain.workbench.send.sent": {
+    "1": {
+      "label": "the name of the player who built it",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.suggestion.title": {
+    "1": {
+      "label": "the build's name",
+      "examples": [
+        "Brick Cabin"
+      ]
+    }
+  },
   "chat.dungeontrain.workbench.committed": {
     "1": {
       "label": "the staged build's Workbench id",
@@ -17007,6 +17070,26 @@
       "label": "the template name it landed under",
       "examples": [
         "brick_cabin"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.committed_renamed": {
+    "1": {
+      "label": "the template name that was asked for but already in use",
+      "examples": [
+        "brick_cabin"
+      ]
+    },
+    "2": {
+      "label": "the kind it became",
+      "examples": [
+        "contents"
+      ]
+    },
+    "3": {
+      "label": "the free name it landed under instead",
+      "examples": [
+        "brick_cabin_2"
       ]
     }
   },
@@ -18600,6 +18683,37 @@
       "examples": [
         "You already have a trash slot",
         "Multiplayer is coming"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.confirm": {
+    "1": {
+      "label": "the name of the Kick or Twitch account being reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    },
+    "2": {
+      "label": "the streaming site the message came from",
+      "examples": [
+        "Kick",
+        "Twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.done": {
+    "1": {
+      "label": "the name of the Kick or Twitch account that was reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.relink": {
+    "1": {
+      "label": "the in-game command that gives a link code",
+      "examples": [
+        "/discord"
       ]
     }
   }

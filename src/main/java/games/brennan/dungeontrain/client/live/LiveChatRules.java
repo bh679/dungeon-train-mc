@@ -121,7 +121,7 @@ public final class LiveChatRules {
      * {@code [Live] <icon> Name: text} — the prefix grey, the source icon, the text plain, the name
      * coloured by room so the reader knows where to answer: Discord aqua, Twitch light purple, another
      * world green. Plain literals with no click or hover events, cleaned again here in case a line was
-     * built elsewhere.
+     * built elsewhere; the one exception is {@link LiveBotReport}'s {@code [⚑]} after a Kick or Twitch line.
      */
     public static MutableComponent line(ChatLine line) {
         return line(line, line.content(), Style.EMPTY.withColor(ChatFormatting.WHITE));
@@ -148,7 +148,11 @@ public final class LiveChatRules {
         out.append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(name))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
         if (flag != null) out.append(flag).append(" ");
-        return out.append(Component.literal(clean(content, MAX_CONTENT)).withStyle(contentStyle));
+        out.append(Component.literal(clean(content, MAX_CONTENT)).withStyle(contentStyle));
+        // A Discord-linked reader can report a Kick or Twitch line as a bot (LiveBotReport): the only click on the line.
+        MutableComponent report = LiveBotReport.chip(line);
+        if (report != null) out.append(Component.literal(" ")).append(report);
+        return out;
     }
 
     /** The English the relay adds after a death message ({@code POST /live/chat/died}). */

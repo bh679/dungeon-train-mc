@@ -227,6 +227,17 @@ public final class EditorMenuPortalRows {
     }
 
     /**
+     * The Entrance row — Two-way, or One-way: once through the entrance hallway's portal the way
+     * back is closed and the exit is the way out. Shown for every portal room.
+     */
+    public static CommandMenuEntry entranceRowFor(String currentMode, String prefix) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.entranceLabel(currentMode),
+            prefix + " entrance next");
+    }
+
+    /**
      * The Exits row, or null unless the walls repeat — only an endless room has anywhere to put an
      * extra way back to the train.
      *
@@ -357,6 +368,11 @@ public final class EditorMenuPortalRows {
     /** {@link #roomFogRowFor(String, String)} for the room the author is standing in. */
     public static CommandMenuEntry roomFogRowFor(String currentMode) {
         return roomFogRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #entranceRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry entranceRowFor(String currentMode) {
+        return entranceRowFor(currentMode, STOOD_IN_PREFIX);
     }
 
     /** {@link #exitsRowFor(String, String)} for the room the author is standing in. */

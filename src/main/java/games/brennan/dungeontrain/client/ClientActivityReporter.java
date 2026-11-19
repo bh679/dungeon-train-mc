@@ -312,7 +312,7 @@ public final class ClientActivityReporter {
      * Is the current pause the pause menu, or a settings screen reached from it? {@link AfkAutoPause}
      * never opens the pause menu over itself.
      */
-    static boolean onGameMenu() {
+    public static boolean onGameMenu() {
         return reportedPaused && pauseKind == ClientInputPacket.PAUSE_GAME_MENU;
     }
 

@@ -34,7 +34,8 @@ final class SubmissionPage {
 
     private static final int LINE_H = 10;
     private static final int SECTION_GAP = 4;
-    private static final int BUTTON_H = 14;
+    /** Height of the Edit button and the verdict row — what a pane reserves to put the row on another page. */
+    static final int BUTTON_H = 14;
     private static final int ICON = 10;
     private static final int TEXT = 0xFFFFFFFF;
     private static final String ELLIPSIS = "…";
@@ -190,6 +191,24 @@ final class SubmissionPage {
         }
         if (tip != null) g.renderTooltip(font, tip, mouseX, mouseY);
         return new Buttons(button, verdicts[0], verdicts[1], verdicts[2], verdicts[3]);
+    }
+
+    /**
+     * The verdict row on its own, in {@code r} — for a pane that wants it in sight on its first page
+     * rather than only under the answers. Same cells, icons and tooltips as the row under the answers.
+     */
+    static Buttons drawVerdicts(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, String review,
+                                int mouseX, int mouseY) {
+        InventoryEditorLayout.Rect[] verdicts = verdictRects(r.x(), r.y(), r.w());
+        String current = BuilderReviewState.of(review);
+        Component tip = null;
+        for (int i = 0; i < VERDICTS.size(); i++) {
+            Verdict v = VERDICTS.get(i);
+            boolean hov = drawIconButton(g, verdicts[i], v.icon(), current.equals(v.review()) ? v.colour() : 0, mouseX, mouseY);
+            if (hov) tip = Component.translatable(v.labelKey());
+        }
+        if (tip != null) g.renderTooltip(font, tip, mouseX, mouseY);
+        return new Buttons(null, verdicts[0], verdicts[1], verdicts[2], verdicts[3]);
     }
 
     /** Equal cells across {@code width}, one per verdict, the gaps between them taken out of the last. */

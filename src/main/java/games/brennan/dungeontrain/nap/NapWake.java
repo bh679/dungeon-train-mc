@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.nap;
 
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ReverseSlide;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +74,11 @@ public final class NapWake {
     private static final Map<UUID, Double> PLACE_AT = new HashMap<>();
     /** Owners whose waiting nap was refused at this server start, to be told at login. Server thread. */
     private static final java.util.Set<UUID> NOT_WOKEN = new java.util.HashSet<>();
+    /**
+     * Owners waking a nap whose file was changed outside the game, and whether this start put the
+     * session's profile-tamper mark on them ({@link ProfileIntegrity#markTampered}). Server thread.
+     */
+    private static final Map<UUID, Boolean> TAMPERED_WAKE = new HashMap<>();
 
     private NapWake() {}
 
@@ -96,10 +103,13 @@ public final class NapWake {
         if (wakeBoundHere(server, store, uuid, here)) return;
         if (!isFreshRunWorld(server, uuid)) return;
         String slot = NapSlot.forNewWorld(server);
-        Optional<NapSnapshot> nap = store.load(uuid, slot);
+        Optional<NapStore.Loaded> loaded = store.loadChecked(uuid, slot);
+        Optional<NapSnapshot> nap = loaded.map(NapStore.Loaded::nap);
+        boolean tampered = loaded.map(NapStore.Loaded::tampered).orElse(false);
         if (nap.isEmpty() && store.hasFile(uuid, slot)) NOT_WOKEN.add(uuid); // refused and kept: say so
         if (nap.isEmpty() || nap.get().levelId().equals(here)) return;
-        if (!NapSlot.matches(slot, nap.get())) {
+        // A tampered nap now reads as Free Play wherever it sat, so only its difficulty is held to the slot.
+        if (!NapSlot.matches(slot, nap.get(), !tampered)) {
             NOT_WOKEN.add(uuid);
             LOGGER.warn("[DungeonTrain] Nap {} is a {} {} run but sits in slot {}; not waking it.", nap.get().napId(),
                 nap.get().cheated() ? "freeplay" : "survival", nap.get().difficulty(), slot);
@@ -119,7 +129,7 @@ public final class NapWake {
             LOGGER.warn("[DungeonTrain] Nap {} could not be bound to '{}'; not waking it.", nap.get().napId(), here, e);
             return;
         }
-        plan(server, uuid, slot, bound);
+        plan(server, uuid, slot, bound, tampered);
     }
 
     /**
@@ -136,19 +146,24 @@ public final class NapWake {
                     store.consume(owner, p.slot(), p.nap());
                     LOGGER.info("[DungeonTrain] Nap {} already loaded into '{}'; used up.", p.nap().napId(), here);
                 } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] Nap {} could not be marked used", p.nap().napId(), e);
+                    LOGGER.error("[DungeonTrain] Nap {} could not be marked used; its file is removed anyway", p.nap().napId(), e);
                 }
                 continue;
             }
             LOGGER.info("[DungeonTrain] Nap {} never finished loading into '{}'; waking it again.",
                 p.nap().napId(), here);
-            plan(server, owner, p.slot(), p.nap());
+            plan(server, owner, p.slot(), p.nap(), p.tampered());
             return true;
         }
         return false;
     }
 
-    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot napped) {
+    private static void plan(MinecraftServer server, UUID owner, String slot, NapSnapshot napped, boolean tampered) {
+        if (tampered) {
+            // Free Play from now, not from login: what the nap carries (its player, advancements, stats)
+            // reaches this world before the login event, and every persistence gate reads this mark.
+            TAMPERED_WAKE.put(owner, ProfileIntegrity.markTampered(owner, "The rest file " + slot));
+        }
         NapSnapshot nap = napped.withX(wakeX(server, napped));
         planned = new Plan(owner, slot, nap);
         RunRestore.raiseWorldProgress(server.overworld(), nap.worldDepth());
@@ -275,7 +290,7 @@ public final class NapWake {
             NapStore.local().consume(plan.owner(), plan.slot(), plan.nap());
             LOGGER.info("[DungeonTrain] Nap {} loaded in and used up", plan.nap().napId());
         } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Nap {} could not be marked used", plan.nap().napId(), e);
+            LOGGER.error("[DungeonTrain] Nap {} could not be marked used; its file is removed anyway", plan.nap().napId(), e);
         }
     }
 
@@ -293,6 +308,14 @@ public final class NapWake {
         return NOT_WOKEN.remove(player);
     }
 
+    /**
+     * Whether {@code player} is waking a tampered nap, once: present when so, holding whether this start
+     * put the profile-tamper mark on them (so it can be lifted once the run itself carries Free Play).
+     */
+    static Optional<Boolean> takeTamperedWake(UUID player) {
+        return Optional.ofNullable(TAMPERED_WAKE.remove(player));
+    }
+
     static Optional<NapSnapshot> takeWoken(UUID player) {
         return Optional.ofNullable(WOKEN.remove(player));
     }
@@ -304,6 +327,7 @@ public final class NapWake {
         WOKEN.clear();
         PLACE_AT.clear();
         NOT_WOKEN.clear();
+        TAMPERED_WAKE.clear();
     }
 
     /** The nap's player tag with the old world's whereabouts removed, standing at this world's spawn. */
@@ -355,12 +379,29 @@ public final class NapWake {
         if (server == null || server.isDedicatedServer() || profile == null || profile.getId() == null) return false;
         GameProfile owner = server.getSingleplayerProfile();
         if (owner == null || !profile.getId().equals(owner.getId())) return false;
+        return isNappedWorld(server);
+    }
+
+    /**
+     * True when this integrated server's owner has a pending nap taken in this world. From the moment
+     * a nap is saved until the host leaves the farewell pages the server still runs, so a LAN guest
+     * could join a world that is about to be deleted; {@code mixin/PlayerListNapWorldRefuseMixin}
+     * refuses them on this.
+     */
+    public static boolean isNappedWorld(MinecraftServer server) {
+        if (server == null || server.isDedicatedServer()) return false;
+        GameProfile owner = server.getSingleplayerProfile();
+        if (owner == null || owner.getId() == null) return false;
         String here = NapService.levelIdOf(server);
         if (here == null) return false;
-        for (NapStore.Pending p : NapStore.local().pending(owner.getId())) {
-            if (here.equals(p.nap().levelId())) return true;
-        }
-        return false;
+        List<String> napped = NapStore.local().pending(owner.getId()).stream()
+            .map(p -> p.nap().levelId()).toList();
+        return napNames(here, napped);
+    }
+
+    /** True when {@code here} is one of the worlds the pending naps were taken in. */
+    static boolean napNames(String here, Collection<String> pendingLevelIds) {
+        return here != null && pendingLevelIds.contains(here);
     }
 
     /** A run world nobody has played yet: DT generated its name, it has a train, and no saved player. */

@@ -36,9 +36,18 @@ public final class NapSlot {
      * (empty) is judged on its Free Play flag alone.
      */
     public static boolean matches(String slot, NapSnapshot nap) {
+        return matches(slot, nap, true);
+    }
+
+    /**
+     * {@link #matches}, with the Free Play/Survival half checked only when {@code checkKind}: a nap whose
+     * file was changed outside the game reads as Free Play whatever slot it sat in, and wakes as Free Play.
+     */
+    public static boolean matches(String slot, NapSnapshot nap, boolean checkKind) {
         String kind = (nap.cheated() ? "freeplay" : "survival") + "-";
-        if (nap.difficulty().isEmpty()) return slot.startsWith(kind);
+        if (nap.difficulty().isEmpty()) return !checkKind || slot.startsWith(kind);
         Difficulty recorded = Difficulty.byName(nap.difficulty());
-        return recorded != null && slot.equals(key(nap.cheated(), recorded));
+        if (recorded == null) return false;
+        return checkKind ? slot.equals(key(nap.cheated(), recorded)) : slot.endsWith("-" + DifficultyPartition.keyFor(recorded));
     }
 }
