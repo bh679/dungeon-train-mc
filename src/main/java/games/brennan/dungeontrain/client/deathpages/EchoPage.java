@@ -58,16 +58,17 @@ public final class EchoPage {
         static Layout fit(int room, int width, int minTextW) {
             int pad = room >= 160 ? EDGE : 3;
             int contentH = Math.max(MIN_CONTENT_H, Math.min(MAX_CONTENT_H, room - 2 * pad));
-            int size = Math.round((contentH - NAME_TAG_H - 6) / PORTRAIT_FIT * PORTRAIT_SCALE);
+            int size = Math.round((contentH - NAME_TAG_H - 6 - (EchoPaint.ARMOR_ICON + 4)) / PORTRAIT_FIT * PORTRAIT_SCALE);
             // The echo's column is about as wide as the model and its swings need; the tabs take
             // the rest of the width.
             int portraitW = Math.max(60, Math.min(120, Math.round(size * 1.7F)));
-            int textW = Math.max(Math.max(EchoInventoryTab.MIN_W, minTextW), width - (EDGE + portraitW + EDGE + EDGE));
+            int worn = 2 * (EchoPaint.SLOT + 4);
+            int textW = Math.max(Math.max(EchoInventoryTab.MIN_W, minTextW), width - (EDGE + portraitW + worn + EDGE + EDGE));
             return new Layout(pad, contentH, portraitW, size, textW);
         }
 
         int panelW() {
-            return EDGE + portraitW + EDGE + textW + EDGE;
+            return EDGE + portraitW + 2 * (EchoPaint.SLOT + 4) + EDGE + textW + EDGE;
         }
 
         int panelH() {
@@ -112,14 +113,27 @@ public final class EchoPage {
         g.fill(x0, y, x0 + panelW, y + panelH, chrome.fade(PANEL_BG));
 
         // ---- The echo, always in view, with its name floating above it like an in-game name tag.
+        // The Inventory tab stands the worn gear around it, like the vanilla inventory: armour left,
+        // offhand right, the armour bar under its feet. That room is kept on both tabs, so the echo
+        // never moves when the tab changes; the gear just isn't drawn on Statistics.
+        boolean wornAround = tab == Tab.INVENTORY;
+        int wornW = EchoPaint.SLOT + 4;
         int portX = x0 + EDGE;
-        int portW = l.portraitW();
+        int portW = l.portraitW() + 2 * wornW;
+        int feetY = top + topH - 4 - (EchoPaint.ARMOR_ICON + 4);
+        inventory.begin();
         if (settled && portrait.available()) {
             EchoPersonality.Kind kind = TEMP_PREVIEW_KIND != null ? TEMP_PREVIEW_KIND : echo.personality();
-            g.enableScissor(portX, top, portX + portW, top + topH);
+            g.enableScissor(portX + wornW, top, portX + portW - wornW, top + topH);
             portrait.renderEcho(g, echo.appearance(), kind, echo.reactionSpeed(),
-                    portX + portW / 2, top + topH - 4, l.portraitSize());
+                    portX + portW / 2, feetY, l.portraitSize());
             g.disableScissor();
+        }
+        if (wornAround) {
+            int columnH = 4 * EchoPaint.SLOT + 3 * EchoPaint.GAP;
+            int colY = feetY - columnH;
+            inventory.drawWorn(g, echo, portX, colY, portX + portW - EchoPaint.SLOT, feetY - EchoPaint.SLOT,
+                    portX + (portW - EchoPaint.ARMOR_BAR_W) / 2, top + topH - EchoPaint.ARMOR_ICON - 1, settled);
         }
         drawNameTag(g, font, echoName(), portX + portW / 2, top + 2);
 
@@ -146,7 +160,7 @@ public final class EchoPage {
             EchoPersonality.Kind kind = TEMP_PREVIEW_KIND != null ? TEMP_PREVIEW_KIND : echo.personality();
             stats.draw(g, echo, kind, tx, by, tw, bh, settled);
         } else {
-            inventory.draw(g, echo, tx, by, tw, bh, mouseX, mouseY, settled);
+            inventory.drawGrid(g, echo, tx, by, tw, bh, mouseX, mouseY, settled);
         }
         return y + panelH;
     }
