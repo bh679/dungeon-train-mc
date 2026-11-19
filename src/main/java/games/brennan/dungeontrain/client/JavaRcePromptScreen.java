@@ -188,7 +188,7 @@ public final class JavaRcePromptScreen extends Screen {
     private int controlsHeight() {
         return switch (page) {
             case MAIN -> font.lineHeight + 2 + BUTTON_H + BUTTON_GAP + font.lineHeight;
-            case UPDATE, ARGS -> BUTTON_H + BUTTON_GAP + BUTTON_H;
+            case UPDATE, ARGS -> BUTTON_H;
             case CONFIRM -> CHECKBOX_H + BUTTON_GAP + BUTTON_H;
         };
     }
@@ -220,34 +220,25 @@ public final class JavaRcePromptScreen extends Screen {
             case UPDATE -> {
                 // Blue is the step the page asks for first. Every update ends in a restart, so Quit is
                 // always here; for a launcher-managed Java quitting IS the step (the launcher updates
-                // its Java on the next start).
-                int row2 = y + BUTTON_H + BUTTON_GAP;
+                // its Java on the next start). Own Java leaves Use Arguments to the main card: never
+                // more than three controls on a page.
                 if (setup.manager() == JavaSetup.Manager.OWN) {
-                    addRenderableWidget(new DarkTintedButton(left, y, half, BUTTON_H,
-                        Component.translatable(K + "download", setup.vendor().displayName),
-                        b -> openLink(setup.vendor().downloadUrl(setup.feature())), 0.45F, 0.60F, 1.25F));
-                    addRenderableWidget(Button.builder(QUIT, b -> quitGame()).bounds(rightX, y, rightW, BUTTON_H).build());
-                    addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
-                        .bounds(left, row2, half, BUTTON_H).build());
-                    addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
-                        .bounds(rightX, row2, rightW, BUTTON_H).build());
+                    addRow(left, y, inner,
+                        (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H,
+                            Component.translatable(K + "download", setup.vendor().displayName),
+                            b -> openLink(setup.vendor().downloadUrl(setup.feature())), 0.45F, 0.60F, 1.25F),
+                        (x, w) -> Button.builder(QUIT, b -> quitGame()).bounds(x, y, w, BUTTON_H).build());
                 } else {
-                    addRenderableWidget(new DarkTintedButton(left, y, half, BUTTON_H, QUIT, b -> quitGame(),
-                        0.45F, 0.60F, 1.25F));
-                    addRenderableWidget(Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
-                        .bounds(rightX, y, rightW, BUTTON_H).build());
-                    addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
-                        .bounds(left, row2, inner, BUTTON_H).build());
+                    addRow(left, y, inner,
+                        (x, w) -> new DarkTintedButton(x, y, w, BUTTON_H, QUIT, b -> quitGame(), 0.45F, 0.60F, 1.25F),
+                        (x, w) -> Button.builder(Component.translatable(K + "opt_args"), b -> show(Page.ARGS))
+                            .bounds(x, y, w, BUTTON_H).build());
                 }
             }
-            case ARGS -> {
-                // Copy, paste into the launcher, restart: Quit sits beside Copy for the last step.
-                copyButton = addRenderableWidget(Button.builder(Component.translatable(K + "copy"), b -> copyArgument())
-                    .bounds(left, y, half, BUTTON_H).build());
-                addRenderableWidget(Button.builder(QUIT, b -> quitGame()).bounds(rightX, y, rightW, BUTTON_H).build());
-                addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
-                    .bounds(left, y + BUTTON_H + BUTTON_GAP, inner, BUTTON_H).build());
-            }
+            case ARGS -> addRow(left, y, inner,
+                (x, w) -> copyButton = Button.builder(Component.translatable(K + "copy"), b -> copyArgument())
+                    .bounds(x, y, w, BUTTON_H).build(),
+                (x, w) -> Button.builder(QUIT, b -> quitGame()).bounds(x, y, w, BUTTON_H).build());
             case CONFIRM -> {
                 Component label = Component.translatable(K + "dont_show_again");
                 int boxW = Checkbox.getBoxSize(font) + 4 + font.width(label);
@@ -256,12 +247,34 @@ public final class JavaRcePromptScreen extends Screen {
                     .selected(dontShowAgain)
                     .build());
                 int by = y + CHECKBOX_H + BUTTON_GAP;
-                addRenderableWidget(Button.builder(Component.translatable(K + "back"), b -> show(Page.MAIN))
-                    .bounds(left, by, half, BUTTON_H).build());
-                addRenderableWidget(Button.builder(Component.translatable(K + "continue"), b -> continueAnyway())
-                    .bounds(rightX, by, rightW, BUTTON_H).build());
+                addRow(left, by, inner,
+                    (x, w) -> Button.builder(Component.translatable(K + "continue"), b -> continueAnyway())
+                        .bounds(x, by, w, BUTTON_H).build());
             }
         }
+    }
+
+    /** Builds one button into the slot {@code x}, {@code w} that {@link #addRow} hands it. */
+    @FunctionalInterface
+    private interface Slot {
+        Button make(int x, int w);
+    }
+
+    /**
+     * One row: the wide buttons share the width equally, then a compact Back sized to its label at
+     * the right end. Every page except the main card ends in exactly one of these.
+     */
+    private void addRow(int left, int y, int inner, Slot... wide) {
+        Component back = Component.translatable(K + "back");
+        int backW = font.width(back) + 12;
+        int wideTotal = inner - backW - wide.length * BUTTON_GAP;
+        int x = left;
+        for (int i = 0; i < wide.length; i++) {
+            int w = i == wide.length - 1 ? wideTotal - (wide.length - 1) * (wideTotal / wide.length) : wideTotal / wide.length;
+            addRenderableWidget(wide[i].make(x, w));
+            x += w + BUTTON_GAP;
+        }
+        addRenderableWidget(Button.builder(back, b -> show(Page.MAIN)).bounds(x, y, backW, BUTTON_H).build());
     }
 
     /** Vanilla's own "Quit Game", already translated in every language. */
