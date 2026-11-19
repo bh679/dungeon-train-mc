@@ -74,7 +74,8 @@ class PaymentLinkSignatureTest {
         PaymentLinkSignature.setKeysForTest(null);
         String signed = "{\"v\":1,\"key\":\"payment\",\"url\":\"https://revolut.me/brennacg7?currency=AUD&amount=2500&note=Dungeon%20Train%20\",\"iat\":1795060948021}";
         String sig = "vFdDUzNpe7QJ7utkYPuxXqC5c+Rsf7losmqySua87Xm+rK4o+rherFEIZbwCxh2hL8zbIsC989cc4fClNgZoCA==";
-        assertEquals(OfficialLinks.FALLBACK_PAYMENT, PaymentLinkSignature.verifiedUrl("payment", signed, sig));
+        assertEquals("https://revolut.me/brennacg7?currency=AUD&amount=2500&note=Dungeon%20Train%20",
+                PaymentLinkSignature.verifiedUrl("payment", signed, sig));
         assertNull(PaymentLinkSignature.verifiedUrl("patreon", signed, sig));
     }
 

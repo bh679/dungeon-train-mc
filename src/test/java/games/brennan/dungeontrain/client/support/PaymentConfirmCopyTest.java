@@ -41,7 +41,8 @@ class PaymentConfirmCopyTest {
         // Title and amount survive the swap; a null URL keeps the relay wording; other providers are untouched.
         assertEquals(SupportTier.HELP_DEV.amountKey(), PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV, raw).amountKey());
         assertEquals(PaymentConfirmCopy.BODY_STRIPE, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV, null).bodyKey());
-        assertEquals(PaymentConfirmCopy.BODY_PATREON, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, raw).bodyKey());
+        assertEquals(PaymentConfirmCopy.BODY_PATREON,
+                PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, "https://www.patreon.com/brennanhatton").bodyKey());
         assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DISCORD, raw));
         assertEquals(false, PaymentConfirmCopy.onRelay("not a url"));
         assertEquals(true, PaymentConfirmCopy.onRelay("https://dungeon.training/pay"));
@@ -59,6 +60,25 @@ class PaymentConfirmCopyTest {
         assertEquals(LinkPolicy.KEY_PAYMENT_CN, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_CN).linkKey());
         assertEquals(LinkPolicy.KEY_PATREON, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON).linkKey());
         assertEquals(LinkPolicy.KEY_PAYMENT, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE).linkKey());
+    }
+
+    @Test
+    void aSignedLinkOnAnotherProvidersHostGetsVanillasScreenNotTheWrongName() {
+        // Payment links may point at any signed host; the provider-named words must not lie about it.
+        String elsewhere = "https://pay.example.com/brennan?note=Steve";
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV, elsewhere));
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE, elsewhere));
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, elsewhere));
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_CN, elsewhere));
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE, "https://buy.stripe.com/x"), "Stripe is not Revolut");
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, "https://brennan.games/x"));
+        // Each provider's own host keeps its words; Stripe's also on our relay's checkout route.
+        assertEquals(PaymentConfirmCopy.TITLE_REVOLUT,
+                PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE, "https://revolut.me/brennacg7?note=x").titleKey());
+        assertEquals(PaymentConfirmCopy.TITLE_PATREON,
+                PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, "https://patreon.com/brennanhatton").titleKey());
+        assertEquals(PaymentConfirmCopy.TITLE_STRIPE, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV,
+                "https://checkout.stripe.com/c/pay/cs_1").titleKey());
     }
 
     @Test

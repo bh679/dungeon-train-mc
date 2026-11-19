@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client.support;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.LinkPolicy;
 
+import java.util.Set;
+
 /**
  * Which words {@link PaymentConfirmScreen} says for a given analytics target, or nothing at all
  * when the target is not a payment link.
@@ -59,8 +61,31 @@ public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountK
      */
     public static PaymentConfirmCopy forTarget(String analyticsTarget, String url) {
         PaymentConfirmCopy copy = resolve(analyticsTarget);
-        if (copy == null || !BODY_STRIPE.equals(copy.bodyKey()) || url == null || onRelay(url)) return copy;
+        if (copy == null || url == null) return copy;
+        // A signed payment link may point at any provider, but these words name one. On a host they
+        // do not describe, say nothing: vanilla's confirm screen shows the whole URL instead.
+        if (!hostFits(copy, url)) return null;
+        if (!BODY_STRIPE.equals(copy.bodyKey()) || onRelay(url)) return copy;
         return new PaymentConfirmCopy(copy.titleKey(), BODY_STRIPE_DIRECT, copy.amountKey(), copy.linkKey());
+    }
+
+    private static final Set<String> STRIPE_HOSTS = Set.of("buy.stripe.com", "checkout.stripe.com");
+    private static final Set<String> PATREON_HOSTS = Set.of("www.patreon.com", "patreon.com");
+    private static final Set<String> REVOLUT_HOSTS = Set.of("revolut.me");
+
+    /**
+     * Whether {@code url} goes where this copy says it does: Stripe wording on Stripe or on our own
+     * domains (the relay's checkout routes, which hand over to Stripe), Patreon's on Patreon,
+     * Revolut's on Revolut. A local test relay's loopback link fits the Stripe wording too.
+     */
+    static boolean hostFits(PaymentConfirmCopy copy, String url) {
+        String host = LinkPolicy.hostOf(url);
+        if (host == null) return false;
+        return switch (copy.titleKey()) {
+            case TITLE_PATREON -> PATREON_HOSTS.contains(host);
+            case TITLE_REVOLUT -> REVOLUT_HOSTS.contains(host);
+            default -> STRIPE_HOSTS.contains(host) || onRelay(url) || LinkPolicy.isLocalRelayLoopback(url);
+        };
     }
 
     /** Whether {@code url}'s host is one of ours (brennan.games, dungeon.training or a subdomain). */

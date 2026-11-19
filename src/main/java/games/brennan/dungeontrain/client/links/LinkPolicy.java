@@ -66,7 +66,7 @@ public final class LinkPolicy {
      * True when a local test relay is in use and {@code url} points at loopback. Such a relay cannot
      * sign with the real key, so its payment links are taken unsigned; nothing else is.
      */
-    static boolean isLocalRelayLoopback(String url) {
+    public static boolean isLocalRelayLoopback(String url) {
         URI uri = parse(url);
         return uri != null && localRelay() && LOOPBACK.contains(uri.getHost().toLowerCase(Locale.ROOT));
     }
