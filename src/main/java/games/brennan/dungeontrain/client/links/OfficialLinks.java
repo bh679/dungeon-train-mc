@@ -18,9 +18,10 @@ import java.util.Map;
  * attempt failed, in which case the next title-screen build retries. All writes happen on the
  * fetcher's HTTP completion thread; readers only touch {@code volatile} fields.</p>
  *
- * <p>Each relay value is validated independently ({@link LinkPolicy#allowed}) — a missing,
- * malformed or off-list key degrades to that key's baked fallback (or to null for the relay-only
- * payment keys) rather than breaking the link. Payment keys also have a host allowlist.</p>
+ * <p>Each relay value is validated independently ({@link LinkPolicy#allowed}) — a missing or
+ * malformed key degrades to that key's baked fallback (or to null for the relay-only payment keys)
+ * rather than breaking the link. A payment key's relay value is used only when it carries a valid
+ * signature ({@link PaymentLinkSignature}); an unsigned one degrades the same way.</p>
  */
 public final class OfficialLinks {
 
@@ -135,9 +136,17 @@ public final class OfficialLinks {
         return general != null ? general : paymentCnCheckout();
     }
 
-    /** Called by the fetcher with the raw relay map; invalid entries are dropped, valid ones kept. */
+    /**
+     * Called by the fetcher with the raw relay map and the payment links whose signatures verified
+     * ({@link PaymentLinkSignature#verifiedUrls}); invalid entries are dropped, valid ones kept.
+     */
+    static void accept(Map<String, String> raw, Map<String, String> signedPayment) {
+        relay = sanitize(raw, signedPayment);
+    }
+
+    /** {@link #accept(Map, Map)} with no signed payment links (test seam). */
     static void accept(Map<String, String> raw) {
-        relay = sanitize(raw);
+        accept(raw, Map.of());
     }
 
     /** Called by the fetcher when the request errored — the next ensureFetched() will retry. */
@@ -152,29 +161,49 @@ public final class OfficialLinks {
     }
 
     /**
-     * New map holding only the entries whose values pass {@link LinkPolicy#allowed} for their own
-     * key, trimmed. A rejected value is logged by key and host only (never the query string, which
-     * can carry a player name).
+     * New map of the usable relay links, trimmed:
+     * <ul>
+     *   <li>a non-payment key, from {@code raw}, when it passes {@link LinkPolicy#allowed};</li>
+     *   <li>a payment key, ONLY from {@code signedPayment} (already verified), never from {@code raw}
+     *       — except a loopback link from a local test relay, which cannot sign with the real key.</li>
+     * </ul>
+     * A dropped value is logged by key and host only (never the query string, which can carry a
+     * player name).
      */
-    static Map<String, String> sanitize(Map<String, String> raw) {
-        if (raw == null || raw.isEmpty()) return Map.of();
+    static Map<String, String> sanitize(Map<String, String> raw, Map<String, String> signedPayment) {
         Map<String, String> out = new HashMap<>();
-        for (Map.Entry<String, String> e : raw.entrySet()) {
-            String v = e.getValue();
-            if (LinkPolicy.allowed(e.getKey(), v)) {
-                out.put(e.getKey(), v.trim());
-            } else if (v != null && !v.isBlank()) {
-                LOGGER.warn("[DungeonTrain] relay link '{}' rejected (host {}); using the fallback",
-                        e.getKey(), LinkPolicy.hostOf(v));
+        if (raw != null) {
+            for (Map.Entry<String, String> e : raw.entrySet()) {
+                String key = e.getKey();
+                String v = e.getValue();
+                boolean payment = LinkPolicy.isPaymentKey(key);
+                if (LinkPolicy.allowed(key, v) && (!payment || LinkPolicy.isLocalRelayLoopback(v))) {
+                    out.put(key, v.trim());
+                } else if (v != null && !v.isBlank() && !(payment && signedPayment != null && signedPayment.containsKey(key))) {
+                    LOGGER.warn("[DungeonTrain] relay link '{}' rejected (host {}{}); using the fallback",
+                            key, LinkPolicy.hostOf(v), payment ? ", unsigned" : "");
+                }
+            }
+        }
+        if (signedPayment != null) {
+            for (Map.Entry<String, String> e : signedPayment.entrySet()) {
+                if (LinkPolicy.isPaymentKey(e.getKey()) && LinkPolicy.allowed(e.getKey(), e.getValue())) {
+                    out.put(e.getKey(), e.getValue().trim());
+                }
             }
         }
         return Map.copyOf(out);
     }
 
+    /** {@link #sanitize(Map, Map)} with no signed payment links. */
+    static Map<String, String> sanitize(Map<String, String> raw) {
+        return sanitize(raw, Map.of());
+    }
+
     /**
      * True when {@code v} is a plausible outbound link for a non-payment key: https, well-formed,
-     * no user-info, sane length, no whitespace. Payment keys are judged by {@link LinkPolicy#allowed}
-     * with their key, which adds a host allowlist.
+     * no user-info, sane length, no whitespace. (Payment keys additionally need a signature; see
+     * {@link #sanitize}.)
      */
     static boolean isValidUrl(String v) {
         return LinkPolicy.allowed(null, v);

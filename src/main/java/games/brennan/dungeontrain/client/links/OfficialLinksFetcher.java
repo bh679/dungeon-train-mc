@@ -69,7 +69,7 @@ public final class OfficialLinksFetcher {
                             }
                             Map<String, String> links = parse(resp.body());
                             if (links != null) {
-                                OfficialLinks.accept(links);
+                                OfficialLinks.accept(links, parseSigned(resp.body()));
                                 // INFO on purpose: one line per session, and the overlay silently changes
                                 // where outbound buttons point — worth being able to see in a player log.
                                 LOGGER.info("[DungeonTrain] official links updated from relay ({} keys)", links.size());
@@ -114,6 +114,24 @@ public final class OfficialLinksFetcher {
                 mc.screen.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
             }
         });
+    }
+
+    /**
+     * The payment links in the response's {@code signed} map whose signatures verify
+     * ({@link PaymentLinkSignature}), as key→url. Empty when absent or malformed — a relay that
+     * predates signing, or a key nobody has signed, leaves those buttons on their baked links.
+     */
+    static Map<String, String> parseSigned(String body) {
+        try {
+            JsonElement root = JsonParser.parseString(body);
+            if (!root.isJsonObject()) return Map.of();
+            JsonElement signed = root.getAsJsonObject().get("signed");
+            return signed != null && signed.isJsonObject()
+                    ? PaymentLinkSignature.verifiedUrls(signed.getAsJsonObject())
+                    : Map.of();
+        } catch (RuntimeException e) {
+            return Map.of();
+        }
     }
 
     /** Parse {@code {ok:true, links:{...}}} into a raw key→url map, or null when malformed. */
