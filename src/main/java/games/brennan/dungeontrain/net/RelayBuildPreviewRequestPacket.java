@@ -64,10 +64,12 @@ public record RelayBuildPreviewRequestPacket(int relayId, String ownerUuid, bool
                         if (player.hasDisconnected()) return;
                         int shown = packet.seq > 0 ? packet.seq
                             : (v.seqs().isEmpty() ? 0 : v.seqs().get(v.seqs().size() - 1));
-                        DungeonTrainNet.sendTo(player, new RelayBuildPreviewPacket(packet.relayId, shown,
-                            v.seqs().stream().mapToInt(Integer::intValue).toArray(),
-                            v.attempt().bytes() != null, v.attempt().retryable(),
-                            v.attempt().bytes() == null ? new byte[0] : v.attempt().bytes()));
+                        int[] seqs = v.seqs().stream().mapToInt(Integer::intValue).toArray();
+                        DungeonTrainNet.sendTo(player, v.attempt().oversize() != null
+                            ? RelayBuildPreviewPacket.oversized(packet.relayId, shown, seqs, v.attempt().oversize())
+                            : new RelayBuildPreviewPacket(packet.relayId, shown, seqs,
+                                v.attempt().bytes() != null, v.attempt().retryable(),
+                                v.attempt().bytes() == null ? new byte[0] : v.attempt().bytes(), new int[0]));
                     }));
                 return;
             }
@@ -76,7 +78,9 @@ public record RelayBuildPreviewRequestPacket(int relayId, String ownerUuid, bool
                     if (player.hasDisconnected()) return;
                     // An answer always goes back, "nothing to draw" included: the client is holding
                     // a slot open for this build and a silence would hold it forever.
-                    DungeonTrainNet.sendTo(player, attempt.bytes() == null
+                    DungeonTrainNet.sendTo(player, attempt.oversize() != null
+                        ? RelayBuildPreviewPacket.oversized(packet.relayId, 0, new int[0], attempt.oversize())
+                        : attempt.bytes() == null
                         ? RelayBuildPreviewPacket.none(packet.relayId, attempt.retryable())
                         : new RelayBuildPreviewPacket(packet.relayId, true, false, attempt.bytes()));
                 }));
