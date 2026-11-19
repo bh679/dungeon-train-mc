@@ -61,7 +61,9 @@ public final class EchoSummaryReader {
             }
             GlobalLifeStore.DeathRecord record = records.get(records.size() - 1);
             return fromSnapshot(player, record.snapshot());
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
+            // LinkageError: a PlayerMob older than the floor lacks a type or method used here.
+            // Drop the echo card rather than the death (and the server) with it.
             LOGGER.warn("[DungeonTrain] Couldn't read the echo for {}'s death page", player.getName().getString(), e);
             return null;
         }
@@ -77,18 +79,25 @@ public final class EchoSummaryReader {
         DispositionTraits traits = new DispositionTraits();
         traits.load(snapshot);
         List<Integer> skills = new ArrayList<>();
-        for (ReactionChannel channel : SKILL_CHANNELS) {
+        for (ReactionChannel channel : skillChannels()) {
             skills.add(traits.reactionSpeed(channel));
         }
         return new EchoSummary(appearance, traits.fightFlight(), traits.friendliness(),
                 traits.reactionSpeed(), skills, carried(ghost), armour(ghost));
     }
 
-    /** PlayerMob's channel for each {@link EchoPersonality.Skill}, in the same order. */
-    private static final ReactionChannel[] SKILL_CHANNELS = {
-        ReactionChannel.MELEE, ReactionChannel.RANGED, ReactionChannel.DEFENCE,
-        ReactionChannel.BUILDING, ReactionChannel.MOVEMENT, ReactionChannel.ITEMS
-    };
+    /**
+     * PlayerMob's channel for each {@link EchoPersonality.Skill}, in the same order. Built on each
+     * call, never held in a static field: a static would load {@code ReactionChannel} (PlayerMob
+     * 0.125.0+) while this class initialises, outside {@link #read}'s guard, and an older PlayerMob
+     * then crashed the server on every death.
+     */
+    private static ReactionChannel[] skillChannels() {
+        return new ReactionChannel[] {
+            ReactionChannel.MELEE, ReactionChannel.RANGED, ReactionChannel.DEFENCE,
+            ReactionChannel.BUILDING, ReactionChannel.MOVEMENT, ReactionChannel.ITEMS
+        };
+    }
 
     /** The backpack's non-empty stacks, in slot order (food first, as PlayerMob packs it). */
     private static List<ItemStack> carried(PlayerMobEntity ghost) {
