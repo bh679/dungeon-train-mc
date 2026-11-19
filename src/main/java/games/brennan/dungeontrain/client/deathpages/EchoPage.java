@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.deathpages;
 
 import games.brennan.dungeontrain.client.DeathPortraitRenderer;
 import games.brennan.dungeontrain.client.live.deathpages.LiveDeathChrome;
-import games.brennan.dungeontrain.echo.EchoPersonality;
 import games.brennan.dungeontrain.echo.EchoSummary;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -45,9 +44,6 @@ public final class EchoPage {
     /** Height of the tab bar, underline included, and the gap under it. */
     private static final int TAB_BAR_H = 12;
     private static final int TAB_GAP = 10;
-
-    /** TEMP: live preview override, set by the Gate 2 harness. Removed before merge. */
-    public static volatile EchoPersonality.Kind TEMP_PREVIEW_KIND;
 
     private enum Tab { STATS, INVENTORY }
 
@@ -123,9 +119,8 @@ public final class EchoPage {
         int feetY = top + topH - 4 - (EchoPaint.ARMOR_ICON + 4);
         inventory.begin();
         if (settled && portrait.available()) {
-            EchoPersonality.Kind kind = TEMP_PREVIEW_KIND != null ? TEMP_PREVIEW_KIND : echo.personality();
             g.enableScissor(portX + wornW, top, portX + portW - wornW, top + topH);
-            portrait.renderEcho(g, echo.appearance(), kind, echo.reactionSpeed(),
+            portrait.renderEcho(g, echo.appearance(), echo.personality(), echo.reactionSpeed(),
                     portX + portW / 2, feetY, l.portraitSize());
             g.disableScissor();
         }
