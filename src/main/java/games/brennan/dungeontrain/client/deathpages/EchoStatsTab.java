@@ -71,6 +71,7 @@ final class EchoStatsTab {
         skillHits.clear();
         Component label = Component.translatable("gui.dungeontrain.death.echo.personality");
         g.drawString(font, label, x, y, chrome.fade(LABEL), false);
+        int personalityEnd = x + font.width(label) + 4 + font.width(personalityName(echo));
         g.drawString(font, personalityName(echo), x + font.width(label) + 4, y,
                 chrome.fade(CLASS), false);
         int top = y + ROW + 4;
@@ -84,12 +85,16 @@ final class EchoStatsTab {
         by = bar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), x, by, barsW);
         bar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), x, by, barsW);
 
-        // Right: the skill hexagon in the rest of the width, icons just outside each corner.
+        // Right: the skill hexagon in the rest of the width, icons just outside each corner, as high
+        // as it goes.
         int hx = x + barsW + 6;
         int hw = x + w - hx;
         float r = Math.max(10, Math.min((hw / 2.0F - ICON - 2) / 0.87F, bodyH / 2.0F - ICON - 1));
         float cx = hx + hw / 2.0F;
-        float cy = top + bodyH / 2.0F;
+        // As high as it goes: the top corner's icon rises level with the personality row when the
+        // personality name ends short of it, else it sits just under that row.
+        boolean clear = personalityEnd + 4 < Math.round(cx - ICON / 2.0F);
+        float cy = (clear ? y : top) + r + ICON + 1;
         EchoPersonality.Skill[] skills = EchoPersonality.Skill.values();
         int[] values = new int[skills.length];
         for (int i = 0; i < skills.length; i++) {
