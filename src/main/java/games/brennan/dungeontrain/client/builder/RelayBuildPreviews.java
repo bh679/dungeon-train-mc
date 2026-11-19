@@ -299,6 +299,18 @@ public final class RelayBuildPreviews {
         return entry == null || entry.summary() == TemplateSummary.NONE ? null : entry.summary();
     }
 
+    /**
+     * Whether anything of this build is coming down right now — its picture or one of its past
+     * versions, asked for and not yet baked. What a tile wears its downloading mark for.
+     */
+    public static boolean downloading(int relayId) {
+        if (relayId <= 0) return false;
+        for (Key key : IN_FLIGHT) {
+            if (key.relayId() == relayId) return true;
+        }
+        return false;
+    }
+
     /** Whether an answer for this build is still out — what a tile draws "loading" for. */
     public static boolean waitingOn(int relayId) {
         return !CACHE.containsKey(new Key(relayId, 0));

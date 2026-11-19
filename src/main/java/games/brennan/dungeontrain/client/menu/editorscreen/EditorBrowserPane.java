@@ -206,6 +206,11 @@ public final class EditorBrowserPane {
             if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(x, y, size, size, border);
             // The star sits in the corner a local tile keeps for its unsaved mark, which a relay
             // build never has. Drawn last so it is never under the review ring.
+            // Opposite corner to the star: this tile's picture, or one of its past versions, is
+            // on its way down from the relay right now.
+            if (RelayBuildPreviews.downloading(entry.relayId())) {
+                DownloadBadge.draw(g, x + size - STAR_INSET - DownloadBadge.SIZE, y + STAR_INSET);
+            }
             boolean starred = EditorCreatorBuilds.starred(entry);
             boolean hovStar = hovered.kind() == HitKind.CREATOR_STAR && hovered.index() == i;
             String star = starred ? "\u2605" : "\u2606";
