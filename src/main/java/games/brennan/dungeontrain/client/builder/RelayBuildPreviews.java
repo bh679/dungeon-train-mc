@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.builder.relay.PreviewSlimmer;
 import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -9,8 +10,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -66,6 +70,12 @@ public final class RelayBuildPreviews {
     /** Past versions held at most — a safety ceiling, not a working budget. */
     static final int VERSION_CEILING = 256;
 
+    /**
+     * GPU bytes past versions may hold. A big room's picture is far heavier than a carriage's, so a
+     * count alone would let a profile of rooms fill video memory while its history comes down.
+     */
+    static final long VERSION_BYTE_BUDGET = 128L * 1024 * 1024;
+
     /** Asks allowed out at once. Each is a relay round trip made on the player's behalf. */
     private static final int MAX_IN_FLIGHT = 3;
 
@@ -75,8 +85,16 @@ public final class RelayBuildPreviews {
     /** How long a build whose fetch failed is left alone before it is asked about again. */
     private static final long RETRY_MILLIS = 5_000L;
 
-    /** A baked build, or a build that will never have a picture ({@code mesh} null). */
-    private record Entry(BuilderTileMesh mesh, TemplateSummary summary) {}
+    /**
+     * A baked build, or a build that will never have a picture ({@code mesh} null). {@code simplified}
+     * when the server sent a lighter copy drawn for the picture only — fine for a tile, not for a
+     * capture that stands for the build.
+     */
+    private record Entry(BuilderTileMesh mesh, TemplateSummary summary, boolean simplified) {
+        Entry(BuilderTileMesh mesh, TemplateSummary summary) {
+            this(mesh, summary, false);
+        }
+    }
 
     /** A build at a version: {@code seq} 0 is the build as it is now. */
     private record Key(int relayId, int seq) {}
@@ -179,7 +197,8 @@ public final class RelayBuildPreviews {
 
     /** Whether background history may still be fetched: under the ceiling, or something to spare. */
     private static boolean historyRoom() {
-        return HISTORY.size() < VERSION_CEILING || evictableVersion(true) != null;
+        return (HISTORY.size() < VERSION_CEILING && historyBytes() < VERSION_BYTE_BUDGET)
+            || evictableVersion(true) != null;
     }
 
     /**
@@ -283,10 +302,14 @@ public final class RelayBuildPreviews {
         return true;
     }
 
-    /** This build's baked mesh as it is now, or null until it has been baked — for a capture. */
+    /**
+     * This build's baked mesh as it is now, or null until it has been baked — for a capture. A
+     * simplified picture counts as none: a capture stands for the build, so it falls back to the
+     * full build where there is one.
+     */
     static BuilderTileMesh mesh(int relayId) {
         Entry entry = CACHE.get(new Key(relayId, 0));
-        return entry == null ? null : entry.mesh();
+        return entry == null || entry.simplified() ? null : entry.mesh();
     }
 
     /** This build's data-sheet numbers, or null until it has been baked. */
@@ -325,12 +348,24 @@ public final class RelayBuildPreviews {
             try {
                 StructureTemplate template = new StructureTemplate();
                 template.load(blocks, pending.template());
+                long started = System.nanoTime();
                 Map<BlockPos, BlockState> cells = TemplateCells.of(template);
                 TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
-                entry = new Entry(cells.isEmpty() ? null : BuilderTileMesh.bake(cells),
-                    new TemplateSummary(cells.size(), template.getSize(), tally.blockEntities(),
+                // A slimmed picture carries the build's real block count and size; the sheet shows
+                // those, not the picture's.
+                CompoundTag real = pending.template().getCompound(PreviewSlimmer.PREVIEW_KEY);
+                boolean simplified = !real.isEmpty();
+                int blockCount = simplified ? real.getInt("blocks") : cells.size();
+                Vec3i size = simplified ? sizeOf(real.getList("size", Tag.TAG_INT), template.getSize())
+                    : template.getSize();
+                BuilderTileMesh mesh = cells.isEmpty() ? null : BuilderTileMesh.bake(cells);
+                entry = new Entry(mesh,
+                    new TemplateSummary(blockCount, size, tally.blockEntities(),
                         tally.containers(), TemplateCells.entityCount(pending.template()),
-                        TemplateCells.lights(cells), TemplateLoot.of(template)));
+                        TemplateCells.lights(cells), TemplateLoot.of(template)), simplified);
+                LOGGER.debug("[DungeonTrain] Relay preview bake: id={} seq={} cells={} simplified={} "
+                        + "bytes={} {} ms", pending.key().relayId(), pending.key().seq(), cells.size(),
+                    simplified, mesh == null ? 0 : mesh.bytes(), (System.nanoTime() - started) / 1_000_000L);
             } catch (RuntimeException e) {
                 // A build this version cannot read keeps its slate rather than taking the screen down.
                 entry = new Entry(null, TemplateSummary.NONE);
@@ -338,6 +373,25 @@ public final class RelayBuildPreviews {
         }
         IN_FLIGHT.remove(pending.key());
         hold(pending.key(), entry);
+    }
+
+    /** A size list of three ints, or {@code fallback} when it is not one. */
+    private static Vec3i sizeOf(ListTag list, Vec3i fallback) {
+        if (list.size() < 3) return fallback;
+        return new Vec3i(list.getInt(0), list.getInt(1), list.getInt(2));
+    }
+
+    /** GPU bytes held by past versions. */
+    private static long historyBytes() {
+        long total = 0;
+        for (Entry entry : HISTORY.values()) {
+            if (entry.mesh() != null) total += entry.mesh().bytes();
+        }
+        return total;
+    }
+
+    private static boolean historyOver() {
+        return HISTORY.size() > VERSION_CEILING || historyBytes() > VERSION_BYTE_BUDGET;
     }
 
     /** The cache this key lives in: current pictures and past versions are held apart. */
@@ -378,7 +432,7 @@ public final class RelayBuildPreviews {
      * ({@link #historyRoom}), so this only makes room for the selected build's history.
      */
     private static void evictHistory() {
-        while (HISTORY.size() > VERSION_CEILING) {
+        while (historyOver()) {
             Key victim = evictableVersion(true);
             if (victim == null) victim = evictableVersion(false);
             if (victim == null) return;
