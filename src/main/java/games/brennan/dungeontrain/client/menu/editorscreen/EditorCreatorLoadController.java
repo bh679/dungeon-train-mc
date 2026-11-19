@@ -193,7 +193,7 @@ final class EditorCreatorLoadController {
      * Unknown size (its preview has not answered) loads without asking.
      */
     private boolean confirmOversized(BuilderProfilePacket.Entry entry, Runnable press) {
-        BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.oversized(entry.relayId(), 0);
+        BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.tooBigToSend(entry.relayId());
         if (oversize == null) return false;
         host.modal().open(new OversizedLoadConfirmScreen(EditorCreatorBuilds.label(entry), oversize, () -> {
             host.modal().pop();
@@ -412,32 +412,27 @@ final class EditorCreatorLoadController {
      * has of it.
      *
      * <p>A change of selection resets to the build as it is now, because a seq belongs to one relay
-     * row and means nothing in another's history. The index ask goes out once per build — the cache
-     * remembers the answer, including "no versions", so this costs a map lookup a frame after
-     * that.</p>
+     * row and means nothing in another's history. Naming the build as selected every frame is what
+     * puts its picture, its version index and its whole history ahead of every other build's — the
+     * cache remembers each answer, "no versions" included, so a frame after that costs lookups.</p>
      */
     void trackVersionsOf(int relayId, String ownerUuid) {
         if (relayId != previewRelayId) {
             previewRelayId = relayId;
             previewSeq = 0;
         }
-        if (relayId > 0 && RelayBuildPreviews.versions(relayId) == null) {
-            // -1: the newest recorded frame, and the index of every seq with it.
-            RelayBuildPreviews.request(relayId, ownerUuid, BuilderProfileState.live(), -1);
-        }
+        RelayBuildPreviews.select(relayId, ownerUuid, BuilderProfileState.live(), previewSeq);
     }
 
-    /** Step the preview one version older or newer, and fetch it if it is not here yet. */
+    /**
+     * Step the preview one version older or newer. The selected build's history is already on its
+     * way at the front of the queue, and the version paged to goes to the very front next frame.
+     */
     void pageVersion(boolean older) {
         int[] seqs = RelayBuildPreviews.versions(previewRelayId);
         if (seqs == null || seqs.length == 0) return;
         int next = older ? VersionStrip.older(seqs, previewSeq) : VersionStrip.newer(seqs, previewSeq);
         if (next == previewSeq) return;
         previewSeq = next;
-        if (next != 0) {
-            RelayBuildPreviews.request(previewRelayId,
-                EditorCreatorBuilds.active() ? EditorCreatorBuilds.ownerOf(selected()) : "",
-                BuilderProfileState.live(), next);
-        }
     }
 }

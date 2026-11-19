@@ -166,17 +166,28 @@ public final class BuilderRelayPreview {
                 || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
         }
+        if (seq > 0) {
+            // The client names a seq only from the index it already holds, so asking the relay for
+            // the index again would double the cost of every past version. No seqs in the answer:
+            // the client keeps the index it has.
+            return frameOf(level, relayId, seq, live, List.of());
+        }
         return SharedCarriageClient.historyIndex(relayId, live).thenCompose(seqs -> {
             if (seqs == null || seqs.isEmpty()) {
                 return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
             }
-            int want = seq > 0 ? seq : seqs.get(seqs.size() - 1);
-            return SharedCarriageClient.historyFrame(relayId, want, live).thenCompose(frame -> {
-                if (frame == null) {
-                    return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, seqs));
-                }
-                return level.getServer().submit(() -> new Versioned(convertFrame(level, relayId, frame), seqs));
-            });
+            return frameOf(level, relayId, seqs.get(seqs.size() - 1), live, seqs);
+        });
+    }
+
+    /** Fetch and convert one history frame, answering with {@code seqs} as the index. */
+    private static CompletableFuture<Versioned> frameOf(ServerLevel level, int relayId, int seq, boolean live,
+                                                        List<Integer> seqs) {
+        return SharedCarriageClient.historyFrame(relayId, seq, live).thenCompose(frame -> {
+            if (frame == null) {
+                return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, seqs));
+            }
+            return level.getServer().submit(() -> new Versioned(convertFrame(level, relayId, frame), seqs));
         });
     }
 
@@ -202,7 +213,7 @@ public final class BuilderRelayPreview {
                 relayId, frame.seq(), t.toString());
             return Attempt.GONE;
         }
-        byte[] bytes = encode(tag);
+        byte[] bytes = previewBytes(level, tag, relayId, "seq " + frame.seq());
         return bytes == null ? Attempt.oversized(Oversize.of(tag)) : new Attempt(bytes, false);
     }
 
@@ -231,7 +242,7 @@ public final class BuilderRelayPreview {
                     build.id(), build.buildName(), build.kind(), t.toString());
             return Attempt.GONE;
         }
-        byte[] bytes = encode(tag);
+        byte[] bytes = previewBytes(level, tag, build.id(), "'" + build.buildName() + "', " + build.kind());
         if (bytes == null) {
             LOGGER.info("[DungeonTrain] Builder relay preview: id={} ('{}', {}) has no picture — {} blocks, "
                             + "{} bytes encoded, over one of the caps ({} blocks / {} bytes / {} accounted)",
@@ -241,6 +252,33 @@ public final class BuilderRelayPreview {
             return Attempt.oversized(Oversize.of(tag));
         }
         return new Attempt(bytes, false);
+    }
+
+    /**
+     * The bytes to send for this build: the build itself when it fits, otherwise a lighter copy
+     * drawn for the picture only ({@link PreviewSlimmer}), coarser step by step until one fits.
+     * Null when even the coarsest does not — the tile keeps its name plate, as before.
+     */
+    static byte[] previewBytes(ServerLevel level, CompoundTag tag, int relayId, String what) {
+        byte[] bytes = encode(tag);
+        if (bytes != null || tag == null) return bytes;
+        long started = System.nanoTime();
+        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+        PreviewSlimmer.Source source = PreviewSlimmer.read(tag, blocks);
+        if (source == null) return null;
+        for (int factor = 1; factor <= PreviewSlimmer.MAX_FACTOR; factor++) {
+            bytes = encode(source.slim(factor));
+            if (bytes != null) {
+                LOGGER.info("[DungeonTrain] Builder relay preview: id={} ({}) slimmed for its picture — "
+                        + "{} blocks drawn at 1/{}, {} bytes, {} ms",
+                    relayId, what, source.blocks(), factor, bytes.length,
+                    (System.nanoTime() - started) / 1_000_000L);
+                return bytes;
+            }
+        }
+        LOGGER.info("[DungeonTrain] Builder relay preview: id={} ({}) too big even at 1/{} — {} ms",
+            relayId, what, PreviewSlimmer.MAX_FACTOR, (System.nanoTime() - started) / 1_000_000L);
+        return null;
     }
 
     /** The encoded size, for the log line that explains a refusal. */
