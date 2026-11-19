@@ -37110,6 +37110,140 @@
       "released": true,
       "released_in": "v0.1885.0",
       "released_at": "2026-11-18T14:37:39Z"
+    },
+    {
+      "id": "discord-status-connection-fix",
+      "version": "0.1886.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Discord status fix",
+      "summary": "Your Discord status connects more reliably and no longer gets stuck when Discord stops answering.",
+      "highlights": [],
+      "pr": 2736,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "nap-file-sealing",
+      "version": "0.1888.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Resting fix",
+      "summary": "Rests taken at a train bed carry over more safely.",
+      "highlights": [],
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "nap-single-use-hardening",
+      "version": "0.1887.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Resting fix",
+      "summary": "Resting at a train bed works more reliably.",
+      "highlights": [],
+      "pr": 2737,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "nap-world-delete-hardening",
+      "version": "0.1887.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer"
+      ],
+      "title": "Save and Quit fix",
+      "summary": "Save and Quit at train beds is safer when your world is open to LAN, and never clears away a world you named yourself.",
+      "highlights": [],
+      "pr": 2739,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "payment-link-safety-check",
+      "version": "0.1887.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Safer donation links",
+      "summary": "Donation and reward links get an extra safety check before they open, and the confirm screen now shows which site your browser will go to.",
+      "highlights": [],
+      "pr": 2738,
+      "date": "2026-11-18",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "live-chat-report-fix",
+      "version": "0.1892.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live chat report fix",
+      "summary": "Reporting a bot from the Live chat is more reliable and better protected.",
+      "highlights": [],
+      "pr": 2743,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "recent-translations-review",
+      "version": "0.1889.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translation fixes",
+      "summary": "Recently added text reads better in all 21 languages, and the Live Eye now carries its new name in 14 more of them.",
+      "highlights": [],
+      "pr": 2741,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
+    },
+    {
+      "id": "workbench-review-and-room-mobs",
+      "version": "0.1890.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "internal"
+      ],
+      "title": "Builder fix",
+      "summary": "Mobs placed in whole-carriage builds now spawn when the carriage is tested or ridden.",
+      "highlights": [],
+      "pr": 2227,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1892.0",
+      "released_at": "2026-11-19T05:10:14Z"
     }
   ]
 }
