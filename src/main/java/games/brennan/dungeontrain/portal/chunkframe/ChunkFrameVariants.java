@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal.chunkframe;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.UserContentPaths;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
@@ -28,7 +29,7 @@ public final class ChunkFrameVariants {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final String EXT = ".variants.json";
 
-    private static final Map<String, TrackVariantBlocks> CACHE = new HashMap<>();
+    private static final Map<String, VariantDoc> CACHE = new HashMap<>();
 
     private ChunkFrameVariants() {}
 
@@ -38,12 +39,12 @@ public final class ChunkFrameVariants {
     }
 
     /** {@code name}'s sidecar — config first, then bundled, then empty. The cached instance: edits stick. */
-    public static synchronized TrackVariantBlocks loadFor(String name) {
+    public static synchronized VariantDoc loadFor(String name) {
         return CACHE.computeIfAbsent(name, ChunkFrameVariants::read);
     }
 
     /** Persist {@code name}'s sidecar, and to the source tree when asked. */
-    public static synchronized void save(String name, TrackVariantBlocks sidecar, boolean toSource) throws IOException {
+    public static synchronized void save(String name, VariantDoc sidecar, boolean toSource) throws IOException {
         String text = sidecar.asJsonText();
         write(configPathFor(name), text);
         CACHE.put(name, sidecar);
@@ -89,7 +90,7 @@ public final class ChunkFrameVariants {
         return projectRoot.resolve("src/main/resources/data/dungeontrain/" + ChunkFrameStore.SUBDIR).resolve(name + EXT);
     }
 
-    private static TrackVariantBlocks read(String name) {
+    private static VariantDoc read(String name) {
         String json = null;
         Path cfg = UserContentPaths.findFile(ChunkFrameStore.SUBDIR, name + EXT);
         try {

@@ -11,11 +11,14 @@ import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
  * {@code NetherBandCoreGateTest}); the mixin is a thin shell that maps the result onto the live
  * biome providers.
  *
- * <p>Decision order (byte-identical to the pre-extraction mixin):</p>
+ * <p>Decision order:</p>
  * <ol>
+ *   <li>an End-void column ({@link WorldGenCycle#isEndVoid}: overworld fully eroded, so no ground at any
+ *       height) → {@link Result#END_CORE} whatever the Y;</li>
  *   <li>below sea level → {@link Result#ORIGINAL} (natural cave biomes);</li>
  *   <li>Nether-band core at the edge-waved X → {@link Result#NETHER_CORE};</li>
- *   <li>End-band core at the un-waved X → {@link Result#END_CORE};</li>
+ *   <li>End-band core at the un-waved X → {@link Result#END_CORE} (already covered by 1; kept as the
+ *       documented pre-void order);</li>
  *   <li>a raising mountain column at the waved X → {@link Result#HIGHLAND} — whose quarts under the
  *       {@link CavernNoise} window top ({@link #caveWindowTop}) are the cave biomes;</li>
  *   <li>otherwise → {@link Result#ORIGINAL}.</li>
@@ -44,6 +47,11 @@ public final class BandBiomeDecision {
                                 boolean hasNetherCore, boolean hasEndCore,
                                 int blockX, int blockY, int blockZ) {
         if (cycle == null) return Result.ORIGINAL;
+        // The End void — both void holds, the island fades and the core — is End at every height: there is
+        // no ground there at all, so no cave biome to keep below sea level, and a rider dropping off an
+        // island into the void stays in the End instead of reading an overworld biome on the way down.
+        // endSegmentInfluence is the O(1) proof that the ramp is 0 for the off-band majority.
+        if (hasEndCore && cycle.endSegmentInfluence(blockX) && cycle.isEndVoid(blockX)) return Result.END_CORE;
         if (blockY < seaLevel) return Result.ORIGINAL;                // natural cave biomes below sea
         // Off-band early-out — no waved or un-waved lookup at this X can land in either band.
         // Gated on the A/B kill-switch (/dungeontrain debug band-earlyout): OFF = pre-change path.

@@ -171,6 +171,90 @@
       "conditions": {
         "subject": "entity:minecraft:strider"
       }
+    },
+    "minecraft:allay": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:allay"
+      }
+    },
+    "minecraft:bat": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:bat"
+      }
+    },
+    "minecraft:cod": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:cod"
+      }
+    },
+    "minecraft:glow_squid": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:glow_squid"
+      }
+    },
+    "minecraft:iron_golem": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:iron_golem"
+      }
+    },
+    "minecraft:pufferfish": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:pufferfish"
+      }
+    },
+    "minecraft:salmon": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:salmon"
+      }
+    },
+    "minecraft:snow_golem": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:snow_golem"
+      }
+    },
+    "minecraft:squid": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:squid"
+      }
+    },
+    "minecraft:trader_llama": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:trader_llama"
+      }
+    },
+    "minecraft:tropical_fish": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:tropical_fish"
+      }
+    },
+    "betternether:firefly": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betternether:firefly"
+      }
+    },
+    "betternether:flying_pig": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betternether:flying_pig"
+      }
+    },
+    "deeperdarker:sculk_snapper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:sculk_snapper"
+      }
     }
   },
   "requirements": [
@@ -251,6 +335,48 @@
     ],
     [
       "minecraft:strider"
+    ],
+    [
+      "minecraft:allay"
+    ],
+    [
+      "minecraft:bat"
+    ],
+    [
+      "minecraft:cod"
+    ],
+    [
+      "minecraft:glow_squid"
+    ],
+    [
+      "minecraft:iron_golem"
+    ],
+    [
+      "minecraft:pufferfish"
+    ],
+    [
+      "minecraft:salmon"
+    ],
+    [
+      "minecraft:snow_golem"
+    ],
+    [
+      "minecraft:squid"
+    ],
+    [
+      "minecraft:trader_llama"
+    ],
+    [
+      "minecraft:tropical_fish"
+    ],
+    [
+      "betternether:firefly"
+    ],
+    [
+      "betternether:flying_pig"
+    ],
+    [
+      "deeperdarker:sculk_snapper"
     ]
   ]
 }

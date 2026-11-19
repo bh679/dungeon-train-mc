@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.CycleLayout;
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes;
@@ -78,11 +79,14 @@ public record LiveColumnProviders(NetherBandContext ctx) implements ColumnBiomeP
     public Holder<Biome> endCore(int blockX, int blockZ) {
         WorldGenCycle cycle = ctx.cycle();
         long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
-        return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
+        return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass),
+                cycle.endPieceProgress(blockX, endPass));
     }
 
+    /** The look of the column's stretch; in the mix zone, of an overworld or Lost City pick ({@link MixBand#biomeCycleFor}). */
     @Override
-    public SecondLapOverworld.Stretch look(int blockX) {
-        return SecondLapOverworld.lookAt(ctx.cycle(), blockX);
+    public SecondLapOverworld.Stretch look(int blockX, int blockZ) {
+        WorldGenCycle cycle = MixBand.biomeCycleFor(ctx.cycle(), ctx.generationSeed(), blockX >> 4, blockZ >> 4);
+        return SecondLapOverworld.lookAt(cycle, blockX);
     }
 }

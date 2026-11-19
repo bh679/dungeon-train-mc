@@ -42,6 +42,15 @@ final class HeldTvScreenTest {
     }
 
     @Test
+    @DisplayName("a set that remembers Stream 2 shows the second stream; 1, none and junk show the first")
+    void rememberedStream() {
+        assertTrue(HeldTvScreen.showsSecond(2));
+        assertFalse(HeldTvScreen.showsSecond(1));
+        assertFalse(HeldTvScreen.showsSecond(0));
+        assertFalse(HeldTvScreen.showsSecond(3));
+    }
+
+    @Test
     @DisplayName("mirroring keeps yaw, pitch, lift and distance and flips only the sideways nudge")
     void mirrorRule() {
         HeldTvScreen.Pose r = new HeldTvScreen.Pose(120f, -10f, 0.3f, 0.7f, -0.4f);

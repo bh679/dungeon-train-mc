@@ -142,11 +142,11 @@ public final class BlockVariantMenuRaycast {
         BlockState growthState = growthRow >= 0
             ? BlockVariantMenu.parseState(entries.get(growthRow).stateString()) : null;
         if (growthState != null) {
-            boolean paintingPopup = BlockVariantMenu.isPaintingRow(entries.get(growthRow), growthState);
-            BlockVariantMenu.CellKind optionKind = paintingPopup
-                ? BlockVariantMenu.CellKind.PAINTING_OPTION : BlockVariantMenu.CellKind.GROWTH_OPTION;
-            java.util.List<GrowthPopupLayout.Row> rows = paintingPopup
-                ? PaintingPopupLayout.rows(BlockVariantMenu.painting(entries.get(growthRow)), panelW, halfH)
+            BlockVariantMenu.SlotPopup slot = BlockVariantMenu.slotPopup(entries.get(growthRow), growthState, panelW, halfH);
+            BlockVariantMenu.CellKind optionKind = slot != null
+                ? slot.kind() : BlockVariantMenu.CellKind.GROWTH_OPTION;
+            java.util.List<GrowthPopupLayout.Row> rows = slot != null
+                ? slot.rows()
                 : GrowthPopupLayout.rows(
                     games.brennan.dungeontrain.editor.VariantGrowth.fromInt(entries.get(growthRow).growth()),
                     growthState, panelW, halfH);
@@ -268,10 +268,10 @@ public final class BlockVariantMenuRaycast {
             && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
         double armsCellR = connectCellL;
         double armsCellL = showArms ? armsCellR - BlockVariantMenuRenderer.ARMS_CELL_WIDTH : armsCellR;
-        // A painting row puts its Painting pill in the Grow slot (a painting never grows).
+        // A painting, candle or flower pot row puts its own pill in the Grow slot (none of them grows).
         boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
             && GrowthShapes.canGrow(parsed))
-            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.isPaintingRow(entry, parsed));
+            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed));
         double growthCellR = armsCellL;
         double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they

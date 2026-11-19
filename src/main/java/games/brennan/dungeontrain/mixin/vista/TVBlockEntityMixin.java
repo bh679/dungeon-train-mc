@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.mixin.vista;
 
-import games.brennan.dungeontrain.registry.ModItems;
+import games.brennan.dungeontrain.compat.vista.TvBlocks;
 import net.mehvahdjukaar.vista.common.cassette.ITvCassette;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
@@ -35,7 +35,7 @@ public abstract class TVBlockEntityMixin {
     @Inject(method = "canTakeItemThroughFace", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$keepLiveCassette(int slot, ItemStack stack, Direction side,
                                                CallbackInfoReturnable<Boolean> cir) {
-        if (stack.is(ModItems.LIVE_CASSETTE.get())) cir.setReturnValue(false);
+        if (TvBlocks.isLiveCassette(stack)) cir.setReturnValue(false);
     }
 
     @Inject(method = "loadAdditional", at = @At("TAIL"))
@@ -47,7 +47,7 @@ public abstract class TVBlockEntityMixin {
         tv.removeItemNoUpdate(0);
         BlockState state = tv.getBlockState();
         if (state.hasProperty(TVBlock.POWER_STATE) && state.getValue(TVBlock.POWER_STATE).isOn()) {
-            tv.setItem(0, new ItemStack(ModItems.LIVE_CASSETTE.get()));
+            tv.setItem(0, TvBlocks.liveCassette(false));
         }
     }
 }

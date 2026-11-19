@@ -4,19 +4,23 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import games.brennan.dungeontrain.ship.CarriageDeck;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import org.joml.Vector3d;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Which drifting carriage, if any, a given block position belongs to.
  *
- * <p>The block-position half of carriage resolution, kept in one place because more than one
- * listener needs it. (The other half — which carriage a <em>player</em> is standing on — starts
- * from the player's footing instead and lives in {@code CarriageDeck.carriageUnder}; the two are
- * not interchangeable.)</p>
+ * <p>Two halves, not interchangeable: {@link #byBlockPos} resolves a block (block events, which
+ * fire in sub-level plot space), {@link #byEntity} resolves whoever is standing on a carriage,
+ * starting from their footing via {@code CarriageDeck.carriageUnder}.</p>
  *
  * <p>Same sequence {@code SableBlockChangeGuardMixin} resolves in: sub-level container → plot →
  * sub-level id → footprint match. NeoForge's block events already fire in sub-level plot space,
@@ -45,5 +49,22 @@ public final class SharedCarriageLookup {
         UUID subLevelId = serverSub.getUniqueId();
         if (!SharedCarriageRegistry.hasSubLevel(subLevelId)) return null;
         return SharedCarriageRegistry.resolve(subLevelId, pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    /**
+     * The drifting carriage {@code entity} is standing on, or null — off the train, on a carriage
+     * that holds no shared build, or airborne (footing needs a block at the feet, so a jump reads as
+     * off for a poll or two). Culled instances resolve too; reject {@code inst.isCulled()} as needed.
+     */
+    public static SharedCarriageRegistry.Instance byEntity(ServerLevel level, Entity entity) {
+        List<Trains.Carriage> carriages = Trains.allCarriages(level);
+        if (carriages.isEmpty()) return null;
+        Trains.Carriage c = CarriageDeck.carriageUnder(carriages, entity);
+        if (c == null) return null;
+        ManagedShip ship = c.ship();
+        Vector3d local = new Vector3d(entity.getX(), entity.getY(), entity.getZ());
+        ship.worldToShip(local);
+        return SharedCarriageRegistry.resolve(ship.subLevelId(),
+                (int) Math.floor(local.x), (int) Math.floor(local.y), (int) Math.floor(local.z));
     }
 }

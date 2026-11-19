@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
+import games.brennan.dungeontrain.client.ChallengesLockedClient;
 import games.brennan.dungeontrain.client.LifeDisqualificationClient;
 import games.brennan.dungeontrain.client.TrackedAdvancements;
 import net.minecraft.ChatFormatting;
@@ -36,6 +38,8 @@ public final class AdvancementHintText {
     private static final String PLACEHOLDER_KEY = "advancements.dungeontrain.hidden_description";
     /** The red line under the hint while this life has ruled the advancement out. */
     private static final String DISQUALIFIED_KEY = "advancements.dungeontrain.disqualified_this_life";
+    /** The red line on a challenge that can't be earned because this is multiplayer. */
+    private static final String MULTIPLAYER_LOCKED_KEY = "advancements.dungeontrain.multiplayer_locked";
     /** Tooltip footer on a trackable, unearned advancement: click to track / click to stop tracking. */
     private static final String TRACK_CLICK_KEY = "advancements.dungeontrain.track.click";
     private static final String TRACK_TRACKING_KEY = "advancements.dungeontrain.track.tracking";
@@ -52,6 +56,9 @@ public final class AdvancementHintText {
         return Set.copyOf(ids);
     }
 
+    /** The Secrete Menu's tab root: the only root whose description stays masked until earned. */
+    private static final String SECRETE_MENU_ROOT = BandAdvancements.SECRETE_MENU_PREFIX + BandAdvancements.REVERSE_ANCHOR;
+
     private AdvancementHintText() {
     }
 
@@ -66,14 +73,15 @@ public final class AdvancementHintText {
      * <p>Masked: unearned {@code dungeontrain:*} advancements. Never masked: other namespaces, tab
      * roots (the tab needs to explain itself when opened), the {@code editor/} tab (its descriptions
      * document editor capabilities and double as discoverability hints), and anything already
-     * earned.</p>
+     * earned. The one masked root is {@link #SECRETE_MENU_ROOT}: Slimed can open that tab before its
+     * root is earned, and the root's description would give away how to earn it.</p>
      *
      * @param progress may be null — treated as "not earned yet"
      */
     public static boolean shouldMask(ResourceLocation id, AdvancementProgress progress) {
         if (!isModAdvancement(id)) return false;
         String path = id.getPath();
-        if (path.endsWith("/root")) return false;
+        if (path.endsWith("/root") && !path.equals(SECRETE_MENU_ROOT)) return false;
         if (path.startsWith("editor/")) return false;
         return progress == null || !progress.isDone();
     }
@@ -83,11 +91,14 @@ public final class AdvancementHintText {
         return id != null && TRACKABLE.contains(id);
     }
 
-    /** Whether {@code id} should draw greyed out: a mod advancement this life has ruled out, not yet earned. */
+    /**
+     * Whether {@code id} should draw greyed out: a mod advancement, not yet earned, that this life has
+     * ruled out or that multiplayer has locked.
+     */
     public static boolean isGreyedOut(ResourceLocation id, AdvancementProgress progress) {
         if (!isModAdvancement(id)) return false;
         if (progress != null && progress.isDone()) return false;
-        return LifeDisqualificationClient.isDisqualified(id);
+        return LifeDisqualificationClient.isDisqualified(id) || ChallengesLockedClient.isLocked(id);
     }
 
     /**
@@ -95,17 +106,22 @@ public final class AdvancementHintText {
      * tracked set changes, so a tooltip split for one state is never shown in another.
      */
     public static int maskedDescriptionRevision() {
-        return LifeDisqualificationClient.revision() * 31 + TrackedAdvancements.revision();
+        return (LifeDisqualificationClient.revision() * 31 + TrackedAdvancements.revision()) * 31
+            + ChallengesLockedClient.revision();
     }
 
     /**
      * The full masked tooltip body for an unearned advancement: the hint (or placeholder), then
-     * either a red "lost this life" line (when this life has ruled it out) or a grey
+     * either a red "single-player only" line (multiplayer has locked it), a red "lost this life"
+     * line (when this life has ruled it out), or a grey
      * track/tracking footer (when it is trackable and still open). Callers have already passed
      * {@link #shouldMask}.
      */
     public static Component maskedDescription(ResourceLocation id) {
         MutableComponent text = hintOrPlaceholder(id).copy();
+        if (ChallengesLockedClient.isLocked(id)) {
+            return text.append("\n").append(Component.translatable(MULTIPLAYER_LOCKED_KEY).withStyle(ChatFormatting.RED));
+        }
         if (LifeDisqualificationClient.isDisqualified(id)) {
             // Nothing left to track once it is gone — the red line is the whole footer.
             return text.append("\n").append(Component.translatable(DISQUALIFIED_KEY).withStyle(ChatFormatting.RED));

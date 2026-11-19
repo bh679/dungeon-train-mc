@@ -48,7 +48,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Deeper Darker + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Deeper Darker + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix/Dungeon Totems (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids, and for `dungeontotems` (jarJar'd, not yet listed: every other case runs its nested copy) |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
@@ -59,7 +59,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **I** | minus BetterNether (its libraries present) | Fails — names `betternether` with its `[x,)` floor |
 | **J** | minus BetterEnd (libraries present) | Fails — names `betterend` with its `[x,)` floor |
 | **K** | minus WWOO + Biomes O' Plenty (their libraries present) | Fails — names `wwoo` and `biomesoplenty` with their `[x,)` floors |
-| **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
+| **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml), and the log says `[SableMobPaths] active`. A, D and G include Pathfinder, proving its mixins apply against production bytecode, and log `[SableMobPaths] off` |
 | **M** | minus VanillaBackport (Platform present) | Fails — names `vanillabackport` with its `[x,)` floor |
 | **A/O (`dmv`)** | top-level DT Mod Verify (`dtmodverify`, the Free Play file-verification engine; jarJar'd like the hybrid trio, so G runs on the nested copy) | Server starts cleanly; `JarJar: nested copy skipped` for `dtmodverify` too |
 | **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |
@@ -70,6 +70,8 @@ The NeoForge version follows `neo_version` for the same reason.
 | **S** | **CurseForge jar** + Case L's set (CurseForge-app layout: top-level StreamDetect/DpiBypassDetect, no Sable Pathfinder) | Server starts cleanly; the two add-ons load from `mods/` (nothing nested to skip) |
 | **T** | **CurseForge jar**, Case S minus StreamDetect + DpiBypassDetect (manual CurseForge download that skipped them) | Server starts cleanly (both `optional`); `streamdetect` / `dpibypassdetect` absent from the mod list |
 | **U** | minus Deeper Darker (the only case without it) | Fails — names `deeperdarker` with its `[x,)` floor |
+| **V** | minus Luminous Monsters (the only case without it) | Fails — names `luminous_monsters` with its `[x,)` floor |
+| **W** | minus Creeper Overhaul (the only case without it; its libraries stay) | Fails — names `creeperoverhaul` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

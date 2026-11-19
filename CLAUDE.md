@@ -17,6 +17,7 @@ human oversight at each stage.
 - **Repos:** dungeon-train-mc
 - **GitHub Project:** https://github.com/users/bh679/projects/16 (Project #16)
 - **Wiki:** github.com/bh679/dungeon-train-mc/wiki
+- **Website:** https://dungeon.training (`brennan.games/dungeontrain` redirects there). Same box as the relay; the relay API, including `FfmpegMirror`'s download, stays on `brennan.games`, because shipped jars call it.
 
 ---
 
@@ -55,12 +56,14 @@ Those gate playbooks reference further playbooks as needed.
 
 ## Gate 1 — Plan Approval
 
+Follow `~/.claude/playbooks/gates/gate-1-plan.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-1-plan.md` (UI prototypes; new advancements prototyped in the advancement editor).
 Before writing any code:
 1. Enter plan mode (`EnterPlanMode`)
 2. Explore the codebase — read relevant files, understand existing patterns (`src/main/java/...`, `build.gradle`, `gradle.properties`)
    - Current stack baseline: NeoForge 1.21.1 (`neo_version` in `gradle.properties`), Sable physics dep (`sable_version`).
 3. Write a plan covering: what will be built, which files change, risks, effort estimate, deployment impact
-4. **Mod-impact check:** If the change involves new dependencies in `build.gradle`, MC/NeoForge/Sable version bumps, new mixins, new registered blocks/items/entities, world-gen changes, or networking packets — call this out explicitly in the plan
+4. **Mod-impact check:** run the checklist in `.claude/gates/gate-1-plan.md` and flag each item that applies
 5. Present via `ExitPlanMode` and wait for user approval
 6. **After approval — rename branch** from `claude/<auto-slug>` → `dev/<feature-slug>`
    before writing any code (see `~/.claude/playbooks/gates/gate-1-plan.md` § Post-Approval: Rename Branch)
@@ -69,6 +72,8 @@ Before writing any code:
 
 ## Gate 2 — Testing Approval
 
+Follow `~/.claude/playbooks/gates/gate-2-test.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-2-test.md` (Minecraft build, F2 screenshots, Sable test).
 After implementation is complete:
 1. Build the mod: `./gradlew build` — must pass cleanly (no errors, warnings noted)
 2. Run unit tests if any: `./gradlew test`
@@ -77,7 +82,7 @@ After implementation is complete:
 5. Enter plan mode and present a **Gate 2 Testing Report**:
    - Build result: success/fail, jar size, output path (`build/libs/dungeon-train-mc-<version>.jar`)
    - Unit test summary: total, passed, failed, skipped (if applicable)
-   - Screenshot paths
+   - Screenshots shown rendered in chat, plus their paths
    - Step-by-step in-game testing instructions (what world, what to do, what to look for)
    - Compatibility notes: Sable interaction tested? multiplayer tested? dedicated server tested?
    - What passed / what failed
@@ -87,11 +92,13 @@ After implementation is complete:
 
 ## Gate 3 — Merge Approval
 
-Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
+Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-on steps in
+`.claude/gates/gate-3-merge.md` (changelog, tags, modpack whitelist). Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
    `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
-   diff, and present those notes **and tags** to the user to confirm before merging — see
+   diff as one new file, `.github/release-notes/unreleased/<id>.json` (never edit `changelog.json`
+   on a branch; only releases write it), and present those notes **and tags** to the user to confirm before merging — see
    `.github/release-notes/README.md`. **You choose the tags, from the diff** — there is no
    keyword classifier. Run `append-entry.py --tag-guide`, answer its question per tag, pass
    `--tag` for each yes or `--no-topical-tags` if none apply (one or the other is required).
@@ -99,7 +106,7 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 3. Verify CI green
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
-6. Bump version in `gradle.properties` per the versioning rule
+6. Don't bump `mod_version` — `version-bump.yml` does the MINOR bump on main after the merge (see "Versioning")
 7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
    on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
    happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
@@ -119,13 +126,14 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
 ./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
+scripts/ci/run-local.sh   # Run the four build.yml CI jobs locally before pushing (scripts/ci/README.md)
 python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/approved_hashes.json (see below)
 ```
 
 ### Community item trade values
 
 What each item trades for (Trade Everything, sixteenths of an emerald) is tuned by the community
-at https://brennan.games/dungeontrain/items/ — members suggest, Brennan approves. Nothing pushes
+at https://dungeon.training/items/ — members suggest, Brennan approves. Nothing pushes
 from there: `./gradlew pullTradeValues` copies the relay's `GET /items/export` into
 `src/main/resources/data/dungeontrain/trade_values.json` (committed; `compat/TradeValueTable`
 registers it as TE's first value provider, ahead of `TradeEverythingBridge`'s hand-tuned
@@ -150,6 +158,13 @@ NeoForge file of every approved mod, pulled by hand with
 fails on an approved id with no record. Ids the script cannot place are listed in `unmatched` and
 stay id-only approved; the relay verifies their files live and the Approved Mods page's review
 queue shows what it could not place. The relay's `enforceHashes` switch ships OFF.
+**The relay's copy of the baked list refreshes itself:** `release.yml` runs
+`scripts/relay/sync-approved-mods-catalog.sh` after every release (cascade ticks included), which
+copies the jar's `approved_mods.json` into dp-relay's `web/js/approved-mods-catalog.json`, regenerates
+`approved-mod-projects.json` with the relay's `sync-mod-projects.js`, and opens or updates ONE PR on
+`bh679/dp-relay` (branch `auto/approved-mods-catalog`). It needs the `RELAY_REPO_TOKEN` secret (a
+fine-grained PAT on dp-relay, Contents + Pull requests read/write); unset, the step warns and skips.
+The relay's `catalog-freshness.yml` goes red until that PR is merged, so never refresh the copy by hand.
 
 ### In-Game Manual Testing
 
@@ -158,7 +173,7 @@ For Gate 2 verification:
 2. Create or open the test world (`run/saves/`)
 3. Reproduce the feature flow
 4. Press **F2** for screenshots → saved to `run/screenshots/`
-5. Copy relevant screenshots to `./test-results/gate2-<feature-slug>-<YYYY-MM>.png`
+5. Copy relevant screenshots to `~/Projects/Screenshots/DungeonTrainCraft/<feature-slug>/<NN>-<what-it-shows>.png`
 
 ### Sable Compatibility
 
@@ -170,13 +185,17 @@ assumptions break on ships. Document the Sable test result in the Gate 2 report.
 
 ## Versioning
 
-Per global versioning rule: SemVer in `gradle.properties` `mod_version` field.
-- Every commit during dev → PATCH bump
-- Feature merged to main (Gate 3) → MINOR bump (reset PATCH)
-- Breaking save format / API change → MAJOR bump
+SemVer in `gradle.properties` `mod_version` field. **Project exception to the global versioning
+rule:** feature branches do NOT bump `mod_version` per commit.
+- Commits during dev → leave `mod_version` alone
+- Feature merged to main (Gate 3) → MINOR bump, done by `version-bump.yml` on main after the squash
+- Breaking save format / API change → MAJOR bump, set by hand on the branch to `X.0.0`
+  (`version-bump.yml` skips a merge whose own diff set `mod_version` to `X.Y.0`)
 
-> **Note:** The shipped versioning hook is npm-only (`package.json`). It is NOT installed in
-> this repo. Bump `gradle.properties` `mod_version` manually before each commit.
+**Why:** `version-bump.yml` rewrites the `mod_version` line on main after every merge. A branch
+that also edits that line conflicts with every merge, and on GitHub a conflicting PR gets no CI
+run at all, so each conflict cost a manual sync plus a full re-run. Same reason the changelog keeps
+one file per unreleased entry (`.github/release-notes/unreleased/`).
 
 **Tagging is NOT done manually.** Tags exist only when a release is shipped — see
 "Releasing (post-Gate 3)" below. The global versioning rule's `git tag && git push`
@@ -185,6 +204,11 @@ example does NOT apply to this project.
 ---
 
 ## Releasing (post-Gate 3)
+
+Step-by-step guides, read these when doing the job:
+- Shipping a release: [docs/guides/release.md](docs/guides/release.md) (includes the required localhost preview)
+- Making and publishing a mod of ours: [docs/guides/newmod.md](docs/guides/newmod.md)
+- Editing a live store page: [docs/guides/editmod.md](docs/guides/editmod.md)
 
 Not every Gate 3 merge ships a public release. Tags exist only for releases — there is
 no `push: tags` trigger on `release.yml`; the workflow is dispatch-only and creates the
@@ -318,17 +342,25 @@ contract — paintings are blocks under FP, and templates/shared carriages carry
 `compat/PaintingTransformProcessor` for why flipped stamps still work). **BetterNether: New Dawn** + its
 BCLib/WorldWeaver/WunderLib libraries (`betternether-neoforge(required)` etc., same slugs on both platforms)
 are hard deps too — every second Nether band's core uses BetterNether biomes
-(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
+(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes) and gets half of BetterNether's own structures, sited on the band's terrain
+(`worldgen/structure/BandBetterNetherStructures`); disabled ores are kept out of its decoration and structures
+(`compat/StructureDisabledContentCleanup`). **BetterEnd: New
 Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
 End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
 read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
 vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
 `data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
-Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. **VanillaBackport** (+ its **Platform** library, `vanillabackport(required)` / `platform(required)`, needed on client AND server) is a hard dep too: its sulfur caves join the caves on the way out of every Nether pass (deep dark 50 / sulfur 30 / lush+dripstone 20 — `worldgen/NetherBandBiomes#pickCavePost`). Its overworld biomes (Pale Garden, underground Sulfur Caves) are kept to the vanilla overworld stretches — spheres/chuncks/stacks included — by `density/OverworldStretchBiomes` (non-vanilla stretches pick from `vanillaTableWithoutBackport`, keys in `worldgen/BackportBiomes`), and `mixin/terrablender/RegionsMixin` drops its TerraBlender region so the BoP stretch's region layout is unchanged; its sulfur/cinnabar rock reaches DT's `dungeontrain:overworld*` settings through VanillaBackport's own `NoiseGeneratorSettings` constructor injection (`event/VanillaBackportSurfaceRuleCheck` warns at server start if it stops). **Exposure** and its add-on **Exposure: Polaroid** (`exposure(required)` / `exposure-polaroid(required)`, same slugs on both platforms; Polaroid needs Exposure, so they travel together) are hard deps too: players get the instant camera, and Exposure's original camera, film and lightroom are hidden (`compat/DisabledModContent#HIDDEN_ITEMS` — recipes, loot, creative tabs). `compat/ExposureLootSuppressor` drops the `exposure:chests/*` tables it would otherwise add to vanilla chests. **Deeper Darker** (`deeperdarker(required)`, same slug on both platforms) is a hard dep too: Lap 2's Deeper Dark pass (`nether:otherside` in the order) copies real Otherside chunks into its core, bedrock floor and roof included (`worldgen/OthersideCore`, stamped by `feature/NetherCoreStamp`), labels it with the Otherside biomes (`density/NetherCoreBiomes`), sites the mod's Ancient Temples there (`structure/BandOthersideStructures`), and gives the train its own phase (`TrainPhase.DEEPER_DARK`: sculk track/tunnels re-skinned by `scripts/deeper-dark/reskin-nether-templates.py`, the `deeper_dark` stage, the `sculkmobs` room). It joins the BetterNether slot before it: back-to-back Nether slots keep one unbroken range of deep-dark mountains between their cores (`CycleLayout#netherJoinedBefore`, `WorldGenCycle#netherShapeOffset`). `NetherBand.isOthersideAt` is the one test Nether-only behaviour (ghasts, fog, music, portals, fortresses) stands aside on. Lap 1 of every cycle is
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. **VanillaBackport** (+ its **Platform** library, `vanillabackport(required)` / `platform(required)`, needed on client AND server) is a hard dep too: its sulfur caves join the caves on the way out of every Nether pass (deep dark 50 / sulfur 30 / lush+dripstone 20 — `worldgen/NetherBandBiomes#pickCavePost`). Its overworld biomes (Pale Garden, underground Sulfur Caves) are kept to the vanilla overworld stretches — spheres/chuncks/stacks included — by `density/OverworldStretchBiomes` (non-vanilla stretches pick from `vanillaTableWithoutBackport`, keys in `worldgen/BackportBiomes`), and `mixin/terrablender/RegionsMixin` drops its TerraBlender region so the BoP stretch's region layout is unchanged; its sulfur/cinnabar rock reaches DT's `dungeontrain:overworld*` settings through VanillaBackport's own `NoiseGeneratorSettings` constructor injection (`event/VanillaBackportSurfaceRuleCheck` warns at server start if it stops). **Exposure** and its add-on **Exposure: Polaroid** (`exposure(required)` / `exposure-polaroid(required)`, same slugs on both platforms; Polaroid needs Exposure, so they travel together) are hard deps too: players get the instant camera, and Exposure's original camera, film and lightroom are hidden (`compat/DisabledModContent#HIDDEN_ITEMS` — recipes, loot, creative tabs). `compat/ExposureLootSuppressor` drops the `exposure:chests/*` tables it would otherwise add to vanilla chests. **Luminous Monsters** (`luminous-monsters(required)`, same slug on both platforms) is a hard dep too: 16 natural-spawn zombie and skeleton variants. DT overrides 10 of its every-biome spawn lists in `data/luminous_monsters/neoforge/biome_modifier/` and hides its spawn eggs (`compat/DisabledModContent#isHiddenCreativeItem`). **Creeper Overhaul** (`creeper-overhaul(required)`, plus its libraries
+`geckolib(required)`, `resourceful-lib(required)`, `resourceful-config(required)`; same slugs on both platforms) is a
+hard dep too: 16 biome creepers for carriage rooms. Its natural spawns wait for their room level
+(`event/NaturalSpawnLevelGate`), and a biome keeps the vanilla creeper until one of its own creepers unlocks: DT
+empties the mod's `remove_vanilla.json` and the gate drops `minecraft:creeper` instead (the everywhere cave creeper
+does not count). `client/render/VanillaCreeperRendererClient` keeps the vanilla creeper's vanilla model. Audit:
+`modpack/audits/creeper-overhaul.md`. **Deeper Darker** (`deeperdarker(required)`, same slug on both platforms) is a hard dep too: Lap 2's Deeper Dark pass (`nether:otherside` in the order) copies real Otherside chunks into its core, bedrock floor and roof included (`worldgen/OthersideCore`, stamped by `feature/NetherCoreStamp`), labels it with the Otherside biomes (`density/NetherCoreBiomes`), sites the mod's Ancient Temples there (`structure/BandOthersideStructures`), and gives the train its own phase (`TrainPhase.DEEPER_DARK`: sculk track/tunnels re-skinned by `scripts/deeper-dark/reskin-nether-templates.py`, the `deeper_dark` stage, the `sculkmobs` room). It joins the BetterNether slot before it: back-to-back Nether slots keep one unbroken range of deep-dark mountains between their cores (`CycleLayout#netherJoinedBefore`, `WorldGenCycle#netherShapeOffset`). `NetherBand.isOthersideAt` is the one test Nether-only behaviour (ghasts, fog, music, portals, fortresses) stands aside on. Lap 1 of every cycle is
 overworld → Nether → WWOO → one End band (1200 vanilla, then 2000 BoP — two back-to-back `end:` slots join into one
 band with a single void fade, each piece its own pass/look) → upside-down; Lap 2 is BoP → BetterNether → Deeper Dark (joined to it) → Lost City (its
 own `legacy:wwoo:` run — an order may hold several; it wears WWOO decoration, and its buildings start on the Nether's exit
-mountains via `CycleLayout#legacyLeadIn`; the track is flattened only where it would cut a mountain — `density/UpsideDownTrackFlatten#mountainGate`, also in the upside-down band; its buildings fade in from the foot of the Nether's fall, 15% of the grid there rising to full 2900 blocks on, none on the range (`LostCityStructures#density`, `#fallFoot`; a 2.4% sprinkling also lands in Lap 1's WWOO stretch), start in every overworld biome, oceans included, seated on the footprint's 30th-percentile floor, with vanilla adaptation off and a fill-only beard instead, yielding their natural pad and air to WWOO's terrain and water, which climb over and flood them — all of that fit lives in the jarJar'd sibling **Lost City Terrain Fit** (`bh679/lostcityterrainfit-mc`; its seat inject runs ahead of `StructureBasementMixin`'s, and DT vetoes its `lostcityterrainfit:all_biome/*` copies — `LostCityStructures#isTerrainFitCopy`)) **Two kinds of building stand there:** Big Lost City's, placed exactly as shipped (the mod is All Rights Reserved, so no DT processor is ever attached to one of its templates — `LostCityStructuresTest#noDtPoolNamesBigLostCity` pins it), and **DT's own** (`dungeontrain:lost_city/<name>`: office tower, apartment block, hotel, hospital, civic hall, shopping strip, railway station, petrol station, radio mast, water tower, overpass, cooling tower, silos, a leaning tower, a fallen block and a snapped tower), generated by `scripts/lost-city/build-templates.py` from recipes in `scripts/lost-city/lostcity/archetypes/` and rolled per placement into designs — `lost_city_stretch` (taller/shorter/wider/podium/setback), `lost_city_swap` (recolour/decay), `lost_city_bite`, `lost_city_facade`, `lost_city_truncate` — by the processor lists `scripts/lost-city/generate-variants.py` emits; CI runs both with `--check`, and `LostCityTemplatesTest` asserts the stretch finds the manifest's floor/bay periods. See `scripts/lost-city/README.md`) → BetterEnd. From the second cycle on, Lap 1's Nether takes the Biomes O'
+mountains via `CycleLayout#legacyLeadIn`; the track is flattened only where it would cut a mountain — `density/UpsideDownTrackFlatten#mountainGate`, also in the upside-down band; its buildings fade in from the foot of the Nether's fall, 15% of the grid there rising to full 2900 blocks on, none on the range (`LostCityStructures#density`, `#fallFoot`; a 2.4% sprinkling also lands in Lap 1's WWOO stretch), start in every overworld biome, oceans included, seated on the footprint's 30th-percentile floor, with vanilla adaptation off and a fill-only beard instead, yielding their natural pad and air to WWOO's terrain and water, which climb over and flood them — all of that fit lives in the jarJar'd sibling **Lost City Terrain Fit** (`bh679/lostcityterrainfit-mc`; it seats DT's own buildings as well as Big Lost City's, on the sea floor in water with footings to the ground; its seat inject runs ahead of `StructureBasementMixin`'s, and DT vetoes its `lostcityterrainfit:all_biome/*` copies — `LostCityStructures#isTerrainFitCopy`)) **Two kinds of building stand there:** Big Lost City's, placed exactly as shipped (the mod is All Rights Reserved, so no DT processor is ever attached to one of its templates — `LostCityStructuresTest#noDtPoolNamesBigLostCity` pins it), and **DT's own** (`dungeontrain:lost_city/<name>`: office tower, apartment block, hotel, hospital, civic hall, shopping strip, railway station, petrol station, radio mast, water tower, overpass, cooling tower, silos, a leaning tower, a fallen block and a snapped tower), generated by `scripts/lost-city/build-templates.py` from recipes in `scripts/lost-city/lostcity/archetypes/` and rolled per placement into designs — `lost_city_stretch` (taller/shorter/wider/podium/setback), `lost_city_swap` (recolour/decay), `lost_city_bite`, `lost_city_facade`, `lost_city_truncate` — by the processor lists `scripts/lost-city/generate-variants.py` emits; CI runs both with `--check`, and `LostCityTemplatesTest` asserts the stretch finds the manifest's floor/bay periods. See `scripts/lost-city/README.md`) → BetterEnd. From the second cycle on, Lap 1's Nether takes the Biomes O'
 Plenty look (`nether:vanilla>bop` in the order — a vanilla + BoP TerraBlender region mix in
 `density/NetherCoreBiomes`; the BoP End is sampled from `worldgen/BopEnd`) (`worldgen/SecondLapOverworld`;
 `/dungeontrain debug overworld-laps` / `nether-passes` list each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
@@ -349,7 +381,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775, Discord Presence — CF project 1573749, Dungeon Train Mod Verification — CF project 1738856):** jarJar'd inside the DT jar
+- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775, Discord Presence — CF project 1573749, Dungeon Train Mod Verification — CF project 1738856, Dungeon Totems — CF project 1800270):** jarJar'd inside the DT jar
   (so Modrinth + manual installs have them built in) AND declared `<slug>(required)` on **CurseForge
   only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
   which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's
@@ -362,6 +394,8 @@ loads (Advancement Plaques needs Iceberg).
   Deptest Cases S/T cover it; `checkCurseforgeJar` (in `check`) asserts it drops exactly those two.
   Deptest Cases A (top-level present) and G (nested only) cover both layouts. Keep Trim is hybrid
   only because its Modrinth listing is still in review (it was fully external 0.863.0–0.908.0).
+- **Sable Mob Paths (`bh679/sablemobpaths-mc`):** jarJar'd into every DT jar, no listing, no modpack entry. It gives CurseForge players mob pathing across carriages, and villagers that work, sleep and raid on them, because Sable Pathfinder (All Rights Reserved) isn't listed there, and turns itself off when Sable Pathfinder is loaded. **It is clean-room: never open Sable Pathfinder's source or decompile its jar** (its `CLEANROOM.md`). Develop and test it with `-PnoSablePathfinder`. On a Sable bump, re-run its `scripts/verify-mixin-targets.sh`.
+- **Dungeon Totems (`bh679/dungeontotems-mc`):** a hybrid sibling: jarJar'd into every DT jar, and on CurseForge (1800270) also `dungeon-totems(required)` plus a `curseforge_only` modpack Include. Its Modrinth listing (`dungeontotems`) still awaits approval; when it lands, drop `curseforge_only` and add `dungeontotems(required)` to the Modrinth dependencies. `compat/DungeonTotemsBridge` lands a Void Totem save on the nearest front pad of the train. DT's loot carries `dungeontrain:random_totem` (weights in `data/dungeontrain/loot/random_totem.json`, `editor/RandomTotemTable`) wherever it had a vanilla Totem of Undying, except ominous vaults, which keep the vanilla one (`RandomTotemLootTest`). Evokers drop by the same weights (`compat/EvokerTotemLootModifier`, after Dungeon Totems' own modifier). No Void Totem anywhere before the first End band (`editor/VoidTotemGate`). Trade values follow the weights: the rarest is worth a quarter of a vanilla totem, heavier ones proportionally less (`TradeEverythingBridge#totemValue`). Audit: `modpack/audits/dungeontotems.md`.
 - **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE (+ hybrid KT/DB/SFF) each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
@@ -370,6 +404,7 @@ loads (Advancement Plaques needs Iceberg).
   **Raise a floor only deliberately** (when DT starts calling a newer seam), and when you do, also
   refresh that mod's `version` + `file_id` + `modrinth_version` in `modpack.config.json`.
   Enforced by `check-pins.py`, which asserts modpack pin ≥ floor.
+- **Adding any new mod ⇒ run the audit in [`modpack/newmod.md`](modpack/newmod.md) first.**
 - **New companion ⇒ add both pins + mod dependency:** when you add an `optional_mods` entry to
   `modpack/modpack.config.json`, give it a `slug` + `required` flag + `modrinth_project` +
   `modrinth_version`, and add `<slug>(optional)` to `release.yml` `curseforge-dependencies`.
@@ -401,10 +436,14 @@ loads (Advancement Plaques needs Iceberg).
   ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
   mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` looks once,
   reports INCONCLUSIVE and won't fail (or wait). With the key it is authoritative and polls.
-  The **mod** jar's listing is checked the same way, but off the release's critical path:
-  `release.yml` fails only on a missing upload file id, then dispatches
-  `verify-curseforge-upload.yml` (300-min approval wait) — a red run there means the file was
-  rejected; recover with `reupload-curseforge.yml`. (Until Oct 2026 `release.yml` polled for
+  So a quick green verify run without the key says nothing: the public listing hides held and
+  rejected files. Setup and test steps: `modpack/README.md`.
+  The **mod** jar is checked off the release's critical path: `release.yml` fails only on a
+  missing upload file id, then dispatches `verify-curseforge-upload.yml` (300-min wait), which
+  with the key polls that file's own status (`reconcile.py --file-id`). Red means rejected (or
+  the key was refused); recover with `reupload-curseforge.yml`. Green with a "still under review"
+  or "UNKNOWN" warning is NOT a rejection, so don't re-upload. A rejection after the 300 min goes
+  unnoticed. (Until Oct 2026 `release.yml` polled for
   30 min itself, which was ~30 of every release's ~34 minutes.)
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).

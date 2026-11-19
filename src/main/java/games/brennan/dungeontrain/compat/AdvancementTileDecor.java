@@ -1,6 +1,11 @@
 package games.brennan.dungeontrain.compat;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
+import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.client.CapstoneNeeds;
 import games.brennan.dungeontrain.client.TrackedAdvancements;
 import net.minecraft.advancements.AdvancementNode;
@@ -11,6 +16,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidgetType;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Vector3f;
+
+import java.util.function.Consumer;
 
 /**
  * How a Dungeon Train tile is decorated on the advancements screens, shared by the vanilla and
@@ -42,6 +49,15 @@ public final class AdvancementTileDecor {
     private static final float HALO_R = 1.0f, HALO_G = 1.0f, HALO_B = 0.33f;
     /** Tint of the "still needed" halo shown while a capstone is hovered — vanilla's "aqua". */
     private static final float NEED_R = 0.33f, NEED_G = 1.0f, NEED_B = 1.0f;
+    /**
+     * The tab-complete frame: vanilla's challenge shape with a point on each side, in vanilla's grey
+     * and gold, so the "complete everything" advancements ({@link #hasStarFrame}) stand out by shape alone. The
+     * advancement editor draws the same sprites.
+     */
+    private static final ResourceLocation TAB_COMPLETE_FRAME_UNOBTAINED =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "advancements/tab_complete_frame_unobtained");
+    private static final ResourceLocation TAB_COMPLETE_FRAME_OBTAINED =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "advancements/tab_complete_frame_obtained");
     /** How far the halo frame extends past the tile on each side. */
     private static final int HALO_PAD = 2;
     /** Frame size both widgets blit. */
@@ -82,7 +98,7 @@ public final class AdvancementTileDecor {
                                  float r, float gr, float b) {
         enableBlend();
         AdvancementType type = node.advancement().display().map(DisplayInfo::getType).orElse(AdvancementType.TASK);
-        ResourceLocation frame = AdvancementWidgetType.UNOBTAINED.frameSprite(type);
+        ResourceLocation frame = tileFrame(node, AdvancementWidgetType.UNOBTAINED.frameSprite(type));
         g.setColor(r, gr, b, alpha);
         g.blitSprite(frame, left - HALO_PAD, top - HALO_PAD, TILE_SIZE + 2 * HALO_PAD, TILE_SIZE + 2 * HALO_PAD);
         g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -104,12 +120,37 @@ public final class AdvancementTileDecor {
      * box goes through the same overload and is left alone.
      */
     public static void wrapHoverFrame(GuiGraphics g, ResourceLocation sprite, int x, int y,
-                                      AdvancementNode node, AdvancementProgress progress, Runnable blit) {
+                                      AdvancementNode node, AdvancementProgress progress,
+                                      Consumer<ResourceLocation> blit) {
         if (node != null && sprite.getPath().contains("_frame_")
             && isTrackedAndUnearned(node.holder().id(), progress)) {
             drawHalo(g, node, x, y, 1.0f, HALO_R, HALO_G, HALO_B);
         }
-        blit.run();
+        blit.accept(tileFrame(node, sprite));
+    }
+
+    /**
+     * The frame sprite to draw for {@code node}: a tile frame ({@code <type>_frame_<state>}) of an
+     * advancement with the star frame ({@link #hasStarFrame}) becomes the tab-complete frame in the same state;
+     * anything else is returned unchanged. Used for the frame blit in {@code draw} (the only
+     * {@code blitSprite} there, in vanilla and Better Advancements alike), the hover redraw and the halo.
+     */
+    public static ResourceLocation tileFrame(AdvancementNode node, ResourceLocation sprite) {
+        String path = sprite.getPath();
+        if (node == null || !path.contains("_frame_") || !hasStarFrame(TabGateways.layout(), node.holder().id())) {
+            return sprite;
+        }
+        return path.endsWith("_unobtained") ? TAB_COMPLETE_FRAME_UNOBTAINED : TAB_COMPLETE_FRAME_OBTAINED;
+    }
+
+    /**
+     * Does {@code id} wear the tab-complete frame? The tab-complete advancements and their in-tab copies,
+     * the Everything Burrito and It's Not That Simple: the "complete everything" advancements. Pure over
+     * the layout.
+     */
+    public static boolean hasStarFrame(TabGateways.Layout layout, ResourceLocation id) {
+        return CompletionistAdvancement.ID.equals(id) || StartAgainAdvancement.ID.equals(id)
+            || TabCompleteAdvancements.isTabCompleteOrCopy(layout, id);
     }
 
     /**

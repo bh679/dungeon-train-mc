@@ -120,4 +120,53 @@ class LiveEncoderArgsTest {
         assertEquals(500, LiveEncoder.effectiveBitrateKbps(600, true));
         assertEquals(4400, LiveEncoder.effectiveBitrateKbps(8000, true));
     }
+
+    @Test
+    void aResumeAppendsToThePlaylistOnTheSameClock() {
+        Path dir = Path.of("/tmp/live/abc");
+        List<String> fresh = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 1550, LiveEncoder.Cadence.of(10), dir, 0, false, null));
+        List<String> resumed = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 1550, LiveEncoder.Cadence.of(10), dir, 0, false,
+            new LiveEncoder.Resume(123.45)));
+        assertTrue(fresh.contains("1550k"), "the bitrate is sent as given");
+        assertFalse(fresh.contains("-output_ts_offset"));
+        assertFalse(String.join(" ", fresh).contains("append_list"));
+        int offset = resumed.indexOf("-output_ts_offset");
+        assertTrue(offset > 0 && offset < resumed.lastIndexOf("-f"), "an output option, before the muxer");
+        assertEquals("123.450", resumed.get(offset + 1));
+        assertTrue(resumed.get(resumed.indexOf("-hls_flags") + 1).endsWith("+append_list"));
+        assertEquals(fresh.get(fresh.indexOf("-g") + 1), resumed.get(resumed.indexOf("-g") + 1), "keyframes unchanged");
+    }
+
+    @Test
+    void theOldEntryPointStillAppliesSaveBandwidth() {
+        Path dir = Path.of("/tmp/live/abc");
+        assertEquals(Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, LiveEncoder.effectiveBitrateKbps(2500, true),
+                LiveEncoder.Cadence.of(10), dir, 0, true, null)),
+            Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, true)));
+    }
+
+    @Test
+    void aMicTrackReadsFourChannelsAndWritesTwoAacTracksMixFirst() {
+        Path dir = Path.of("/tmp/live/abc");
+        List<String> one = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 51234, false, null));
+        assertEquals(one, Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 51234, false, false, null)),
+            "no mic track: exactly today's one-track arguments");
+        assertEquals("2", one.get(one.indexOf("-ac") + 1));
+        assertFalse(one.contains("-filter:a:0"));
+
+        List<String> a = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 51234, true, false, null));
+        assertEquals("4", a.get(a.indexOf("-ac") + 1), "the pump's four-channel frame");
+        assertEquals(2, a.stream().filter("1:a:0"::equals).count(), "the sound input mapped twice: two tracks");
+        assertEquals("pan=stereo|c0=c0|c1=c1", a.get(a.indexOf("-filter:a:0") + 1), "track 0 = game + mic");
+        assertEquals("pan=stereo|c0=c2|c1=c3", a.get(a.indexOf("-filter:a:1") + 1), "track 1 = game only");
+        assertEquals("96k", a.get(a.indexOf("-b:a") + 1), "each track at the one-track rate");
+        assertEquals("2", a.get(a.lastIndexOf("-ac") + 1), "both tracks stereo");
+        assertTrue(a.contains("vflip"), "the picture's own filter is untouched");
+        assertFalse(a.contains("-filter_complex"));
+
+        List<String> silent = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, true, false, null));
+        assertEquals(Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, dir)), silent, "a mic track needs the sound input");
+        assertEquals(192, LiveEncoder.audioKbps(true));
+        assertEquals(96, LiveEncoder.audioKbps(false));
+    }
 }

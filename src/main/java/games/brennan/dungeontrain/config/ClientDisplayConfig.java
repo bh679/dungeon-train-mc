@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
+import games.brennan.dungeontrain.client.moty.ModOfTheYear;
 import games.brennan.dungeontrain.client.PetProtectionSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.minecraft.world.Difficulty;
@@ -172,6 +173,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_CONFIRM_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue OWN_BOOK_BOOST_CONFIRM_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue DEV_CONSENT_GRANTED;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_GRANT_SESSION;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_LAST_MSG_TO_DEV;
@@ -220,6 +222,12 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue CHUNCKS_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue SPHERES_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue STACKS_HIDE_DISTANT_HORIZONS;
+    /**
+     * Whether Distant Horizons leaves the sunk zone's attic (dimensional carriages over the invisible
+     * barrier lid) out of its LODs. DH keeps drawing everything else there. See
+     * {@code compat.DistantHorizonsSunkAttic}.
+     */
+    public static final ModConfigSpec.BooleanValue SUNK_ATTIC_HIDE_DISTANT_HORIZONS;
 
     /** How many blocks either side of a void band DH stays hidden — the approach, and past its far edge. */
     public static final ModConfigSpec.IntValue VOID_BANDS_DISTANT_HORIZONS_MARGIN;
@@ -231,6 +239,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     /** How loud the train wind plays. See {@link #getWindVolume()}. */
     public static final ModConfigSpec.DoubleValue WIND_VOLUME;
+    /** How strongly the wind's on-screen effects draw, 0 (off) to 6. See {@link #getWindScreenEffects()}. */
+    public static final ModConfigSpec.IntValue WIND_SCREEN_EFFECTS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
@@ -276,6 +286,16 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue SHARED_BOOKS_GAME_LANGUAGE_WEIGHT;
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
+    /** Sticky: the player has given an NPS answer of 8-10 at least once (see {@code client.moty.ModOfTheYear}). */
+    public static final ModConfigSpec.BooleanValue NPS_RECOMMENDED_HIGH;
+    /** The player has nominated (or said they already nominated) the DT modpack for Modpack of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_NOMINATED;
+    /** The player has voted (or said they already voted) for the DT modpack in Modpack of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_VOTED;
+    /** The player has nominated (or said they already nominated) the DT mod for Mod of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_MOD_NOMINATED;
+    /** The player has voted (or said they already voted) for the DT mod in Mod of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_MOD_VOTED;
     /**
      * Ids of the death-screen forms (survey question ids, plus the mod-recommendation sentinel)
      * this player has submitted at least once. Drives the "Don't ask me this again" checkbox,
@@ -295,6 +315,7 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
     public static final ModConfigSpec.BooleanValue DEV_CHAT_ENABLED;
+    public static final ModConfigSpec.BooleanValue PUBLIC_POSTS;
     /**
      * The config deviation the player last chose to keep, as a stable signature (see
      * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
@@ -322,6 +343,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
     public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
+    /** Only advancements in Dungeon Train's tabs pop a card — see {@link #isHideOtherAdvancementCards()}. */
+    public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_CARDS;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -343,6 +366,8 @@ public final class ClientDisplayConfig {
     public static final EditorScreenTheme DEFAULT_EDITOR_SCREEN_THEME = EditorScreenTheme.LIGHT;
     /** How the inventory-style editor X menu is painted. See {@link #DEFAULT_EDITOR_SCREEN_THEME}. */
     public static final ModConfigSpec.EnumValue<EditorScreenTheme> EDITOR_SCREEN_THEME;
+    /** How solid the block-variant editor's empty-cell markers are. See {@link #getPlaceholderCollision()}. */
+    public static final ModConfigSpec.EnumValue<PlaceholderCollision> PLACEHOLDER_COLLISION;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -399,6 +424,7 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
         FREE_PLAY_CONFIRM_OPTED_OUT = pair.getLeft().freePlayConfirmOptedOut;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT = pair.getLeft().ownBookBoostConfirmOptedOut;
         DEV_CONSENT_GRANTED = pair.getLeft().devConsentGranted;
         DEV_CONSENT_GRANT_SESSION = pair.getLeft().devConsentGrantSession;
         DEV_CONSENT_LAST_MSG_TO_DEV = pair.getLeft().devConsentLastMsgToDev;
@@ -420,12 +446,14 @@ public final class ClientDisplayConfig {
         CHUNCKS_HIDE_DISTANT_HORIZONS = pair.getLeft().chuncksHideDistantHorizons;
         SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
         STACKS_HIDE_DISTANT_HORIZONS = pair.getLeft().stacksHideDistantHorizons;
+        SUNK_ATTIC_HIDE_DISTANT_HORIZONS = pair.getLeft().sunkAtticHideDistantHorizons;
         VOID_BANDS_DISTANT_HORIZONS_MARGIN = pair.getLeft().voidBandsDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         WIND_VOLUME = pair.getLeft().windVolume;
+        WIND_SCREEN_EFFECTS = pair.getLeft().windScreenEffects;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
@@ -451,11 +479,17 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         DEATH_FORM_ANSWERED_IDS = pair.getLeft().deathFormAnsweredIds;
         DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
+        NPS_RECOMMENDED_HIGH = pair.getLeft().npsRecommendedHigh;
+        MOTY_NOMINATED = pair.getLeft().motyNominated;
+        MOTY_VOTED = pair.getLeft().motyVoted;
+        MOTY_MOD_NOMINATED = pair.getLeft().motyModNominated;
+        MOTY_MOD_VOTED = pair.getLeft().motyModVoted;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
         HUMAN_ONLY_TRANSLATIONS = pair.getLeft().humanOnlyTranslations;
         CONTENT_MODE = pair.getLeft().contentMode;
         DEV_CHAT_ENABLED = pair.getLeft().devChatEnabled;
+        PUBLIC_POSTS = pair.getLeft().publicPosts;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         NEW_RUN_DIFFICULTY = pair.getLeft().newRunDifficulty;
@@ -468,11 +502,13 @@ public final class ClientDisplayConfig {
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
+        HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
         BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
         EDITOR_SCREEN_THEME = pair.getLeft().editorScreenTheme;
+        PLACEHOLDER_COLLISION = pair.getLeft().placeholderCollision;
     }
 
     private ClientDisplayConfig() {}
@@ -502,6 +538,12 @@ public final class ClientDisplayConfig {
         b.push("freePlayConfirm");
         ModConfigSpec.BooleanValue freePlayConfirmOptedOut = b
                 .comment("Whether the player has ticked \"Don't show this again\" on the Free Play confirmation. When true, switching to creative/spectator or running a cheat command starts Free Play immediately, with no confirm screen. Reset by editing this back to false.")
+                .define("optedOut", false);
+        b.pop();
+
+        b.push("ownBookBoostConfirm");
+        ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut = b
+                .comment("Whether the player has ticked \"Don't show this again\" on the confirmation shown before boosting their own book (which costs 10 Book Boosts). When true, the star spends at once. Reset by editing this back to false.")
                 .define("optedOut", false);
         b.pop();
 
@@ -579,6 +621,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue stacksHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are in, or approaching, the stacks section of the track - the void standing with towers of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInStacks", true);
+        ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons = b
+                .comment("Fixes a Distant Horizons sky glitch on one stretch of the track. Leave this on; set false only to troubleshoot. Chunks DH stored before this was on keep the glitch until DH processes them again. Does nothing if Distant Horizons is not installed, and never touches DH's own settings.")
+                .define("hideSunkAttic", true);
         ModConfigSpec.IntValue voidBandsDistantHorizonsMargin = b
                 .comment("How many blocks either side of the chunks, spheres and stacks sections DH stays hidden. A section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the sections' edges.")
                 .defineInRange("strangeBandsHideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
@@ -610,6 +655,12 @@ public final class ClientDisplayConfig {
                 .comment("How loud the wind on the train plays, 0.0 (off) to 1.0 (unscaled). Scales the breeze and the gusts together. Separate from vanilla's Ambient slider. Also settable in Options -> Music & Sounds and in Options -> Dungeon Train...")
                 .defineInRange("windVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
                         MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        b.pop();
+
+        b.push("wind");
+        ModConfigSpec.IntValue windScreenEffects = b
+                .comment("How strongly the wind's on-screen effects (streaks at the screen edges while the wind is on you) draw: 0 = off, 1 (faint) to 6 (strongest). 3 is the default. Also settable in Options -> Dungeon Train... -> Train.")
+                .defineInRange("screenEffects", DEFAULT_WIND_SCREEN_EFFECTS, 0, MAX_WIND_SCREEN_EFFECTS);
         b.pop();
 
         b.push("skybox");
@@ -736,6 +787,13 @@ public final class ClientDisplayConfig {
                          "translucent black the other Dungeon Train menus use. Set in-game from the X menu's",
                          "Settings tab.")
                 .defineEnum("editorScreenTheme", DEFAULT_EDITOR_SCREEN_THEME);
+        ModConfigSpec.EnumValue<PlaceholderCollision> placeholderCollision = b
+                .comment("How solid the block variant editor's see-through empty-cell markers are. HALF_SOLID: stand on",
+                         "top, walk through from the side, sneak to drop through. SOLID: a full block. AIR: no collision.",
+                         "They always draw and can always be built against. An authoring convenience: on a multiplayer",
+                         "server the server keeps HALF_SOLID, so another choice there will push you back. Set in-game",
+                         "from the X menu's Settings tab.")
+                .defineEnum("placeholderCollision", PlaceholderCollision.DEFAULT);
         b.pop();
 
         b.push("sharedBooks");
@@ -777,19 +835,26 @@ public final class ClientDisplayConfig {
                 .comment("Chat with the developer in-game, both ways. A switch on the first-launch consent card",
                          "(Adult only) and an Options row. Kid mode keeps developer chat off regardless.")
                 .define("devChat", true);
+        ModConfigSpec.BooleanValue publicPosts = b
+                .comment("Public posts: your photos and deaths may be shared on the Dungeon Train Discord and socials",
+                         "(Instagram, Facebook stories), and you get a message with a link when one is. Off keeps",
+                         "them off Discord and the socials. A switch on the first-launch consent card (on for Adult,",
+                         "off for Kid) and an Options row; synced to the server and the relay.")
+                .define("publicPosts", true);
         b.pop();
 
         b.push("customContent");
         ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference = b
                 .comment("What to do when a world starts with custom Train Editor content active",
                          "(your own edits, or an imported dtpack).",
-                         "ASK (default) — show the prompt each time a world is entered for the first time.",
+                         "DISABLE (default) — turn custom content off, so the world runs the bundled game",
+                         "  and your stats count. Free Play is off until you turn it on.",
                          "CONTINUE — always play with the custom content. Those runs are Free Play: they",
                          "  earn advancements live but don't count towards your cross-world profile or stats.",
-                         "DISABLE — always turn custom content off, so the world runs the bundled game and",
-                         "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
-                         "Custom Train Content row in Options -> Dungeon Train...")
-                .defineEnum("preference", CustomContentPreference.ASK);
+                         "ASK — show the prompt each time a world is entered for the first time.",
+                         "Set from the title screen's Free Play button, the prompt's \"Remember decision\"",
+                         "checkbox, or the Custom Train Content row in Options -> Dungeon Train...")
+                .defineEnum("preference", CustomContentPreference.DISABLE);
         ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
                 .comment("The last answer you gave the custom-content prompt, recorded whether or not",
                          "you ticked \"Remember decision\". Reused when a run reboards automatically",
@@ -816,6 +881,22 @@ public final class ClientDisplayConfig {
                          "Managed automatically — you can clear it by emptying this list.")
                 .defineListAllowEmpty("mutedForms", () -> List.<String>of(), () -> "",
                         o -> o instanceof String);
+        ModConfigSpec.BooleanValue npsRecommendedHigh = b
+                .comment("Internal: true once you have answered the \"how likely to recommend\" question with 8-10.",
+                         "Used to decide who is asked to nominate/vote for Dungeon Train in CurseForge's Mod of the Year. Managed automatically.")
+                .define("npsRecommendedHigh", false);
+        ModConfigSpec.BooleanValue motyNominated = b
+                .comment("Internal: true once you have nominated (or said you already nominated) the Dungeon Train modpack for Modpack of the Year. Managed automatically.")
+                .define("motyNominated", false);
+        ModConfigSpec.BooleanValue motyVoted = b
+                .comment("Internal: true once you have voted (or said you already voted) for the Dungeon Train modpack in Modpack of the Year. Managed automatically.")
+                .define("motyVoted", false);
+        ModConfigSpec.BooleanValue motyModNominated = b
+                .comment("Internal: true once you have nominated (or said you already nominated) the Dungeon Train mod for Mod of the Year. Managed automatically.")
+                .define("motyModNominated", false);
+        ModConfigSpec.BooleanValue motyModVoted = b
+                .comment("Internal: true once you have voted (or said you already voted) for the Dungeon Train mod in Mod of the Year. Managed automatically.")
+                .define("motyModVoted", false);
         b.pop();
 
         b.push("contentFilter");
@@ -920,6 +1001,11 @@ public final class ClientDisplayConfig {
                          "every other mod's are hidden; their advancements are still earned and still pop up.",
                          "Toggle in-game via Options > Dungeon Train. On by default.")
                 .define("hideOtherTabs", true);
+        ModConfigSpec.BooleanValue hideOtherAdvancementCards = b
+                .comment("Only advancements in Dungeon Train's tabs pop up a card when earned. Minecraft's own and",
+                         "every other mod's are still earned and still announced in chat, just without the card.",
+                         "Toggle in-game via Options > Dungeon Train. On by default.")
+                .define("hideOtherCards", true);
         b.pop();
 
         b.push("run");
@@ -935,7 +1021,7 @@ public final class ClientDisplayConfig {
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
-                devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
+                ownBookBoostConfirmOptedOut, devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
@@ -943,21 +1029,23 @@ public final class ClientDisplayConfig {
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
+                sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
-                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
                 sharedBooksRead, sharedBooksLanguages, sharedBooksGameLanguageWeight,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
-                politicalFilter, contentMode, devChatEnabled, customContentPreference,
+                npsRecommendedHigh, motyNominated, motyVoted, motyModNominated, motyModVoted,
+                politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
+                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
-                editorScreenTheme,
+                editorScreenTheme, placeholderCollision,
                 confirmBuildRestore, humanOnlyTranslations, newRunDifficulty);
     }
 
@@ -1071,6 +1159,19 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Own-book boost confirmation opt-out (see client/BookBoostConfirm) -----
+
+    /** Has the player ticked "Don't show this again" on the own-book boost confirmation? */
+    public static boolean isOwnBookBoostConfirmOptedOut() {
+        return isLoaded() && OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.get();
+    }
+
+    public static void setOwnBookBoostConfirmOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.set(value);
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.save();
     }
 
     // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
@@ -1215,6 +1316,42 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS.save();
     }
 
+    /** Sticky "has ever answered the NPS question with 8-10". False before the config loads. */
+    public static boolean isNpsRecommendedHigh() {
+        return isLoaded() && NPS_RECOMMENDED_HIGH.get();
+    }
+
+    /** Latch the sticky high-NPS flag. Idempotent — skips the TOML write when already set. */
+    public static void markNpsRecommendedHigh() {
+        setFlag(NPS_RECOMMENDED_HIGH);
+    }
+
+    /**
+     * What the player has already done for Mod of the Year (or said they have), for
+     * {@code client.moty.ModOfTheYear#nextAsk}. All false before the config loads.
+     */
+    public static ModOfTheYear.Done motyDone() {
+        if (!isLoaded()) return new ModOfTheYear.Done(false, false, false, false);
+        return new ModOfTheYear.Done(
+                MOTY_NOMINATED.get(), MOTY_MOD_NOMINATED.get(), MOTY_VOTED.get(), MOTY_MOD_VOTED.get());
+    }
+
+    /** Record that {@code ask} is done, so it is never asked again. */
+    public static void markMotyDone(ModOfTheYear.Ask ask) {
+        setFlag(switch (ask) {
+            case NOMINATE_MODPACK -> MOTY_NOMINATED;
+            case NOMINATE_MOD -> MOTY_MOD_NOMINATED;
+            case VOTE_MODPACK -> MOTY_VOTED;
+            case VOTE_MOD -> MOTY_MOD_VOTED;
+        });
+    }
+
+    private static void setFlag(ModConfigSpec.BooleanValue flag) {
+        if (!isLoaded() || flag.get()) return;
+        flag.set(true);
+        flag.save();
+    }
+
     /**
      * The death-screen forms this player has already answered at least once. Empty (never null)
      * before the config loads. Read once per death screen and held as a snapshot, so answering a
@@ -1302,7 +1439,12 @@ public final class ClientDisplayConfig {
             || FREE_PLAY_CONFIRM_OPTED_OUT.get()
             || DEATH_SCREEN_LAST_NPS.get() >= 0
             || !DEATH_FORM_ANSWERED_IDS.get().isEmpty()
-            || !DEATH_FORM_MUTED_IDS.get().isEmpty();
+            || !DEATH_FORM_MUTED_IDS.get().isEmpty()
+            || NPS_RECOMMENDED_HIGH.get()
+            || MOTY_NOMINATED.get()
+            || MOTY_VOTED.get()
+            || MOTY_MOD_NOMINATED.get()
+            || MOTY_MOD_VOTED.get();
     }
 
     public static void resetFirstRunFlags() {
@@ -1313,6 +1455,11 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS.set(-1);
         DEATH_FORM_ANSWERED_IDS.set(List.<String>of());
         DEATH_FORM_MUTED_IDS.set(List.<String>of());
+        NPS_RECOMMENDED_HIGH.set(false);
+        MOTY_NOMINATED.set(false);
+        MOTY_VOTED.set(false);
+        MOTY_MOD_NOMINATED.set(false);
+        MOTY_MOD_VOTED.set(false);
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
@@ -1423,6 +1570,20 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         HIDE_OTHER_ADVANCEMENT_TABS.set(value);
         HIDE_OTHER_ADVANCEMENT_TABS.save();
+    }
+
+    /**
+     * Whether advancements outside Dungeon Train's tabs skip the earned card (the chat line stays). On
+     * by default, pre-load included. Read on every earn — see {@code AdvancementTabGate#shouldSuppressCard}.
+     */
+    public static boolean isHideOtherAdvancementCards() {
+        return !isLoaded() || HIDE_OTHER_ADVANCEMENT_CARDS.get();
+    }
+
+    public static void setHideOtherAdvancementCards(boolean value) {
+        if (!isLoaded()) return;
+        HIDE_OTHER_ADVANCEMENT_CARDS.set(value);
+        HIDE_OTHER_ADVANCEMENT_CARDS.save();
     }
 
     public static boolean isLowMemoryNoticeChatEnabled() {
@@ -1597,6 +1758,30 @@ public final class ClientDisplayConfig {
         if (WIND_VOLUME.get() == snapped) return;
         WIND_VOLUME.set(snapped);
         WIND_VOLUME.save();
+    }
+
+    // ----- Wind screen effects (see client/wind/WindFeelOverlay) -----
+
+    /** Default and top tier of {@link #getWindScreenEffects()}. */
+    public static final int DEFAULT_WIND_SCREEN_EFFECTS = 3;
+    public static final int MAX_WIND_SCREEN_EFFECTS = 6;
+
+    /**
+     * How strongly the wind's on-screen effects draw: {@code 0} off, {@code 1} (faint) to
+     * {@link #MAX_WIND_SCREEN_EFFECTS}; {@link #DEFAULT_WIND_SCREEN_EFFECTS} before the config loads.
+     */
+    public static int getWindScreenEffects() {
+        if (!isLoaded()) return DEFAULT_WIND_SCREEN_EFFECTS;
+        return Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, WIND_SCREEN_EFFECTS.get()));
+    }
+
+    /** Persist the wind screen-effects tier, clamped; skips unchanged writes (sliders call this live). */
+    public static void setWindScreenEffects(int tier) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, tier));
+        if (WIND_SCREEN_EFFECTS.get() == clamped) return;
+        WIND_SCREEN_EFFECTS.set(clamped);
+        WIND_SCREEN_EFFECTS.save();
     }
 
     // ----- Delete old world on reboard (death-screen trash toggle) -----
@@ -1988,15 +2173,31 @@ public final class ClientDisplayConfig {
         DEV_CHAT_ENABLED.save();
     }
 
+    /**
+     * The Public posts switch (consent card, Options row): whether this player's photos and deaths may be
+     * posted to Discord and the socials. Defaults on, including pre-load, so an unanswered install behaves
+     * as before; the consent card sets the per-mode default (off for Kid).
+     */
+    public static boolean isPublicPosts() {
+        return !isLoaded() || PUBLIC_POSTS.get();
+    }
+
+    /** Persist the Public posts switch. Idempotent; no-op pre-load. */
+    public static void setPublicPosts(boolean value) {
+        if (!isLoaded() || PUBLIC_POSTS.get() == value) return;
+        PUBLIC_POSTS.set(value);
+        PUBLIC_POSTS.save();
+    }
+
     // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
 
     /**
      * This client's remembered answer to the custom-content prompt. Defaults to
-     * {@link CustomContentPreference#ASK}, including before the config loads — a pre-load read must
-     * never silently answer a prompt on the player's behalf.
+     * {@link CustomContentPreference#DISABLE}, including before the config loads: Free Play is off
+     * until the player turns it on, and a pre-load read must never turn it on for them.
      */
     public static CustomContentPreference getCustomContentPreference() {
-        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.ASK;
+        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.DISABLE;
     }
 
     /**
@@ -2150,6 +2351,22 @@ public final class ClientDisplayConfig {
         return isLoaded() ? EDITOR_SCREEN_THEME.get() : DEFAULT_EDITOR_SCREEN_THEME;
     }
 
+    /**
+     * How solid the block-variant editor's empty-cell markers are. Pre-load, and on a dedicated
+     * server (which never loads the client config), {@link PlaceholderCollision#DEFAULT}.
+     */
+    public static PlaceholderCollision getPlaceholderCollision() {
+        return isLoaded() ? PLACEHOLDER_COLLISION.get() : PlaceholderCollision.DEFAULT;
+    }
+
+    /** Persist the empty-marker collision mode. Idempotent: skips the TOML write when unchanged. */
+    public static void setPlaceholderCollision(PlaceholderCollision value) {
+        if (!isLoaded() || value == null) return;
+        if (PLACEHOLDER_COLLISION.get() == value) return;
+        PLACEHOLDER_COLLISION.set(value);
+        PLACEHOLDER_COLLISION.save();
+    }
+
     /** Persist the editor screen's theme. Idempotent: skips the TOML write when unchanged. */
     public static void setEditorScreenTheme(EditorScreenTheme value) {
         if (!isLoaded() || value == null) return;
@@ -2193,6 +2410,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
             ModConfigSpec.BooleanValue freePlayConfirmOptedOut,
+            ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut,
             ModConfigSpec.BooleanValue devConsentGranted,
             ModConfigSpec.DoubleValue devConsentGrantSession,
             ModConfigSpec.DoubleValue devConsentLastMsgToDev,
@@ -2214,12 +2432,14 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue chuncksHideDistantHorizons,
             ModConfigSpec.BooleanValue spheresHideDistantHorizons,
             ModConfigSpec.BooleanValue stacksHideDistantHorizons,
+            ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons,
             ModConfigSpec.IntValue voidBandsDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue afkPauseEnabled,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.DoubleValue windVolume,
+            ModConfigSpec.IntValue windScreenEffects,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,
@@ -2245,9 +2465,15 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormAnsweredIds,
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds,
+            ModConfigSpec.BooleanValue npsRecommendedHigh,
+            ModConfigSpec.BooleanValue motyNominated,
+            ModConfigSpec.BooleanValue motyVoted,
+            ModConfigSpec.BooleanValue motyModNominated,
+            ModConfigSpec.BooleanValue motyModVoted,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.BooleanValue devChatEnabled,
+            ModConfigSpec.BooleanValue publicPosts,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
@@ -2259,11 +2485,13 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
+            ModConfigSpec.BooleanValue hideOtherAdvancementCards,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
+            ModConfigSpec.EnumValue<PlaceholderCollision> placeholderCollision,
             ModConfigSpec.BooleanValue confirmBuildRestore,
             ModConfigSpec.BooleanValue humanOnlyTranslations,
             ModConfigSpec.ConfigValue<String> newRunDifficulty

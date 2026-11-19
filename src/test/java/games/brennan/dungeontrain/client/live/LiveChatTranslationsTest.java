@@ -1,0 +1,120 @@
+package games.brennan.dungeontrain.client.live;
+
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class LiveChatTranslationsTest {
+
+    private static final ChatLine LINE = new ChatLine(7, 1000L, "Alice", "aa", "the creeper got me", Source.GAME);
+
+    @Test
+    @DisplayName("the reader's language is Minecraft's locale code, normalised; anything else is nothing")
+    void readerLang() {
+        assertEquals("zh_cn", LiveChatTranslations.readerLang("zh_cn"));
+        assertEquals("pt_br", LiveChatTranslations.readerLang(" PT-BR "));
+        assertNull(LiveChatTranslations.readerLang("english"));
+        assertNull(LiveChatTranslations.readerLang(""));
+        assertNull(LiveChatTranslations.readerLang(null));
+    }
+
+    @Test
+    @DisplayName("pick: the exact locale first, then the same language, else nothing")
+    void pick() {
+        Map<String, String> tr = Map.of("zh_cn", "简体", "pt_br", "oi", "de_de", " ");
+        assertEquals("简体", LiveChatTranslations.pick(tr, "zh_cn"));
+        assertEquals("简体", LiveChatTranslations.pick(tr, "zh_tw"), "same language, other script, better than none");
+        assertEquals("oi", LiveChatTranslations.pick(tr, "pt_pt"));
+        assertNull(LiveChatTranslations.pick(tr, "de_de"), "a blank is no translation");
+        assertNull(LiveChatTranslations.pick(tr, "fr_fr"));
+        assertNull(LiveChatTranslations.pick(null, "fr_fr"));
+        assertNull(LiveChatTranslations.pick(tr, null));
+    }
+
+    @Test
+    @DisplayName("under: the translation alone right under its line, named when another line came between")
+    void underLine() {
+        MutableComponent adjacent = LiveChatTranslations.underLine(LINE, "苦力怕§c炸了我", true);
+        assertEquals("chat.dungeontrain.live_chat.translation", key(adjacent));
+        assertEquals("苦力怕炸了我", adjacent.getSiblings().isEmpty() ? arg(adjacent, 0) : "", "cleaned");
+        MutableComponent named = LiveChatTranslations.underLine(LINE, "x", false);
+        assertEquals("chat.dungeontrain.live_chat.translation.named", key(named));
+        assertEquals("Alice", arg(named, 0));
+    }
+
+    @Test
+    @DisplayName("replace: the same line with the translation as its text and the original on hover")
+    void replacedLine() {
+        MutableComponent c = LiveChatTranslations.replacedLine(LINE, "苦力怕炸了我");
+        assertEquals("chat.dungeontrain.live_chat.prefix  Alice: 苦力怕炸了我", c.getString());
+        var text = c.getSiblings().get(c.getSiblings().size() - 1);
+        HoverEvent hover = text.getStyle().getHoverEvent();
+        assertNotNull(hover);
+        assertEquals("chat.dungeontrain.live_chat.translation.original", key((MutableComponent) hover.getValue(HoverEvent.Action.SHOW_TEXT)));
+    }
+
+    @Test
+    @DisplayName("a flag comes just before the text, under the original and in a replaced line; without one they read as before")
+    void flags() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        String glyph = flag.getString();
+        assertEquals(glyph + " hola", ((MutableComponent) ((net.minecraft.network.chat.contents.TranslatableContents)
+            LiveChatTranslations.underLine(LINE, "hola", true, flag).getContents()).getArgs()[0]).getString());
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", flag).getString().endsWith("Alice: " + glyph + " hola"));
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", null).getString().endsWith("Alice: hola"));
+    }
+
+    @Test
+    @DisplayName("translation alone: flag and translation, a click flips to the original with no flag, and back")
+    void flip() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        MutableComponent shown = LiveChatTranslations.flippableLine(LINE, "hola", flag);
+        assertTrue(shown.getString().endsWith("Alice: " + flag.getString() + " hola"));
+        var text = shown.getSiblings().get(shown.getSiblings().size() - 1);
+        assertEquals("dungeontrain:live-chat-flip/" + LINE.seq(), text.getStyle().getClickEvent().getValue());
+        assertEquals(LiveChatTranslations.FLIP_HIDE_KEY, key((MutableComponent) text.getStyle().getHoverEvent().getValue(HoverEvent.Action.SHOW_TEXT)));
+
+        LiveChatFlip.track(LINE, "hola", flag);
+        var original = (MutableComponent) LiveChatFlip.toggle(LINE.seq());
+        assertTrue(original.getString().endsWith("Alice: " + LINE.content()));
+        var originalText = original.getSiblings().get(original.getSiblings().size() - 1);
+        assertEquals(LiveChatTranslations.FLIP_SHOW_KEY, key((MutableComponent) originalText.getStyle().getHoverEvent().getValue(HoverEvent.Action.SHOW_TEXT)));
+        assertTrue(LiveChatFlip.toggle(LINE.seq()).getString().endsWith("Alice: " + flag.getString() + " hola"));
+
+        LiveChatFlip.forget();
+        assertNull(LiveChatFlip.toggle(LINE.seq()));
+    }
+
+    @Test
+    @DisplayName("a language's own name for the notice; the code when the JDK has none")
+    void langName() {
+        assertEquals("Deutsch", LiveChatTranslations.langName("de_de"));
+        assertEquals("中文", LiveChatTranslations.langName("zh_cn"));
+        assertFalse(LiveChatTranslations.langName("xx_yy").isBlank());
+    }
+
+    private static String key(MutableComponent c) {
+        return ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getKey();
+    }
+
+    @Test
+    @DisplayName("the chat's plain label")
+    void translatedLabel() {
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel()));
+    }
+
+    private static String arg(MutableComponent c, int i) {
+        return ((net.minecraft.network.chat.Component) ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getArgs()[i]).getString();
+    }
+}

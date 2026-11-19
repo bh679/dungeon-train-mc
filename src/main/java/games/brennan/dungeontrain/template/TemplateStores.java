@@ -120,27 +120,15 @@ public final class TemplateStores {
     }
 
     private static void clearCaches() {
-        // Order doesn't matter inside this group — each clearCache() only
-        // touches its own static map. Kept in the order they were added so
-        // future cache additions can append here without rethinking.
-        games.brennan.dungeontrain.editor.CarriageTemplateStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriageContentsStore.clearCache();
+        // Every ThreeTierStore (and the stores that register a clearer by hand: track cells, the
+        // prefab rosters) drops its cache here — one loop, so a new store cannot be forgotten. The
+        // hand-kept list this replaced had missed five.
+        games.brennan.dungeontrain.editor.StoreRegistry.clearAll();
+        // The block-variant sidecar documents keep their own caches (review slice 3b).
         games.brennan.dungeontrain.editor.CarriageVariantBlocks.clearCache();
-        games.brennan.dungeontrain.editor.CarriageVariantPartsStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriagePartTemplateStore.clearCache();
         games.brennan.dungeontrain.editor.CarriagePartVariantBlocks.clearCache();
         games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.clearCache();
-        games.brennan.dungeontrain.editor.PillarTemplateStore.clearCache();
-        games.brennan.dungeontrain.editor.ContainerContentsStore.clearCache();
-        games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriageGroupTemplateStore.clearCache();
-        games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
-        // Group sidecars travel with their kind's templates, so a package switch can change which
-        // rooms are sub-variants — and a stale answer here would put a member back in the top-level
-        // pool as a sibling of its own parent.
-        games.brennan.dungeontrain.editor.TrackVariantGroupStore.clearCache();
         // A package switch can change which copy of a building worldgen places: drop the loaded
         // templates (by the names known before the switch) and the new-building roster with them.
         games.brennan.dungeontrain.building.BuildingSizes.clear();

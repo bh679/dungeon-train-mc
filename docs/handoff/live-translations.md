@@ -1,0 +1,139 @@
+# Handoff: Live Translations (community reward)
+
+Status as of 2026-10-26. Branch `dev/live-translations` (mod, this repo). Read this first if you are
+picking the feature up in a new session.
+
+## What it is
+
+Live Eye chat lines translated on the dp-relay by Claude Haiku (`claude-haiku-4-5`) into the
+languages the room is actually read in, shown in game under / instead of / above the original.
+Sold as a **Community Reward `live_translation`: A$90 for 1 month**, like every reward (it was 3, then 2 months per gift, before going back to 1 on 2026-10-26).
+Nothing changes on the wire while the reward is off.
+
+Approved Gate 1 plan (full detail, both repos):
+`docs/handoff/live-translations-plan.md` (copy of `~/.claude/plans/lets-setup-hauki-but-dapper-hellman.md`). Part A = relay, Part B = mod.
+
+## Where it stands
+
+| Piece | State |
+|---|---|
+| Mod (Part B) | **Built, Gate 2 tested against a stub relay, NOT yet approved by Brennan.** No PR opened yet. |
+| Relay (Part A) | **Built and pushed** on dp-relay branch `dev/live-translations` (commit 0b522a56, worktree `~/Projects/dp-relay-worktrees/live-translations`, version 0.282.1). Full relay suite 7,491/7,491 pass. No PR yet. End to end passed 2026-10-26 on a local relay (real `server.js`, mock Anthropic + Discord webhook on 127.0.0.1:3199): a game line came back with `tr: {zh_cn: …}` inline and in `translations` on both the mod and web reads; `gg` was skipped without a call; public status carried `rewards: ['live_translation']`; the call used `LIVE_TRANSLATE_API_KEY`, not the shared key (747-char system prompt, one requested locale); with the reward off the poll body had no new keys and no call went out. Note: the claim route does not forward `language`, so the streamer's language only comes from world-info (pre-existing). Must ship and deploy before the mod is useful. |
+| Reward on sale | Not open. `REWARDS_OPEN` on the box gains `live_translation` only after the mod release. |
+| Changelog entry | Not written yet (Gate 3 step, via `scripts/release-notes/append-entry.py`). |
+
+### Next steps, in order
+
+1. Brennan approves Gate 2 for the mod (screenshots, gitignored so local only: `.claude/worktrees/blissful-benz-4307f1/test-results/gate2-live-translations-*-2026-10.png`; re-create with the stub steps below).
+2. Relay Part A is built on dp-relay `dev/live-translations`: `live-chat-translate.js` (+ test), the `trans` ring
+   step in `live-chat.js`, `rewards.js` (`live_translation`, A$90, `TERM_MONTHS` = 2), `lang=` noting in
+   `server.js` / `live-chat-web.js`, `rewards` on the public status (`live.js`), the Live page using relay
+   translations first (`public/dungeontrain/live/chat-*.js`, `live-translate.js`), shelf/thanks pages, env keys
+   in `config-schema.js` + `.env.example`, README section. Remaining: its Gate 2 (a local relay with a mock
+   Anthropic endpoint via `LIVE_TRANSLATE_ENDPOINT`, or a real key), PR, Gate 3, deploy.
+3. Mod PR (Gate 3): changelog entry + tags, CI green, Brennan approves, squash-merge.
+4. Relay PR + deploy; then set `LIVE_TRANSLATE_API_KEY` (Brennan creates it in its own Anthropic console
+   workspace with a monthly spend limit) and `LIVE_TRANSLATE_ENABLED=true` on the box.
+5. After the mod release: `REWARDS_OPEN=quicker_streams,live_translation` on the box.
+
+## Decisions already made (do not re-ask)
+
+- Haiku on the relay, **one call per chat line** (never batch lines: injection isolation). Batching per
+  second was considered and rejected (chat averages ~24 lines/hour, peak ~178/hour).
+- **Own API key, own switch.** dp-relay#937 (merged + deployed, prod 0.279.3) added
+  `ANTHROPIC_INLINE_ENABLED=false` so nothing else on the relay can spend API credits; Brennan's credits
+  had expired and all other AI work moved to Claude Routines. Live Translations must NOT reuse that key or
+  switch: `LIVE_TRANSLATE_API_KEY` (no fallback to `ANTHROPIC_API_KEY`), `LIVE_TRANSLATE_ENABLED` default
+  false, on-air only, daily + monthly character caps that fail closed, its own outbound-meter label.
+- Only translate into languages viewers are reading (each poll sends `lang=`), plus the streamer's.
+- In-game display default: grey line **under** the original; client setting cycles Under / Translation
+  only / Translation first.
+- Website Live page also prefers relay translations while the reward is on (browser engine stays as
+  fallback).
+- Price A$90, **1 month per gift** (like every reward).
+- **Lean Haiku call (2026-10-26, for margin):** ~250-token system prompt (no big glossary, no prompt
+  caching) and a strict JSON schema listing **only the requested locales**; monthly cap 1.5M chars.
+  Real calls used ~600 input tokens; at today's volume that is ≈ A$24 of Haiku per 1-month gift (3 reader languages), so ≈ A$64 profit
+  on A$90. A ~2k-token cached glossary + fixed 22-locale schema was costed at a loss and rejected.
+  Full figures in the plan's Risks / Cost section.
+- Injection posture: nonce-tagged `<chat_line_xxxx>` data block, strict per-request JSON schema, then
+  post-validate each translation (cleanContent, length ratio, liveModWords.censor +
+  censorPatterns + hookGuard.inspectChat); drop on doubt, the original always shows.
+
+## Wire contract (relay must produce exactly this)
+
+- **Poll:** `GET /<CAP>/live/chat?since=N&lang=zh_cn` (mod) and the web read `...&lang=`. `lang` is a
+  Minecraft locale code `[a-z]{2,3}_[a-z0-9]{2,4}`. Relay keeps readers per label for ~90 s.
+- **Late translations:** top-level `translations: [{"line": <seq>, "tr": {"zh_cn": "...", ...}}]` in both
+  game and web read shapes; a new ring seq step (like `reacts`), latest per line since the cursor.
+- **Inline:** a message read in the same poll as its translation carries `"tr": {...}` on the message.
+- **Status:** public live status gains `rewards: [active ids]` while live (web page uses it).
+- **Reward length:** relay `rewards.js` must give `live_translation` **1 x 30 days per gift** (`TERM_MONTHS` is empty) (it stacks
+  `from = max(now, until)`; the mod's `CommunityRewards.nextFreeMs` mirrors it via `Reward.months()`).
+  Also: `IDS`, `PRICE_AUD.live_translation = 90`, `NAMES`, support/thanks pages ("for 1 month"),
+  `ui-events.js` `reward_live_translation`.
+- Old mods ignore all of this; old relays never send it.
+
+## Mod changes on this branch
+
+- `net/relay/LiveFeedClient`: `chat(base, since, lang)`, `LineTranslations`, `parseTranslations`, `parseTr`
+  (keys checked, values cleaned like content, capped at 32), `ChatLine.tr`, `ChatPage.translations`.
+- `client/live/LiveChatTranslations` (new, pure): `readerLang`, `pick` (exact then same language),
+  `underLine` (`↳ text` / `↳ Name: text`), `replacedLine` (original on hover), `langName`.
+- `client/live/LiveChatBridge`: sends reader language, remembers printed lines, renders inline and late
+  translations per mode, one-time notice per session, deletion takes the line and its `↳` part.
+- `client/live/LiveChatSignatures`: `signPart` / `takeAll`. `client/chat/ChatReactionTracker.replaceLive`
+  (in-place redraw keeps reaction chips; vanilla delete leaves a grey marker, so no delete+reprint).
+- `config/LiveFeedClientConfig.LiveChatTranslation` + Options / Stream / Chat translations row
+  (`ClientOptionsTab`, `DungeonTrainClientOptionsScreen`, `ClientOptionsIcons`).
+- Rewards roster: `LiveRewards.LIVE_TRANSLATION`, `CommunityRewards.Reward.LIVE_TRANSLATION` (A$90,
+  1 month, Extra group), `RewardIcons` (book).
+- 16 lang keys in all 22 locales, provenance stamped; `translation_examples.json` entries.
+- Tests: `LiveFeedClientTranslationsParseTest`, `LiveChatTranslationsTest`, plus additions to
+  `LiveChatSignaturesTest`, `CommunityRewardsTest`, `ClientOptionsTabTest`.
+- Harness: `scripts/live/stub-chat-relay.py` (scenes `inline`, `late`, `named`, `delete`).
+
+## Gate 2 so far
+
+- `./gradlew build` passed; full suite 8,387 tests, 0 failed (after the tab-count and placeholder fixes).
+- In-game, zh_cn client wearing a TV against the stub: all three modes, the named under-line, the
+  one-time notice and deletion verified; every poll carried `lang=zh_cn`. Screenshots kept locally in this worktree's `test-results/` (gitignored).
+- Not covered: the real relay (doesn't exist yet); multiplayer/server (feature is client-only); Sable n/a.
+
+## Go-live review fixes (2026-10-26, after Gate 2)
+
+Brennan: "Fix all of these". Mod side, on this branch:
+- Merged origin/main; changelog entry `live-translations-reward` retitled **Live Eye Chat Translations**
+  (the reward's in-game name stays "Live Translations").
+- Late translation under the wrong line: adjacency no longer uses a `lastPrintedSeq` that only live lines
+  updated. `LiveChatBridge#applyLate` now asks `LiveChatSignatures#isNewest(seq, newest)` with the newest
+  `GuiMessage`'s signature (via `ChatComponentAccessor`), so any line since (server chat, system, poll,
+  death, restart, reaction notice, the one-time notice) gets the named `↳ Name: text` form. UNDER and late
+  FIRST both use it. Unit test in `LiveChatSignaturesTest#isNewest`.
+- Queued givers' start month on the Community Rewards screen stepped one month per giver; now
+  `CommunityRewards.queuedStartMs` (months per gift, so 2 for Live Translations). `CommunityRewardsTest`.
+- The reader's own lines are never translated (shown as typed, late translations skipped).
+- The `↳` under-line and FIRST's moved original go through `ChatReactionTracker.onOtherChat`, so `:emote:`
+  codes render like live lines.
+- de_de `translation.on` reworded "ins %s" → "auf %s"; provenance restamped. The one-time notice reads
+  the game language when it is shown (call time), confirmed.
+
+### Re-running the in-game check
+
+```bash
+python3 -I scripts/live/stub-chat-relay.py --port 8788
+DUNGEONTRAIN_RELAY_BASE_URL=http://127.0.0.1:8788/dev DUNGEONTRAIN_RELAY_LIVE_BASE_URL=http://127.0.0.1:8788/live ./gradlew runClient
+curl -X POST 127.0.0.1:8788/scene/late
+```
+
+Set the game language to Chinese, join a world, wear a TV (`/item replace entity @s armor.head with
+vista:television`). Custom env vars do not reach the client JVM; only the `DUNGEONTRAIN_RELAY_*` ones
+are forwarded by `build.gradle`.
+
+## Cost reference
+
+Prod `live_msgs` (14 to 24 Oct 2026): 4,671 lines in ~9.8 days, about 14k lines/month, ~76% from game.
+Measured on real calls (~600 input tokens each): ≈ US$12/16/22 a month for 1/3/5 reader languages if every line
+were translated, so ≈ A$17/24/33 per 1-month gift and ≈ A$71/64/55 profit on A$90 after Stripe.
+the 1.5M-char monthly cap stops translating before that. Prices from memory: recheck Haiku pricing
+and FX before launch.

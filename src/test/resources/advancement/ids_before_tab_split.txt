@@ -86,7 +86,6 @@ dungeon_train/remote_echo_kill
 dungeon_train/remote_echo_void
 dungeon_train/returned_to_train
 dungeon_train/ridden_biomes_100
-dungeon_train/ridden_biomes_150
 dungeon_train/ridden_biomes_25
 dungeon_train/ridden_biomes_50
 dungeon_train/roof_run_1

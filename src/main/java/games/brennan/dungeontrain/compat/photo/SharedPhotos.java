@@ -66,6 +66,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -104,12 +105,14 @@ public final class SharedPhotos {
     /** Frame extra-data key carrying how many people had opened a found photo when it was handed out. */
     public static final String SHARED_VIEWS_KEY = "dt_shared_photo_views";
 
-    /** Frame extra-data key carrying the views a Tribute refills a found photo to (more if its photographer boosted it). */
+    /** Frame extra-data key carrying the views a Tribute refills a found photo to (more once a Tribute has earned it more reach). */
     public static final String SHARED_MAX_VIEWS_KEY = "dt_shared_photo_max_views";
 
     /**
-     * Views a photo goes back to after any Tribute, its photographer's own included (the relay's
-     * PLAYER_PHOTOS_VIEWS). Before its first Tribute a photo has fewer (PLAYER_PHOTOS_FRESH_VIEWS, 3).
+     * Views a photo goes back to after a one-emerald Tribute, its photographer's own included (the
+     * relay's PLAYER_PHOTOS_VIEWS); a dearer Tribute from someone else earns more
+     * ({@link TributePayment#reach}). Before its first Tribute a photo has fewer
+     * (PLAYER_PHOTOS_FRESH_VIEWS, 3).
      */
     public static final int VIEWS_MAX = 5;
 
@@ -136,15 +139,15 @@ public final class SharedPhotos {
     private static final int PIXEL_WAIT_TICKS = 100;
     private static final int REFRESH_PERIOD_TICKS = 600;
     private static final int FIRST_REFRESH_DELAY_TICKS = 100;
-    private static final int POOL_FETCH_LIMIT = 10;
+    static final int POOL_FETCH_LIMIT = 10;
     private static final int POOL_MAX = 40;
     /** How many handed-out or opened photo ids this server remembers, so it never asks for them again. */
     private static final int SPENT_MAX = 300;
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     // HTTP/1.1 on purpose: over plain http the default client first asks to upgrade to HTTP/2, and the
     // relay closes that connection without answering.
-    private static final HttpClient HTTP = HttpClient.newBuilder()
+    static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1).connectTimeout(REQUEST_TIMEOUT).build();
 
     private record PendingUpload(UUID playerId, String author, String exposureId, String key, JsonObject meta, int ticksLeft) {
@@ -157,7 +160,7 @@ public final class SharedPhotos {
     }
 
     /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
-    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
+    record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
                              List<String> advancements, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
@@ -567,11 +570,15 @@ public final class SharedPhotos {
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
         boolean ownPhoto = isOwnPhoto(held, player.getGameProfile().getName());
+        // Big Spender's running total: clean runs only, so Free Play emeralds can't bank progress for later.
+        int totalToOthers = ownPhoto ? 0
+                : RunIntegrity.isCheated(player) ? GlobalTributeStats.totalPaidToOthers(player.getUUID())
+                : GlobalTributeStats.addPaidToOthers(player.getUUID(), cost);
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
                     ownPhoto ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
-            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, ownPhoto, cost);
+            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, ownPhoto, cost, totalToOthers);
             recordView(player, photoId);
         });
         JsonObject body = action(player, photoId);
@@ -585,7 +592,7 @@ public final class SharedPhotos {
         run.recordTribute(cost);
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
+        player.sendSystemMessage(tributePaidLine(player, cost, TributePayment.reach(cost, maxViews(held), ownPhoto)));
     }
 
     /**
@@ -611,7 +618,7 @@ public final class SharedPhotos {
         String photographer = frame == null ? "" : frame.extraData().getString(SHARED_AUTHOR_KEY);
         // The frame carries the Tributes the photo had when handed out; this one is the next.
         int tributeNumber = (frame == null ? 0 : Math.max(0, frame.extraData().getInt(SHARED_TRIBUTES_KEY))) + 1;
-        String exposureId = exposureIdFor(photoId);
+        String exposureId = exposureIdFor(DungeonTrain.relayBaseUrl(), photoId);
         Optional<ExposureData> data = peekExposure(server, exposureId);
         if (data.isEmpty()) {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
@@ -654,7 +661,7 @@ public final class SharedPhotos {
 
     /** Send the picture back from this world's copy. */
     private static void restore(MinecraftServer server, int photoId) {
-        String exposureId = exposureIdFor(photoId);
+        String exposureId = exposureIdFor(DungeonTrain.relayBaseUrl(), photoId);
         Optional<ExposureData> data = peekExposure(server, exposureId);
         if (data.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Tributed photo {} is no longer in this world; it cannot be sent back.", photoId);
@@ -711,13 +718,16 @@ public final class SharedPhotos {
         // Who is here, so the relay can skip what they have already opened and lead with their own tributed photos.
         String uuids = server.getPlayerList().getPlayers().stream().map(p -> bare(p.getUUID())).collect(Collectors.joining(","));
         if (!uuids.isEmpty()) url.append("&uuids=").append(uuids);
+        // The Tribute prices they still need a photo at, so the relay can hold those photos to a floor.
+        String needs = PhotoTierNeed.needsOf(server);
+        if (!needs.isEmpty()) url.append("&needs=").append(needs);
         String exclude = Stream.concat(held.stream().map(PoolPhoto::id), spentIds().stream())
                 .map(String::valueOf).collect(Collectors.joining(","));
         if (!exclude.isEmpty()) url.append("&exclude=").append(exclude);
         HttpRequest request = HttpRequest.newBuilder(URI.create(url.toString()))
                 .timeout(REQUEST_TIMEOUT).header("Accept", "application/json").GET().build();
         HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApplyAsync(response -> fetchNew(base, response))
+                .thenApplyAsync(response -> fetchNew(base, response, total -> relayTotal = total))
                 .whenComplete((fetched, error) -> {
                     fetchInFlight.set(false);
                     if (error != null) {
@@ -728,11 +738,11 @@ public final class SharedPhotos {
                 });
     }
 
-    /** Off-thread: download and decode every photo in the response. */
-    private static List<PoolPhoto> fetchNew(String base, HttpResponse<String> response) {
+    /** Off-thread: download and decode every photo in the response; {@code onTotal} hears the pool's size. */
+    static List<PoolPhoto> fetchNew(String base, HttpResponse<String> response, IntConsumer onTotal) {
         if (response.statusCode() != 200) throw new IllegalStateException("pool answered " + response.statusCode());
         JsonObject body = JsonParser.parseString(response.body()).getAsJsonObject();
-        if (body.has("total")) relayTotal = body.get("total").getAsInt();
+        if (body.has("total")) onTotal.accept(body.get("total").getAsInt());
         JsonArray photos = body.getAsJsonArray("photos");
         List<PoolPhoto> fetched = new ArrayList<>();
         for (int i = 0; photos != null && i < photos.size(); i++) {
@@ -774,8 +784,8 @@ public final class SharedPhotos {
 
     // ---- found photo ----------------------------------------------------------
 
-    private static String exposureIdFor(int photoId) {
-        return "dt_shared_" + Integer.toHexString(DungeonTrain.relayBaseUrl().hashCode()) + "_" + photoId;
+    private static String exposureIdFor(String base, int photoId) {
+        return "dt_shared_" + Integer.toHexString(base.hashCode()) + "_" + photoId;
     }
 
     /** Who took the photo in {@code stack}: a found photo's credited name, else the frame's photographer. Blank if none. */
@@ -837,10 +847,13 @@ public final class SharedPhotos {
 
     /**
      * {@link #rollFound(long)} without handing the photo out: it stays in the pool. For the editor's
-     * Test the Carriage, which re-stamps on every reroll and would otherwise drain the pool.
+     * Test the Carriage, which re-stamps on every reroll and would otherwise drain the pool. A dev
+     * build's own pool is near-empty, so this previews the live relay's ({@link LivePreviewPhotos}).
      */
     public static ItemStack previewFound(long seed) {
-        return rollFound(seed, false);
+        if (!SharedBookGate.canDiscover()) return ItemStack.EMPTY;
+        if (LivePreviewPhotos.sameAsOwnPool()) return rollFound(seed, false);
+        return LivePreviewPhotos.preview(seed);
     }
 
     private static ItemStack rollFound(long seed, boolean spend) {
@@ -848,8 +861,19 @@ public final class SharedPhotos {
         if (photos.isEmpty() || !SharedBookGate.canDiscover()) return ItemStack.EMPTY;
         PoolPhoto photo = photos.stream().filter(p -> !p.tributedBy().isBlank()).findFirst()
                 .orElseGet(() -> photos.get((int) Math.floorMod(seed, (long) photos.size())));
+        ItemStack stack = stackFor(photo, DungeonTrain.relayBaseUrl(), true);
+        if (spend && !stack.isEmpty()) markSpent(photo.id());
+        return stack;
+    }
+
+    /**
+     * {@code photo} as a found photograph from the relay at {@code base}, or {@link ItemStack#EMPTY}.
+     * Only a {@code relayLinked} stack carries the relay id, so only it reports views and Tributes —
+     * a photo previewed from another relay must never send its id to this build's.
+     */
+    static ItemStack stackFor(PoolPhoto photo, String base, boolean relayLinked) {
         try {
-            String exposureId = exposureIdFor(photo.id());
+            String exposureId = exposureIdFor(base, photo.id());
             ExposureRepository repository = ExposureServer.exposureRepository();
             // A first handout copies the photo into this world; a miss is the normal case, not an error.
             if (peekExposure(ServerLifecycleHooks.getCurrentServer(), exposureId).isEmpty()) {
@@ -863,6 +887,7 @@ public final class SharedPhotos {
                     .setIdentifier(ExposureIdentifier.id(exposureId))
                     .updateExtraData(tag -> {
                         PhotoAdvancementBadges.write(tag, badges);
+                        if (!relayLinked) return;
                         tag.putInt(SHARED_ID_KEY, photo.id());
                         tag.putString(SHARED_AUTHOR_KEY, photo.author());
                         tag.putInt(SHARED_TRIBUTES_KEY, photo.tributes());
@@ -880,7 +905,6 @@ public final class SharedPhotos {
                         Component.translatable("item.dungeontrain.shared_photo.by", photo.author())
                                 .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false)))));
             }
-            if (spend) markSpent(photo.id());
             return stack;
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Could not place shared photo {}: {}", photo.id(), e.toString());

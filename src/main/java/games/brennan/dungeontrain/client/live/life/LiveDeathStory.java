@@ -46,8 +46,17 @@ public final class LiveDeathStory {
     }
 
     public static Pitch pitch(LiveLifeStats s, LiveRewards rewards, long now) {
+        return pitch(s, rewards, now, LiveRewards.open(LiveRewards.TWO_STREAMS));
+    }
+
+    /**
+     * {@code twoStreamsOpen}: the relay lists Two Streams as one that can be given today
+     * ({@link LiveRewards#open}). Until then a taken Eye gets the usual pitch, never one whose Give
+     * button reads "Soon".
+     */
+    public static Pitch pitch(LiveLifeStats s, LiveRewards rewards, long now, boolean twoStreamsOpen) {
         Story story = story(s);
-        if (story == Story.TAKEN && !rewards.active(LiveRewards.TWO_STREAMS, now)) return Pitch.TWO_STREAMS_ASK;
+        if (story == Story.TAKEN && twoStreamsOpen && !rewards.active(LiveRewards.TWO_STREAMS, now)) return Pitch.TWO_STREAMS_ASK;
         if (story == Story.NOBODY) return Pitch.NOBODY;
         if (rewards.active(LiveRewards.QUICKER_STREAMS, now)) return Pitch.QUICKER_THANKS;
         if (story == Story.ENDED_EARLY && !rewards.active(LiveRewards.REPLAYS_KEPT, now)) return Pitch.REPLAYS_ASK;

@@ -70,12 +70,14 @@ final class BookBoostControl {
 
     /** A book was opened (or turned out to be the reader's own): read what it already carries. */
     static void open(ItemStack stack) {
+        BookBoostConfirm.close();
         given = BookBoostTag.count(stack);
         priority = BookPriorityTag.isPriority(stack);
         starW = 0;
     }
 
     static void reset() {
+        BookBoostConfirm.close();
         given = 0;
         priority = false;
         starW = 0;
@@ -177,16 +179,25 @@ final class BookBoostControl {
     }
 
     /**
-     * Boost your own book, a whole Priority Book's worth (ten boosts), once. Shown at once (optimistic):
-     * the server stamps the copy when the relay confirms, and if it refuses, the chat line says no boost
-     * was used and the next open reads the stack's real state.
+     * Boost your own book, a whole Priority Book's worth (ten boosts), once, after
+     * {@link BookBoostConfirm} has said what it costs (unless the player opted out of asking).
      */
     private static boolean clickOwn(String bookType, String bookId) {
         if (priority || BookCredits.current() <= 0) return true;
+        BookBoostConfirm.ask(() -> spendOwn(bookType, bookId));
+        return true;
+    }
+
+    /**
+     * The spend itself. Shown at once (optimistic): the server stamps the copy when the relay confirms,
+     * and if it refuses, the chat line says no boost was used and the next open reads the stack's real
+     * state. Checked again here: the state can change while the confirmation is up.
+     */
+    private static void spendOwn(String bookType, String bookId) {
+        if (priority || BookCredits.current() <= 0) return;
         priority = true;
         DungeonTrainNet.sendToServer(new BookPriorityPacket(bookType, bookId));
         BookCredits.spentOne();
-        return true;
     }
 
     private static void tooltip(GuiGraphics gfx, Font font, List<Component> parts, int mouseX, int mouseY) {

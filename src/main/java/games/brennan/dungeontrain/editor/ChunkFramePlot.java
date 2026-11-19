@@ -28,7 +28,7 @@ public final class ChunkFramePlot implements BlockVariantPlot {
 
     private final String name;
     private final BlockPos origin;
-    private final TrackVariantBlocks sidecar;
+    private final VariantDoc sidecar;
 
     public ChunkFramePlot(String name, BlockPos origin) {
         this.name = name;

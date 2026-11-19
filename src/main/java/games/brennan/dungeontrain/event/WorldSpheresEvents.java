@@ -45,7 +45,8 @@ import java.util.Set;
  *       (sand/gravel) become their stable equivalent so nothing rains out of a sphere's underside.</li>
  *   <li>Outside every sphere the block is erased — outright in the core, and noise-dithered against
  *       the depth-weighted End erosion probability across the entry fade, so the terrain crumbles
- *       from below as the spheres begin.</li>
+ *       from below as the spheres begin. Sand or gravel the crumbling leaves hanging is anchored to
+ *       its stable equivalent, as inside a sphere.</li>
  *   <li>Only the track itself is preserved — the bed row and the rail row across the track's own
  *       Z-lane, exactly what {@code WorldDisintegrationEvents} keeps in the End fade. The tunnel
  *       shell a mountain earned, the pillars under the bed and any terrain in the lane are ordinary
@@ -198,9 +199,13 @@ public final class WorldSpheresEvents {
                                          SphereCarveGeometry geo, long seed, int minY, int maxY) {
         boolean changed = false;
         int bedY = geo.bedY();
+        BlockState below = AIR;                                          // what y - 1 ends up as (bottom-up)
         for (int y = minY; y < maxY; y++) {
-            if (laneZ && (y == bedY || y == geo.railY())) continue;      // the track itself: bed + rails
             BlockState cur = col[y - minY];
+            if (laneZ && (y == bedY || y == geo.railY())) {              // the track itself: bed + rails
+                below = cur;
+                continue;
+            }
             BlockState ns;
             boolean trainAir = geo.reserved(y, false, airZ);             // keep the train's airspace open
             SphereField.Sphere owner = trainAir ? null : SphereField.bestAt(spheres, worldX, y, worldZ);
@@ -215,10 +220,17 @@ public final class WorldSpheresEvents {
             } else if (core || cur.isAir()) {
                 ns = AIR;
             } else {
-                // Entry fade: crumble the natural terrain from below, End-erosion style.
+                // Entry fade: crumble the natural terrain from below, End-erosion style. A kept fallable
+                // left hanging over the crumbled cells becomes its stable equivalent, so it can't rain out.
                 double p = Disintegration.removalProbabilityFromRamp(ramp, y, bedY);
-                ns = Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p ? cur : AIR;
+                if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) {
+                    BlockState stable = FallingBlockAnchor.anchorIfUnsupported(cur, below);
+                    ns = stable != null ? stable : cur;
+                } else {
+                    ns = AIR;
+                }
             }
+            below = ns;
             if (ns == cur) continue;
             if (cur.hasBlockEntity()) SilentBlockOps.evictBlockEntity(chunk, new BlockPos(worldX, y, worldZ));
             int sIdx = chunk.getSectionIndex(y);

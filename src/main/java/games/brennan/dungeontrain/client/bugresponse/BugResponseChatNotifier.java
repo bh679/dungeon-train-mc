@@ -125,7 +125,7 @@ public final class BugResponseChatNotifier {
     }
 
     /** The comment typed into the open survey, or "" when it cannot be read. */
-    private static String surveyComment(Minecraft mc) {
+    public static String surveyComment(Minecraft mc) {
         if (!(mc.screen instanceof SurveyScreen screen)) return "";
         try {
             Field f = SurveyScreen.class.getDeclaredField(COMMENT_FIELD);

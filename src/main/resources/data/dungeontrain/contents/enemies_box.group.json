@@ -9,6 +9,10 @@
     {
       "id": "enemies_walled",
       "weight": 1
+    },
+    {
+      "id": "minerzombs",
+      "weight": 1
     }
   ]
 }

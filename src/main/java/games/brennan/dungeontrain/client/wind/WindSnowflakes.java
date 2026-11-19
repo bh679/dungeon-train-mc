@@ -64,7 +64,8 @@ final class WindSnowflakes {
 
     /** Expected flakes this tick for a push and rain level (0..1). */
     static double flakesPerTick(double push, float rainLevel) {
-        return Math.min(MAX_PER_TICK, Math.max(0.0, push) * RATE_PER_PUSH) * Math.max(0.0f, Math.min(1.0f, rainLevel));
+        return Math.min(MAX_PER_TICK, Math.max(0.0, push) * RATE_PER_PUSH) * WindFeelMath.calmFade(push)
+                * Math.max(0.0f, Math.min(1.0f, rainLevel));
     }
 
     private static boolean snowingAt(ClientLevel level, BlockPos pos) {

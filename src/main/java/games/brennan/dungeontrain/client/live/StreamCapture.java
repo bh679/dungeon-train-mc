@@ -48,9 +48,12 @@ public final class StreamCapture {
 
     private StreamCapture() {}
 
-    /** The chat switch as it applies: Kid mode never shows chat. */
-    public static boolean chatShown(boolean streamChat, boolean kid) {
-        return streamChat && !kid;
+    /**
+     * The chat switch as it applies: Kid mode never shows chat, and neither does a streamer with Live chat
+     * off — chat off hides the chat from the stream as well as from them.
+     */
+    public static boolean chatShown(boolean streamChat, boolean liveChat, boolean kid) {
+        return streamChat && liveChat && !kid;
     }
 
     /**

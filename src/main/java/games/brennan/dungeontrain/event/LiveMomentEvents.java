@@ -31,8 +31,7 @@ public final class LiveMomentEvents {
 
     /** Whether {@code player} is streaming with the Live Eye on this server right now. */
     public static boolean isLiveStreamer(ServerPlayer player) {
-        UUID streamer = LiveStreamers.get(player.server);
-        return streamer != null && streamer.equals(player.getUUID());
+        return LiveStreamers.isStreamer(player.server, player.getUUID());
     }
 
     /** A genuine (non-replayed) advancement earn: shared when vanilla would announce it in chat. */

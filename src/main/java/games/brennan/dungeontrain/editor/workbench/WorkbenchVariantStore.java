@@ -2,7 +2,8 @@ package games.brennan.dungeontrain.editor.workbench;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
-import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
+import games.brennan.dungeontrain.editor.MirrorDefaults;
+import games.brennan.dungeontrain.editor.VariantDoc;
 import net.minecraft.core.Vec3i;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -22,16 +23,16 @@ import java.util.Map;
  * a commit — {@code WorkbenchCommit} hands the same document to the install, retargeted to whatever
  * kind the build is committed as.</p>
  *
- * <p>The document is a {@link TrackVariantBlocks} loaded detached, as the Train Builder's is
- * ({@code BuilderVariantStore}): every kind's variants file shares that schema, and this is the one
- * flavour bounded by an arbitrary footprint. Cached per staged id <i>and</i> footprint, because
+ * <p>The document is a {@link VariantDoc} loaded detached, as the Train Builder's is
+ * ({@code BuilderVariantStore}): every kind's variants file shares that schema, and this is one of the
+ * flavours bounded by an arbitrary footprint. Cached per staged id <i>and</i> footprint, because
  * parsing crops to the footprint and a staged build can be resized.</p>
  */
 public final class WorkbenchVariantStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private record Cached(Vec3i footprint, TrackVariantBlocks doc) {}
+    private record Cached(Vec3i footprint, VariantDoc doc) {}
 
     private static final Map<String, Cached> CACHE = new HashMap<>();
 
@@ -41,28 +42,28 @@ public final class WorkbenchVariantStore {
      * {@code stagedId}'s candidates, parsed on first use. Never null — a build that carried none, or
      * is no longer staged, reads as an empty document.
      */
-    public static synchronized TrackVariantBlocks loadFor(String stagedId, Vec3i footprint) {
+    public static synchronized VariantDoc loadFor(String stagedId, Vec3i footprint) {
         String key = keyOf(stagedId);
         Cached cached = CACHE.get(key);
         if (cached != null && cached.footprint().equals(footprint)) return cached.doc();
         String text = WorkbenchStagingStore.find(stagedId)
                 .flatMap(b -> TemplateSidecars.fileTextOf(b.sidecars(), TemplateSidecars.ROLE_VARIANTS))
                 .orElse(null);
-        TrackVariantBlocks doc;
+        VariantDoc doc;
         try {
-            doc = TrackVariantBlocks.fromJsonText(text, null, stagedId, footprint);
+            doc = VariantDoc.fromJsonText(text, MirrorDefaults.NONE, "staged:" + stagedId, footprint);
         } catch (RuntimeException e) {
             // An unreadable variants role reads as empty rather than failing every menu resolve; the
             // document on disk is left alone, so nothing is lost until something is saved over it.
             LOGGER.warn("[DungeonTrain] Workbench: '{}' carries variants that would not parse: {}", stagedId, e.toString());
-            doc = TrackVariantBlocks.fromJsonText(null, null, stagedId, footprint);
+            doc = VariantDoc.fromJsonText(null, MirrorDefaults.NONE, "staged:" + stagedId, footprint);
         }
         CACHE.put(key, new Cached(footprint, doc));
         return doc;
     }
 
     /** Write {@code doc} back into {@code stagedId}'s sidecar document. */
-    public static synchronized void save(String stagedId, TrackVariantBlocks doc, Vec3i footprint) throws IOException {
+    public static synchronized void save(String stagedId, VariantDoc doc, Vec3i footprint) throws IOException {
         write(stagedId, doc.isEmpty() && doc.isDefaultMirror() ? "" : doc.asJsonText());
         CACHE.put(keyOf(stagedId), new Cached(footprint, doc));
     }

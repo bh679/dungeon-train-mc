@@ -620,8 +620,8 @@ def build_manifest(locale: str, authors: dict[str, str],
     this lives here rather than in either stamp script: both of them rebuild it, and
     check-provenance.py verifies it, from this single definition.
 
-    A body with no sidecar for this locale is omitted rather than emitted empty (e.g.
-    discordpresence has no zh_cn — its Chinese lives in its own repo), so "absent" stays
+    A body with no sidecar for this locale is omitted rather than emitted empty (e.g. a
+    sibling namespace DT does not ship that locale for), so "absent" stays
     distinguishable from "nothing needs review".
 
     ``english_dir`` is the ``data/dungeontrain`` tree holding the English books (defaults to

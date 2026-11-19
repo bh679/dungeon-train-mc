@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.template;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.worldgen.BandFlavor;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -21,8 +23,11 @@ import java.util.function.Supplier;
  * @param stageId the stage to paint with, or {@code null} for Auto
  * @param level   the Diff-Level to gate at, or {@link #AUTO_LEVEL} for Auto
  * @param phase   the band to gate in, or {@code null} for Auto
+ * @param bands   the styled bands to gate in, or {@code null} for whatever the column says. Only a
+ *                carriage rebuild sets them: it replays the bands its id recorded, which a forced
+ *                phase would otherwise blank out
  */
-public record TestGate(String stageId, int level, TrainPhase phase) {
+public record TestGate(String stageId, int level, TrainPhase phase, Set<BandFlavor> bands) {
 
     public static final int AUTO_LEVEL = -1;
     /** Every setting on Auto: the test stands up exactly as it did before these settings existed. */
@@ -31,15 +36,20 @@ public record TestGate(String stageId, int level, TrainPhase phase) {
     public TestGate {
         if (stageId != null && stageId.isBlank()) stageId = null;
         if (level < 0) level = AUTO_LEVEL;
+        if (bands != null) bands = Set.copyOf(bands);
+    }
+
+    public TestGate(String stageId, int level, TrainPhase phase) {
+        this(stageId, level, phase, null);
     }
 
     public boolean levelSet() { return level != AUTO_LEVEL; }
     public boolean phaseSet() { return phase != null; }
     public boolean isAuto() { return stageId == null && !levelSet() && !phaseSet(); }
 
-    public TestGate withStage(String id) { return new TestGate(id, level, phase); }
-    public TestGate withLevel(int l) { return new TestGate(stageId, l, phase); }
-    public TestGate withPhase(TrainPhase p) { return new TestGate(stageId, level, p); }
+    public TestGate withStage(String id) { return new TestGate(id, level, phase, bands); }
+    public TestGate withLevel(int l) { return new TestGate(stageId, l, phase, bands); }
+    public TestGate withPhase(TrainPhase p) { return new TestGate(stageId, level, p, bands); }
 
     /**
      * The stage a test stamp paints with: the picked one; else, once the level or band has been
@@ -89,6 +99,12 @@ public record TestGate(String stageId, int level, TrainPhase phase) {
     public static TrainPhase phaseOr(TrainPhase computed) {
         TestGate g = CURRENT.get();
         return g != null && g.phaseSet() ? g.phase : computed;
+    }
+
+    /** The in-scope styled-band override, or {@code null} when there is none. */
+    public static Set<BandFlavor> bandsOrNull() {
+        TestGate g = CURRENT.get();
+        return g == null ? null : g.bands;
     }
 
     /** The stage a test stamp paints with, given what it would have used: see {@link #stageOr}. */

@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Schimbi oricând din configurare sau cu /chatconnect on.",
   "discordpresence.consent.enable": "Activează",
   "discordpresence.consent.not_now": "Nu acum",
+  "discordpresence.consent.toggle_on": "Pornit",
+  "discordpresence.consent.toggle_off": "Oprit",
   "discordpresence.survey.give_feedback": "Trimite feedback",
   "discordpresence.survey.title": "Feedback",
   "discordpresence.survey.comment": "Comentariu",

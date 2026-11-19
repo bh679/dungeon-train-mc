@@ -214,8 +214,13 @@ public final class DungeonTrainConfig {
      * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
      * back, and a steady trickle of blank canvases keeps entering the pool.
      */
-    /** One Bedrock dimensional carriage in fifteen drifts; the rest are the plain template. */
-    public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
+    /** One Bedrock dimensional carriage in five drifts; the rest are the plain template. */
+    public static final double DEFAULT_SHARED_ROOM_CHANCE = 0.20;
+    /**
+     * The room drift chance shipped before {@link #CURRENT_CONFIG_VERSION} 6 (one in fifteen). Read by the
+     * v5 -> v6 step of {@link #runPendingMigrations()} to tell a stale shipped default from an operator's pick.
+     */
+    public static final double LEGACY_SHARED_ROOM_CHANCE = 1.0 / 15.0;
     public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
     public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
     /** One Group carriage in ten drifts — one group-long build travelling the relay whole. */
@@ -331,7 +336,7 @@ public final class DungeonTrainConfig {
      *
      * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
      */
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 6;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -535,7 +540,7 @@ public final class DungeonTrainConfig {
                 .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
                 .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
         ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
-                .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
+                .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. A bow or crossbow a mob spawns holding has no material to improve, so it scales from level 1. Default true; set false to restore the original behavior where hostile gear stops improving at netherite and held bows stay a plain roll.")
                 .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
         ModConfigSpec.BooleanValue mobExperienceScalingEnabled = b
                 .comment("When true, a monster drops more experience the more dangerous it actually is: its worn gear and active buffs are scored at death and the drop is multiplied by (1 + weighted score), capped at mobExperienceMaxMultiplier. Rewards exactly what difficulty progression hands out — high-level armor and weapons, deep enchantments, and stacked beneficial potion effects — so late-train kills pay for the fight instead of dropping the same handful of XP as a naked mob. Scored off the live mob, so it also covers a naturally-armoured vanilla mob and survives a progress reset. Set false for vanilla experience drops.")
@@ -731,7 +736,7 @@ public final class DungeonTrainConfig {
                 .comment("The probability a Bedrock dimensional carriage DRIFTS at all — takes part in the shared pool",
                         "the way a shared carriage slot does. A drifting one uploads when a player edits it and rolls the",
                         "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
-                        "template and never touch the relay. Rolled deterministically per pair. Default 1/15 (0.0667).",
+                        "template and never touch the relay. Rolled deterministically per pair. Default 0.20.",
                         "Authors can still veto a room outright with its Drift setting.")
                 .defineInRange("sharedRoomChance", DEFAULT_SHARED_ROOM_CHANCE,
                         MIN_SHARED_ROOM_CHANCE, MAX_SHARED_ROOM_CHANCE);
@@ -1301,6 +1306,14 @@ public final class DungeonTrainConfig {
             SHARED_GROUP_CHANCE.set(DEFAULT_SHARED_GROUP_CHANCE);
             LOGGER.info("[DungeonTrain] Config migration v{}->v{}: Group carriage drift chance now {}.",
                     from, CURRENT_CONFIG_VERSION, DEFAULT_SHARED_GROUP_CHANCE);
+        }
+
+        // v5 -> v6: Bedrock dimensional carriages drift one in five instead of one in fifteen, for the
+        // same reason as the step above: the old value is on disk everywhere. An operator's pick is kept.
+        if (from < 6 && Math.abs(SHARED_ROOM_CHANCE.get() - LEGACY_SHARED_ROOM_CHANCE) < 1e-9) {
+            SHARED_ROOM_CHANCE.set(DEFAULT_SHARED_ROOM_CHANCE);
+            LOGGER.info("[DungeonTrain] Config migration v{}->v{}: dimensional carriage drift chance now {}.",
+                    from, CURRENT_CONFIG_VERSION, DEFAULT_SHARED_ROOM_CHANCE);
         }
 
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);

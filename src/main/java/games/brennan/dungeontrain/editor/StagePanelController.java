@@ -21,10 +21,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
+
+import static games.brennan.dungeontrain.editor.EditorFeedback.actionBar;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,26 +32,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side driver for the Stage Blocks panel (the "stage V menu") — the sibling billboard
  * beside the Stages panel that shows a stage's aggregated blocks + per-part strips and hosts the
  * replace / hide-unused actions. Mirrors {@link BlockVariantMenuController}'s
- * toggle/applyEdit/sendSync shape with a per-player {@code OPEN} map.
+ * toggle/applyEdit/sendSync shape with a per-player open map.
  *
  * <p><b>Deliberate divergence</b> from the block-variant menu: no
  * {@link BlockVariantPlot#resolveAt} plot check — the Stages panel sits at the editor door
  * outside any plot, and its existing gate edits already run plot-free via
  * {@code /dt editor stage …}. OP≥2 plus an actively-stamped editor category is the gate.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
-public final class StagePanelController {
+public final class StagePanelController extends PlayerMenuController<String> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Player → the stage id their panel is open on (lowercased). */
-    private static final Map<UUID, String> OPEN = new ConcurrentHashMap<>();
+    /** The open record is the stage id the player's panel is open on (lowercased). */
+    public static final StagePanelController INSTANCE = new StagePanelController();
 
     /**
      * The {@link StageBlockIndex#generation()} the open panels were last synced at — the same
@@ -62,7 +59,40 @@ public final class StagePanelController {
      */
     private static volatile long lastSyncedGeneration = -1;
 
-    private StagePanelController() {}
+    private StagePanelController() {
+        super("StagePanel", "stage");
+    }
+
+    @Override
+    protected String requiresOpKey() {
+        return "chat.dungeontrain.editor_bar.stage_panel.requires_op";
+    }
+
+    @Override
+    protected String keyOf(String state) {
+        return state;
+    }
+
+    @Override
+    protected void resync(ServerPlayer player, String stageId) {
+        if (StageStore.exists(stageId)) {
+            sendSync(player, stageId);
+        } else {
+            close(player);
+        }
+    }
+
+    /** Stage panels are shared rather than per-player — another author may be looking at the stage this step just changed. */
+    @Override
+    public void resyncAfterHistory(ServerPlayer player) {
+        resyncAllOpen(player.server);
+    }
+
+    @Override
+    public void clearAll() {
+        super.clearAll();
+        lastSyncedGeneration = -1;
+    }
 
     /** Resync every open panel when the stage-blocks index has changed since the last sync. */
     public static void resyncIfStale(MinecraftServer server) {
@@ -74,19 +104,17 @@ public final class StagePanelController {
 
     /** Apply a {@link StagePanelEditPacket} op, with OP validation. Runs on the server thread. */
     public static void applyEdit(ServerPlayer player, StagePanelEditPacket packet) {
-        if (!player.hasPermissions(2)) {
-            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.requires_op"), ChatFormatting.RED);
-            return;
-        }
+        if (!INSTANCE.requireOp(player)) return;
+        INSTANCE.armUndo(player);
         switch (packet.op()) {
-            case OPEN -> open(player, packet.stageId());
+            case OPEN -> openPanel(player, packet.stageId());
             case CLOSE -> close(player);
             case SWAP_BLOCK -> swapBlock(player, packet);
             case TOGGLE_HIDE_UNUSED -> toggleHideUnused(player);
         }
     }
 
-    private static void open(ServerPlayer player, String rawStageId) {
+    private static void openPanel(ServerPlayer player, String rawStageId) {
         String stageId = rawStageId == null ? "" : rawStageId.toLowerCase(Locale.ROOT);
         if (!StageStore.exists(stageId)) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_such_stage", rawStageId), ChatFormatting.YELLOW);
@@ -96,12 +124,12 @@ public final class StagePanelController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.enter_category_first"), ChatFormatting.YELLOW);
             return;
         }
-        OPEN.put(player.getUUID(), stageId);
+        INSTANCE.put(player, stageId);
         sendSync(player, stageId);
     }
 
     private static void close(ServerPlayer player) {
-        OPEN.remove(player.getUUID());
+        INSTANCE.remove(player);
         DungeonTrainNet.sendTo(player, StageBlocksSyncPacket.closed());
         DungeonTrainNet.sendTo(player, StagePaletteSyncPacket.closed());
     }
@@ -114,10 +142,11 @@ public final class StagePanelController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.palette_requires_op"), ChatFormatting.RED);
             return;
         }
+        INSTANCE.armUndo(player);
         String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
         // The editor screen's Palette page edits any stage it shows; the world-space panel only the
         // one it has open, since its rows are that snapshot.
-        if (!packet.fromScreen() && !stageId.equals(OPEN.get(player.getUUID()))) {
+        if (!packet.fromScreen() && !stageId.equals(INSTANCE.open(player))) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.open_stage_panel_first"), ChatFormatting.YELLOW);
             return;
         }
@@ -228,13 +257,13 @@ public final class StagePanelController {
         if (player == null) return;
         String id = stageId == null ? "" : stageId.toLowerCase(Locale.ROOT);
         if (!StageStore.exists(id) || EditorStampedCategoryState.current().isEmpty()) return;
-        OPEN.put(player.getUUID(), id);
+        INSTANCE.put(player, id);
         sendSync(player, id);
     }
 
     /** Close the panel for {@code player} (the stage-deselect hook). No-op when none is open. */
     public static void closeFor(ServerPlayer player) {
-        if (player == null || !OPEN.containsKey(player.getUUID())) return;
+        if (player == null || !INSTANCE.isOpen(player)) return;
         close(player);
     }
 
@@ -246,11 +275,11 @@ public final class StagePanelController {
      */
     private static void swapBlock(ServerPlayer player, StagePanelEditPacket packet) {
         String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
-        if (!stageId.equals(OPEN.get(player.getUUID()))) {
+        if (!stageId.equals(INSTANCE.open(player))) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.open_stage_panel_first"), ChatFormatting.YELLOW);
             return;
         }
-        // Editor-presence gate (the OPEN map isn't cleared on editor exit) — never rewrite part files
+        // Editor-presence gate (the open map isn't cleared on editor exit) — never rewrite part files
         // for a player who has left the editor. Mirrors open()'s stamped-category check.
         if (EditorStampedCategoryState.current().isEmpty()) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.enter_category_first"), ChatFormatting.YELLOW);
@@ -371,17 +400,13 @@ public final class StagePanelController {
     /** Re-send the snapshot to every player with an open panel (shared data changed). */
     public static void resyncAllOpen(MinecraftServer server) {
         if (server == null) return;
-        for (Map.Entry<UUID, String> e : OPEN.entrySet()) {
+        for (Map.Entry<UUID, String> e : INSTANCE.openEntries().entrySet()) {
             ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
             if (p == null) {
-                OPEN.remove(e.getKey());
+                INSTANCE.removeById(e.getKey());
                 continue;
             }
-            if (StageStore.exists(e.getValue())) {
-                sendSync(p, e.getValue());
-            } else {
-                close(p);
-            }
+            INSTANCE.resync(p, e.getValue());
         }
     }
 
@@ -389,13 +414,13 @@ public final class StagePanelController {
     public static void closeForStage(MinecraftServer server, String stageId) {
         if (server == null || stageId == null) return;
         String key = stageId.toLowerCase(Locale.ROOT);
-        for (Map.Entry<UUID, String> e : OPEN.entrySet()) {
+        for (Map.Entry<UUID, String> e : INSTANCE.openEntries().entrySet()) {
             if (!key.equals(e.getValue())) continue;
             ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
             if (p != null) {
                 close(p);
             } else {
-                OPEN.remove(e.getKey());
+                INSTANCE.removeById(e.getKey());
             }
         }
     }
@@ -403,21 +428,5 @@ public final class StagePanelController {
     private static Optional<Block> blockById(String id) {
         ResourceLocation loc = ResourceLocation.tryParse(id == null ? "" : id);
         return loc == null ? Optional.empty() : BuiltInRegistries.BLOCK.getOptional(loc);
-    }
-
-    private static void actionBar(ServerPlayer player, Component message, ChatFormatting color) {
-        player.displayClientMessage(message.copy().withStyle(color), true);
-    }
-
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
-        OPEN.clear();
-        lastSyncedGeneration = -1;
-    }
-
-    /** Drop the disconnecting player's open-panel entry (the client resets via LoggingOut). */
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
-        OPEN.remove(event.getEntity().getUUID());
     }
 }

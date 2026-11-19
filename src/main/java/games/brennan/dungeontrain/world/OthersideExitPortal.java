@@ -65,6 +65,8 @@ public final class OthersideExitPortal {
         int z = exit.getZ();
         int y = Math.max(level.getMinBuildHeight() + 2, Math.min(exit.getY(), level.getMaxBuildHeight() - 6));
         level.getChunk(x >> 4, z >> 4);
+        TouchedChunks.mark(level, exit);
+        TouchedChunks.mark(level, new BlockPos(x + 2, y, z));
         BlockState frame = Blocks.REINFORCED_DEEPSLATE.defaultBlockState();
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();

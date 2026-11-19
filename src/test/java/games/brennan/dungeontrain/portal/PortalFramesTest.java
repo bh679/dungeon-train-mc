@@ -735,4 +735,24 @@ final class PortalFramesTest {
         assertEquals(CAR_Y + FEET_Y, m.y(), 1e-9);
         assertEquals(CAR_Z + WALK_Z, m.z(), 1e-9);
     }
+
+    // ---- swap zone at the side walls ------------------------------------------
+
+    @Test
+    @DisplayName("hugging the inside of a side wall still swaps; the wall block itself does not")
+    void swapZoneAtSideWalls() {
+        PortalFrames f = frames();
+        double pastMid = CAR_X + 7;
+        // Inside, centre 0.3 off each wall's inner face (z = 1 and z = width - 1).
+        assertNotNull(f.requiredMove(pastMid, CAR_Y + FEET_Y, CAR_Z + 1.3), "against the near wall");
+        assertNotNull(f.requiredMove(pastMid, CAR_Y + FEET_Y, CAR_Z + LAYOUT.width() - 1.3),
+            "against the far wall");
+        assertNotNull(f.requiredMoveFacing(pastMid, CAR_Y + FEET_Y, CAR_Z + 1.3, -90f));
+
+        // Half way into the wall block: still "in the corridor" for puppets and light, never swapped.
+        double inWall = CAR_Z + 0.7;
+        assertEquals(PortalFrames.FRAME_CARRIAGE, f.frameAt(pastMid, CAR_Y + FEET_Y, inWall));
+        assertNull(f.requiredMove(pastMid, CAR_Y + FEET_Y, inWall));
+        assertNull(f.requiredMoveFacing(pastMid, CAR_Y + FEET_Y, inWall, -90f));
+    }
 }

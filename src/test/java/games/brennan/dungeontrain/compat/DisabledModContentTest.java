@@ -25,6 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class DisabledModContentTest {
 
+    @Test
+    void luminousSpawnEggsAreHiddenFromVanillaTabsWithoutDisablingThem() {
+        ResourceLocation egg = id("luminous_monsters:miner_zombie_spawn_egg");
+        assertTrue(DisabledModContent.isHiddenCreativeItem(egg));
+        assertFalse(DisabledModContent.isDisabledItem(egg, false));
+        assertFalse(DisabledModContent.isHiddenCreativeItem(id("minecraft:zombie_spawn_egg")));
+        assertFalse(DisabledModContent.isHiddenCreativeItem(null));
+    }
+
     private static ResourceLocation id(String s) {
         return ResourceLocation.parse(s);
     }
@@ -53,6 +62,17 @@ final class DisabledModContentTest {
             assertFalse(DisabledModContent.isDisabledOreFeature(id(k)), k);
         }
         assertFalse(DisabledModContent.isDisabledOreFeature(null));
+    }
+
+    @Test
+    @DisplayName("JEI extras come from a hidden tab's mod and are never disabled content")
+    void jeiExtraItemsAreHiddenTabItemsDtKeeps() {
+        assertTrue(DisabledModContent.JEI_EXTRA_ITEMS.contains("betternether:cincinnasite_forge"));
+        for (String extra : DisabledModContent.JEI_EXTRA_ITEMS) {
+            ResourceLocation rl = id(extra);
+            assertTrue(DisabledModContent.isBiomeModCreativeTab(id(rl.getNamespace() + ":tab")), extra);
+            assertFalse(DisabledModContent.isDisabledItem(rl, false), extra);
+        }
     }
 
     @Test
@@ -113,13 +133,13 @@ final class DisabledModContentTest {
     }
 
     @Test
-    @DisplayName("Vista's viewfinder, wave gate and cassettes are hidden; the TV, mirror, picture tape and DT's live cassette stay")
+    @DisplayName("Vista's viewfinder, wave gate, cassettes and mirror are hidden; the TV, picture tape and DT's live cassette stay")
     void vistaContentHidden() {
-        for (String hidden : new String[] {"viewfinder", "wave_gate", "cassette", "hollow_cassette"}) {
+        for (String hidden : new String[] {"viewfinder", "wave_gate", "cassette", "hollow_cassette", "mirror"}) {
             assertTrue(DisabledModContent.isDisabledItem(id("vista:" + hidden), false), hidden);
         }
-        for (String kept : new String[] {"vista:television", "vista:mirror", "vista:picture_tape",
-                "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette"}) {
+        for (String kept : new String[] {"vista:television", "vista:picture_tape",
+                "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette", "dungeontrain:live_cassette_2"}) {
             assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
         }
     }
@@ -224,19 +244,19 @@ final class DisabledModContentTest {
     }
 
     private static final List<String> DISABLED_BLOCKS = List.of(
-        "betternether:pig_statue_respawner", "betterend:respawn_obelisk", "betterend:infusion_pedestal",
+        "betternether:pig_statue_respawner", "betternether:cincinnasite_anvil", "betterend:respawn_obelisk", "betterend:infusion_pedestal",
         "betterend:aeternium_anvil", "betterend:terminite_anvil", "betterend:thallasium_anvil",
         "betterend:end_stone_smelter");
 
     @Test
-    @DisplayName("respawn statues, the infusion pedestal, BetterEnd's anvils and smelter are off as blocks and items")
+    @DisplayName("respawn statues, the infusion pedestal, the mods' anvils and BetterEnd's smelter are off as blocks and items")
     void disabledBlocks() {
         for (String b : DISABLED_BLOCKS) {
             assertTrue(DisabledModContent.isDisabledBlock(id(b)), b);
             assertTrue(DisabledModContent.isDisabledItem(id(b), false), b);
         }
         for (String kept : List.of("betterend:purpur_pedestal", "betterend:flavolite_pedestal",
-                "betternether:cincinnasite_anvil", "betternether:cincinnasite_forge", "minecraft:anvil",
+                "betternether:cincinnasite_forge", "minecraft:anvil",
                 "minecraft:respawn_anchor")) {
             assertFalse(DisabledModContent.isDisabledBlock(id(kept)), kept);
             assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
@@ -283,5 +303,14 @@ final class DisabledModContentTest {
         assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:catalysis")));
         assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:reverberation")));
         assertTrue(DisabledModContent.isDisabledEnchantment(id("deeperdarker:volume")));
+    }
+
+    @Test
+    @DisplayName("Piglin Proliferation's Buckler is hidden from players but mob-only, so brutes keep it")
+    void bucklerIsMobOnly() {
+        assertTrue(DisabledModContent.isDisabledItem(id("piglinproliferation:buckler"), false));
+        assertTrue(DisabledModContent.isMobOnlyItem(id("piglinproliferation:buckler")));
+        assertFalse(DisabledModContent.isMobOnlyItem(id("exposure:camera")));
+        assertFalse(DisabledModContent.isDisabledItem(id("piglinproliferation:travelers_compass"), false));
     }
 }

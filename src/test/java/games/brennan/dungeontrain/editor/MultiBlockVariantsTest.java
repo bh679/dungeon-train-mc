@@ -356,7 +356,7 @@ class MultiBlockVariantsTest {
     @Test
     @DisplayName("A sidecar stores the span per cell, and removing the cell clears it")
     void sidecarSpanLifecycle() {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.empty();
+        VariantDoc sidecar = CarriageVariantBlocks.empty();
         sidecar.put(CELL, List.of(door(), VariantState.of(Blocks.STONE.defaultBlockState())));
         assertEquals(VariantSpan.NONE, sidecar.spanAt(CELL));
         VariantSpan v = span(ONE, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME);

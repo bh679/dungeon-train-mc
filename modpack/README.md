@@ -44,6 +44,11 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Biomes O' Plenty | `220318` (slug `biomes-o-plenty`) | **enabled** | Third-party **hard dep**: on odd laps the overworld gap after the Nether band uses BoP biomes (`worldgen/density/OverworldStretchBiomes`; vanilla elsewhere, and kept out of the Nether/End bands). **Pinned**; floor `biomesoplenty_min_version` (not strict semver, so `check-pins.py` skips it). Requires **TerraBlender** + **GlitchCore**. |
 | TerraBlender (NeoForge) | `940057` (slug `terrablender-neoforge`) | **enabled** (library) | BoP's required library; DT also compiles against its Regions API. **Pinned**. |
 | GlitchCore | `955399` (slug `glitchcore`) | **enabled** (library) | BoP's required library. **Pinned**. |
+| Luminous Monsters | `1066090` (slug `luminous-monsters`) | **enabled** | Third-party **hard dep** (RipleysMods; All Rights Reserved in the jar, author permits modpack use): 16 zombie and skeleton variants that spawn naturally by biome. Needed on client AND server. DT overrides 10 of its biome modifiers (`data/luminous_monsters/neoforge/biome_modifier/`) because they list every biome, and hides its spawn eggs under the two creative settings. Audit: [`audits/luminous-monsters.md`](audits/luminous-monsters.md). **Pinned** (1.3.1); floor `luminous_monsters_min_version`. |
+| Creeper Overhaul | `561625` (slug `creeper-overhaul`) | **enabled** | Third-party **hard dep** (Joosh + ThatGravyBoat; All Rights Reserved): 16 biome creepers placed in carriage rooms. Needed on client AND server. Its natural spawns wait for the train's Diff-Level, and a biome keeps the vanilla creeper until one of its own creepers unlocks (`event/NaturalSpawnLevelGate`; DT empties its `remove_vanilla.json`). Spawn eggs hidden under the two creative settings. Audit: [`audits/creeper-overhaul.md`](audits/creeper-overhaul.md). **Pinned** (4.0.6); floor `creeperoverhaul_min_version`. |
+| GeckoLib | `388172` (slug `geckolib`) | **enabled** | Library (MIT) required by Creeper Overhaul's animated models. Client AND server. **Pinned** (4.9.3); floor `geckolib_min_version`. |
+| Resourceful Lib | `570073` (slug `resourceful-lib`) | **enabled** | Library (MIT) required by Creeper Overhaul (networking). Client AND server. **Pinned** (3.0.12); floor `resourcefullib_min_version`. |
+| Resourceful Config | `714059` (slug `resourceful-config`) | **enabled** | Library (MIT) required by Creeper Overhaul (its config). Client AND server. **Pinned** (3.0.11); floor `resourcefulconfig_min_version`. |
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
@@ -52,6 +57,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | AmbientSounds | `254284` | **enabled** | Immersive ambient / environmental sound engine. Client-side audio only — no render/physics/chunk hooks, safe with Sable. Requires **CreativeCore**. **Pinned**. |
 | CreativeCore | `257814` | **enabled** (library) | AmbientSounds' required dependency. Inert library — enabled so AmbientSounds loads on a default install. **Pinned**. |
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
+| YDM's Weapon Master | `608235` | **enabled** | Shows the player's hotbar weapons, tools, shield and banner on their body. Cosmetic; approved for fair play. Its settings key (V) is held back in Creative, where V is the editor's block menu (`client/WeaponMasterCreativeKeyGate`). **Pinned**. |
 | Iceberg | `520110` | **enabled** (library) | Advancement Plaques' required dependency (`[1.2.2,)`). Inert UI library — enabled so AP loads on a default install. **Pinned**. |
 | Jade | `324717` | **enabled** | Block/item tooltip HUD. Formerly opt-in because tooltips didn't render for blocks **on the moving train** (Sable sub-level) — that limitation is now **resolved** by the bundled **Jade Sable Compat** (below), so Jade ships on by default. **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Jade Sable Compat | `1530988` | **enabled** | Client-only compat mod (`sablejade`, MIT). Gives Jade a Sable-aware retrace path so tooltips resolve the **correct** block on Sable sub-levels / moving trains. Requires **Jade** (shipped enabled, above). `server_side=unsupported` — auto-skipped on dedicated servers. **Pinned** (1.2.1). |
@@ -69,6 +75,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Prickle | `1023259` | **enabled** (library) | Enchantment Descriptions' other required dependency — Darkhax's config library. Inert; enabled so ED loads on a default install. **Pinned** (21.1.11) — satisfies ED 21.1.9's `prickle [21.1, 21.2)`. |
 | Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
 | SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
+| PotionLevelFix | `1070801` | **enabled** | Shows potion effect levels above X as real numbers in tooltips, the effect list and Jade, and stops amplifiers above 127 wrapping on the way to the client. Must match on both sides (it patches the effect packet). No render/physics/chunk hooks, safe with Sable. **Pinned** (1.6). |
 | Crash Assistant | `1154099` | **enabled** | Post-crash GUI: analyses the crash report / logs / `hs_err` against ~40 known causes and offers a one-click upload of all of them to mclo.gs plus a ready-to-paste report message. Client-only (`server_side=unsupported` — auto-skipped on dedicated servers), no dependencies. Shipped **on**: a crash reporter is useless unless it is already installed when the crash happens. Configured via `overrides/config/crash_assistant/config.toml` to point players at **#bugs-feedback** on the Dungeon Train Discord — left at its default the help button would send them to the *NeoForge* Discord. **Pinned** (1.11.12). |
 | Particle Effects | `1120746` | **enabled** | Replaces the flat coloured swirl of every vanilla status effect with a unique textured particle per effect (Speed, Poison, Regeneration, …), so a glance tells you what a mob or player is under. Client-only render (`side="CLIENT"`, auto-skipped on dedicated servers), no dependencies on NeoForge (its only optional dep is Fabric API; declares `inventory_particles` <2.0.1 incompatible — not in this pack). Two client mixins on the particle engine — verified on the moving train under Sodium + Iris. CC-BY-ND 4.0 (attribution via the platform listing; bundled by reference, unmodified). **Pinned** (1.5.0). |
 | Advanced Shulkerboxes | `253861` | **enabled** | Open a Shulker Box straight from your hand (right-click it in the main hand) instead of placing it first. henkelmax; modId `shulkerbox`; no dependencies beyond NeoForge. Server-side logic (Modrinth lists client as unsupported/optional) with a few item-use mixins. All Rights Reserved — bundled by reference (CurseForge/Modrinth ID), unmodified. **Pinned** (1.21.1-2.0.5, the only NeoForge 1.21.1 build; beta channel). |
@@ -126,6 +133,8 @@ flag straight into the manifest:
   **Particle Effects** is on too — a purely cosmetic status-effect readability upgrade with no
   server side and no screens to restyle.
   **Advanced Shulkerboxes** is on too — opening a Shulker Box from your hand is pure inventory QoL.
+  **PotionLevelFix** is on too — high-tier loot potions read "Strength XV" instead of a raw
+  translation key; it patches the effect packet, so like What Are They Up To a server carries it.
   **What Are They Up To** is on too, with its **CoroUtil** library — unlike the client-only
   companions above it must match on both sides, so it is the one companion a server has to carry.
   The libraries ship enabled so their dependent loads on a default install (CreativeCore —
@@ -313,7 +322,7 @@ afterwards — leaving the workflow green and the release silently missing from 
 `approval_timeout_minutes` (default `300` — the most the 360-min job limit allows after the upload + verify) runs out, the run **defers** (`--on-timeout defer`):
 nothing is uploaded, every later step is skipped, and the run ends green with a warning and a
 step-summary note. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set
-(authoritative: `fileStatus == 4`), otherwise the caching cfwidget mirror — where the file
+(authoritative: `fileStatus == 4` and available), otherwise the caching cfwidget mirror — where the file
 appearing proves approval but its absence may just be cache lag. Either way an unapproved file
 never reaches a manifest.
 
@@ -389,8 +398,46 @@ credential and cannot read listings.)
 / v0.592.0 for a full 30 minutes after curseforge.com already listed 261 / v0.613.0. A cache
 cannot prove absence, so without an API key `--verify` downgrades a negative result to
 `INCONCLUSIVE`: it prints a warning with a link to check by hand and **does not fail the
-release**. Set the secret and the check becomes authoritative — a genuine rejection then fails
-the run, which is the whole point.
+release**. The public listing also hides files under review and rejected ones, so a quick green
+`verify-curseforge-upload.yml` run without the key says nothing about an unlisted file.
+
+**What a verify run means with the key.** `verify-curseforge-upload.yml` and
+`reupload-curseforge.yml` pass `--file-id`, which polls that file's own status:
+
+| API says | Run | Do |
+|---|---|---|
+| Approved | Green | Nothing |
+| Rejected, ChangesRequired, MalwareDetected, Deleted, FailedPublishing | **Red at once** | See the reason in the author dashboard; `reupload-curseforge.yml` if it was a CurseForge fault |
+| Still under review at the timeout | Green + warning | **Don't re-upload.** Re-dispatch to check again |
+| File unreadable to the timeout (including 404) | Green + warning, "UNKNOWN" | Check the author dashboard |
+| Key refused (401/403) | **Red** | Replace the key |
+
+`release-modpack.yml`'s pack check has no file id, so it searches the listing: red if the version
+is not listed within 30 min. That can't tell a rejected pack file from one that is still held.
+
+**Known gap:** manual review holds last days and one run stops at 300 min, so a rejection after
+that is not caught automatically.
+
+**Setting it up.** Get a key from the [CurseForge console](https://console.curseforge.com/); the
+[API docs](https://docs.curseforge.com/rest-api/) send non-game-developers to an application form.
+Then paste it at this prompt, so it stays out of shell history:
+
+```bash
+gh secret set CURSEFORGE_API_KEY --repo bh679/dungeon-train-mc
+```
+
+To test it without a release, pick a tag whose file is under review:
+
+```bash
+gh workflow run verify-curseforge-upload.yml -f tag=<tag> -f file_id=<id> -f timeout_minutes=15
+```
+
+The log should show `UnderManualReview` readings every 5 min, ending in the "still under review"
+warning. If it reports `lookup failed … 404` instead, CurseForge hides held files from the API
+too, so holds will read as UNKNOWN.
+
+The API allows at most 50 results per page with an undocumented sort order, so
+`cf_api.list_approved_files` walks every page and keeps only approved files.
 
 If verification fails, open the pack's file list in CurseForge Studio — a rejected file
 shows the reason inline. A rejection with a `500` body is CurseForge-side; the manifest

@@ -20,6 +20,8 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -73,10 +75,49 @@ final class OverworldLapsDebug {
             send(source, "    Nether/End core BoP samples: " + bandCoreBop(ctx, cycle, leadEnd, postEnd + cycle.endLen())
                     + " | overworld source at cores: " + coreLabels(cycle, biomeSource, sampler, overworld.getSeaLevel(),
                     leadEnd, postEnd + cycle.endLen()), ChatFormatting.GRAY);
+            for (String line : endPassLabels(cycle, biomeSource, sampler, overworld.getSeaLevel(), leadEnd, postEnd + cycle.endLen())) {
+                send(source, line, ChatFormatting.GRAY);
+            }
             scanEnd = Math.max(scanEnd, postEnd + cycle.endLen());
         }
         send(source, "  transitions wearing a modded look: " + bleedRuns(cycle, cycle.startX(), scanEnd), ChatFormatting.AQUA);
         return 1;
+    }
+
+    /** X step of the End-core label census. */
+    private static final int END_LABEL_STEP_X = 50;
+
+    /**
+     * One line per End <b>piece</b> core in {@code [from, to)}: its X range, look, and a census of what the
+     * overworld source labels its columns (the biome mixin at work — a vanilla piece runs small islands →
+     * highlands, a BoP piece shows {@code biomesoplenty:} End biomes among vanilla's).
+     */
+    private static List<String> endPassLabels(WorldGenCycle cycle, BiomeSource biomeSource, Climate.Sampler sampler,
+                                              int seaLevel, long from, long to) {
+        List<String> out = new ArrayList<>();
+        int qy = QuartPos.fromBlock(seaLevel + 8);
+        long runStart = -1L;
+        long runPass = -2L;
+        Map<String, Integer> census = new TreeMap<>();
+        for (long x = from; x <= Math.min(to, Integer.MAX_VALUE); x += END_LABEL_STEP_X) {
+            int ix = (int) x;
+            long pass = cycle.isEndCore(ix) && x < to ? cycle.endPassIndex(ix) : -2L;
+            if (pass != runPass) {
+                if (runPass >= 0L) {
+                    out.add("    End pass " + runPass + " (" + cycle.endStyleOfPass(runPass) + "): x=" + runStart + ".."
+                            + (x - 1) + " labels=" + census);
+                }
+                runPass = pass;
+                runStart = x;
+                census = new TreeMap<>();
+            }
+            if (pass < 0L) continue;
+            for (int z : SAMPLE_Z) {
+                Holder<Biome> b = biomeSource.getNoiseBiome(QuartPos.fromBlock(ix), qy, QuartPos.fromBlock(z), sampler);
+                census.merge(b.unwrapKey().map(k -> k.location().toString()).orElse("?"), 1, Integer::sum);
+            }
+        }
+        return out;
     }
 
     /** Runs of X (to {@link #BLEED_STEP_X}) where a band transition carries on a modded stretch's look. */
@@ -130,7 +171,9 @@ final class OverworldLapsDebug {
                 }
                 if (ctx.endCoreBiomes() != null && cycle.isEndCore(ix)) {
                     samples++;
-                    if (OverworldStretchBiomes.isBop(ctx.endCoreBiomes().biomeAt(ix, z, cycle.endPassIndex(ix), cycle.endLookAt(ix)))) end++;
+                    long pass = cycle.endPassIndex(ix);
+                    if (OverworldStretchBiomes.isBop(ctx.endCoreBiomes().biomeAt(ix, z, pass, cycle.endStyleOfPass(pass),
+                            cycle.endPieceProgress(ix, pass)))) end++;
                 }
             }
         }

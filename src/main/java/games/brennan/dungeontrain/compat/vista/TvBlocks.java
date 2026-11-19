@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.compat.vista;
 
+import games.brennan.dungeontrain.item.LiveCassetteItem;
+import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -26,4 +29,20 @@ public final class TvBlocks {
     public static boolean isTelevision(BlockState state) {
         return state != null && isTelevision(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
     }
+
+    /** Either Live Feed Cassette: the first stream's or the second stream's (Two Streams). */
+    public static boolean isLiveCassette(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof LiveCassetteItem;
+    }
+
+    /** The second stream's cassette specifically. */
+    public static boolean isSecondCassette(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof LiveCassetteItem c && c.isSecond();
+    }
+
+    /** A fresh cassette for the first stream ({@code second} false) or the second. */
+    public static ItemStack liveCassette(boolean second) {
+        return new ItemStack(second ? ModItems.LIVE_CASSETTE_2.get() : ModItems.LIVE_CASSETTE.get());
+    }
+
 }

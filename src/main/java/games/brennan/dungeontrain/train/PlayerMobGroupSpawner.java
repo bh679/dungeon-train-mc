@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.compat.vista.PlayerMobTvHat;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
@@ -268,6 +269,13 @@ public final class PlayerMobGroupSpawner {
                 && DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) {
             int progression = DifficultyProgression.maxTravelledCarriageIndex(level);
             DifficultyApplier.apply(mob, progression, rng, false, DifficultyApplier.StatScaling.FULL);
+        }
+
+        // After the gear, so a TV hat replaces any rolled helmet. Isolated so a fault can't skip the tag.
+        try {
+            PlayerMobTvHat.maybeWear(mob, rng);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] PlayerMob spawn: TV hat failed", t);
         }
 
         // REQUIRED: marks the mob as carriage contents so the train kill-ahead

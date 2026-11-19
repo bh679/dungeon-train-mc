@@ -83,6 +83,16 @@ class CapstoneNeedsTest {
     }
 
     @Test
+    @DisplayName("an advancement listed in notForTabComplete is not needed by its tab-complete")
+    void notForTabCompleteIsLeftOut() {
+        TabGateways.Layout optional = new TabGateways.Layout(layout.copies(), Map.of(), List.of(), Map.of(), Map.of(),
+            Map.of(), Map.of(), layout.complete(), Map.of(), List.of(DT + "reached_nether"));
+        ResourceLocation explored = ResourceLocation.parse(DT + "train_explored");
+        assertFalse(CapstoneNeeds.needs(optional, explored, node(DT + "reached_nether")), "listed: left out");
+        assertTrue(CapstoneNeeds.needs(optional, explored, node(DT + "te_probe")), "the rest of the tab still counts");
+    }
+
+    @Test
     @DisplayName("the burrito needs Dungeon Train-tab advancements only; ordinary advancements need nothing")
     void burritoNeedsTheDungeonTrainTab() {
         ResourceLocation burrito = ResourceLocation.parse(DT + "completionist");

@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Deeper Darker's Gloomslate Pots, when Dungeon Train rolled them as loot vases, have a small chance to
+ * Deeper Darker's Gloomslate Pots, when Dungeon Train rolled them as loot vases, have a one-in-four chance to
  * wake up as one of the mod's three pot mobs when a player breaks them. The pot's item goes into the mob
  * instead of spilling on the floor, and drops when the mob dies.
  *
@@ -58,7 +58,7 @@ public final class GloomslatePotMobEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Chance that a broken DT loot pot becomes a pot mob. */
-    public static final float CONVERT_CHANCE = 0.10f;
+    public static final float CONVERT_CHANCE = 0.25f;
 
     /** Persistent-data key on the mob: the pot's item as an {@link ItemStack} tag. */
     public static final String NBT_POT_LOOT = "DungeonTrainPotLoot";

@@ -17,7 +17,8 @@ import java.util.function.ToIntFunction;
  * The order a sidecar's cells decide in, so conditions between neighbours have one answer (see
  * {@link VariantConditions}). Plain cells first; then conditional cells, each after every cell its
  * conditions read (a group target reads all the group's cells, a touching side its variant
- * neighbour). When the rest form a cycle the lowest remaining cell (y, then z, then x) goes next,
+ * neighbour) and after the anchor of every group its references follow
+ * ({@link VariantGroupResolver#placedByGroup}). When the rest form a cycle the lowest remaining cell (y, then z, then x) goes next,
  * so a column of cells gating on each other resolves bottom-up.
  */
 public final class VariantRollOrder {
@@ -73,6 +74,7 @@ public final class VariantRollOrder {
         Set<BlockPos> out = new HashSet<>();
         if (states == null) return out;
         for (VariantState s : states) {
+            addReferencedAnchors(s, groups, out, 0);
             VariantCondition c = s.condition();
             if (c.isDefault()) continue;
             if (c.isGroupTarget()) {
@@ -85,5 +87,25 @@ public final class VariantRollOrder {
             }
         }
         return out;
+    }
+
+    /** How deep a reference's copied group is searched for further references — matches the resolver's cap. */
+    private static final int MAX_REF_DEPTH = 4;
+
+    /** The anchor (lowest y, z, x) of every group {@code s} follows, its nested copies included. */
+    private static void addReferencedAnchors(VariantState s, Map<Integer, List<BlockPos>> groups,
+                                             Set<BlockPos> out, int depth) {
+        if (!s.isGroupRef() || depth > MAX_REF_DEPTH) return;
+        BlockPos anchor = anchor(groups.get(s.groupRef()));
+        if (anchor != null) out.add(anchor);
+        for (VariantState nested : s.groupStates()) addReferencedAnchors(nested, groups, out, depth + 1);
+    }
+
+    /** Lowest cell by y, then z, then x — the same rule as {@link VariantGroupResolver#anchorOf}. */
+    private static BlockPos anchor(List<BlockPos> cells) {
+        if (cells == null || cells.isEmpty()) return null;
+        Comparator<BlockPos> lowest = Comparator.comparingInt((BlockPos p) -> p.getY())
+            .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX);
+        return cells.stream().min(lowest).orElse(null);
     }
 }

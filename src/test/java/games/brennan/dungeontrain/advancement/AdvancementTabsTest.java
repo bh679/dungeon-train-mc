@@ -52,6 +52,16 @@ class AdvancementTabsTest {
         return out;
     }
 
+    /** A {@code neoforge:false} load condition keeps the advancement out of the game (an unlaunched one). */
+    static boolean switchedOff(JsonObject adv) {
+        if (!adv.has("neoforge:conditions")) return false;
+        for (JsonElement c : adv.getAsJsonArray("neoforge:conditions")) {
+            if (c.isJsonObject() && c.getAsJsonObject().has("type")
+                    && "neoforge:false".equals(c.getAsJsonObject().get("type").getAsString())) return true;
+        }
+        return false;
+    }
+
     private static String parentPath(JsonObject adv) {
         JsonElement p = adv.get("parent");
         return p == null ? null : p.getAsString().replaceFirst("^dungeontrain:", "");
@@ -71,6 +81,16 @@ class AdvancementTabsTest {
     private static TabGateways.Layout shippedLayout() throws IOException {
         Path file = RepoPaths.resources().resolve("dungeontrain/advancement_tabs.json");
         return TabGateways.Layout.parse(new StringReader(Files.readString(file, StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    @DisplayName("every advancement left out of a tab-complete is a real advancement")
+    void notForTabCompleteListsRealAdvancements() throws IOException {
+        TabGateways.Layout layout = shippedLayout();
+        Map<String, JsonObject> all = advancements();
+        for (String id : layout.notForTabComplete()) {
+            assertTrue(all.containsKey(id.substring(id.indexOf(':') + 1)), "notForTabComplete names a missing advancement: " + id);
+        }
     }
 
     @Test
@@ -103,7 +123,7 @@ class AdvancementTabsTest {
                 Map.entry(DT + "carts_10000", TRAIN_EXPLORER),
                 Map.entry(DT + "the_long_run", TRAIN_EXPLORER),
                 Map.entry(DT + "reached_nether", TRAIN_EXPLORER),
-                Map.entry(DT + "ridden_biomes_150", TRAIN_EXPLORER),
+                Map.entry(DT + "ridden_biomes_all", TRAIN_EXPLORER),
                 Map.entry(DT + "help_i_cant_get_off", TRAIN_EXPLORER),
                 Map.entry(DT + "echo_kill", OTHERS),
                 Map.entry(DT + "encountered_1000_players", OTHERS),
@@ -131,7 +151,9 @@ class AdvancementTabsTest {
         Map<String, JsonObject> all = advancements();
         TabGateways.Layout layout = shippedLayout();
         Set<String> expected = new java.util.HashSet<>(Set.of("dungeontrain:" + TRAIN_EXPLORER, "dungeontrain:" + OTHERS,
-                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom"));
+                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom",
+                "dungeontrain:" + DT + "memory_lane_link", "dungeontrain:" + DT + "keepsake_link",
+                "dungeontrain:" + DT + "no_room_left_link")); // the photo album, linked into The Enchiridion
         layout.complete().keySet().forEach(self -> expected.add(self + "_tab")); // each tab-complete's in-tab copy
         assertEquals(expected, layout.copies().keySet());
         layout.copies().forEach((copyId, originalId) -> {
@@ -194,6 +216,7 @@ class AdvancementTabsTest {
         List<String> required = new ArrayList<>();
         Map<String, JsonObject> all = advancements();
         for (String path : all.keySet()) {
+            if (switchedOff(all.get(path))) continue; // never loaded, so never required
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", path);
             if (CompletionistAdvancement.isRequiredId(id, Set.of(), (DT + "root").equals(tabOf(all, path)))) required.add(id.toString());
         }

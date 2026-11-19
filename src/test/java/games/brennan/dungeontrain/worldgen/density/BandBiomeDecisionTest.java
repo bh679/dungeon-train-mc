@@ -32,6 +32,7 @@ final class BandBiomeDecisionTest {
     private static Result reference(WorldGenCycle cycle, long seed, int seaLevel,
                                     boolean hasNetherCore, boolean hasEndCore,
                                     int blockX, int blockY, int blockZ) {
+        if (hasEndCore && cycle.isEndVoid(blockX)) return Result.END_CORE;   // the End void, at every height
         if (blockY < seaLevel) return Result.ORIGINAL;
         int wx = NetherMountainTerrain.wavyX(seed, blockX, blockZ);
         if (hasNetherCore && cycle.isNetherCore(wx)) return Result.NETHER_CORE;
@@ -94,6 +95,32 @@ final class BandBiomeDecisionTest {
                 }
             }
         }
+    }
+
+    @Test
+    @DisplayName("End void: END_CORE below sea level and in the void holds either side of the islands; fades stay overworld")
+    void endVoidIsEndAtEveryHeight() {
+        long seed = 0x1234_5678L;
+        int seaLevel = 63;
+        boolean sawVoidOffCore = false;
+        boolean sawFadeOriginal = false;
+        for (int x = 2200; x <= 3000; x += 4) {
+            boolean endVoid = CYCLE.isEndVoid(x);
+            for (int y : new int[] {5, 40, 62, 63, 120}) {
+                Result r = decide(CYCLE, seed, seaLevel, true, true, x, y, 0);
+                if (endVoid) {
+                    assertEquals(Result.END_CORE, r, "void column x=" + x + " y=" + y);
+                    if (!CYCLE.isEndCore(x)) sawVoidOffCore = true;
+                } else if (CYCLE.endMiddleRamp(x) > 0.0 && y < seaLevel) {
+                    assertEquals(Result.ORIGINAL, r, "fade column x=" + x + " y=" + y);
+                    sawFadeOriginal = true;
+                }
+            }
+        }
+        assertTrue(sawVoidOffCore, "no void-hold column off the island core on the sweep");
+        assertTrue(sawFadeOriginal, "no overworld fade column on the sweep");
+        // no End provider → the void is never forced
+        assertEquals(Result.ORIGINAL, decide(CYCLE, seed, seaLevel, true, false, 2600, 40, 0));
     }
 
     @Test

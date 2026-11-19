@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.block;
 
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
+import games.brennan.dungeontrain.compat.photo.FramePhotoRemoval;
 import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
 import games.brennan.dungeontrain.compat.photo.RandomFramePhotos;
 import games.brennan.dungeontrain.compat.photo.TestFramePhoto;
@@ -249,6 +250,18 @@ public class PhotographFrameBlock extends Block implements EntityBlock {
         return super.playerWillDestroy(level, pos, state, player);
     }
 
+    /** Breaking a frame drops its photo too: that photo lands rather than burns, as a taken-out one does. */
+    @Override
+    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state,
+                              @Nullable BlockEntity blockEntity, ItemStack tool) {
+        FramePhotoRemoval.begin();
+        try {
+            super.playerDestroy(level, player, pos, state, blockEntity, tool);
+        } finally {
+            FramePhotoRemoval.end();
+        }
+    }
+
     @Override
     public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         PhotographFrameBlockEntity be = masterEntity(level, pos, state);
@@ -313,7 +326,15 @@ public class PhotographFrameBlock extends Block implements EntityBlock {
         if (be == null || !be.hasPhoto()) return false;
         if (level.isClientSide) return true;
         ItemStack photo = be.removePhoto();
-        if (!player.isCreative()) Block.popResource(level, pos, photo);
+        if (!player.isCreative()) {
+            // Lands rather than burns, so the player who took it down can pick it up.
+            FramePhotoRemoval.begin();
+            try {
+                Block.popResource(level, pos, photo);
+            } finally {
+                FramePhotoRemoval.end();
+            }
+        }
         playSound(level, pos, Exposure.SoundEvents.PHOTOGRAPH_FRAME_REMOVE_ITEM.get());
         return true;
     }

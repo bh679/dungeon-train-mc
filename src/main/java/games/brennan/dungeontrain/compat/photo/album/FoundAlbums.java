@@ -100,7 +100,7 @@ public final class FoundAlbums {
                     pages.add(new SignedAlbumPage(photo, Component.literal(page.note())));
                 }
                 markSpent(picked.album().owner());
-                return signed(picked.album().owner(), picked.album().name(), pages);
+                return signed(picked.album().owner(), picked.album().index(), picked.album().name(), pages);
             } catch (RuntimeException e) {
                 LOGGER.warn("[DungeonTrain] Could not place found album of {}: {}", picked.album().name(), e.toString());
                 return ItemStack.EMPTY;
@@ -114,14 +114,14 @@ public final class FoundAlbums {
         List<SignedAlbumPage> pages = content.pages().stream()
                 .map(page -> new SignedAlbumPage(page.photograph().copy(), Component.literal(page.note())))
                 .toList();
-        return signed(owner.uuid(), owner.name(), pages);
+        return signed(owner.uuid(), owner.index(), owner.name(), pages);
     }
 
-    private static ItemStack signed(UUID owner, String name, List<SignedAlbumPage> pages) {
+    private static ItemStack signed(UUID owner, int index, String name, List<SignedAlbumPage> pages) {
         ItemStack stack = new ItemStack(Exposure.Items.SIGNED_ALBUM.get());
         stack.set(Exposure.DataComponents.SIGNED_ALBUM_CONTENT, new SignedAlbumContent(name, name, pages));
-        stack.set(DataComponents.CUSTOM_NAME, AlbumOwnership.albumName(name));
-        AlbumOwnership.markFound(stack, owner);
+        stack.set(DataComponents.CUSTOM_NAME, AlbumOwnership.albumName(name, index));
+        AlbumOwnership.markFound(stack, owner, index);
         return stack;
     }
 
@@ -152,6 +152,8 @@ public final class FoundAlbums {
             player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosViewed();
             JsonObject body = new JsonObject();
             body.addProperty("uuid", AlbumSavePayload.bare(owner.get()));
+            int index = AlbumOwnership.foundIndex(album);
+            if (index > 0) body.addProperty("index", index);
             RelayOutbox.get().enqueue(VIEW_PATH, body.toString());
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.found_album_burns").withStyle(ChatFormatting.GRAY));
             return;

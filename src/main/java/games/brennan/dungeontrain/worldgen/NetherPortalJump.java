@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 
 /**
  * Where a Nether portal on the overworld ride lets the player out — pure world-X arithmetic over a
@@ -16,9 +17,12 @@ import java.util.function.IntFunction;
  *   <li><b>First overworld</b> (before the first Nether core) → the first Nether's core.</li>
  *   <li><b>Any other non-Nether band</b> → back to the <b>previous</b> Nether's core (the last core that
  *       starts at or behind the player).</li>
- *   <li><b>Inside a Nether band</b> → back to the core of the <b>band just before it</b>, whatever its
- *       type.</li>
+ *   <li><b>Inside a Nether core</b> → back to the core of the <b>band just before it</b>, whatever its
+ *       type. All looks of one Nether count as one band, so this never lands in the same Nether.</li>
  * </ul>
+ *
+ * <p>Only the core counts as inside the Nether: the crossfades at its edges follow the first two rules, so the
+ * portal there leads into that Nether's core.</p>
  *
  * <p>The landing column keeps the player's <b>proportion</b>: their fraction through the segment they
  * left is applied to the destination core ({@link #mapFraction}), so bands of different lengths still
@@ -35,6 +39,15 @@ public final class NetherPortalJump {
 
     /** A non-Nether core keeps at least this share of its segment (the trim is capped at a third per side). */
     private static final int MIN_CORE_DIVISOR = 3;
+
+    /**
+     * An overworld stretch shorter than this is a gap or a fade between two bands (the Lost City's closing fade
+     * reads as plain overworld), not one to arrive in. Every overworld band in the shipped order is longer.
+     */
+    static final long MIN_OVERWORLD_BLOCKS = 1000L;
+
+    /** The one segment label for all looks of a portal's own kind of band ({@link #mergingLooks}); never a real band name. */
+    private static final String MERGED_BAND = "\0portal-kind-band";
 
     private NetherPortalJump() {}
 
@@ -75,11 +88,42 @@ public final class NetherPortalJump {
     public static OptionalLong targetX(WorldGenCycle cycle, IntFunction<String> label, int fromX, Target target) {
         if (cycle.period() <= 0L) return OptionalLong.empty();
         long bound = scanBound(cycle, fromX);
-        Optional<Segment> dest = destinationCore(cycle, label, fromX, bound, target);
+        IntFunction<String> bands = mergingLooks(cycle, label, target);
+        Optional<Segment> dest = destinationCore(cycle, bands, fromX, bound, target);
         if (dest.isEmpty()) return OptionalLong.empty();
-        Segment from = segmentAround(label, fromX, Math.max(rideStart(cycle), (long) fromX - bound), (long) fromX + bound);
+        Segment from = segmentAround(bands, fromX, Math.max(rideStart(cycle), (long) fromX - bound), (long) fromX + bound);
         long landing = mapFraction(from, fromX, dest.get());
         return landing > Integer.MAX_VALUE ? OptionalLong.empty() : OptionalLong.of(landing);
+    }
+
+    /**
+     * Target world-X for an End gateway used at {@code fromX}: the proportional spot in the core of the nearest
+     * segment behind its own whose columns pass {@code overworld}, whatever lies between. A stretch shorter than
+     * {@link #MIN_OVERWORLD_BLOCKS} is passed over too. Empty when the ride has none behind it.
+     */
+    public static OptionalLong previousOverworldX(WorldGenCycle cycle, IntFunction<String> label, IntPredicate overworld,
+                                                  int fromX) {
+        if (cycle.period() <= 0L) return OptionalLong.empty();
+        long bound = scanBound(cycle, fromX);
+        long rideStart = rideStart(cycle);
+        Segment from = segmentAround(label, fromX, Math.max(rideStart, (long) fromX - bound), (long) fromX + bound);
+        for (long x = from.start() - 1L; x >= rideStart && x >= Integer.MIN_VALUE && x >= fromX - bound; ) {
+            Segment segment = segmentAround(label, (int) x, Math.max(rideStart, x - bound), x);
+            if (overworld.test((int) x) && segment.length() >= MIN_OVERWORLD_BLOCKS) {
+                return OptionalLong.of(mapFraction(from, fromX, coreOf(segment, cycle)));
+            }
+            x = segment.start() - 1L;
+        }
+        return OptionalLong.empty();
+    }
+
+    /**
+     * {@code label} with every column in a band of kind {@code target} named alike. The F3+4 label also names the
+     * look, so a split slot ({@code nether:vanilla=1000~400+bop}) reads as two segments, and without this a portal
+     * in its later look would take the earlier look for "the band before" and land in the same Nether.
+     */
+    private static IntFunction<String> mergingLooks(WorldGenCycle cycle, IntFunction<String> label, Target target) {
+        return x -> NetherBand.isInNetherBand(cycle, x) && target.wants(cycle.netherLookAt(x)) ? MERGED_BAND : label.apply(x);
     }
 
     /** The core a portal at {@code fromX} leads to, per the class rules; empty when there is none. */
@@ -95,7 +139,7 @@ public final class NetherPortalJump {
      */
     static Optional<Segment> destinationCore(WorldGenCycle cycle, IntFunction<String> label, int fromX, long bound,
                                              Target target) {
-        if (NetherBand.isInNetherBand(cycle, fromX) && target.wants(cycle.netherLookAt(fromX))) {
+        if (cycle.isNetherCore(fromX) && target.wants(cycle.netherLookAt(fromX))) {
             return target == Target.DEEPER_DARK ? beforeJoinedRange(cycle, label, fromX, bound)
                     : previousBandCore(cycle, label, fromX, bound);
         }
@@ -153,7 +197,7 @@ public final class NetherPortalJump {
         long prevEnd = nether.start() - 1L;
         if (prevEnd < rideStart || prevEnd < Integer.MIN_VALUE) return Optional.empty();
         if (NetherBand.isInNetherBand(cycle, (int) prevEnd)) {
-            // Two Nether looks back to back (a split slot): the band before is still "the Nether".
+            // A Nether slot of the other kind right before this one (looks of this kind are one segment).
             return slotCore(cycle, (int) cycle.netherPassIndex((int) prevEnd));
         }
         Segment prev = segmentAround(label, (int) prevEnd, Math.max(rideStart, prevEnd - bound), prevEnd);

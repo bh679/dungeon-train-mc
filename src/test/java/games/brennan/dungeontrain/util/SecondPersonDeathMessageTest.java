@@ -77,4 +77,22 @@ final class SecondPersonDeathMessageTest {
         assertEquals("Brennan fell from a high place",
                 SecondPersonDeathMessage.rewrite("Brennan fell from a high place", null));
     }
+
+    @Test
+    @DisplayName("non-English message → returned as the game wrote it, no English pronoun spliced in")
+    void nonEnglishUnchanged() {
+        assertEquals("Hiro_659掉出了这个世界",
+                SecondPersonDeathMessage.rewrite("Hiro_659掉出了这个世界", "Hiro_659", "zh_cn"));
+        assertEquals("Brennan est tombé hors du monde",
+                SecondPersonDeathMessage.rewrite("Brennan est tombé hors du monde", "Brennan", "fr_fr"));
+    }
+
+    @Test
+    @DisplayName("English variants are still rewritten")
+    void englishVariantsRewritten() {
+        assertEquals("You were slain by Zombie",
+                SecondPersonDeathMessage.rewrite("Brennan was slain by Zombie", "Brennan", "en_gb"));
+        assertEquals("You fell out of the world",
+                SecondPersonDeathMessage.rewrite("Brennan fell out of the world", "Brennan", "en_pt"));
+    }
 }

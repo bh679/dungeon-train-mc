@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.difficulty;
 
+import games.brennan.adventureitemstats.api.StatsModifier;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -28,14 +29,14 @@ import net.minecraft.world.item.enchantment.Enchantment;
  */
 public final class ItemPowerScore {
 
-    /** Bows/crossbows carry no ATTACK_DAMAGE modifier (damage is on the projectile) — score them here. */
+    /** A bow or crossbow with no AIS Ranged Damage on it (damage is on the projectile) — score it here. */
     public static final double BOW_BASE_SCORE = 4.0;
 
     private ItemPowerScore() {}
 
     /**
-     * The item's headline combat stat: attack damage if it has any, else armor, else a flat score for
-     * bows and crossbows, else 0.
+     * The item's headline combat stat: attack damage if it has any, else armor, else Ranged Damage,
+     * else a flat score for bows and crossbows, else 0.
      *
      * <p>Clamped to {@link BakedItemStats#MAX_SANE_MODIFIER}. Items baked into saved structure
      * templates can carry multi-million attribute amounts (the corruption {@code BakedItemStats}
@@ -53,6 +54,8 @@ public final class ItemPowerScore {
         if (attack > 0) return sane(attack);
         double armor = sumAddValue(modifiers, Attributes.ARMOR);
         if (armor > 0) return sane(armor);
+        double ranged = StatsModifier.rangedDamage(stack);
+        if (ranged > 0) return sane(ranged);
         if (stack.getItem() instanceof BowItem || stack.getItem() instanceof CrossbowItem) return BOW_BASE_SCORE;
         return 0;
     }

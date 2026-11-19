@@ -26,7 +26,19 @@ class PhotoSubjectTallyTest {
         assertEquals(new Subjects(false, false, true), PhotoSubjectTally.classify(false, false, false, false, true));
         // A hoglin is an Animal and an Enemy: it is a monster, not wildlife.
         assertEquals(new Subjects(false, true, false), PhotoSubjectTally.classify(false, false, false, true, true));
+        // A villager is a mob too, but a passenger, never wildlife.
+        assertEquals(new Subjects(true, false, false), PhotoSubjectTally.classify(false, false, true, false, true));
         assertFalse(PhotoSubjectTally.classify(false, false, false, false, false).any());
+    }
+
+    @Test
+    @DisplayName("a Piglin Traveler is a passenger, never hostile; a Piglin Alchemist stays hostile")
+    void piglinTravelerIsPassenger() throws Exception {
+        ClassLoader loader = getClass().getClassLoader();
+        Class<?> traveler = Class.forName("tallestred.piglinproliferation.common.entities.PiglinTraveler", false, loader);
+        Class<?> alchemist = Class.forName("tallestred.piglinproliferation.common.entities.PiglinAlchemist", false, loader);
+        assertEquals(new Subjects(true, false, false), PhotoSubjectTally.classifyType(traveler, true));
+        assertEquals(new Subjects(false, true, false), PhotoSubjectTally.classifyType(alchemist, false));
     }
 
     @Test

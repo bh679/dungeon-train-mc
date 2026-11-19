@@ -7,7 +7,9 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.narrative.AuthorSkinRef;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
+import games.brennan.dungeontrain.narrative.NoteAuthorGear;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
@@ -63,6 +65,12 @@ public final class DeathNoteEvents {
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
+        // The author's skin, so their echo arrives wearing it rather than the UUID default
+        // (the echo's profile ref needs a captured texture URL; a bare uuid never resolves one).
+        String authorSkinRef = AuthorSkinCapture.capture(player).map(AuthorSkinRef::encode).orElse("");
+        // …and what they were carrying as they died, so the echo comes back with THIS life's gear.
+        // LivingDeathEvent fires before the inventory drops, so it is all still on them here.
+        String authorGear = NoteAuthorGear.captureEncoded(player);
 
         for (PendingDeathNotes.PendingDeathNote note : pending) {
             if (deathCarriage == null) {
@@ -80,7 +88,8 @@ public final class DeathNoteEvents {
             // orphaned; the relay is pulled by the target in their next world (login + arrival scan).
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
-                    note.targetUuid(), deathCarriage, worldKey, "", freePlay, note.kind(), note.lines());
+                    note.targetUuid(), deathCarriage, worldKey, authorSkinRef, freePlay, note.kind(),
+                    note.lines(), authorGear);
         }
     }
 
@@ -109,6 +118,11 @@ public final class DeathNoteEvents {
         echo.level().addFreshEntity(drop);
         if (KillCredit.resolveKiller(echo, event.getSource()).orElse(null) instanceof ServerPlayer killer) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, killedEchoActionId(kind));
+            // The cursed player who kills their own hunter also takes its author's head.
+            if (DeathNoteEchoHead.shouldDrop(kind, killer.getUUID(),
+                    data.getString(DeathNoteEchoSpawner.KEY_TARGET))) {
+                DeathNoteEchoHead.drop(echo, author);
+            }
         }
         LOGGER.debug("[DungeonTrain] Note: echo of {} dropped a {} on death", author, kind.trophyTitle());
     }

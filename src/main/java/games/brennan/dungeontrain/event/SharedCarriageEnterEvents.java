@@ -4,12 +4,10 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
-import games.brennan.dungeontrain.ship.CarriageDeck;
-import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.train.SharedCarriageLookup;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.train.StorageContents;
-import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,7 +16,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import org.joml.Vector3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,25 +122,14 @@ public final class SharedCarriageEnterEvents {
         boolean ownByThisPlayer = false;
         Credits credits = Credits.EMPTY;
         Deaths deaths = Deaths.EMPTY;
-        List<Trains.Carriage> carriages = Trains.allCarriages(level);
-        if (!carriages.isEmpty()) {
-            Trains.Carriage c = CarriageDeck.carriageUnder(carriages, player);
-            if (c != null) {
-                ManagedShip ship = c.ship();
-                Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
-                ship.worldToShip(local);
-                SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(
-                        ship.subLevelId(),
-                        (int) Math.floor(local.x), (int) Math.floor(local.y), (int) Math.floor(local.z));
-                if (inst != null) {
-                    key = ship.subLevelId() + ":" + inst.pIdx;
-                    leased = inst.leasedFromPool;
-                    own = inst.authoredHere;
-                    ownByThisPlayer = inst.isAuthoredBy(player.getUUID());
-                    credits = inst.credits;
-                    deaths = inst.deaths();
-                }
-            }
+        SharedCarriageRegistry.Instance inst = SharedCarriageLookup.byEntity(level, player);
+        if (inst != null) {
+            key = inst.subLevelId + ":" + inst.pIdx;
+            leased = inst.leasedFromPool;
+            own = inst.authoredHere;
+            ownByThisPlayer = inst.isAuthoredBy(player.getUUID());
+            credits = inst.credits;
+            deaths = inst.deaths();
         }
 
         UUID id = player.getUUID();

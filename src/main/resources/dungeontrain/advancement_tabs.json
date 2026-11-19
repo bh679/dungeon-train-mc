@@ -24,7 +24,10 @@
     "dungeontrain:dungeon_train/challenge_complete_tab": "dungeontrain:dungeon_train/challenge_complete",
     "dungeontrain:dungeon_train/heros_handbook_tab": "dungeontrain:dungeon_train/heros_handbook",
     "dungeontrain:dungeon_train/fully_developed_tab": "dungeontrain:dungeon_train/fully_developed",
-    "dungeontrain:dungeon_train/all_out_of_secrets_tab": "dungeontrain:dungeon_train/all_out_of_secrets"
+    "dungeontrain:dungeon_train/all_out_of_secrets_tab": "dungeontrain:dungeon_train/all_out_of_secrets",
+    "dungeontrain:dungeon_train/memory_lane_link": "dungeontrain:enchiridion/memory_lane",
+    "dungeontrain:dungeon_train/keepsake_link": "dungeontrain:enchiridion/keepsake",
+    "dungeontrain:dungeon_train/no_room_left_link": "dungeontrain:enchiridion/no_room_left"
   },
   "unlockedBy": {
     "dungeontrain:dungeon_train/tab_challenges": "dungeontrain:dungeon_train/carts_100"
@@ -83,6 +86,7 @@
     "dungeontrain:dungeon_train/reached_beta": true,
     "dungeontrain:dungeon_train/reached_better_end": true,
     "dungeontrain:dungeon_train/reached_better_nether": true,
+    "dungeontrain:dungeon_train/reached_deeper_dark": true,
     "dungeontrain:dungeon_train/reached_bop": true,
     "dungeontrain:dungeon_train/reached_caves_of_chaos": true,
     "dungeontrain:dungeon_train/reached_chuncks": true,
@@ -91,7 +95,6 @@
     "dungeontrain:dungeon_train/reached_far_lands": true,
     "dungeontrain:dungeon_train/reached_floating": true,
     "dungeontrain:dungeon_train/reached_infdev": true,
-    "dungeontrain:dungeon_train/reached_large_biomes": false,
     "dungeontrain:dungeon_train/reached_lost_city": true,
     "dungeontrain:dungeon_train/reached_nether": true,
     "dungeontrain:dungeon_train/reached_overworld_again": true,
@@ -102,7 +105,6 @@
     "dungeontrain:dungeon_train/reached_void": true,
     "dungeontrain:dungeon_train/reached_wwoo": true,
     "dungeontrain:dungeon_train/read_all_nether_starting_books": true,
-    "dungeontrain:dungeon_train/read_all_rules": true,
     "dungeontrain:dungeon_train/read_all_stories": true,
     "dungeontrain:dungeon_train/read_shared_book": true,
     "dungeontrain:dungeon_train/reassembly_required": true,
@@ -112,7 +114,7 @@
     "dungeontrain:dungeon_train/remote_echo_kill": true,
     "dungeontrain:dungeon_train/remote_echo_void": true,
     "dungeontrain:dungeon_train/ridden_biomes_100": true,
-    "dungeontrain:dungeon_train/ridden_biomes_150": true,
+    "dungeontrain:dungeon_train/ridden_biomes_all": true,
     "dungeontrain:dungeon_train/ridden_biomes_25": true,
     "dungeontrain:dungeon_train/ridden_biomes_50": true,
     "dungeontrain:dungeon_train/seasoned_traveller": true,
@@ -168,6 +170,7 @@
     "dungeontrain:enchiridion/photo_beta": true,
     "dungeontrain:enchiridion/photo_better_end": true,
     "dungeontrain:enchiridion/photo_better_nether": true,
+    "dungeontrain:enchiridion/photo_deeper_dark": true,
     "dungeontrain:enchiridion/photo_bop": true,
     "dungeontrain:enchiridion/photo_caves_of_chaos": true,
     "dungeontrain:enchiridion/photo_chuncks": true,
@@ -203,7 +206,10 @@
     "dungeontrain:enchiridion/wildlife_photographer": true,
     "dungeontrain:enchiridion/wither_watcher": true,
     "dungeontrain:dungeon_train/three_melons": true,
-    "dungeontrain:dungeon_train/the_challenge": true
+    "dungeontrain:dungeon_train/the_challenge": true,
+    "dungeontrain:enchiridion/family_photo": true,
+    "dungeontrain:enchiridion/skeleton_crew": true,
+    "dungeontrain:enchiridion/photobomb": true
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",
@@ -211,11 +217,13 @@
     "dungeontrain:enchiridion/run_away": "always",
     "dungeontrain:enchiridion/shh": "always",
     "dungeontrain:enchiridion/wither_watcher": "always",
+    "dungeontrain:enchiridion/skeleton_crew": "always",
+    "dungeontrain:enchiridion/most_wanted": "always",
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",
-    "dungeontrain:dungeon_train/reached_large_biomes": "earned",
-    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned"
+    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned",
+    "dungeontrain:enchiridion/photobomb": "always"
   },
   "complete": {
     "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",
@@ -225,6 +233,11 @@
     "dungeontrain:dungeon_train/fully_developed": "dungeontrain:enchiridion/darkroom",
     "dungeontrain:dungeon_train/all_out_of_secrets": "dungeontrain:secrete_menu/root"
   },
+  "notForTabComplete": [
+    "dungeontrain:dungeon_train/memory_lane_link",
+    "dungeontrain:dungeon_train/keepsake_link",
+    "dungeontrain:dungeon_train/no_room_left_link"
+  ],
   "needs": {
     "dungeontrain:dungeon_train/all_at_once": [
       "dungeontrain:dungeon_train/apple_a_day",

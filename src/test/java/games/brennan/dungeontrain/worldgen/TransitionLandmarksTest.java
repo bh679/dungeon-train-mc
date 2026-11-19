@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class TransitionLandmarksTest {
 
     /** Shipped spheres progression: boost 3250 → 6250, so the peak sits at core offset 4750. */
-    static final SpheresSegments SPHERES = SpheresSegments.of(1000, 1750, 2500, 3250, 6250, 0.08, 5.0, 20.0, 1, 1, 1);
+    static final SpheresSegments SPHERES = SpheresSegments.of(1000, 1750, 2500, 3250, 3250, 6250, 0.08, 5.0, 20.0, 1, 1, 1, 1);
 
     /** Shipped Nether rise: a 32-block beach and five 40-block mountain stages (riseLen 232). */
     static List<Landmark> run(int k) {

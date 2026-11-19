@@ -35,6 +35,28 @@ class TvSpawnPowerTest {
     }
 
     @Test
+    void aboutHalfOfTheScreensTuneToTheSecondStreamAndTheRollIsStable() {
+        Vec3i rel = new Vec3i(3, 1, 2);
+        boolean first = TvSpawnPower.rollSecond(42L, 17, rel);
+        for (int i = 0; i < 10; i++) assertEquals(first, TvSpawnPower.rollSecond(42L, 17, rel));
+        int second = 0;
+        int total = 0;
+        int agree = 0;
+        for (int carriage = 0; carriage < 400; carriage++) {
+            for (int x = 0; x < 5; x++) {
+                Vec3i r = new Vec3i(x, 1, 2);
+                total++;
+                if (TvSpawnPower.rollSecond(1234L, carriage, r)) second++;
+                if (TvSpawnPower.rollSecond(1234L, carriage, r) == TvSpawnPower.rollOn(1234L, carriage, r)) agree++;
+            }
+        }
+        double share = (double) second / total;
+        assertTrue(Math.abs(share - TvSpawnPower.SECOND_STREAM_SHARE) < 0.04, "share was " + share);
+        // A different salt: the two rolls are not the same bit.
+        assertTrue(agree < total, "the second-stream roll must not mirror the power roll");
+    }
+
+    @Test
     void anyOnlinePlayerWhoOptedOutKeepsEveryTvOff() {
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();

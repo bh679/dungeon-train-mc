@@ -6,7 +6,8 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
-    "deeperdarker.OthersidePortalBlockBandJumpMixin"
+    "deeperdarker.OthersidePortalBlockBandJumpMixin",
+    "deeperdarker.SculkSnapperNoMendingMixin"
   ],
   "client": [],
   "server": [],

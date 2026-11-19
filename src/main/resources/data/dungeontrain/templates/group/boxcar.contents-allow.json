@@ -1,7 +1,8 @@
 {
   "schemaVersion": 2,
   "excluded": [
-    "default_full"
+    "default_full",
+    "passanger"
   ],
   "included": [
     "enemies_box",

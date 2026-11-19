@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Wijzig dit altijd in de configuratie of met /chatconnect on.",
   "discordpresence.consent.enable": "Inschakelen",
   "discordpresence.consent.not_now": "Niet nu",
+  "discordpresence.consent.toggle_on": "Aan",
+  "discordpresence.consent.toggle_off": "Uit",
 
   "discordpresence.survey.give_feedback": "Feedback geven",
   "discordpresence.survey.title": "Feedback",

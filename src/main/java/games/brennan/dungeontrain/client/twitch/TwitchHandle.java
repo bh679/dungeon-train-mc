@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.client.twitch;
 
+import games.brennan.dungeontrain.DungeonTrain;
+
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -28,11 +31,18 @@ public final class TwitchHandle {
 
     private TwitchHandle() {}
 
+    /** {@link #find(String, boolean, Set)} with nothing ignored. */
+    public static Optional<String> find(String message, boolean allowBare) {
+        return find(message, allowBare, Set.of());
+    }
+
     /**
      * The handle in {@code message}, lower-case, if there is one. A URL wins over an @-mention; a bare
      * token counts only with {@code allowBare} and only when the message is nothing but that token.
+     * An @-mention or bare token whose login is in {@code ignore} (lower-case: the dev ping tags,
+     * players on the server) is passed over; a pasted twitch.tv URL never is.
      */
-    public static Optional<String> find(String message, boolean allowBare) {
+    public static Optional<String> find(String message, boolean allowBare, Set<String> ignore) {
         if (message == null) return Optional.empty();
         String text = message.strip();
         if (text.isEmpty()) return Optional.empty();
@@ -43,11 +53,23 @@ public final class TwitchHandle {
         }
         Matcher at = AT.matcher(text);
         while (at.find()) {
-            Optional<String> login = accept(at.group(1));
+            Optional<String> login = accept(at.group(1)).filter(l -> !ignore.contains(l));
             if (login.isPresent()) return login;
         }
-        if (allowBare && BARE.matcher(text).matches()) return accept(text);
+        if (allowBare && BARE.matcher(text).matches()) return accept(text).filter(l -> !ignore.contains(l));
         return Optional.empty();
+    }
+
+    /**
+     * The logins DT's own ping tags would read as ({@code @dev} → {@code dev}), from
+     * {@link DungeonTrain#MENTION_TOKENS}: they tag the dev, never a channel.
+     */
+    public static Set<String> mentionLogins() {
+        Set<String> out = new HashSet<>();
+        for (String token : DungeonTrain.MENTION_TOKENS) {
+            out.add(token.substring(token.startsWith("@") ? 1 : 0).toLowerCase(Locale.ROOT));
+        }
+        return Set.copyOf(out);
     }
 
     /** Whether {@code login} alone is a usable handle (the shape and not a route). */

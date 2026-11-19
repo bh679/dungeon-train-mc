@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -115,5 +116,36 @@ final class CursedStoryPoolTest {
         assertEquals(9, stories.get(0).id());
         assertEquals("", stories.get(0).targetName());   // absent optional field → empty, not null
         assertEquals(0L, stories.get(0).landedTs());
+    }
+
+    private static Story story(int id) {
+        return new Story(id, "T" + id, 5, 0L, 0L, "", null, NoteKind.LOVE);
+    }
+
+    private static final List<Story> THREE = List.of(story(1), story(2), story(3));
+
+    @Test
+    @DisplayName("a story already handed out this life is skipped; the next unread one comes instead")
+    void skipsDeliveredStory() {
+        assertEquals(2, CursedStoryPool.firstUntold(THREE, Set.of(), Set.of(1)).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("a read story is skipped")
+    void skipsReadStory() {
+        assertEquals(2, CursedStoryPool.firstUntold(THREE, Set.of("1"), Set.of()).orElseThrow().id());
+        assertEquals(3, CursedStoryPool.firstUntold(THREE, Set.of("1"), Set.of(2)).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("nothing is owed once every story is read or delivered this life")
+    void allToldIsEmpty() {
+        assertTrue(CursedStoryPool.firstUntold(THREE, Set.of("2"), Set.of(1, 3)).isEmpty());
+    }
+
+    @Test
+    @DisplayName("with nothing delivered yet, the oldest unread story comes first")
+    void oldestFirstWhenFresh() {
+        assertEquals(1, CursedStoryPool.firstUntold(THREE, Set.of(), Set.of()).orElseThrow().id());
     }
 }

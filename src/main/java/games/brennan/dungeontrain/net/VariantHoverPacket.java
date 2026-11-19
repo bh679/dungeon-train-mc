@@ -18,10 +18,14 @@ import java.util.List;
  * An empty list means "not hovering anything variant-flagged" — clears the
  * client-side HUD.
  *
+ * <p>{@code showIcons} is the author's variant-overlay toggle: with the overlay off the
+ * icon row stays hidden, but the hover is still pushed — it is what arms middle-click
+ * copy ({@code VariantCopyPickClient}), which must not depend on a display preference.</p>
+ *
  * <p>Sent only when the hover state changes (not per-tick) to keep the pipe
  * quiet. See {@link games.brennan.dungeontrain.editor.VariantOverlayRenderer}.</p>
  */
-public record VariantHoverPacket(List<ResourceLocation> blockIds) implements CustomPacketPayload {
+public record VariantHoverPacket(List<ResourceLocation> blockIds, boolean showIcons) implements CustomPacketPayload {
 
     public static final Type<VariantHoverPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hover"));
@@ -33,7 +37,7 @@ public record VariantHoverPacket(List<ResourceLocation> blockIds) implements Cus
         );
 
     public static VariantHoverPacket empty() {
-        return new VariantHoverPacket(Collections.emptyList());
+        return new VariantHoverPacket(Collections.emptyList(), false);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -41,6 +45,7 @@ public record VariantHoverPacket(List<ResourceLocation> blockIds) implements Cus
         for (ResourceLocation id : blockIds) {
             buf.writeResourceLocation(id);
         }
+        buf.writeBoolean(showIcons);
     }
 
     public static VariantHoverPacket decode(FriendlyByteBuf buf) {
@@ -49,7 +54,7 @@ public record VariantHoverPacket(List<ResourceLocation> blockIds) implements Cus
         for (int i = 0; i < n; i++) {
             ids.add(buf.readResourceLocation());
         }
-        return new VariantHoverPacket(ids);
+        return new VariantHoverPacket(ids, buf.readBoolean());
     }
 
     @Override
@@ -58,6 +63,6 @@ public record VariantHoverPacket(List<ResourceLocation> blockIds) implements Cus
     }
 
     public static void handle(VariantHoverPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> VariantHoverHudOverlay.setHover(packet.blockIds));
+        ctx.enqueueWork(() -> VariantHoverHudOverlay.setHover(packet.blockIds, packet.showIcons));
     }
 }

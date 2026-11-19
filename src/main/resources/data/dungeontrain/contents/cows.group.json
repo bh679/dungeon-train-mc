@@ -36,7 +36,28 @@
     },
     {
       "id": "fox",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
     },
     {
       "id": "donkey",
@@ -56,7 +77,28 @@
     },
     {
       "id": "snowman",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
     },
     {
       "id": "worf",
@@ -69,7 +111,28 @@
     {
       "id": "bear",
       "weight": 1,
-      "minLevel": 6
+      "minLevel": 6,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
     }
   ]
 }

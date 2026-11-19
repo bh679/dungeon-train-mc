@@ -194,6 +194,30 @@ class ApprovedModListTest {
     }
 
     @Test
+    @DisplayName("carrierApproved parses, round-trips, and is baked ∪ relay; junk ids dropped")
+    void carrierApprovedRoundTrip() {
+        ApprovedModList.Payload p = ApprovedModList.parse(
+            "{\"ok\":true,\"approved\":[],\"revoked\":[],\"carrierApproved\":[\"CustomSkinLoader\",\"bad id!\",7]}");
+        assertNotNull(p);
+        assertEquals(Set.of("customskinloader"), p.carrierApproved());
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertEquals(Set.of("customskinloader"), back.carrierApproved());
+        assertEquals(Set.of(), ApprovedModList.parse("{\"approved\":[]}").carrierApproved(), "absent: empty, never null");
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null)).contains("carrierApproved"),
+            "an empty allowlist is not written");
+        try {
+            ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), null, Set.of(), null,
+                java.util.Map.of(), Set.of("anotherloader")));
+            Set<String> eff = ApprovedModList.carrierApproved();
+            assertTrue(eff.contains("customskinloader"), "the baked allowlist is still there");
+            assertTrue(eff.contains("anotherloader"), "a relay-allowed carrier id is added");
+        } finally {
+            ApprovedModList.setRelayForTest(null);
+        }
+        assertEquals(Set.of("customskinloader"), ApprovedModList.carrierApproved(), "baked alone otherwise");
+    }
+
+    @Test
     @DisplayName("The hash switch is baked OFF and the relay can turn it on")
     void hashEnforcementIsBakedOff() {
         assertFalse(ApprovedModList.BAKED_ENFORCE_HASHES);
@@ -328,7 +352,8 @@ class ApprovedModListTest {
     void bakedResourceCoversSiblings() {
         Set<String> baked = ApprovedModList.approved();
         for (String id : List.of("keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix",
-            "sable_pathfinder", "pigmanvillagers", "streamdetect", "dpibypassdetect", "dtmodverify")) {
+            "sable_pathfinder", "sablemobpaths", "dungeontotems", "pigmanvillagers", "streamdetect", "dpibypassdetect",
+            "dtmodverify")) {
             assertTrue(baked.contains(id), id + " ships with Dungeon Train, so it must be approved");
         }
     }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "excluded": [
     "2ndlevel",
     "armor",
@@ -10,7 +10,13 @@
     "default",
     "enchant",
     "ender",
-    "enemies",
+    "enemies_deeper_dark",
+    "enemies_end",
+    "enemies_nether",
+    "enemies_odd",
+    "enemies_pillagers",
+    "enemies_spiders_slimes",
+    "enemies_undead",
     "featurefancy",
     "fire",
     "kitchen",
@@ -24,5 +30,8 @@
     "smelt",
     "traps",
     "upgrade"
+  ],
+  "included": [
+    "biome_creepers"
   ]
 }

@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.event.SpheresCometEvents;
 import games.brennan.dungeontrain.worldgen.LodGeneration;
 import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.CarriageDebug;
@@ -159,6 +160,19 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setLostCityMemo(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLostCityMemo(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> lostCityMemoStatus(ctx.getSource()))))
+            // /dungeontrain debug chunk-saves — overworld chunks dropped vs written since the server started
+            // (UntouchedChunkSaves): an untouched chunk with no player near it is not saved.
+            // `touch` marks the chunk you stand in as changed by a player, so it is always saved.
+            .then(Commands.literal("chunk-saves").executes(ctx -> chunkSavesStatus(ctx.getSource()))
+                .then(Commands.literal("touch").executes(ctx -> touchChunk(ctx.getSource()))))
+            // /dungeontrain debug disk-memo <on|off|verify|status> — toggles DiskTestMemo, which skips the disk
+            // feature's repeated block tests (WWOO's cliff disks). OFF = vanilla's path; VERIFY re-runs the real
+            // test on every remembered answer and counts mismatches (expect 0). status prints and resets counts.
+            .then(Commands.literal("disk-memo")
+                .then(Commands.literal("on").executes(ctx -> setDiskMemo(ctx.getSource(), games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.ON)))
+                .then(Commands.literal("off").executes(ctx -> setDiskMemo(ctx.getSource(), games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.OFF)))
+                .then(Commands.literal("verify").executes(ctx -> setDiskMemo(ctx.getSource(), games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.VERIFY)))
+                .then(Commands.literal("status").executes(ctx -> diskMemoStatus(ctx.getSource()))))
             // /dungeontrain debug lod-lite <auto|force|off|status> — Distant Horizons LOD-lite Nether-core
             // decoration (see LodGeneration). `auto` (default) = lite only on DH-World Gen threads; `force`
             // = lite on every worldgen thread so a headless server measures the saving with no DH
@@ -174,6 +188,9 @@ public final class DebugCommand {
             // /dungeontrain debug wind [reload|export|on|off] — the train wind at your feet; reload the tuned
             // profile (scripts/wind/); export band edges for the tuner; a temporary on/off. See wind/WindServer.
             .then(WindDebug.build())
+            // /dungeontrain debug carriage-id [rebuild <id>|verify|back] — the id of the carriage you're in,
+            // that carriage's group stood up again from an id, and a cell-by-cell check against the train.
+            .then(CarriageIdDebug.build())
             // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
             // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
             .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))
@@ -193,7 +210,7 @@ public final class DebugCommand {
                     games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.LEGACY))))
             // /dungeontrain debug trade-values dump — every registered item with its name, Trade
             // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
-            // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
+            // Copied verbatim to the relay page's catalog.json (dungeon.training/items/).
             .then(Commands.literal("trade-values")
                 .then(Commands.literal("dump").executes(ctx -> dumpTradeValues(ctx.getSource()))))
             // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled
@@ -206,6 +223,17 @@ public final class DebugCommand {
             .then(Commands.literal("sphere-gravity").executes(ctx -> SphereGravityDebug.report(ctx.getSource()))
                 .then(Commands.literal("on").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), false)))
                 .then(Commands.literal("off").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), true))))
+            // /dungeontrain debug comet [aimed|miss|ahead|shower] — comet chance where you stand and how many are in
+            // flight; aimed|miss|ahead launch one at the nearest train now, shower starts a comet shower sized for
+            // where you stand, whatever the band. Also logged at INFO.
+            .then(Commands.literal("comet").executes(ctx -> SpheresCometDebug.report(ctx.getSource()))
+                .then(Commands.literal("aimed").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
+                    SpheresCometEvents.Aim.HIT)))
+                .then(Commands.literal("miss").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
+                    SpheresCometEvents.Aim.MISS)))
+                .then(Commands.literal("ahead").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
+                    SpheresCometEvents.Aim.MISS_AHEAD)))
+                .then(Commands.literal("shower").executes(ctx -> SpheresCometDebug.shower(ctx.getSource()))))
             // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
             // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
             // and carries the contents tag (regression probe for the ghost-passenger bug).
@@ -330,6 +358,9 @@ public final class DebugCommand {
             .then(Commands.literal("loot-rolls")
                 .then(Commands.literal("on").executes(ctx -> setLogLootRolls(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLogLootRolls(ctx.getSource(), false))))
+            // /dungeontrain debug vault-roll <trial|ominous|green> [times] — rolls a vault type's default
+            // reward as that many players and logs every item ([DT-vault-roll]); chat gets the tally.
+            .then(VaultRollDebug.node())
             // /dungeontrain debug traingen on|off|status — the backward-generation
             // investigation switch. `on` arms EVERY probe the backward lane has in one
             // go (the [bwdgen] decision trace, the spawn-stall detector, the
@@ -642,6 +673,43 @@ public final class DebugCommand {
         return 1;
     }
 
+    private static int setDiskMemo(CommandSourceStack source, games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode mode) {
+        games.brennan.dungeontrain.worldgen.DiskTestMemo.mode = mode;
+        boolean off = mode == games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.OFF;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Disk test memo " + mode + (off ? " (vanilla path, A/B mode)" : "")
+        ).withStyle(off ? ChatFormatting.GOLD : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int chunkSavesStatus(CommandSourceStack source) {
+        long dropped = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.dropped();
+        long kept = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.kept();
+        boolean off = !games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDropUntouchedWorldGen();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chunk saves: dropped=" + dropped + " chunks, kept=" + kept + " saves"
+                + (off ? " (dropUntouchedWorldGen is off: nothing is dropped)" : "")
+        ), false);
+        return 1;
+    }
+
+    private static int touchChunk(CommandSourceStack source) {
+        net.minecraft.core.BlockPos pos = net.minecraft.core.BlockPos.containing(source.getPosition());
+        games.brennan.dungeontrain.world.TouchedChunks.mark(source.getLevel(), pos);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chunk " + new net.minecraft.world.level.ChunkPos(pos) + " marked as changed: it is always saved"
+        ), false);
+        return 1;
+    }
+
+    private static int diskMemoStatus(CommandSourceStack source) {
+        String counters = games.brennan.dungeontrain.worldgen.DiskTestMemo.drainCounters();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Disk test memo " + games.brennan.dungeontrain.worldgen.DiskTestMemo.mode + " " + counters
+        ), false);
+        return 1;
+    }
+
     private static int setLostCityMemo(CommandSourceStack source, boolean on) {
         games.brennan.dungeontrain.worldgen.LostCityChunkVeto.ENABLED = on;
         source.sendSuccess(() -> Component.literal(
@@ -820,7 +888,8 @@ public final class DebugCommand {
             + " | holding index: " + (indexOn ? "on" : "DISABLED")
             + " held=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.size()
             + " filed=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.filedCount()
-            + " gaveUp=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.gaveUpCount();
+            + " gaveUp=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.gaveUpCount()
+            + " | leftover groups deleted=" + games.brennan.dungeontrain.ship.sable.DriverlessCarriageReaper.reapedCount();
         LOGGER.info(line);
         source.sendSuccess(() -> Component.literal(line)
             .withStyle(c[0] == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);

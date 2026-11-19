@@ -324,6 +324,25 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on:15"
   },
+  "nnout": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "void/exact/off/off/off/none/sealed/0/7"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "void"
@@ -336,6 +355,7 @@
       "name": "AntonioMacarely"
     }
   },
+  "onionman": 1,
   "outsidethebox": {
     "weight": 0,
     "mode": "endless_open/single:minecraft:stone"
@@ -411,12 +431,17 @@
   "singlepillar": {
     "weight": 4,
     "minLevel": 2,
-    "maxLevel": 40,
     "mode": "endless_open"
   },
   "singlepillar2": {
     "weight": 1,
     "mode": "endless_open"
+  },
+  "singlepillar_trapped": {
+    "weight": 4,
+    "minLevel": 2,
+    "maxLevel": 40,
+    "mode": "endless_open/exact/off/off/off/none/sealed/0/2/0/2/minecraft:bedrock/auto/on/door"
   },
   "singlesomething": {
     "weight": 1,
@@ -428,11 +453,11 @@
   },
   "slime": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on/off/day/repeated/0/1"
+    "mode": "endless_repetition/dynamic/off/on:30/off/day/repeated/0/1"
   },
   "sloped": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on:12/off/nether"
+    "mode": "endless_repetition/dynamic/off/on:12/off/nether/repeated/0/1"
   },
   "smalllibrary": {
     "weight": 1,
@@ -442,6 +467,10 @@
   "squidwardshouse_2": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/1/-1/1"
+  },
+  "staircase": {
+    "weight": 1,
+    "mode": "void/exact/off/off/off/end/sealed/0/0/0/43/minecraft:bedrock/on"
   },
   "statue2": {
     "weight": 1,
@@ -521,6 +550,10 @@
     "weight": 1,
     "minLevel": 10,
     "mode": "bedrock"
+  },
+  "trapped_default2": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/1"
   },
   "upsidedown": {
     "weight": 1,

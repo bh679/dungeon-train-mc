@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import net.minecraft.core.Vec3i;
@@ -36,7 +37,7 @@ public final class BuilderVariantStore {
     /** The {@code name} the document reports in log lines — it has no template name of its own. */
     private static final String DOC_NAME = "build";
 
-    private record Cached(Vec3i footprint, TrackVariantBlocks doc) {}
+    private record Cached(Vec3i footprint, VariantDoc doc) {}
 
     private static final Map<String, Cached> CACHE = new HashMap<>();
 
@@ -46,31 +47,31 @@ public final class BuilderVariantStore {
      * This build's sidecar, read from disk on first use. Never null — an absent or unreadable file
      * reads as an empty document, which is also the state a New build starts in.
      */
-    public static synchronized TrackVariantBlocks loadFor(ServerLevel level, Vec3i footprint) {
+    public static synchronized VariantDoc loadFor(ServerLevel level, Vec3i footprint) {
         return loadFor(level, 0, footprint);
     }
 
     /** The sidecar of parked carriage {@code volume} — see {@link BuilderStorePaths#variantsFile(ServerLevel, int)}. */
-    public static synchronized TrackVariantBlocks loadFor(ServerLevel level, int volume, Vec3i footprint) {
+    public static synchronized VariantDoc loadFor(ServerLevel level, int volume, Vec3i footprint) {
         Path file = BuilderStorePaths.variantsFile(level, volume);
         String key = file.toString();
         Cached cached = CACHE.get(key);
         if (cached != null && cached.footprint().equals(footprint)) {
             return cached.doc();
         }
-        TrackVariantBlocks doc = TrackVariantBlocks.fromJsonText(readOrNull(file), null, DOC_NAME, footprint);
+        VariantDoc doc = TrackVariantBlocks.fromJsonText(readOrNull(file), null, DOC_NAME, footprint);
         CACHE.put(key, new Cached(footprint, doc));
         return doc;
     }
 
     /** Persist {@code doc} as this build's sidecar. */
-    public static synchronized void save(ServerLevel level, TrackVariantBlocks doc, Vec3i footprint)
+    public static synchronized void save(ServerLevel level, VariantDoc doc, Vec3i footprint)
             throws IOException {
         save(level, 0, doc, footprint);
     }
 
     /** Persist {@code doc} as the sidecar of parked carriage {@code volume}. */
-    public static synchronized void save(ServerLevel level, int volume, TrackVariantBlocks doc, Vec3i footprint)
+    public static synchronized void save(ServerLevel level, int volume, VariantDoc doc, Vec3i footprint)
             throws IOException {
         Path file = BuilderStorePaths.variantsFile(level, volume);
         Files.createDirectories(file.getParent());
@@ -105,7 +106,7 @@ public final class BuilderVariantStore {
      * string when nothing has been authored, so callers can skip the write entirely.
      */
     public static synchronized String snapshotJson(ServerLevel level, Vec3i footprint) {
-        TrackVariantBlocks doc = loadFor(level, footprint);
+        VariantDoc doc = loadFor(level, footprint);
         return doc.isEmpty() ? "" : doc.asJsonText();
     }
 

@@ -25,6 +25,11 @@
     {
       "id": "mirror",
       "weight": 1
+    },
+    {
+      "id": "trapped_default2",
+      "weight": 4,
+      "minLevel": 55
     }
   ]
 }

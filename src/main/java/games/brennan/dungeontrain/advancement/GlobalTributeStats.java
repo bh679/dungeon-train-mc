@@ -23,7 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * The most emeralds a player has ever paid for one photo Tribute, across every world. A tributed
  * photo is shown in the passenger log only when its Tribute beats this — a personal best — so the
- * feed carries the photos people valued most rather than every Tribute paid.
+ * feed carries the photos people valued most rather than every Tribute paid. Also the running total
+ * of emeralds paid in Tribute to other people's photos, which drives Big Spender.
  *
  * <p>Sibling to {@link GlobalBookBurnStats} and built the same way: {@code
  * <gameDir>/dungeontrain/stats/<uuid>-tribute.json}, cached, written atomically. Tributes are rare,
@@ -36,12 +37,13 @@ public final class GlobalTributeStats {
     private static final String LEGACY_DIR_NAME = "dungeontrain-stats";
     private static final String FILE_SUFFIX = "-tribute.json";
 
-    private record Data(int highestTributePaid) {
+    private record Data(int highestTributePaid, int totalPaidToOthers) {
         static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
-            Codec.INT.optionalFieldOf("highestTributePaid", 0).forGetter(Data::highestTributePaid)
+            Codec.INT.optionalFieldOf("highestTributePaid", 0).forGetter(Data::highestTributePaid),
+            Codec.INT.optionalFieldOf("totalPaidToOthers", 0).forGetter(Data::totalPaidToOthers)
         ).apply(in, Data::new));
 
-        static final Data EMPTY = new Data(0);
+        static final Data EMPTY = new Data(0, 0);
     }
 
     private static final Map<UUID, Data> CACHE = new ConcurrentHashMap<>();
@@ -62,9 +64,35 @@ public final class GlobalTributeStats {
         return cost > 0 && cost > best;
     }
 
+    /** A running total of {@code total} after paying {@code cost}: nothing paid adds nothing, and it never overflows. */
+    static int added(int total, int cost) {
+        if (cost <= 0) return total;
+        return (int) Math.min(Integer.MAX_VALUE, (long) total + cost);
+    }
+
+    private static Data data(UUID uuid) {
+        return CACHE.computeIfAbsent(uuid, GlobalTributeStats::loadFromDisk);
+    }
+
     /** The most this player has paid for one Tribute, 0 if they never have. */
     public static int highestTributePaid(UUID uuid) {
-        return CACHE.computeIfAbsent(uuid, GlobalTributeStats::loadFromDisk).highestTributePaid();
+        return data(uuid).highestTributePaid();
+    }
+
+    /** Every emerald this player has paid in Tribute to other people's photos, across every world. */
+    public static int totalPaidToOthers(UUID uuid) {
+        return data(uuid).totalPaidToOthers();
+    }
+
+    /** Add a Tribute of {@code cost} to someone else's photo to the running total, saved at once. @return the new total */
+    public static synchronized int addPaidToOthers(UUID uuid, int cost) {
+        Data old = data(uuid);
+        int total = added(old.totalPaidToOthers(), cost);
+        if (total == old.totalPaidToOthers()) return total;
+        Data data = new Data(old.highestTributePaid(), total);
+        CACHE.put(uuid, data);
+        saveToDisk(uuid, data);
+        return total;
     }
 
     /**
@@ -72,8 +100,9 @@ public final class GlobalTributeStats {
      * returns true; otherwise nothing changes.
      */
     public static synchronized boolean recordIfHighest(UUID uuid, int cost) {
-        if (!beats(highestTributePaid(uuid), cost)) return false;
-        Data data = new Data(cost);
+        Data old = data(uuid);
+        if (!beats(old.highestTributePaid(), cost)) return false;
+        Data data = new Data(cost, old.totalPaidToOthers());
         CACHE.put(uuid, data);
         saveToDisk(uuid, data);
         return true;

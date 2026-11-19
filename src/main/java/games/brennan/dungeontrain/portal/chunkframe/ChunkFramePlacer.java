@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal.chunkframe;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.VariantState;
@@ -51,7 +52,7 @@ public final class ChunkFramePlacer {
     }
 
     /** The frame a pair's room is dressed in: its template and its variant sidecar. */
-    public record Picked(String name, ChunkFrameTemplate template, TrackVariantBlocks variants) {}
+    public record Picked(String name, ChunkFrameTemplate template, VariantDoc variants) {}
 
     /**
      * Frames forced onto particular pairs — what Test the Carriage uses to show one frame on a
@@ -115,6 +116,26 @@ public final class ChunkFramePlacer {
         return Optional.of(new Picked(name, template.get(), ChunkFrameVariants.loadFor(name)));
     }
 
+    /**
+     * Read every frame that could dress {@code roomName} into its cache, off the server thread.
+     *
+     * <p>A frame's sidecar runs to megabytes, and the first stamp to ask for it would otherwise parse
+     * it inside the tick. Called from the sampler ahead of the room's ground, and a pair cannot be
+     * planned until the ground lands, so the stamp finds these already cached. A failure here costs
+     * only that: the stamp reads the frame itself, as it would have anyway.</p>
+     */
+    public static void preload(ServerLevel level, String roomName) {
+        try {
+            for (String name : ChunkFrameRegistry.names()) {
+                if (!ChunkFrameMetaStore.get(name).appliesTo(roomName)) continue;
+                ChunkFrameStore.get(level, name);
+                ChunkFrameVariants.loadFor(name);
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not preload the chunk frames for room {}: {}", roomName, e.toString());
+        }
+    }
+
     /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. */
     static String pick(String roomName, long seed) {
         java.util.List<String> names = new java.util.ArrayList<>();
@@ -150,7 +171,7 @@ public final class ChunkFramePlacer {
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
         ChunkFrameTemplate frame = picked.template();
-        TrackVariantBlocks variants = picked.variants();
+        VariantDoc variants = picked.variants();
         long seed = level.getSeed();
         int changed = 0;
         Vec3i size = frame.size();

@@ -54,4 +54,20 @@ class LiveRecOverlayTest {
         }
         assertEquals(set, covered);
     }
+
+    @Test
+    void theMicHintShowsForTheFirstSecondsOfAStreamAndAgainAfterTheInventoryCloses() {
+        LiveRecOverlay.MicHint.reset();
+        long start = 1_000_000;
+        assertTrue(LiveRecOverlay.MicHint.showing(start, start), "from the first frame");
+        assertTrue(LiveRecOverlay.MicHint.showing(start + LiveRecOverlay.MicHint.FIRST_MS - 1, start));
+        assertFalse(LiveRecOverlay.MicHint.showing(start + LiveRecOverlay.MicHint.FIRST_MS, start), "gone after its window");
+        long closed = start + 60_000;
+        LiveRecOverlay.MicHint.screenClosed(closed);
+        assertTrue(LiveRecOverlay.MicHint.showing(closed, start), "back when the inventory closes with the mic off");
+        assertTrue(LiveRecOverlay.MicHint.showing(closed + LiveRecOverlay.MicHint.AFTER_CLOSE_MS - 1, start));
+        assertFalse(LiveRecOverlay.MicHint.showing(closed + LiveRecOverlay.MicHint.AFTER_CLOSE_MS, start));
+        LiveRecOverlay.MicHint.reset();
+        assertFalse(LiveRecOverlay.MicHint.showing(closed, start));
+    }
 }

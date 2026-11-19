@@ -67,6 +67,7 @@ dungeontrain:dungeon_train/reached_bop
 dungeontrain:dungeon_train/reached_caves_of_chaos
 dungeontrain:dungeon_train/reached_chuncks
 dungeontrain:dungeon_train/reached_classic
+dungeontrain:dungeon_train/reached_deeper_dark
 dungeontrain:dungeon_train/reached_end_islands
 dungeontrain:dungeon_train/reached_far_lands
 dungeontrain:dungeon_train/reached_floating
@@ -81,7 +82,6 @@ dungeontrain:dungeon_train/reached_superflat
 dungeontrain:dungeon_train/reached_void
 dungeontrain:dungeon_train/reached_wwoo
 dungeontrain:dungeon_train/read_all_nether_starting_books
-dungeontrain:dungeon_train/read_all_rules
 dungeontrain:dungeon_train/read_all_stories
 dungeontrain:dungeon_train/read_shared_book
 dungeontrain:dungeon_train/reassembly_required
@@ -92,9 +92,9 @@ dungeontrain:dungeon_train/remote_echo_kill
 dungeontrain:dungeon_train/remote_echo_void
 dungeontrain:dungeon_train/returned_to_train
 dungeontrain:dungeon_train/ridden_biomes_100
-dungeontrain:dungeon_train/ridden_biomes_150
 dungeontrain:dungeon_train/ridden_biomes_25
 dungeontrain:dungeon_train/ridden_biomes_50
+dungeontrain:dungeon_train/ridden_biomes_all
 dungeontrain:dungeon_train/roof_run_1
 dungeontrain:dungeon_train/roof_runner
 dungeontrain:dungeon_train/root
@@ -134,6 +134,7 @@ dungeontrain:enchiridion/danger_close
 dungeontrain:enchiridion/darkroom
 dungeontrain:enchiridion/end_credits
 dungeontrain:enchiridion/familiar_faces
+dungeontrain:enchiridion/family_photo
 dungeontrain:enchiridion/field_guide
 dungeontrain:enchiridion/final_moments
 dungeontrain:enchiridion/found_footage
@@ -165,6 +166,7 @@ dungeontrain:enchiridion/photo_bop
 dungeontrain:enchiridion/photo_caves_of_chaos
 dungeontrain:enchiridion/photo_chuncks
 dungeontrain:enchiridion/photo_classic
+dungeontrain:enchiridion/photo_deeper_dark
 dungeontrain:enchiridion/photo_far_lands
 dungeontrain:enchiridion/photo_floating
 dungeontrain:enchiridion/photo_infdev
@@ -185,6 +187,7 @@ dungeontrain:enchiridion/self_care
 dungeontrain:enchiridion/self_employed_photographer
 dungeontrain:enchiridion/shameless_self_promotion
 dungeontrain:enchiridion/shh
+dungeontrain:enchiridion/skeleton_crew
 dungeontrain:enchiridion/some_pig
 dungeontrain:enchiridion/spirit_photography
 dungeontrain:enchiridion/supporting_artists

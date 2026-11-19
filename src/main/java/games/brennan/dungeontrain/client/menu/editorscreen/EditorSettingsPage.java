@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.PlaceholderCollision;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import net.minecraft.client.Minecraft;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -33,6 +34,7 @@ public final class EditorSettingsPage {
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(themeRow(theme, setTheme));
         out.add(skyboxRow());
+        out.add(emptyBlocksRow());
         if (DungeonTrain.isDevBuild()) out.add(relayRow());
         out.addAll(EditorMenuScreen.settingsRows(standingCategory, standingName));
         return out;
@@ -67,6 +69,29 @@ public final class EditorSettingsPage {
         ClientDisplayConfig.setSkyboxBlocksOn(on);
         Minecraft mc = Minecraft.getInstance();
         if (mc.levelRenderer != null) mc.levelRenderer.allChanged();
+    }
+
+    /**
+     * Empty blocks | Half solid | Solid | Air — how solid the variant editor's empty-cell markers are.
+     *
+     * <p>Collision only, so nothing is redrawn on the switch: the markers look the same in every
+     * mode and can always be built against. See {@link PlaceholderCollision}.</p>
+     */
+    static CommandMenuEntry emptyBlocksRow() {
+        PlaceholderCollision active = ClientDisplayConfig.getPlaceholderCollision();
+        return new CommandMenuEntry.Quad(
+            new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.EMPTY_BLOCKS)),
+            emptyBlocksCell(PlaceholderCollision.HALF_SOLID, EditorScreenLang.EMPTY_BLOCKS_HALF_SOLID, active),
+            emptyBlocksCell(PlaceholderCollision.SOLID, EditorScreenLang.EMPTY_BLOCKS_SOLID, active),
+            emptyBlocksCell(PlaceholderCollision.AIR, EditorScreenLang.EMPTY_BLOCKS_AIR, active),
+            0.46, 0.64, 0.82);
+    }
+
+    /** One cell of the Empty blocks row: highlighted while it is the active mode, a switch otherwise. */
+    private static CommandMenuEntry emptyBlocksCell(PlaceholderCollision cell, String labelKey,
+                                                    PlaceholderCollision active) {
+        return new CommandMenuEntry.ClientAction(EditorScreenLang.text(labelKey),
+            () -> ClientDisplayConfig.setPlaceholderCollision(cell), cell == active);
     }
 
     /**

@@ -107,6 +107,15 @@ class LeaderboardPoolTest {
     }
 
     @Test
+    @DisplayName("the all-time stream board gives the seconds on air, the one-life board does not")
+    void readsStreamSeconds() {
+        assertEquals(17_055L, LeaderboardPool.streamSeconds(LeaderboardPool.parseAllRanks(
+            "{\"ranks\":{\"live_stream_time\":{\"rank\":4,\"score\":17055},\"live_stream_run\":{\"rank\":2,\"score\":5262}}}")));
+        assertEquals(0L, LeaderboardPool.streamSeconds(LeaderboardPool.parseAllRanks(
+            "{\"ranks\":{\"live_stream_run\":{\"rank\":2,\"score\":5262}}}")));
+    }
+
+    @Test
     @DisplayName("a rank of zero is not a rank")
     void rejectsZeroRank() {
         assertTrue(LeaderboardPool.parseRanks("{\"ranks\":{\"lives\":{\"rank\":0,\"score\":4}}}").isEmpty());

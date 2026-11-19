@@ -59,11 +59,25 @@ public final class AdvancementProfiles {
      */
     private static volatile boolean clearing = false;
 
+    /**
+     * Set only while {@link #replay} re-awards whole advancements already banked as earned. Their
+     * rewards (items, XP, recipes, functions) were paid in the world where they were first earned, so
+     * {@code AdvancementRewardsReplayMixin} skips them; otherwise every new world hands them out again
+     * (Biomes O' Plenty's all-biomes music disc landed in the hand at every spawn). Not set for
+     * {@link #replayCriteria}: criteria from several worlds adding up to a first completion still pay.
+     */
+    private static volatile boolean restoringEarned = false;
+
     private AdvancementProfiles() {}
 
     /** True while awards are a replay of an earned profile, not genuine earns. */
     public static boolean isReplaying() {
         return replaying;
+    }
+
+    /** True while {@link #replay} restores already-earned advancements, whose rewards were paid before. */
+    public static boolean isRestoringEarned() {
+        return restoringEarned;
     }
 
     /**
@@ -156,8 +170,10 @@ public final class AdvancementProfiles {
             (GlobalAchievementStore.isShared(holder.id()) ? shared : profile).add(holder.id());
         }
         UUID uuid = player.getUUID();
-        int added = GlobalAchievementStore.appendAll(uuid, profileKey, profile)
-            + GlobalAchievementStore.appendAll(uuid, GlobalAchievementStore.SHARED, shared);
+        // Absorbed, not granted: a world's advancement file is as editable as the profile, so what it
+        // says was earned is replayed but never vouched for (CompletionistAdvancement.isVerifiedEarn).
+        int added = GlobalAchievementStore.appendAllAbsorbed(uuid, profileKey, profile)
+            + GlobalAchievementStore.appendAllAbsorbed(uuid, GlobalAchievementStore.SHARED, shared);
         if (added > 0) {
             LOGGER.info("[DungeonTrain] Absorbed {} already-earned advancement(s) into the {} profile for {}",
                 added, profileKey, player.getName().getString());
@@ -181,18 +197,24 @@ public final class AdvancementProfiles {
         if (server == null) return;
         ServerAdvancementManager mgr = server.getAdvancements();
         int[] replayed = {0};
-        silently(server, () -> {
-            for (ResourceLocation id : granted) {
-                AdvancementHolder holder = mgr.get(id);
-                if (holder == null) {
-                    LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping", id);
-                    continue;
+        boolean wasRestoring = restoringEarned;
+        restoringEarned = true;
+        try {
+            silently(server, () -> {
+                for (ResourceLocation id : granted) {
+                    AdvancementHolder holder = mgr.get(id);
+                    if (holder == null) {
+                        LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping", id);
+                        continue;
+                    }
+                    for (String key : holder.value().criteria().keySet()) {
+                        if (player.getAdvancements().award(holder, key)) replayed[0]++;
+                    }
                 }
-                for (String key : holder.value().criteria().keySet()) {
-                    if (player.getAdvancements().award(holder, key)) replayed[0]++;
-                }
-            }
-        });
+            });
+        } finally {
+            restoringEarned = wasRestoring;
+        }
         if (replayed[0] > 0) {
             LOGGER.info("[DungeonTrain] Replayed {} criteria from the {} profile for {} (silent)",
                 replayed[0], profileKey, player.getName().getString());
@@ -316,8 +338,14 @@ public final class AdvancementProfiles {
                     }
                     if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
                         ResourceLocation id = holder.id();
+                        // Progress from a file the store could not vouch for finishes as absorbed.
+                        boolean unverified = GlobalCriteriaProgress.isUnverified(uuid, partition);
                         finished.add(() -> {
-                            GlobalAchievementStore.append(uuid, partition, id);
+                            if (unverified) {
+                                GlobalAchievementStore.appendAllAbsorbed(uuid, partition, List.of(id));
+                            } else {
+                                GlobalAchievementStore.append(uuid, partition, id);
+                            }
                             GlobalCriteriaProgress.removeAdvancement(uuid, partition, id);
                         });
                     }

@@ -129,7 +129,16 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      REMOVE_COND_VALUE,
                      CLEAR_COND,
                      // Group mode: stateString = block id to switch on / off in the condition.
-                     TOGGLE_COND_VALUE }
+                     TOGGLE_COND_VALUE,
+                     // Candle row: stateString = VariantCandles token ("random", "3"); "" = as placed.
+                     SET_CANDLES,
+                     // Flower pot row: stateString = "" (off, as placed) or "random" (on, any plant,
+                     // dropping a chosen list).
+                     SET_POT,
+                     // Flower pot row: stateString = plant block id to add; "" adds the held plant.
+                     ADD_POT_PLANT,
+                     // Flower pot row: stateString = plant block id to drop.
+                     REMOVE_POT_PLANT }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

@@ -58,6 +58,26 @@ public final class TextCensor {
         return run(raw, words, true);
     }
 
+    /**
+     * Censor a finished line against the strike list and the mild list ({@link LiveWordList#mild()}): both are
+     * masked, but only strike-list terms land in {@link Result#hits()}. {@link Result#changed()} says the text
+     * changed; a strike is due only when {@code hits} is non-empty.
+     */
+    public static Result censor(String raw, CompiledWords words, CompiledWords mild) {
+        return withMild(run(raw, words, false), mild, false);
+    }
+
+    /** {@link #censor(String, CompiledWords, CompiledWords)} for text still being typed. */
+    public static Result censorTail(String raw, CompiledWords words, CompiledWords mild) {
+        return withMild(run(raw, words, true), mild, true);
+    }
+
+    private static Result withMild(Result strike, CompiledWords mild, boolean tail) {
+        Result m = run(strike.text(), mild, tail);
+        if (!m.changed()) return strike;
+        return new Result(m.text(), strike.hits(), true);
+    }
+
     private static Result run(String raw, CompiledWords words, boolean tail) {
         if (raw == null || raw.isEmpty() || words == null || words.isEmpty() || raw.length() > MAX_LEN) {
             return Result.unchanged(raw == null ? "" : raw);

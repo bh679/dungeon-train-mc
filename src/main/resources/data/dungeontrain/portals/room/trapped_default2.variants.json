@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 10,
+  "mirror": { "x": true, "y": false, "z": true, "v": true },
+  "variants": {
+    "6,1,5": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "6,1,7": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "4,1,5": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "4,1,7": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "5,1,8": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "5,1,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,1,8": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "3,1,4": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "7,1,8": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "7,1,4": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,1,6": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "7,1,6": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "8,1,9": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "8,1,3": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "2,1,9": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "2,1,3": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "8,1,7": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "8,1,5": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "2,1,7": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "2,1,5": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "6,1,3": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "6,1,9": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "4,1,3": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "4,1,9": { "lockId": 3, "states": [{"state": "minecraft:spruce_log[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:stripped_spruce_wood[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "5,2,6": [{"state": "minecraft:iron_block", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:gold_block", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:redstone_block", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:emerald_block", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:diamond_block", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:lapis_block", "rotation": {"mode": "lock", "dirs": ["south"]}}]
+  }
+}

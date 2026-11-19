@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "sculkmobs",
+      "weight": 12,
+      "phases": [
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "deeper",
+      "weight": 4,
+      "minLevel": 9,
+      "phases": [
+        "VOID",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "deeper2",
+      "weight": 7,
+      "minLevel": 5,
+      "phases": [
+        "FLOATING",
+        "FAR_LANDS",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "deeper3",
+      "weight": 4,
+      "minLevel": 10,
+      "phases": [
+        "VOID",
+        "FAR_LANDS",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "warden",
+      "weight": 1,
+      "minLevel": 60
+    }
+  ]
+}

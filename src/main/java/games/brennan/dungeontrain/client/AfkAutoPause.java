@@ -32,7 +32,7 @@ import org.slf4j.Logger;
  *
  * <p>The server's not-getting-anywhere rule ({@code PlayerActivityTracker.Reason.NO_PROGRESS}) no
  * longer pauses on its own: a pause may only come after the idle wait, and by then this one fires
- * anyway. It still stops the train clock and advancements, as before.</p>
+ * anyway. It still stops the train clock; advancements it leaves alone.</p>
  *
  * <p><b>One pause per idle spell.</b> Once fired, nothing more until the next input, so a player who
  * leaves the menu open is not hit again.</p>

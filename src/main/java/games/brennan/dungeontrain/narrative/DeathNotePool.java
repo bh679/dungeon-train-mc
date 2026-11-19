@@ -58,10 +58,11 @@ public final class DeathNotePool {
      */
     public record Note(int id, String authorUuid, String authorName, String authorSkinRef,
                        int deathCarriage, String worldKey, boolean freePlay, NoteKind kind,
-                       List<String> lines) {
+                       List<String> lines, String authorGear) {
 
         public Note {
             lines = lines == null ? List.of() : List.copyOf(lines);
+            authorGear = authorGear == null ? "" : authorGear;
         }
     }
 
@@ -177,7 +178,7 @@ public final class DeathNotePool {
             int carriage = o.get("deathCarriage").getAsInt();
             return new Note(id, str(o, "authorUuid"), str(o, "authorName"), str(o, "authorSkinRef"),
                     carriage, str(o, "worldKey"), bool(o, "freePlay"), NoteKind.fromId(str(o, "kind")),
-                    lines(o));
+                    lines(o), str(o, "authorGear"));
         } catch (RuntimeException e) {
             return null;
         }

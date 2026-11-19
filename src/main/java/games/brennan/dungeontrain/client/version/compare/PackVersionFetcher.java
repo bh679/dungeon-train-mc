@@ -17,7 +17,7 @@ import java.util.function.Function;
 /**
  * One anonymous GET per platform for the modpack's version listing, parsed off-thread and pushed
  * into {@link VersionCompareState}. Same shape as
- * {@link games.brennan.dungeontrain.client.version.GitHubLatestReleaseFetcher}: a single daemon
+ * {@link games.brennan.dungeontrain.client.version.LatestReleaseFetcher}: a single daemon
  * thread owns the client, so overlapping triggers serialise and nothing holds JVM shutdown.
  *
  * <p>Modrinth's API is public and keyless. CurseForge's official API needs a key that cannot ship

@@ -597,6 +597,16 @@ function combinesRules(id) { return !!(M.needs && M.needs[id]); }
  * towards it), or a tab-complete advancement's (its tab, less the tab-complete copies). Hidden-until-earned
  * ones are left out, as a player can't see them. Null when the selection is neither.
  */
+const START_AGAIN = 'dungeontrain:dungeon_train/start_again';
+/**
+ * Drawn in DT's tab-complete frame, as in game (AdvancementTileDecor#hasStarFrame): the Everything Burrito,
+ * It's Not That Simple, and each tab-complete advancement with its copy inside its own tab.
+ */
+function isTabCompleteTile(E, id) {
+  if (id === BURRITO || id === START_AGAIN) return true;
+  if (!M.complete) return false;
+  return !!(M.complete[id] || (E.nodes[id] && E.nodes[id].copyOf && M.complete[E.nodes[id].copyOf]));
+}
 function neededBy(L, id) {
   const E = L.E;
   if (E.nodes[id] && E.nodes[id].copyOf && M.complete && M.complete[E.nodes[id].copyOf]) id = E.nodes[id].copyOf; // its in-tab copy

@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Змінити можна будь-коли в налаштуваннях або командою /chatconnect on.",
   "discordpresence.consent.enable": "Увімкнути",
   "discordpresence.consent.not_now": "Не зараз",
+  "discordpresence.consent.toggle_on": "Увімк.",
+  "discordpresence.consent.toggle_off": "Вимк.",
   "discordpresence.survey.give_feedback": "Залишити відгук",
   "discordpresence.survey.title": "Відгук",
   "discordpresence.survey.comment": "Коментар",

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
@@ -243,7 +244,7 @@ public final class BuilderSave {
         BlockPos origin = BuilderTrackPlot.origin(kind, dims);
         Vec3i footprint = BuilderTrackPlot.footprint(kind, dims);
         try {
-            TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+            VariantDoc sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
             mirrorTrackBeforeCapture(level, kind, name, origin, footprint, sidecar);
 
             // Tunnels capture against STRUCTURE_VOID, everything else against AIR — the tunnel
@@ -295,7 +296,7 @@ public final class BuilderSave {
      */
     private static void mirrorTrackBeforeCapture(ServerLevel level, TrackKind kind, String name,
                                                  BlockPos origin, Vec3i footprint,
-                                                 TrackVariantBlocks sidecar) {
+                                                 VariantDoc sidecar) {
         if (!sidecar.mirrorX() && !sidecar.mirrorY() && !sidecar.mirrorZ()) {
             return;
         }
@@ -575,10 +576,10 @@ public final class BuilderSave {
     private static void carryMirrorToTemplate(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
         BuilderMirrorFlags flags = DungeonTrainWorldData.get(level).builderMirror();
         try {
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+            VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, dims);
             sidecar.setMirrorAxes(flags.x(), flags.y(), flags.z());
             sidecar.setMirrorVariants(flags.variants());
-            sidecar.save(variant);
+            sidecar.save();
         } catch (Throwable t) {
             // Cosmetic: the geometry is already saved and symmetric. Only the editor's future view
             // of the axes is lost, so warn rather than failing a save that actually worked.

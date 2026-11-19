@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.consent.enable": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.consent.not_now": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
+  "discordpresence.consent.toggle_on": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "discordpresence.consent.toggle_off": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.survey.give_feedback": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.survey.title": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.survey.comment": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},

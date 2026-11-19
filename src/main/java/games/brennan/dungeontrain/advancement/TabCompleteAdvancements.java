@@ -30,7 +30,8 @@ import java.util.function.Predicate;
  * tab's members are read from the live advancement tree on every check — the root and every descendant
  * — so the band journey's load-time re-parenting and any move made in the advancement editor are
  * followed without an id list here. Skipped: the tab-complete copies themselves (a copy would otherwise
- * need itself), band advancements the world's layout never visits ({@link BandAdvancements#reachable}),
+ * need itself), the ones {@code advancement_tabs.json} → {@code notForTabComplete} lists (hidden extras such
+ * as Bigger Picture, shown only once earned), band advancements the world's layout never visits ({@link BandAdvancements#reachable}),
  * which no player there can earn, and any the relay operator marked not required, the same escape hatch
  * the Everything Burrito honours.</p>
  */
@@ -47,6 +48,17 @@ public final class TabCompleteAdvancements {
     /** Is {@code id} a tab-complete advancement (the original, not its in-tab copy)? */
     public static boolean isTabComplete(ResourceLocation id) {
         return TabGateways.layout().complete().containsKey(id.toString());
+    }
+
+    /**
+     * Is {@code id} a tab-complete advancement or its copy inside its own tab? Those tiles are drawn
+     * in the tab-complete frame shape ({@code AdvancementTileDecor}). Pure over the layout.
+     */
+    public static boolean isTabCompleteOrCopy(TabGateways.Layout layout, ResourceLocation id) {
+        String key = id.toString();
+        if (layout.complete().containsKey(key)) return true;
+        String original = layout.copies().get(key);
+        return original != null && layout.complete().containsKey(original);
     }
 
     /**
@@ -74,30 +86,45 @@ public final class TabCompleteAdvancements {
         return out;
     }
 
-    /** Grant {@code player} every tab-complete advancement whose tab is now done. Idempotent. */
-    public static void checkAndGrant(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        TabGateways.Layout layout = TabGateways.layout();
-        if (layout.complete().isEmpty()) return;
-        Predicate<ResourceLocation> skip = skipRule(completeCopies(layout));
-        for (Map.Entry<String, String> e : layout.complete().entrySet()) {
-            checkOne(player, server.getAdvancements(), e.getKey(), e.getValue(), skip);
-        }
+    /**
+     * Never needed by any tab: the tab-complete copies ({@link #completeCopies}) and the layout's
+     * {@code notForTabComplete} list. Also read by the client's "what you still need" halo.
+     */
+    public static Set<String> leftOut(TabGateways.Layout layout) {
+        Set<String> out = completeCopies(layout);
+        out.addAll(layout.notForTabComplete());
+        return out;
     }
 
-    private static void checkOne(ServerPlayer player, ServerAdvancementManager mgr, String selfId, String tabRootId,
+    /**
+     * Grant {@code player} every tab-complete advancement whose tab is now done. Idempotent. Answers
+     * whether it granted any.
+     */
+    public static boolean checkAndGrant(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return false;
+        TabGateways.Layout layout = TabGateways.layout();
+        if (layout.complete().isEmpty()) return false;
+        Predicate<ResourceLocation> skip = skipRule(leftOut(layout));
+        boolean any = false;
+        for (Map.Entry<String, String> e : layout.complete().entrySet()) {
+            any |= checkOne(player, server.getAdvancements(), e.getKey(), e.getValue(), skip);
+        }
+        return any;
+    }
+
+    private static boolean checkOne(ServerPlayer player, ServerAdvancementManager mgr, String selfId, String tabRootId,
                                  Predicate<ResourceLocation> skip) {
         ResourceLocation selfRl = ResourceLocation.tryParse(selfId), rootRl = ResourceLocation.tryParse(tabRootId);
-        if (selfRl == null || rootRl == null) return;
+        if (selfRl == null || rootRl == null) return false;
         AdvancementHolder self = mgr.get(selfRl);
         AdvancementNode root = mgr.tree().get(rootRl);
-        if (self == null || root == null) return; // data not loaded
-        if (player.getAdvancements().getOrStartProgress(self).isDone()) return;
+        if (self == null || root == null) return false; // data not loaded
+        if (player.getAdvancements().getOrStartProgress(self).isDone()) return false;
 
         List<AdvancementNode> needed = members(root, skip);
         for (AdvancementNode node : needed) {
-            if (!player.getAdvancements().getOrStartProgress(node.holder()).isDone()) return;
+            if (!player.getAdvancements().getOrStartProgress(node.holder()).isDone()) return false;
         }
         boolean granted = false;
         for (String key : self.value().criteria().keySet()) {
@@ -107,14 +134,15 @@ public final class TabCompleteAdvancements {
             LOGGER.info("[DungeonTrain] Granted tab complete '{}' ({} advancements under {}) to {}",
                 selfId, needed.size(), tabRootId, player.getName().getString());
         }
+        return granted;
     }
 
-    /** What not to require in this world: tab-complete copies, unreachable bands and the relay's not-required list. */
-    private static Predicate<ResourceLocation> skipRule(Set<String> completeCopies) {
+    /** What not to require in this world: {@link #leftOut}, unreachable bands and the relay's not-required list. */
+    private static Predicate<ResourceLocation> skipRule(Set<String> leftOut) {
         Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         Set<String> reachable = cycle.hasLayout() ? BandAdvancements.reachable(cycle.layout()) : null;
-        return id -> completeCopies.contains(id.toString()) || notRequired.contains(id)
+        return id -> leftOut.contains(id.toString()) || notRequired.contains(id)
             || (reachable != null && isUnreachableBand(id, reachable));
     }
 

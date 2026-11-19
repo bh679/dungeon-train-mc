@@ -1,8 +1,7 @@
 package games.brennan.dungeontrain.command;
 
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.NetherBand;
-import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
+import games.brennan.dungeontrain.worldgen.BandFlavor;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -41,16 +40,8 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
     private static List<DtpTarget> build() {
         List<DtpTarget> out = new ArrayList<>();
         for (TrainPhase phase : TrainPhase.values()) out.add(ofPhase(phase.token(), phase));
-        out.add(new DtpTarget("better_nether", "Better Nether", (l, x) -> NetherBand.isInNetherBand(l, x)
-                && WorldGenCycle.fromConfig().isBetterNetherAt(x)));
-        out.add(new DtpTarget("better_end", "Better End", (l, x) -> TrainPhase.phaseAt(l, x) == TrainPhase.END
-                && WorldGenCycle.fromConfig().isBetterEndAt(x)));
-        out.add(new DtpTarget("bop_nether", "Biomes O' Plenty Nether", (l, x) -> NetherBand.isInNetherBand(l, x)
-                && WorldGenCycle.fromConfig().isBopNetherAt(x)));
-        out.add(new DtpTarget("bop_end", "Biomes O' Plenty End", (l, x) -> TrainPhase.phaseAt(l, x) == TrainPhase.END
-                && WorldGenCycle.fromConfig().isBopEndAt(x)));
-        out.add(new DtpTarget("wwoo", "WWOO Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.WWOO));
-        out.add(new DtpTarget("bop", "Biomes O' Plenty Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.BOP));
+        // Same names in enum order as before: better_nether, better_end, bop_nether, bop_end, wwoo, bop.
+        for (BandFlavor f : BandFlavor.values()) out.add(new DtpTarget(f.token(), f.displayName(), f::test));
         out.add(new DtpTarget("reassembly", "Reassembly", UpsideDownBand::isInExitFade));
         out.add(new DtpTarget(SUPERFLAT_TOKEN, "Superflat", (l, x) -> LegacyBands.isInBand(l, LegacyBandKind.SUPERFLAT, x)));
         out.add(new DtpTarget("mix", "Mix zone", (l, x) -> DungeonTrainWorldData.get(l).startsWithTrain()
@@ -60,10 +51,5 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
 
     private static DtpTarget ofPhase(String token, TrainPhase phase) {
         return new DtpTarget(token, phase.displayName(), (l, x) -> TrainPhase.phaseAt(l, x) == phase);
-    }
-
-    private static SecondLapOverworld.Stretch overworldStretch(ServerLevel overworld, int worldX) {
-        if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return SecondLapOverworld.Stretch.VANILLA;
-        return SecondLapOverworld.at(WorldGenCycle.fromConfig(), worldX);
     }
 }

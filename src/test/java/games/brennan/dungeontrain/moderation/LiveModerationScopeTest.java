@@ -31,6 +31,14 @@ final class LiveModerationScopeTest {
     }
 
     @Test
+    @DisplayName("a client's strike: anyone live, or its player wears a TV (in the room on air or not)")
+    void clientStrike() {
+        assertFalse(LiveModerationScope.clientStrikeActive(false, false));
+        assertTrue(LiveModerationScope.clientStrikeActive(true, false));
+        assertTrue(LiveModerationScope.clientStrikeActive(false, true));
+    }
+
+    @Test
     @DisplayName("a book page is on stream only when its writer is the streamer")
     void book() {
         assertFalse(LiveModerationScope.bookFieldActive(false));
@@ -44,5 +52,6 @@ final class LiveModerationScopeTest {
         assertTrue(LiveModerationScope.serverActive(false));
         assertTrue(LiveModerationScope.clientActive(false, false));
         assertTrue(LiveModerationScope.bookFieldActive(false));
+        assertTrue(LiveModerationScope.clientStrikeActive(false, false));
     }
 }

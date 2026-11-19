@@ -82,14 +82,26 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         String roomMode,
         String copiesFloorBlock,
         String copiesRoofBlock,
-        int copiesFloorHeight
+        int copiesFloorHeight,
+        String note
     ) {
         public Entry {
+            if (note == null) note = "";
             // Never null: the renderer reads them every frame the panel is up, and "" is the
             // "nothing authored yet" case the rows draw their hint for.
             if (copiesFloorBlock == null) copiesFloorBlock = "";
             if (copiesRoofBlock == null) copiesRoofBlock = "";
             if (copiesFloorHeight < 1) copiesFloorHeight = 1;
+        }
+
+        /** The shape before plots carried a note line — none. */
+        public Entry(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode,
+                     String copiesFloorBlock, String copiesRoofBlock, int copiesFloorHeight) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, copiesFloorBlock, copiesRoofBlock, copiesFloorHeight, "");
         }
 
         /** The shape before the floor had a depth — one plane. */
@@ -186,6 +198,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeUtf(e.copiesFloorBlock(), 128);
             buf.writeUtf(e.copiesRoofBlock(), 128);
             buf.writeVarInt(e.copiesFloorHeight());
+            buf.writeUtf(e.note(), 128);
         }
     }
 
@@ -210,9 +223,10 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             String copiesFloorBlock = buf.readUtf(128);
             String copiesRoofBlock = buf.readUtf(128);
             int copiesFloorHeight = buf.readVarInt();
+            String note = buf.readUtf(128);
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
                 inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
-                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight));
+                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight, note));
         }
         return new EditorPlotLabelsPacket(out);
     }

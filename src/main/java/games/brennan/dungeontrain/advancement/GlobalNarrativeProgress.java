@@ -36,10 +36,11 @@ import java.util.TreeSet;
  *
  * <p>Sibling of {@link GlobalAchievementStore} / {@link GlobalPlayerStats}, but
  * deliberately <b>not</b> keyed by player UUID — it is one shared record for
- * the whole instance. Story lectern <em>selection</em> stays per-world (in
- * {@code NarrativeProgressData}); this store exists only so the "read every
- * story" advancements can accumulate across worlds instead of resetting each
- * new world.</p>
+ * the whole instance. It lets the "read every story" advancements accumulate
+ * across worlds instead of resetting each new world, and story lectern
+ * selection ({@code NarrativeProgressData}) consults it so a story finished in
+ * any world is not served again until every story is finished. The letter
+ * cursor within a story stays per-world.</p>
  *
  * <p>Shape mirrors the two world-scoped maps it shadows so the advancement
  * checks can read it via {@link #progressFor(String)} /

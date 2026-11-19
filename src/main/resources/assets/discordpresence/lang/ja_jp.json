@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "設定画面または /chatconnect on でいつでも変更できます。",
   "discordpresence.consent.enable": "有効にする",
   "discordpresence.consent.not_now": "後で",
+  "discordpresence.consent.toggle_on": "オン",
+  "discordpresence.consent.toggle_off": "オフ",
 
   "discordpresence.survey.give_feedback": "フィードバックを送る",
   "discordpresence.survey.title": "フィードバック",

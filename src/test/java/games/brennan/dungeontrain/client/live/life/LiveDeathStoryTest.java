@@ -41,7 +41,14 @@ class LiveDeathStoryTest {
     void takenMidLifeAsksForTwoStreams() {
         LiveLifeStats s = watched().taken("Rook", true).stintEnded(NOW, "removed");
         assertEquals(Story.TAKEN, LiveDeathStory.story(s));
-        assertEquals(Pitch.TWO_STREAMS_ASK, LiveDeathStory.pitch(s, on(LiveRewards.QUICKER_STREAMS), NOW));
+        assertEquals(Pitch.TWO_STREAMS_ASK, LiveDeathStory.pitch(s, on(LiveRewards.QUICKER_STREAMS), NOW, true));
+    }
+
+    @Test
+    void takenMidLifeSkipsTwoStreamsUntilItCanBeGiven() {
+        LiveLifeStats s = watched().taken("Rook", true).stintEnded(NOW, "removed");
+        assertEquals(Pitch.QUICKER_THANKS, LiveDeathStory.pitch(s, on(LiveRewards.QUICKER_STREAMS), NOW, false));
+        assertEquals(Pitch.QUICKER_ASK, LiveDeathStory.pitch(s, LiveRewards.NONE, NOW, false));
     }
 
     @Test

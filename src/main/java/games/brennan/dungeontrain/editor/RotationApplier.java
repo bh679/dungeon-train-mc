@@ -220,14 +220,25 @@ public final class RotationApplier {
      * redstone toggle. {@code base} is normally {@code entry.state()} after the caller's stage
      * resolution — passed separately so this class stays free of the train package. Use this from
      * any stamp pass that writes a picked {@link VariantState}; writing {@code entry.state()}
-     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers.
+     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers, and the candle count
+     * ({@link VariantCandles}) and flower pot plant ({@link VariantPot}) options.
      */
     public static BlockState apply(
         BlockState base, VariantState entry,
         BlockPos localPos, long worldSeed, int carriageIndex, int lockId
     ) {
-        return apply(base, entry.rotation(), entry.half(), entry.active(),
+        BlockState placed = apply(base, entry.rotation(), entry.half(), entry.active(),
             localPos, worldSeed, carriageIndex, lockId);
+        long key = posOrLockKey(localPos, lockId);
+        placed = entry.candles().apply(placed, key, worldSeed, carriageIndex);
+        return entry.pot().apply(placed, key, worldSeed, carriageIndex);
+    }
+
+    /** The cell's roll key: its lock group when it has one (so the group rolls as one), else its position. */
+    static long posOrLockKey(BlockPos localPos, int lockId) {
+        return lockId > 0
+            ? (long) lockId * 0xBF58476D1CE4E5B9L
+            : (((long) localPos.getX() * 31L + localPos.getY()) * 31L + localPos.getZ()) * 0xBF58476D1CE4E5B9L;
     }
 
     /**

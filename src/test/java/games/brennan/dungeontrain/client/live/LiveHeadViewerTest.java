@@ -93,4 +93,13 @@ class LiveHeadViewerTest {
         assertTrue(LiveHeadViewer.fitScale(100_000, 80, 3) >= 0.1f, "a floor, never invisible");
         assertEquals(1f, LiveHeadViewer.fitScale(0, 80, 3), "empty text is not a division by zero");
     }
+
+    @Test
+    void boxResizesToTheStreamsShape() {
+        assertEquals(LiveHeadViewer.layout(480, 160), LiveHeadViewer.layout(480, 160, 16f / 9f), "16:9 is the box it always was");
+        assertEquals(120, LiveHeadViewer.layout(480, 160, 4f / 3f).h(), "4:3: taller, whole picture");
+        assertEquals(69, LiveHeadViewer.layout(480, 160, 21f / 9f).h(), "21:9: shorter");
+        assertEquals(160, LiveHeadViewer.layout(480, 160, 0.5f).h(), "never taller than square");
+        assertEquals(160, LiveHeadViewer.layout(480, 160, 4f / 3f).w(), "the width is the size setting's");
+    }
 }

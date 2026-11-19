@@ -36,8 +36,10 @@ final class EditorSaveNoMirrorRebuildTest {
         "CarriageContentsEditor.java",
         "CarriagePartEditor.java",
         "PillarEditor.java",
+        "PlotEditor.java",
         "PortalRoomEditor.java",
         "TrackEditor.java",
+        "TrackSidePlotEditor.java",
         "TunnelEditor.java");
 
     private static Path editorSources() {

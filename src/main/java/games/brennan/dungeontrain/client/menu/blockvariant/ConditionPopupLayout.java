@@ -17,7 +17,8 @@ import java.util.List;
  *
  * <p>Top to bottom: the <b>mode</b> ({@code Touch | Group | Kind}), that mode's picker
  * ({@code N S E W U D} multi-select for Touch and Kind, plus {@code Any | All} once two sides are
- * lit, or {@code ◂ G3 ▸}), then what the target must be, OR'd: in Kind mode the
+ * lit, or {@code ◂ G3 ▸}), then <b>Is | Is not</b>, then what the target must (or must not) be, OR'd:
+ * in Kind mode the
  * {@code Solid Empty Any block} checkboxes; otherwise the <b>block list</b> as a horizontal strip of
  * icons — every block the neighbouring variant cells (Touch) or the group (Group) can roll, each
  * toggled on or off — then <b>+ Held</b> (Touch only, for a block no neighbour offers) and
@@ -35,6 +36,10 @@ final class ConditionPopupLayout {
     static final int SECTION_MATCH = 6;
     static final int MATCH_ANY = 0;
     static final int MATCH_ALL = 1;
+    /** Is | Is not: whether the target must be one of the values, or must not be. */
+    static final int SECTION_NEGATE = 7;
+    static final int NEGATE_IS = 0;
+    static final int NEGATE_NOT = 1;
 
     static final int MODE_TOUCHING = 0;
     static final int MODE_GROUP = 1;
@@ -52,7 +57,7 @@ final class ConditionPopupLayout {
      */
     static List<GrowthPopupLayout.Row> rows(BlockVariantSyncPacket.Entry entry, double panelW, double halfH) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        List<Object[]> spec = new ArrayList<>(5);
+        List<Object[]> spec = new ArrayList<>(6);
         spec.add(new Object[] {SECTION_MODE, MenuLang.t("block_variant.condition"),
             new String[] {MenuLang.t("block_variant.condition_touching"), MenuLang.t("block_variant.condition_group"),
                 MenuLang.t("block_variant.condition_kind")},
@@ -68,6 +73,9 @@ final class ConditionPopupLayout {
                     c.all() ? MATCH_ALL : MATCH_ANY});
             }
         }
+        spec.add(new Object[] {SECTION_NEGATE, MenuLang.t("block_variant.condition_negate"),
+            new String[] {MenuLang.t("block_variant.condition_negate_is"), MenuLang.t("block_variant.condition_negate_not")},
+            c.negate() ? NEGATE_NOT : NEGATE_IS});
         if (c.isKindMode()) {
             spec.add(new Object[] {SECTION_KIND, MenuLang.t("block_variant.condition_is"), new String[] {
                 MenuLang.t("block_variant.condition_solid"), MenuLang.t("block_variant.condition_empty"),

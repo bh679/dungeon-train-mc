@@ -35,7 +35,7 @@ import java.util.UUID;
  *       since last death (forward + backward both count); drives the
  *       carts-in-run tiers.</li>
  *   <li>{@link #cartsBackwardSinceDeath} — backward-only subtotal of
- *       {@link #cartsSinceDeath}; drives "The Long Way Back".</li>
+ *       {@link #cartsSinceDeath}; read by the per-life challenge advancements.</li>
  *   <li>{@link #travelledCarriageIndex} — signed net carriages traversed by
  *       the player as leader this life (forward positive, backward negative).
  *       Drives mob difficulty: the spawn-time tier is computed from

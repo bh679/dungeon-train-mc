@@ -21,7 +21,7 @@
     "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod.",
     "",
     "MINIMUM DT VERSION: an approval that is only safe from some Dungeon Train version up (it needs",
-    "support DT added, e.g. Farmer's Delight needs the soup-stacking hold-off) is floored ON THE RELAY",
+    "support DT added, e.g. a setting DT has to hold off first) is floored ON THE RELAY",
     "(Approved Mods page, min_dt_version), not here. Jars send ?dt=<version>; the relay serves a",
     "floored id as approved at or above the floor and as REVOKED below it or when no version is sent.",
     "That is the only lever that reaches jars already shipped: a field here would be invisible to them,",
@@ -38,6 +38,18 @@
     "Matched on the RAW id, so the underscore namespace is all that matches: a mod called",
     "\"Fabric Furniture\" (modId fabricfurniture) is untouched. A prefix never beats a revocation:",
     "an exact id revoked from the relay stays unapproved even if a prefix would have matched it."
+  ],
+  "carrierApproved": [
+    "customskinloader"
+  ],
+  "carrierApprovedWhy": [
+    "Ids whose mod file may be verified by its CARRIER: the jar in mods/ that generated it. CustomSkinLoader",
+    "15.x ships only a Universal bootstrap jar in mods/ (not a mod itself; its hashes are approved like any",
+    "file) that rewrites CustomSkinLoader-Common.jar into .minecraft/CustomSkinLoader/Core/ on every launch,",
+    "remapped for the running game, so that file's hash differs per install while the bootstrap's does not.",
+    "The engine reports the bootstrap as the generated file's carrier; the file is VERIFIED when every id it",
+    "declares is listed here and the carrier's own hash is approved. Any other carrier is never trusted by",
+    "the client and is flagged for review on the relay. Every id here must also be an approved id."
   ],
   "groups": {
     "platform": {
@@ -62,7 +74,8 @@
         "sodium_extra",
         "reeses_sodium_options",
         "modelfix",
-        "cupboard"
+        "cupboard",
+        "betterfpsdist"
       ]
     },
     "visual": {
@@ -86,6 +99,7 @@
         "particular",
         "particlerain",
         "subtle_effects",
+        "ambientenvironment",
         "continuity",
         "fusion",
         "euphoria_patcher",
@@ -171,9 +185,15 @@
       "why": "Playing with other people: hosting, cosmetics and social layers.",
       "ids": [
         "essential",
+        "essentialtweaks",
         "e4mc",
         "e4all",
         "lanserverproperties"
+      ],
+      "note": [
+        "essentialtweaks (Essential Tweaks, EpicSkydex) is client-only and only changes Essential's defaults:",
+        "unbound keybinds, no Discord RPC, no update popups, banners or badges. Decompiled and audited",
+        "2026-11-03: no packets, commands, game-mode or player access. It rides on the essential approval."
       ]
     },
     "libraries": {
@@ -226,28 +246,28 @@
         "smartbrainlib",
         "irons_lib",
         "oracle_index",
-        "rhino"
-      ]
-    },
-    "farmers_delight": {
-      "why": "Farmer's Delight and its addons: cooking and farming content, approved on the operator's call. Its one setting that changes what a run can carry, stackable soups, is held OFF by Dungeon Train (cheat/FarmersDelightSoupStacking) and turning it back on is Free Play, so the approval does not cover that.",
-      "ids": [
-        "farmersdelight",
-        "cuttingdelight"
-      ],
-      "note": [
-        "cuttingdelight (Cutting Delight, JaronZ) only adds a cutting board with a recipe picker for",
-        "Farmer's Delight cutting recipes. It requires farmersdelight, so it rides on this approval."
+        "rhino",
+        "ash_api"
       ]
     },
     "community_approved": {
       "why": "Approved on the relay's mod-request queue (dt.brennan.games #/mod-requests) after community suggestion, then baked here so offline and first-launch players get them too. Same rule as every other group.",
       "ids": [
         "alltheleaks",
+        "armor_hud",
+        "armor_visibility",
         "catalogue",
+        "cinematic",
         "cirrus",
+        "cwb",
+        "explosiveenhancement",
+        "jecharacters",
+        "legendarytooltips",
         "lmft",
-        "perception"
+        "perception",
+        "shouldersurfing",
+        "weaponmaster_ydm",
+        "zombieawareness"
       ]
     }
   }

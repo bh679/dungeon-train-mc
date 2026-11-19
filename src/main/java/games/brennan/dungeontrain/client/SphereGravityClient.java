@@ -23,7 +23,8 @@ import java.util.List;
  * {@code worldgen.SphereGravityServer}). Both sides roll the same seed-stable spheres
  * ({@link ClientSphereField}), so no per-tick packet is needed.
  *
- * <p>Off for spectators, creative flight, elytra gliding and anyone riding something. On the train the
+ * <p>Off for spectators, creative flight, elytra gliding, anyone riding something and anyone in a dimensional
+ * carriage (portal twin space, {@link ClientUpsideDownBand#isInPortalTwinSpace}). On the train the
  * pull is cut to the rider factor, and to nothing inside a carriage ({@link SphereGravityShelter}).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -46,6 +47,7 @@ public final class SphereGravityClient {
         lastPull = SphereGravity.Pull.ZERO;
         if (!SpheresGravityConfig.enabled() || SpheresGravityConfig.strength() <= 0.0) return;
         if (player.isSpectator() || player.getAbilities().flying || player.isFallFlying() || player.isPassenger()) return;
+        if (ClientUpsideDownBand.isInPortalTwinSpace(player.getBlockX(), player.getBlockY())) return;
         double midY = player.getY() + player.getBbHeight() * 0.5;
         List<SphereField.Sphere> spheres = ClientSphereField.spheresNear(player.getX(), midY, player.getZ(),
                 SphereGravityPush.lookupReach());

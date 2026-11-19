@@ -135,4 +135,33 @@ class AlbumStoreTest {
         assertEquals(List.of("h:" + H1 + "|a", "|b"), AlbumStore.pageKeys(album(1,
                 new AlbumStore.Page(H1, "a", null), new AlbumStore.Page(null, "b", null))));
     }
+
+    @Test
+    @DisplayName("numbered albums are separate files; the first keeps its old name")
+    void numberedAlbums() {
+        AlbumStore store = newStore();
+        assertEquals(1, store.count(ALEX, AlbumKind.LIVE));
+        store.put(ALEX, AlbumKind.LIVE, album(1, new AlbumStore.Page(H1, "first", null)));
+        store.put(ALEX, AlbumKind.LIVE, 2, album(2, new AlbumStore.Page(H2, "third", null)));
+        store.flush();
+        assertTrue(Files.exists(dir.resolve(ALEX.toString()).resolve("live.json")));
+        assertTrue(Files.exists(dir.resolve(ALEX.toString()).resolve("live_3.json")));
+        AlbumStore fresh = newStore();
+        assertEquals(3, fresh.count(ALEX, AlbumKind.LIVE));
+        assertEquals(1, fresh.count(ALEX, AlbumKind.FREE_PLAY));
+        assertEquals(H1, fresh.entry(ALEX, AlbumKind.LIVE).pages().get(0).hash());
+        assertEquals(H2, fresh.entry(ALEX, AlbumKind.LIVE, 2).pages().get(0).hash());
+        assertSame(AlbumStore.Entry.EMPTY, fresh.entry(ALEX, AlbumKind.LIVE, 1));
+    }
+
+    @Test
+    @DisplayName("file names map to album indexes; anything else reads as the first")
+    void indexOfFileName() {
+        assertEquals(0, AlbumStore.indexOf("live.json", AlbumKind.LIVE));
+        assertEquals(1, AlbumStore.indexOf("live_2.json", AlbumKind.LIVE));
+        assertEquals(0, AlbumStore.indexOf("live_1.json", AlbumKind.LIVE));
+        assertEquals(0, AlbumStore.indexOf("live_x.json", AlbumKind.LIVE));
+        assertEquals(0, AlbumStore.indexOf("free_play_2.json", AlbumKind.LIVE));
+        assertEquals(1, AlbumStore.indexOf("free_play_2.json", AlbumKind.FREE_PLAY));
+    }
 }

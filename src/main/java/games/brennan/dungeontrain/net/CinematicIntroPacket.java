@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.CinematicPreloadGate;
+import games.brennan.dungeontrain.client.ReplayPlaybackGuard;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -90,6 +91,7 @@ public record CinematicIntroPacket(
      */
     public static void handle(CinematicIntroPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
+            if (ReplayPlaybackGuard.skipsCinematic("spawn intro")) return;
             if (packet.preloadMaxWaitTicks() > 0) {
                 CinematicPreloadGate.begin(packet);
             } else {

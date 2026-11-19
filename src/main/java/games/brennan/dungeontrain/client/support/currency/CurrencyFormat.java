@@ -24,6 +24,16 @@ public final class CurrencyFormat {
         return Component.literal(approx(aud, c, CurrencyRates.rate(c)));
     }
 
+    /**
+     * {@code aud} whole Australian dollars with no lang key behind it (a Community Reward the relay
+     * raised above its base): "$140" in AUD, converted like {@link #amount} otherwise.
+     */
+    public static Component amount(int aud) {
+        DisplayCurrency c = CurrencyChoice.current();
+        if (c == DisplayCurrency.AUD) return Component.literal(DisplayCurrency.AUD.format(aud));
+        return Component.literal(approx(aud, c, CurrencyRates.rate(c)));
+    }
+
     /** Pure: the converted whole amount with its symbol. */
     static String approx(int aud, DisplayCurrency c, double rate) {
         return c.format(Math.round(aud * rate));

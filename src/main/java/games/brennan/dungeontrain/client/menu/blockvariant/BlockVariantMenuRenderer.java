@@ -398,8 +398,11 @@ public final class BlockVariantMenuRenderer {
             // A painting row puts its Painting pill in the Grow slot (a painting never grows).
             boolean painting = concrete && BlockVariantMenu.growthSupported()
                 && BlockVariantMenu.isPaintingRow(entry, parsed);
+            // Candle and flower pot rows do the same with their Candles / Plant pills.
+            boolean slotRow = concrete && BlockVariantMenu.growthSupported()
+                && BlockVariantMenu.usesGrowSlot(entry, parsed);
             boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
-                && GrowthShapes.canGrow(parsed)) || painting;
+                && GrowthShapes.canGrow(parsed)) || slotRow;
             double growthCellR = armsCellL;
             double growthCellL = growable ? growthCellR - GROWTH_CELL_WIDTH : growthCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
@@ -517,8 +520,8 @@ public final class BlockVariantMenuRenderer {
             }
 
             // Grow pill (vines / ladders / bamboo / dripstone …)
-            if (painting) {
-                drawPaintingCell(ps, buffer, font, i, entry,
+            if (slotRow) {
+                drawSlotCell(ps, buffer, font, i, entry, parsed,
                     growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
             } else if (growable) {
                 drawGrowthCell(ps, buffer, font, i, entry, parsed,
@@ -565,10 +568,10 @@ public final class BlockVariantMenuRenderer {
         int growthRow = BlockVariantMenu.growthPopupRow();
         if (growthRow >= 0) {
             BlockState growthState = BlockVariantMenu.parseState(entries.get(growthRow).stateString());
-            if (growthState != null && BlockVariantMenu.isPaintingRow(entries.get(growthRow), growthState)) {
-                drawPopupRows(ps, buffer, font,
-                    PaintingPopupLayout.rows(BlockVariantMenu.painting(entries.get(growthRow)), panelW, halfH),
-                    BlockVariantMenu.CellKind.PAINTING_OPTION, hovered);
+            BlockVariantMenu.SlotPopup slot = growthState == null ? null
+                : BlockVariantMenu.slotPopup(entries.get(growthRow), growthState, panelW, halfH);
+            if (slot != null) {
+                drawPopupRows(ps, buffer, font, slot.rows(), slot.kind(), hovered);
             } else if (growthState != null) {
                 drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
             }
@@ -723,23 +726,38 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * The Painting pill: "Painting" when off, the size ({@code 2×1} / {@code Any}) in green when on,
-     * lit while its popup is open — the Grow pill's look, in the Grow slot.
+     * The pill a painting, candle or flower pot row shows in the Grow slot: its key word when off,
+     * a short read-out ({@code 2×1}, {@code Rnd}, {@code ×3}, a plant) in green when on, lit while
+     * its popup is open — the Grow pill's look.
      */
-    private static void drawPaintingCell(PoseStack ps, MultiBufferSource buffer, Font font,
-                                         int rowIndex, BlockVariantSyncPacket.Entry entry,
-                                         double cellL, double cellR,
-                                         double rowBottom, double rowTop, double rowCY,
-                                         BlockVariantMenu.Hit hovered) {
-        games.brennan.dungeontrain.editor.VariantPainting painting = BlockVariantMenu.painting(entry);
+    private static void drawSlotCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                     int rowIndex, BlockVariantSyncPacket.Entry entry, BlockState parsed,
+                                     double cellL, double cellR,
+                                     double rowBottom, double rowTop, double rowCY,
+                                     BlockVariantMenu.Hit hovered) {
+        boolean on;
+        String label;
+        if (BlockVariantMenu.isPaintingRow(entry, parsed)) {
+            games.brennan.dungeontrain.editor.VariantPainting painting = BlockVariantMenu.painting(entry);
+            on = painting.on();
+            label = PaintingPopupLayout.shortLabel(painting);
+        } else if (BlockVariantMenu.isCandleRow(entry, parsed)) {
+            games.brennan.dungeontrain.editor.VariantCandles candles = BlockVariantMenu.candles(entry);
+            on = !candles.isDefault();
+            label = CandlePopupLayout.shortLabel(candles);
+        } else {
+            games.brennan.dungeontrain.editor.VariantPot pot = BlockVariantMenu.pot(entry);
+            on = pot.on();
+            label = PotPopupLayout.shortLabel(pot);
+        }
         boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_GROWTH && hovered.index() == rowIndex;
         boolean open = BlockVariantMenu.growthPopupRow() == rowIndex;
-        int tint = painting.on()
+        int tint = on
             ? (hover || open ? 0xC055CC66 : 0x80338844)
             : (hover || open ? 0x60AAAAAA : 0x30777777);
         drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
-        drawCenteredText(ps, buffer, font, PaintingPopupLayout.shortLabel(painting),
-            (cellL + cellR) / 2.0, rowCY, painting.on() || hover ? 0xFFFFFFFF : 0xFF888888);
+        drawCenteredText(ps, buffer, font, label,
+            (cellL + cellR) / 2.0, rowCY, on || hover ? 0xFFFFFFFF : 0xFF888888);
     }
 
     /** The Grow popup: the visible sections of {@link GrowthPopupLayout} for one row. */

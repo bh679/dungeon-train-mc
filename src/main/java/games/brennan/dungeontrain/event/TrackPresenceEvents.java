@@ -27,8 +27,9 @@ import java.util.UUID;
  *   <li>{@code left_train} — off every carriage <em>and</em> off the corridor
  *       (stepped off the side, out into the world). The request's "leaving the
  *       train <em>and</em> tracks".</li>
- *   <li>{@code returned_to_train} — back on a carriage after having been off it
- *       (whether they dropped to the tracks or jumped off entirely).</li>
+ *   <li>{@code returned_to_train} — back on a carriage after having jumped off
+ *       the side of it (out of the corridor). Crossing a gap between carriages,
+ *       or dropping onto the rail bed between them, does not count.</li>
  * </ul>
  *
  * <h2>Detection</h2>
@@ -106,9 +107,10 @@ public final class TrackPresenceEvents {
 
     /**
      * Consecutive off-carriage scans before a departure "counts" for the return
-     * marker. 2 scans × 10 ticks ≈ 1 s — long enough that a coupling-seam
-     * crossing (already bridged by padding) or a momentary hop never reads as
-     * leaving-then-returning.
+     * marker. 2 scans × 10 ticks ≈ 1 s — long enough that a momentary hop never
+     * reads as leaving-then-returning. The departure must also be seen off the
+     * corridor (see {@link #step}): a player loitering in the gap between two
+     * carriages is off every carriage AABB for as long as they like.
      */
     private static final int OFF_GRACE_SCANS = 2;
 
@@ -244,7 +246,9 @@ public final class TrackPresenceEvents {
         boolean left = s.leftCarriageSinceAboard();
         if (s.hasBeenAboard()) {
             offScans++;
-            if (offScans >= OFF_GRACE_SCANS) left = true;
+            // Only off the side counts: the gap between carriages and the rail bed under
+            // it are inside the corridor, so wandering across a coupling never latches.
+            if (offScans >= OFF_GRACE_SCANS && offCorridor) left = true;
         }
         return new PresenceStep(onTracks, false, wasOnTrainOrTracks && offCorridor,
             new State(wasOnTrainOrTracks, s.hasBeenAboard(), offScans, left));

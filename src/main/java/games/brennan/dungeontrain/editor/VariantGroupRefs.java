@@ -105,6 +105,16 @@ public final class VariantGroupRefs {
 
         /** Every non-zero lock-id carried by a cell in this sidecar. */
         Set<Integer> lockIdsInUse();
+
+        /**
+         * What group {@code lockId} actually placed for this roll — its anchor cell's final pick,
+         * conditions applied and references followed — or {@code null} when the view cannot say
+         * (no cell carries the id), in which case {@link #follow} rolls the group's list itself.
+         */
+        @Nullable
+        default VariantState placedByGroup(int lockId, long worldSeed, int index) {
+            return null;
+        }
     }
 
     /**
@@ -423,6 +433,11 @@ public final class VariantGroupRefs {
      * The {@code view} is only the fallback for a lock-id the graph has no
      * pool for, which means a caller filtered with a stale graph.</p>
      *
+     * <p>A hop into a group that has cells of its own takes what that group placed
+     * ({@link LockGroupView#placedByGroup}), so the group's conditions hold for everyone who
+     * follows it: "follow group 11" can never put a bookshelf where group 11's own gate left
+     * it empty.</p>
+     *
      * <p>{@code picked} is returned unchanged when it is not a reference.
      * Returns {@code null} only if the chain dead-ends, which cannot happen
      * for a reference {@link #eligible} passed — the hop bound is a backstop
@@ -444,6 +459,8 @@ public final class VariantGroupRefs {
         while (current.isGroupRef()) {
             if (++hops > maxHops) return null;
             int target = current.groupRef();
+            VariantState placed = view.placedByGroup(target, worldSeed, index);
+            if (placed != null) return placed;
             List<VariantState> pool;
             int[] weights;
             Pool cached = graph.poolFor(target);

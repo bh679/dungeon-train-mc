@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * as a viewer, which is how the relay's viewer cap works — there is no lease to hold.
  *
  * <p>Which channel: every run watches the public feed — except that while a dev is streaming (the
- * dev channel, also at brennan.games/dungeontrain/livedev), a Free Play run's TVs show that instead.
+ * dev channel, also at dungeon.training/livedev), a Free Play run's TVs show that instead.
  * So a Free Play poll first asks the dev channel, uncounted, whether it is live, then polls (and is
  * counted on) whichever channel it will show. Free Play comes from the badge, the client-visible
  * half of {@code RunIntegrity}; when it flips, the old status is dropped and re-polled at once.</p>
@@ -132,7 +132,9 @@ public final class LiveStatusPoller {
         LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
             ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
         String name = ranked != null && Minecraft.getInstance().getUser() != null ? Minecraft.getInstance().getUser().getName() : null;
-        return LiveFeedClient.status(viewer, channel, ranked, name, headTv)
+        // A TV here shows the second stream (Two Streams): count this viewer on that slot too.
+        boolean secondSlot = LiveFeedSource.SECOND.interested();
+        return LiveFeedClient.status(viewer, channel, ranked, name, headTv, secondSlot)
             .handle((r, t) -> {
                 if ((r == null || !r.ok()) && LiveRelayRestart.inWindow(System.currentTimeMillis())) return null;
                 if (r == null) return Status.OFFLINE;

@@ -23,6 +23,7 @@ class UnobtainableLiveItemsTest {
     @DisplayName("the Live Feed Cassette and the camcorder placeholder are unobtainable; the real headpiece is not")
     void unobtainableIds() {
         assertTrue(UnobtainableLiveItems.isUnobtainable(ResourceLocation.parse("dungeontrain:live_cassette")));
+        assertTrue(UnobtainableLiveItems.isUnobtainable(ResourceLocation.parse("dungeontrain:live_cassette_2")));
         assertTrue(UnobtainableLiveItems.isUnobtainable(ResourceLocation.parse("dungeontrain:random_live_headpiece")));
         assertFalse(UnobtainableLiveItems.isUnobtainable(ResourceLocation.parse("dungeontrain:live_headpiece")));
         assertFalse(UnobtainableLiveItems.isUnobtainable(ResourceLocation.parse("vista:cassette")));

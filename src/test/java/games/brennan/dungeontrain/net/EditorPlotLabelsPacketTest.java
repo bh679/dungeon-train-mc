@@ -108,4 +108,17 @@ final class EditorPlotLabelsPacketTest {
     void roundTrip_empty() {
         assertTrue(roundTrip(EditorPlotLabelsPacket.empty()).entries().isEmpty());
     }
+
+    @Test
+    @DisplayName("a plot's note line survives the buffer, and older shapes carry none")
+    void roundTrip_note() {
+        EditorPlotLabelsPacket.Entry noted = new EditorPlotLabelsPacket.Entry(BlockPos.ZERO, "Nether", 60, "CONTENTS",
+            "enemies_nether", "enemies_nether", true, false, false, EditorPlotLabelsPacket.NO_SIZE,
+            EditorPlotLabelsPacket.NO_SIZE, EditorPlotLabelsPacket.NO_SIZE, EditorPlotLabelsPacket.NO_MODE, "", "", 1,
+            "Enemies · 30%");
+        assertEquals("Enemies · 30%", roundTrip(new EditorPlotLabelsPacket(List.of(noted))).entries().get(0).note());
+        EditorPlotLabelsPacket.Entry plain = new EditorPlotLabelsPacket.Entry(BlockPos.ZERO, "Books", 4, "CONTENTS",
+            "books", "books", false, false, false);
+        assertEquals("", roundTrip(new EditorPlotLabelsPacket(List.of(plain))).entries().get(0).note());
+    }
 }

@@ -98,4 +98,42 @@ class SaveFreePlayProbeTest {
     void missingFilesErrTowardsOffering(@TempDir Path dir) {
         assertFalse(SaveFreePlayProbe.wasFreePlay(dir, PLAYER));
     }
+
+    // --- anyPlayerRunCheated: the one-time world backfill for world-wide Free Play ---
+
+    private static void namedPlayer(Path dir, UUID id, boolean cheated, int gameType) throws Exception {
+        Path pd = dir.resolve(SaveFreePlayProbe.PLAYERDATA_DIR);
+        Files.createDirectories(pd);
+        NbtIo.writeCompressed(playerTag(cheated, gameType), pd.resolve(id + ".dat"));
+    }
+
+    @Test
+    void backfillFindsAnyCheatedPlayerAmongMany(@TempDir Path dir) throws Exception {
+        level(dir, false);
+        namedPlayer(dir, UUID.randomUUID(), false, 0);
+        namedPlayer(dir, UUID.randomUUID(), true, 0);
+        namedPlayer(dir, UUID.randomUUID(), false, 0);
+        assertTrue(SaveFreePlayProbe.anyPlayerRunCheated(dir));
+    }
+
+    @Test
+    void backfillIgnoresCleanPlayersAndGameModeAndAllowCommands(@TempDir Path dir) throws Exception {
+        // Only the permanent attachment counts: a creative mode or Allow Cheats alone is not a
+        // recorded Free Play run, and the world flag this feeds is permanent.
+        level(dir, true);
+        namedPlayer(dir, UUID.randomUUID(), false, 0);
+        namedPlayer(dir, UUID.randomUUID(), false, SaveFreePlayProbe.GAME_TYPE_CREATIVE);
+        assertFalse(SaveFreePlayProbe.anyPlayerRunCheated(dir));
+    }
+
+    @Test
+    void backfillReadsTheEmbeddedSingleplayerOwner(@TempDir Path dir) throws Exception {
+        level(dir, false, playerTag(true, 0));
+        assertTrue(SaveFreePlayProbe.anyPlayerRunCheated(dir));
+    }
+
+    @Test
+    void backfillOnAnEmptyWorldIsClean(@TempDir Path dir) {
+        assertFalse(SaveFreePlayProbe.anyPlayerRunCheated(dir));
+    }
 }

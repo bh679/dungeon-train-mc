@@ -20,7 +20,7 @@
       "trigger": "dungeontrain:photo_tribute",
       "conditions": {
         "whose": "others",
-        "min_cost": 9
+        "min_total": 100
       }
     }
   },

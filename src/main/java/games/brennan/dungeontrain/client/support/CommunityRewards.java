@@ -10,14 +10,16 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- * The community rewards shelf: the five gifts that keep something on for everyone for a month,
+ * The community rewards shelf: the six gifts that keep something on for everyone for a month,
  * and the rules every screen showing them shares (which one the Contribute panel features, when
  * the next free month starts, what the status lines say).
  *
  * <p>A reward is a donation with a thank-you attached, not a product: the copy says "Give" and
  * "keeps it on a month", never buy or price. Amounts live in lang keys
  * ({@code gui.dungeontrain.rewards.<id>.amount}); {@link Reward#costAud} is a reference copy and must
- * match those keys.</p>
+ * match those keys. They are each reward's amount on its own: while other rewards that cost it more to
+ * run are on, the relay quotes it higher ({@link LiveRewards#quote}) and {@link #amountShort},
+ * {@link #amountFull} and {@link #raisedLine} show that instead.</p>
  *
  * <p>Live state ({@code activeUntil}, who kept it on, queued months) comes from the relay's
  * {@code rewards[]} block, already parsed by {@link LiveRewards}. Pure apart from the lang-key and
@@ -38,25 +40,34 @@ public final class CommunityRewards {
     /** The shelf, in its display order. */
     public enum Reward {
         QUICKER_STREAMS(LiveRewards.QUICKER_STREAMS, Group.STREAMS, 94),
-        TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 140),
+        TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 100),
         VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
-        REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80);
+        REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
+        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90);
 
         private final String id;
         private final Group group;
         private final int costAud;
+        private final int months;
 
         Reward(String id, Group group, int costAud) {
+            this(id, group, costAud, 1);
+        }
+
+        Reward(String id, Group group, int costAud, int months) {
             this.id = id;
             this.group = group;
             this.costAud = costAud;
+            this.months = months;
         }
 
         public String id() { return id; }
         public Group group() { return group; }
         /** Whole AUD: the figure converted into the player's chosen currency. Must match {@link #amountKey()}. */
         public int costAud() { return costAud; }
+        /** How many {@link #MONTH_MS} months one gift keeps it on; the relay's rewards.js must agree. */
+        public int months() { return months; }
 
         public String nameKey() { return KEY + id + ".name"; }
         /** One line: "Reduce delay, from 30s to 5s. For EVERYONE, 1 month." */
@@ -91,15 +102,30 @@ public final class CommunityRewards {
         return state.active(reward.id(), now);
     }
 
+    /** Whether a gift's month of {@code reward} is running: free credits leave a new gift starting now, not queued. */
+    static boolean giftRunning(LiveRewards state, Reward reward, long now) {
+        return active(state, reward, now) && !state.find(reward.id()).free();
+    }
+
+    /** Whether {@code reward} is on through free credits, thanking {@link LiveRewards.Reward#by()} instead of a giver. */
+    static boolean onFreeCredits(LiveRewards state, Reward reward, long now) {
+        return active(state, reward, now) && state.find(reward.id()).free();
+    }
+
     /**
      * When the next gift to {@code reward} would start: now when it is off, else after its current
-     * month and every month already queued behind it. Mirrors the relay's stacking
-     * ({@code from = max(now, until)}, each gift adding 30 days).
+     * term and every term already queued behind it. Mirrors the relay's stacking
+     * ({@code from = max(now, until)}, each gift adding 30 days per {@link Reward#months()}).
      */
     static long nextFreeMs(LiveRewards state, Reward reward, long now) {
         LiveRewards.Reward live = state.find(reward.id());
         if (live == null || live.activeUntilMs() <= now) return now;
-        return live.activeUntilMs() + MONTH_MS * live.queuedBy().size();
+        return queuedStartMs(live.activeUntilMs(), reward, live.queuedBy().size());
+    }
+
+    /** When the {@code index}th gift queued behind a term ending {@code activeUntilMs} starts (0 = right after it). */
+    static long queuedStartMs(long activeUntilMs, Reward reward, int index) {
+        return activeUntilMs + MONTH_MS * reward.months() * index;
     }
 
     /**
@@ -108,11 +134,11 @@ public final class CommunityRewards {
      */
     static final List<Reward> FEATURE_ORDER = List.of(
             Reward.QUICKER_STREAMS, Reward.VOICE_ON_STREAM, Reward.TWO_STREAMS,
-            Reward.HD_STREAMS, Reward.REPLAYS_KEPT);
+            Reward.HD_STREAMS, Reward.REPLAYS_KEPT, Reward.LIVE_TRANSLATION);
 
     /**
      * The reward the Contribute panel features: the first in {@link #FEATURE_ORDER} that is off now,
-     * so there is always something a giver can switch on today; when all five are on, the one whose
+     * so there is always something a giver can switch on today; when all six are on, the one whose
      * next free month comes soonest (ties in {@link #FEATURE_ORDER}).
      */
     static Reward featured(LiveRewards state, long now) {
@@ -121,7 +147,7 @@ public final class CommunityRewards {
 
     /**
      * {@link #featured(LiveRewards, long)} among the rewards {@code open} accepts gifts for, so the
-     * card leads with one a giver can actually give; all five when none are open yet.
+     * card leads with one a giver can actually give; all six when none are open yet.
      */
     static Reward featured(LiveRewards state, long now, java.util.function.Predicate<Reward> open) {
         List<Reward> order = FEATURE_ORDER.stream().filter(open).toList();
@@ -154,6 +180,54 @@ public final class CommunityRewards {
         LiveRewards.Reward live = state.find(reward.id());
         return live != null && live.activeUntilMs() > now ? live.by() : "";
     }
+
+    // ---- amounts ----------------------------------------------------------------------------------
+
+    /** The relay's raised amount for {@code reward}, or empty when nothing raises it (or no quote came). */
+    static java.util.OptionalInt raisedAud(@Nullable LiveRewards.Quote quote) {
+        return quote != null && quote.raised() ? java.util.OptionalInt.of(quote.aud()) : java.util.OptionalInt.empty();
+    }
+
+    /** The rewards raising {@code quote}, in shelf order; ids this jar does not know are left out. */
+    static List<Reward> raisedBy(@Nullable LiveRewards.Quote quote) {
+        if (quote == null || !quote.raised()) return List.of();
+        List<Reward> out = new java.util.ArrayList<>();
+        for (Reward r : Reward.values()) if (quote.raisedBy().contains(r.id())) out.add(r);
+        return List.copyOf(out);
+    }
+
+    /** "$94", or the relay's raised amount: the Give buttons. */
+    public static net.minecraft.network.chat.Component amountShort(Reward reward) {
+        java.util.OptionalInt raised = raisedAud(LiveRewards.quote(reward.id()));
+        return raised.isPresent()
+                ? games.brennan.dungeontrain.client.support.currency.CurrencyFormat.amount(raised.getAsInt())
+                : games.brennan.dungeontrain.client.support.currency.CurrencyFormat.amount(reward.costAud(), reward.amountShortKey());
+    }
+
+    /** "$94 AUD", or the relay's raised amount in AUD: the payment confirm, which always names AUD. */
+    public static net.minecraft.network.chat.Component amountFull(Reward reward) {
+        java.util.OptionalInt raised = raisedAud(LiveRewards.quote(reward.id()));
+        return raised.isPresent()
+                ? net.minecraft.network.chat.Component.literal(
+                        games.brennan.dungeontrain.client.support.currency.DisplayCurrency.AUD.format(raised.getAsInt()) + " AUD")
+                : net.minecraft.network.chat.Component.translatable(reward.amountKey());
+    }
+
+    /** "Higher while Two Streams is on" under a raised reward's Give button, or null when nothing raises it. */
+    @Nullable
+    public static net.minecraft.network.chat.Component raisedLine(Reward reward) {
+        List<Reward> by = raisedBy(LiveRewards.quote(reward.id()));
+        if (by.isEmpty()) return null;
+        net.minecraft.network.chat.MutableComponent names = net.minecraft.network.chat.Component.empty();
+        for (int i = 0; i < by.size(); i++) {
+            if (i > 0) names.append(", ");
+            names.append(net.minecraft.network.chat.Component.translatable(by.get(i).nameKey()));
+        }
+        return net.minecraft.network.chat.Component.translatable(by.size() == 1 ? RAISED_ONE : RAISED_MANY, names);
+    }
+
+    static final String RAISED_ONE = KEY + "raised";
+    static final String RAISED_MANY = KEY + "raised_many";
 
     // ---- links ------------------------------------------------------------------------------------
 

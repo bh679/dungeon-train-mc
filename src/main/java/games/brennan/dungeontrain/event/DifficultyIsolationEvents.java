@@ -88,5 +88,13 @@ public final class DifficultyIsolationEvents {
         }
         LOGGER.info("[DungeonTrain] difficulty profile changed {} → {} for {} player(s)",
             fromKey, toKey, server.getPlayerList().getPlayerCount());
+        // And the world: loot dropped or stored under the old difficulty must not wait here for the new one.
+        try {
+            DifficultyWorldLootEvents.onSwap(server, fromKey, toKey);
+            server.getPlayerList().broadcastSystemMessage(Component.translatable(
+                "chat.dungeontrain.difficulty_profile.world_loot_cleared").withStyle(ChatFormatting.YELLOW), false);
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] difficulty loot clear {} → {} failed", fromKey, toKey, e);
+        }
     }
 }

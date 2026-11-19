@@ -62,7 +62,6 @@ public record TemplateBlockGroupsEditPacket(Op op, String key, int group) implem
             Player p = ctx.player();
             if (!(p instanceof ServerPlayer sender)) return;
             if (packet.op() == Op.RESKIN) {
-                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "template blocks");
             }
             TemplateBlockGroupsController.applyEdit(sender, packet);
         });

@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Altere quando quiser nas configurações ou com /chatconnect on.",
   "discordpresence.consent.enable": "Ativar",
   "discordpresence.consent.not_now": "Agora não",
+  "discordpresence.consent.toggle_on": "Ligado",
+  "discordpresence.consent.toggle_off": "Desligado",
   "discordpresence.survey.give_feedback": "Enviar feedback",
   "discordpresence.survey.title": "Feedback",
   "discordpresence.survey.comment": "Comentário",

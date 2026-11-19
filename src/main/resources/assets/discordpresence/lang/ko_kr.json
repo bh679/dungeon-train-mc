@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "설정에서 또는 /chatconnect on 명령어로 언제든지 변경할 수 있습니다.",
   "discordpresence.consent.enable": "활성화",
   "discordpresence.consent.not_now": "나중에",
+  "discordpresence.consent.toggle_on": "켜기",
+  "discordpresence.consent.toggle_off": "끄기",
 
   "discordpresence.survey.give_feedback": "피드백 보내기",
   "discordpresence.survey.title": "피드백",

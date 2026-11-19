@@ -1,11 +1,11 @@
 {
   "id": "they_didnt_want_it",
-  "title": "他们不想被爱",
+  "title": "对方不愿被爱",
   "author": "Brennan Hatton",
   "generation": 0,
   "weight": 1,
   "variants": [
-    "它找到了他们。\n他们杀了它。\n%PAGE%\n这是短的说法。\n%PAGE%\n下面是长的。\n%PAGE%\n%STORY%\n%PAGE%\n第 %CARRIAGE% 节车厢。\n%PAGE%\n%DAYS% 天的等待，换来大约一分钟的误会。\n%PAGE%\n一开始它没有还手。\n它起初从不还手。\n%GEAR%\n%PAGE%\n也许他们并不知情。\n%PAGE%\n一个死去的东西顶着一张脸走上前来，伸手递出什么。\n%PAGE%\n大多数人会先挥刀。\n%PAGE%\n我倒希望能告诉你，他们心里清楚，却仍旧动了手。\n%PAGE%\n那样更糟，而我不知道是不是真的。\n%PAGE%\n在某处的一只箱子里，%TARGET% 收着你的字迹。\n%PAGE%\n他们以为那是战利品。",
-    "%TARGET% 杀了它。\n%PAGE%\n你该知道，过程很快。\n%PAGE%\n等了 %DAYS% 天，结束却没花多少时间。\n%PAGE%\n%STORY%\n%PAGE%\n我总是想起动手之前的那一刻。\n%PAGE%\n它手里捧着要给他们的东西。\n%GEAR%\n%PAGE%\n到最后它还捧着。\n%PAGE%\n这列车上的人很少收到礼物。\n%PAGE%\n他们收到的多是埋伏。\n%PAGE%\n分辨这两者，全靠猜。\n%PAGE%\n他们猜错了。\n%PAGE%\n你大概会原谅他们。\n%PAGE%\n你就是这一点最叫人恼火。"
+    "它找到了对方。\n对方杀了它。\n%PAGE%\n简单说，就是这样。\n%PAGE%\n细说，是这样。\n%PAGE%\n%STORY%\n%PAGE%\n第 %CARRIAGE% 节车厢。\n%PAGE%\n%DAYS% 天的等待，换来大约一分钟的误会。\n%PAGE%\n起初，它没有还手。\n它一开始总是如此。\n%GEAR%\n%PAGE%\n也许对方并不知情。\n%PAGE%\n一个死物顶着一张人脸走来，伸手递出东西。\n%PAGE%\n多数人都会挥刀。\n%PAGE%\n我倒想告诉你，对方明明知道，却还是动了手。\n%PAGE%\n那样更糟。可我不知道事实是不是如此。\n%PAGE%\n%TARGET% 把你的字迹收在某处的箱子里。\n%PAGE%\n当作一件战利品。",
+    "%TARGET% 杀了它。\n%PAGE%\n你该知道，过程很快。\n%PAGE%\n等了 %DAYS% 天，结束却没用多久。\n%PAGE%\n%STORY%\n%PAGE%\n我总想起动手前的那一刻。\n%PAGE%\n它手里捧着要送给对方的东西。\n%GEAR%\n%PAGE%\n到最后，它还捧着。\n%PAGE%\n这列车上的人，很少收到礼物。\n%PAGE%\n迎接他们的，多是伏击。\n%PAGE%\n要分清哪一种，只能靠猜。\n%PAGE%\n这回，对方猜错了。\n%PAGE%\n你会原谅对方的。\n%PAGE%\n你就是这一点，最让人恼火。"
   ]
 }

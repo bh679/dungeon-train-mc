@@ -117,6 +117,8 @@ public final class SharedCarriageRegistry {
         private final AtomicInteger seq;
         /** Set once this carriage is being culled — the flusher stops issuing new POSTs for it. */
         private volatile boolean culled;
+        /** Coal in this build's Drifting Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
+        private volatile int fuel = -1;
         /** Set when the relay asked for a re-baseline (delta log near/at full) — flusher does a full save. */
         private volatile boolean rebaseline;
         /** Guards against overlapping submit/save/delta calls for this carriage. */
@@ -191,6 +193,8 @@ public final class SharedCarriageRegistry {
         @Override public String leaseToken() { return leaseToken; }
         @Override public boolean isOnRelay() { return relayId != null && leaseToken != null; }
         @Override public String stageId() { return stageId; }
+        @Override public int fuel() { return fuel; }
+        @Override public void setFuel(int fuel) { this.fuel = fuel; }
         @Override public String describe() { return "pIdx=" + pIdx; }
         public boolean isCallInFlight() { return callInFlight; }
         public long lastContactMs() { return lastContactMs; }
@@ -242,7 +246,23 @@ public final class SharedCarriageRegistry {
          */
         private volatile boolean blockEditedThisSession;
 
-        public void markBlockEdited() { this.blockEditedThisSession = true; }
+        /**
+         * Cells a mob broke (see {@code MobDigGoal}) before any other build edit this session. Kept
+         * local: a carriage only a mob has dug into never uploads. The first real edit releases them
+         * into the outbox, so the delta it sends carries the mob's holes with it.
+         */
+        private final Set<BlockPos> heldMobBreaks = ConcurrentHashMap.newKeySet();
+
+        /** Hold a mob-broken cell back from upload until a real edit lands (no-op once culled). */
+        public void holdMobBreak(BlockPos pos) { if (!culled) heldMobBreaks.add(pos.immutable()); }
+
+        public void markBlockEdited() {
+            this.blockEditedThisSession = true;
+            if (heldMobBreaks.isEmpty()) return;
+            Set<BlockPos> snap = new HashSet<>(heldMobBreaks);
+            heldMobBreaks.removeAll(snap);
+            if (!culled) outbox.addAll(snap);
+        }
         public boolean isBlockEditedThisSession() { return blockEditedThisSession; }
         public boolean hasParked() { return !parkedContainers.isEmpty(); }
 

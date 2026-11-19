@@ -164,7 +164,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             for (int i = start; i < end; i++) {
                 CommunityRewards.Reward r = all[i];
                 int cx = colX + (i - start) * (cardW + GAP);
-                Button b = ContributePanel.giveButton(r, CommunityRewards.active(state, r, now), state, now,
+                Button b = ContributePanel.giveButton(r, CommunityRewards.giftRunning(state, r, now), state, now,
                         cx + PAD, giveY, cardW - PAD * 2, GIVE_H, links, false);
                 buttons.add(new Placed(b, giveY));
                 addWidget(b);
@@ -347,6 +347,12 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty += 2;
         ty += 2;
         ty = wrap(ContributePanel.lineOf(r), tx, ty, tw, COLOUR_LINE);
+        if (CommunityRewards.onFreeCredits(state, r, now)) {
+            ty = wrap(ContributePanel.freeThanks(state.find(r.id())), tx, ty + 2, tw, ContributePanel.COLOUR_ON);
+        }
+        // Other rewards being on cost this one more to run, so the relay asked more: say which.
+        Component raised = CommunityRewards.raisedLine(r);
+        if (raised != null) ty = wrap(raised, tx, ty + 2, tw, COLOUR_SUB);
         return ty - y + 4 + GIVE_H + PAD;
     }
 
@@ -372,14 +378,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             if (!live.by().isEmpty()) {
                 byGiver.computeIfAbsent(live.by(), k -> new ArrayList<>()).add(Component.translatable(r.nameKey()));
             }
-            long from = live.activeUntilMs();
-            for (String who : live.queuedBy()) {
+            for (int i = 0; i < live.queuedBy().size(); i++) {
+                String who = live.queuedBy().get(i);
                 if (!who.isEmpty()) {
                     byGiver.computeIfAbsent(who, k -> new ArrayList<>()).add(Component.translatable(
                             "gui.dungeontrain.rewards.thanks.later", Component.translatable(r.nameKey()),
-                            ContributePanel.shortDate(from)));
+                            ContributePanel.shortDate(CommunityRewards.queuedStartMs(live.activeUntilMs(), r, i))));
                 }
-                from += CommunityRewards.MONTH_MS;
             }
         }
         if (byGiver.isEmpty()) return Component.translatable("gui.dungeontrain.rewards.thanks.none");

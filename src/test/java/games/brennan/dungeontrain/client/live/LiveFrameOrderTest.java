@@ -28,4 +28,18 @@ class LiveFrameOrderTest {
         assertTrue(viewer.ordinal() > grab.ordinal(), "the pinned live viewer must stay out of the stream");
         assertTrue(viewer.ordinal() > viewfinder.ordinal(), "the pinned viewer layers over the viewfinder");
     }
+
+    @Test
+    void streamersOwnLivePillDrawsAfterTheStreamGrabsTheFrame() throws Exception {
+        EventPriority grab = priority(LiveStreamController.class, "onRenderFrameEnd");
+        EventPriority pill = priority(StreamNameTag.class, "onFrameEnd");
+        assertTrue(pill.ordinal() > grab.ordinal(), "baked into the frame, viewers would get a second pill");
+    }
+
+    @Test
+    void deathScreenChatDrawsAfterTheStreamGrabsTheFrame() throws Exception {
+        EventPriority grab = priority(LiveStreamController.class, "onRenderFrameEnd");
+        EventPriority chat = priority(LiveDeathChat.class, "onFrameEnd");
+        assertTrue(chat.ordinal() > grab.ordinal(), "what the dead streamer types must stay out of the stream");
+    }
 }

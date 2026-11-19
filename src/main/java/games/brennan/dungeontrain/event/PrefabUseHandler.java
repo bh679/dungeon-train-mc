@@ -169,6 +169,7 @@ public final class PrefabUseHandler {
                 be.loadCustomOnly(merged, level.registryAccess());
                 be.setChanged();
                 ChiseledBookshelfSync.syncIfNeeded(level, placePos);
+                games.brennan.dungeontrain.editor.VaultLoot.syncState(level, placePos);
             }
         }
 
@@ -245,6 +246,7 @@ public final class PrefabUseHandler {
         be.loadCustomOnly(rolled, serverLevel.registryAccess());
         be.setChanged();
         ChiseledBookshelfSync.syncIfNeeded(serverLevel, pos);
+        games.brennan.dungeontrain.editor.VaultLoot.syncState(serverLevel, pos);
 
         // Editor-plot integration: if the player is standing in an editor plot,
         // record the link to the prefab. The pool itself is fetched from
@@ -414,6 +416,14 @@ public final class PrefabUseHandler {
     private static boolean holdsPrefabOf(Player player, net.minecraft.world.item.Item item) {
         return prefabStackOfType(player.getMainHandItem(), item)
             || prefabStackOfType(player.getOffhandItem(), item);
+    }
+
+    /** The loot prefab id a creative-tab prefab stack carries, or null for any other stack. */
+    @javax.annotation.Nullable
+    public static String lootPrefabIdOf(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        CompoundTag tag = customDataTag(stack);
+        return tag != null && tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING) ? tag.getString(NBT_LOOT_PREFAB_ID) : null;
     }
 
     private static boolean prefabStackOfType(ItemStack stack, net.minecraft.world.item.Item item) {

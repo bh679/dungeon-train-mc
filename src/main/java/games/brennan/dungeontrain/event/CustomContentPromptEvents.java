@@ -31,8 +31,8 @@ import org.slf4j.Logger;
  * ahead of worldgen — so a world reaching login still {@link CustomContentChoice#UNSET}
  * means one of the routes that can't be asked earlier: a multiplayer join, a
  * world made through the vanilla world list, or a save from before the gate
- * existed. Those still get the question here, where the honest thing to say is
- * that the content is already loading.</p>
+ * existed. Those still get the question here. Until it is answered the content
+ * stays off and the run is Live: Free Play is something a player opts into.</p>
  *
  * <p>Runs at {@link EventPriority#LOW} so the Free Play notices in
  * {@code CheatDetectionEvents.onLogin} (HIGHEST) have already been sent — the
@@ -42,8 +42,8 @@ import org.slf4j.Logger;
  * <p>The prompt is skipped entirely when the run is already Free Play for some other reason
  * ({@link RunIntegrity#isFreePlayApartFromCustomContent}) — creative mode, a cheat mod, a retuned
  * config. Its question is a trade ("keep your designs and run as Free Play, or drop them and keep
- * your stats") and that trade is already spent, so the content simply stays on and chat says which
- * packages are loading. The world choice stays {@link CustomContentChoice#UNSET}: it is permanent
+ * your stats") and that trade is already spent, so the content stays off and chat says how to turn
+ * it on. The world choice stays {@link CustomContentChoice#UNSET}: it is permanent
  * and world-wide, so a clean run still gets to answer it properly.</p>
  *
  * <p>The decision is per-world, not per-player. On a shared server every player
@@ -69,15 +69,37 @@ public final class CustomContentPromptEvents {
         if (!EditorContentIntegrity.hasCustomContent()) return;
 
         CustomContentChoice choice = EditorContentIntegrity.choice();
+        if (!choice.isAnswered()) {
+            // Nobody has answered for this world, so the content is off and the run is Live — Free
+            // Play is never the default. The prompt offers the player their designs.
+            if (RunIntegrity.isFreePlayApartFromCustomContent(player)) {
+                // The prompt's whole question is "play your designs as Free Play, or keep the
+                // built-in ones and your stats". This run is Free Play regardless — creative mode, a
+                // cheat mod, a retuned config — so the modal would only be in the way. Say how to
+                // turn the designs on instead.
+                //
+                // The world choice stays UNSET on purpose: it is permanent and world-wide, and the
+                // player hasn't answered it. Opening this world in a clean run still asks properly.
+                LOGGER.info("[DungeonTrain] Skipping the custom content prompt for {} — run is "
+                        + "already Free Play for another reason; content ({}) stays off, choice stays UNSET.",
+                    player.getName().getString(), packageSummary());
+                sendDisabledNotice(player);
+                return;
+            }
+            // Un-answered: the window is the whole message. No chat lines here — the player gets
+            // the popup and hears from chat only once they've chosen.
+            LOGGER.info("[DungeonTrain] Asking {} about custom content ({}) — world choice is UNSET.",
+                player.getName().getString(), packageSummary());
+            DungeonTrainNet.sendTo(player,
+                new ShowCustomContentPromptPacket(packageSummary()));
+            return;
+        }
         if (choice.suppressesContent()) {
             // Content is installed but this world has turned it off — say so, quietly, so a player
             // wondering where their builds went isn't left guessing.
             LOGGER.info("[DungeonTrain] Custom content is disabled for this world; {} joined clean.",
                 player.getName().getString());
-            player.sendSystemMessage(Component.translatable("chat.dungeontrain.custom_content.disabled")
-                .withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(" "))
-                .append(fixLink("chat.dungeontrain.custom_content.enable_link", COMMAND_ON)));
+            sendDisabledNotice(player);
             return;
         }
 
@@ -89,35 +111,7 @@ public final class CustomContentPromptEvents {
             return;
         }
 
-        // The run IS Free Play from this tick — the content is loading whether or not anyone has
-        // answered yet — so the status effect goes on immediately either way. That is the honest,
-        // non-silent part, and it costs no chat line.
         RunIntegrity.applyFreePlayEffect(player);
-
-        if (!choice.isAnswered()) {
-            if (RunIntegrity.isFreePlayApartFromCustomContent(player)) {
-                // The prompt's whole question is "keep your designs and run as Free Play, or drop
-                // them and keep your stats". This run is Free Play regardless — creative mode, a
-                // cheat mod, a retuned config — so there is nothing left to trade and the modal is
-                // just in the way. Keep the content (it is already loading) and say so in chat.
-                //
-                // The world choice stays UNSET on purpose: it is permanent and world-wide, and the
-                // player hasn't answered it. Opening this world in a clean run still asks properly.
-                LOGGER.info("[DungeonTrain] Skipping the custom content prompt for {} — run is "
-                        + "already Free Play for another reason; content ({}) stays on, choice stays UNSET.",
-                    player.getName().getString(), packageSummary());
-                sendPackagesNotice(player);
-                return;
-            }
-            // Un-answered: the window is the whole message. No chat lines here — the player gets
-            // the popup and hears from chat only once they've chosen, exactly the order the normal
-            // Free Play flow uses (FreePlayConfirmScreen first, notice after).
-            LOGGER.info("[DungeonTrain] Asking {} about custom content ({}) — world choice is UNSET.",
-                player.getName().getString(), packageSummary());
-            DungeonTrainNet.sendTo(player,
-                new ShowCustomContentPromptPacket(packageSummary()));
-            return;
-        }
         // Already answered "keep it" on a previous join — re-state why the run is Free Play, the
         // same way the AIS and cheat-mod taints re-explain themselves at every login.
         sendFreePlayNotice(player);
@@ -192,6 +186,14 @@ public final class CustomContentPromptEvents {
             // than the creative one it was locked onto. No-op when the slot is unchanged.
             EnderChestLockBridge.engage(p);
         }
+    }
+
+    /** Content is installed but off for this world, with the one-click way to turn it on. */
+    private static void sendDisabledNotice(ServerPlayer player) {
+        player.sendSystemMessage(Component.translatable("chat.dungeontrain.custom_content.disabled")
+            .withStyle(ChatFormatting.GRAY)
+            .append(Component.literal(" "))
+            .append(fixLink("chat.dungeontrain.custom_content.enable_link", COMMAND_ON)));
     }
 
     /**

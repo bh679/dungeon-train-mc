@@ -27,18 +27,34 @@ public final class LiveChatCensorEvents {
 
     private LiveChatCensorEvents() {}
 
+    /**
+     * A player the relay has muted for their words says nothing: the line is cancelled before anything
+     * else sees it (HIGHEST, so the Discord Presence mirror never relays it), live or not.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onMutedChat(ServerChatEvent event) {
+        try {
+            if (!LiveModeration.isMuted(event.getPlayer().getUUID())) return;
+            event.setCanceled(true);
+            LiveModeration.remindMuted(event.getPlayer());
+        } catch (Throwable t) {
+            // Fail open: a fault here must never eat a chat line.
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onServerChat(ServerChatEvent event) {
         try {
             MinecraftServer server = event.getPlayer().getServer();
             if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(server))) return;
             String raw = event.getMessage().getString();
-            TextCensor.Result r = TextCensor.censor(raw, LiveWordList.effective());
+            // Mild words are masked too, but only strike-list hits count against the player.
+            TextCensor.Result r = TextCensor.censor(raw, LiveWordList.effective(), LiveWordList.mild());
             // Links and phone numbers: hidden on the same scope, but never a strike.
             TextCensor.Result p = PatternCensor.censor(r.text());
             if (!r.changed() && !p.changed()) return;
             event.setMessage(Component.literal(p.text()));
-            if (r.changed()) LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
+            if (!r.hits().isEmpty()) LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
             if (p.changed()) LiveModeration.warnLinkHidden(event.getPlayer());
         } catch (Throwable t) {
             // Fail open: a filter fault must never eat a chat line.

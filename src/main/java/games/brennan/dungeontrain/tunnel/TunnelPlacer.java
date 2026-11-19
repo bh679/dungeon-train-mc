@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.tunnel;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
@@ -412,7 +413,7 @@ public final class TunnelPlacer {
         TrackKind kind, String name, long worldSeed, int tileIndex, int diffIndex,
         @Nullable ServerLevel fadeOverworld, long genSeed
     ) {
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
         if (sidecar.isEmpty()) return;
         GrowthPass.Target growTarget = GrowthPass.worldgen(level);
@@ -513,7 +514,7 @@ public final class TunnelPlacer {
         ServerLevel level, BlockPos origin, boolean mirrorX,
         TrackKind kind, String name, long worldSeed, int tileIndex, boolean grow
     ) {
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
         if (sidecar.isEmpty()) return;
         int diffIndex = diffIndexForTile(level, tileIndex);

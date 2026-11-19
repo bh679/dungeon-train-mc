@@ -2,7 +2,9 @@
 """Append one curated entry to the changelog ledger (Gate-3 merge step).
 
 Run by the agent on the feature branch during Gate 3, before merging, so the
-entry lands in the PR diff and squash-merges atomically. The shipped version is
+entry lands in the PR diff and squash-merges atomically. It writes one new file,
+`.github/release-notes/unreleased/<id>.json`, and nothing else, so two PRs (or a
+PR and a release) never conflict over the ledger. The shipped version is
 computed from gradle.properties using the same rule as version-bump.yml, so the
 logged `version` matches what CI assigns after the squash.
 
@@ -38,6 +40,11 @@ Optional:
                     card on the web update page. With it:
   --description-file PATH  Markdown description (replaces summary + highlights).
   --image URL       https:// URL of the release photo.
+  --video URL       https:// URL of an .mp4 clip with sound: the social posts' videos
+                    are built from it (its sound kept) instead of the photo.
+  --video-cover S   The second of the clip whose frame is the posts' cover (default 0.5).
+  --mention TEXT PLATFORM HANDLE  A description link whose text is TEXT shows as
+                    HANDLE (@name) in that platform's caption (instagram, tiktok).
   --notable         The middle tier: a major that the web update page shows as a
                     smaller "Notable update" card (milestone-sized). Implies --major.
   Attach or change these later with set-major.py.
@@ -45,6 +52,7 @@ Optional:
 Paths honour CHANGELOG_FILE / GRADLE_PROPERTIES_FILE env overrides.
 """
 import argparse
+import os
 import sys
 
 import changelog_io
@@ -130,6 +138,26 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Major release only: https:// URL of the release photo.",
     )
     p.add_argument(
+        "--video",
+        default=None,
+        help="Major release only: https:// URL of an .mp4 clip with sound for the social posts.",
+    )
+    p.add_argument(
+        "--mention",
+        nargs=3,
+        action="append",
+        default=None,
+        metavar=("TEXT", "PLATFORM", "HANDLE"),
+        help="Major release only: a description link whose text is TEXT shows as HANDLE (@name) in that "
+        "PLATFORM's caption (instagram or tiktok). Repeat for each.",
+    )
+    p.add_argument(
+        "--video-cover",
+        type=float,
+        default=None,
+        help="Major release only, with --video: the second of the clip whose frame is the cover.",
+    )
+    p.add_argument(
         "--version",
         default=None,
         help="Override the computed ship version (X.Y.Z).",
@@ -206,14 +234,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.notable:
         args.major = True
-    if (args.description_file or args.image) and not args.major:
-        print("::error::--description-file / --image need --major", file=sys.stderr)
+    if (args.description_file or args.image or args.video or args.video_cover is not None or args.mention) and not args.major:
+        print("::error::--description-file / --image / --video / --mention need --major", file=sys.stderr)
         return 1
     if args.major:
         try:
             description = read_text(args.description_file) if args.description_file else None
             entry = changelog_io.with_major(
-                entry, description=description, image=args.image, notable=args.notable or None
+                entry, description=description, image=args.image, notable=args.notable or None,
+                video=args.video, video_cover=args.video_cover,
+                mentions=changelog_io.mentions_from_args(args.mention),
             )
         except (OSError, ValueError) as e:
             print(f"::error::{e}", file=sys.stderr)
@@ -224,9 +254,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::error::{e}", file=sys.stderr)
         return 1
 
-    changelog_io.save_changelog({**data, "entries": new_entries})
+    try:
+        written = changelog_io.write_unreleased_entry(entry)
+    except ValueError as e:
+        print(f"::error::{e}", file=sys.stderr)
+        return 1
     print(
-        f"Logged changelog entry '{args.id}' for v{version} "
+        f"Logged changelog entry '{args.id}' for v{version} in {os.path.relpath(written)} "
         f"({len(new_entries)} entr{'y' if len(new_entries) == 1 else 'ies'} total)."
     )
     return 0

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -19,7 +20,9 @@ import java.util.List;
  * by default hides those mods' own tabs outright — an emptied tab is not drawn — and keeps their
  * contents out of the search. The two halves are separate client settings
  * ({@link ClientDisplayConfig#isCreativeModBlockTabs()} and
- * {@link ClientDisplayConfig#isCreativeModBlocksInSearch()}); the gear rule ignores both.
+ * {@link ClientDisplayConfig#isCreativeModBlocksInSearch()}); the gear rule ignores both. Mods with no tab of
+ * their own ({@link DisabledModContent#isHiddenCreativeItem}) have their items pulled from vanilla's tabs under the
+ * same two settings.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DisabledModCreativeTabs {
@@ -28,16 +31,19 @@ public final class DisabledModCreativeTabs {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
-        if (DisabledModContent.isBiomeModCreativeTab(event.getTabKey().location())) {
-            // The settings are client config; a dedicated server never draws a tab, so it keeps the defaults.
-            boolean client = FMLEnvironment.dist == Dist.CLIENT;
-            if (!(client && ClientDisplayConfig.isCreativeModBlockTabs())) {
-                for (ItemStack stack : new ArrayList<>(event.getParentEntries())) {
+        boolean hiddenTab = DisabledModContent.isBiomeModCreativeTab(event.getTabKey().location());
+        // The settings are client config; a dedicated server never draws a tab, so it keeps the defaults.
+        boolean client = FMLEnvironment.dist == Dist.CLIENT;
+        if (!(client && ClientDisplayConfig.isCreativeModBlockTabs())) {
+            for (ItemStack stack : new ArrayList<>(event.getParentEntries())) {
+                if (hiddenTab || isHiddenItem(stack)) {
                     event.remove(stack, CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
                 }
             }
-            if (!(client && ClientDisplayConfig.isCreativeModBlocksInSearch())) {
-                for (ItemStack stack : new ArrayList<>(event.getSearchEntries())) {
+        }
+        if (!(client && ClientDisplayConfig.isCreativeModBlocksInSearch())) {
+            for (ItemStack stack : new ArrayList<>(event.getSearchEntries())) {
+                if (hiddenTab || isHiddenItem(stack)) {
                     event.remove(stack, CreativeModeTab.TabVisibility.SEARCH_TAB_ONLY);
                 }
             }
@@ -56,5 +62,9 @@ public final class DisabledModCreativeTabs {
         for (ItemStack stack : disabled) {
             event.remove(stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
+    }
+
+    private static boolean isHiddenItem(ItemStack stack) {
+        return DisabledModContent.isHiddenCreativeItem(BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 }

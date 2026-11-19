@@ -65,7 +65,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Decide whether to fire
         id: decide

@@ -30,6 +30,13 @@ public final class MenuChatScreen extends Screen {
     private ChatMessageList list;
     private UUID uuid;
     private boolean drained; // drain once per open — init() re-fires on resize on the SAME instance
+    // The two async halves of a visit, applied together once both have landed (MenuChatMerge): a
+    // relay-only note (whitelist approval, outdated build) exists only in the drain, never in the
+    // Discord history, so applying the history alone would show "offline" over a consumed note.
+    private ChatHistory history;
+    private boolean historyDone;
+    private ChatInbox inbox;
+    private boolean inboxDone = true; // false only while the one drain per open is in flight
 
     public MenuChatScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.menu_chat.title"));
@@ -69,34 +76,52 @@ public final class MenuChatScreen extends Screen {
         // Flush anything queued from a prior offline session as soon as the window opens.
         ChatOutbox.get().flush();
 
-        RelayChatClient.fetchHistory(uuid).thenAcceptAsync(history -> {
-            if (history != null) {
+        historyDone = false;
+        RelayChatClient.fetchHistory(uuid).thenAcceptAsync(fetched -> {
+            if (fetched != null) {
                 // ✅ the fetched messages regardless of which init owns the list — the data arrived.
-                ChatReceipts.markLoaded(uuid, history.threadId(), history.messages());
+                ChatReceipts.markLoaded(uuid, fetched.threadId(), fetched.messages());
             }
             if (this.list != l) {
                 return; // resized while in flight — the newer init's fetch owns the current list
             }
-            if (history == null) {
-                l.setStatus(Component.translatable("gui.dungeontrain.menu_chat.offline"));
-                return;
-            }
-            threadId.set(history.threadId());
-            l.setHistory(history);
+            this.history = fetched;
+            this.historyDone = true;
+            applyVisit(l);
         }, mc);
 
         // Reading happens here: drain the inbox (advances the relay's delivery cursor), which clears the
         // title screen's unread popup for next time. The "+N" badge shows how many were new this visit.
         if (!drained) {
             drained = true;
-            RelayChatClient.drainInbox(uuid).thenAcceptAsync(inbox -> {
-                if (inbox != null) {
-                    ChatReceipts.markLoaded(uuid, inbox.threadId(), inbox.messages());
-                    if (this.list == l) {
-                        l.setUnread(inbox.unread());
-                    }
+            inboxDone = false;
+            RelayChatClient.drainInbox(uuid).thenAcceptAsync(drainedNow -> {
+                if (drainedNow != null) {
+                    ChatReceipts.markLoaded(uuid, drainedNow.threadId(), drainedNow.messages());
+                }
+                this.inbox = drainedNow;
+                this.inboxDone = true;
+                if (this.list == l) {
+                    applyVisit(l);
                 }
             }, mc);
+        }
+    }
+
+    /** Once the history fetch and the drain have both answered, show them as one list. */
+    private void applyVisit(ChatMessageList l) {
+        if (!historyDone || !inboxDone) {
+            return;
+        }
+        ChatHistory merged = MenuChatMerge.merge(history, inbox);
+        if (merged == null) {
+            l.setStatus(Component.translatable("gui.dungeontrain.menu_chat.offline"));
+        } else {
+            threadId.set(merged.threadId());
+            l.setHistory(merged);
+        }
+        if (inbox != null) {
+            l.setUnread(inbox.unread());
         }
     }
 

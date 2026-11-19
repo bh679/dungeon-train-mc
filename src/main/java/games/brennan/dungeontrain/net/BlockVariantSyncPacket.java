@@ -137,7 +137,7 @@ public record BlockVariantSyncPacket(
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
                         int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
                         int growth, String painting, String condition, boolean conditionLive,
-                        String conditionGroupValues) {
+                        String conditionGroupValues, String candles, String pot) {
 
         /** Cap on the condition token over the wire: eight namespaced ids and a target. */
         public static final int CONDITION_MAX_LEN = 1024;
@@ -146,6 +146,26 @@ public record BlockVariantSyncPacket(
             if (painting == null) painting = "";
             if (condition == null) condition = "";
             if (conditionGroupValues == null) conditionGroupValues = "";
+            if (candles == null) candles = "";
+            if (pot == null) pot = "";
+        }
+
+        /** Cap on the flower pot token over the wire: {@code VariantPot.MAX_PLANTS} namespaced ids. */
+        public static final int POT_MAX_LEN = 1024;
+
+        /**
+         * Backward-compat constructor for call sites that don't carry candle / flower pot options
+         * (defaults to as placed / off, the empty tokens).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
+                     int growth, String painting, String condition, boolean conditionLive,
+                     String conditionGroupValues) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode, growth,
+                painting, condition, conditionLive, conditionGroupValues, "", "");
         }
 
         /** Backward-compat constructor for call sites that don't carry Group mode's value list. */
@@ -342,6 +362,8 @@ public record BlockVariantSyncPacket(
             buf.writeUtf(e.condition(), Entry.CONDITION_MAX_LEN);
             buf.writeBoolean(e.conditionLive());
             buf.writeUtf(e.conditionGroupValues(), Entry.CONDITION_MAX_LEN * 2);
+            buf.writeUtf(e.candles(), 16);
+            buf.writeUtf(e.pot(), Entry.POT_MAX_LEN);
         }
     }
 
@@ -389,9 +411,12 @@ public record BlockVariantSyncPacket(
             String condition = buf.readUtf(Entry.CONDITION_MAX_LEN);
             boolean conditionLive = buf.readBoolean();
             String conditionGroupValues = buf.readUtf(Entry.CONDITION_MAX_LEN * 2);
+            String candles = buf.readUtf(16);
+            String pot = buf.readUtf(Entry.POT_MAX_LEN);
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
-                activeMode, connectMode, growth, painting, condition, conditionLive, conditionGroupValues));
+                activeMode, connectMode, growth, painting, condition, conditionLive, conditionGroupValues,
+                candles, pot));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);

@@ -134,4 +134,47 @@ final class FallingBlockAnchorTest {
             Arguments.of("black",      Blocks.BLACK_CONCRETE_POWDER.defaultBlockState(),      Blocks.BLACK_CONCRETE.defaultBlockState())
         );
     }
+
+    @Test
+    @DisplayName("anchorIfUnsupported: sand over air → sandstone")
+    void sandOverAirAnchors() {
+        BlockState got = FallingBlockAnchor.anchorIfUnsupported(
+                Blocks.SAND.defaultBlockState(), Blocks.AIR.defaultBlockState());
+        assertNotNull(got);
+        assertEquals(Blocks.SANDSTONE, got.getBlock());
+    }
+
+    @Test
+    @DisplayName("anchorIfUnsupported: gravel over water → stone (liquids let it fall)")
+    void gravelOverWaterAnchors() {
+        BlockState got = FallingBlockAnchor.anchorIfUnsupported(
+                Blocks.GRAVEL.defaultBlockState(), Blocks.WATER.defaultBlockState());
+        assertNotNull(got);
+        assertEquals(Blocks.STONE, got.getBlock());
+    }
+
+    @Test
+    @DisplayName("anchorIfUnsupported: suspicious sand over air → sandstone")
+    void suspiciousSandOverAirAnchors() {
+        BlockState got = FallingBlockAnchor.anchorIfUnsupported(
+                Blocks.SUSPICIOUS_SAND.defaultBlockState(), Blocks.AIR.defaultBlockState());
+        assertNotNull(got);
+        assertEquals(Blocks.SANDSTONE, got.getBlock());
+    }
+
+    @Test
+    @DisplayName("anchorIfUnsupported: supported sand stays")
+    void supportedSandStays() {
+        assertNull(FallingBlockAnchor.anchorIfUnsupported(
+                Blocks.SAND.defaultBlockState(), Blocks.STONE.defaultBlockState()));
+        assertNull(FallingBlockAnchor.anchorIfUnsupported(
+                Blocks.SAND.defaultBlockState(), Blocks.SAND.defaultBlockState()));
+    }
+
+    @Test
+    @DisplayName("anchorIfUnsupported: non-fallable over air stays")
+    void nonFallableStays() {
+        assertNull(FallingBlockAnchor.anchorIfUnsupported(
+                Blocks.DIRT.defaultBlockState(), Blocks.AIR.defaultBlockState()));
+    }
 }

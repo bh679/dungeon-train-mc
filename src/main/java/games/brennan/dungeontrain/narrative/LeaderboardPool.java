@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.LiveTvAdvancements;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -591,10 +592,18 @@ public final class LeaderboardPool {
         Map<BoardKey, Standing> parsed = parseAllRanks(body);
         if (parsed.isEmpty()) return;
         RANKS.put(player, Map.copyOf(parsed));
+        long streamSeconds = streamSeconds(parsed);
+        if (streamSeconds > 0L) LiveTvAdvancements.onRelayStreamTotal(player, streamSeconds);
         // The one line that says a refresh actually landed. Every other outcome here is already
         // logged (a failed fetch, a bad status), so without this a rank refresh — the login one and
         // the post-death one alike — is invisible even at debug, and "did it fire?" is unanswerable.
         LOGGER.debug("[DungeonTrain] leaderboard ranks refreshed for {}: {} boards", player, parsed.size());
+    }
+
+    /** The all-time seconds on air in a parsed {@code /leaderboard/me} answer: zero when they aren't on that board. */
+    static long streamSeconds(Map<BoardKey, Standing> ranks) {
+        Standing total = ranks.get(new BoardKey(LeaderboardCategory.LIVE_STREAM_TIME, CURRENT));
+        return total == null ? 0L : total.score();
     }
 
     /**

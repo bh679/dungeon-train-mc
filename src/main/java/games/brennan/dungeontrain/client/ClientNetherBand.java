@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.BandSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
@@ -54,8 +55,7 @@ public final class ClientNetherBand {
     }
 
     private static double netherBandRampAt(WorldGenCycle cycle, int worldX) {
-        if (!DungeonTrainCommonConfig.isNetherTransitionEnabled()) return 0.0;
-        return cycle.netherRamp(worldX);
+        return BandSky.netherSkyIntensityAt(cycle, worldX);
     }
 
     /**

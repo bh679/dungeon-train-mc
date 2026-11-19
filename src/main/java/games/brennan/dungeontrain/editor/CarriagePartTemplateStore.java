@@ -1,32 +1,22 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.CarriagePartTemplateId;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateAdapters;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -49,10 +39,14 @@ import java.util.Optional;
  *       sentinel).</li>
  * </ol>
  *
- * <p>Every load is filtered against {@link CarriagePartKind#dims(CarriageDims)}
+ * <p>Every read is filtered against {@link CarriagePartKind#dims(CarriageDims)}
  * so a template authored at one world's dims can't poison a carriage in a
- * world with different dims — the load returns empty and the stamp is a no-op
- * rather than corrupting the shell.</p>
+ * world with different dims — the read returns empty and the stamp is a no-op
+ * rather than corrupting the shell. The gate is applied <i>per call</i>, outside the cache: a
+ * rejection at one caller's dims used to be cached as "absent" for every later caller.</p>
+ *
+ * <p>Policies: {@link SourcePolicy#NEVER}, {@link DeleteCachePolicy#REMOVE}, cache entry dropped
+ * on save (the file is the repaired copy). {@link #exists} asks the active package only.</p>
  */
 public final class CarriagePartTemplateStore {
 
@@ -62,8 +56,36 @@ public final class CarriagePartTemplateStore {
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
 
-    // Key = "<kind>/<name>" — small compound key keeps a single flat map.
-    private static final Map<String, Optional<StructureTemplate>> CACHE = new HashMap<>();
+    /** A part's address. */
+    private record Key(CarriagePartKind kind, String name) {
+        String id() {
+            return kind.id() + "/" + name;
+        }
+    }
+
+    private static final ThreeTierStore<Key, StructureTemplate> STORE =
+        StoreDescriptor.<Key, StructureTemplate>named("CarriagePartTemplateStore")
+            .id(Key::id)
+            .subdir(k -> SUBDIR_BASE + "/" + k.kind().id())
+            .fileName(k -> k.name() + EXT)
+            .bundledResource(k -> RESOURCE_PREFIX + k.kind().id() + "/" + k.name() + EXT)
+            .sourceRelDir(k -> SOURCE_REL_PATH + "/" + k.kind().id())
+            .codec(StoreCodecs.structureTemplate(true))
+            .logNoun("part template")
+            .sourcePolicy(SourcePolicy.NEVER)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .saveCachePolicy(StoreDescriptor.SaveCachePolicy.DROP)
+            .onSave(k -> {
+                StageBlockIndex.invalidateAll();
+                ProvenanceCache.invalidateAll();
+            })
+            .onDelete(k -> {
+                StageBlockIndex.invalidateAll();
+                ProvenanceCache.invalidateAll();
+            })
+            .onRename((a, b) -> ProvenanceCache.invalidateAll())
+            .onClear(StageBlockIndex::invalidateAll)
+            .build();
 
     private CarriagePartTemplateStore() {}
 
@@ -72,21 +94,19 @@ public final class CarriagePartTemplateStore {
     }
 
     public static Path fileFor(CarriagePartKind kind, String name) {
-        return directory(kind).resolve(name + EXT);
+        return STORE.fileFor(new Key(kind, name));
     }
 
     public static Path sourceFileFor(CarriagePartKind kind, String name) {
-        return sourceDirectory(kind).resolve(name + EXT);
+        return STORE.sourceFileFor(new Key(kind, name));
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return STORE.sourceTreeAvailable();
     }
 
-    public static synchronized void clearCache() {
-        CACHE.clear();
-        StageBlockIndex.invalidateAll();
+    public static void clearCache() {
+        STORE.clearCache();
     }
 
     /**
@@ -98,71 +118,32 @@ public final class CarriagePartTemplateStore {
             RESOURCE_PREFIX + kind.id() + "/" + name + EXT, "part template " + kind.id() + ":" + name);
     }
 
-    public static synchronized Optional<StructureTemplate> get(
+    public static Optional<StructureTemplate> get(
         ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims
     ) {
-        String key = key(kind, name);
-        Optional<StructureTemplate> cached = CACHE.get(key);
-        if (cached != null) return filterForDims(kind, name, cached, dims);
-        Optional<StructureTemplate> loaded = loadFromConfig(level, kind, name, dims);
-        if (loaded.isEmpty()) loaded = loadFromResource(level, kind, name, dims);
-        CACHE.put(key, loaded);
-        return loaded;
+        return filterForDims(kind, name, STORE.get(new Key(kind, name), level), dims);
     }
 
-    public static synchronized void save(CarriagePartKind kind, String name, StructureTemplate template) throws IOException {
-        Path dir = directory(kind);
-        Files.createDirectories(dir);
-        Path file = fileFor(kind, name);
-        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
-        NbtIo.writeCompressed(tag, file);
-        // Dropped rather than replaced: the file on disk is the repaired copy
-        // (DoubleBlockTemplateRepair), and the next read picks that up.
-        CACHE.remove(key(kind, name));
-        StageBlockIndex.invalidateAll();
-        ProvenanceCache.invalidateAll();
-        LOGGER.info("[DungeonTrain] Saved part template {}:{} to {}", kind.id(), name, file);
+    public static void save(CarriagePartKind kind, String name, StructureTemplate template) throws IOException {
+        STORE.save(new Key(kind, name), template);
     }
 
-    public static synchronized void saveToSource(CarriagePartKind kind, String name, StructureTemplate template) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path file = sourceFileFor(kind, name);
-        Files.createDirectories(file.getParent());
-        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
-        NbtIo.writeCompressed(tag, file);
-        LOGGER.info("[DungeonTrain] Wrote bundled part template {}:{} to {}", kind.id(), name, file);
+    public static void saveToSource(CarriagePartKind kind, String name, StructureTemplate template) throws IOException {
+        STORE.saveToSource(new Key(kind, name), template);
     }
 
-    public static synchronized void promote(CarriagePartKind kind, String name) throws IOException {
-        Path src = fileFor(kind, name);
-        if (!Files.isRegularFile(src)) {
-            throw new IOException("No saved part template for " + kind.id() + ":" + name + " in " + src);
-        }
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path dst = sourceFileFor(kind, name);
-        Files.createDirectories(dst.getParent());
-        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.info("[DungeonTrain] Promoted part template {}:{} from {} to {}", kind.id(), name, src, dst);
+    public static void promote(CarriagePartKind kind, String name) throws IOException {
+        STORE.promote(new Key(kind, name));
         try {
-            ContainerContentsStore.promoteFor("part:" + kind.id() + ":" + name);
+            ContainerContentsStore.promoteFor(BlockVariantPlot.partKey(kind, name));
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Promoted part template {}:{} but failed to promote container sidecar: {}",
                 kind.id(), name, e.toString());
         }
     }
 
-    public static synchronized boolean delete(CarriagePartKind kind, String name) throws IOException {
-        Path file = fileFor(kind, name);
-        boolean existed = Files.deleteIfExists(file);
-        CACHE.put(key(kind, name), Optional.empty());
-        StageBlockIndex.invalidateAll();
-        ProvenanceCache.invalidateAll();
-        if (existed) LOGGER.info("[DungeonTrain] Deleted part template {}:{} ({})", kind.id(), name, file);
-        return existed;
+    public static boolean delete(CarriagePartKind kind, String name) throws IOException {
+        return STORE.delete(new Key(kind, name));
     }
 
     /**
@@ -172,123 +153,33 @@ public final class CarriagePartTemplateStore {
      * and a door, so a rename that crossed kinds would collide with a different part entirely. The
      * file half of a rename only; the caller re-registers the name.</p>
      */
-    public static synchronized boolean rename(CarriagePartKind kind, String sourceName, String targetName)
+    public static boolean rename(CarriagePartKind kind, String sourceName, String targetName)
             throws IOException {
-        Path src = fileFor(kind, sourceName);
-        Path dst = fileFor(kind, targetName);
-        if (!Files.isRegularFile(src)) return false;
-        Files.createDirectories(dst.getParent());
-        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
-        if (cached != null) CACHE.put(key(kind, targetName), cached);
-        ProvenanceCache.invalidateAll();
-        LOGGER.info("[DungeonTrain] Renamed part template {}:{} -> {}:{}", kind.id(), sourceName,
-                kind.id(), targetName);
-        return true;
+        return STORE.rename(new Key(kind, sourceName), new Key(kind, targetName));
     }
 
     public static boolean exists(CarriagePartKind kind, String name) {
-        return Files.isRegularFile(fileFor(kind, name));
+        return STORE.existsInActive(new Key(kind, name));
     }
 
     public static boolean bundled(CarriagePartKind kind, String name) {
-        try (InputStream in = CarriagePartTemplateStore.class.getResourceAsStream(
-                RESOURCE_PREFIX + kind.id() + "/" + name + EXT)) {
-            return in != null;
-        } catch (IOException e) {
-            return false;
-        }
+        return STORE.bundled(new Key(kind, name));
     }
 
-    private static Optional<StructureTemplate> loadFromConfig(
-        ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims
-    ) {
-        // Search user/parts/<kind>/ first, then imported/<pkg>/parts/<kind>/.
-        Path file = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
-        if (file == null) return Optional.empty();
-        try {
-            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, kind, name, dims, tag, "config " + file);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read config part template {}:{} at {}: {}",
-                kind.id(), name, file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadFromResource(
-        ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims
-    ) {
-        String resource = RESOURCE_PREFIX + kind.id() + "/" + name + EXT;
-        try (InputStream in = CarriagePartTemplateStore.class.getResourceAsStream(resource)) {
-            if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, kind, name, dims, tag, "bundled " + resource);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled part template {}: {}",
-                resource, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadAndValidate(
-        ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims,
-        CompoundTag tag, String origin
-    ) {
-        StructureTemplate template = new StructureTemplate();
-        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, kind.id() + ":" + name));
-
-        Vec3i expected = kind.dims(dims);
-        Vec3i size = template.getSize();
-        if (!size.equals(expected)) {
-            LOGGER.warn(
-                "[DungeonTrain] Part template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
-                kind.id(), name, origin, size.getX(), size.getY(), size.getZ(),
-                expected.getX(), expected.getY(), expected.getZ()
-            );
-            return Optional.empty();
-        }
-        LOGGER.info("[DungeonTrain] Loaded part template {}:{} from {}", kind.id(), name, origin);
-        return Optional.of(template);
-    }
-
+    /** The size gate — per call, never cached. */
     private static Optional<StructureTemplate> filterForDims(
-        CarriagePartKind kind, String name, Optional<StructureTemplate> cached, CarriageDims dims
+        CarriagePartKind kind, String name, Optional<StructureTemplate> loaded, CarriageDims dims
     ) {
-        if (cached.isEmpty()) return cached;
+        if (loaded.isEmpty()) return loaded;
         Vec3i expected = kind.dims(dims);
-        if (cached.get().getSize().equals(expected)) return cached;
+        Vec3i size = loaded.get().getSize();
+        if (size.equals(expected)) return loaded;
         LOGGER.warn(
-            "[DungeonTrain] Cached part template {}:{} no longer matches dims {}x{}x{} — falling back.",
-            kind.id(), name, dims.length(), dims.width(), dims.height()
+            "[DungeonTrain] Part template {}:{} has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
+            kind.id(), name, size.getX(), size.getY(), size.getZ(),
+            expected.getX(), expected.getY(), expected.getZ()
         );
         return Optional.empty();
-    }
-
-    private static String key(CarriagePartKind kind, String name) {
-        return kind.id() + "/" + name;
-    }
-
-    private static Path sourceDirectory(CarriagePartKind kind) {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) {
-            throw new IllegalStateException(
-                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
-            );
-        }
-        return projectRoot.resolve(SOURCE_REL_PATH).resolve(kind.id());
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
-    }
-
-    private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        return gameDir.getParent();
     }
 
     /**
@@ -306,26 +197,11 @@ public final class CarriagePartTemplateStore {
     }
 
     private static TemplateStore<Template.Part> makeAdapter(CarriagePartKind kind) {
-        return new TemplateStore<>() {
-            @Override public TemplateKind kind() { return TemplateKind.PART; }
-
-            @Override
-            public SaveResult save(ServerPlayer player, Template.Part template) throws Exception {
-                CarriagePartEditor.SaveResult r = CarriagePartEditor.save(player,
-                    new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, template.name()));
-                return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
-            }
-
-            @Override
-            public boolean canPromote(Template.Part template) {
-                return sourceTreeAvailable() && exists(kind, template.name());
-            }
-
-            @Override
-            public void promote(Template.Part template) throws Exception {
-                CarriagePartTemplateStore.promote(kind, template.name());
-            }
-        };
+        return TemplateAdapters.of(TemplateKind.PART,
+            (player, t) -> CarriagePartEditor.save(player, new CarriagePartTemplateId(kind, t.name())),
+            TemplateAdapters.when(
+                t -> sourceTreeAvailable() && exists(kind, t.name()),
+                t -> promote(kind, t.name())));
     }
 
     public static TemplateStore<Template.Part> adapter(CarriagePartKind kind) {
@@ -334,11 +210,11 @@ public final class CarriagePartTemplateStore {
 
     /**
      * Phase-3 record-shaped overload: {@link #adapter(CarriagePartKind)}
-     * keyed via the {@link games.brennan.dungeontrain.template.CarriagePartTemplateId}
+     * keyed via the {@link CarriagePartTemplateId}
      * record. The underlying EnumMap cache key stays the bare
      * {@link CarriagePartKind}; the id record is a callsite shape only.
      */
-    public static TemplateStore<Template.Part> adapter(games.brennan.dungeontrain.template.CarriagePartTemplateId id) {
+    public static TemplateStore<Template.Part> adapter(CarriagePartTemplateId id) {
         return ADAPTERS.get(id.kind());
     }
 }

@@ -22,6 +22,9 @@ permissions:
 jobs:
   bump:
     runs-on: ubuntu-latest
+    env:
+      # The generated translation-count files the counts refresh below may rewrite.
+      GENERATED_L10N: src/main/resources/assets/dungeontrain/localization_credits src/main/resources/assets/dungeontrain/translation_contributors.json src/main/resources/assets/dungeontrain/localization_provenance
     # Defense in depth: don't fire on our own commit. GITHUB_TOKEN-authored
     # pushes already don't trigger workflow runs (built-in GH Actions
     # safety), but this guard catches the case where someone reconfigures
@@ -32,7 +35,9 @@ jobs:
     # cascade commits also include `[skip ci]` so under normal Actions
     # behaviour they don't trigger here, but this guard is a fallback if
     # `[skip ci]` honoring is ever disabled at the repo level.
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore(version): bump to') && !startsWith(github.event.head_commit.message, 'chore(auto):') }}"
+    #
+    # The third clause covers the index-only commit the skipped-bump path below makes.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(version): bump to') && !startsWith(github.event.head_commit.message, 'chore(auto):') && !startsWith(github.event.head_commit.message, 'chore(version): refresh version-history index') }}"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,10 +84,23 @@ jobs:
           MINOR=$(echo "$CURRENT" | cut -d. -f2)
           PATCH=$(echo "$CURRENT" | cut -d. -f3)
 
+          # Feature branches leave mod_version alone (CLAUDE.md "Versioning"): a branch that edits
+          # the line conflicts with every bump this job pushes, and a conflicting PR gets no CI run.
+          # So a merge bumps MINOR even when PATCH is already 0. The one skip is a merge whose own
+          # diff set mod_version to X.Y.0, i.e. a deliberate MAJOR/MINOR bump on the branch. A
+          # manual re-fire (workflow_dispatch) keeps the old rule: PATCH 0 means already aligned.
+          DELIBERATE=false
           if [ "$PATCH" = "0" ]; then
-            echo "PATCH is already 0 — version $CURRENT is already MINOR-aligned."
-            echo "Likely a manual MAJOR/MINOR bump or a fresh release. Skipping."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+               || git diff HEAD^ HEAD -- gradle.properties | grep -qE '^\+mod_version='; then
+              DELIBERATE=true
+            fi
+          fi
+          if [ "$DELIBERATE" = "true" ]; then
+            echo "PATCH is 0 and this merge set mod_version=$CURRENT itself (or this is a manual re-fire)."
+            echo "Treating it as a deliberate MAJOR/MINOR bump. Skipping."
             echo "skipped=true" >> "$GITHUB_OUTPUT"
+            echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -101,6 +119,26 @@ jobs:
         continue-on-error: true
         run: python3 scripts/version-history/collect.py
 
+      # The translation counts (localization_credits/*.json, translation_contributors.json) are
+      # generated from the provenance sidecars and committed. Two PRs that each add a key from
+      # the same base both write the SAME count edit (5678 -> 5679); git keeps it once, so main
+      # holds one key more than its counts and localization-checks goes red on every PR (#2541).
+      # Regenerating them here, in the bump's own commit, fixes that without a second push that
+      # could race this one. --refresh writes no sidecar, so no author or reviewer can move. Same
+      # contract as the index: a failed refresh never blocks the bump.
+      - name: Refresh the generated translation counts
+        id: counts
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 scripts/localization/stamp-provenance.py --refresh
+          CHANGED=$(git status --porcelain -- $GENERATED_L10N)
+          if [ -n "$CHANGED" ]; then
+            echo "::notice::Merge left the translation counts stale; regenerated:"
+            echo "$CHANGED"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Commit and push
         if: steps.bump.outputs.skipped != 'true'
         env:
@@ -109,9 +147,69 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add gradle.properties docs/version-history/index.json
+          if [ "${{ steps.counts.outputs.changed }}" = "true" ]; then
+            git add $GENERATED_L10N
+          fi
           # [skip ci] avoids triggering build.yml on a 1-line gradle.properties
           # change. The bump can't break the build; running CI on it is waste.
           # version-bump.yml itself is gated by the message-prefix check above
           # so [skip ci] doesn't cause us to miss a real merge.
           git commit -m "chore(version): bump to $NEW_VERSION (MINOR — Gate 3 merge) [skip ci]"
+          git push
+
+      # A PR that arrives already bumped to X.Y.0 (Gate 3 bumps on the feature branch) skips the
+      # bump above, but its merge is still a shipped update the death screen should count. The
+      # collector picks the X.Y.0 up from the merge commit's own gradle.properties diff, so the
+      # index only needs regenerating and committing. `generatedAt` changes on every run, so it is
+      # left out of the "did anything change?" check — otherwise every skipped merge would commit.
+      # Same contract as the bump path: a failed refresh never blocks anything.
+      - name: Refresh the version-history index (bump skipped)
+        id: refresh_skipped
+        if: steps.bump.outputs.skipped == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          INDEX=docs/version-history/index.json
+          python3 scripts/version-history/collect.py
+          CHANGED=$(python3 - "$INDEX" <<'EOF'
+          import json, subprocess, sys
+          path = sys.argv[1]
+          def strip(doc):
+              return {k: v for k, v in doc.items() if k != "generatedAt"}
+          try:
+              old = json.loads(subprocess.run(["git", "show", f"HEAD:{path}"], check=True,
+                                              stdout=subprocess.PIPE, text=True).stdout)
+          except (subprocess.CalledProcessError, ValueError):
+              print("true")
+              sys.exit(0)
+          with open(path, encoding="utf-8") as f:
+              new = json.load(f)
+          print("true" if strip(old) != strip(new) else "false")
+          EOF
+          )
+          echo "Version-history index changed: $CHANGED"
+          if [ "$CHANGED" != "true" ]; then
+            git checkout -- "$INDEX"
+          fi
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+
+      # The skipped-bump path commits the counts refresh too, so a merge that brought its own
+      # version still leaves main's counts whole. The message keeps the index-only prefix the
+      # job's `if:` skips on.
+      - name: Commit and push the index (bump skipped)
+        if: steps.bump.outputs.skipped == 'true' && (steps.refresh_skipped.outputs.changed == 'true' || steps.counts.outputs.changed == 'true')
+        continue-on-error: true
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.refresh_skipped.outputs.changed }}" = "true" ]; then
+            git add docs/version-history/index.json
+          fi
+          if [ "${{ steps.counts.outputs.changed }}" = "true" ]; then
+            git add $GENERATED_L10N
+          fi
+          git commit -m "chore(version): refresh version-history index for $VERSION [skip ci]"
           git push

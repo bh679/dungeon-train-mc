@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Tukar bila-bila masa dalam konfigurasi atau dengan /chatconnect on.",
   "discordpresence.consent.enable": "Dayakan",
   "discordpresence.consent.not_now": "Bukan sekarang",
+  "discordpresence.consent.toggle_on": "Hidup",
+  "discordpresence.consent.toggle_off": "Mati",
   "discordpresence.survey.give_feedback": "Beri Maklum Balas",
   "discordpresence.survey.title": "Maklum Balas",
   "discordpresence.survey.comment": "Komen",

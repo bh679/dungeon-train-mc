@@ -162,6 +162,12 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
         return layout.insideCorridor(wx - o.x(), wy - o.y(), wz - o.z());
     }
 
+    /** Whether a position in {@code frame} is far enough off the side walls to be swapped. */
+    private boolean inSwapZone(int frame, double wx, double wy, double wz) {
+        Origin o = originOf(frame);
+        return layout.insideSwapZone(wx - o.x(), wy - o.y(), wz - o.z());
+    }
+
     /**
      * The move the invariant demands, or {@code null} when the position is already correct (or in
      * neither corridor).
@@ -173,7 +179,7 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
      */
     public Move requiredMove(double wx, double wy, double wz) {
         int frame = frameAt(wx, wy, wz);
-        if (frame == FRAME_NONE) return null;
+        if (frame == FRAME_NONE || !inSwapZone(frame, wx, wy, wz)) return null;
 
         Origin from = originOf(frame);
         double localX = wx - from.x();
@@ -228,7 +234,7 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
      */
     public Move requiredMoveFacing(double wx, double wy, double wz, float yawDegrees) {
         int frame = frameAt(wx, wy, wz);
-        if (frame == FRAME_NONE) return null;
+        if (frame == FRAME_NONE || !inSwapZone(frame, wx, wy, wz)) return null;
 
         Origin from = originOf(frame);
         double localX = wx - from.x();

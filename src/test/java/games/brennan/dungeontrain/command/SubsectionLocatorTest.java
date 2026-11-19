@@ -23,7 +23,7 @@ final class SubsectionLocatorTest {
 
     private static final long START = 10_000L;
     private static final CycleLayout.Fades FADES = new CycleLayout.Fades(232, 0, 300, 120, 500, 600, 600, 10_000, 1500, 1500, 1500, 480);
-    private static final SpheresSegments SPHERES = SpheresSegments.of(1000, 1750, 2500, 3250, 6250, 0.1, 5, 20, 1, 1, 1);
+    private static final SpheresSegments SPHERES = SpheresSegments.of(1000, 1750, 2500, 3250, 3250, 6250, 0.1, 5, 20, 1, 1, 1, 1);
 
     private static LegacySpan[] eraDefaults() {
         List<LegacySpan> out = new ArrayList<>();

@@ -58,6 +58,12 @@ class PortalExitSitesTest {
                 assertEquals(expected, !owed.isEmpty(), tile.toString());
                 if (!expected) continue;
 
+                if (z == 0) {
+                    // On the corridor row only the corridor that points the pair's own way stands.
+                    assertEquals(List.of(new Site(tile,
+                        x > 0 ? PortalCarriageRole.EXIT : PortalCarriageRole.ENTRY)), owed, tile.toString());
+                    continue;
+                }
                 // A "set" is one of each, so a player who finds one has both a way back and a way on.
                 assertEquals(2, owed.size(), tile.toString());
                 assertTrue(owed.contains(new Site(tile, PortalCarriageRole.ENTRY)));
@@ -386,6 +392,85 @@ class PortalExitSitesTest {
         for (int i = 0; i < 30; i++) {
             assertEquals(first,
                 PortalExitSites.relocatedExitTile(exits, seed, PortalRoomTiling.MAX_RADIUS));
+        }
+    }
+
+    // ---- the corridor row ----
+
+    @Test
+    @DisplayName("On the corridor row a site points the way the pair's own corridors do")
+    void corridorRowPointsTheRightWay() {
+        for (int x = -12; x <= 12; x++) {
+            Tile tile = new Tile(x, 0);
+            assertEquals(x >= 1, PortalExitSites.pointsTheRightWay(tile, PortalCarriageRole.EXIT), tile.toString());
+            assertEquals(x <= -1, PortalExitSites.pointsTheRightWay(tile, PortalCarriageRole.ENTRY), tile.toString());
+        }
+        for (int z = -5; z <= 5; z++) {
+            if (z == 0) continue;
+            for (int x = -5; x <= 5; x++) {
+                Tile tile = new Tile(x, z);
+                assertTrue(PortalExitSites.pointsTheRightWay(tile, PortalCarriageRole.EXIT), tile.toString());
+                assertTrue(PortalExitSites.pointsTheRightWay(tile, PortalCarriageRole.ENTRY), tile.toString());
+            }
+        }
+        assertFalse(PortalExitSites.pointsTheRightWay(null, PortalCarriageRole.EXIT));
+        assertFalse(PortalExitSites.pointsTheRightWay(Tile.BASE, null));
+    }
+
+    @Test
+    @DisplayName("No exit is ever owed on the corridor row behind the room, and no entry ahead of it")
+    void corridorRowOwesNothingTheWrongWay() {
+        for (int pairKey = 0; pairKey < 300; pairKey++) {
+            long seed = PortalExitSites.seedFor(1234567L, pairKey, "backrooms");
+            for (int every = 2; every <= 8; every++) {
+                for (PortalRoomExits exits : List.of(random(every), on(every))) {
+                    for (int x = -12; x <= 12; x++) {
+                        Tile tile = new Tile(x, 0);
+                        List<Site> owed = PortalExitSites.owedAt(exits, tile, seed);
+                        if (x < 0) assertFalse(owed.contains(new Site(tile, PortalCarriageRole.EXIT)), tile.toString());
+                        if (x > 0) assertFalse(owed.contains(new Site(tile, PortalCarriageRole.ENTRY)), tile.toString());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Off the corridor row the rule changes nothing: every site is still owed as rolled")
+    void offTheRowIsUntouched() {
+        long seed = PortalExitSites.seedFor(1234567L, 47, "backrooms");
+        int owed = 0;
+        for (int x = -12; x <= 12; x++) {
+            for (int z = -12; z <= 12; z++) {
+                if (z == 0) continue;
+                Tile tile = new Tile(x, z);
+                for (Site site : PortalExitSites.owedAt(random(2), tile, seed)) {
+                    assertTrue(PortalExitSites.pointsTheRightWay(site.tile(), site.role()));
+                    owed++;
+                }
+            }
+        }
+        assertTrue(owed > 200, "only " + owed + " sites owed off the row at 1-in-2");
+    }
+
+    @Test
+    @DisplayName("A moved exit never stands on the corridor row behind the room — the sppongy_ loop")
+    void relocatedExitNeverBehindTheRoomOnTheRow() {
+        // Pair 1047's 'backrooms' moved its exit to (-2, 0), which put the exit twin corridor on the
+        // entry twin corridor and swapped the player between the two carriages once a second.
+        for (int every = 2; every <= 8; every++) {
+            PortalRoomExits exits = new PortalRoomExits(PortalRoomExits.Kind.RANDOM, every,
+                PortalRoomExits.MOVE_ALWAYS);
+            int moved = 0;
+            for (int pairKey = 0; pairKey < 400; pairKey++) {
+                long seed = PortalExitSites.seedFor(1234567L, pairKey, "backrooms");
+                Tile tile = PortalExitSites.relocatedExitTile(exits, seed, PortalRoomTiling.MAX_RADIUS);
+                if (Tile.BASE.equals(tile)) continue;
+                moved++;
+                assertFalse(tile.z() == 0 && tile.x() < 0,
+                    "pair " + pairKey + " every=" + every + " moved its exit to " + tile);
+            }
+            assertTrue(moved > 300, "only " + moved + " pairs moved their exit at every=" + every);
         }
     }
 

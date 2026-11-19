@@ -14,6 +14,15 @@ class HeldGroupWakeVetoTest {
     private static final Window WALKED_BACK = new Window(-8, 36, 3, 1000L);
 
     @Test
+    @DisplayName("a player near a train with groups has a window; nothing else does")
+    void windowAppliesOnlyWithAPlayerNearAGroup() {
+        assertTrue(HeldGroupWakeVeto.windowApplies(true, 0, 30, false));
+        assertFalse(HeldGroupWakeVeto.windowApplies(false, 0, 30, false)); // a thrown-off rider
+        assertFalse(HeldGroupWakeVeto.windowApplies(true, 5, 4, false)); // no carriage range
+        assertFalse(HeldGroupWakeVeto.windowApplies(true, 0, 30, true)); // no groups
+    }
+
+    @Test
     @DisplayName("a group wholly ahead of the window stays held (the front-edge loop)")
     void aheadOfWindowStaysHeld() {
         assertTrue(HeldGroupWakeVeto.leaveHeld(WALKED_BACK, 1005L, 39));

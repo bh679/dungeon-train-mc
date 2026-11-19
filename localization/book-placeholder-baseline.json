@@ -652,46 +652,6 @@
       "{deaths}"
     ]
   },
-  "zh_cn/death_lore/default#11.epitaph": {
-    "english": [
-      "{deaths_nth}"
-    ],
-    "translated": [
-      "{deaths}"
-    ]
-  },
-  "zh_cn/death_lore/default#13.epitaph": {
-    "english": [
-      "{deaths_nth}"
-    ],
-    "translated": [
-      "{deaths}"
-    ]
-  },
-  "zh_cn/death_lore/default#36.epitaph": {
-    "english": [
-      "{deaths_nth}"
-    ],
-    "translated": [
-      "{deaths}"
-    ]
-  },
-  "zh_cn/death_lore/default#37.epitaph": {
-    "english": [
-      "{deaths_nth}"
-    ],
-    "translated": [
-      "{deaths}"
-    ]
-  },
-  "zh_cn/death_lore/default#38.epitaph": {
-    "english": [
-      "{deaths_nth}"
-    ],
-    "translated": [
-      "{deaths}"
-    ]
-  },
   "zh_tw/death_lore/default#11.epitaph": {
     "english": [
       "{deaths_nth}"

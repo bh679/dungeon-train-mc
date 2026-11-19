@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
 import games.brennan.dungeontrain.block.VariantPlaceholderBlock;
+import games.brennan.dungeontrain.block.engine.EngineBlock;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import net.minecraft.world.item.BlockItem;
@@ -151,6 +152,12 @@ public final class ModBlocks {
                 .noOcclusion()
                 .noTerrainParticles()
                 .isValidSpawn((state, level, pos, type) -> false)
+                // Never suffocating or view-blocking: the default derives both from the cached
+                // context-free collision shape, which is a full cube (CollisionContext.empty()
+                // answers "above" to the scaffolding test), so a head inside a marker got the
+                // dark in-wall overlay drawn over the view.
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos) -> false)
                 .pushReaction(PushReaction.BLOCK)
                 .sound(SoundType.GLASS)
         )
@@ -178,6 +185,26 @@ public final class ModBlocks {
                 .sound(SoundType.WOOD)
         )
     );
+
+    /**
+     * The Drifting Engine Block: what makes a carriage drift — see {@link EngineBlock}. Creative and
+     * editor only, so no recipe. Mines exactly like obsidian (same hardness and blast resistance, and
+     * the {@code mineable/pickaxe} + {@code needs_diamond_tool} tags, so a diamond pickaxe is fast and
+     * anything else slow), but always drops itself whatever the tool — see
+     * {@link EngineBlock#canHarvestBlock}. Its coal is burnt and never drops.
+     */
+    public static final DeferredBlock<EngineBlock> ENGINE_BLOCK = BLOCKS.register(
+        "drifting_engine_block",
+        () -> new EngineBlock(
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)
+                .mapColor(MapColor.COLOR_BLACK)
+                .lightLevel(EngineBlock::lightLevel)
+                .sound(SoundType.METAL)
+        )
+    );
+
+    public static final DeferredItem<BlockItem> ENGINE_BLOCK_ITEM = BLOCK_ITEMS.register(
+        "drifting_engine_block", () -> new BlockItem(ENGINE_BLOCK.get(), new Item.Properties()));
 
     /**
      * The stage placeholder blocks ({@code stage_block_1..10}, stairs/slab slots, button, plate and
@@ -212,6 +239,7 @@ public final class ModBlocks {
             event.accept(SKYBOX_NIGHT_ITEM.get());
             event.accept(SKYBOX_SUNRISE_ITEM.get());
             event.accept(VARIANT_PLACEHOLDER_ITEM.get());
+            event.accept(ENGINE_BLOCK_ITEM.get());
         }
     }
 }

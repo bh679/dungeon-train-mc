@@ -21,6 +21,7 @@ public final class RewardIcons {
             case TWO_STREAMS -> new ItemStack(ModItems.LIVE_HEADPIECE.get());   // two Live Eyes, stacked
             case HD_STREAMS -> new ItemStack(Items.SPYGLASS);                   // a sharper view
             case REPLAYS_KEPT -> new ItemStack(Items.RECOVERY_COMPASS);         // back to where you were
+            case LIVE_TRANSLATION -> new ItemStack(Items.BOOK);                 // every language in the room
         };
     }
 

@@ -1,30 +1,17 @@
 package games.brennan.dungeontrain.editor;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import org.slf4j.Logger;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -57,28 +44,51 @@ import java.util.Set;
  * registry side may call in here while holding <i>its</i> monitor. That is why the cache is cleared
  * from this class's own {@link ServerStoppedEvent} handler rather than from
  * {@code TrackVariantRegistry.clear()}.</p>
+ *
+ * <p>Policies: {@link SourcePolicy#DEV_MODE} (was "whenever writable", which mirrored per-install
+ * sidecars into {@code src/}) and {@link DeleteCachePolicy#REMOVE}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrackVariantGroupStore {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     /** Filename suffix for the group sidecar. Matches the contents sidecar's. */
     public static final String EXT = ".group.json";
 
-    /** Per-kind, per-name cache. {@code Optional.empty()} = "not a parent" — a cached negative. */
-    private static final Map<TrackKind, Map<String, Optional<TrackVariantGroup>>> CACHE =
-        new EnumMap<>(TrackKind.class);
+    /** A group's address: its kind and lower-cased parent name. */
+    private record Key(TrackKind kind, String name) {
+        static Key of(TrackKind kind, String parent) {
+            return new Key(kind, parent.toLowerCase(Locale.ROOT));
+        }
 
-    /** Memoised per-kind child id set. null = needs recompute. */
-    private static final Map<TrackKind, Set<String>> CHILD_IDS = new EnumMap<>(TrackKind.class);
+        String id() {
+            return kind.id() + ":" + name;
+        }
+    }
 
-    /** Memoised per-kind reverse index childId → parentId. null = needs recompute. */
-    private static final Map<TrackKind, Map<String, String>> CHILD_TO_PARENT = new EnumMap<>(TrackKind.class);
+    private static final ThreeTierStore<Key, TrackVariantGroup> STORE =
+        StoreDescriptor.<Key, TrackVariantGroup>named("TrackVariantGroupStore")
+            .id(Key::id)
+            .subdir(k -> k.kind().subdir())
+            .fileName(k -> k.name() + EXT)
+            .bundledResource(k -> k.kind().bundledResourcePrefix() + k.name() + EXT)
+            .sourceRelDir(k -> k.kind().sourceRelativePath())
+            .codec(StoreCodecs.json(TrackVariantGroup::fromJson, TrackVariantGroup::toJson))
+            .logNoun("track variant group")
+            .sourcePolicy(SourcePolicy.DEV_MODE)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .build();
 
     static {
-        for (TrackKind k : TrackKind.values()) CACHE.put(k, new HashMap<>());
+        // Lock order is this class -> STORE (every read takes the class monitor first), so the
+        // registry must clear through the synchronized facade, not the store's own entry.
+        StoreRegistry.register("TrackVariantGroupStore", TrackVariantGroupStore::clearCache);
     }
+
+    /** Memoised per-kind child id set. Absent = needs recompute. */
+    private static final Map<TrackKind, Set<String>> CHILD_IDS = new EnumMap<>(TrackKind.class);
+
+    /** Memoised per-kind reverse index childId → parentId. Absent = needs recompute. */
+    private static final Map<TrackKind, Map<String, String>> CHILD_TO_PARENT = new EnumMap<>(TrackKind.class);
 
     private TrackVariantGroupStore() {}
 
@@ -94,25 +104,19 @@ public final class TrackVariantGroupStore {
     }
 
     public static Path fileFor(TrackKind kind, String parent) {
-        return directory(kind).resolve(parent.toLowerCase(Locale.ROOT) + EXT);
+        return STORE.fileFor(Key.of(kind, parent));
     }
 
     public static String bundledResourceFor(TrackKind kind, String parent) {
-        return kind.bundledResourcePrefix() + parent.toLowerCase(Locale.ROOT) + EXT;
+        return STORE.bundledResourceFor(Key.of(kind, parent));
     }
 
     public static Path sourceFileFor(TrackKind kind, String parent) {
-        Path resources = resourcesRootOrNull();
-        if (resources == null) {
-            throw new IllegalStateException("Cannot resolve source directory — FMLPaths.GAMEDIR has no parent.");
-        }
-        return resources.resolve(kind.sourceRelativePath().substring("src/main/resources/".length()))
-            .resolve(parent.toLowerCase(Locale.ROOT) + EXT);
+        return STORE.sourceFileFor(Key.of(kind, parent));
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return STORE.sourceTreeAvailable();
     }
 
     // ---------- reads ----------
@@ -124,21 +128,10 @@ public final class TrackVariantGroupStore {
      */
     public static synchronized Optional<TrackVariantGroup> get(TrackKind kind, String parent) {
         if (kind == null || parent == null) return Optional.empty();
-        String key = parent.toLowerCase(Locale.ROOT);
-        Map<String, Optional<TrackVariantGroup>> byName = CACHE.get(kind);
-        Optional<TrackVariantGroup> cached = byName.get(key);
-        if (cached != null) return cached;
-        Optional<TrackVariantGroup> loaded;
-        try {
-            loaded = loadFromConfig(kind, key);
-            if (loaded.isEmpty()) loaded = loadFromResource(kind, key);
-        } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] Track variant group load for {}:{} failed defensively: {}",
-                kind.id(), key, t.toString());
-            loaded = Optional.empty();
-        }
-        byName.put(key, loaded);
-        if (loaded.isPresent()) invalidateIndexes(kind);
+        Key key = Key.of(kind, parent);
+        boolean wasCached = STORE.isCached(key);
+        Optional<TrackVariantGroup> loaded = STORE.get(key);
+        if (loaded.isPresent() && !wasCached) invalidateIndexes(kind);
         return loaded;
     }
 
@@ -207,67 +200,44 @@ public final class TrackVariantGroupStore {
         CHILD_TO_PARENT.remove(kind);
     }
 
+
     // ---------- writes ----------
 
-    /** Persist {@code group}, mirroring to the source tree when running from a checkout. */
+    /** Persist {@code group}, mirroring to the source tree in dev mode. */
     public static synchronized void save(TrackKind kind, String parent, TrackVariantGroup group) throws IOException {
         if (kind == null) throw new IllegalArgumentException("kind must not be null");
         if (parent == null) throw new IllegalArgumentException("parent must not be null");
         if (group == null) throw new IllegalArgumentException("group must not be null");
-        String key = parent.toLowerCase(Locale.ROOT);
-        Path file = fileFor(kind, key);
-        Files.createDirectories(file.getParent());
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(group.toJson());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
-        }
-        CACHE.get(kind).put(key, Optional.of(group));
+        STORE.save(Key.of(kind, parent), group);
         invalidateIndexes(kind);
-        LOGGER.info("[DungeonTrain] Saved track variant group {}:{} to {}", kind.id(), key, file);
-        trySaveToSource(kind, key, group);
     }
 
-    public static synchronized void saveToSource(TrackKind kind, String parent, TrackVariantGroup group) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        String key = parent.toLowerCase(Locale.ROOT);
-        Path file = sourceFileFor(kind, key);
-        Files.createDirectories(file.getParent());
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(group.toJson());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
-        }
-        LOGGER.info("[DungeonTrain] Wrote bundled track variant group {}:{} to {} (devmode promote).",
-            kind.id(), key, file);
+    public static void saveToSource(TrackKind kind, String parent, TrackVariantGroup group) throws IOException {
+        STORE.saveToSource(Key.of(kind, parent), group);
     }
 
     /**
-     * Delete the config-dir sidecar (and its source-tree mirror in dev). Returns true iff the
+     * Delete the config-dir sidecar (and its source-tree mirror in dev mode). Returns true iff the
      * config-dir file existed. A bundled copy, if any, becomes visible again on the next read.
      */
     public static synchronized boolean delete(TrackKind kind, String parent) throws IOException {
         if (kind == null || parent == null) return false;
-        String key = parent.toLowerCase(Locale.ROOT);
-        boolean existed = Files.deleteIfExists(fileFor(kind, key));
-        CACHE.get(kind).remove(key);
+        boolean existed = STORE.delete(Key.of(kind, parent));
         invalidateIndexes(kind);
-        tryDeleteFromSource(kind, key);
-        if (existed) LOGGER.info("[DungeonTrain] Deleted track variant group {}:{}", kind.id(), key);
         return existed;
     }
 
     // ---------- lifecycle / testing ----------
 
     public static synchronized void clearCache() {
-        for (TrackKind k : TrackKind.values()) CACHE.get(k).clear();
+        STORE.clearCache();
         CHILD_IDS.clear();
         CHILD_TO_PARENT.clear();
     }
 
     public static synchronized void invalidate(TrackKind kind, String parent) {
         if (kind == null || parent == null) return;
-        CACHE.get(kind).remove(parent.toLowerCase(Locale.ROOT));
+        STORE.invalidate(Key.of(kind, parent));
         invalidateIndexes(kind);
     }
 
@@ -277,84 +247,12 @@ public final class TrackVariantGroupStore {
      */
     public static synchronized void injectForTesting(TrackKind kind, String parent, TrackVariantGroup group) {
         if (kind == null || parent == null || group == null) return;
-        CACHE.get(kind).put(parent.toLowerCase(Locale.ROOT), Optional.of(group));
+        STORE.injectForTesting(Key.of(kind, parent), group);
         invalidateIndexes(kind);
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         clearCache();
-    }
-
-    // ---------- loading ----------
-
-    private static Optional<TrackVariantGroup> loadFromConfig(TrackKind kind, String key) {
-        Path file = UserContentPaths.findFile(kind.subdir(), key + EXT);
-        if (file == null) return Optional.empty();
-        try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            JsonElement root = JsonParser.parseReader(r);
-            if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Track variant group {} is not a JSON object — ignoring", file);
-                return Optional.empty();
-            }
-            TrackVariantGroup g = TrackVariantGroup.fromJson(root.getAsJsonObject());
-            LOGGER.info("[DungeonTrain] Loaded track variant group {}:{} from {} ({} members)",
-                kind.id(), key, file, g.members().size());
-            return Optional.of(g);
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read track variant group {}:{} at {}: {}",
-                kind.id(), key, file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<TrackVariantGroup> loadFromResource(TrackKind kind, String key) {
-        String resource = bundledResourceFor(kind, key);
-        try (InputStream in = TrackVariantGroupStore.class.getResourceAsStream(resource)) {
-            if (in == null) return Optional.empty();
-            JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Bundled track variant group {} is not a JSON object — ignoring", resource);
-                return Optional.empty();
-            }
-            TrackVariantGroup g = TrackVariantGroup.fromJson(root.getAsJsonObject());
-            LOGGER.info("[DungeonTrain] Loaded track variant group {}:{} from bundled {} ({} members)",
-                kind.id(), key, resource, g.members().size());
-            return Optional.of(g);
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled track variant group {}: {}",
-                resource, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static void trySaveToSource(TrackKind kind, String key, TrackVariantGroup group) {
-        if (!sourceTreeAvailable()) return;
-        try {
-            saveToSource(kind, key, group);
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Failed to write bundled track variant group {}:{} to source tree: {} (config write succeeded).",
-                kind.id(), key, e.toString());
-        }
-    }
-
-    private static void tryDeleteFromSource(TrackKind kind, String key) {
-        if (!sourceTreeAvailable()) return;
-        try {
-            if (SourceTreeFiles.deleteWithClasspathTwin(sourceFileFor(kind, key))) {
-                LOGGER.info("[DungeonTrain] Deleted bundled track variant group {}:{} (devmode promote).",
-                    kind.id(), key);
-            }
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Failed to delete bundled track variant group {}:{} from source tree: {} (config delete succeeded).",
-                kind.id(), key, e.toString());
-        }
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        Path projectRoot = gameDir == null ? null : gameDir.getParent();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
     }
 }

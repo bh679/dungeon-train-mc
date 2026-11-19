@@ -61,11 +61,11 @@ public final class LiveTextCensorClient {
     public static void onClientChat(ClientChatEvent event) {
         try {
             if (!chatActive()) return;
-            TextCensor.Result r = TextCensor.censor(event.getMessage(), LiveWordList.effective());
+            TextCensor.Result r = TextCensor.censor(event.getMessage(), LiveWordList.effective(), LiveWordList.mild());
             TextCensor.Result p = PatternCensor.censor(r.text());
             if (!r.changed() && !p.changed()) return;
             event.setMessage(p.text());
-            if (r.changed()) report(Source.CHAT, event.getOriginalMessage(), r.hits());
+            if (!r.hits().isEmpty()) report(Source.CHAT, event.getOriginalMessage(), r.hits());
             if (p.changed()) warnLinkHidden();
         } catch (Throwable t) {
             // Fail open: never eat the player's line over a filter fault.
@@ -100,16 +100,32 @@ public final class LiveTextCensorClient {
         }
     }
 
+    /** The death screens' chat box ({@link LiveDeathChat}): its keys never reach a screen event's Post. */
+    static void checkTyped(EditBox input) {
+        if (rewriting) return;
+        try {
+            rewriting = true;
+            if (chatActive()) checkInput(input);
+        } catch (Throwable t) {
+            // Fail open.
+        } finally {
+            rewriting = false;
+        }
+    }
+
     private static void checkChatBox(ChatScreen chat) {
-        EditBox input = ((ChatScreenAccessor) chat).dungeontrain$getInput();
+        checkInput(((ChatScreenAccessor) chat).dungeontrain$getInput());
+    }
+
+    private static void checkInput(EditBox input) {
         if (input == null) return;
         String typed = input.getValue();
         if (typed.isEmpty() || typed.startsWith("/")) return;
-        TextCensor.Result r = TextCensor.censorTail(typed, LiveWordList.effective());
+        TextCensor.Result r = TextCensor.censorTail(typed, LiveWordList.effective(), LiveWordList.mild());
         TextCensor.Result p = PatternCensor.censorTail(r.text());
         if (!r.changed() && !p.changed()) return;
         input.setValue(p.text());
-        if (r.changed()) report(Source.CHAT_FIELD, typed, r.hits());
+        if (!r.hits().isEmpty()) report(Source.CHAT_FIELD, typed, r.hits());
         if (p.changed()) warnLinkHidden();
     }
 
@@ -117,14 +133,15 @@ public final class LiveTextCensorClient {
         BookEditScreenAccessor acc = (BookEditScreenAccessor) book;
         BookEditScreenInvoker inv = (BookEditScreenInvoker) book;
         var words = LiveWordList.effective();
+        var mild = LiveWordList.mild();
         if (acc.dungeontrain$isSigning()) {
             String title = acc.dungeontrain$getTitle();
-            TextCensor.Result r = TextCensor.censorTail(title == null ? "" : title, words);
+            TextCensor.Result r = TextCensor.censorTail(title == null ? "" : title, words, mild);
             TextCensor.Result p = PatternCensor.censorTail(r.text());
             if (r.changed() || p.changed()) {
                 acc.dungeontrain$setTitle(p.text());
                 acc.dungeontrain$getTitleEdit().setCursorToEnd();
-                if (r.changed()) report(Source.BOOK_FIELD, "[title] " + title, r.hits());
+                if (!r.hits().isEmpty()) report(Source.BOOK_FIELD, "[title] " + title, r.hits());
                 if (p.changed()) warnLinkHidden();
             }
         } else {
@@ -132,13 +149,13 @@ public final class LiveTextCensorClient {
             int page = acc.dungeontrain$getCurrentPage();
             if (page < 0 || page >= pages.size()) return;
             String typed = pages.get(page);
-            TextCensor.Result r = TextCensor.censorTail(typed, words);
+            TextCensor.Result r = TextCensor.censorTail(typed, words, mild);
             TextCensor.Result p = PatternCensor.censorTail(r.text());
             if (r.changed() || p.changed()) {
                 inv.dungeontrain$setCurrentPageText(p.text());
                 acc.dungeontrain$getPageEdit().setCursorToEnd();
                 inv.dungeontrain$clearDisplayCache();
-                if (r.changed()) report(Source.BOOK_FIELD, typed, r.hits());
+                if (!r.hits().isEmpty()) report(Source.BOOK_FIELD, typed, r.hits());
                 if (p.changed()) warnLinkHidden();
             }
         }

@@ -41,7 +41,7 @@ import java.util.concurrent.Executors;
  * <p>The zip lands as {@code <name>.part} and is moved into place only once it has verified, so an
  * interrupted download can never leave Iris a half-written pack to choke on.</p>
  *
- * <p>Follows the {@code GitHubLatestReleaseFetcher} idiom — one shared single-thread daemon
+ * <p>Follows the {@code LatestReleaseFetcher} idiom — one shared single-thread daemon
  * executor, so concurrent clicks queue rather than saturating the link, and nothing here blocks JVM
  * shutdown. Progress is published into a concurrent map the screen polls each frame; no game state
  * is touched off the render thread.</p>

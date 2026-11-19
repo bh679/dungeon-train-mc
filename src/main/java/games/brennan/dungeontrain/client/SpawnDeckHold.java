@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
+import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -11,6 +15,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
+
+import java.util.List;
 
 /**
  * Client-side "deck hold": keeps the local player from sinking below the train
@@ -47,6 +53,12 @@ public final class SpawnDeckHold {
     /** A drop of more than this below the deck top counts as "fell under the train". */
     private static final double DROP_TOLERANCE = 1.0;
 
+    /**
+     * The furthest below the deck top the hold will lift a player from. One tick's fall is at most
+     * about 4 blocks, so anything past this was a move, not a fall.
+     */
+    private static final double MAX_LIFT = 8.0;
+
     private static volatile boolean active = false;
     private static double deckTopY;
     private static int remaining;
@@ -68,8 +80,44 @@ public final class SpawnDeckHold {
         SpawnDeckHold.clampsFired = 0;
         SpawnDeckHold.verifyRemaining = 0;
         active = true;
-        LOGGER.debug("[DungeonTrain] Spawn deck-hold begin: deckTopY={} cap={}t",
-            String.format("%.2f", deckTopY), SpawnDeckHold.remaining);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[DungeonTrain] Spawn deck-hold begin: deckTopY={} cap={}t carriage={}",
+                String.format("%.2f", deckTopY), SpawnDeckHold.remaining, carriageState());
+        }
+    }
+
+    /**
+     * Whether this client has a carriage around the local player yet, for the hold's log lines: tells
+     * a carriage that never arrived from one that arrived and was not drawn.
+     */
+    private static String carriageState() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null || mc.level == null) return "no player";
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(mc.level);
+        if (container == null) return "no container";
+        List<ClientSubLevel> subLevels = container.getAllSubLevels();
+        for (ClientSubLevel subLevel : subLevels) {
+            BoundingBox3dc box = subLevel.boundingBox();
+            if (box == null) continue;
+            if (player.getX() >= box.minX() && player.getX() <= box.maxX()
+                && player.getZ() >= box.minZ() && player.getZ() <= box.maxZ()) {
+                return "present finalized=" + subLevel.isFinalized();
+            }
+        }
+        return "none of " + subLevels.size();
+    }
+
+    /**
+     * Drop the hold outright, with no post-check — the player has left the deck on purpose (a portal
+     * swap into a dimensional carriage's room), so there is nothing to hold them to or verify.
+     */
+    public static void cancel() {
+        if (active) {
+            LOGGER.debug("[DungeonTrain] Spawn deck-hold cancelled after {} corrections", clampsFired);
+        }
+        active = false;
+        verifyRemaining = 0;
     }
 
     /** End the hold and arm the post-release verification sample. */
@@ -93,6 +141,15 @@ public final class SpawnDeckHold {
         }
 
         if (active) {
+            if (player.getY() < deckTopY - MAX_LIFT) {
+                // Too far below to have fallen there: the clamp catches a fall a tick at a time, so
+                // a gap this size means the player was moved — a portal swap, a /tp — and lifting
+                // them would carry them straight up to wherever the deck is overhead.
+                LOGGER.debug("[DungeonTrain] Spawn deck-hold dropped: player {} below deck top, moved away",
+                    String.format("%.2f", deckTopY - player.getY()));
+                cancel();
+                return;
+            }
             if (player.getY() < deckTopY) {
                 // Snap back up onto the deck and kill any downward velocity so the
                 // player rides instead of accelerating through the hollow slab.
@@ -108,8 +165,10 @@ public final class SpawnDeckHold {
                 cleanStreak = 0;
             } else if (++cleanStreak >= RELEASE_CLEAN_TICKS) {
                 // Player stayed on the deck unaided — Sable's carry has taken over.
-                LOGGER.debug("[DungeonTrain] Spawn deck-hold released: carry engaged after {} corrections ({}t cap left)",
-                    clampsFired, remaining);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[DungeonTrain] Spawn deck-hold released: carry engaged after {} corrections ({}t cap left) carriage={}",
+                        clampsFired, remaining, carriageState());
+                }
                 endHold();
                 return;
             }

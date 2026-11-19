@@ -15,10 +15,11 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * {@code /liveappeal} — a player banned from the Live Eye by the text filter appeals one of the lines
- * that earned the ban.
+ * {@code /liveappeal} — a player muted or banned from the Live Eye by the text filter appeals one of the lines
+ * that earned the penalty.
  *
  * <ul>
  *   <li>{@code /liveappeal} — lists the lines (masked, numbered), each with a clickable [Appeal];</li>
@@ -26,7 +27,7 @@ import java.util.List;
  *   <li>{@code /liveappeal <why>} — a free-text appeal when no line is named.</li>
  * </ul>
  *
- * <p>One appeal per ban. It goes to the relay through the durable {@link RelayOutbox}; the relay keeps
+ * <p>One appeal per penalty. It goes to the relay through the durable {@link RelayOutbox}; the relay keeps
  * every logged strike as the evidence, tells Brennan, and he approves or denies it on the explorer's
  * Appeals page. The relay's answer comes back through {@link LiveModeration#onAppealResponse} and is
  * said in chat. Player-facing ({@code requires(s -> true)}), and on {@code CommandAllowlist} so running
@@ -72,10 +73,23 @@ public final class LiveAppealCommand {
             source.sendFailure(Component.translatable(KEY + "player_only"));
             return 0;
         }
-        if (!LiveModeration.isBanned(player.getUUID())) {
-            source.sendFailure(Component.translatable(KEY + "not_banned"));
-            return 0;
+        if (!LiveModeration.isPenalised(player.getUUID())) {
+            // The server's copy of the ban comes from a login fetch that can miss; the relay may still
+            // hold one. Ask it before saying "not banned" (no answer: "try again later"), then answer in chat.
+            LiveModeration.refresh(player, p -> {
+                if (LiveModeration.isPenalised(p.getUUID())) {
+                    appeal(p, arg, line -> p.sendSystemMessage(line.copy().withStyle(ChatFormatting.RED)), p::sendSystemMessage);
+                } else {
+                    p.sendSystemMessage(Component.translatable(KEY + "not_penalised").withStyle(ChatFormatting.RED));
+                }
+            }, p -> p.sendSystemMessage(Component.translatable(KEY + "failed").withStyle(ChatFormatting.RED)));
+            return 1;
         }
+        return appeal(player, arg, source::sendFailure, line -> source.sendSuccess(() -> line, false));
+    }
+
+    /** The appeal itself, for a player known to be muted or banned; {@code fail} and {@code ok} say how it went. */
+    private static int appeal(ServerPlayer player, String arg, Consumer<Component> fail, Consumer<Component> ok) {
         List<LiveModerationLadder.Evidence> evidence = LiveModeration.evidenceFor(player.getUUID());
         Integer n = lineNumber(arg);
         String why = reason(arg);
@@ -83,10 +97,10 @@ public final class LiveAppealCommand {
         // Bare /liveappeal: show the lines to pick from.
         if (n == null && why.isEmpty()) {
             if (evidence.isEmpty()) {
-                source.sendFailure(Component.translatable(KEY + "usage"));
+                fail.accept(Component.translatable(KEY + "usage"));
                 return 0;
             }
-            player.sendSystemMessage(Component.translatable(KEY + "pick").withStyle(ChatFormatting.GRAY)
+            ok.accept(Component.translatable(KEY + "pick").withStyle(ChatFormatting.GRAY)
                 .append(LiveModeration.evidenceLines(evidence)));
             return 1;
         }
@@ -94,7 +108,7 @@ public final class LiveAppealCommand {
         Long evidenceId = null;
         if (n != null) {
             if (n < 1 || n > evidence.size()) {
-                source.sendFailure(Component.translatable(KEY + "no_such_line", evidence.size()));
+                fail.accept(Component.translatable(KEY + "no_such_line", evidence.size()));
                 return 0;
             }
             evidenceId = evidence.get(n - 1).id();
@@ -104,12 +118,12 @@ public final class LiveAppealCommand {
                 LiveModerationClient.appealBody(player.getUUID(), player.getGameProfile().getName(), evidenceId, why));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] /liveappeal could not be queued: {}", t.toString());
-            source.sendFailure(Component.translatable(KEY + "failed"));
+            fail.accept(Component.translatable(KEY + "failed"));
             return 0;
         }
         LOGGER.info("[DungeonTrain] /liveappeal by {} (line {}{})", player.getGameProfile().getName(),
             n == null ? "-" : n, why.isEmpty() ? "" : ", with a reason");
-        source.sendSuccess(() -> Component.translatable(KEY + "sent").withStyle(ChatFormatting.GRAY), false);
+        ok.accept(Component.translatable(KEY + "sent").withStyle(ChatFormatting.GRAY));
         return 1;
     }
 }

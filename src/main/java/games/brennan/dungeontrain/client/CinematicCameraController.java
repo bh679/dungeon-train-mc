@@ -250,7 +250,7 @@ public final class CinematicCameraController {
             return;
         }
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) {
+        if (player == null || ReplayPlaybackGuard.skipsCinematic("camera shot")) {
             forceStop();
             return;
         }

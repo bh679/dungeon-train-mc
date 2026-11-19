@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
+import games.brennan.dungeontrain.worldgen.EndBandEntities;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.MixBand;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.ProtoChunk;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Writes a sampled End-band chunk ({@link EndBandSampler.Result}) into a chunk — the one rule for both
@@ -83,6 +85,28 @@ final class EndBandTerrainWriter {
             }
         }
         return changed;
+    }
+
+    /**
+     * The sample's entities to add to the chunk: only in a column it owns, clear of the track and the train,
+     * and past the fade, where the blocks an entity stands in or hangs on are not thinned away.
+     */
+    static void admitEntities(ServerLevel level, ChunkAccess chunk, EndBandSampler.Result r, Consumer<CompoundTag> add) {
+        if (r.entities().isEmpty()) return;
+        ChunkPos pos = r.pos();
+        SphereCarveGeometry geo = SphereCarveGeometry.of(level);
+        WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);
+        long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
+        for (CompoundTag tag : r.entities()) {
+            int worldX = (int) Math.floor(EndBandEntities.pos(tag, 0));
+            int y = (int) Math.floor(EndBandEntities.pos(tag, 1));
+            int worldZ = (int) Math.floor(EndBandEntities.pos(tag, 2));
+            if (new ChunkPos(new BlockPos(worldX, y, worldZ)).toLong() != pos.toLong()) continue;
+            if (cycle.endIslandRamp(worldX) < EndBandStyle.FULL_FILL_RAMP) continue;
+            if (!sampledOwns(level, cycle, seed, worldX, worldZ)) continue;
+            if (geo.reserved(y, geo.laneZ(worldZ), geo.airZ(worldZ))) continue;
+            add.accept(tag);
+        }
     }
 
     /** One sampled block through the gate. True if it was written. */

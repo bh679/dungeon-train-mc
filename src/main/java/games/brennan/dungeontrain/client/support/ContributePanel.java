@@ -78,9 +78,10 @@ public final class ContributePanel {
 
     private static final int COLOUR_WHITE = 0xFFFFFFFF;
     private static final int COLOUR_YOU = 0xFF8FE08A;
-    private static final int COLOUR_ON = 0xFF8FE08A;
+    static final int COLOUR_ON = 0xFF8FE08A;
     private static final int COLOUR_REWARDS_TITLE = 0xB99BF0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
+    private static final int COLOUR_RAISED = 0xFFA0A0A0;
     private static final int COLOUR_CARD = 0x306D4B9C;
     private static final int COLOUR_CARD_EDGE = 0xFF4A3F66;
     private static final int COLOUR_FEATURED_EDGE = 0xFF8FE08A;
@@ -270,7 +271,7 @@ public final class ContributePanel {
             cardH = h;
             int gx = x + w - sideW - CARD_PAD;
             int gy = y + (h - sideH) / 2;
-            giveOnCard = giveButton(reward, CommunityRewards.active(state, reward, now), state, now,
+            giveOnCard = giveButton(reward, CommunityRewards.giftRunning(state, reward, now), state, now,
                     gx, gy, sideW, GIVE_H, this, true);
             add.accept(giveOnCard);
             // "For everyone", under the button even while it reads Soon: it says what the reward is.
@@ -302,11 +303,20 @@ public final class ContributePanel {
             ty += lh + 1;
         }
         if (CommunityRewards.active(state, reward, now)) {
-            Component status = Component.translatable("gui.dungeontrain.rewards.status.on_by",
-                    shortDate(state.find(reward.id()).activeUntilMs()),
-                    CommunityRewards.keptOnBy(state, reward, now));
+            LiveRewards.Reward live = state.find(reward.id());
+            Component status = live.free()
+                    ? freeThanks(live)
+                    : onStatus(live.activeUntilMs(), now, CommunityRewards.keptOnBy(state, reward, now));
             for (FormattedCharSequence l : font.split(status, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_ON, false));
+                ty += lh + 1;
+            }
+        }
+        // Other rewards being on cost this one more to run, so the relay asked more: say which.
+        Component raised = CommunityRewards.raisedLine(reward);
+        if (raised != null) {
+            for (FormattedCharSequence l : font.split(raised, textW)) {
+                out.add(new Text(l, textX, ty, COLOUR_RAISED, false));
                 ty += lh + 1;
             }
         }
@@ -333,11 +343,11 @@ public final class ContributePanel {
                 label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
             } else {
                 label = Component.translatable("gui.dungeontrain.rewards.give.amount",
-                        CurrencyFormat.amount(reward.costAud(), reward.amountShortKey()));
+                        CommunityRewards.amountShort(reward));
             }
         } else {
             // The rewards page carries the amount only here: "Give $94", or "Give $94 · Dec" when it would queue.
-            Component amount = CurrencyFormat.amount(reward.costAud(), reward.amountShortKey());
+            Component amount = CommunityRewards.amountShort(reward);
             if (on) {
                 String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
                         .getMonth().getDisplayName(TextStyle.SHORT, javaLocale());
@@ -500,6 +510,29 @@ public final class ContributePanel {
             return Component.translatable(reward.lineKey(), d.normal(), d.quick());
         }
         return Component.translatable(reward.lineKey());
+    }
+
+    /** The green line of a reward on through free credits, thanking who keeps it free. */
+    static Component freeThanks(LiveRewards.Reward live) {
+        return Component.translatable("gui.dungeontrain.rewards.status.free_thanks", live.by());
+    }
+
+    /**
+     * The green "ON …" line of an active reward kept on by {@code by}: time left when it ends within a
+     * day ("ON for 11 more hours"), "ON until tomorrow" when it ends the next day, else its date
+     * ({@link RewardTimeLeft}). The card redraws every frame, so a short count ticks down live.
+     */
+    static Component onStatus(long untilMs, long now, String by) {
+        RewardTimeLeft.Left left = RewardTimeLeft.of(untilMs, now, ZoneId.systemDefault());
+        String countKey = RewardTimeLeft.countKey(left.kind());
+        if (countKey != null) {
+            return Component.translatable(countKey + "." + games.brennan.dungeontrain.narrative.PluralRules.category(locale(), left.count()),
+                    left.count(), by);
+        }
+        if (left.kind() == RewardTimeLeft.Kind.TOMORROW) {
+            return Component.translatable("gui.dungeontrain.rewards.status.on_until_tomorrow", by);
+        }
+        return Component.translatable("gui.dungeontrain.rewards.status.on_by", shortDate(untilMs), by);
     }
 
     static String shortDate(long ms) {

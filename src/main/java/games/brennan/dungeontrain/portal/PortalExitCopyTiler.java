@@ -243,8 +243,11 @@ public final class PortalExitCopyTiler {
         return shrunk;
     }
 
-    /** Every block this copy occupies — read off the same mask that protects it while it stands. */
-    private static BoundingBox copyBox(PortalStructure structure, CarriageDims dims, Site site) {
+    /**
+     * Every block this copy occupies — read off the same mask that protects it while it stands.
+     * Package-private for {@link PortalTwinChunkHold}, which holds the chunks under it.
+     */
+    static BoundingBox copyBox(PortalStructure structure, CarriageDims dims, Site site) {
         return copyMask(structure, dims, site).bounds();
     }
 

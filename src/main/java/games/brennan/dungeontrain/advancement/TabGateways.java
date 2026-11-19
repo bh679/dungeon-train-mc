@@ -42,7 +42,7 @@ import java.util.Optional;
  * (counts towards the Everything Burrito — {@link CompletionistAdvancement#isRequiredId}) and
  * {@code startAgainReset} (cleared by "It's Not That Simple" — {@link StartAgainAdvancement#isWiped}),
  * and {@code complete}: each tab's "tab complete" advancement → the tab root it needs in full
- * ({@link TabCompleteAdvancements}).</p>
+ * ({@link TabCompleteAdvancements}), less the ones listed in {@code notForTabComplete}.</p>
  *
  * <p>The pairs live in {@code /dungeontrain/advancement_tabs.json} (also read by the advancement editor,
  * {@code scripts/advancements/editor}), so a new pair is a data change. Copies are mirrors, never
@@ -68,7 +68,8 @@ public final class TabGateways {
     public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
                          Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
                          Map<String, String> unlockedBy, Map<String, String> visibility,
-                         Map<String, String> complete, Map<String, List<String>> needs) {
+                         Map<String, String> complete, Map<String, List<String>> needs,
+                         List<String> notForTabComplete) {
 
         public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of());
 
@@ -84,11 +85,20 @@ public final class TabGateways {
             this(copies, tabNames, order, burrito, startAgainReset, unlockedBy, visibility, complete, Map.of());
         }
 
+        /** A layout with nothing left out of its tab-complete advancements. */
+        public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
+                      Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
+                      Map<String, String> unlockedBy, Map<String, String> visibility, Map<String, String> complete,
+                      Map<String, List<String>> needs) {
+            this(copies, tabNames, order, burrito, startAgainReset, unlockedBy, visibility, complete, needs, List.of());
+        }
+
         public static Layout parse(Reader reader) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"),
                     boolMap(root, "burrito"), boolMap(root, "startAgainReset"), stringMap(root, "unlockedBy"),
-                    stringMap(root, "visibility"), stringMap(root, "complete"), listMap(root, "needs"));
+                    stringMap(root, "visibility"), stringMap(root, "complete"), listMap(root, "needs"),
+                    stringList(root, "notForTabComplete"));
         }
 
         /** {@code needs}: an advancement → the advancements whose rules it combines (All at Once's challenges). */

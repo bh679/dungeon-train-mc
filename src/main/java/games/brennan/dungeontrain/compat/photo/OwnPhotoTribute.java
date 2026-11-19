@@ -121,7 +121,7 @@ public final class OwnPhotoTribute {
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_OWN_PHOTO);
-            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, true, cost);
+            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, true, cost, 0);
         });
         int tributeNumber = player.getData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get()) + 1;
         player.setData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get(), tributeNumber);

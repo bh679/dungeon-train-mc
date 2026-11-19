@@ -325,33 +325,34 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         }
     }
 
-    /** Mask listed words while anyone is live; records one strike when anything changed. Never throws. */
+    /** Mask listed words while anyone is live; records one strike when a strike-list word was masked. Never throws. */
     private void dungeontrain$censorForLive(ServerPlayer serverPlayer, FilteredText title, List<FilteredText> pages) {
         try {
             if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(serverPlayer.getServer()))) return;
             var words = LiveWordList.effective();
+            var mild = LiveWordList.mild();
             java.util.List<String> hits = new java.util.ArrayList<>();
             StringBuilder evidence = new StringBuilder();
-            TextCensor.Result t = TextCensor.censor(title.raw(), words);
+            TextCensor.Result t = TextCensor.censor(title.raw(), words, mild);
             TextCensor.Result tp = PatternCensor.censor(t.text());
             hits.addAll(t.hits());
-            if (t.changed()) evidence.append("[title] ").append(title.raw());
+            if (!t.hits().isEmpty()) evidence.append("[title] ").append(title.raw());
             java.util.List<String> out = new java.util.ArrayList<>(pages.size());
             boolean changed = t.changed();
             boolean linksHidden = tp.changed();
             for (FilteredText page : pages) {
-                TextCensor.Result r = TextCensor.censor(page.raw(), words);
+                TextCensor.Result r = TextCensor.censor(page.raw(), words, mild);
                 TextCensor.Result rp = PatternCensor.censor(r.text());
                 out.add(rp.text());
                 hits.addAll(r.hits());
                 changed |= r.changed();
                 linksHidden |= rp.changed();
-                if (r.changed() && evidence.length() < 400) evidence.append(evidence.length() > 0 ? " | " : "").append(page.raw());
+                if (!r.hits().isEmpty() && evidence.length() < 400) evidence.append(evidence.length() > 0 ? " | " : "").append(page.raw());
             }
             if (!changed && !linksHidden) return;
             this.dungeontrain$censoredTitle = tp.text();
             this.dungeontrain$censoredPages = List.copyOf(out);
-            if (changed) LiveModeration.strike(serverPlayer, "book_sign", hits, evidence.toString());
+            if (!hits.isEmpty()) LiveModeration.strike(serverPlayer, "book_sign", hits, evidence.toString());
             if (linksHidden) LiveModeration.warnLinkHidden(serverPlayer);
         } catch (Throwable e) {
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] live text filter skipped a book: {}", e.toString());

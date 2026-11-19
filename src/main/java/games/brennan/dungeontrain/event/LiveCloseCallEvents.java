@@ -1,0 +1,176 @@
+package games.brennan.dungeontrain.event;
+
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
+import games.brennan.dungeontrain.advancement.CloseCallPace;
+import games.brennan.dungeontrain.advancement.CloseCallRules;
+import games.brennan.dungeontrain.advancement.CloseCallRules.Found;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.LiveCloseCallPacket;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
+import games.brennan.dungeontrain.player.LiveStreamers;
+import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.player.ServerLiveStatus;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import org.slf4j.Logger;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Live Eye close calls: a player estimated a few minutes from a rare single-life advancement
+ * ({@link CloseCallRules}) is reported to the relay, and the streamer on air sees
+ * "X is about N minutes from a rare challenge [Hand them the Live Eye]". Handing it over is the
+ * ordinary Live Eye gift: the player must accept ({@code LiveGiftClient}, {@link LiveGiftServer}).
+ *
+ * <p>Fed by {@code AchievementEvents#notifyRunDistance} on every boarded scan; {@link CloseCallPace}
+ * keeps one reading a minute. Nothing is sent while the player is AFK, is the one streaming, could
+ * not take a Live Eye anyway, or whether anyone is on air can't be told. When nobody at all is on air
+ * ({@link ServerLiveStatus#isNobodyLive}) there is no streamer to ask, so for The Challenge the train
+ * drops the Live Eye itself ({@link LiveEyeTrainHandout}); the other targets wait for a streamer. Each advancement alerts at most twice a life,
+ * at 20 and at 5 minutes ({@link CloseCallRules.Stage}, recorded in
+ * {@link ModDataAttachments#CLOSE_CALLS_SENT_THIS_LIFE}).</p>
+ */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+public final class LiveCloseCallEvents {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    private static final Map<UUID, CloseCallPace> PACE = new ConcurrentHashMap<>();
+
+    private LiveCloseCallEvents() {}
+
+    /** A boarded scan booked distance. Server thread. */
+    public static void onProgress(ServerPlayer player, double runMeters) {
+        long now = System.currentTimeMillis();
+        UUID uuid = player.getUUID();
+        CloseCallPace pace = PACE.getOrDefault(uuid, CloseCallPace.EMPTY);
+        if (!pace.due(now)) return;
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        CloseCallPace.Sample reading = new CloseCallPace.Sample(now, AchievementEvents.effectiveTravelled(run), runMeters);
+        CloseCallPace next = pace.with(reading);
+        PACE.put(uuid, next);
+        Route route = route(player);
+        if (route == Route.TRAIN_FOR_CHALLENGE) {
+            evaluate(player, next, reading, Route.TRAIN);
+            evaluate(player, next, reading, Route.STREAMER, true);
+        } else if (route != null) {
+            evaluate(player, next, reading, route);
+        }
+    }
+
+    /**
+     * Who hands a close-call player the Live Eye: the streamer on air, or the train when nobody is.
+     * {@code TRAIN_FOR_CHALLENGE}: a streamer is on air but a second channel is free, so the train hands
+     * out The Challenge's eye and the streamer is asked for the rest.
+     */
+    enum Route { STREAMER, TRAIN, TRAIN_FOR_CHALLENGE }
+
+    /** Pure form for the tests: null when nobody may be asked to offer one. */
+    static Route route(boolean blocked, boolean someoneElseLive, boolean nobodyLive) {
+        return route(blocked, someoneElseLive, nobodyLive, false);
+    }
+
+    /**
+     * As above, plus {@code secondFree}: the Two Streams reward has its second channel free
+     * ({@link ServerLiveStatus#isSecondChannelFree}). Nobody has to hand over their Live Eye then, so
+     * The Challenge goes to the train as if nobody were live ({@link Route#TRAIN_FOR_CHALLENGE}); the
+     * other targets still ask the streamer.
+     */
+    static Route route(boolean blocked, boolean someoneElseLive, boolean nobodyLive, boolean secondFree) {
+        if (blocked) return null;
+        if (someoneElseLive) return secondFree ? Route.TRAIN_FOR_CHALLENGE : Route.STREAMER;
+        return nobodyLive || secondFree ? Route.TRAIN : null;
+    }
+
+    private static Route route(ServerPlayer player) {
+        MinecraftServer server = player.server;
+        boolean blocked = PlayerActivityTracker.isAfk(player)
+            || LiveStreamers.isStreamer(server, player.getUUID())
+            || LiveGiftServer.refusalFor(player) != null;
+        if (blocked) return null;
+        return route(false, ServerLiveStatus.isSomeoneElseLive(server, player), ServerLiveStatus.isNobodyLive(server),
+            ServerLiveStatus.isSecondChannelFree(server));
+    }
+
+    /**
+     * Whether {@code route} handles a close call on a target the train owes an eye for ({@code challenge}):
+     * the train takes only The Challenge; the streamer takes every target, less The Challenge when the
+     * train has it ({@code trainHasChallenge}). Pure, for the tests.
+     */
+    static boolean takes(Route route, boolean trainHasChallenge, boolean challenge) {
+        if (route == Route.TRAIN) return challenge;
+        return !(trainHasChallenge && challenge);
+    }
+
+    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route) {
+        evaluate(player, pace, reading, route, false);
+    }
+
+    /** {@code trainHasChallenge}: the train hands out The Challenge's eye, so the streamer is not told of it. */
+    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route,
+                                 boolean trainHasChallenge) {
+        List<String> sent = player.getData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get());
+        // The train only helps with The Challenge: the other targets stay unsent for a streamer later this life.
+        Found found = CloseCallRules.find(pace, reading,
+            t -> eligible(player, t) && takes(route, trainHasChallenge, LiveEyeTrainHandout.owesEye(t)), new HashSet<>(sent));
+        if (!found.any()) return;
+        List<String> marked = new ArrayList<>(sent);
+        marked.addAll(found.keys());
+        player.setData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get(), List.copyOf(marked));
+        int minutes = CloseCallRules.minutes(found.etaMs());
+        String name = player.getGameProfile().getName();
+        if (route == Route.TRAIN) {
+            LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live or a second channel is free, the train hands out the Live Eye",
+                found.stage(), name, minutes, found.close().get(0).id());
+            LiveEyeTrainHandout.onCloseCall(player);
+            return;
+        }
+        LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; telling the stream",
+            found.stage(), name, minutes, found.close().get(0).id());
+        MinecraftServer server = player.server;
+        UUID uuid = player.getUUID();
+        LiveFeedClient.closeCall(LiveFeedClient.viewerBase(Channel.LIVE), uuid, name, minutes)
+            .whenComplete((r, t) -> server.execute(() -> {
+                if (t != null || r == null || !r.ok()) {
+                    LOGGER.debug("[DungeonTrain] Close call for {} not delivered (status {})", name, r == null ? 0 : r.status());
+                    return;
+                }
+                ServerPlayer p = server.getPlayerList().getPlayer(uuid);
+                if (p != null && notified(r)) DungeonTrainNet.sendTo(p, new LiveCloseCallPacket(LiveCloseCallPacket.WATCH_SECONDS));
+            }));
+    }
+
+    private static boolean notified(LiveFeedClient.Result r) {
+        return r.body() != null && r.body().has("notified") && r.body().get("notified").getAsBoolean();
+    }
+
+    /** Still on course for {@code t} this life: not yet earned, and The Challenge's rules all held. */
+    private static boolean eligible(ServerPlayer player, CloseCallRules.Target t) {
+        AdvancementHolder holder = player.server.getAdvancements().get(t.id());
+        if (holder == null || player.getAdvancements().getOrStartProgress(holder).isDone()) return false;
+        return t != CloseCallRules.THE_CHALLENGE || !AllAtOnceAdvancement.anyRuleBroken(player);
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!event.isEndConquered()) PACE.remove(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        PACE.remove(event.getEntity().getUUID());
+    }
+}

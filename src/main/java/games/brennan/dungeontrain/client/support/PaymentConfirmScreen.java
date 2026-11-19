@@ -85,9 +85,13 @@ public final class PaymentConfirmScreen extends Screen {
     public static boolean tryOpen(Screen parent, String surface, String target, String url) {
         PaymentConfirmCopy copy = PaymentConfirmCopy.forTarget(target, url);
         if (copy == null || url == null) return false;
+        // A Community Reward names the relay's amount, which other rewards being on may have raised.
+        CommunityRewards.Reward reward = CommunityRewards.Reward.byTarget(target);
         Component title = copy.amountKey() == null
                 ? Component.translatable(copy.titleKey())
-                : Component.translatable(copy.titleKey(), Component.translatable(copy.amountKey()));
+                : Component.translatable(copy.titleKey(), reward != null
+                        ? CommunityRewards.amountFull(reward)
+                        : Component.translatable(copy.amountKey()));
         Minecraft.getInstance().setScreen(new PaymentConfirmScreen(
                 parent, surface, target, url, title, Component.translatable(copy.bodyKey())));
         return true;

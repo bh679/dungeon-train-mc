@@ -44,6 +44,9 @@ public final class VariantHoverHudOverlay {
     /** Mutated on the main client thread from packet handling. */
     private static List<ItemStack> hoverStacks = Collections.emptyList();
 
+    /** False while the author has the variant overlay off — the hover still arms middle-click copy, but draws nothing. */
+    private static boolean showIcons = true;
+
     /** Icon width and spacing in GUI pixels. */
     private static final int ICON_SIZE = 16;
     private static final int ICON_GAP = 2;
@@ -57,7 +60,8 @@ public final class VariantHoverHudOverlay {
      * Called from {@code VariantHoverPacket.handle} on the client main
      * thread. Replaces the hover set atomically.
      */
-    public static void setHover(List<ResourceLocation> blockIds) {
+    public static void setHover(List<ResourceLocation> blockIds, boolean icons) {
+        showIcons = icons;
         if (blockIds.isEmpty()) {
             hoverStacks = Collections.emptyList();
             return;
@@ -83,7 +87,8 @@ public final class VariantHoverHudOverlay {
 
     /**
      * True when the crosshair is on a cell the server has pushed variants for.
-     * The hover push is editor-plot-only, so this doubles as the client-side
+     * The hover push is editor- and builder-plot-only, and is sent whether or not the icon
+     * row is showing, so this doubles as the client-side
      * "this block is a variant cell" test used by {@link VariantCopyPickClient}
      * to decide whether middle-click copies variants or falls through to
      * vanilla pick-block.
@@ -96,7 +101,7 @@ public final class VariantHoverHudOverlay {
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.options.hideGui) return;
+            if (mc.options.hideGui || !showIcons) return;
             List<ItemStack> stacks = hoverStacks;
             if (stacks.isEmpty()) return;
             drawIconRow(graphics, stacks, graphics.guiWidth(), graphics.guiHeight());

@@ -9,8 +9,16 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 /**
- * Puts a run into <b>Free Play</b> when the player <em>uses</em> Effortless Building — behind the
- * same confirmation that gates {@code /gamemode} and {@code /give} (see {@link CheatDetectionEvents}).
+ * Keeps Effortless Building to <b>Creative</b>, and puts a run into <b>Free Play</b> when a Creative
+ * player <em>uses</em> it — behind the same confirmation that gates {@code /gamemode} and
+ * {@code /give} (see {@link CheatDetectionEvents}).
+ *
+ * <p><b>Outside Creative it does nothing.</b> {@link #blockedOutsideCreative} drops every build,
+ * break, undo, redo and modifier packet from a Survival / Adventure / Spectator player before the
+ * Free Play prompt is even considered, so there is nothing to confirm. The client half
+ * ({@code mixin.effortlessbuilding.EffortlessBuildingClientTickMixin} and
+ * {@code EffortlessBuildingClientInterceptMixin}) hides the Alt radial menu, the modifier screen
+ * and the previews to match; this server check is the one that holds against a modified client.</p>
  *
  * <p><b>Use, not presence.</b> Unlike {@link games.brennan.dungeontrain.cheat.CheatModIntegrity},
  * merely having the mod installed changes nothing: Effortless Building is a bundled, opt-in modpack
@@ -40,6 +48,14 @@ public final class EffortlessBuildingGate {
     private static final String ENABLED_KEY = "enabled";
 
     private EffortlessBuildingGate() {}
+
+    /**
+     * True when {@code player} is not in Creative, so Effortless Building must not act for them at
+     * all. A null player is not blocked here; {@link #gate} already lets the vanilla handler decide.
+     */
+    public static boolean blockedOutsideCreative(ServerPlayer player) {
+        return player != null && !player.isCreative();
+    }
 
     /**
      * Gate one Effortless Building action.

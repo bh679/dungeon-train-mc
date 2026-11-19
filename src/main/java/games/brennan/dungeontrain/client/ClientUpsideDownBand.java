@@ -168,6 +168,20 @@ public final class ClientUpsideDownBand {
         return drop.active() ? drop : null;
     }
 
+    /**
+     * The sunk zone's attic over column {@code worldX} of {@code level}, or {@code null} — the client's answer
+     * for {@code DistantHorizonsSunkAttic} when DH builds LODs from a client-side level. Called from DH's
+     * worker threads: reads only the synced fields and the memoised cycle.
+     */
+    public static PortalTwinRegion sunkAtticFor(Object level, int worldX) {
+        if (!(level instanceof ClientLevel client) || !client.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+            return null;
+        }
+        if (!isInSunkZone(worldX)) return null;
+        AmplifiedDrop drop = amplifiedDrop();
+        return drop == null ? null : PortalTwinSpace.amplifiedAttic(drop, client.getMaxBuildHeight());
+    }
+
     /** Client mirror of {@code SunkZone.contains(level, x)}: the gap into Amplified, and Amplified's slot. */
     public static boolean isInSunkZone(int worldX) {
         return startsWithTrain && SunkZone.contains(WorldGenCycle.fromConfig(), worldX);

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The once-per-game outdated chat line: which lang keys, plural form, colours and link it carries. */
 class OutdatedVersionNoticeTest {
 
-    private static final String URL = "https://brennan.games/dungeontrain/update/?v=0.1137.0&from=modrinth";
+    private static final String URL = "https://dungeon.training/update/?v=0.1137.0&from=modrinth";
 
     private static FullSemver v(String s) {
         return FullSemver.parse(s).orElseThrow();

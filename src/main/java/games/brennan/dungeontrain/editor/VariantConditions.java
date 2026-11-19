@@ -104,13 +104,32 @@ public final class VariantConditions {
     public static TemplateLookup stamped(net.minecraft.world.level.LevelReader level,
                                          java.util.function.Function<BlockPos, BlockPos> toWorld,
                                          net.minecraft.core.Vec3i size) {
-        return p -> {
-            if (p.getX() < 0 || p.getY() < 0 || p.getZ() < 0
-                || p.getX() >= size.getX() || p.getY() >= size.getY() || p.getZ() >= size.getZ()) {
-                return Blocks.AIR.defaultBlockState();
-            }
-            return level.getBlockState(toWorld.apply(p));
-        };
+        return stamped(level, toWorld, size, 0);
+    }
+
+    /**
+     * {@link #stamped(net.minecraft.world.level.LevelReader, java.util.function.Function, net.minecraft.core.Vec3i)}
+     * that also reads the world up to {@code margin} blocks outside the box. A contents template uses 1:
+     * the ring round its interior is the carriage's own floor, walls and ceiling, stamped (variants
+     * and all) before the contents, so an edge cell can gate on the carriage it sits in. Anything
+     * further out still reads as air.
+     */
+    public static TemplateLookup stamped(net.minecraft.world.level.LevelReader level,
+                                         java.util.function.Function<BlockPos, BlockPos> toWorld,
+                                         net.minecraft.core.Vec3i size, int margin) {
+        return bounded(p -> level.getBlockState(toWorld.apply(p)), size, margin);
+    }
+
+    /** {@code world} inside {@code size} grown by {@code margin}; air beyond it. */
+    static TemplateLookup bounded(TemplateLookup world, net.minecraft.core.Vec3i size, int margin) {
+        return p -> withinMargin(p, size, margin) ? world.at(p) : Blocks.AIR.defaultBlockState();
+    }
+
+    /** True when {@code p} lies inside {@code size}, grown by {@code margin} on every side. */
+    static boolean withinMargin(BlockPos p, net.minecraft.core.Vec3i size, int margin) {
+        return p.getX() >= -margin && p.getY() >= -margin && p.getZ() >= -margin
+            && p.getX() < size.getX() + margin && p.getY() < size.getY() + margin
+            && p.getZ() < size.getZ() + margin;
     }
 
     /** True when any entry in {@code states} carries a condition. */
@@ -156,10 +175,18 @@ public final class VariantConditions {
 
     /**
      * Whether {@code c} holds for the cell at {@code localPos}: a group target when that group rolled
-     * a listed block, a touching target when <i>any</i> selected side holds one.
+     * a listed block, a touching target when <i>any</i> selected side holds one — or, negated, when
+     * that is not so.
      */
     static boolean passes(VariantCondition c, BlockPos localPos, VariantGroupResolver view,
                           long worldSeed, int index, Map<Object, BlockState> seen) {
+        // Is not: the same match, turned round.
+        return c.negate() != targetMatches(c, localPos, view, worldSeed, index, seen);
+    }
+
+    /** Whether {@code c}'s target holds one of its values, before {@link VariantCondition#negate} applies. */
+    private static boolean targetMatches(VariantCondition c, BlockPos localPos, VariantGroupResolver view,
+                                         long worldSeed, int index, Map<Object, BlockState> seen) {
         if (c.isGroupTarget()) {
             BlockState rolled = seen.computeIfAbsent(c.groupId(), k -> {
                 BlockPos anchor = view.anchorOf(c.groupId());

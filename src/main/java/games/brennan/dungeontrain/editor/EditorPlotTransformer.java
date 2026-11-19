@@ -336,7 +336,7 @@ public final class EditorPlotTransformer {
     private static final class TrackSidecar implements Sidecar {
         private final TrackKind kind;
         private final String name;
-        private final TrackVariantBlocks blocks;
+        private final VariantDoc blocks;
 
         TrackSidecar(TrackKind kind, String name, Vec3i size) {
             this.kind = kind;
@@ -359,10 +359,10 @@ public final class EditorPlotTransformer {
         @Override public VariantSpan spanAt(BlockPos l) { return blocks.spanAt(l); }
         @Override public void setSpan(BlockPos l, VariantSpan s) { blocks.setSpan(l, s); }
         @Override public void save() throws IOException {
-            blocks.save(kind, name);
+            blocks.save();
             if (EditorDevMode.isEnabled()) {
                 try {
-                    blocks.saveToSource(kind, name);
+                    blocks.saveToSource();
                 } catch (IOException e) {
                     LOGGER.warn("[DungeonTrain] EditorPlotTransformer: source write failed for {}/{}: {}",
                         kind.id(), name, e.toString());

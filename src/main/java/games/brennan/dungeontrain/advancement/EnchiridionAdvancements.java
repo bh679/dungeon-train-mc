@@ -35,7 +35,7 @@ public final class EnchiridionAdvancements {
             "dungeon_train/deathnote_self_target",
             "dungeon_train/submitted_love_note",
             "dungeon_train/lovenote_self_target",
-            "dungeon_train/read_all_rules",
+            "dungeon_train/read_all_rules", // switched off (read_all_rules.json.disabled): needed ~155 random-book reads; kept so a rename re-enables it
             "dungeon_train/i_must_know",
             "dungeon_train/faulthursts_favourite",
             "dungeon_train/burned_stat_book",
@@ -64,7 +64,7 @@ public final class EnchiridionAdvancements {
     public static final String PHOTO_WITHER_DYING = "photo_wither_dying";
     /** Someone else's album, found on the train, is in your inventory — "Memory Lane". */
     public static final String FOUND_ALBUM = "found_album";
-    /** Your album was saved holding at least one photo — "Keepsake". */
+    /** Your album was saved with a photo and a note on the same page — "Keepsake". */
     public static final String ALBUM_PHOTO = "album_photo";
     /** Your album was saved with a photo on every page — "No Room Left". */
     public static final String ALBUM_FULL = "album_full";
@@ -81,8 +81,11 @@ public final class EnchiridionAdvancements {
     /** The biome tiers share one album of photos, one per biome, kept under the first tier. */
     public static final String BIOME_ALBUM = PATH_PREFIX + "scenic_route";
 
-    private static final Set<String> BIOME_TIERS = Set.of(
+    /** The biome tiers, lowest first. Coffee Table Book is last: it asks for every biome. */
+    public static final java.util.List<String> BIOME_TIER_ORDER = java.util.List.of(
             PATH_PREFIX + "scenic_route", PATH_PREFIX + "travel_brochure", PATH_PREFIX + "coffee_table_book");
+
+    private static final Set<String> BIOME_TIERS = Set.copyOf(BIOME_TIER_ORDER);
 
     /**
      * How many biomes each photo tier asks for — the album shows that many slots. Kept here because a
@@ -94,7 +97,65 @@ public final class EnchiridionAdvancements {
 
     /** Collections that keep a photo for every entry, not just the one that completed them. */
     private static final Set<String> ENTITY_ALBUMS = Set.of(
-            PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted");
+            PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted",
+            PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew", PATH_PREFIX + "photobomb");
+
+    /**
+     * The mob collections that share ticks by name ({@code SharedPhotoCriteria}): Most Wanted and its three
+     * subsets. The client reports which of their mobs it holds photos of at login.
+     */
+    public static final java.util.List<String> SHARED_PHOTO_LISTS = java.util.List.of(
+            PATH_PREFIX + "most_wanted", PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew",
+            PATH_PREFIX + "photobomb");
+
+    /**
+     * Where a collection borrows a mob's photo when its own album has none: Family Photo, Skeleton Crew and
+     * Photobomb are subsets of Most Wanted, and a tick copied across from it ({@code SharedPhotoCriteria}) brings no photo.
+     * {@code null} for every other advancement.
+     */
+    public static String photoFallbackAlbum(String path) {
+        return (PATH_PREFIX + "family_photo").equals(path) || (PATH_PREFIX + "skeleton_crew").equals(path)
+                || (PATH_PREFIX + "photobomb").equals(path) ? PATH_PREFIX + "most_wanted" : null;
+    }
+
+    /**
+     * The photo-count categories' albums ({@code PhotoCounts}): every counted photo is kept, numbered,
+     * in one album per category, kept under the category's first tier.
+     */
+    public static final java.util.Map<String, String> COUNT_ALBUM_BY_CATEGORY = java.util.Map.of(
+            "animal", PATH_PREFIX + "wildlife_photographer",
+            "hostile", PATH_PREFIX + "danger_close",
+            "passenger", PATH_PREFIX + "those_we_meet");
+
+    /** Each photo-count tier → its category's album. */
+    private static final java.util.Map<String, String> COUNT_TIERS = java.util.Map.of(
+            PATH_PREFIX + "wildlife_photographer", PATH_PREFIX + "wildlife_photographer",
+            PATH_PREFIX + "field_guide", PATH_PREFIX + "wildlife_photographer",
+            PATH_PREFIX + "gational_neographic", PATH_PREFIX + "wildlife_photographer",
+            PATH_PREFIX + "danger_close", PATH_PREFIX + "danger_close",
+            PATH_PREFIX + "creature_feature", PATH_PREFIX + "danger_close",
+            PATH_PREFIX + "rogues_gallery", PATH_PREFIX + "danger_close",
+            PATH_PREFIX + "those_we_meet", PATH_PREFIX + "those_we_meet",
+            PATH_PREFIX + "inhabitants", PATH_PREFIX + "those_we_meet",
+            PATH_PREFIX + "passenger_log", PATH_PREFIX + "those_we_meet");
+
+    /**
+     * How many photos each count tier asks for. The album never shows these (the tiers are hidden, so it
+     * lists only the photos kept); they fix the album's size cap, and a test pins them to the JSON.
+     */
+    public static final java.util.Map<String, Integer> COUNT_TIER_TARGETS = java.util.Map.of(
+            PATH_PREFIX + "wildlife_photographer", 10, PATH_PREFIX + "field_guide", 25,
+            PATH_PREFIX + "gational_neographic", 50,
+            PATH_PREFIX + "danger_close", 10, PATH_PREFIX + "creature_feature", 25,
+            PATH_PREFIX + "rogues_gallery", 50,
+            PATH_PREFIX + "those_we_meet", 10, PATH_PREFIX + "inhabitants", 25,
+            PATH_PREFIX + "passenger_log", 50);
+
+    /** The most photos a count album keeps: the top tier's target. */
+    public static final int COUNT_ALBUM_MAX = 50;
+
+    /** Prefix of a count album's entries: {@code dungeontrain:photo_<n>}. */
+    public static final String COUNT_ENTRY_PREFIX = "photo_";
 
     private EnchiridionAdvancements() {}
 
@@ -122,7 +183,47 @@ public final class EnchiridionAdvancements {
     public static String albumOf(String path) {
         if (path == null) return null;
         if (BIOME_TIERS.contains(path)) return BIOME_ALBUM;
+        String count = COUNT_TIERS.get(path);
+        if (count != null) return count;
         return ENTITY_ALBUMS.contains(path) ? path : null;
+    }
+
+    /** True when {@code album} is a photo-count category's album; its entries are numbered photos. */
+    public static boolean isCountAlbum(String album) {
+        return album != null && COUNT_ALBUM_BY_CATEGORY.containsValue(album);
+    }
+
+    /** The photo-count category {@code album} holds, or {@code null} when it is not a count album. */
+    public static String countCategoryOf(String album) {
+        for (java.util.Map.Entry<String, String> e : COUNT_ALBUM_BY_CATEGORY.entrySet()) {
+            if (e.getValue().equals(album)) return e.getKey();
+        }
+        return null;
+    }
+
+    /** The count tiers kept in {@code album} ({@link #COUNT_ALBUM_BY_CATEGORY}), lowest target first. */
+    public static java.util.List<String> countTiersOf(String album) {
+        java.util.List<String> tiers = new java.util.ArrayList<>();
+        COUNT_TIERS.forEach((tier, tierAlbum) -> {
+            if (tierAlbum.equals(album)) tiers.add(tier);
+        });
+        tiers.sort(java.util.Comparator.comparingInt(COUNT_TIER_TARGETS::get));
+        return java.util.List.copyOf(tiers);
+    }
+
+    /** {@code photo_007}: the entry path for a category's {@code n}th counted photo. */
+    public static String countEntryPath(int n) {
+        return COUNT_ENTRY_PREFIX + String.format(java.util.Locale.ROOT, "%03d", n);
+    }
+
+    /** The number in a count entry path ({@link #countEntryPath}), or -1 for anything else. */
+    public static int countEntryNumber(String path) {
+        if (path == null || !path.startsWith(COUNT_ENTRY_PREFIX)) return -1;
+        try {
+            return Integer.parseInt(path.substring(COUNT_ENTRY_PREFIX.length()));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     /** True when {@code album}'s entries are biome ids; otherwise they are entity type ids. */

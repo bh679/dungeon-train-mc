@@ -1,12 +1,16 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.client.chat.emoji.EmojiText;
+
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -32,9 +36,13 @@ public final class LiveChatRules {
     /** The bitmap font holding the source icons ({@code assets/dungeontrain/font/live_chat_icons.json}). */
     public static final ResourceLocation ICON_FONT = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_chat_icons");
 
-    /** The source icon before a name: one glyph each in {@link #ICON_FONT}. */
+    /**
+     * The source icon before a name: one glyph each in {@link #ICON_FONT}. {@link #OTHER} is a plain chat bubble.
+     * {@link #DUNGEON_TRAIN} (the ring logo, a 16 px glyph drawn at chat height) marks the website's live page.
+     */
     public enum Icon {
-        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004');
+        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004'), KICK('\uE005'), OTHER('\uE006'),
+        YOUTUBE('\uE007'), TIKTOK('\uE008'), FACEBOOK('\uE009'), INSTAGRAM('\uE00A'), DUNGEON_TRAIN('\uE00B');
 
         public final char glyph;
 
@@ -46,11 +54,12 @@ public final class LiveChatRules {
     private LiveChatRules() {}
 
     /**
-     * In the chat: the switch is on, not Kid mode, and this client is either streaming or wearing a TV
-     * while someone is on air. A TV with nobody live is silent — the chat belongs to a stream.
+     * In the chat: the switch is on, not Kid mode, and this client is either streaming or wearing a TV.
+     * A TV is in the room whether or not anyone is on air: TV wearers, Discord and the website keep
+     * talking between streams, and a streamer with chat off only stops reading it.
      */
-    public static boolean granted(boolean setting, boolean kid, boolean streaming, boolean wearingTv, boolean someoneLive) {
-        return setting && !kid && (streaming || (wearingTv && someoneLive));
+    public static boolean granted(boolean setting, boolean kid, boolean streaming, boolean wearingTv) {
+        return setting && !kid && (streaming || wearingTv);
     }
 
     /**
@@ -115,18 +124,58 @@ public final class LiveChatRules {
      * built elsewhere.
      */
     public static MutableComponent line(ChatLine line) {
+        return line(line, line.content(), Style.EMPTY.withColor(ChatFormatting.WHITE));
+    }
+
+    /** {@link #line(ChatLine)} with {@code content} in place of the line's text, in {@code contentStyle} (a translation, the original on hover). */
+    public static MutableComponent line(ChatLine line, String content, Style contentStyle) {
+        return line(line, content, contentStyle, null);
+    }
+
+    /** {@link #line(ChatLine, String, Style)} with {@code flag}, when there is one, just before the text. */
+    public static MutableComponent line(ChatLine line, String content, Style contentStyle, @Nullable MutableComponent flag) {
         MutableComponent out = Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY);
-        Icon icon = icon(line);
-        if (icon != null) {
-            // White so the glyph's own colours show; text colour tints a bitmap glyph.
-            out.append(Component.literal(" "))
-                .append(Component.literal(String.valueOf(icon.glyph))
-                    .withStyle(s -> s.withFont(ICON_FONT).withColor(ChatFormatting.WHITE)));
+        // A source this build has no constant for draws from the relay's catalog (LiveChatSources): its icon once loaded
+        // (a runtime glyph in the Discord-emoji font), its name colour. Until then, or without an entry, the bubble.
+        LiveChatSources.Entry ext = line.source() == Source.OTHER ? LiveChatSources.entry(line.sourceId()) : null;
+        java.util.OptionalInt extGlyph = ext != null ? LiveChatSources.glyph(line.sourceId()) : java.util.OptionalInt.empty();
+        String glyph = extGlyph.isPresent() ? new String(Character.toChars(extGlyph.getAsInt())) : String.valueOf(icon(line).glyph);
+        ResourceLocation font = extGlyph.isPresent() ? EmojiText.DISCORD_EMOJI_FONT : ICON_FONT;
+        // White so the glyph's own colours show; text colour tints a bitmap glyph.
+        out.append(Component.literal(" "))
+            .append(Component.literal(glyph).withStyle(s -> s.withFont(font).withColor(ChatFormatting.WHITE)));
+        Style name = ext != null && ext.color() != null ? Style.EMPTY.withColor(ext.color()) : Style.EMPTY.applyFormat(nameColour(line.source()));
+        out.append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(name))
+            .append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
+        if (flag != null) out.append(flag).append(" ");
+        return out.append(Component.literal(clean(content, MAX_CONTENT)).withStyle(contentStyle));
+    }
+
+    /** The English the relay adds after a death message ({@code POST /live/chat/died}). */
+    static final String DEATH_SUFFIX = " while watching the stream";
+
+    /**
+     * Whether a TV watcher's death line belongs in this client's chat: not on the dying player's own client
+     * (the death screen says it) and not for anyone in that same world, who saw vanilla's death message.
+     */
+    public static boolean showDeath(LiveFeedClient.Death death, String myName, Set<String> namesHere) {
+        if (death.name().equalsIgnoreCase(myName)) return false;
+        for (String n : namesHere) {
+            if (n.equalsIgnoreCase(death.name())) return false;
         }
-        return out
-            .append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
-            .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-            .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
+        return true;
+    }
+
+    /** The cause out of a death line's English content, when its message JSON won't read: the relay's suffix dropped. */
+    public static String deathFallback(@Nullable String content) {
+        String t = clean(content, MAX_CONTENT);
+        return t.endsWith(DEATH_SUFFIX) ? t.substring(0, t.length() - DEATH_SUFFIX.length()).strip() : t;
+    }
+
+    /** {@code [Live] Steve was slain by Zombie while watching the stream}, the cause a plain literal. */
+    public static MutableComponent deathLine(String key, String cause) {
+        return systemLine(Component.translatable(key, Component.literal(clean(cause, MAX_CONTENT)))
+            .withStyle(ChatFormatting.GRAY));
     }
 
     /** {@code [Live] text} — a line from the room itself (a takeover vote), no name or icon. */
@@ -184,6 +233,11 @@ public final class LiveChatRules {
     public static ChatFormatting nameColour(Source source) {
         return switch (source) {
             case TWITCH -> ChatFormatting.LIGHT_PURPLE;
+            case KICK -> ChatFormatting.DARK_GREEN;
+            case YOUTUBE -> ChatFormatting.RED;
+            case TIKTOK -> ChatFormatting.DARK_AQUA;
+            case FACEBOOK -> ChatFormatting.BLUE;
+            case INSTAGRAM -> ChatFormatting.GOLD;
             case GAME -> ChatFormatting.GREEN;
             case DISCORD, WEB, OTHER -> ChatFormatting.AQUA;
         };
@@ -191,17 +245,21 @@ public final class LiveChatRules {
 
     /**
      * The source icon for a line: a game line's player in the Live Eye (the streamer) or a TV — a TV
-     * when an older relay says neither — the website's globe, the Discord and Twitch logos. Null for a
-     * source this client doesn't know.
+     * when an older relay says neither — the website's globe, the Discord, Twitch, Kick, YouTube, TikTok, Facebook and Instagram logos, and a
+     * plain chat bubble for a source this client doesn't know. Never null.
      */
-    @Nullable
     public static Icon icon(ChatLine line) {
         return switch (line.source()) {
             case GAME -> line.via() == Via.EYE ? Icon.EYE : Icon.TV;
             case WEB -> Icon.WEB;
             case DISCORD -> Icon.DISCORD;
             case TWITCH -> Icon.TWITCH;
-            case OTHER -> null;
+            case KICK -> Icon.KICK;
+            case YOUTUBE -> Icon.YOUTUBE;
+            case TIKTOK -> Icon.TIKTOK;
+            case FACEBOOK -> Icon.FACEBOOK;
+            case INSTAGRAM -> Icon.INSTAGRAM;
+            case OTHER -> Icon.OTHER; // a room this client doesn't know yet still says it came from somewhere
         };
     }
 

@@ -15,8 +15,9 @@ import org.slf4j.Logger;
  * <p>Sable Pathfinder is {@code optional} in {@code neoforge.mods.toml} — required on Modrinth but
  * not listed on CurseForge — so two player populations run different mob-pathing code: with it,
  * every path node that reads as air asks Sable which sub-level (carriage) contains it, and the
- * villager POI / sleep / golem / raid brain logic runs in sub-level coordinates; without it,
- * carriages are opaque to vanilla pathfinding. A support log has to say which one a player had.
+ * villager POI / sleep / golem / raid brain logic runs in sub-level coordinates; without it, our
+ * jarJar'd Sable Mob Paths carries mobs across carriages, and the villager logic stays vanilla.
+ * A support log has to say which one a player had.
  * The 2026-09-30 headless A/B found no measurable tick cost either way, so this is a diagnostic,
  * not a gate.</p>
  *
@@ -32,6 +33,9 @@ public final class SablePathfinderPresence {
     /** Mod id Sable Pathfinder declares in its {@code neoforge.mods.toml}. */
     public static final String MOD_ID = "sable_pathfinder";
 
+    /** Our clean-room equivalent, which turns itself off when Sable Pathfinder is installed. */
+    private static final String OWN_PATHS_MOD_ID = "sablemobpaths";
+
     private SablePathfinderPresence() {}
 
     @SubscribeEvent
@@ -44,7 +48,7 @@ public final class SablePathfinderPresence {
                     .map(c -> c.getModInfo().getVersion().toString())
                     .orElse(null)
                 : null;
-            LOGGER.info(describe(present, version));
+            LOGGER.info(describe(present, version, mods.isLoaded(OWN_PATHS_MOD_ID)));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not read the mod list for Sable Pathfinder: {}", t.toString());
         }
@@ -56,10 +60,13 @@ public final class SablePathfinderPresence {
      *
      * @param present whether the mod is loaded
      * @param version its version when present, or {@code null} when unknown
+     * @param ownPaths whether Sable Mob Paths is loaded
      */
-    static String describe(boolean present, @Nullable String version) {
+    static String describe(boolean present, @Nullable String version, boolean ownPaths) {
         if (!present) {
-            return "[DungeonTrain] Sable Pathfinder absent — vanilla mob pathing; carriages are opaque to pathfinding";
+            return ownPaths
+                ? "[DungeonTrain] Sable Pathfinder absent — Sable Mob Paths carries mobs across carriages"
+                : "[DungeonTrain] Sable Pathfinder absent — vanilla mob pathing; carriages are opaque to pathfinding";
         }
         String v = version == null ? "unknown version" : "v" + version;
         return "[DungeonTrain] Sable Pathfinder present (" + v + ") — mobs path across carriages; "

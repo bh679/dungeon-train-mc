@@ -20,8 +20,12 @@ import org.lwjgl.glfw.GLFW;
  * pick-block constantly, so the click is only intercepted when the crosshair
  * is on a cell the server has pushed a hover list for
  * ({@link VariantHoverHudOverlay#hasHover()}, fed by
- * {@code VariantHoverPacket} and pushed only inside editor plots). On a plain
- * block, outside a plot, or in survival, vanilla pick-block runs untouched.</p>
+ * {@code VariantHoverPacket} and pushed only for cells of an editor plot or a
+ * Train Builder build, of every template type, whether or not the variant
+ * overlay is showing). That hover is the whole gate: a builder world has no
+ * editor status bar, so gating on it as well left middle-click doing vanilla
+ * pick-block there. On a plain block, outside a plot, or in survival, vanilla
+ * pick-block runs untouched.</p>
  *
  * <p>The gate chain mirrors {@link VariantHotkeyClient.TickWatcher}; the
  * {@code mc.screen == null} guard follows the project's input-event rule —
@@ -41,7 +45,6 @@ public final class VariantCopyPickClient {
         if (mc.screen != null) return;
         if (mc.player == null || mc.getConnection() == null) return;
         if (TemplateBlocksHotkeyClient.inSurvival()) return;
-        if (!EditorStatusHudOverlay.isActive()) return;
         if (!VariantHoverHudOverlay.hasHover()) return;
 
         // Suppress vanilla pick-block — this cell's copy takes the click.

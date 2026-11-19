@@ -290,7 +290,7 @@
       ]
     },
     {
-      "text": "颅帽",
+      "text": "小圆帽",
       "item_types": [
         "minecraft:head_armor"
       ]
@@ -308,7 +308,7 @@
       ]
     },
     {
-      "text": "束腰衣",
+      "text": "短袍",
       "item_types": [
         "minecraft:chest_armor"
       ]
@@ -368,7 +368,7 @@
       ]
     },
     {
-      "text": "长腿仔",
+      "text": "长腿裤",
       "item_types": [
         "minecraft:leg_armor"
       ]
@@ -398,7 +398,7 @@
       ]
     },
     {
-      "text": "袜子玩意",
+      "text": "长袜玩意儿",
       "item_types": [
         "minecraft:leg_armor"
       ]

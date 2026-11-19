@@ -3,8 +3,13 @@ package games.brennan.dungeontrain.cheat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.google.gson.JsonObject;
+
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** How the relay's answers to {@code POST /mods/suggest} map to what the screen shows. Pure. */
@@ -64,5 +69,22 @@ class ModSuggestClientTest {
         assertFalse(ModSuggestClient.Result.NOT_PROVEN.isFinal());
         assertFalse(ModSuggestClient.Result.EXPLANATION_REQUIRED.isFinal());
         assertFalse(ModSuggestClient.Result.FAILED.isFinal());
+    }
+
+    @Test
+    @DisplayName("The body carries the installed jar's fingerprint when there is one, and none otherwise")
+    void bodyCarriesFileFingerprint() {
+        ModFileFingerprint file = new ModFileFingerprint("sodium-0.6.jar", 1234L,
+            "0123456789abcdef0123456789abcdef01234567", 4000000000L, List.of("sodium"));
+        JsonObject body = ModSuggestClient.bodyOf("u", "Steve", "", "sodium", ModSuggestClient.Kind.WHITELIST, "why", file);
+        JsonObject f = body.getAsJsonObject("file");
+        assertEquals("0123456789abcdef0123456789abcdef01234567", f.get("sha1").getAsString());
+        assertEquals(4000000000L, f.get("murmur2").getAsLong());
+        assertEquals(1234L, f.get("size").getAsLong());
+        assertEquals("sodium-0.6.jar", f.get("fileName").getAsString());
+        assertEquals("sodium", f.getAsJsonArray("modIds").get(0).getAsString());
+        assertEquals("whitelist", body.get("kind").getAsString());
+
+        assertNull(ModSuggestClient.bodyOf("u", "Steve", "", "sodium", ModSuggestClient.Kind.WHITELIST, "why", null).get("file"));
     }
 }

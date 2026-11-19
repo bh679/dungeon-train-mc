@@ -27,6 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * entry) — is doubled while {@link ServerLiveStatus#isAnyoneLive} and halved (rounding down, so 1
  * becomes 0) while it is not.</p>
  *
+ * <p>While the Two Streams reward has its second channel free ({@link ServerLiveStatus#isSecondChannelFree})
+ * only the variant entries are doubled: a TV variant never shares a cell with a container, so it costs no
+ * Live Eye loot, but a TV room crowds out rooms that carry it, so rooms take the nobody-live weight
+ * ({@link ServerLiveStatus#isLiveForEyes}).</p>
+ *
  * <p>The answer is snapshotted per carriage index the first time that carriage asks, so its contents
  * pick, its block pass and its deferred mob pass all agree even if a stream starts between them. With
  * no server running (unit tests, the client) nothing is scaled.</p>
@@ -41,15 +46,18 @@ public final class LiveTvWeighting {
     private static final int SNAPSHOT_CAPACITY = 512;
 
     private static volatile MinecraftServer server;
-    private static final Map<Integer, Boolean> SNAPSHOTS = new LinkedHashMap<>(64, 0.75f, true) {
+    private static final Map<Integer, Snapshot> SNAPSHOTS = new LinkedHashMap<>(64, 0.75f, true) {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Integer, Boolean> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<Integer, Snapshot> eldest) {
             return size() > SNAPSHOT_CAPACITY;
         }
     };
     private static final Map<String, Boolean> TV_TEMPLATES = new ConcurrentHashMap<>();
 
     private LiveTvWeighting() {}
+
+    /** One carriage's live answers: for its TV variant cells, and for its rooms (Live Eye loot rules). */
+    record Snapshot(boolean anyoneLive, boolean liveForEyes) {}
 
     /** Doubles while live, halves (1 → 0) otherwise. */
     public static int scale(int weight, boolean live) {
@@ -62,13 +70,19 @@ public final class LiveTvWeighting {
         return server != null;
     }
 
-    /** The live answer for one carriage, fixed the first time it is asked. */
-    public static boolean liveFor(int carriageIndex) {
+    /** The live answers for one carriage, fixed the first time it is asked. */
+    private static Snapshot snapshotFor(int carriageIndex) {
         MinecraftServer s = server;
-        if (s == null) return false;
+        if (s == null) return new Snapshot(false, false);
         synchronized (SNAPSHOTS) {
-            return SNAPSHOTS.computeIfAbsent(carriageIndex, k -> ServerLiveStatus.isAnyoneLive(s));
+            return SNAPSHOTS.computeIfAbsent(carriageIndex,
+                k -> new Snapshot(ServerLiveStatus.isAnyoneLive(s), ServerLiveStatus.isLiveForEyes(s)));
         }
+    }
+
+    /** Whether anyone is live for this carriage's TV variant cells. */
+    public static boolean liveFor(int carriageIndex) {
+        return snapshotFor(carriageIndex).anyoneLive();
     }
 
     /** A variant entry's weight for this carriage — TVs scaled, everything else as authored. */
@@ -80,7 +94,7 @@ public final class LiveTvWeighting {
     /** A contents template's weight for this carriage — scaled when TVs are baked into its template. */
     public static int contentsWeight(String contentsId, int weight, int carriageIndex) {
         if (!active() || !hasBakedTv(contentsId)) return weight;
-        return scale(weight, liveFor(carriageIndex));
+        return scale(weight, snapshotFor(carriageIndex).liveForEyes());
     }
 
     public static boolean isTv(VariantState state) {

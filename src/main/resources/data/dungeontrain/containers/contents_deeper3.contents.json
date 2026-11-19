@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "4,0,2": "ancient_vase",
+    "2,0,2": "ancient_vase"
+  }
+}

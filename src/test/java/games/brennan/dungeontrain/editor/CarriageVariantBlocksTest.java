@@ -147,7 +147,7 @@ final class CarriageVariantBlocksTest {
     @Test
     @DisplayName("empty() returns a sidecar with no entries")
     void empty_hasNoEntries() {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.empty();
+        VariantDoc sidecar = CarriageVariantBlocks.empty();
         assertTrue(sidecar.isEmpty());
         assertEquals(0, sidecar.size());
         assertTrue(sidecar.entries().isEmpty());

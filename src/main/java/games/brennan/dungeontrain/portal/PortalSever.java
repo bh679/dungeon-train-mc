@@ -12,25 +12,24 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 /**
- * Breaking a hole in a portal corridor's outer shell, past the point where the swap happens, kills
- * the way in.
+ * Breaking a hole in a portal corridor's side wall, roof or floor kills the way in.
  *
  * <p><b>What the hole actually does.</b> The illusion rests on the two corridors being identical and
  * sealed — inside one there is no external reference that could contradict the claim that you are in
- * the other. A hole in the shell is exactly such a reference, and only in the half past the midpoint:
- * there the same hole shows open sky beside a moving carriage on the train side, and the pocket
- * room's deepslate plug in the twin. {@link PortalEditMirror} copies the break faithfully to both
- * copies, which is what puts the contradiction in front of the player rather than hiding it. So the
- * portal stops pretending.</p>
+ * the other. A hole in a side wall, the roof or the floor is exactly such a reference: it shows open
+ * sky or track around a moving carriage on the train side, and the pocket room on the twin side. {@link PortalEditMirror} copies
+ * the break faithfully to both copies, which is what puts the contradiction in front of the player
+ * rather than hiding it. So the portal stops pretending. Any side-wall, roof or floor block counts,
+ * in either half of the corridor, broken from either copy: from the train, or from the room by
+ * somebody standing outside the twin corridor.</p>
  *
  * <p><b>Both ends of the pair, one direction each.</b> A hole in either corridor closes entry
  * through <i>both</i> — a portal is a pair sharing one room, and it is the pair that is broken.
  * What is never cut is the way out: twin → carriage keeps working forever, at both ends, severed or
  * not. A player standing in the pocket room when someone breaks the shell — or who breaks it
- * themselves from inside — can always walk back onto the train, through whichever corridor is
- * nearer. Nothing this class does can strand anybody, which is also why the trigger is restricted
- * to the carriage-side copy: a break in a twin corridor or anywhere in the room is ignored
- * outright.</p>
+ * themselves from inside — stays where they are, and walking into either corridor still takes them
+ * back onto the train. Nothing this class does can strand anybody, which is what lets a break on
+ * the twin side sever as well.</p>
  *
  * <p><b>And the group opens up.</b> A severed pair is still three carriages of train, and with no
  * swap left in it the entry corridor is a dead end — in through the near door, and nowhere to go but
@@ -63,19 +62,19 @@ public final class PortalSever {
      * <p>Split out from {@link #onCarriageBlockChanged} with no Minecraft level in sight so the rule
      * itself can be unit-tested — the geometry is where the subtlety is, not the plumbing.</p>
      *
-     * @param local the corridor-local cell, as {@code PortalPairIndex.Entry.localOfPlot} returns it
+     * <p>Side walls, roof and floor, along the whole corridor. The floor includes the crossing
+     * lanterns: between the baffles they ARE the floor, so a hole through one is a hole to the
+     * outside like any other. The end planes, the baffles and the doorways are left alone — breaking
+     * one of those opens nothing to the outside.</p>
+     *
+     * @param local the corridor-local cell, as {@code PortalPairIndex.Entry.localOfPlot} or
+     *              {@code localOfTwin} returns it
      */
-    public static boolean isSeveringBreak(PortalCarriageLayout layout, PortalCarriageRole role,
-                                          int[] local, boolean becameAir) {
+    public static boolean isSeveringBreak(PortalCarriageLayout layout, int[] local, boolean becameAir) {
         if (!becameAir) return false;
-
-        int dx = local[0], dy = local[1], dz = local[2];
-        if (!layout.isShellCell(dx, dy, dz)) return false;
-
-        // The cell's centre, not its corner: a corridor's midpoint sits deliberately off a block
-        // boundary (PortalCarriageLayout.midX), and testing the corner would put the whole block
-        // that straddles the line on the wrong side of it.
-        return layout.isTwinSideLocalX(dx + 0.5, role);
+        int dy = local[1], dz = local[2];
+        return dz < layout.interiorMinZ() || dz > layout.interiorMaxZ()
+            || dy == layout.floorY() || dy == layout.ceilingY();
     }
 
     /**
@@ -96,9 +95,27 @@ public final class PortalSever {
      */
     public static void onCarriageBlockChanged(ServerLevel level, PortalPairIndex.Entry entry,
                                               int[] local, BlockState newState, BlockPos twinPos) {
-        PortalFrames frames = entry.frames();
-        if (!isSeveringBreak(frames.layout(), frames.role(), local, newState.isAir())) return;
+        if (!isSeveringBreak(entry.frames().layout(), local, newState.isAir())) return;
+        sever(level, entry, local, twinPos, "carriage");
+    }
 
+    /**
+     * A block changed in a twin corridor: sever the pair if it was a hole in a side wall.
+     *
+     * <p>Called from {@link PortalEditMirror#onTwinBlockChanged} before the change is mirrored into
+     * the carriage, so the hole can be named at both positions. The one-way rule is what makes this
+     * safe from the room side: the player who broke it is left standing in the room, and walking into
+     * the corridor still takes them back to the train.</p>
+     */
+    public static void onTwinBlockChanged(ServerLevel level, PortalPairIndex.Entry entry,
+                                          int[] local, BlockState newState, BlockPos twinPos) {
+        if (!isSeveringBreak(entry.frames().layout(), local, newState.isAir())) return;
+        sever(level, entry, local, twinPos, "twin");
+    }
+
+    private static void sever(ServerLevel level, PortalPairIndex.Entry entry, int[] local,
+                              BlockPos twinPos, String side) {
+        PortalFrames frames = entry.frames();
         int broken = entry.carriageIndex();
         int pairKey = PortalCarriageRole.entryIndexOf(broken, DungeonTrainConfig.getGroupSize());
 
@@ -118,11 +135,11 @@ public final class PortalSever {
 
         openCentreWall(level, entry);
 
-        LOGGER.info("[DungeonTrain] Portal connection severed: pair {} (broken at carriage {}, {}), "
-                + "shell broken at local ({},{},{}) — world {}, twin {}. "
+        LOGGER.info("[DungeonTrain] Portal connection severed: pair {} (broken at carriage {}, {}, "
+                + "{} side), shell broken at local ({},{},{}) — world {}, twin {}. "
                 + "Both ends are closed to entry; both ways out stay open. Repaired when the "
                 + "rolling window re-stamps the group.",
-            pairKey, broken, frames.role(), local[0], local[1], local[2], carriagePos, twinPos);
+            pairKey, broken, frames.role(), side, local[0], local[1], local[2], carriagePos, twinPos);
     }
 
     /**

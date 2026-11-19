@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.worldgen.BandFlavor;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -271,6 +272,41 @@ final class CarriageContentsRegistryGroupResolveTest {
             }
         }
         assertTrue(sawPiglinNether, "nether-only member appears once the context is NETHER");
+    }
+
+    @Test
+    @DisplayName("resolveGroup drops a banded member outside its styled band, keeps it inside, and never leaks it on an unknown token")
+    void bandFilter_keepsMemberToItsStyledBand() {
+        registerCustom("dirt");
+        registerCustom("veined_sand");  // NETHER + better_nether only
+        registerCustom("typo");         // NETHER + an unknown band token: fails closed
+        TemplateGate netherOnly = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        CarriageContentsGroupStore.injectForTesting("dirt", new CarriageContentsGroup(List.of(
+            new CarriageContentsGroup.Member("veined_sand", 5, netherOnly, List.of(), List.of("better_nether")),
+            new CarriageContentsGroup.Member("typo", 5, netherOnly, List.of(), List.of("betternether")))));
+
+        GateContext vanillaNether = new GateContext(0, TrainPhase.NETHER);
+        GateContext bopNether = new GateContext(0, TrainPhase.NETHER, Set.of(BandFlavor.BOP_NETHER));
+        GateContext betterNether = new GateContext(0, TrainPhase.NETHER, Set.of(BandFlavor.BETTER_NETHER));
+        GateContext betterNetherWrongPhase = new GateContext(0, TrainPhase.OVERWORLD, Set.of(BandFlavor.BETTER_NETHER));
+
+        for (GateContext outside : List.of(vanillaNether, bopNether, betterNetherWrongPhase)) {
+            Set<String> seen = picksUnder(outside);
+            assertTrue(seen.contains("dirt"), "self stays eligible under " + outside);
+            assertFalse(seen.contains("veined_sand"), "banded member must not leak outside its band: " + outside);
+            assertFalse(seen.contains("typo"), "an unknown band token never matches: " + outside);
+        }
+        Set<String> inside = picksUnder(betterNether);
+        assertTrue(inside.contains("veined_sand"), "inside its band the member is eligible");
+        assertFalse(inside.contains("typo"), "an unknown band token never matches, even in a styled band");
+    }
+
+    private static Set<String> picksUnder(GateContext ctx) {
+        Set<String> seen = new HashSet<>();
+        for (int idx = 0; idx < 500; idx++) {
+            seen.add(CarriageContentsRegistry.pick(0L, idx, CarriageContentsAllowList.EMPTY, ctx).id());
+        }
+        return seen;
     }
 
     @Test

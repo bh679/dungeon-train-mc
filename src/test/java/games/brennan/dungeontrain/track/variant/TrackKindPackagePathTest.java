@@ -41,7 +41,7 @@ final class TrackKindPackagePathTest {
     /** {@code {file, method}} — path accessors that must resolve against the active package. */
     private static final String[][] WRITE_TARGETS = {
         {"track/variant/TrackVariantStore.java", "directory"},
-        {"track/variant/TrackVariantBlocks.java", "configPathFor"},
+        {"track/variant/TrackVariantBlocks.java", "userPath"},
         {"track/variant/TrackVariantWeights.java", "configPath"},
         {"editor/TrackVariantGroupStore.java", "directory"},
         {"portal/PortalRoomCopiesVariant.java", "configPathFor"},

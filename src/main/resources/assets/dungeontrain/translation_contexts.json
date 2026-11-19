@@ -1822,6 +1822,84 @@
  "gui.dungeontrain.loading.story.11.line.21": [
   "screen"
  ],
+ "gui.dungeontrain.loading.story.12.line.1": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.2": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.3": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.4": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.5": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.6": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.7": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.8": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.9": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.10": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.11": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.12": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.13": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.14": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.15": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.16": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.17": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.18": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.19": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.20": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.21": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.22": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.23": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.24": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.25": [
+  "screen"
+ ],
+ "gui.dungeontrain.loading.story.12.line.26": [
+  "screen"
+ ],
  "gui.dungeontrain.death.narr.platform_fallback": [
   "death_screen"
  ],
@@ -6310,7 +6388,7 @@
  "advancements.dungeontrain.dungeon_train.all_biome_families.hint": [
   "advancement_screen"
  ],
- "advancements.dungeontrain.dungeon_train.ridden_biomes_150.hint": [
+ "advancements.dungeontrain.dungeon_train.ridden_biomes_all.hint": [
   "advancement_screen"
  ],
  "advancements.dungeontrain.dungeon_train.multiplayer.hint": [
@@ -6896,6 +6974,17 @@
   "advancement_screen"
  ],
  "advancements.dungeontrain.dungeon_train.reached_better_nether.hint": [
+  "advancement_screen"
+ ],
+ "advancements.dungeontrain.dungeon_train.reached_deeper_dark.title": [
+  "advancement",
+  "advancement_screen",
+  "chat"
+ ],
+ "advancements.dungeontrain.dungeon_train.reached_deeper_dark.description": [
+  "advancement_screen"
+ ],
+ "advancements.dungeontrain.dungeon_train.reached_deeper_dark.hint": [
   "advancement_screen"
  ],
  "advancements.dungeontrain.dungeon_train.reached_bop.title": [
@@ -9416,6 +9505,21 @@
  "gui.dungeontrain.editor_menu.plot.sky": [
   "world"
  ],
+ "gui.dungeontrain.editor_menu.plot.ground": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.plot.ground_below": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.portal.ground.bottom": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.portal.ground.enter": [
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.portal.ground.door": [
+  "world"
+ ],
  "gui.dungeontrain.editor_menu.plot.fog": [
   "world"
  ],
@@ -10364,6 +10468,16 @@
   "world"
  ],
  "gui.dungeontrain.editor_menu.container.scale_off": [
+  "button",
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.container.luck_on": [
+  "button",
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.container.luck_off": [
   "button",
   "screen",
   "world"
@@ -11676,6 +11790,9 @@
   "chat"
  ],
  "chat.dungeontrain.editor.unknown_door_wall_option": [
+  "chat"
+ ],
+ "chat.dungeontrain.editor.unknown_ground_option_try": [
   "chat"
  ],
  "chat.dungeontrain.editor.unknown_fog_option_try": [

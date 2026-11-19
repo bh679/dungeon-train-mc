@@ -71,6 +71,11 @@ public final class LootPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    static {
+        // Dropped by TemplateStores.clearCaches() with every other store cache.
+        StoreRegistry.register("LootPrefabStore", LootPrefabStore::clear);
+    }
+
     static final String SUBDIR = "prefabs/loot";
     private static final String EXT = ".json";
     public static final int CURRENT_SCHEMA_VERSION = 4;
@@ -330,6 +335,20 @@ public final class LootPrefabStore {
         }
     }
 
+    /**
+     * One pool as prefab-document text, every field kept — what a placed vault carries in its block
+     * entity so it can roll each player's reward later ({@link VaultLoot}). Read back with
+     * {@link #poolFromText}.
+     */
+    public static String poolText(ContainerContentsPool pool, ResourceLocation sourceBlock) {
+        return toJsonText(pool, sourceBlock, CATEGORY_LOOT);
+    }
+
+    /** The pool in text written by {@link #poolText}; empty when the text will not parse. */
+    public static Optional<ContainerContentsPool> poolFromText(String jsonText) {
+        return parse("embedded", jsonText).map(Data::pool);
+    }
+
     /** Whether this install holds {@code id} in the config tier (user-authored, or an override). */
     public static boolean hasConfigFile(String id) {
         return id != null && UserContentPaths.findFile(SUBDIR, id.toLowerCase(Locale.ROOT) + EXT) != null;
@@ -431,6 +450,8 @@ public final class LootPrefabStore {
             ? obj.get("fillMin").getAsInt() : 0;
         int fillMax = obj.has("fillMax") && obj.get("fillMax").isJsonPrimitive()
             ? obj.get("fillMax").getAsInt() : ContainerContentsPool.FILL_ALL;
+        String vaultKey = obj.has("vaultKey") && obj.get("vaultKey").isJsonPrimitive()
+            ? obj.get("vaultKey").getAsString() : ContainerContentsPool.DEFAULT_VAULT_KEY;
         List<ContainerContentsEntry> entries = new ArrayList<>();
         if (obj.has("entries") && obj.get("entries").isJsonArray()) {
             JsonArray arr = obj.getAsJsonArray("entries");
@@ -443,6 +464,8 @@ public final class LootPrefabStore {
                 if (rl == null) continue;
                 int count = e.has("count") && e.get("count").isJsonPrimitive()
                     ? e.get("count").getAsInt() : 1;
+                int minCount = e.has("minCount") && e.get("minCount").isJsonPrimitive()
+                    ? e.get("minCount").getAsInt() : ContainerContentsEntry.DEFAULT_MIN_COUNT;
                 int weight = e.has("weight") && e.get("weight").isJsonPrimitive()
                     ? e.get("weight").getAsInt() : 1;
                 boolean randDur = e.has("randDur") && e.get("randDur").isJsonPrimitive()
@@ -469,12 +492,17 @@ public final class LootPrefabStore {
                 PotionForm form = e.has("form") && e.get("form").isJsonPrimitive()
                     ? PotionForm.parse(e.get("form").getAsString())
                     : ContainerContentsEntry.DEFAULT_POTION_FORM;
+                boolean luck = e.has("luck") && e.get("luck").isJsonPrimitive()
+                    ? e.get("luck").getAsBoolean()
+                    : ContainerContentsEntry.DEFAULT_INCLUDE_LUCK;
                 StoredBook book = ContainerContentsBooks.fromJson(e.get("book"));
-                entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
+                entries.add(new ContainerContentsEntry(rl, count, minCount, weight,
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
+                    BookEnchantsCodec.fromJson(e), luck,
+                    e.has("contents") && e.get("contents").isJsonPrimitive() ? e.get("contents").getAsString() : null));
             }
         }
-        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax)));
+        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey)));
     }
 
     private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock, String category) {
@@ -489,6 +517,9 @@ public final class LootPrefabStore {
         if (pool.fillMax() != ContainerContentsPool.FILL_ALL) {
             sb.append("  \"fillMax\": ").append(pool.fillMax()).append(",\n");
         }
+        if (!pool.isDefaultVaultKey()) {
+            sb.append("  \"vaultKey\": \"").append(pool.vaultKey()).append("\",\n");
+        }
         sb.append("  \"entries\": [");
         boolean first = true;
         for (ContainerContentsEntry e : pool.entries()) {
@@ -501,13 +532,19 @@ public final class LootPrefabStore {
                 .append(" \"durChance\": ").append(e.durabilityChance()).append(",")
                 .append(" \"randEnch\": ").append(e.randomEnchantment()).append(",")
                 .append(" \"enchChance\": ").append(e.enchantmentChance());
+            if (e.hasMinCount()) {
+                sb.append(", \"minCount\": ").append(e.minCount());
+            }
             if (e.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                 sb.append(", \"slot\": ").append(e.slotOverride());
             }
             if (e.potionId() != null) {
                 sb.append(", \"potion\": \"").append(e.potionId()).append("\"");
             }
-            if (!e.scaleWithDistance()) {
+            if (e.includeLuck()) {
+                    sb.append(", \"luck\": true");
+                }
+                if (!e.scaleWithDistance()) {
                 sb.append(", \"scale\": false");
             }
             if (e.potionForm() != PotionForm.ANY) {
@@ -515,6 +552,10 @@ public final class LootPrefabStore {
             }
             if (e.book() != null) {
                 sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(e.book()));
+            }
+            BookEnchantsCodec.appendJson(sb, e.enchants());
+            if (e.hasContents()) {
+                sb.append(", \"contents\": \"").append(e.contents()).append("\"");
             }
             sb.append(" }");
             first = false;

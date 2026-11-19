@@ -74,6 +74,11 @@ public final class BlockVariantPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    static {
+        // Dropped by TemplateStores.clearCaches() with every other store cache.
+        StoreRegistry.register("BlockVariantPrefabStore", BlockVariantPrefabStore::clear);
+    }
+
     static final String SUBDIR = "prefabs/block_variants";
     private static final String EXT = ".json";
     public static final int CURRENT_SCHEMA_VERSION = 1;

@@ -74,10 +74,8 @@ public final class NetherBand {
      * Which repeat of the world-gen cycle (0-based) the Nether band at {@code worldX} belongs to, or
      * {@code -1} before the cycle / when the nether phase is disabled or this world has no train. The
      * Nether band is the first special band of every period, so pass index 0 is the FIRST Nether band,
-     * 1 the second, and so on. Drives the "Nether Return Again" advancement, which fires only from the
-     * second Nether band onward (index ≥ 1) — see
-     * {@link games.brennan.dungeontrain.event.ZoneProgressEvents}. Positional (not advancement-based)
-     * so a returning player's cross-world sidecar can't fire the return on the first pass.
+     * 1 the second, and so on — counting Lap 2's Nether bands, so it is not the cycle repeat ("Nether
+     * Return Again" gates on {@link DisintegrationBand#cyclePassIndex} instead).
      */
     public static long netherPassIndex(ServerLevel overworld, int worldX) {
         return netherPassIndex(overworld, worldX, MixBand.NO_Z);

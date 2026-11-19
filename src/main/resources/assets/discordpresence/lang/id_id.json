@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Ubah kapan saja di konfigurasi atau dengan /chatconnect on.",
   "discordpresence.consent.enable": "Aktifkan",
   "discordpresence.consent.not_now": "Nanti saja",
+  "discordpresence.consent.toggle_on": "Aktif",
+  "discordpresence.consent.toggle_off": "Nonaktif",
   "discordpresence.survey.give_feedback": "Beri Masukan",
   "discordpresence.survey.title": "Masukan",
   "discordpresence.survey.comment": "Komentar",

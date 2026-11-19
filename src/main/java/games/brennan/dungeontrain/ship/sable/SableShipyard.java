@@ -101,8 +101,16 @@ public final class SableShipyard implements Shipyard {
      */
     private final WeakHashMap<ServerSubLevel, SableManagedShip> wrappers = new WeakHashMap<>();
 
+    /** See {@link Shipyard#generation()}. Server thread only, like every mutator here. */
+    private long generation;
+
     public SableShipyard(ServerLevel level) {
         this.level = level;
+    }
+
+    @Override
+    public long generation() {
+        return generation;
     }
 
     @Override
@@ -131,6 +139,7 @@ public final class SableShipyard implements Shipyard {
                 blocks.size(), density);
         }
 
+        generation++;
         return wrappers.computeIfAbsent(subLevel, SableManagedShip::new);
     }
 
@@ -143,6 +152,7 @@ public final class SableShipyard implements Shipyard {
         ServerSubLevel subLevel = sableShip.subLevel();
         if (subLevel == null) return; // already collected — nothing left to remove
         subLevel.markRemoved();
+        generation++;
         // A deleted carriage's player-added blocks go with it (see PlayerPlacedTrainBlocks).
         PlayerPlacedTrainBlocks.removeSubLevel(subLevel.getUniqueId());
         // ...and so do its forced fence / wall arms (see ForcedConnectCells).
@@ -446,6 +456,7 @@ public final class SableShipyard implements Shipyard {
                 : new dev.ryanhcode.sable.sublevel.storage.holding.GlobalSavedSubLevelPointer(filed, (short) 0, (short) 0);
         try {
             holding.snatchAndLoad(target, subLevelId);
+            generation++;
             return true;
         } catch (Throwable t) {
             LOGGER.warn("[Sable] reloadFromHolding failed for sub-level {}: {}", subLevelId, t.toString());

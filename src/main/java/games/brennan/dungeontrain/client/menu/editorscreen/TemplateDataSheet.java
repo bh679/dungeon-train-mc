@@ -231,15 +231,7 @@ public final class TemplateDataSheet {
      */
     static String builderCommandPrefix(VariantKey key) {
         if (key == null) return null;
-        return switch (key.category()) {
-            case CARRIAGES -> "dungeontrain editor builder " + key.modelId();
-            case CONTENTS -> "dungeontrain editor contents builder " + key.modelId();
-            case PORTALS -> "dungeontrain editor portals builder " + key.modelId() + " " + key.modelName();
-            case WHOLE -> "dungeontrain editor whole builder " + key.modelId();
-            case WHOLE_GROUP -> "dungeontrain editor whole group builder " + key.modelId();
-            case WHOLE_HALF -> "dungeontrain editor whole half builder " + key.modelId();
-            case PARTS, CHUNK_FRAMES, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
-        };
+        return key.category().command(PlotCategory.Verb.BUILDER, key.modelId(), key.modelName()).orElse(null);
     }
 
     /**

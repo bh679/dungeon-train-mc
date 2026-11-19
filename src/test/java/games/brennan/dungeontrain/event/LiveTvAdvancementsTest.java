@@ -21,4 +21,13 @@ final class LiveTvAdvancementsTest {
         assertFalse(LiveTvAdvancements.watchingOwnStream(true, UUID.randomUUID(), me));
         assertFalse(LiveTvAdvancements.watchingOwnStream(true, null, me));
     }
+
+    @Test
+    @DisplayName("the earn holds while the intro plays or is still to come, never in a world with no train")
+    void introHoldsTheEarn() {
+        assertTrue(CinematicIntroService.introPendingOrActive(true, false, true));
+        assertTrue(CinematicIntroService.introPendingOrActive(false, true, true));
+        assertFalse(CinematicIntroService.introPendingOrActive(false, false, true));
+        assertFalse(CinematicIntroService.introPendingOrActive(false, true, false));
+    }
 }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.cheat;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -89,18 +90,15 @@ public final class ModSuggestClient {
     /**
      * POST the suggestion. {@code uuid}/{@code name} identify the player; {@code serverId} (may be
      * empty) is the optional owner proof; {@code kind} is what they're saying about the mod. {@code
-     * comment} is required (the relay refuses an empty one). No-throw.
+     * comment} is required (the relay refuses an empty one). {@code file} (may be null) is the installed
+     * jar's fingerprint, so the relay can tie the suggestion to a real file hash — an approval needs one.
+     * No-throw.
      */
     public static CompletableFuture<Result> suggest(String baseUrl, String uuid, String name, String serverId,
-                                                    String modId, Kind kind, String comment) {
+                                                    String modId, Kind kind, String comment,
+                                                    ModFileFingerprint file) {
         try {
-            JsonObject body = new JsonObject();
-            body.addProperty("uuid", uuid == null ? "" : uuid);
-            body.addProperty("name", name == null ? "" : name);
-            body.addProperty("serverId", serverId == null ? "" : serverId);
-            body.addProperty("modId", modId == null ? "" : modId);
-            body.addProperty("kind", (kind == null ? Kind.WHITELIST : kind).wire());
-            body.addProperty("comment", comment == null ? "" : comment);
+            JsonObject body = bodyOf(uuid, name, serverId, modId, kind, comment, file);
             HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/mods/suggest"))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
@@ -121,6 +119,30 @@ public final class ModSuggestClient {
             LOGGER.info("[DungeonTrain] mod suggestion for {} could not start: {}", modId, t.toString());
             return CompletableFuture.completedFuture(Result.FAILED);
         }
+    }
+
+    /** Pure: the request body. {@code file} adds {@code file:{sha1,murmur2,size,fileName,modIds}}. Package-visible for tests. */
+    static JsonObject bodyOf(String uuid, String name, String serverId, String modId, Kind kind, String comment,
+                             ModFileFingerprint file) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        body.addProperty("name", name == null ? "" : name);
+        body.addProperty("serverId", serverId == null ? "" : serverId);
+        body.addProperty("modId", modId == null ? "" : modId);
+        body.addProperty("kind", (kind == null ? Kind.WHITELIST : kind).wire());
+        body.addProperty("comment", comment == null ? "" : comment);
+        if (file != null && file.sha1() != null && !file.sha1().isEmpty()) {
+            JsonObject f = new JsonObject();
+            f.addProperty("sha1", file.sha1());
+            f.addProperty("murmur2", file.murmur2());
+            f.addProperty("size", file.size());
+            if (file.fileName() != null) f.addProperty("fileName", file.fileName());
+            JsonArray ids = new JsonArray();
+            if (file.modIds() != null) file.modIds().forEach(ids::add);
+            f.add("modIds", ids);
+            body.add("file", f);
+        }
+        return body;
     }
 
     /**

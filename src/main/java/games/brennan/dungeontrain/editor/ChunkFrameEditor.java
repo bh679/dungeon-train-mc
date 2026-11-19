@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry;
@@ -13,8 +14,6 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -53,8 +52,6 @@ public final class ChunkFrameEditor {
     private static final int STRIDE_PAD = EditorLayout.GAP + 2;
     /** The room rows start at Z_BASELINE and only grow toward +Z; frames stand a gap short of it. */
     private static final int ROW_Z = TrackSidePlots.Z_BASELINE - STRIDE_PAD - ChunkFrame.SIZE.getZ() + 1;
-    private static final BlockState OUTLINE = Blocks.BEDROCK.defaultBlockState();
-    private static final int QUIET = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     /** What each player last entered, which {@code save} writes when they are not standing in a plot. */
     private static final Map<UUID, String> SESSIONS = new ConcurrentHashMap<>();
@@ -85,16 +82,14 @@ public final class ChunkFrameEditor {
         return slotOrigin(0);
     }
 
-    /** The frame whose plot (cage included) holds {@code pos}, or empty. */
+    /**
+     * The frame whose plot (cage included) holds {@code pos}, or empty. Resident category only: the
+     * frames stand with the Dimensions rooms, and every category lays out from the same origin.
+     */
     public static Optional<String> plotContaining(BlockPos pos) {
-        Vec3i s = ChunkFrame.SIZE;
+        if (!EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) return Optional.empty();
         for (String name : ChunkFrameRegistry.names()) {
-            BlockPos o = plotOrigin(name);
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + s.getX()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + s.getY() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + s.getZ()) {
-                return Optional.of(name);
-            }
+            if (EditorPlotBox.contains(pos, plotOrigin(name), ChunkFrame.SIZE)) return Optional.of(name);
         }
         return Optional.empty();
     }
@@ -112,7 +107,7 @@ public final class ChunkFrameEditor {
      * existing one; null stamps what is saved, or an empty plot for a new name.
      */
     public static void enter(ServerPlayer player, ServerLevel level, String name, String copyOf) {
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         ChunkFrameRegistry.register(name);
         SESSIONS.put(player.getUUID(), name);
         BlockPos origin = plotOrigin(name);
@@ -127,7 +122,7 @@ public final class ChunkFrameEditor {
      * stay: on the roof in front of its menu, or in the middle of it when {@code centre}.
      */
     public static void walkTo(ServerPlayer player, ServerLevel level, String name, boolean centre) {
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         SESSIONS.put(player.getUUID(), name);
         EditorPlotArrival.land(player, level, plotOrigin(name), ChunkFrame.SIZE, !centre,
             EditorPlotArrival.Inside.CENTRE, null);
@@ -228,7 +223,7 @@ public final class ChunkFrameEditor {
     public static void clearAllPlots(ServerLevel level) {
         for (String name : ChunkFrameRegistry.names()) {
             BlockPos o = plotOrigin(name);
-            fillBox(level, o.offset(-1, -1, -1), o.offset(ChunkFrame.SIZE), Blocks.AIR.defaultBlockState());
+            EditorPlotBox.erase(level, o, ChunkFrame.SIZE, EditorPlotCage.QUIET);
             // Nothing stands to compare against any more.
             EditorPlotSnapshots.clear(snapshotKey(name));
         }
@@ -236,7 +231,7 @@ public final class ChunkFrameEditor {
 
     /** The dirty-check baseline key for {@code name}'s plot. */
     public static String snapshotKey(String name) {
-        return EditorPlotSnapshots.key(PlotCategory.CHUNK_FRAMES.id(), MODEL_ID + ":" + name);
+        return new Template.ChunkFrame(name).snapshotKey().orElseThrow();
     }
 
     /** Stamp {@code frame} on {@code name}'s plot and take that as the plot's saved baseline. */
@@ -252,8 +247,8 @@ public final class ChunkFrameEditor {
 
     private static void stampBlocks(ServerLevel level, BlockPos origin, ChunkFrameTemplate frame) {
         Vec3i size = ChunkFrame.SIZE;
-        fillBox(level, origin.offset(-1, -1, -1), origin.offset(size), Blocks.AIR.defaultBlockState());
-        drawCage(level, origin, size);
+        EditorPlotBox.erase(level, origin, size, EditorPlotCage.QUIET);
+        EditorPlotCage.setOutline(level, origin, size, EditorPlotCage.OUTLINE_BLOCK, EditorPlotCage.QUIET);
         if (frame == null) return;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = 0; y < size.getY(); y++) {
@@ -262,7 +257,7 @@ public final class ChunkFrameEditor {
                     BlockState state = frame.at(x, y, z);
                     if (state.isAir()) continue;
                     cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
-                    level.setBlock(cursor, state, QUIET);
+                    level.setBlock(cursor, state, EditorPlotCage.QUIET);
                     CompoundTag nbt = frame.blockEntityAt(x, y, z);
                     BlockEntity be = nbt == null ? null : level.getBlockEntity(cursor);
                     if (be != null) be.loadWithComponents(nbt, level.registryAccess());
@@ -271,33 +266,4 @@ public final class ChunkFrameEditor {
         }
     }
 
-    /** The twelve edges of the box one block outside the plot. */
-    private static void drawCage(ServerLevel level, BlockPos origin, Vec3i size) {
-        int x0 = origin.getX() - 1, y0 = origin.getY() - 1, z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + size.getX(), y1 = origin.getY() + size.getY(), z1 = origin.getZ() + size.getZ();
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int edges = (x == x0 || x == x1 ? 1 : 0) + (y == y0 || y == y1 ? 1 : 0) + (z == z0 || z == z1 ? 1 : 0);
-                    if (edges >= 2) level.setBlock(p.set(x, y, z), OUTLINE, QUIET);
-                }
-            }
-        }
-    }
-
-    private static void fillBox(ServerLevel level, BlockPos min, BlockPos max, BlockState state) {
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = min.getX(); x <= max.getX(); x++) {
-            for (int y = min.getY(); y <= max.getY(); y++) {
-                for (int z = min.getZ(); z <= max.getZ(); z++) {
-                    p.set(x, y, z);
-                    BlockState current = level.getBlockState(p);
-                    if (current == state) continue;
-                    if (current.hasBlockEntity()) level.removeBlockEntity(p);
-                    level.setBlock(p, state, QUIET);
-                }
-            }
-        }
-    }
 }

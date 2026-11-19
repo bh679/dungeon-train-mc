@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.consent.enable": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.consent.not_now": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
+  "discordpresence.consent.toggle_on": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "discordpresence.consent.toggle_off": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.survey.give_feedback": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.survey.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
   "discordpresence.survey.comment": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},

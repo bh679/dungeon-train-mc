@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.parts;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.number.NumberField;
 import games.brennan.dungeontrain.client.menu.number.NumberPad;
@@ -15,8 +16,6 @@ import games.brennan.dungeontrain.net.PartMenuTogglePacket;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Direction;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -24,7 +23,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -50,76 +48,37 @@ import java.util.List;
 )
 public final class PartPositionMenuInputHandler {
 
-    /** True only when a press fired while the menu was active and we're awaiting its release. */
-    private static boolean pressArmed;
-    /** Captured at press time so the release knows whether it was a shift-click. */
-    private static boolean pressShift;
-    /** Which mouse button armed the press — only its own release dispatches. */
-    private static int pressButton;
+    private static final WorldPanelInput<PartPositionMenu.Hit> INPUT = new WorldPanelInput<>(
+        PartPositionMenu::hovered, hit -> hit.kind() == PartPositionMenu.CellKind.NONE,
+        PartPositionMenuInputHandler::shouldHandle, true, PartPositionMenuInputHandler::dispatch);
 
     private PartPositionMenuInputHandler() {}
 
-    /** Cancel the world-targeted attack/use when a press lands on the panel. Mirrors CommandMenuInputHandler. */
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        // Only cancel when the press is actually on a panel cell — otherwise
-        // a player editing a carriage with the menu open should still be able
-        // to break / place blocks they're not aiming at the panel for.
-        PartPositionMenu.Hit hit = PartPositionMenu.hovered();
-        if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        pressShift = Minecraft.getInstance().screen == null
-            && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
-        // Clobber hitResult so the next tick's continueAttack sees a miss —
-        // prevents block-mining progress from accumulating during the click.
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift
-            || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
-
-        PartPositionMenu.Hit hit = PartPositionMenu.hovered();
-        if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
-        dispatch(hit, shift, btn);
+        INPUT.onMouseButton(event);
     }
+
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        INPUT.onLeftClickBlock(event);
+    }
+
+    /** Cancel the world-targeted attack/use when a press lands on the panel. Mirrors CommandMenuInputHandler. */
 
     /**
      * Belt-and-braces guard: if a click somehow slips past
      * {@link InputEvent.InteractionKeyMappingTriggered}, cancel the
      * left-click-block event so block damage doesn't begin.
      */
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        PartPositionMenu.Hit hit = PartPositionMenu.hovered();
-        if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-    }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {

@@ -56,7 +56,6 @@ public record StagePaletteEditPacket(Op op, String stageId, String name, boolean
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {
-                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "stage");
                 games.brennan.dungeontrain.editor.StagePanelController.applyPaletteEdit(sender, packet);
             }
         });

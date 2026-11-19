@@ -91,6 +91,19 @@ final class LostCityStructuresTest {
     }
 
     @Test
+    @DisplayName("buildings are told apart from street props (cars, decorations, tents, shipping containers)")
+    void buildingsAreNotProps() {
+        for (String b : new String[] {"big_lost_city:warehouse", "big_lost_city:house_2", "big_lost_city:tallskyscraper",
+                "dungeontrain:lost_city/office_tower", "dungeontrain:lost_city/player_building"}) {
+            assertTrue(LostCityStructures.isBuilding(ResourceLocation.parse(b)), b);
+        }
+        for (String p : new String[] {"big_lost_city:car_6", "big_lost_city:deco_13", "big_lost_city:tent_2",
+                "big_lost_city:smallshippingcontainer", "big_lost_city:bigshippingcontainer", "minecraft:village_plains"}) {
+            assertFalse(LostCityStructures.isBuilding(ResourceLocation.parse(p)), p);
+        }
+    }
+
+    @Test
     @DisplayName("Lost City runs 3000 blocks alone between the Deeper Dark and BetterEnd, entered over its own 750-block fade")
     void shippedPlacement() {
         int slot = slot();

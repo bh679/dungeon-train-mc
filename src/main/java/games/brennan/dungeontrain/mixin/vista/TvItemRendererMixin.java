@@ -37,7 +37,7 @@ public abstract class TvItemRendererMixin {
                                                     MultiBufferSource buffer, int light, int overlay, LivingEntity entity,
                                                     CallbackInfo ci) {
         if (!HeldTvScreen.shows(stack, context)) return;
-        HeldTvScreen.draw(poseStack, buffer, light);
+        HeldTvScreen.draw(stack, poseStack, buffer, light);
         poseStack.popPose();
     }
 }

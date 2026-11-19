@@ -1,6 +1,13 @@
 package games.brennan.dungeontrain.client.live;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -8,8 +15,8 @@ import java.util.Set;
 
 /**
  * The little of HLS the uploader needs: which segment files a {@code live.m3u8} lists, its media
- * sequence, whether it is finished, and the copy of it that is safe to publish. Pure, so it is
- * unit-tested without a game.
+ * sequence, whether it is finished, and the copy of it that is safe to publish. Pure apart from
+ * {@link #dropEndlist}, so it is unit-tested without a game.
  */
 public final class LivePlaylist {
 
@@ -65,6 +72,68 @@ public final class LivePlaylist {
     }
 
     /**
+     * Sequence numbers of the segments ffmpeg marked {@code #EXT-X-DISCONTINUITY} in {@code text}: where an
+     * encoder restarted at a new bitrate picked the stream up ({@link LiveEncoder.Resume}). The uploader keeps
+     * them, so {@link #publishable} can still count them once they slide out of the window.
+     */
+    public static List<Long> discontinuities(String text) {
+        List<Long> out = new ArrayList<>();
+        if (text == null) return out;
+        long sn = parse(text).mediaSequence();
+        boolean marked = false;
+        for (String raw : text.split("\\r?\\n")) {
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+            if (line.startsWith("#")) {
+                if (line.equals(DISCONTINUITY)) marked = true;
+                continue;
+            }
+            if (!isSafeName(line)) {
+                marked = false;
+                continue;
+            }
+            if (marked) out.add(sn);
+            sn++;
+            marked = false;
+        }
+        return out;
+    }
+
+    /** {@code text} without its {@code #EXT-X-ENDLIST}: the stream goes on. */
+    public static String withoutEndlist(String text) {
+        if (text == null || !text.contains(ENDLIST)) return text;
+        List<String> kept = new ArrayList<>();
+        for (String line : text.split("\\r?\\n")) {
+            if (!line.trim().startsWith(ENDLIST)) kept.add(line);
+        }
+        return String.join("\n", kept) + "\n";
+    }
+
+    /**
+     * Takes the ENDLIST out of the local playlist an encoder left when it was swapped for another
+     * mid-stream, so its successor appends to a stream that is still going (and the uploader never
+     * publishes the end). Written to a temp file and moved over, as ffmpeg itself does. Missing file:
+     * nothing to do. Blocking I/O: never on the render thread.
+     */
+    public static void dropEndlist(Path playlist) {
+        try {
+            if (!Files.exists(playlist)) return;
+            String text = Files.readString(playlist, StandardCharsets.UTF_8);
+            String kept = withoutEndlist(text);
+            if (kept.equals(text)) return;
+            Path tmp = playlist.resolveSibling(playlist.getFileName() + ".resume");
+            Files.writeString(tmp, kept, StandardCharsets.UTF_8);
+            Files.move(tmp, playlist, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public static Optional<String> publishable(String text, Set<String> uploaded, NavigableSet<Long> skippedSeqs) {
+        return publishable(text, uploaded, skippedSeqs, Collections.emptyNavigableSet());
+    }
+
+    /**
      * The playlist to put on storage, built from ffmpeg's {@code text}, so that it never names a segment
      * that is not there. A segment still being retried (neither {@code uploaded} nor given up) cuts the
      * playlist off before it, so nothing after it is announced yet; a given-up segment (its sequence
@@ -73,15 +142,20 @@ public final class LivePlaylist {
      * <p>Sequence numbers stay stable across refreshes of a sliding window: a kept segment {@code sn}
      * is always published as {@code sn − (given-up segments below sn)}, and every inserted
      * discontinuity that has slid out of the window is counted into
-     * {@code #EXT-X-DISCONTINUITY-SEQUENCE}. {@code #EXT-X-ENDLIST} only goes out when nothing was
-     * cut off. Empty when the result would name no segment.</p>
+     * {@code #EXT-X-DISCONTINUITY-SEQUENCE}, as is every encoder restart ({@code encoderBreaks}, from
+     * {@link #discontinuities}) that has, since ffmpeg itself never counts them. {@code #EXT-X-ENDLIST}
+     * only goes out when nothing was cut off. Empty when the result would name no segment.</p>
      */
-    public static Optional<String> publishable(String text, Set<String> uploaded, NavigableSet<Long> skippedSeqs) {
+    public static Optional<String> publishable(String text, Set<String> uploaded, NavigableSet<Long> skippedSeqs,
+                                               NavigableSet<Long> encoderBreaks) {
         if (text == null) return Optional.empty();
         long mediaSeq = parse(text).mediaSequence();
         long skippedBelow = skippedSeqs.headSet(mediaSeq, false).size();
         long insertedBelow = skippedSeqs.headSet(mediaSeq - 1, false).stream()
-            .filter(s -> !skippedSeqs.contains(s + 1)).count();
+            .filter(s -> !skippedSeqs.contains(s + 1)).count()
+            // A break on a dropped segment, or right after one, is the inserted discontinuity already counted.
+            + encoderBreaks.headSet(mediaSeq, false).stream()
+            .filter(b -> !skippedSeqs.contains(b) && !skippedSeqs.contains(b - 1)).count();
 
         List<String> out = new ArrayList<>();
         List<String> block = new ArrayList<>();

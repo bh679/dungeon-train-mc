@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/creature_feature",
   "display": {
     "icon": {
-      "id": "minecraft:skeleton_skull"
+      "id": "minecraft:iron_axe"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.rogues_gallery.title"

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.template.Template;
 
 import java.util.ArrayList;
@@ -57,10 +58,7 @@ public final class CategoryTemplatesScreen implements MenuScreen {
         switch (categoryId) {
             case "carriages" -> {
                 for (String id : EditorTemplateLists.carriages()) {
-                    out.add(new CommandMenuEntry.Run(
-                        id,
-                        "dungeontrain editor enter " + id,
-                        id.equals(activeId)));
+                    out.add(new CommandMenuEntry.Run(id, enter(PlotCategory.CARRIAGES, id), id.equals(activeId)));
                 }
             }
             case "contents" -> {
@@ -75,21 +73,17 @@ public final class CategoryTemplatesScreen implements MenuScreen {
                             new ContentsSubVariantScreen(id),
                             id.equals(activeId)));
                     } else {
-                        out.add(new CommandMenuEntry.Run(
-                            id,
-                            "dungeontrain editor contents enter " + id,
-                            id.equals(activeId)));
+                        out.add(new CommandMenuEntry.Run(id, enter(PlotCategory.CONTENTS, id), id.equals(activeId)));
                     }
                 }
             }
             case "whole" -> {
                 for (String id : EditorTemplateLists.wholeCarriages()) {
-                    out.add(new CommandMenuEntry.Run(id, "dungeontrain editor whole enter " + id,
-                        id.equals(activeId)));
+                    out.add(new CommandMenuEntry.Run(id, enter(PlotCategory.WHOLE, id), id.equals(activeId)));
                 }
                 for (String id : EditorTemplateLists.carriageGroups()) {
                     out.add(new CommandMenuEntry.Run(MenuLang.t("type_name.group") + " · " + id,
-                        "dungeontrain editor whole group enter " + id, id.equals(activeId)));
+                        enter(PlotCategory.WHOLE_GROUP, id), id.equals(activeId)));
                 }
             }
             case "tracks" -> {
@@ -140,9 +134,14 @@ public final class CategoryTemplatesScreen implements MenuScreen {
                 + tm.variant().name().toLowerCase(Locale.ROOT);
         }
         if (model instanceof Template.PortalRoom rm) {
-            return "dungeontrain editor portals enter " + rm.name();
+            return PlotCategory.PORTALS.command(PlotCategory.Verb.ENTER, rm.id(), rm.name()).orElse(null);
         }
         return null;
+    }
+
+    /** The category's enter command for a template addressed by id alone. */
+    private static String enter(PlotCategory category, String id) {
+        return category.command(PlotCategory.Verb.ENTER, id, id).orElseThrow();
     }
 
     /** Visible-for-test accessor — the category id this screen targets. */

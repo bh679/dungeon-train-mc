@@ -3,19 +3,27 @@ package games.brennan.dungeontrain.registry;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.photo.WornPhotographItem;
 import games.brennan.dungeontrain.compat.vista.LiveBroadcastSource;
+import games.brennan.dungeontrain.item.KnockbackSlimeItem;
 import games.brennan.dungeontrain.item.LiveCassetteItem;
 import games.brennan.dungeontrain.item.LiveHeadpieceItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.mehvahdjukaar.vista.VistaMod;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
@@ -95,6 +103,17 @@ public final class ModItems {
         "live_cassette",
         () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
             .component(VistaMod.LINKED_FEED_COMPONENT.get(), LiveBroadcastSource.MAIN_FEED_UUID))
+    );
+
+    /**
+     * The same cassette tuned to the Live Feed's second stream (the Two Streams reward): a TV holding it
+     * shows the second player who is live, or the first stream while there is no second. A right-click on
+     * a TV cycles off / Stream 1 / Stream 2 ({@code mixin.vista.TVBlockMixin}). Never a player's item either.
+     */
+    public static final DeferredItem<Item> LIVE_CASSETTE_2 = ITEMS.register(
+        "live_cassette_2",
+        () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+            .component(VistaMod.LINKED_FEED_COMPONENT.get(), LiveBroadcastSource.SECOND_FEED_UUID), true)
     );
 
     /**
@@ -215,6 +234,18 @@ public final class ModItems {
     );
 
     /**
+     * Loot placeholder for "a random Dungeon Totem". Substituted at chest spawn time by
+     * {@code ContainerContentsRoller} for one totem drawn from {@code editor.RandomTotemTable}'s
+     * weights; each totem in a multi-count roll is picked on its own. DT's loot carries this wherever
+     * it used to carry the vanilla Totem of Undying, except ominous vaults, which keep the vanilla one.
+     * Falls back to the vanilla totem when no Dungeon Totem is registered.
+     */
+    public static final DeferredItem<Item> RANDOM_TOTEM = ITEMS.register(
+        "random_totem",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
      * The loot-facing book, and the only one of these five that ordinary loot tables place: a
      * coin-flip between the two above. Half the time the slot becomes a tall
      * {@link #RANDOM_LEADERBOARD_BOOK} — a ranked board of the whole server — and half the time a
@@ -238,6 +269,60 @@ public final class ModItems {
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * Single-use slimeball that hits like Knockback X and is spent on the hit
+     * ({@link KnockbackSlimeItem}). Found in the slimes carriage's loot ({@code prefabs/loot/slimes.json}); no recipe.
+     */
+    /**
+     * The key to a green vault ({@code block.VaultGreen}), the third vault type beside vanilla's trial
+     * and ominous ones. A vault's key is its config's {@code key_item}, so vanilla checks and takes
+     * this one like any other; {@code editor.VaultLoot#GREEN_KEY} names it.
+     */
+    public static final DeferredItem<Item> DUNGEON_TRIAL_KEY = ITEMS.register(
+        "dungeon_trial_key",
+        () -> new Item(new Item.Properties().rarity(Rarity.UNCOMMON))
+    );
+
+    public static final DeferredItem<Item> KNOCKBACK_SLIME = ITEMS.register(
+        "knockback_slime",
+        () -> new KnockbackSlimeItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON))
+    );
+
+    /**
+     * A Piglin Brute that spawns holding Piglin Proliferation's Buckler (golden axe in the main hand, as
+     * vanilla), so its charge attack runs. Ordinary brute eggs spawn without one
+     * ({@link games.brennan.dungeontrain.event.BruteBucklerSpawnRule}); this egg's {@code ENTITY_DATA} is
+     * applied after that rule, and the editor captures it into a carriage cell as the mob's NBT
+     * ({@link games.brennan.dungeontrain.editor.SpawnEggMobNbt}). Creative/editor only.
+     */
+    public static final DeferredItem<Item> BUCKLER_PIGLIN_BRUTE_SPAWN_EGG = ITEMS.register(
+        "buckler_piglin_brute_spawn_egg",
+        () -> new DeferredSpawnEggItem(() -> EntityType.PIGLIN_BRUTE, 0x592A10, 0xC9A46A,
+            new Item.Properties().component(DataComponents.ENTITY_DATA, CustomData.of(bucklerBruteNbt())))
+    );
+
+    private static CompoundTag bucklerBruteNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putString("id", "minecraft:piglin_brute");
+        ListTag hands = new ListTag();
+        hands.add(itemNbt("minecraft:golden_axe"));
+        hands.add(itemNbt("piglinproliferation:buckler"));
+        nbt.put("HandItems", hands);
+        // The Buckler is mob-only (DisabledModContent#MOB_ONLY_ITEMS): the axe drops as vanilla, the Buckler never.
+        ListTag dropChances = new ListTag();
+        dropChances.add(FloatTag.valueOf(0.085F));
+        dropChances.add(FloatTag.valueOf(0.0F));
+        nbt.put("HandDropChances", dropChances);
+        return nbt;
+    }
+
+    private static CompoundTag itemNbt(String id) {
+        CompoundTag item = new CompoundTag();
+        item.putString("id", id);
+        item.putInt("count", 1);
+        return item;
+    }
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
@@ -256,6 +341,12 @@ public final class ModItems {
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(VARIANT_CLIPBOARD.get());
+        } else if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept(DUNGEON_TRIAL_KEY.get());
+        } else if (event.getTabKey() == CreativeModeTabs.COMBAT) {
+            event.accept(KNOCKBACK_SLIME.get());
+        } else if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
+            event.accept(BUCKLER_PIGLIN_BRUTE_SPAWN_EGG.get());
         }
     }
 }

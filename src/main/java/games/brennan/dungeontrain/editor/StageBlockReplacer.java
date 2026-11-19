@@ -192,7 +192,7 @@ public final class StageBlockReplacer {
     private static int rewriteSidecar(StageBlockIndex.PartRef ref, CarriageDims dims,
                                       Block from, Block to, CompoundTag toBeNbt) throws IOException {
         Vec3i partSize = ref.kind().dims(dims);
-        CarriagePartVariantBlocks sidecar =
+        VariantDoc sidecar =
             CarriagePartVariantBlocks.loadFor(ref.kind(), ref.name(), partSize);
         if (sidecar.isEmpty()) return 0;
 
@@ -216,10 +216,10 @@ public final class StageBlockReplacer {
         }
         if (rewritten == 0) return 0;
 
-        sidecar.save(ref.kind(), ref.name());
+        sidecar.save();
         if (EditorDevMode.isEnabled()) {
             try {
-                sidecar.saveToSource(ref.kind(), ref.name());
+                sidecar.saveToSource();
             } catch (IOException e) {
                 LOGGER.warn("[DungeonTrain] Stage replace: sidecar source write failed for {}:{}: {} "
                     + "(config write succeeded).", ref.kind().id(), ref.name(), e.toString());

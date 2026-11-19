@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.InstantRespawnReboard;
+import games.brennan.dungeontrain.client.live.LiveDeathAnnounce;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,6 +35,8 @@ public abstract class ClientPacketListenerInstantRespawnMixin {
     private void dungeontrain$instantRespawnStartsNewWorld(
             ClientboundPlayerCombatKillPacket packet, CallbackInfo ci
     ) {
+        // Before the reboard check: a TV watcher's death reaches the stream's chat either way.
+        LiveDeathAnnounce.onCombatKill(packet.playerId(), packet.message());
         if (InstantRespawnReboard.interceptDeath(packet.playerId(), packet.message())) {
             ci.cancel();
         }

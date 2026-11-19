@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -45,12 +46,14 @@ public final class StreamPreviewWidget extends AbstractWidget {
         int availW = getWidth();
         int availH = getHeight() - captionH;
         if (availW < 32 || availH < 18) return;
-        int w = Math.min(availW, availH * 16 / 9);
-        int h = w * 9 / 16;
+        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        int[] size = StreamPreview.frameSize(main); // the broadcast's own shape, never stretched
+        int w = Math.min(availW, availH * size[0] / size[1]);
+        int h = w * size[1] / size[0];
         int x0 = getX() + (availW - w) / 2;
         int y0 = getY() + captionH;
 
-        g.drawCenteredString(font, caption(), getX() + availW / 2, getY(), 0xFFFFFF);
+        g.drawCenteredString(font, caption(size), getX() + availW / 2, getY(), 0xFFFFFF);
         g.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, BORDER);
 
         TextureTarget frame = StreamPreview.frame();
@@ -60,7 +63,7 @@ public final class StreamPreviewWidget extends AbstractWidget {
             return;
         }
         drawFrame(g, frame, x0, y0, w, h);
-        headViewerOutline(g, x0, y0, w);
+        headViewerOutline(g, main, size, x0, y0, w);
         if (!LiveFeedClientConfig.streamingEnabled()) {
             g.fill(x0, y0, x0 + w, y0 + h, DIM);
             centred(g, font, Component.translatable("gui.dungeontrain.options.stream.preview.off"), x0, y0, w, h);
@@ -68,26 +71,30 @@ public final class StreamPreviewWidget extends AbstractWidget {
     }
 
     /**
-     * Where the live feed pinned top-right sits on your screen, at its chosen size, scaled into the
-     * preview. An outline only: the real box is never in the broadcast.
+     * Where the live feed pinned top-right sits on your screen while you stream, at that size, scaled into the
+     * preview, through the same crop as the broadcast. An outline only: the real box is never in the broadcast.
      */
-    private static void headViewerOutline(GuiGraphics g, int x0, int y0, int w) {
+    private static void headViewerOutline(GuiGraphics g, RenderTarget main, int[] size, int x0, int y0, int w) {
         int guiW = g.guiWidth();
-        if (guiW <= 0) return;
-        LiveHeadViewer.Box b = LiveHeadViewer.layout(guiW, LiveFeedClientConfig.headViewerWidth(false));
-        float s = (float) w / guiW;
-        int bx = x0 + Math.round(b.x() * s);
-        int by = y0 + Math.round(b.y() * s);
+        double guiScale = Minecraft.getInstance().getWindow().getGuiScale();
+        if (guiW <= 0 || guiScale <= 0) return;
+        // While you stream: your streaming size, as tall as your own broadcast's shape.
+        LiveHeadViewer.Box b = LiveHeadViewer.layout(guiW, LiveFeedClientConfig.headViewerWidth(true), (float) size[0] / size[1]);
+        int[] crop = LiveAspect.cropRect(main.width, main.height, size[0], size[1]);
+        float s = (float) (w * guiScale / (crop[2] - crop[0])); // preview px per GUI px
+        float left = (float) (crop[0] / guiScale);
+        float top = (float) ((main.height - crop[3]) / guiScale);
+        int bx = x0 + Math.round((b.x() - left) * s);
+        int by = y0 + Math.round((b.y() - top) * s);
         int bw = Math.max(2, Math.round(b.w() * s));
         int bh = Math.max(2, Math.round(b.h() * s));
         g.fill(bx, by, bx + bw, by + bh, OUTLINE_FILL);
         g.renderOutline(bx, by, bw, bh, OUTLINE);
     }
 
-    /** "What viewers see · 1280×720": the size the broadcast is sent at, which the picture shows. */
-    private Component caption() {
-        int w = LiveFeedClientConfig.captureWidth();
-        return getMessage().copy().append(" · " + w + "×" + LiveFeedClientConfig.heightFor(w));
+    /** "What viewers see · 960×720": the size the broadcast is sent at, which the picture shows. */
+    private Component caption(int[] size) {
+        return getMessage().copy().append(" · " + size[0] + "×" + size[1]);
     }
 
     private static void centred(GuiGraphics g, Font font, Component text, int x0, int y0, int w, int h) {

@@ -47,17 +47,8 @@ import cf_api  # noqa: E402
 
 DT_PROJECT = int(os.environ.get("CURSEFORGE_PROJECT_ID") or 1527512)
 
-# CurseForge fileStatus enum. Only Approved (4) is a public, referenceable file.
-STATUS_APPROVED = 4
-STATUS_NAMES = {
-    1: "Processing", 2: "ChangesRequired", 3: "UnderReview", 4: "Approved",
-    5: "Rejected", 6: "MalwareDetected", 7: "Deleted", 8: "Archived", 9: "Testing",
-    10: "Released", 11: "ReadyForReview", 12: "Deprecated", 13: "Baking",
-    14: "AwaitingPublishing", 15: "FailedPublishing",
-}
-
-APPROVED = "approved"
-PENDING = "pending"
+APPROVED = cf_api.APPROVED
+PENDING = cf_api.PENDING
 UNKNOWN = "unknown"
 
 ON_TIMEOUT_FAIL = "fail"
@@ -66,18 +57,7 @@ ON_TIMEOUT_DEFER = "defer"
 
 def status_via_api(project_id, file_id):
     """Authoritative status of one file. Returns (state, human-readable detail)."""
-    data = cf_api.get_json(
-        f"{cf_api.CF_API}/mods/{project_id}/files/{file_id}",
-        headers=cf_api.api_headers(),
-    )
-    info = data.get("data") or {}
-    status = info.get("fileStatus")
-    name = STATUS_NAMES.get(status, f"status {status!r}")
-    if status != STATUS_APPROVED:
-        return PENDING, name
-    if info.get("isAvailable") is False:
-        return PENDING, f"{name} but not available"
-    return APPROVED, name
+    return cf_api.file_status(project_id, file_id)
 
 
 def status_via_mirror(project_id, file_id):

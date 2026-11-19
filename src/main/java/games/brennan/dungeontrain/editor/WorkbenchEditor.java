@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
@@ -349,6 +350,7 @@ public final class WorkbenchEditor {
                              EditorPlotArrival.Inside inside) {
         BlockPos origin = plotOrigin(overworld, stagedId);
         if (origin == null) return;
+        EditorSessions.rememberReturn(player);
         EditorPlotArrival.land(player, overworld, origin, plotSize(stagedId), onTop, inside, null);
     }
 
@@ -380,6 +382,6 @@ public final class WorkbenchEditor {
 
     /** The {@link EditorPlotSnapshots} key for {@code stagedId}'s plot. */
     public static String snapshotKey(String stagedId) {
-        return EditorPlotSnapshots.key(EditorCategory.WORKBENCH.id(), stagedId);
+        return new Template.Staged(stagedId).snapshotKey().orElseThrow();
     }
 }

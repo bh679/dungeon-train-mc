@@ -46,7 +46,10 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
 import org.jetbrains.annotations.Nullable;
+import games.brennan.dungeontrain.ship.KinematicDriver;
+import games.brennan.dungeontrain.util.DtLogging;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,6 +86,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TrainCarriageAppender {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    /** The jitter namespace: INFO reaches player logs, where the reload settle has to be readable. */
+    private static final Logger RELOAD_SETTLE_LOGGER = LoggerFactory.getLogger(DtLogging.JITTER);
     /**
      * The walk-away release keeps un-serialized groups held and re-checks them every tick while no
      * player is near, so a "kept N held" line with nothing released repeated each tick. One per window.
@@ -3557,8 +3562,9 @@ public final class TrainCarriageAppender {
         // caused once a long ride exceeded it.
         boolean resumeHold = isResumeHoldActive(trainId, level.getGameTime());
         // Tell Sable's own wake-on-chunk-load which groups this train wants this tick; one
-        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto).
-        if (playerNear && !resumeHold && nearMinPIdx <= nearMaxPIdx && !train.isEmpty()) {
+        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto). A resume or
+        // save hold keeps this on: lifting it woke every group waiting on it, at each autosave.
+        if (HeldGroupWakeVeto.windowApplies(playerNear, nearMinPIdx, nearMaxPIdx, train.isEmpty())) {
             int groupSize = train.get(0).provider().getGroupSize();
             HeldGroupWakeVeto.record(trainId, nearMinPIdx, nearHoldTop(nearMaxPIdx, groupSize),
                 groupSize, level.getGameTime());
@@ -4085,7 +4091,10 @@ public final class TrainCarriageAppender {
      * anchor first because the anchor itself is the ghost, while {@link #sweepDuplicateAnchors}
      * must NOT, because that anchor is legitimately registered to the surviving twin.</p>
      *
-     * <p>Known gap, pre-existing: world-space contents entities belonging to the deleted
+     * <p>Pets aboard are settled first ({@link CarriagePets}): sitting ones in a drifting carriage
+     * leave with its upload, the rest are sent to their owner.</p>
+     *
+     * <p>Known gap, pre-existing: other world-space contents entities belonging to the deleted
      * sub-level are not swept. A duplicated group already spawned duplicate mobs, and deleting
      * one twin leaves its mobs standing on the survivor — same behaviour as the ghost cleanup
      * has always had.</p>
@@ -4100,20 +4109,30 @@ public final class TrainCarriageAppender {
         // synchronous on the server thread (reading the still-live plot); only the return POST is
         // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
         // and frees the lease promptly instead of at the ~1h TTL.
+        Set<Entity> driftedPets = new HashSet<>();
+        List<CarriagePets.DriftFootprint> driftFootprints = new ArrayList<>();
         if (SharedCarriageRegistry.hasSubLevel(shipId)) {
             for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
                 boolean allowCapture = sharedCaptured < captureBudget;
+                CarriagePets.DriftFootprint footprint = CarriagePets.DriftFootprint.of(inst);
+                if (footprint != null) driftFootprints.add(footprint);
+                List<Entity> drifters = CarriagePets.sittingDrifters(level, ship, inst);
                 if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
                     sharedCaptured++;
+                    driftedPets.addAll(drifters);
                 } else if (!allowCapture && inst.hasPending()) {
                     sharedDeferred++;
                 }
             }
             SharedCarriageRegistry.removeSubLevel(shipId);
         }
+        // Sitting pets that just uploaded with their drifting carriage go with it; every other pet
+        // aboard goes to its owner rather than being stranded where the carriage was.
+        CarriagePets.settleBeforeRemoval(level, ship, driftedPets);
         // Drop any despawn snapshot this group was holding. The group is about to stop
         // existing, so its swept mobs have nowhere to come back to — leaving the file would
-        // strand it on disk until the next train wipe.
+        // strand it on disk until the next train wipe. Pets frozen in it go to their owner first.
+        CarriagePets.rescueFromSnapshot(level, shipId, driftFootprints);
         ContentsSnapshotStore.delete(level, shipId);
         // Tear down any force-load ticket on this anchor (mirror + Sable
         // ticket together) before deleting it.
@@ -5952,6 +5971,32 @@ public final class TrainCarriageAppender {
         return pIdxWithinGroup(nearest.carriage(), player, dims, groupSize);
     }
 
+    /** How far outside a group's bounds a player still counts as in it, squared (8 blocks). */
+    private static final double IN_GROUP_RADIUS_SQ = 8.0 * 8.0;
+
+    /**
+     * The carriage group {@code player} is in or standing beside (within 8 blocks of its bounds), on
+     * any train in {@code level}, or {@code null} when there is none.
+     */
+    public static Trains.Carriage groupAt(ServerLevel level, ServerPlayer player) {
+        NearestGroup nearest = nearestGroup(Trains.allCarriages(level), player.getX(), player.getY(), player.getZ());
+        return nearest == null || nearest.distSq() > IN_GROUP_RADIUS_SQ ? null : nearest.carriage();
+    }
+
+    /**
+     * The absolute index of the carriage {@code player} is in, read in its own group's frame (see
+     * {@link #pIdxWithinGroup}); clamped to the group, so a player on a pad gets the carriage beside it.
+     * {@code null} when they are on no train.
+     */
+    public static Integer carriageIndexAt(ServerLevel level, ServerPlayer player, CarriageDims dims) {
+        Trains.Carriage group = groupAt(level, player);
+        if (group == null) return null;
+        int groupSize = Math.max(1, group.provider().getGroupSize());
+        int pIdx = pIdxWithinGroup(group, player, dims, groupSize);
+        int anchor = group.provider().getPIdx();
+        return Math.max(anchor, Math.min(anchor + groupSize - 1, pIdx));
+    }
+
     /** A group and the squared world-AABB distance from a point to it ({@code 0} = inside). */
     private record NearestGroup(Trains.Carriage carriage, double distSq) {}
 
@@ -6846,9 +6891,53 @@ public final class TrainCarriageAppender {
                 // Same ownership adoptReloadedGroup takes: the force-load ticket is per instance,
                 // so the window must hold the restored one rather than the dead one.
                 holdGroupResident(level, trainId, live);
+                settleReloadedGroup(level, trainId, anchor, live);
                 LOGGER.info("[DungeonTrain] Registry handle for anchor={} re-pointed to resurfaced sub-level {} for trainId={} — Sable restored it from holding without a DT reload",
                     anchor, live.subLevelId(), trainId);
             }
+        }
+    }
+
+    /**
+     * Put a group that just came back from holding at its true slot NOW, in the tick it surfaced.
+     *
+     * <p>Sable restores a held sub-level at the pose it was culled with. The train has moved on
+     * since, so that pose is wherever the group WAS, which after backward travel and a later
+     * return is the carriage a player is standing in right now. DT reloads at {@code LevelTick
+     * Post}; Sable's tracking tick runs at the next tick's HEAD and sends every client the new
+     * sub-level at that stale pose. The client's collision latches the player onto the floor that
+     * is suddenly overlapping theirs, and when the kinematic ticker's re-anchor catches the body
+     * up to its slot one tick later, the player is carried with it, six to eight carriages
+     * forward and face-first into whatever that carriage holds (reports 2026-10-27, 0.1547.0).</p>
+     *
+     * <p>So the catch-up happens here instead: the same {@code nextTransform} + {@code
+     * applyTickOutput} the ticker makes, run once at adoption. {@code nextTransform} already
+     * re-anchors on a tick gap, and the body already exists (Sable adds it to the physics
+     * pipeline synchronously), so by the time any client hears of the group it is where it
+     * belongs. The ticker's own call this tick or next sees a gap of at most one and is a normal
+     * step. The jitter log line carries the distance the dev-only {@code [reanchor]} line hides,
+     * so a player's log shows the settle.</p>
+     */
+    private static void settleReloadedGroup(ServerLevel level, UUID trainId, int anchor, ManagedShip ship) {
+        if (ship == null || !ship.isResident()) return;
+        KinematicDriver driver = ship.getKinematicDriver();
+        if (driver == null) return;
+        try {
+            KinematicDriver.TickInput input = ship.currentTickInput(level.getGameTime());
+            KinematicDriver.TickOutput output = driver.nextTransform(input);
+            if (output == null) return;
+            // Measured BEFORE the teleport: the input position is the live logical pose, which
+            // applyTickOutput overwrites, so measuring after would always read zero.
+            double movedBlocks = input.currentPosition().distance(output.position());
+            ship.applyTickOutput(output);
+            RELOAD_SETTLE_LOGGER.info(
+                "[reload-settle] anchor={} trainId={} movedBlocks={} (cull pose -> true slot, settled before any client saw it)",
+                anchor, trainId, String.format("%.2f", movedBlocks));
+        } catch (RuntimeException e) {
+            // Never let the settle take the appender tick down: without it the group still
+            // re-anchors on the ticker's next pass, which is exactly the pre-fix behaviour.
+            LOGGER.warn("[DungeonTrain] Reload settle failed for anchor={} trainId={} — falling back to the ticker's re-anchor",
+                anchor, trainId, e);
         }
     }
 
@@ -6869,6 +6958,7 @@ public final class TrainCarriageAppender {
             if (!uuid.equals(ship.subLevelId())) continue;
             Trains.refreshHandle(trainId, anchor, ship);
             holdGroupResident(level, trainId, ship);
+            settleReloadedGroup(level, trainId, anchor, ship);
             return ship;
         }
         // allocateSubLevel adds the new instance to the container synchronously, so findAll()

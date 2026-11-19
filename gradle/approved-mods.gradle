@@ -101,6 +101,7 @@ tasks.register('generateApprovedMods') {
     inputs.file modpackFile
     inputs.files jarJarJars
     inputs.property 'modId', mod_id
+    inputs.property 'engineVersion', dtmodverify_version
     outputs.dir outDir
 
     doLast {
@@ -227,6 +228,16 @@ tasks.register('generateApprovedMods') {
                           'Hand-curated groups live in src/main/whitelist/approved_mods.curated.json.'] + (curated.comment ?: [])
         result.prefixes = curated.prefixes ?: []
         result.prefixesWhy = curated.prefixesWhy ?: []
+        // Ids whose generated mod file may be verified by its carrier jar (ApprovedModList.carrierApproved):
+        // the allowlist is curated, and a listed id must be an approved id or the rule approves nothing.
+        def carrierApproved = (curated.carrierApproved ?: []).collect { it as String }
+        def carrierNotApproved = carrierApproved.findAll { id -> !(id in seen) }
+        if (carrierNotApproved) {
+            throw new GradleException("carrierApproved ids that are not approved ids: ${carrierNotApproved.sort().join(', ')}. "
+                + 'Approve them in approved_mods.curated.json first.')
+        }
+        result.carrierApproved = carrierApproved
+        result.carrierApprovedWhy = curated.carrierApprovedWhy ?: []
         result.groups = groups
         result.hashesWhy = 'SHA-1 of every file the modpack pins, every jar embedded in ours, and every published ' +
             '1.21.1 NeoForge file of each approved mod — approved as files offline. GENERATED from modpack.config.json ' +
@@ -236,6 +247,13 @@ tasks.register('generateApprovedMods') {
             'modpack pins, embedded jars). A file whose hash is unknown but whose packages are the claimed mod\'s is ' +
             'plausible, not Free Play; one whose packages are not is suspect.'
         result.knownPackages = knownPackages
+        // The verification engine DT embeds: UnapprovedModIntegrity refuses any other dtmodverify
+        // (a top-level jar of that id would replace the nested one and answer VERIFIED for everything).
+        def engineJar = jarJarJars.files.find { f -> 'dtmodverify' in jarModIds(f.bytes) }
+        if (engineJar) {
+            result.engineSha1 = java.security.MessageDigest.getInstance('SHA-1').digest(engineJar.bytes).encodeHex().toString()
+            result.engineVersion = dtmodverify_version as String
+        }
 
         def outFile = outDir.get().file("assets/${selfId}/cheat/approved_mods.json").asFile
         outFile.parentFile.mkdirs()

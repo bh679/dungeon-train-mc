@@ -52,6 +52,7 @@ public record NetworkConsentSyncPacket(boolean granted) implements CustomPacketP
             // room planned near them can then be fitted to their own count rather than guessed.
             if (packet.granted()) {
                 games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.prefetchSelf(player, false);
+                games.brennan.dungeontrain.compat.photo.album.PlayerAlbums.onConsentSynced(player);
             }
         });
     }

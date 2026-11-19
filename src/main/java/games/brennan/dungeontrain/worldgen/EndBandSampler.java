@@ -30,6 +30,7 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.ticks.ProtoChunkTicks;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -67,14 +68,14 @@ public final class EndBandSampler {
     /**
      * One sampled display chunk: {@code states} is {@code 16 × 16 × height} display-space blocks
      * starting at world Y {@code minY}; {@code blockEntities} maps packed display {@link BlockPos}
-     * longs to their NBT.
+     * longs to their NBT; {@code entities} are saved at display positions ({@link EndBandEntities}).
      */
     public record Result(ChunkPos pos, int minY, int height, BlockState[] states,
-                         Map<Long, CompoundTag> blockEntities, Map<Long, EndBandSpill> spill) {
+                         Map<Long, CompoundTag> blockEntities, List<CompoundTag> entities, Map<Long, EndBandSpill> spill) {
 
         /** This sample with {@code spill}: what its features wrote into each neighbouring display chunk, by chunk key. */
         public Result withSpill(Map<Long, EndBandSpill> spill) {
-            return new Result(pos, minY, height, states, blockEntities, spill);
+            return new Result(pos, minY, height, states, blockEntities, entities, spill);
         }
 
         /** The sampled display-space block at chunk-local {@code (dx, dz)} and world {@code y}. */
@@ -209,6 +210,7 @@ public final class EndBandSampler {
     public static void clear() {
         EndBandBiomeRemap.clear();
         EndBandBiomeFill.clear();
+        EndBandStructures.clear();
         CARVERS.clear();
         EPOCH.incrementAndGet();
         SamplerPool.shared().cancel(SamplerPool.Kind.END_BAND);
@@ -244,22 +246,37 @@ public final class EndBandSampler {
         // assumed (EndBandBiomeFill).
         BiomeSource biomes = EndBandBiomeFill.memoised(source, random.sampler(), end.getSeed(), endPos);
         if (EndBandConfig.featureSpill()) {
-            return sampleWithSpill(end, noise, random, biomes, carve, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
+            return sampleWithSpill(end, noise, random, source, biomes, carve, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
         }
         ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos, biomes);
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk, biomes);
         ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
         if (carve) carveGround(noise, random, ground, workspace, end.getSeed(), endPos);
+        decorate(end, noise, random, source, bop, endPos, workspace, ground);
+        return copyOut(end, ground, pos, endPos, bedY, displayMinY, displayMaxY);
+    }
+
+    /**
+     * The biome's decoration with its structures, best effort: a failure keeps the bare terrain. A BoP pass
+     * keeps vanilla + BoP features only: BetterEnd injects its ores into the vanilla End biomes, which the BoP
+     * End shares.
+     */
+    private static void decorate(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random, BiomeSource source,
+                                 boolean bop, ChunkPos endPos, OfflineChunkSampler.Workspace workspace, ProtoChunk chunk) {
         try {
-            // A BoP pass keeps vanilla + BoP features only: BetterEnd injects its ores into the vanilla
-            // End biomes, which the BoP End shares.
-            if (bop) OfflineChunkSampler.decorate(noise, workspace, ground, true, BopEnd.NAMESPACE);
-            else OfflineChunkSampler.decorate(noise, workspace, ground);
+            if (bop) {
+                BopEnd.Built built = BopEnd.get(end.getServer());
+                OfflineChunkSampler.Workspace structures = built == null ? workspace
+                        : EndBandStructures.withStructures(end, noise, random, source, CycleLayout.Style.BOP, built.structureState(), endPos, workspace);
+                OfflineChunkSampler.decorate(noise, structures, chunk, true, BopEnd.NAMESPACE);
+            } else {
+                OfflineChunkSampler.decorate(noise, EndBandStructures.withStructures(end, noise, random, source, CycleLayout.Style.BETTER,
+                        end.getChunkSource().getGeneratorState(), endPos, workspace), chunk);
+            }
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
         }
-        return copyOut(end, ground, pos, endPos, bedY, displayMinY, displayMaxY);
     }
 
     /**
@@ -271,7 +288,7 @@ public final class EndBandSampler {
      * first. A neighbour whose ground fails to generate is left blank, as before.
      */
     private static Result sampleWithSpill(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                          BiomeSource biomes, boolean carve, boolean bop, ChunkPos pos, ChunkPos endPos,
+                                          BiomeSource source, BiomeSource biomes, boolean carve, boolean bop, ChunkPos pos, ChunkPos endPos,
                                           long passIndex, int bedY, int displayMinY, int displayMaxY, GroundFill fill) {
         CycleLayout.Style style = bop ? CycleLayout.Style.BOP : CycleLayout.Style.BETTER;
         ProtoChunk cached = cachedGround(end, noise, random, biomes, carve, style, endPos, fill);
@@ -290,12 +307,7 @@ public final class EndBandSampler {
             }
         }
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, centre, ring::get, biomes);
-        try {
-            if (bop) OfflineChunkSampler.decorate(noise, workspace, centre, true, BopEnd.NAMESPACE);
-            else OfflineChunkSampler.decorate(noise, workspace, centre);
-        } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
-        }
+        decorate(end, noise, random, source, bop, endPos, workspace, centre);
         Result own = copyOut(end, centre, pos, endPos, bedY, displayMinY, displayMaxY);
         if (own == null) return null;
         int chunkOffsetX = EndBandStyle.endChunkOffsetX(passIndex);
@@ -400,11 +412,16 @@ public final class EndBandSampler {
         return out;
     }
 
-    /** Copy the End's island band out of the sample, shifted onto track level. */
+    /**
+     * Copy the End's island band out of the sample, shifted onto track level. End cities and mountains stand well
+     * above the islands' {@link EndIslandGeometry#END_Y_SAMPLE_MAX}, so with structures on the copy runs to the
+     * End's ceiling.
+     */
     private static Result copyOut(ServerLevel end, ProtoChunk ground, ChunkPos pos, ChunkPos endPos, int bedY,
                                   int displayMinY, int displayMaxY) {
+        int topEndY = EndBandConfig.structures() ? end.getMaxBuildHeight() - 1 : EndIslandGeometry.END_Y_SAMPLE_MAX;
         int minY = Math.max(displayMinY, EndBandStyle.displayY(EndIslandGeometry.END_Y_SAMPLE_MIN, bedY));
-        int maxY = Math.min(displayMaxY - 1, EndBandStyle.displayY(EndIslandGeometry.END_Y_SAMPLE_MAX, bedY));
+        int maxY = Math.min(displayMaxY - 1, EndBandStyle.displayY(topEndY, bedY));
         if (maxY < minY) return null;
         int height = maxY - minY + 1;
         int srcMin = end.getMinBuildHeight();
@@ -429,7 +446,19 @@ public final class EndBandSampler {
         });
         ground.getBlockEntities().forEach((at, be) ->
                 putBlockEntity(blockEntities, at, be.saveWithFullMetadata(end.registryAccess()), shiftX, bedY, minY, maxY));
-        return new Result(pos, minY, height, states, Map.copyOf(blockEntities), Map.of());
+        return new Result(pos, minY, height, states, Map.copyOf(blockEntities), entitiesIn(ground, shiftX, bedY, minY, maxY), Map.of());
+    }
+
+    /** What the sample's structures spawned inside the copied band, at display positions. */
+    private static List<CompoundTag> entitiesIn(ProtoChunk ground, int shiftX, int bedY, int minY, int maxY) {
+        int shiftY = EndBandStyle.displayY(0, bedY);
+        List<CompoundTag> out = new ArrayList<>(0);
+        for (CompoundTag tag : ground.getEntities()) {
+            if (!EndBandEntities.hasPos(tag)) continue;
+            int y = (int) Math.floor(EndBandEntities.pos(tag, 1)) + shiftY;
+            if (y >= minY && y <= maxY) out.add(EndBandEntities.moved(tag, shiftX, shiftY));
+        }
+        return List.copyOf(out);
     }
 
     private static void putBlockEntity(Map<Long, CompoundTag> out, BlockPos at, CompoundTag nbt,

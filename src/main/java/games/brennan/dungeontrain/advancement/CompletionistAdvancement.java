@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * The "Everything Burrito" capstone — a code-driven advancement granted once a
@@ -106,6 +107,38 @@ public final class CompletionistAdvancement {
         if (BandAdvancements.isBackwards(rl.getPath())) return false;     // The Secrete Menu: optional, never required
         if (EnchiridionAdvancements.isEnchiridion(rl.getPath())) return false; // The Enchiridion: books + photos, a collection of its own
         return !notRequired.contains(rl);                                 // the operator dropped it from the capstone (relay)
+    }
+
+    /**
+     * Is a grant derived from the player's whole profile — the capstone, or a tab-complete
+     * advancement — standing on progress this install saw earned? False when any Dungeon Train
+     * gameplay id in the current profile was taken on trust ({@link GlobalAchievementStore#unverified}:
+     * absorbed from a world's own advancement file, or read from a profile with no seal), or when
+     * the clock or stats the burrito's time would come from could not be vouched for. The grant
+     * itself still happens; only the records (Discord milestone, first-ever claim, burrito time)
+     * stand down, since every one of those files is as editable as the profile.
+     */
+    public static boolean isVerifiedEarn(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        String key = AdvancementProfiles.currentKey(player);
+        for (ResourceLocation id : GlobalAchievementStore.unverified(uuid, key)) {
+            if (DungeonTrain.MOD_ID.equals(id.getNamespace()) && !id.getPath().startsWith("editor/")) {
+                LOGGER.info("[DungeonTrain] {}'s profile holds {} on trust; this grant makes no record.",
+                    player.getName().getString(), id);
+                return false;
+            }
+        }
+        if (BurritoClock.isUnverified(uuid) || GlobalPlayerStats.isUnverified(uuid)) {
+            LOGGER.info("[DungeonTrain] {}'s clock or stats could not be vouched for; this grant makes no record.",
+                player.getName().getString());
+            return false;
+        }
+        return true;
+    }
+
+    /** Is {@code id} a grant derived from the rest of the profile, which {@link #isVerifiedEarn} must judge? */
+    public static boolean isDerivedGrant(ResourceLocation id) {
+        return id.equals(ID) || TabCompleteAdvancements.isTabComplete(id);
     }
 
     /**

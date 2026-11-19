@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
@@ -23,14 +24,13 @@ class LiveChatRulesTest {
     private static final UUID OTHER = UUID.fromString("66666666-2222-3333-4444-555555555555");
 
     @Test
-    @DisplayName("granted: the switch, not Kid mode, and streaming or a worn TV with someone live")
+    @DisplayName("granted: the switch, not Kid mode, and streaming or a worn TV, live or not")
     void granted() {
-        assertTrue(LiveChatRules.granted(true, false, true, false, false), "streaming");
-        assertTrue(LiveChatRules.granted(true, false, false, true, true), "TV + someone live");
-        assertFalse(LiveChatRules.granted(true, false, false, true, false), "TV but nobody live");
-        assertFalse(LiveChatRules.granted(true, false, false, false, true), "no TV, not streaming");
-        assertFalse(LiveChatRules.granted(false, false, true, true, true), "switch off");
-        assertFalse(LiveChatRules.granted(true, true, true, true, true), "Kid mode wins");
+        assertTrue(LiveChatRules.granted(true, false, true, false), "streaming");
+        assertTrue(LiveChatRules.granted(true, false, false, true), "TV, with or without anyone live");
+        assertFalse(LiveChatRules.granted(true, false, false, false), "no TV, not streaming");
+        assertFalse(LiveChatRules.granted(false, false, true, true), "switch off");
+        assertFalse(LiveChatRules.granted(true, true, true, true), "Kid mode wins");
     }
 
     @Test
@@ -119,6 +119,18 @@ class LiveChatRulesTest {
     }
 
     @Test
+    @DisplayName("every source has its own icon, each a distinct glyph")
+    void everySourceHasAnIcon() {
+        Set<Character> glyphs = new java.util.HashSet<>();
+        for (Source s : Source.values()) {
+            LiveChatRules.Icon icon = LiveChatRules.icon(new ChatLine(1, 0, "A", null, "x", s));
+            assertTrue(icon != null, s + " has an icon");
+            glyphs.add(icon.glyph);
+        }
+        assertEquals(Source.values().length, glyphs.size(), "no two sources share a glyph");
+    }
+
+    @Test
     @DisplayName("line: [Live] <icon> Name: text, the icon in the icon font, the name coloured by room")
     void line() {
         ChatLine l = new ChatLine(1, 0, "Viewer", null, "hi there", Source.DISCORD);
@@ -130,7 +142,10 @@ class LiveChatRulesTest {
         assertEquals(TextColor.fromLegacyFormat(ChatFormatting.WHITE), glyph.getColor(), "white, so the glyph keeps its colours");
         assertEquals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE), LiveChatRules.line(t).getSiblings().get(2).getStyle().getColor());
         ChatLine o = new ChatLine(3, 0, "Bot", null, "?", Source.OTHER);
-        assertEquals("chat.dungeontrain.live_chat.prefix Bot: ?", LiveChatRules.line(o).getString(), "an unknown room has no icon");
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE006 Bot: ?", LiveChatRules.line(o).getString(), "an unknown room gets the plain bubble");
+        ChatLine k = new ChatLine(4, 0, "KickViewer", null, "hey", Source.KICK);
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE005 KickViewer: hey", LiveChatRules.line(k).getString());
+        assertEquals(ChatFormatting.DARK_GREEN, LiveChatRules.nameColour(Source.KICK));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.WEB));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.DISCORD));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.OTHER));
@@ -147,7 +162,13 @@ class LiveChatRulesTest {
         assertEquals(LiveChatRules.Icon.WEB, LiveChatRules.icon(new ChatLine(1, 0, "W", null, "x", Source.WEB)));
         assertEquals(LiveChatRules.Icon.DISCORD, LiveChatRules.icon(new ChatLine(1, 0, "D", null, "x", Source.DISCORD)));
         assertEquals(LiveChatRules.Icon.TWITCH, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TWITCH)));
-        assertNull(LiveChatRules.icon(new ChatLine(1, 0, "O", null, "x", Source.OTHER)));
+        assertEquals(LiveChatRules.Icon.KICK, LiveChatRules.icon(new ChatLine(1, 0, "K", null, "x", Source.KICK)));
+        assertEquals(LiveChatRules.Icon.OTHER, LiveChatRules.icon(new ChatLine(1, 0, "O", null, "x", Source.OTHER)), "an unknown room: the plain bubble");
+        assertEquals(LiveChatRules.Icon.YOUTUBE, LiveChatRules.icon(new ChatLine(1, 0, "Y", null, "x", Source.YOUTUBE)));
+        assertEquals(LiveChatRules.Icon.TIKTOK, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TIKTOK)));
+        assertEquals(LiveChatRules.Icon.FACEBOOK, LiveChatRules.icon(new ChatLine(1, 0, "F", null, "x", Source.FACEBOOK)));
+        assertEquals(LiveChatRules.Icon.INSTAGRAM, LiveChatRules.icon(new ChatLine(1, 0, "I", null, "x", Source.INSTAGRAM)));
+        assertEquals(ChatFormatting.RED, LiveChatRules.nameColour(Source.YOUTUBE));
     }
 
     @Test
@@ -171,5 +192,33 @@ class LiveChatRulesTest {
         assertFalse(LiveChatRules.isVoidWhisper(Component.translatable(LiveChatRules.CONNECTED_KEY)));
         assertFalse(LiveChatRules.isVoidWhisper(Component.literal("Steve whispers into the void, will anyone answer?")));
         assertFalse(LiveChatRules.isVoidWhisper(null));
+    }
+
+    @Test
+    @DisplayName("showDeath: not on the dying player's own client, nor for a player in their world")
+    void showDeath() {
+        LiveFeedClient.Death steve = new LiveFeedClient.Death("Steve", null);
+        assertTrue(LiveChatRules.showDeath(steve, "Me", Set.of("Alex")));
+        assertFalse(LiveChatRules.showDeath(steve, "steve", Set.of()), "my own death");
+        assertFalse(LiveChatRules.showDeath(steve, "Me", Set.of("Alex", "STEVE")), "a world-mate saw vanilla's message");
+    }
+
+    @Test
+    @DisplayName("deathFallback: the relay's English suffix comes off so the line isn't doubled")
+    void deathFallback() {
+        assertEquals("Steve was slain by Zombie", LiveChatRules.deathFallback("Steve was slain by Zombie while watching the stream"));
+        assertEquals("Steve died", LiveChatRules.deathFallback("Steve died"));
+        assertEquals("", LiveChatRules.deathFallback(null));
+    }
+
+    @Test
+    @DisplayName("deathLine: [Live] then the key with the cause as a plain cleaned literal")
+    void deathLine() {
+        Component line = LiveChatRules.deathLine("chat.dungeontrain.live.viewer_died", "Steve \u00a7kwas slain");
+        Component body = line.getSiblings().get(1);
+        net.minecraft.network.chat.contents.TranslatableContents t =
+            (net.minecraft.network.chat.contents.TranslatableContents) body.getContents();
+        assertEquals("chat.dungeontrain.live.viewer_died", t.getKey());
+        assertEquals("Steve was slain", ((Component) t.getArgs()[0]).getString());
     }
 }

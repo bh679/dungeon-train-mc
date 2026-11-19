@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.portal;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -82,5 +84,44 @@ final class PortalRoomMemoryTest {
 
         assertEquals(List.of(Path.of("b.nbt"), Path.of("c.nbt")), PortalRoomMemory.toPrune(writtenAt, 2));
         assertEquals(List.of(), PortalRoomMemory.toPrune(writtenAt, 4));
+    }
+    @Test
+    @DisplayName("each copy of a pair's room has its own file, negative tiles included")
+    void tileFilesAreDistinctPerCopy() {
+        assertEquals("42_-3_7.nbt", PortalRoomMemory.tileFileName(42, new PortalRoomTiling.Tile(-3, 7)));
+        assertFalse(PortalRoomMemory.tileFileName(4, new PortalRoomTiling.Tile(2, 1))
+            .equals(PortalRoomMemory.tileFileName(42, new PortalRoomTiling.Tile(-1, 1))));
+    }
+
+    @Test
+    @DisplayName("a copy a player stood in is remembered; the base room is left to the pair's own memory")
+    void tileTouchesAreTrackedPerPairAndSkipTheBase() {
+        PortalRoomMemory.clearSession();
+        try {
+            PortalRoomTiling.Tile copy = new PortalRoomTiling.Tile(-3, -7);
+            PortalRoomMemory.markTileTouched(75, copy);
+            PortalRoomMemory.markTileTouched(75, PortalRoomTiling.Tile.BASE);
+
+            assertTrue(PortalRoomMemory.isTileTouched(75, copy));
+            assertFalse(PortalRoomMemory.isTileTouched(75, PortalRoomTiling.Tile.BASE));
+            assertFalse(PortalRoomMemory.isTileTouched(76, copy));
+
+            PortalRoomMemory.clearSession();
+            assertFalse(PortalRoomMemory.isTileTouched(75, copy));
+        } finally {
+            PortalRoomMemory.clearSession();
+        }
+    }
+
+    @Test
+    @DisplayName("a room box lists every chunk column it touches, each once")
+    void chunkSpanCoversEveryColumnTheBoxTouches() {
+        // Inside one chunk: one column.
+        assertEquals(List.of(new ChunkPos(0, 0)),
+            PortalRoomMemory.chunkSpan(new BlockPos(1, 60, 1), new Vec3i(10, 5, 10)));
+        // Straddling a border on both axes, and negative coordinates: 2x2 columns.
+        List<ChunkPos> span = PortalRoomMemory.chunkSpan(new BlockPos(-3, 60, 14), new Vec3i(6, 5, 4));
+        assertEquals(List.of(new ChunkPos(-1, 0), new ChunkPos(-1, 1), new ChunkPos(0, 0), new ChunkPos(0, 1)), span);
+        assertEquals(span.size(), span.stream().distinct().count());
     }
 }

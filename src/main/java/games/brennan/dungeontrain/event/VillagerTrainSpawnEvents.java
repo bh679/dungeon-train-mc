@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.GearResaleFloor;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.NewJobMendingBlock;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import games.brennan.dungeontrain.difficulty.TradeGearScaler;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -21,6 +23,7 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import org.slf4j.Logger;
@@ -157,8 +160,7 @@ public final class VillagerTrainSpawnEvents {
         // villager as a merchant: a fresh spawn we haven't rerolled, or one that
         // just claimed a job this tick. An established villager loaded from disk
         // keeps its saved offers — we must not re-roll its trades on every chunk
-        // load. (Restocking never happens regardless — our offers are pre-baked,
-        // not workstation-driven.)
+        // load. (Nor do they restock by themselves: TrainVillagerNoRestockMixin.)
         if (villager.getTags().contains(REROLLED_TAG) && !justClaimed) return;
 
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
@@ -190,11 +192,34 @@ public final class VillagerTrainSpawnEvents {
             scaled.add(TradeGearScaler.scale(offer, carriageIndex, posTier,
                 villager.getRandom(), serverLevel.registryAccess()));
         }
-        villager.setOffers(scaled);
+        // Only a librarian the train spawns may sell Mending. A roll on reload is a villager
+        // that took its job in play (or claimed a placed lectern), so its Mending books go.
+        if (event.loadedFromDisk()) {
+            NewJobMendingBlock.replaceMendingBooks(villager, scaled, 0);
+            villager.addTag(NewJobMendingBlock.BLOCKED_TAG);
+        }
+        villager.setOffers(withResaleFloor(scaled));
         villager.addTag(REROLLED_TAG);
 
         LOGGER.info("[DungeonTrain] Rerolled train villager: uuid={} profession={} level={}",
             villager.getUUID(), profession, newLevel);
+    }
+
+    /**
+     * Raises every gear and enchanted-book offer to at least what Trade Everything would pay for it
+     * ({@link GearResaleFloor}), so buying here and selling to another villager can't profit. Without
+     * Trade Everything, or if its API throws, the offers are returned unchanged.
+     */
+    private static MerchantOffers withResaleFloor(MerchantOffers offers) {
+        if (!ModList.get().isLoaded("tradeeverything")) return offers;
+        try {
+            MerchantOffers floored = new MerchantOffers();
+            for (MerchantOffer offer : offers) floored.add(GearResaleFloor.apply(offer));
+            return floored;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not apply the gear resale floor; offers left as rolled: {}", t.toString());
+            return offers;
+        }
     }
 
     /**

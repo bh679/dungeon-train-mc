@@ -12,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import games.brennan.dungeontrain.event.PrefabUseHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,7 +20,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.decoration.GlowItemFrame;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -33,13 +33,12 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
+import static games.brennan.dungeontrain.editor.EditorFeedback.actionBar;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side driver for the container-contents world-space menu (C key).
@@ -55,7 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *       untouched.</li>
  * </ul>
  */
-public final class ContainerContentsMenuController {
+public final class ContainerContentsMenuController extends PlayerMenuController<ContainerContentsMenuController.OpenMenu> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -68,30 +67,37 @@ public final class ContainerContentsMenuController {
      * {@link LootPrefabStore#CATEGORY_ITEM_FRAME} for the corresponding entity.
      * The save flow reads this to route prefabs to the right creative tab.
      */
-    private record OpenMenu(String plotKey, BlockPos localPos, Direction face, Vec3 up, String category) {}
+    record OpenMenu(String plotKey, BlockPos localPos, Direction face, Vec3 up, String category) {}
 
-    private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
+    public static final ContainerContentsMenuController INSTANCE = new ContainerContentsMenuController();
 
-    private ContainerContentsMenuController() {}
-
-    public static void forget(ServerPlayer player) {
-        OPEN.remove(player.getUUID());
+    private ContainerContentsMenuController() {
+        super("ContainerContentsMenu", "container contents");
     }
 
-    public static void clearAll() {
-        OPEN.clear();
+    @Override
+    protected String requiresOpKey() {
+        return "chat.dungeontrain.editor_bar.contents_menu.requires_op";
+    }
+
+    @Override
+    protected String keyOf(OpenMenu state) {
+        return state.plotKey();
+    }
+
+    /** The undo path's resync: wherever the menu is anchored, re-send it. */
+    @Override
+    protected void resync(ServerPlayer player, OpenMenu open) {
+        resyncIfOpen(player, open.plotKey(), open.localPos());
     }
 
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
-            OPEN.remove(player.getUUID());
+            INSTANCE.remove(player);
             DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
             return;
         }
-        if (!player.hasPermissions(2)) {
-            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.requires_op"), ChatFormatting.RED);
-            return;
-        }
+        if (!INSTANCE.requireOp(player)) return;
 
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
@@ -151,14 +157,37 @@ public final class ContainerContentsMenuController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.container_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
-        BlockPos clampedLocal = clampToFootprint(localPos, plot);
+        BlockPos clampedLocal = MenuPanelGeometry.clampToFootprint(localPos, plot);
         BlockPos clampedWorld = plot.origin().offset(clampedLocal);
 
+        prefillVault(level, plot, clampedLocal, clampedWorld);
+
         Direction face = bhit.getDirection();
-        Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up,
+        Vec3 up = MenuPanelGeometry.computeUp(face, player);
+        INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clampedLocal));
+    }
+
+    /**
+     * A vault with no loot of its own opens with vanilla's trial reward already in it, as an
+     * ordinary local pool the author can edit: that is what it rolls at spawn anyway, so the menu
+     * shows it instead of an empty list. A linked vault keeps its prefab.
+     *
+     * <p>Held in the cached store, not saved. Opening a menu is not an edit, and a file written here
+     * would count as custom content and put every later run into Free Play. The first real edit
+     * through the menu saves the store, prefill included; until then the vault rolls this same pool
+     * at spawn without it.</p>
+     */
+    private static void prefillVault(ServerLevel level, BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos) {
+        if (!VaultLoot.isVault(level.getBlockState(worldPos))) return;
+        ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
+        if (store.linkAt(localPos) != null || !store.poolAt(localPos).isEmpty()) return;
+        ContainerContentsPool pool = VaultLoot.defaultPool(ContainerContentsPool.DEFAULT_VAULT_KEY);
+        if (pool.isEmpty()) return;
+        store.putPool(localPos, pool);
+        rerollLocalContainer(level, plot, localPos, pool);
     }
 
     /**
@@ -177,7 +206,7 @@ public final class ContainerContentsMenuController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.entity_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
-        BlockPos clampedLocal = clampToFootprint(localPos, plot);
+        BlockPos clampedLocal = MenuPanelGeometry.clampToFootprint(localPos, plot);
         BlockPos clampedWorld = plot.origin().offset(clampedLocal);
 
         // Face the player horizontally — vertical Y faces would force the
@@ -185,12 +214,13 @@ public final class ContainerContentsMenuController {
         // a horizontal cardinal direction; flipping by 180° points it at the
         // player, so the menu's front faces the author.
         Direction face = Direction.fromYRot(player.getYRot() + 180);
-        Vec3 up = computeUp(face, player);
+        Vec3 up = MenuPanelGeometry.computeUp(face, player);
         String category = entity instanceof ArmorStand
             ? LootPrefabStore.CATEGORY_ARMOR_STAND
             : LootPrefabStore.CATEGORY_ITEM_FRAME;
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up, category));
+        INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up, category));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clampedLocal));
     }
 
     /**
@@ -201,10 +231,19 @@ public final class ContainerContentsMenuController {
      * the saved prefab to the right creative tab.
      */
     public static String categoryFor(ServerPlayer player) {
-        OpenMenu open = OPEN.get(player.getUUID());
+        OpenMenu open = INSTANCE.open(player);
         return open == null ? LootPrefabStore.CATEGORY_LOOT : open.category();
     }
 
+
+    /** Most characters of a row's book label the sync packet carries. */
+    private static final int BOOK_LABEL_MAX = 64;
+
+    /** A row's book label: a signed book's title, or a book entry's enchantments; cut to fit the packet. */
+    private static String rowBookLabel(ContainerContentsEntry e) {
+        String label = e.book() != null ? e.book().title() : e.enchants() != null ? e.enchants().label() : "";
+        return label.length() <= BOOK_LABEL_MAX ? label : label.substring(0, BOOK_LABEL_MAX - 3) + "...";
+    }
     /**
      * Entity raycast for the {@link #toggle} menu. Mirrors the vanilla
      * {@code Entity#pick}-like pattern using
@@ -234,22 +273,6 @@ public final class ContainerContentsMenuController {
             || entity instanceof GlowItemFrame;
     }
 
-    private static Vec3 computeUp(Direction face, Player player) {
-        if (face.getAxis() != Direction.Axis.Y) return new Vec3(0, 1, 0);
-        Vec3 look = player.getLookAngle();
-        Vec3 horizontal = new Vec3(look.x, 0, look.z);
-        if (horizontal.lengthSqr() < 1.0e-6) horizontal = new Vec3(0, 0, 1);
-        return horizontal.normalize();
-    }
-
-    private static BlockPos clampToFootprint(BlockPos localPos, BlockVariantPlot plot) {
-        net.minecraft.core.Vec3i f = plot.footprint();
-        int x = Math.max(0, Math.min(f.getX() - 1, localPos.getX()));
-        int y = Math.max(0, Math.min(f.getY() - 1, localPos.getY()));
-        int z = Math.max(0, Math.min(f.getZ() - 1, localPos.getZ()));
-        return new BlockPos(x, y, z);
-    }
-
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
                                  BlockPos localPos, BlockPos worldPos,
                                  Direction face, Vec3 up) {
@@ -258,37 +281,41 @@ public final class ContainerContentsMenuController {
         String link = store.linkAt(localPos);
         BlockState state = player.serverLevel().getBlockState(worldPos);
         int containerSize = ContainerContentsRoller.slotsForContainer(state);
+        String vaultKey = VaultLoot.isVault(state) ? pool.vaultKey() : null;
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link));
+            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link, vaultKey));
     }
 
     private static ContainerContentsSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
         Direction face, Vec3 up, ContainerContentsPool pool, int containerSize,
-        String link
+        String link, String vaultKey
     ) {
-        Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
-        Vec3 faceCentre = new Vec3(
-            worldPos.getX() + 0.5 + face.getStepX() * 0.5,
-            worldPos.getY() + 0.5 + face.getStepY() * 0.5,
-            worldPos.getZ() + 0.5 + face.getStepZ() * 0.5);
-        Vec3 anchor = faceCentre.add(normal.scale(0.02));
-        Vec3 right = up.cross(normal).normalize();
+        Vec3 normal = MenuPanelGeometry.normalOf(face);
+        Vec3 anchor = MenuPanelGeometry.faceAnchor(worldPos, face);
+        Vec3 right = MenuPanelGeometry.right(up, normal);
 
         List<ContainerContentsSyncPacket.Entry> entries = new ArrayList<>(pool.entries().size());
         for (ContainerContentsEntry e : pool.entries()) {
             entries.add(new ContainerContentsSyncPacket.Entry(
-                e.itemId().toString(), e.count(), e.weight(),
+                e.itemId().toString(), e.count(), e.minCount(), e.weight(),
                 e.randomDurability(), e.durabilityChance(),
                 e.randomEnchantment(), e.enchantmentChance(),
                 e.slotOverride(),
                 e.potionId() == null ? "" : e.potionId().toString(),
                 e.scaleWithDistance(),
                 e.potionForm().ordinal(),
-                e.book() == null ? "" : e.book().title()));
+                rowBookLabel(e),
+                e.enchants() == null ? 0 : e.enchants().randomMin(),
+                e.enchants() == null ? 0 : e.enchants().randomMax(),
+                e.enchants() == null ? 0 : e.enchants().levelMin(),
+                e.enchants() == null ? 0 : e.enchants().levelMax(),
+                BookEnchantsMenuOps.syncList(e.enchants()),
+                e.includeLuck(),
+                e.hasContents() ? e.contents() : ""));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
-            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
+            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
     }
 
     /**
@@ -304,18 +331,16 @@ public final class ContainerContentsMenuController {
      */
     public static void openAt(ServerPlayer player, BlockVariantPlot plot,
                               BlockPos localPos, Direction face, Vec3 up) {
-        if (!player.hasPermissions(2)) {
-            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.requires_op"), ChatFormatting.RED);
-            return;
-        }
-        BlockPos clamped = clampToFootprint(localPos, plot);
+        if (!INSTANCE.requireOp(player)) return;
+        BlockPos clamped = MenuPanelGeometry.clampToFootprint(localPos, plot);
         BlockPos worldPos = plot.origin().offset(clamped);
         // External openAt callers target container blocks (variant preview path) —
         // default to the loot category so saves from this entry land in the
         // Containers / Loot tab as before.
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clamped, face, up,
+        INSTANCE.put(player, new OpenMenu(plot.key(), clamped, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clamped, worldPos, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clamped));
     }
 
     /**
@@ -325,20 +350,8 @@ public final class ContainerContentsMenuController {
      * {@link games.brennan.dungeontrain.event.PrefabUseHandler} after they
      * mutate the link state behind the controller's back.
      */
-    /**
-     * Re-send this player's open container-contents menu, wherever it is
-     * anchored. The editor undo path's counterpart to
-     * {@link #resyncIfOpen(ServerPlayer, String, BlockPos)}, which needs the
-     * caller to already know the anchor.
-     */
-    public static void resyncOpen(ServerPlayer player) {
-        OpenMenu open = OPEN.get(player.getUUID());
-        if (open == null) return;
-        resyncIfOpen(player, open.plotKey(), open.localPos());
-    }
-
     public static void resyncIfOpen(ServerPlayer player, String plotKey, BlockPos localPos) {
-        OpenMenu open = OPEN.get(player.getUUID());
+        OpenMenu open = INSTANCE.open(player);
         if (open == null) return;
         if (!open.plotKey().equals(plotKey)) return;
         if (!open.localPos().equals(localPos)) return;
@@ -351,22 +364,12 @@ public final class ContainerContentsMenuController {
     }
 
     public static void applyEdit(ServerPlayer player, ContainerContentsEditPacket packet) {
-        if (!player.hasPermissions(2)) {
-            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: player {} not OP",
-                player.getName().getString());
-            return;
-        }
-        ServerLevel level = player.serverLevel();
-        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         // Authorised against the menu the server itself opened for this player, rather than against
         // where they are standing now — which is both stronger (the key came from the server, not
         // the packet) and what lets the author step off the plot while the menu is up.
-        OpenMenu open = OPEN.get(player.getUUID());
-        if (open == null || !open.plotKey().equals(packet.plotKey())) {
-            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: player {} has no open menu for '{}'",
-                player.getName().getString(), packet.plotKey());
-            return;
-        }
+        if (INSTANCE.authorise(player, packet.plotKey()) == null) return;
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveByKey(level, packet.plotKey(), dims);
         if (plot == null) {
             LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: no plot for '{}'",
@@ -379,6 +382,7 @@ public final class ContainerContentsMenuController {
                 localPos);
             return;
         }
+        INSTANCE.armUndo(player);
 
         ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
         ContainerContentsPool current = store.poolAt(localPos);
@@ -391,6 +395,8 @@ public final class ContainerContentsMenuController {
                 int count;
                 ResourceLocation potionId = null;
                 StoredBook book = null;
+                BookEnchants enchants = null;
+                String contents = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -414,13 +420,18 @@ public final class ContainerContentsMenuController {
                     potionId = ContainerContentsPotions.potionIdOf(held);
                     // Likewise a signed book keeps its title, author and pages.
                     book = ContainerContentsBooks.bookOf(held, player.registryAccess());
+                    // And an enchanted book keeps its enchantments.
+                    enchants = ContainerContentsEnchants.enchantsOf(held);
+                    // And a loot prefab that is a shulker box adds a shulker packed from that prefab.
+                    contents = ContainerContentsEntry.isShulkerBox(id) ? PrefabUseHandler.lootPrefabIdOf(held) : null;
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.pool_full", ContainerContentsPool.MAX_ENTRIES),
                         ChatFormatting.YELLOW);
                     return;
                 }
-                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book));
+                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book)
+                    .withEnchants(enchants).withContents(contents));
                 dirty = true;
             }
             case REMOVE -> {
@@ -535,6 +546,15 @@ public final class ContainerContentsMenuController {
                 next = current.replaced(idx, e.withCount(newCount));
                 dirty = true;
             }
+            case SET_COUNT_RANGE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                ContainerContentsEntry ranged = e.withCountRange(packet.value2(), packet.delta());
+                if (ranged.count() == e.count() && ranged.minCount() == e.minCount()) return;
+                next = current.replaced(idx, ranged);
+                dirty = true;
+            }
             case SET_DUR_CHANCE -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;
@@ -558,6 +578,16 @@ public final class ContainerContentsMenuController {
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.withRandomDurability(!e.randomDurability()));
+                dirty = true;
+            }
+            case BUMP_BOOK_ENCH, SET_BOOK_ENCH_RANGE, BUMP_BOOK_ENCH_LEVEL, SET_BOOK_ENCH_LEVEL_RANGE,
+                 TOGGLE_BOOK_ENCH, SET_BOOK_ENCH_ALL -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                ContainerContentsEntry edited = BookEnchantsMenuOps.apply(packet, e, player.registryAccess());
+                if (edited.equals(e)) return;
+                next = current.replaced(idx, edited);
                 dirty = true;
             }
             case TOGGLE_RAND_ENCH -> {
@@ -597,11 +627,58 @@ public final class ContainerContentsMenuController {
                 next = current.replaced(idx, e.withScaleWithDistance(!e.scaleWithDistance()));
                 dirty = true;
             }
+            case TOGGLE_LUCK -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.withIncludeLuck(!e.includeLuck()));
+                dirty = true;
+            }
             case CYCLE_POTION_FORM -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.cyclePotionForm());
+                dirty = true;
+            }
+            case SET_CONTENTS -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                if (!e.isShulkerBox()) return;
+                String held = PrefabUseHandler.lootPrefabIdOf(player.getMainHandItem());
+                if (held != null && !LootPrefabStore.contains(held)) held = null;
+                if (java.util.Objects.equals(held, e.contents())) return;
+                next = current.replaced(idx, e.withContents(held));
+                actionBar(player, held == null
+                    ? Component.translatable("chat.dungeontrain.editor_bar.contents_menu.contents_cleared")
+                    : Component.translatable("chat.dungeontrain.editor_bar.contents_menu.contents_set", held),
+                    ChatFormatting.GREEN);
+                dirty = true;
+            }
+            case CYCLE_VAULT_KEY -> {
+                String nextKey = VaultLoot.nextKey(current.vaultKey());
+                String linkedId = store.linkAt(localPos);
+                // Linked to one of the two default vault prefabs: link the other one. Writing the
+                // other default's loot into the linked prefab would overwrite that prefab's loot.
+                String relink = linkedId == null ? null : VaultLoot.otherDefaultPrefab(linkedId);
+                if (relink != null) {
+                    store.setLink(localPos, relink);
+                    try {
+                        store.save();
+                    } catch (IOException e) {
+                        LOGGER.error("[DungeonTrain] Vault relink save failed for {}: {}", plot.key(), e.toString());
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed",
+                            e.getClass().getSimpleName()), ChatFormatting.RED);
+                        return;
+                    }
+                    rerollLocalContainer(level, plot, localPos, store.poolAt(localPos));
+                    resyncSameFace(player, plot, localPos);
+                    return;
+                }
+                // Any other linked prefab only changes its key; a local pool that is still its
+                // key's default loot follows the vault type to the other default.
+                next = linkedId == null ? VaultLoot.withKey(current, nextKey) : current.withVaultKey(nextKey);
                 dirty = true;
             }
             case UNLINK -> {
@@ -654,7 +731,7 @@ public final class ContainerContentsMenuController {
             // CLEAR on a linked container empties the template — close the
             // menu since the pool is now empty.
             if (next.isEmpty() && packet.op() == ContainerContentsEditPacket.Op.CLEAR) {
-                OPEN.remove(player.getUUID());
+                INSTANCE.remove(player);
                 DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
                 return;
             }
@@ -685,7 +762,7 @@ public final class ContainerContentsMenuController {
         rerollLocalContainer(level, plot, localPos, next);
 
         if (next.isEmpty() && packet.op() == ContainerContentsEditPacket.Op.CLEAR) {
-            OPEN.remove(player.getUUID());
+            INSTANCE.remove(player);
             DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
             return;
         }
@@ -716,10 +793,11 @@ public final class ContainerContentsMenuController {
         be.loadCustomOnly(rolled, level.registryAccess());
         be.setChanged();
         ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
+        VaultLoot.syncState(level, worldPos);
     }
 
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
-        OpenMenu open = OPEN.get(player.getUUID());
+        OpenMenu open = INSTANCE.open(player);
         Direction face;
         Vec3 up;
         if (open != null
@@ -729,14 +807,10 @@ public final class ContainerContentsMenuController {
             up = open.up();
         } else {
             face = Direction.UP;
-            up = computeUp(face, player);
+            up = MenuPanelGeometry.computeUp(face, player);
         }
         BlockPos worldPos = plot.origin().offset(localPos);
         sendSync(player, plot, localPos, worldPos, face, up);
-    }
-
-    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
-        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 
     /**

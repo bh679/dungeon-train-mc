@@ -288,6 +288,31 @@ public record PortalCarriageLayout(int length, int height, int width) {
     }
 
     /**
+     * How far inside each side wall's inner face the swap zone stops. A player hugging the inside of
+     * a wall has their centre 0.3 off it, so they still count; one hugging the outside is
+     * {@code 0.3 + 1 + SWAP_WALL_INSET} away.
+     */
+    public static final double SWAP_WALL_INSET = 0.25;
+
+    /**
+     * True if a player (or mob, or pearl) at this local position is somewhere a swap may move them
+     * from: {@link #insideCorridor}, with the side-wall reach pulled back from half way into the wall
+     * block to just inside its inner face.
+     *
+     * <p>Narrower than {@link #insideCorridor} on purpose and only for the swap decision. The corridor
+     * test's half-block Z pad reached into the wall, which left a player standing against the
+     * <i>outside</i> of it only 0.8 of a block from counting as inside; any drift in the frame or a
+     * block built onto the carriage closed that gap and the facing rule carried them through the
+     * wall. Puppets, crossing light and edit mirroring keep the wider test, since they must still see
+     * somebody standing at the wall.</p>
+     */
+    public boolean insideSwapZone(double localX, double localY, double localZ) {
+        if (!insideCorridor(localX, localY, localZ)) return false;
+        return localZ >= interiorMinZ() + SWAP_WALL_INSET
+            && localZ <= interiorMaxZ() + 1 - SWAP_WALL_INSET;
+    }
+
+    /**
      * True if a local Y/Z pair lies in the two-block doorway column an end plane leaves open — the
      * cells {@link #isDoorwayCell} describes, as a continuous volume.
      *

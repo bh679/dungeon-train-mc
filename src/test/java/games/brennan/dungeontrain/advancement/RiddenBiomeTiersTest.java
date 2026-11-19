@@ -19,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The riding biome tiers were raised to count every biome the train meets — modded and the train's own
  * Nether and End among them. New ids reset everyone who earned the old, lower tiers; the old display keys
- * are kept so every translation carries over, and each derived hint key exists in English.
+ * are kept so every translation carries over, and each derived hint key exists in English. Terra Omnia asks
+ * for every biome there is ({@link TerraOmnia}), so it has no threshold: it fires on its own action.
  */
 final class RiddenBiomeTiersTest {
 
@@ -27,8 +28,7 @@ final class RiddenBiomeTiersTest {
     private static final Map<String, String[]> TIERS = Map.of(
             "ridden_biomes_25", new String[] {"25", "biomes_10"},
             "ridden_biomes_50", new String[] {"50", "biomes_17"},
-            "ridden_biomes_100", new String[] {"100", "biomes_25"},
-            "ridden_biomes_150", new String[] {"150", "all_biome_families"});
+            "ridden_biomes_100", new String[] {"100", "biomes_25"});
 
     @Test
     @DisplayName("each tier: new id, new threshold, old title key, a hint for its own id")
@@ -46,5 +46,21 @@ final class RiddenBiomeTiersTest {
             assertTrue(en.has("advancements.dungeontrain.dungeon_train." + t.getKey() + ".hint"), t.getKey() + " hint");
             assertFalse(Files.exists(DIR.resolve(t.getValue()[1] + ".json")), "old id still ships: " + t.getValue()[1]);
         }
+    }
+
+    @Test
+    @DisplayName("Terra Omnia: every biome, on its own action, under its old title key; the 150 tier is gone")
+    void terraOmnia() throws IOException {
+        JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        JsonObject json = JsonParser.parseString(Files.readString(DIR.resolve("ridden_biomes_all.json"),
+                StandardCharsets.UTF_8)).getAsJsonObject();
+        JsonObject criterion = json.getAsJsonObject("criteria").getAsJsonObject("every_biome");
+        assertEquals("dungeontrain:gameplay_action", criterion.get("trigger").getAsString());
+        assertEquals(TerraOmnia.ACTION, criterion.getAsJsonObject("conditions").get("actionId").getAsString());
+        assertEquals("advancements.dungeontrain.dungeon_train.all_biome_families.title",
+                json.getAsJsonObject("display").getAsJsonObject("title").get("translate").getAsString());
+        assertTrue(en.has("advancements.dungeontrain.dungeon_train.ridden_biomes_all.hint"));
+        assertFalse(Files.exists(DIR.resolve("ridden_biomes_150.json")), "the 150 tier still ships");
     }
 }

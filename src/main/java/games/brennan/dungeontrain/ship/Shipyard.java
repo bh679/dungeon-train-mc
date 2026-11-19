@@ -30,6 +30,16 @@ public interface Shipyard {
     /** Snapshot of every managed ship currently loaded in the level. */
     List<ManagedShip> findAll();
 
+    /**
+     * A counter that moves every time this shipyard itself adds or removes a ship ({@link #assemble},
+     * {@link #delete}, {@link #reloadFromHolding}). Per-tick snapshots of the fleet (see
+     * {@code ResidentCarriageBoxes}) compare it to learn that their tick's view is already stale.
+     * Ships Sable loads or culls on its own do not move it; those are picked up next tick.
+     */
+    default long generation() {
+        return 0L;
+    }
+
     /** The managed ship currently owning {@code pos}, or {@code null} if none. */
     @Nullable
     ManagedShip findAt(BlockPos pos);

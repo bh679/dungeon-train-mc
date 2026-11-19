@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
@@ -309,9 +311,9 @@ public final class CarriagePlacer {
         // The stage this carriage lands in is what its stage placeholder blocks resolve to — held
         // in scope for the whole stamp (shell, parts, portal corridor, sidecars, contents).
         String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
-        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> placeAtGuarded(
-            level, origin, variant, dims, config, carriageIndex,
-            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX)));
+        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> ProvenanceScope.with(carriageIndex,
+            () -> placeAtGuarded(level, origin, variant, dims, config, carriageIndex,
+                applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX))));
     }
 
     /**
@@ -435,7 +437,7 @@ public final class CarriagePlacer {
             // returns "portal", "portal_middle" and null, and all three used to fall through both
             // arms in silence — which is how a 264-cell portal sidecar sat unapplied without ever
             // saying so. If a sidecar was authored and nothing laid it, that is worth a line.
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
+            VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
             if (!sidecar.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — {} basis has no "
                         + "per-position overlay ({} cells dropped).",
@@ -578,8 +580,8 @@ public final class CarriagePlacer {
         if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
         // Contents stamp after Sable assembly, outside placeAt's scope — re-enter it for the same stage.
         String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
-        return StagePlacementScope.with(stageId, () -> applyContents(level, origin, variant, dims, config,
-            carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX));
+        return StagePlacementScope.with(stageId, () -> ProvenanceScope.with(carriageIndex, () -> applyContents(level,
+            origin, variant, dims, config, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX)));
     }
 
     /**
@@ -592,6 +594,15 @@ public final class CarriagePlacer {
      * previous carriage at this shipyard position (rolling-window cycle).</p>
      */
     public static void applyContentsEntitiesAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
+    ) {
+        // Gear rolled onto stands and into frames here is marked with this carriage (ItemProvenance).
+        ProvenanceScope.run(carriageIndex,
+            () -> applyContentsEntitiesInScope(level, origin, variant, dims, config, carriageIndex, groupAnchorWorldX));
+    }
+
+    private static void applyContentsEntitiesInScope(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
     ) {
@@ -801,7 +812,7 @@ public final class CarriagePlacer {
                                                CarriageVariant variant, CarriageDims dims,
                                                long seed, int carriageIndex) {
         CarriageDims sidecarDims = variantDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         int spawned = 0;
         try (VariantConditions.Scope conds = VariantConditions.open(
@@ -993,7 +1004,7 @@ public final class CarriagePlacer {
         CarriageDims dims, long seed, int carriageIndex
     ) {
         CarriageDims sidecarDims = variantDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin,
             sidecarDims.length(), sidecarDims.height(), sidecarDims.width());
@@ -1007,7 +1018,7 @@ public final class CarriagePlacer {
                 // One write per space: a door / bed / tall plant cell owns two (MultiBlockVariants).
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
                         seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            StagePlacementScope.resolve(v.state()), v,
                             e.localPos(), seed, carriageIndex, lockId))) {
                     BlockPos world = origin.offset(w.localPos());
                     if (w.isAir()) {
@@ -1015,7 +1026,7 @@ public final class CarriagePlacer {
                     } else {
                         games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                             level, world, w.state(), w.entry().blockEntityNbt(),
-                            "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                            games.brennan.dungeontrain.editor.BlockVariantPlot.carriageKey(variant.id()), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
                         GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
@@ -1057,6 +1068,8 @@ public final class CarriagePlacer {
      * no train pair to repair; see the two-placeAt note on this class.</p>
      */
     private static void repairSeveredPair(ServerLevel level, int pairKey) {
+        // A rebuild is a copy; the real pair's severed state is none of its business.
+        if (games.brennan.dungeontrain.train.id.RebuildScope.active()) return;
         if (!PortalRegistry.get(level).repairPair(pairKey)) return;
         LOGGER.info("[DungeonTrain] Portal pair {} repaired: its corridors are being re-stamped from "
             + "their template, so the shell that was broken open is whole again.", pairKey);

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.discord;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
@@ -63,6 +64,13 @@ public final class TributePhotoReporter {
      */
     public static void postOwn(ServerPlayer tributer, int tributeNumber, int cost, byte[] png) {
         if (png == null || png.length == 0) return;
+        // Their own photo: Public posts off keeps it off Discord. Someone else's photo (post above) is
+        // dropped by the relay, which knows whose it is even when they are offline.
+        if (!ContentModeMirror.isPublicPostsOn(tributer.getUUID())) {
+            LOGGER.info("[DungeonTrain] {} has Public posts off — not posting their tributed photo.",
+                    tributer.getGameProfile().getName());
+            return;
+        }
         try {
             String name = tributer.getGameProfile().getName();
             LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the tribute-photos channel.", name);

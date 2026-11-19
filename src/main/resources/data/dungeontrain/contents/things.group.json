@@ -1,18 +1,18 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 20,
+  "selfWeight": 40,
   "variants": [
     {
       "id": "crates",
-      "weight": 20
+      "weight": 40
     },
     {
       "id": "crates2",
-      "weight": 10
+      "weight": 20
     },
     {
       "id": "trees",
-      "weight": 10
+      "weight": 20
     },
     {
       "id": "tntfull",

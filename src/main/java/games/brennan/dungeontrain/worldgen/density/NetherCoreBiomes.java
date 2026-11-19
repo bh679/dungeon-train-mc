@@ -98,7 +98,7 @@ public final class NetherCoreBiomes {
      * <ul>
      *   <li>{@code BETTER} — BetterNether biomes ({@link BetterNetherCoreBiomes});</li>
      *   <li>{@code BOP} — Biomes O' Plenty's Nether: each {@link BetterNetherCoreBiomes#CELL_BLOCKS}
-     *       cell takes one of BoP's TerraBlender Nether regions, and that region's
+     *       cell takes one of BoP's TerraBlender Nether regions or vanilla's own, and that region's
      *       climate table is sampled like the vanilla Nether — the way a BoP world blends its Nether;</li>
      *   <li>{@code OTHERSIDE} — Deeper Darker's Otherside, sampled from its own biome source and climate
      *       ({@code OthersideSettings}) at the same block X/Z the core's terrain is generated at;</li>
@@ -212,7 +212,7 @@ public final class NetherCoreBiomes {
             }
             Climate.Sampler sampler = nether.getChunkSource().randomState().sampler();
             BiomeSource vanilla = vanillaNetherSource(server, nether);
-            return new NetherCoreBiomes(vanilla, sampler, fallback, betterNether, resolveBopRegions(server), seed,
+            return new NetherCoreBiomes(vanilla, sampler, fallback, betterNether, resolveBopRegions(server, vanilla), seed,
                     othersideSource, othersideSampler);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture Nether biome source; vanilla core stays single-biome", t);
@@ -225,11 +225,14 @@ public final class NetherCoreBiomes {
 
     /**
      * The regions a BoP Nether pass cycles through: one climate table per Biomes O' Plenty TerraBlender
-     * Nether region — not vanilla's own region, so a BoP pass is all BoP. Each region keeps only vanilla and
-     * BoP biomes, so another mod's Nether biome never leaks into the band. Regions sorted by name for a
-     * stable seeded order. {@code null} (BoP passes stay vanilla) when BoP registers no Nether region.
+     * Nether region, plus {@code vanilla} (vanilla's own region), the way a BoP world blends its Nether. BoP's
+     * regions never place warped_forest, soul_sand_valley or basalt_deltas, so without vanilla's region those
+     * three would only ever appear in a world's first, vanilla-look Nether pass. Each BoP region keeps only
+     * vanilla and BoP biomes, so another mod's Nether biome never leaks into the band. BoP regions sorted by
+     * name, vanilla last, for a stable seeded order. {@code null} (BoP passes stay vanilla) when BoP registers
+     * no Nether region.
      */
-    private static BetterNetherCoreBiomes<BiomeSource> resolveBopRegions(MinecraftServer server) {
+    private static BetterNetherCoreBiomes<BiomeSource> resolveBopRegions(MinecraftServer server, BiomeSource vanilla) {
         try {
             Registry<Biome> registry = server.registryAccess().registryOrThrow(Registries.BIOME);
             List<Region> regions = new ArrayList<>(Regions.get(RegionType.NETHER));
@@ -251,8 +254,10 @@ public final class NetherCoreBiomes {
                 LOGGER.warn("[DungeonTrain] No Biomes O' Plenty Nether regions registered — BoP Nether bands stay vanilla");
                 return null;
             }
+            int bopCount = sources.size();
+            if (vanilla != null) sources.add(vanilla);
             long seed = server.getWorldData().worldGenOptions().seed() ^ 0x426F_504E_6574_6865L;
-            LOGGER.debug("[DungeonTrain] BoP Nether bands blend {} BoP regions", sources.size());
+            LOGGER.debug("[DungeonTrain] BoP Nether bands blend {} BoP regions + {} vanilla", bopCount, sources.size() - bopCount);
             return BetterNetherCoreBiomes.of(sources, seed);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to collect BoP Nether regions; BoP Nether bands stay vanilla", t);

@@ -16,13 +16,16 @@ import java.nio.file.Path;
 /**
  * The streamer's death clip ({@link LiveDeathClip}) looped as the opening death page's backdrop, in
  * place of its ride photo: decoded by the same ffmpeg → texture path the TVs use
- * ({@link LiveHlsSession#localLoop}), drawn cover-fit, with the page's dip-to-black and vignette
- * still laid over it by the caller. Nothing to draw until the clip is cut and its first frame is in;
+ * ({@link LiveHlsSession#localLoop}). The clip keeps its real shape (the streamer's window, via
+ * {@link LiveHlsSession#createFullView}); how it's fitted depends on where it shows. Here it is the
+ * page's full-screen backdrop, so it is drawn cover-fit: it fills the screen and crops what overflows,
+ * never stretched. The page's dip-to-black and vignette are still laid over it by the caller. Nothing to draw until the clip is cut and its first frame is in;
  * the page shows its photo until then. Render thread.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathClipBackground {
 
+    /** The decode is at least this size, in the clip's own shape. */
     static final int WIDTH = LiveDeathClip.WIDTH;
     static final int HEIGHT = WIDTH * 9 / 16;
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/death_clip");
@@ -41,29 +44,40 @@ public final class DeathClipBackground {
         if (session == null || !clip.equals(playing)) {
             close();
             session = LiveHlsSession.localLoop(clip, WIDTH, HEIGHT);
-            texture = (LiveFeedTexture) session.createTextureView(TEXTURE);
-            texture.register();
             playing = clip;
         }
         session.touch(ffmpeg);
+        if (session.frameSequence() == 0) return false;
+        // The texture is the clip's real size, made at its first frame (and again if that ever changed).
+        LiveFrameShape.Size size = session.shape();
+        if (texture == null || texture.getPixels() == null
+                || texture.getPixels().getWidth() != size.width() || texture.getPixels().getHeight() != size.height()) {
+            dropTexture();
+            texture = session.createFullView(TEXTURE);
+            texture.register();
+        }
         texture.uploadFrameAtTime(tick, partialTick, false);
         if (!texture.hasPicture()) return false;
-        DeathBackgroundPainter.drawCover(g, TEXTURE, WIDTH, HEIGHT, screenW, screenH);
+        DeathBackgroundPainter.drawCover(g, TEXTURE, size.width(), size.height(), screenW, screenH);
         return true;
     }
 
     /** Stops the decode and frees the texture. */
     public static void close() {
-        LiveFeedTexture t = texture;
+        dropTexture();
         LiveHlsSession s = session;
-        texture = null;
         session = null;
         playing = null;
+        if (s != null) s.close();
+    }
+
+    private static void dropTexture() {
+        LiveFeedTexture t = texture;
+        texture = null;
         if (t != null) {
             t.unregister();
             t.close();
         }
-        if (s != null) s.close();
     }
 
     @SubscribeEvent

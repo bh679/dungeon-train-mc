@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor.workbench;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
@@ -110,7 +111,7 @@ public final class WorkbenchVariantPlot implements BlockVariantPlot {
         ContainerContentsStore.setPathOverride(keyFor(stagedId), file);
     }
 
-    private TrackVariantBlocks doc() {
+    private VariantDoc doc() {
         return WorkbenchVariantStore.loadFor(plot.stagedId(), plot.size());
     }
 

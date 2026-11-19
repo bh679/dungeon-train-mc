@@ -20,6 +20,7 @@ public final class SpheresProgressionConfig {
     public static final int MAX_OFFSET_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_MIX_START_BLOCKS = 1750;
     public static final int DEFAULT_END_MIX_START_BLOCKS = 2500;
+    public static final int DEFAULT_OTHERSIDE_MIX_START_BLOCKS = 3250;
     public static final int DEFAULT_STRUCTURE_BOOST_START_BLOCKS = 3250;
     public static final int DEFAULT_STRUCTURE_BOOST_END_BLOCKS = 6250;
 
@@ -52,6 +53,7 @@ public final class SpheresProgressionConfig {
 
     private static ModConfigSpec.IntValue netherMixStart;
     private static ModConfigSpec.IntValue endMixStart;
+    private static ModConfigSpec.IntValue othersideMixStart;
     private static ModConfigSpec.IntValue structureBoostStart;
     private static ModConfigSpec.IntValue structureBoostEnd;
     private static ModConfigSpec.IntValue endSkyExitFade;
@@ -63,6 +65,7 @@ public final class SpheresProgressionConfig {
     private static ModConfigSpec.IntValue overworldWeight;
     private static ModConfigSpec.IntValue netherWeight;
     private static ModConfigSpec.IntValue endWeight;
+    private static ModConfigSpec.IntValue othersideWeight;
     private static ModConfigSpec.IntValue applyPerTick;
     private static ModConfigSpec.IntValue samplerThreads;
 
@@ -91,6 +94,11 @@ public final class SpheresProgressionConfig {
         endMixStart = b
                 .comment("Blocks into the spheres band where spheres can also be cut from the End. Default 2500.")
                 .defineInRange("spheresEndMixStartBlocks", DEFAULT_END_MIX_START_BLOCKS,
+                        MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
+        othersideMixStart = b
+                .comment("Blocks into the spheres band where spheres can also be cut from Deeper Darker's Otherside.",
+                        "Default 3250.")
+                .defineInRange("spheresOthersideMixStartBlocks", DEFAULT_OTHERSIDE_MIX_START_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         structureBoostStart = b
                 .comment("Blocks into the spheres band where the structure-chance boost starts (ramping from",
@@ -123,6 +131,10 @@ public final class SpheresProgressionConfig {
         endWeight = b
                 .comment("Relative weight of End spheres once the band mixes in the End. Default 1.")
                 .defineInRange("spheresMixEndWeight", DEFAULT_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
+        othersideWeight = b
+                .comment("Relative weight of Otherside (Deeper Darker) spheres once the band mixes in the Otherside.",
+                        "Default 1.")
+                .defineInRange("spheresMixOthersideWeight", DEFAULT_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
         applyPerTick = b
                 .comment("Other-dimension sphere chunks filled in per server tick once generated off-thread.",
                         "Default 4.")
@@ -140,6 +152,7 @@ public final class SpheresProgressionConfig {
                 DungeonTrainCommonConfig.getSpheresEndSkyStartBlocks(),
                 loaded ? netherMixStart.get() : DEFAULT_NETHER_MIX_START_BLOCKS,
                 loaded ? endMixStart.get() : DEFAULT_END_MIX_START_BLOCKS,
+                loaded ? othersideMixStart.get() : DEFAULT_OTHERSIDE_MIX_START_BLOCKS,
                 loaded ? structureBoostStart.get() : DEFAULT_STRUCTURE_BOOST_START_BLOCKS,
                 loaded ? structureBoostEnd.get() : DEFAULT_STRUCTURE_BOOST_END_BLOCKS,
                 loaded ? structureChance.get() : DEFAULT_STRUCTURE_CHANCE,
@@ -147,7 +160,8 @@ public final class SpheresProgressionConfig {
                 loaded ? structureBoostPeakMultiplier.get() : DEFAULT_STRUCTURE_BOOST_PEAK_MULTIPLIER,
                 loaded ? overworldWeight.get() : DEFAULT_WEIGHT,
                 loaded ? netherWeight.get() : DEFAULT_WEIGHT,
-                loaded ? endWeight.get() : DEFAULT_WEIGHT);
+                loaded ? endWeight.get() : DEFAULT_WEIGHT,
+                loaded ? othersideWeight.get() : DEFAULT_WEIGHT);
     }
 
     /**

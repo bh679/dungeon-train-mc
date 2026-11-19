@@ -144,7 +144,8 @@ public final class OverworldStretchBiomes {
         Climate.TargetPoint target = sampler.sample(qx, qy, qz);
         if (stretch == SecondLapOverworld.Stretch.BOP && !bopRegions.isEmpty()) {
             Holder<Biome> h = bopRegionAt(regionLayout(source), qx, qy, qz).findValue(target);
-            if (h != null) return h;                       // deferred / missing → vanilla
+            if (h != null) return h;
+            // deferred / missing → vanilla
         }
         Climate.ParameterList<Holder<Biome>> table =
                 allowBackport && stretch == SecondLapOverworld.Stretch.VANILLA ? vanilla : vanillaWithoutBackport;
@@ -187,11 +188,16 @@ public final class OverworldStretchBiomes {
 
     private Climate.ParameterList<Holder<Biome>> bopRegionAt(IExtendedParameterList<?> regionLayout,
                                                              int qx, int qy, int qz) {
-        if (regionLayout == null || !regionLayout.isInitialized()) return bopRegions.get(0);
+        return bopRegions.get(bopRegionIndexAt(regionLayout, qx, qy, qz));
+    }
+
+    /** Index into {@link #bopRegions} of the BoP region at the quart. */
+    private int bopRegionIndexAt(IExtendedParameterList<?> regionLayout, int qx, int qy, int qz) {
+        if (regionLayout == null || !regionLayout.isInitialized()) return 0;
         int index = regionLayout.getUniqueness(qx, qy, qz);
         Region region = regionLayout.getRegion(index);
         Integer own = region == null ? null : bopRegionIndex.get(region.getName());
-        return bopRegions.get(own != null ? own : Math.floorMod(index, bopRegions.size()));
+        return own != null ? own : Math.floorMod(index, bopRegions.size());
     }
 
     /** Build from the server's biome registry and TerraBlender's regions; {@code null} on any failure. */
@@ -243,6 +249,7 @@ public final class OverworldStretchBiomes {
                 bopRegions.add(withHolders(new Climate.ParameterList<>(points),
                         key -> key == Region.DEFERRED_PLACEHOLDER ? null : holder.apply(key)));
             }
+
 
             return new OverworldStretchBiomes(vanilla, vanillaWithoutBackport, List.copyOf(bopRegions),
                     Map.copyOf(bopRegionIndex), fallback);

@@ -26,6 +26,15 @@ public final class ModDataComponents {
         COMPONENTS.registerComponentType("tv_on",
             b -> b.persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL));
 
+    /**
+     * Which Live Feed stream a TV item remembers (1 or 2; absent = none): set when a tuned, switched-on
+     * TV is broken ({@code event/TvDropMemory}) and when its wearer solos a pane from the inventory
+     * ({@code net/TvStreamChoicePacket}); read when it is placed or worn. Persistent, synced.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> TV_STREAM =
+        COMPONENTS.registerComponentType("tv_stream",
+            b -> b.persistent(Codec.intRange(1, 2)).networkSynchronized(ByteBufCodecs.VAR_INT));
+
     private ModDataComponents() {}
 
     public static void register(IEventBus modBus) {

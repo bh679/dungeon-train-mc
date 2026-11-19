@@ -50,9 +50,13 @@ public final class WorldInfoReporter {
      * Mods page can show which files ship under which ids (hash-verified whitelist). Null when
      * unknown; they are then simply omitted from the payload.
      */
-    record ModEntry(String modId, String version, String sha1, Long size, String fileName) {
+    record ModEntry(String modId, String version, String sha1, Long size, String fileName, String carrierSha1) {
         ModEntry(String modId, String version) {
-            this(modId, version, null, null, null);
+            this(modId, version, null, null, null, null);
+        }
+
+        ModEntry(String modId, String version, String sha1, Long size, String fileName) {
+            this(modId, version, sha1, size, fileName, null);
         }
     }
 
@@ -158,6 +162,9 @@ public final class WorldInfoReporter {
             if (m.sha1() != null) mo.addProperty("sha1", m.sha1());
             if (m.size() != null) mo.addProperty("size", m.size());
             if (m.fileName() != null) mo.addProperty("fileName", m.fileName());
+            // The mods/ jar that generated this file, when the engine found one: lets the relay's
+            // server-side taint judge a launcher-generated file by its carrier.
+            if (m.carrierSha1() != null) mo.addProperty("carrierSha1", m.carrierSha1());
             modsArr.add(mo);
         }
         body.add("mods", modsArr);
@@ -199,7 +206,8 @@ public final class WorldInfoReporter {
             var file = games.brennan.dungeontrain.compat.DtModVerifyBridge.fileOf(info.getModId());
             out.add(file == null
                 ? new ModEntry(info.getModId(), info.getVersion().toString())
-                : new ModEntry(info.getModId(), info.getVersion().toString(), file.sha1(), file.size(), file.fileName()));
+                : new ModEntry(info.getModId(), info.getVersion().toString(), file.sha1(), file.size(), file.fileName(),
+                    file.carrierSha1()));
         }
         out.sort(Comparator.comparing(ModEntry::modId));
         return out;

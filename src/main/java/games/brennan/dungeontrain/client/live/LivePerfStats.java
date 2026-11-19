@@ -82,8 +82,10 @@ public final class LivePerfStats {
         LiveStreamController controller = LiveStreamController.get();
         boolean streaming = controller.streaming();
         LiveFeedSource.MAIN.tick(); // the decoders' stall and idle watchdog, with or without a TV in view
+        LiveFeedSource.SECOND.tick();
         LiveHlsSession session = LiveFeedSource.MAIN.currentSession();
-        int sessions = LiveFeedSource.MAIN.decodingSessions();
+        if (session == null) session = LiveFeedSource.SECOND.currentSession();
+        int sessions = LiveFeedSource.MAIN.decodingSessions() + LiveFeedSource.SECOND.decodingSessions();
         active = streaming || sessions > 0;
         activeSeen |= active;
 

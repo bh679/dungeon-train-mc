@@ -3,10 +3,17 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementAwards;
+import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.DeferredCapstoneGrants;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.GlobalBiomeProgress;
+import games.brennan.dungeontrain.advancement.GlobalRandomBookProgress;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
+import games.brennan.dungeontrain.advancement.TerraOmniaMigration;
 import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
@@ -40,11 +47,13 @@ import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.net.AdvancementsHintPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.RiddenBiomesPacket;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
@@ -76,6 +85,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -351,11 +361,10 @@ public final class AchievementEvents {
      * same leader delta.</p>
      *
      * <p>{@link ModAdvancementTriggers#CARTS_BOTH_DIRECTIONS} ("The Long Way
-     * Back") uses the per-life forward / backward subtotals (absolute deltas)
-     * tracked in {@link PlayerRunState#cartsForwardSinceDeath} /
-     * {@link PlayerRunState#cartsBackwardSinceDeath} — backward travel
-     * contributes positively there, while it subtracts from the signed
-     * {@code travelledCarriageIndex} used above.</p>
+     * Back") reads the highest and lowest signed {@code travelledCarriageIndex}
+     * of this life ({@link ModDataAttachments#LONG_WAY_BACK_MAX_CARRIAGE} /
+     * {@link ModDataAttachments#LONG_WAY_BACK_MIN_CARRIAGE}): reach carriage
+     * +100 and carriage -100, in either order.</p>
      *
      * <p>{@link PacifistAdvancement} (100 / 250 / 1000 tiers) uses the same
      * travelled-carriage counter as {@code carts_100}, gated on
@@ -375,8 +384,7 @@ public final class AchievementEvents {
         int effectiveTravelled = Math.abs(DifficultyProgression.effectiveTravelled(travelled));
         ModAdvancementTriggers.CARTS_IN_RUN.get()
             .trigger(player, effectiveTravelled);
-        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
-            .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
+        recordLongWayBackEnds(player, travelled);
         // "The Far Start" — same travelled-carriage counter as carts_100 but a
         // longer haul, reached while still carrying the (unread, unburned)
         // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
@@ -448,10 +456,36 @@ public final class AchievementEvents {
      * distinct-biome count grows. {@code distinctBiomes} is the player's
      * single-life {@link games.brennan.dungeontrain.player.PlayerBiomeProgress#biomeCount()}.
      * Drives the exploration count tiers ("Far Afield", "Many Lands", "World
-     * Without End", "Terra Omnia").
+     * Without End"). Terra Omnia keeps its own, permanent list: {@link #recordLifetimeBiomes}.
      */
     public static void notifyBiomesVisited(ServerPlayer player, int distinctBiomes) {
         ModAdvancementTriggers.BIOMES_VISITED.get().trigger(player, distinctBiomes);
+    }
+
+    /**
+     * Add {@code biomes} to the biomes {@code player} has ever ridden through ({@link GlobalBiomeProgress}),
+     * which Terra Omnia asks to hold every biome. That list is kept for good: across deaths and worlds, and
+     * nothing removes from it. A cheated run adds nothing, as with the other cross-world stats.
+     */
+    public static void recordLifetimeBiomes(ServerPlayer player, Set<ResourceLocation> biomes) {
+        if (biomes.isEmpty() || RunIntegrity.isCheated(player)) return;
+        if (!GlobalBiomeProgress.addAll(player.getUUID(), biomes)) return;
+        checkTerraOmnia(player);
+        syncRiddenBiomes(player);
+    }
+
+    /** Award Terra Omnia once {@code player}'s permanent list holds every biome. Re-firing an earned one is a no-op. */
+    public static void checkTerraOmnia(ServerPlayer player) {
+        Set<ResourceLocation> ridden = GlobalBiomeProgress.biomes(player.getUUID());
+        if (TerraOmnia.isComplete(ridden, player.registryAccess().registryOrThrow(Registries.BIOME))) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, TerraOmnia.ACTION);
+        }
+    }
+
+    /** Send {@code player} every biome they have ever ridden through, for Terra Omnia's checklist. */
+    public static void syncRiddenBiomes(ServerPlayer player) {
+        DungeonTrainNet.sendTo(player, new RiddenBiomesPacket(
+            GlobalBiomeProgress.biomes(player.getUUID()).stream().map(ResourceLocation::toString).toList()));
     }
 
     // ---------------- Train-time milestones ----------------
@@ -485,6 +519,7 @@ public final class AchievementEvents {
      */
     public static void notifyRunDistance(ServerPlayer player, double runMeters) {
         ModAdvancementTriggers.RUN_DISTANCE.get().trigger(player, runMeters);
+        LiveCloseCallEvents.onProgress(player, runMeters);
     }
 
     /**
@@ -608,6 +643,16 @@ public final class AchievementEvents {
     }
 
     /**
+     * Fired when a lectern read finishes a player-written narrative series — every letter it currently
+     * has is read in this world. Drives "A Library In Motion". Routed through the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id {@code finished_player_series};
+     * vanilla award is idempotent so later finishes are harmless.
+     */
+    public static void notifyPlayerSeriesFinished(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "finished_player_series");
+    }
+
+    /**
      * Fired when a player tags {@code @dev} / {@code @brennanhatton} in chat.
      * Drives "Summon The Creator". Routed through the generic
      * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id
@@ -647,14 +692,13 @@ public final class AchievementEvents {
         if (anyStoryRead()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "any_story");
         }
-        if (allFaulthurstTitlesSeen(data)) {
+        Map<String, Set<Integer>> lifetime = GlobalRandomBookProgress.seen(player.getUUID());
+        if (allFaulthurstTitlesSeen(data, lifetime)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst_all_titles");
         }
-        if (allFaulthurstSeen(data)) {
+        fireFaulthurstVariantsSeen(player, data, lifetime);
+        if (allFaulthurstSeen(data, lifetime)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
-        }
-        if (allQuietRulesSeen(data)) {
-            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "quiet_rules");
         }
         if (allStoriesRead()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
@@ -867,10 +911,12 @@ public final class AchievementEvents {
 
     /**
      * True when every random-book file whose basename contains
-     * {@code "faulthurst"} has every variant marked seen. Drives the
+     * {@code "faulthurst"} has every variant seen, in this world or in the
+     * player's lifetime record ({@link GlobalRandomBookProgress}) — so a new
+     * world no longer starts it from zero. Drives the
      * {@code faulthurst_all_variants} milestone ("Faulthurst's Favourite").
      */
-    private static boolean allFaulthurstSeen(NarrativeProgressData data) {
+    private static boolean allFaulthurstSeen(NarrativeProgressData data, Map<String, Set<Integer>> lifetime) {
         boolean anyFaulthurst = false;
         for (String basename : RandomBookRegistry.basenames()) {
             if (!basename.toLowerCase().contains("faulthurst")) continue;
@@ -878,14 +924,28 @@ public final class AchievementEvents {
             RandomBookFile file = RandomBookRegistry.getByBasename(basename).orElse(null);
             if (file == null) return false;
             int total = file.variants().size();
-            Set<Integer> seen = data.randomBookSnapshot()
-                .getOrDefault(basename, new NarrativeProgress())
-                .readLetters();
+            Set<Integer> seen = seenAnywhere(data, lifetime, basename);
             for (int i = 0; i < total; i++) {
                 if (!seen.contains(i)) return false;
             }
         }
         return anyFaulthurst;
+    }
+
+    /**
+     * One {@code random_book_variant_seen} per seen variant of every Faulthurst random-book, in this
+     * world or the player's lifetime record: the per-variant criteria behind Faulthurst's Favourite's
+     * progress bar. Already-held criteria are
+     * no-ops, so re-firing the whole set after each read is harmless.
+     */
+    private static void fireFaulthurstVariantsSeen(ServerPlayer player, NarrativeProgressData data,
+                                                   Map<String, Set<Integer>> lifetime) {
+        for (String basename : RandomBookRegistry.basenames()) {
+            if (!basename.toLowerCase().contains("faulthurst")) continue;
+            for (int variant : seenAnywhere(data, lifetime, basename)) {
+                ModAdvancementTriggers.RANDOM_BOOK_VARIANT_SEEN.get().trigger(player, basename, variant);
+            }
+        }
     }
 
     /**
@@ -894,47 +954,50 @@ public final class AchievementEvents {
      * ("I Must Know"). Weaker than {@link #allFaulthurstSeen} — requires
      * the player to have encountered every title, not every variant.
      */
-    private static boolean allFaulthurstTitlesSeen(NarrativeProgressData data) {
+    private static boolean allFaulthurstTitlesSeen(NarrativeProgressData data, Map<String, Set<Integer>> lifetime) {
         boolean anyFaulthurst = false;
         for (String basename : RandomBookRegistry.basenames()) {
             if (!basename.toLowerCase().contains("faulthurst")) continue;
             anyFaulthurst = true;
-            Set<Integer> seen = data.randomBookSnapshot()
-                .getOrDefault(basename, new NarrativeProgress())
-                .readLetters();
-            if (seen.isEmpty()) return false;
+            if (seenAnywhere(data, lifetime, basename).isEmpty()) return false;
         }
         return anyFaulthurst;
     }
 
+    /** The variants of {@code basename} seen in this world or in the player's lifetime record. */
+    private static Set<Integer> seenAnywhere(NarrativeProgressData data, Map<String, Set<Integer>> lifetime,
+                                             String basename) {
+        Set<Integer> seen = new HashSet<>(data.randomBookSnapshot()
+            .getOrDefault(basename, new NarrativeProgress())
+            .readLetters());
+        seen.addAll(lifetime.getOrDefault(basename, Set.of()));
+        return seen;
+    }
+
     /**
-     * True when every variant of every random-book whose basename contains
-     * {@code "rules"} has been marked seen. Drives the {@code read_all_rules}
-     * ("Know The Rules") achievement — currently the single {@code quiet_rules}
-     * book ("Quiet Rules of the Train"), each variant a numbered Rule.
-     *
-     * <p>Fully registry-driven: the per-variant count comes from
-     * {@code file.variants().size()} and the membership from the
-     * {@code contains("rules")} matcher, so adding/removing Rules — or adding a
-     * whole new {@code *rules*} book — re-scales the requirement with no code
-     * change. An empty match set (no rules book loaded) → false.</p>
+     * Fold this world's random-book variants into the player's lifetime record, so a player part-way
+     * through "Faulthurst's Favourite" in a world from before that record existed keeps what they have.
+     * Grow-only; a Free Play run adds nothing.
      */
-    private static boolean allQuietRulesSeen(NarrativeProgressData data) {
-        boolean anyRules = false;
-        for (String basename : RandomBookRegistry.basenames()) {
-            if (!basename.toLowerCase().contains("rules")) continue;
-            anyRules = true;
-            RandomBookFile file = RandomBookRegistry.getByBasename(basename).orElse(null);
-            if (file == null) return false;
-            int total = file.variants().size();
-            Set<Integer> seen = data.randomBookSnapshot()
-                .getOrDefault(basename, new NarrativeProgress())
-                .readLetters();
-            for (int i = 0; i < total; i++) {
-                if (!seen.contains(i)) return false;
-            }
-        }
-        return anyRules;
+    private static void absorbWorldRandomBooksIntoLifetime(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || RunIntegrity.isCheated(player)) return;
+        Map<String, Set<Integer>> world = new HashMap<>();
+        NarrativeProgressData.get(server.overworld()).randomBookSnapshot()
+            .forEach((basename, p) -> world.put(basename, p.readLetters()));
+        GlobalRandomBookProgress.addAll(player.getUUID(), world);
+    }
+
+    /**
+     * "The Long Way Back": widen this life's furthest-forward / furthest-back carriage marks with the raw
+     * {@code travelled} index (real travel, not the admin difficulty offset), then test both ends.
+     */
+    private static void recordLongWayBackEnds(ServerPlayer player, int travelled) {
+        int max = Math.max(player.getData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get()), travelled);
+        int min = Math.min(player.getData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get()), travelled);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get(), max);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get(), min);
+        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get().trigger(player, max, min);
     }
 
     // ---------------- Respawn reset ----------------
@@ -945,14 +1008,16 @@ public final class AchievementEvents {
         if (event.isEndConquered()) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
-        // Exploration progress is per-life too — clear distinct biomes so the
-        // count tiers (and "Terra Omnia") restart for the new run.
+        // The count tiers' biomes are per-life — clear them for the new run. Terra Omnia's
+        // list (GlobalBiomeProgress) is kept for good and is not touched here.
         player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
         player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).clear();
         // Per-life container markers. Neither attachment is copyOnDeath, so the
         // respawn clone already starts clean — cleared explicitly for the same
         // defensive reason PlayerRunState is.
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get(), 0);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
         LifeChallengeAdvancements.resetForNewLife(player);
@@ -1018,12 +1083,20 @@ public final class AchievementEvents {
         // so progress earned in other worlds — or before this store existed —
         // can complete them here.
         absorbWorldStoryProgressIntoGlobal(player);
+        absorbWorldRandomBooksIntoLifetime(player);
         notifyStoryProgress(player);
         // Absorb this world's already-earned advancements into the cross-world
         // store FIRST, so progress that predates this store — or a freshly-
         // updated player's complete vanilla / other-mod trees, which will never
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
+        // Terra Omnia keeps every biome ever ridden: fold in this life's, then (once) retire its old
+        // 150-biome version, crediting its earners up to 150. Before the replay below, which would only
+        // warn about the retired id.
+        recordLifetimeBiomes(player, player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes());
+        TerraOmniaMigration.apply(player);
+        checkTerraOmnia(player);
+        syncRiddenBiomes(player);
         AdvancementProfiles.absorb(player, AdvancementProfiles.currentKey(player));
         // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
         // finished advancements, so without this a new world started them from zero.
@@ -1041,6 +1114,9 @@ public final class AchievementEvents {
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Advancements the developer gave this player (relay awards): granted as real earns once the
+        // relay answers, after the replay above so one already held elsewhere is just "already done".
+        AdvancementAwards.fetchAndApply(player);
         // Vanilla sent this player's command tree before any of the above ran. If they hold the
         // banked capstone — replayed just now, or granted just now — /advancement revoke @s
         // everything is theirs to run, so send the tree again with it in.
@@ -1071,8 +1147,13 @@ public final class AchievementEvents {
         StartAgainAdvancement.disarm(uuid); // drop a pending arm from a disconnect mid-command
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);
+        BurritoClock.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
+        GlobalLivestreamStats.flush(uuid);
+        GlobalLivestreamStats.evict(uuid);
+        GlobalBiomeProgress.evict(uuid);   // every biome was written when it was added
+        GlobalRandomBookProgress.evict(uuid);   // likewise every random-book variant
         AdvancementProfiles.reconcileRevokes(player);
         // After the reconcile, which may still strike ids. Queued writes finish in the background.
         GlobalAchievementStore.evict(uuid);
@@ -1087,7 +1168,9 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
+        BurritoClock.flushAll();
         GlobalBookBurnStats.flushAll();
+        GlobalLivestreamStats.flushAll();
         GlobalAchievementStore.flushAndClearAll();
         GlobalCriteriaProgress.flushAndClearAll();
     }
@@ -1228,30 +1311,37 @@ public final class AchievementEvents {
             // earn into the per-life run state; read into the death packet on death.
             player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordEarnedAdvancement(id);
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
-            // The three milestone earns go to the public passenger log and ping Brennan —
-            // genuine earns only (this block), clean runs only (the reporter checks).
-            MilestoneAdvancementReporter.maybePost(player, advancement);
-            // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
-            // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
-            // The burrito's play time (since first played or the last reset) is recorded here and rides
-            // the relay claim below, for the fastest-burrito board.
-            BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
-            // The Challenge is a one-life feat, so its time is this life's time aboard — the
-            // fastest-challenge board.
-            long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
-                    ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
-            FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
+            // A grant derived from the whole profile (the burrito, a tab-complete) is only a record
+            // when the profile it stands on was seen earned here: progress absorbed from a world's
+            // own advancement file, or read from an unsealed profile, is replayed but not vouched
+            // for, and a forged file must not end as a Discord post or a relay first.
+            boolean record = !CompletionistAdvancement.isDerivedGrant(id)
+                    || CompletionistAdvancement.isVerifiedEarn(player);
+            if (record) {
+                // The three milestone earns go to the public passenger log and ping Brennan —
+                // genuine earns only (this block), clean runs only (the reporter checks).
+                MilestoneAdvancementReporter.maybePost(player, advancement);
+                // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
+                // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
+                // The burrito's play time (since first played or the last reset) is recorded here and rides
+                // the relay claim below, for the fastest-burrito board.
+                BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
+                // The Challenge is a one-life feat, so its time is this life's time aboard — the
+                // fastest-challenge board.
+                long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
+                        ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
+                FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
+            }
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the
             // needless re-entry (the award is idempotent once done regardless).
             // Each tab's "tab complete" advancement (Dungeon Train Explored and friends): every advancement
-            // in that tab. Before the burrito, which needs them. Skip their own earns, as for the burrito.
-            if (!TabCompleteAdvancements.isTabComplete(id)) {
-                TabCompleteAdvancements.checkAndGrant(player);
-            }
+            // in that tab. Before the burrito, which needs them. Both a moment later, so their cards
+            // always follow the one that finished them (DeferredCapstoneGrants). A tab-complete's own
+            // earn schedules again: that is the burrito's turn. The burrito's own earn needs none.
             if (!id.equals(CompletionistAdvancement.ID)) {
-                CompletionistAdvancement.checkAndGrant(player);
+                DeferredCapstoneGrants.schedule(player);
             }
         }
     }
