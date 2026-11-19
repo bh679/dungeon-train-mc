@@ -60,6 +60,8 @@ public final class CreatorParentPickerScreen implements MenuScreen {
             out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_TOP_LEVEL), "", chosen));
             out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_ROOM),
                 CreatorLoadParent.WHOLE_ROOM, chosen));
+            out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_HALF),
+                CreatorLoadParent.WHOLE_HALF, chosen));
             out.add(new CommandMenuEntry.Back(EditorScreenLang.text(EditorScreenLang.MOVE_BACK)));
             return out;
         }
@@ -80,6 +82,8 @@ public final class CreatorParentPickerScreen implements MenuScreen {
         if (CreatorLoadParent.offersWholeRoom(category)) {
             out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_ROOM),
                 CreatorLoadParent.WHOLE_ROOM, chosen));
+            out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_HALF),
+                CreatorLoadParent.WHOLE_HALF, chosen));
         }
         out.add(new CommandMenuEntry.Back(EditorScreenLang.text(EditorScreenLang.MOVE_BACK)));
         return out;
