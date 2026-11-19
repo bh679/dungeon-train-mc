@@ -203,6 +203,7 @@ public final class EditorBrowserPane {
             TemplateTilePainter.draw(g, font, art, EditorCreatorBuilds.label(entry),
                 EditorPlotLabelsPacket.NO_WEIGHT, x, y, size, yaw,
                 new TemplateTilePainter.Marks(selected, hov, false, false, false, false), entry.relayId());
+            SizeBar.draw(g, x, y, size, entry.blocksChars());
             int border = BuilderReviewState.borderColourFor(entry.review());
             if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(x, y, size, size, border);
             // The star sits in the corner a local tile keeps for its unsaved mark, which a relay

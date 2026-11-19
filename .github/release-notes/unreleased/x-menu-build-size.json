@@ -1,0 +1,21 @@
+{
+  "id": "x-menu-build-size",
+  "version": "0.1893.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "ui"
+  ],
+  "title": "See how big each build is",
+  "summary": "The editor's build browser now shows how big each uploaded build is. A thin bar on every tile shows how close it is to the size limit, and the details panel lists its dimensions and data size as soon as you pick it.",
+  "highlights": [
+    "Size bar on every build tile: green, amber, then red near the limit",
+    "Dimensions and data size shown before the preview finishes loading"
+  ],
+  "pr": 2745,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

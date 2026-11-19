@@ -199,6 +199,10 @@ public final class ModCreativeTabs {
                 for (String name : games.brennan.dungeontrain.block.stage.StageBlocksTabLayout.names()) {
                     output.accept(byName.get(name));
                 }
+                // The Dungeon Train flags: editor-only placeholders that roll into logo banners.
+                for (var flag : games.brennan.dungeontrain.block.flag.FlagPlaceholders.items()) {
+                    output.accept(flag.get());
+                }
             })
             .build()
     );

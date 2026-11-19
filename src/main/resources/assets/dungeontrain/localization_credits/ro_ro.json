@@ -2,8 +2,15 @@
   "locale": "ro_ro",
   "name": "IA fără verificare umană",
   "human_reviewed": false,
+<<<<<<< HEAD
   "total_keys": 6072,
   "ai_authored": 6072,
   "ai_unreviewed": 6072,
   "counted_keys": 4085
+=======
+  "total_keys": 6078,
+  "ai_authored": 6078,
+  "ai_unreviewed": 6078,
+  "counted_keys": 4090
+>>>>>>> origin/main
 }

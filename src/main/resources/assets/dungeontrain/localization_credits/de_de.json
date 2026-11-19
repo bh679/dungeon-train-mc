@@ -2,8 +2,15 @@
   "locale": "de_de",
   "name": "KI ohne menschliche Überprüfung",
   "human_reviewed": false,
+<<<<<<< HEAD
   "total_keys": 6003,
   "ai_authored": 6003,
   "ai_unreviewed": 6003,
   "counted_keys": 4021
+=======
+  "total_keys": 6009,
+  "ai_authored": 6009,
+  "ai_unreviewed": 6009,
+  "counted_keys": 4026
+>>>>>>> origin/main
 }

@@ -118,6 +118,23 @@ final class BuilderProfilePacketTest {
                 "the optimistic flip changes only the verdict and the comment");
     }
 
+    @Test
+    @DisplayName("a build's dims and stored blob length ride the listing, the review flip and the wire")
+    void sizeRoundTrip() {
+        SharedCarriageClient.ProfileBuild room = new SharedCarriageClient.ProfileBuild(
+                46, "portal_room", "", "library", "profile", "builder", "", "approved", "none",
+                64, 64, 64, 0, 1L, false, MINE, "Brennan", false,
+                games.brennan.dungeontrain.builder.relay.SubmitNote.EMPTY, "", "", "", 543_128L);
+        BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(room), MINE, "Brennan", true);
+        BuilderProfilePacket.Entry entry = roundTrip(packet).builds().get(0);
+        assertEquals(64, entry.l());
+        assertEquals(64, entry.h());
+        assertEquals(64, entry.w());
+        assertEquals(543_128L, entry.blocksChars());
+        assertEquals(543_128L, entry.withReview(BuilderReviewState.ACCEPTED, "", "", "").blocksChars());
+        assertEquals(packet, roundTrip(packet));
+    }
+
     private static BuilderProfilePacket roundTrip(BuilderProfilePacket packet) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfilePacket.STREAM_CODEC.encode(buf, packet);

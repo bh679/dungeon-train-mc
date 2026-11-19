@@ -323,12 +323,24 @@ public final class SharedCarriageClient {
                                int changeCount, long updatedTs,
                                boolean favourite, String ownerUuid, String ownerName,
                                boolean templateCopy, SubmitNote note, String reviewComment,
-                               String reviewVersion, String reviewVersionOp) {
+                               String reviewVersion, String reviewVersionOp, long blocksChars) {
         public ProfileBuild {
             note = note == null ? SubmitNote.EMPTY : note;
             reviewComment = reviewComment == null ? "" : reviewComment;
             reviewVersion = reviewVersion == null ? "" : reviewVersion;
             reviewVersionOp = reviewVersionOp == null ? "" : reviewVersionOp;
+            blocksChars = Math.max(0L, blocksChars);
+        }
+
+        /** A row without its stored size — what every listing carried before {@code blocksChars} was read. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy, SubmitNote note, String reviewComment,
+                            String reviewVersion, String reviewVersionOp) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, note, reviewComment,
+                    reviewVersion, reviewVersionOp, 0L);
         }
 
         /** A row with a comment but no resubmit rule. */
@@ -506,7 +518,8 @@ public final class SharedCarriageClient {
                 r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
                         && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
                         && r.get("templateCopy").getAsBoolean(),
-                noteOf(r), str(r, "reviewComment"), str(r, "reviewVersion"), str(r, "reviewVersionOp"));
+                noteOf(r), str(r, "reviewComment"), str(r, "reviewVersion"), str(r, "reviewVersionOp"),
+                longOf(r, "blocksChars"));
     }
 
     /**
