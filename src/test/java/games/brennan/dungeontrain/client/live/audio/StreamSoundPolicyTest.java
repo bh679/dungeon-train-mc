@@ -34,6 +34,18 @@ class StreamSoundPolicyTest {
     }
 
     @Test
+    void streamMutedModIsApprovedForTheStreamToRunButItsFilesStayOff() {
+        // AudioMirror asks per file with approved-and-not-muted; the stream-wide gate with plain approval.
+        Set<String> approvedForRuns = Set.of("dungeontrain", "minecraft", "neoforge", "dangomusic");
+        Predicate<String> streamSafe = id -> approvedForRuns.contains(id) && !id.equals("dangomusic");
+        assertEquals(List.of(), StreamSoundPolicy.unapproved(List.of("minecraft", "dangomusic"), approvedForRuns::contains),
+            "a stream-muted mod does not switch the whole stream's sound off");
+        assertFalse(StreamSoundPolicy.allowed("mod/dangomusic", streamSafe), "but none of its own files reach the stream");
+        assertTrue(StreamSoundPolicy.allowed("vanilla", streamSafe));
+        assertTrue(StreamSoundPolicy.allowed("mod/dungeontrain", streamSafe));
+    }
+
+    @Test
     void unapprovedListsOnlyTheModsOffTheList() {
         assertEquals(List.of(), StreamSoundPolicy.unapproved(List.of("minecraft", "dungeontrain"), APPROVED));
         assertEquals(List.of("aaa", "zzz"), StreamSoundPolicy.unapproved(List.of("zzz", "dungeontrain", "aaa"), APPROVED));

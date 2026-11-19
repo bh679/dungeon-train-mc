@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DeathStatsCache;
+import games.brennan.dungeontrain.echo.EchoSummary;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
@@ -40,6 +41,8 @@ import java.util.List;
  * {@code side} 0 = none, 1 = befriended (drawn left), 2 = killed (drawn right);
  * {@code portrait} is the chosen mob's {@link PlayerMobAppearance} (null when
  * {@code side == 0}). Written/read only when {@code side != 0}.</p>
+ *
+ * <p>{@link #echo} is the echo page's subject, behind a presence flag.</p>
  */
 public record DeathStatsPacket(
         int mobKills,
@@ -90,7 +93,10 @@ public record DeathStatsPacket(
         int photoShots,
         int photosViewed,
         int tributesMade,
-        int tributeEmeralds
+        int tributeEmeralds,
+        // The echo this death left behind (the echo page); null when none was captured, and
+        // always null on the nap / logout summaries.
+        EchoSummary echo
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -164,6 +170,10 @@ public record DeathStatsPacket(
         buf.writeVarInt(photosViewed);
         buf.writeVarInt(tributesMade);
         buf.writeVarInt(tributeEmeralds);
+        buf.writeBoolean(echo != null);
+        if (echo != null) {
+            echo.encode(buf);
+        }
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -229,6 +239,7 @@ public record DeathStatsPacket(
         int photosViewed = buf.readVarInt();
         int tributesMade = buf.readVarInt();
         int tributeEmeralds = buf.readVarInt();
+        EchoSummary echo = buf.readBoolean() ? EchoSummary.decode(buf) : null;
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, trainTimeTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
@@ -236,7 +247,7 @@ public record DeathStatsPacket(
                 lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
                 lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
                 narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals,
-                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds);
+                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds, echo);
     }
 
     @Override

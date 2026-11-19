@@ -201,6 +201,14 @@ public final class ChunkFramePlacer {
                         if (state == null || state.isAir()) continue;
                         // Stage placeholders become the stage's real blocks, as in every other stamp.
                         state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);
+                        // Dungeon Train flags roll into their banners, as in every other stamp.
+                        games.brennan.dungeontrain.block.flag.FlagPlaceholders.Resolved flag =
+                            games.brennan.dungeontrain.block.flag.FlagPlaceholders.resolveInScope(
+                                state, level.registryAccess(), level.getSeed());
+                        if (flag != null) {
+                            state = flag.state();
+                            blockEntity = flag.nbt();
+                        }
                         cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
                             roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
                             roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);

@@ -68,6 +68,18 @@ final class DonationSummaryClientTest {
     }
 
     @Test
+    @DisplayName("you.supporterAud: read when a gift split sends it, -1 (use the total) when not")
+    void parsesTheSupporterTotal() {
+        Summary plain = DonationSummaryClient.parse(realRelayBody());
+        assertEquals(-1, plain.youSupporterAud());
+        assertEquals(105, plain.youSupporterTotalAud());
+        Summary split = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":0,"totalUsd":0,"supporterAud":30}}
+        """);
+        assertEquals(30, split.youSupporterTotalAud());
+    }
+
+    @Test
     @DisplayName("an updates block the relay could not fill is treated as absent")
     void anEmptyUpdatesBlockIsAbsent() {
         // windowMonths 0 is meaningful ("this year"), so the count is what decides. A block whose

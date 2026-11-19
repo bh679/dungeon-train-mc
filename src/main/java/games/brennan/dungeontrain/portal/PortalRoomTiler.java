@@ -162,6 +162,7 @@ public final class PortalRoomTiler {
         if (next != null) {
             // Same stage as the base room for the stage placeholders — PortalCarriageBuilder#stageIdFor.
             return StagePlacementScope.with(PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+                java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)),
                 () -> stampTile(level, dims, structure, next, pairKey));
         }
 

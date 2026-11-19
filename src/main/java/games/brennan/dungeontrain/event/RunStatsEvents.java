@@ -23,6 +23,8 @@ import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.echo.EchoSummary;
+import games.brennan.dungeontrain.echo.EchoSummaryReader;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -272,7 +274,10 @@ public final class RunStatsEvents {
                 GlobalPlayerStats.totalBooks(id),
                 GlobalPlayerStats.trainTicks(id),
                 narrative,
-                deathCause);
+                deathCause,
+                false,
+                // PlayerMob wrote this death's echo record before LivingDeathEvent fired.
+                EchoSummaryReader.read(player));
         DungeonTrainNet.sendTo(player, packet);
 
         // Relay all ~5 per-death telemetry signals to dp-relay inside ONE RelayOutbox batch window, so
@@ -542,7 +547,7 @@ public final class RunStatsEvents {
                 GlobalPlayerStats.totalFriends(id),
                 GlobalPlayerStats.totalBooks(id),
                 Math.max(0L, GlobalPlayerStats.trainTicks(id) - ownTicks),
-                DeathNarrative.EMPTY, "", true);
+                DeathNarrative.EMPTY, "", true, null);
     }
 
     /**
@@ -555,18 +560,19 @@ public final class RunStatsEvents {
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative, String deathCause) {
         return buildPacket(player, lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks,
-                lifeTrainTicks, narrative, deathCause, false);
+                lifeTrainTicks, narrative, deathCause, false, null);
     }
 
     /**
      * @param previousLivesOnly the lifetime icons count only the lives before this one ({@link #napPacket}):
      *                          the totals that accrue live (players and echoes met) and the advancement
      *                          count lose what this life added. The death-accrued totals never held it.
+     * @param echo the echo this death left behind (the echo page), or null — always null off a death.
      */
     private static DeathStatsPacket buildPacket(ServerPlayer player,
             long lifeDeaths, long lifeCarriages, double lifeDistance,
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
-            DeathNarrative narrative, String deathCause, boolean previousLivesOnly) {
+            DeathNarrative narrative, String deathCause, boolean previousLivesOnly, EchoSummary echo) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         UUID id = player.getUUID();
         // All-lives icon-row lifetime totals — the current cross-world totals (accrued just above at
@@ -636,7 +642,8 @@ public final class RunStatsEvents {
                 run.photoShots(),
                 run.photosViewed(),
                 run.tributesMade(),
-                run.tributeEmeralds()
+                run.tributeEmeralds(),
+                echo
         );
     }
 
