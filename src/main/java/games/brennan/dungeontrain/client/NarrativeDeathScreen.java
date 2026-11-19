@@ -36,6 +36,7 @@ import games.brennan.dungeontrain.client.deathphotos.DeathPhoto;
 import games.brennan.dungeontrain.client.deathphotos.DeathPhotoSet;
 import games.brennan.dungeontrain.client.deathphotos.PhotoStripPage;
 import games.brennan.dungeontrain.client.deathphotos.PhotoViewerOverlay;
+import games.brennan.dungeontrain.client.deathpages.EchoPage;
 import games.brennan.dungeontrain.client.live.deathpages.BroadcastPage;
 import games.brennan.dungeontrain.client.live.deathpages.CrowdPage;
 import games.brennan.dungeontrain.client.live.deathpages.LiveDeathChrome;
@@ -135,7 +136,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM, ONGOING }
+    private enum Kind { FALL, ECHO, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM, ONGOING }
 
     /** {@code slot} is which of its form's notes a NOTE page shows (see {@link #notes}); 0 elsewhere. */
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey, int slot) {
@@ -361,6 +362,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Renders the DEEDS-page befriended/killed PlayerMob portrait; cleared on removal. */
     private final DeathPortraitRenderer portrait = new DeathPortraitRenderer();
+    /** The echo page, drawn with this screen's fade and bevels; its portrait is cleared on removal. */
+    private EchoPage echoPage;
+    /** Whether the deck was last built with an echo page (rebuilt when the packet's echo lands). */
+    private boolean lastHasEcho;
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
@@ -556,6 +561,12 @@ public final class NarrativeDeathScreen extends Screen {
         }
         list.add(Page.of(Kind.DEEDS));
         list.add(Page.of(Kind.GEAR));
+        // "The echo" — the echo this death left behind, after the cargo it now carries, when
+        // PlayerMob captured one (the death packet carries it; it can land a tick after the screen opens).
+        lastHasEcho = hasEcho();
+        if (lastHasEcho) {
+            list.add(Page.of(Kind.ECHO));
+        }
         list.add(Page.of(Kind.LIVES));
         addSurveyPages(list);
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
@@ -680,6 +691,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (broadcastPage == null) {
             broadcastPage = new BroadcastPage(liveChrome);
             crowdPage = new CrowdPage(liveChrome);
+            echoPage = new EchoPage(liveChrome);
         }
         pages = buildPages();
         donateInFlow = nap() || shouldShowDonate();
@@ -817,7 +829,8 @@ public final class NarrativeDeathScreen extends Screen {
         // screen opens. If the survey set changed, rebuild so the pages match.
         if (SurveyClientState.questions().size() != lastSurveyCount
                 || photoSet().size() != lastPhotoCount
-                || hasPhotoStats(DeathStatsCache.get()) != lastPhotoStats) {
+                || hasPhotoStats(DeathStatsCache.get()) != lastPhotoStats
+                || (!nap() && hasEcho() != lastHasEcho)) {
             this.rebuildWidgets();
         }
     }
@@ -972,6 +985,7 @@ public final class NarrativeDeathScreen extends Screen {
             int y = CONTENT_TOP_Y + contentShift;
             switch (page.kind()) {
                 case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+                case ECHO -> y = drawEcho(g, stats, cx, contentW, y, mouseX, mouseY);
                 case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, partialTick);
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
@@ -1000,6 +1014,10 @@ public final class NarrativeDeathScreen extends Screen {
             // Cargo-page hover tooltips last, above everything — only when settled.
             if (page.kind() == Kind.GEAR && stats != null && settled()) {
                 drawCargoTooltips(g, stats, mouseX, mouseY);
+            }
+            // Echo-page item and armour-bar tooltips (same "settled" gate).
+            if (page.kind() == Kind.ECHO && settled()) {
+                echoPage.drawTooltips(g, mouseX, mouseY);
             }
             // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
             if (page.kind() == Kind.LIVES && stats != null && settled()) {
@@ -1073,6 +1091,7 @@ public final class NarrativeDeathScreen extends Screen {
     private static List<SnapshotTag> chainFor(Kind kind) {
         return switch (kind) {
             case FALL     -> List.of(SnapshotTag.SCENIC);
+            case ECHO     -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES, ONGOING -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
@@ -1099,7 +1118,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DONATE -> UiAnalytics.PAGE_DONATE;
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
             // Untracked: UiAnalytics PAGE_* ids are lock-step with the relay's ui-events.js.
-            case PHOTOS -> null;
+            case PHOTOS, ECHO -> null;
             // Nap mode only, and nap mode sends no analytics.
             case ONGOING -> null;
         };
@@ -1311,6 +1330,24 @@ public final class NarrativeDeathScreen extends Screen {
             drawCell(g, left + 2 * third + third / 2, y, fmtTime(s.trainTimeTicks()), "gui.dungeontrain.death.narr.lbl_time");
         }
         return y + 34;
+    }
+
+    /** "The echo": kicker, question, then the inventory-style panel ({@link EchoPage}). */
+    private int drawEcho(GuiGraphics g, DeathStatsPacket s, int cx, int w, int y, int mouseX, int mouseY) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.echo.kicker");
+        // No train gap here: the card takes that room to grow (it fills down to the footer).
+        y += 14;
+        y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.echo.question").getString(), cx, w, y);
+        y += 1;
+        if (s == null || s.echo() == null) return y;
+        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - 32 + contentShift, w,
+                mouseX, mouseY, settled());
+    }
+
+    /** Whether the death packet carries this death's echo (the echo page's subject). */
+    private static boolean hasEcho() {
+        DeathStatsPacket s = DeathStatsCache.get();
+        return s != null && s.echo() != null;
     }
 
     private int drawDeeds(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
@@ -2821,6 +2858,8 @@ public final class NarrativeDeathScreen extends Screen {
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+            // The echo page's tabs and inventory slots.
+            if (page.kind() == Kind.ECHO && echoPage != null && echoPage.mouseClicked(mx, my)) return true;
             if (bugReportRect != null && bugReportRect.has(mx, my)) {
                 // Jump straight to the bug-report question; Next Screen there returns here.
                 returnToStartAfterBug = true;
@@ -3516,6 +3555,7 @@ public final class NarrativeDeathScreen extends Screen {
         TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
         portrait.clear();
+        if (echoPage != null) echoPage.clear();
         if (crowdPage != null) crowdPage.clear();
         // Lift the gallery freeze. The world-leave paths clear the gallery anyway, but if the
         // screen is ever dismissed without disconnecting, capture/offload must resume normally.

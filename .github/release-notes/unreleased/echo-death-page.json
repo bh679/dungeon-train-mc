@@ -1,0 +1,59 @@
+{
+  "id": "echo-death-page",
+  "version": "0.1901.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "ui"
+  ],
+  "title": "Meet your echo",
+  "summary": "A new page on the death screen shows the echo you left behind: how it looks, the personality your play gave it, how quickly it reacts, and the gear it carries.",
+  "highlights": [
+    "Your echo's personality and traits, shaped by how you played",
+    "A skill chart of how quick you were at melee, ranged, blocking, placing, movement and quickswap",
+    "Look through the gear your echo carries, item by item"
+  ],
+  "pr": 2751,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "major": true,
+  "notable": true,
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/meet-your-echo.png",
+  "bilibili": {
+    "title": {
+      "zh": "\u5730\u7262\u5217\u8f66 \u66f4\u65b0\uff1a\u8ba4\u8bc6\u4f60\u7684\u56de\u54cd | \u6211\u7684\u4e16\u754c\u6a21\u7ec4",
+      "en": "Dungeon Train Update: Meet Your Echo | Minecraft Mod"
+    },
+    "description": {
+      "zh": "\u6bcf\u4e00\u6b21\u6b7b\u4ea1\uff0c\u4f60\u90fd\u4f1a\u7559\u4e0b\u4e00\u4e2a\u56de\u54cd\u3002\n\u73b0\u5728\uff0c\u6b7b\u4ea1\u754c\u9762\u65b0\u589e\u4e86\u4e00\u9875\uff0c\u8ba9\u4f60\u770b\u6e05\u4f60\u7559\u4e0b\u7684\u662f\u8c01\u3002\n\n\u5b83\u957f\u4ec0\u4e48\u6837\u3001\u4f60\u7684\u73a9\u6cd5\u7ed9\u4e86\u5b83\u600e\u6837\u7684\u6027\u683c\u3001\u5b83\u53cd\u5e94\u6709\u591a\u5feb\uff0c\u4ee5\u53ca\u5b83\u8eab\u4e0a\u5e26\u7740\u4ec0\u4e48\u88c5\u5907\uff0c\u4e00\u76ee\u4e86\u7136\u3002\n\n\u66f4\u65b0\u4eae\u70b9\uff1a\n\u00b7 \u56de\u54cd\u7684\u6027\u683c\u548c\u7279\u8d28\uff0c\u7531\u4f60\u7684\u73a9\u6cd5\u5851\u9020\n\u00b7 \u6280\u80fd\u56fe\u8868\u5c55\u793a\u4f60\u5728\u8fd1\u6218\u3001\u8fdc\u7a0b\u3001\u683c\u6321\u3001\u653e\u7f6e\u3001\u79fb\u52a8\u548c\u5feb\u901f\u5207\u6362\u4e0a\u6709\u591a\u5feb\n\u00b7 \u9010\u4ef6\u67e5\u770b\u56de\u54cd\u643a\u5e26\u7684\u88c5\u5907\n\n\u5b8c\u6574\u66f4\u65b0\u8bf4\u660e\uff1adungeon.training/update\n\u4e0b\u8f7d\uff1a\u5728 CurseForge \u6216 Modrinth \u641c\u7d22 Dungeon Train\n\u5730\u7262\u5217\u8f66\u662f\u4e00\u4e2a Minecraft\uff08\u6211\u7684\u4e16\u754c\uff09NeoForge 1.21.1 \u6a21\u7ec4\uff1a\u5728\u4e00\u5217\u6c38\u4e0d\u505c\u6b47\u7684\u5217\u8f66\u4e0a\u5192\u9669\u3001\u641c\u522e\u3001\u751f\u5b58\u3002",
+      "en": "Every death leaves an echo behind.\nNow the death screen has a new page that shows you who you left.\n\nSee how it looks, the personality your play gave it, how quickly it reacts, and the gear it carries.\n\nHighlights:\n\u00b7 Your echo's personality and traits, shaped by how you played\n\u00b7 A skill chart of how quick you were at melee, ranged, blocking, placing, movement and quickswap\n\u00b7 Look through the gear your echo carries, item by item\n\nFull notes: dungeon.training/update\nDownload: search Dungeon Train on CurseForge or Modrinth\nDungeon Train is a Minecraft NeoForge 1.21.1 mod: loot, fight and survive aboard a train that never stops."
+    },
+    "tags": {
+      "zh": [
+        "\u6211\u7684\u4e16\u754c",
+        "Minecraft",
+        "\u6a21\u7ec4",
+        "\u5730\u7262\u5217\u8f66",
+        "\u56de\u54cd",
+        "\u751f\u5b58",
+        "\u6e38\u620f\u66f4\u65b0",
+        "\u8089\u9e3d",
+        "NeoForge",
+        "MOD"
+      ],
+      "en": [
+        "Minecraft",
+        "mod",
+        "Dungeon Train",
+        "roguelike",
+        "survival",
+        "game update",
+        "NeoForge",
+        "echo"
+      ]
+    }
+  }
+}
