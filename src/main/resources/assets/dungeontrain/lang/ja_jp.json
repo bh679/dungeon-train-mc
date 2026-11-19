@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.support.confirm.body.stripe": "ブラウザで brennan.games を開きます。ボード用にあなたの Minecraft 名が入力済みです。",
   "gui.dungeontrain.support.confirm.body.patreon": "ブラウザで patreon.com を開きます。金額は自由、いつでも解約できます。",
   "gui.dungeontrain.support.confirm.body.revolut": "ブラウザで revolut.me を開きます。ボード用にあなたの Minecraft 名がメモとして付きます。",
-  "gui.dungeontrain.support.confirm.body.stripe.gift": "ブラウザで brennan.games を開きます。ボード用に選んだ名前が入力済みです。",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "ブラウザで brennan.games を開きます。報酬は選んだ名前に届きます。支払い後にどれを贈るか選べます。",
   "gui.dungeontrain.support.confirm.body.revolut.gift": "ブラウザで revolut.me を開きます。ボード用に選んだ名前がメモとして付きます。",
   "gui.dungeontrain.support.confirm.open": "開く",
   "gui.dungeontrain.support.confirm.cancel": "キャンセル",

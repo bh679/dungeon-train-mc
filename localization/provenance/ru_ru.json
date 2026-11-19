@@ -1676,7 +1676,7 @@
   "gui.dungeontrain.support.confirm.body.stripe": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "18984d997fdd5503"},
   "gui.dungeontrain.support.confirm.body.patreon": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0e371d7fa5ffb8f7"},
   "gui.dungeontrain.support.confirm.body.revolut": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "69e752240fab4de3"},
-  "gui.dungeontrain.support.confirm.body.stripe.gift": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "a61a4769ceec1b99"},
+  "gui.dungeontrain.support.confirm.body.stripe.gift": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e0b2486834e59e41"},
   "gui.dungeontrain.support.confirm.body.revolut.gift": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "c2bcb330d1822a4a"},
   "gui.dungeontrain.support.confirm.open": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ed077f3d8125d60d"},
   "gui.dungeontrain.support.confirm.cancel": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "19766ed6ccb2f4a3"},

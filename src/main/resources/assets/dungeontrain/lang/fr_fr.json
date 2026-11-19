@@ -1621,7 +1621,7 @@
   "gui.dungeontrain.support.confirm.body.stripe": "Dans ton navigateur, sur brennan.games. Ton nom Minecraft est déjà rempli pour le tableau.",
   "gui.dungeontrain.support.confirm.body.patreon": "Dans ton navigateur, sur patreon.com. Le montant de ton choix, résiliable à tout moment.",
   "gui.dungeontrain.support.confirm.body.revolut": "Dans ton navigateur, sur revolut.me. Ton nom Minecraft est ajouté en note pour le tableau.",
-  "gui.dungeontrain.support.confirm.body.stripe.gift": "Dans ton navigateur, sur brennan.games. Le nom que tu as choisi est déjà rempli pour le tableau.",
+  "gui.dungeontrain.support.confirm.body.stripe.gift": "Dans ton navigateur, sur brennan.games. Les récompenses vont au nom que tu as choisi. Après le paiement, tu peux choisir lesquelles.",
   "gui.dungeontrain.support.confirm.body.revolut.gift": "Dans ton navigateur, sur revolut.me. Le nom que tu as choisi est ajouté en note pour le tableau.",
   "gui.dungeontrain.support.confirm.open": "Ouvrir",
   "gui.dungeontrain.support.confirm.cancel": "Annuler",
