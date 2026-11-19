@@ -51,6 +51,23 @@
     "declares is listed here and the carrier's own hash is approved. Any other carrier is never trusted by",
     "the client and is flagged for review on the relay. Every id here must also be an approved id."
   ],
+  "streamMuted": [
+    "concerto",
+    "dangomusic",
+    "showthelyrics"
+  ],
+  "streamMutedWhy": [
+    "Music players and lyric displays: approved for runs, but kept OFF the Live Eye stream so copyrighted songs",
+    "and lyrics never reach DT's official broadcast. Their sound never counts as stream-safe",
+    "(ApprovedModList.isStreamSoundApproved), their lyric/player HUD and 3D lyrics are hidden while the player",
+    "streams (client/live/StreamHiddenOverlays + dungeontrain.musicmods.mixins.json), and the player is told once",
+    "at the title screen (client/modcheck/StreamMutedModsPopupHandler). Concerto and Dango Music play through",
+    "their own audio output (OpenAL source / Java Sound), which the stream mirror never copies; Show the Lyrics",
+    "plays nothing, it reads the system's media player.",
+    "NEVER approve a stream-muted id on the relay: jars older than this list don't know it, and a relay approval",
+    "would switch their stream sound back on with the music mod loaded. Approve here only, so the mute ships",
+    "with the approval. Every id here must also be an approved id."
+  ],
   "groups": {
     "platform": {
       "why": "The game and the loader. Never optional, never a choice a player made.",
@@ -140,7 +157,10 @@
         "presencefootsteps",
         "sounds",
         "voicechat",
-        "voicechat_api"
+        "voicechat_api",
+        "concerto",
+        "dangomusic",
+        "showthelyrics"
       ]
     },
     "interface": {

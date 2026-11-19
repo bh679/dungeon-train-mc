@@ -443,7 +443,7 @@ public final class AudioMirror {
         if (source == null) return false;
         return s.verdicts.computeIfAbsent(source, id -> {
             String pack = Minecraft.getInstance().getResourceManager().getResource(id).map(Resource::sourcePackId).orElse(null);
-            boolean ok = StreamSoundPolicy.allowed(pack, ApprovedModList::isApproved);
+            boolean ok = StreamSoundPolicy.allowed(pack, ApprovedModList::isStreamSoundApproved);
             if (!ok) LOGGER.debug("[DungeonTrain] stream audio: {} from pack {} stays off the stream", id, pack);
             return ok;
         });

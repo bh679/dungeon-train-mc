@@ -112,6 +112,12 @@ public final class ApprovedModList {
      */
     private static volatile Set<String> bakedCarrierApproved = Set.of();
     private static volatile Set<String> relayCarrierApproved = Set.of();
+    /**
+     * Ids approved for runs but kept OFF the Live Eye stream: music players and lyric displays. Baked
+     * only (the curated resource's {@code streamMuted}); the relay can neither add nor remove one, so
+     * the mute always ships in the same jar as the approval. See the resource's {@code streamMutedWhy}.
+     */
+    private static volatile Set<String> bakedStreamMuted = Set.of();
     /** A lowercase 40-hex SHA-1, as the relay serves and the scanner computes them. */
     private static final java.util.regex.Pattern SHA1 = java.util.regex.Pattern.compile("[0-9a-f]{40}");
     private static final int MAX_HASHES = 200000;
@@ -244,6 +250,25 @@ public final class ApprovedModList {
         return isApproved(modId, approved(), prefixes(), relayRevoked);
     }
 
+    /** The baked stream-muted ids. See {@link #bakedStreamMuted}. */
+    public static Set<String> streamMuted() {
+        loadBakedOnce();
+        return bakedStreamMuted;
+    }
+
+    /** True when {@code modId} is approved for runs but must never be heard or seen on the stream. */
+    public static boolean isStreamMuted(String modId) {
+        return streamMuted().contains(ModIds.normalise(modId));
+    }
+
+    /**
+     * May a sound file from {@code modId}'s jar reach the Live Eye stream? Approved, and not
+     * {@linkplain #isStreamMuted stream-muted}.
+     */
+    public static boolean isStreamSoundApproved(String modId) {
+        return isApproved(modId) && !isStreamMuted(modId);
+    }
+
     /** The current relay revocations — package-visible so the scan can pass them down. */
     static Set<String> revoked() {
         loadDiskCacheOnce();
@@ -320,6 +345,7 @@ public final class ApprovedModList {
             bakedHashes = parseHashes(root);
             bakedPackages = parseKnownPackages(root);
             bakedCarrierApproved = parseCarrierApproved(root);
+            bakedStreamMuted = parseStreamMuted(root);
             bakedEngineSha1 = stringAt(root, "engineSha1");
             bakedEngineVersion = stringAt(root, "engineVersion");
             LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es), {} file hash(es), "
@@ -391,6 +417,11 @@ public final class ApprovedModList {
     /** The {@code carrierApproved} id list of a resource or payload, sanitized; empty when absent. */
     static Set<String> parseCarrierApproved(JsonObject root) {
         return ModIds.sanitize(stringsAt(root, "carrierApproved"), MAX_IDS);
+    }
+
+    /** The resource's {@code streamMuted} id list, sanitized; empty when absent. */
+    static Set<String> parseStreamMuted(JsonObject root) {
+        return ModIds.sanitize(stringsAt(root, "streamMuted"), MAX_IDS);
     }
 
     /** The resource's raw-ID prefixes, lowercased and validated as ID fragments. */
