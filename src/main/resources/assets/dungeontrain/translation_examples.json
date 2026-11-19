@@ -5079,6 +5079,34 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.creator.oversized_size": {
+    "1": {
+      "label": "the build's name, as its creator typed it",
+      "examples": [
+        "Grand Hall"
+      ]
+    },
+    "2": {
+      "label": "the build's size in blocks, length by height by width",
+      "examples": [
+        "64×64×64"
+      ]
+    },
+    "3": {
+      "label": "how many blocks the build holds, already formatted with thousands separators",
+      "examples": [
+        "63,669"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": {
+    "1": {
+      "label": "how many blocks the build holds, already formatted with thousands separators",
+      "examples": [
+        "63,669"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sub_variants_of": {
     "1": {
       "label": "the name of the group template whose sub-variants are listed",

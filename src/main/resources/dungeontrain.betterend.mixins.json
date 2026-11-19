@@ -21,7 +21,8 @@
     "wover.WoverBiomePickerOrderMixin",
     "wover.WoverBiomePickerSampleMixin",
     "wover.WoverPossibleBiomesCompatOrderMixin",
-    "wover.WoverPossibleBiomesOrderMixin"
+    "wover.WoverPossibleBiomesOrderMixin",
+    "wover.WoverWorldConfigInvoker"
   ],
   "client": [
     "bclib.BclibFixPromptMixin",

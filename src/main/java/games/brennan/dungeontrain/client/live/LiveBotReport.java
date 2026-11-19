@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
+import games.brennan.dungeontrain.client.ChatClickTokens;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -32,7 +33,9 @@ import java.util.Set;
  * deletes the line for everyone, and this client's next poll turns it into vanilla's deleted marker like any other
  * deleted line. A link made before report keys gets a line asking for {@code /discord} once more instead.</p>
  *
- * <p>Buttons are {@link ChatClick} actions, never commands. Client thread only, apart from the HTTP.</p>
+ * <p>Buttons are {@link ChatClick} actions, never commands. Any sender can print a {@code dungeontrain:} click, so
+ * the confirm's buttons carry a {@link ChatClickTokens} token minted when this client printed it: a copy from anyone
+ * else, or one clicked without the confirm ever showing, sends nothing. Client thread only, apart from the HTTP.</p>
  */
 public final class LiveBotReport {
 
@@ -124,9 +127,19 @@ public final class LiveBotReport {
         return ChatClick.event(ACTION, step, Long.toString(seq));
     }
 
-    /** {@code [ask|go|cancel, seq]} → the seq, or -1 for anything else. Pure. */
+    /** A confirm button's click: the step, the seq and the confirm's token. */
+    static ClickEvent click(String step, long seq, String token) {
+        return ChatClick.event(ACTION, step, Long.toString(seq), token);
+    }
+
+    /** {@code [ask, seq]} → the seq, or -1 for anything else. Pure. */
     static long seqOf(List<String> args, String step) {
-        if (args.size() != 2 || !step.equals(args.get(0))) return -1;
+        return seqOf(args, step, 2);
+    }
+
+    /** {@code [step, seq]} ({@code size} 2) or {@code [step, seq, token]} ({@code size} 3) → the seq, or -1. Pure. */
+    static long seqOf(List<String> args, String step, int size) {
+        if (args.size() != size || !step.equals(args.get(0))) return -1;
         try {
             long seq = Long.parseLong(args.get(1));
             return seq > 0 ? seq : -1;
@@ -141,9 +154,14 @@ public final class LiveBotReport {
             ask(ask);
             return;
         }
-        long go = seqOf(args, GO);
-        if (go > 0) go(go);
-        // CANCEL: nothing to do; the confirm line stays as it was.
+        long go = seqOf(args, GO, 3);
+        if (go > 0) {
+            go(go, args.get(2));
+            return;
+        }
+        // CANCEL uses the confirm's token up, so its [Report] can't be clicked later. The line stays as it was.
+        long cancel = seqOf(args, CANCEL, 3);
+        if (cancel > 0) ChatClickTokens.consume(ACTION, cancel, args.get(2));
     }
 
     private static void ask(long seq) {
@@ -170,16 +188,23 @@ public final class LiveBotReport {
         say(confirmLine(seq, f));
     }
 
+    /** The confirm for {@code seq}, with a fresh token on its buttons: only this line's [Report] can send. */
     static Component confirmLine(long seq, Flagged f) {
+        String token = ChatClickTokens.mint(ACTION, seq);
         MutableComponent yes = Component.translatable(YES_KEY)
-            .withStyle(s -> s.withColor(ChatFormatting.GREEN).withClickEvent(click(GO, seq)));
+            .withStyle(s -> s.withColor(ChatFormatting.GREEN).withClickEvent(click(GO, seq, token)));
         MutableComponent no = Component.translatable(CANCEL_KEY)
-            .withStyle(s -> s.withColor(ChatFormatting.GRAY).withClickEvent(click(CANCEL, seq)));
+            .withStyle(s -> s.withColor(ChatFormatting.GRAY).withClickEvent(click(CANCEL, seq, token)));
         return Component.translatable(CONFIRM_KEY, Component.literal(f.author()).withStyle(nameColour(f.source())), platform(f.source()))
             .withStyle(ChatFormatting.GRAY).append(" ").append(yes).append(" ").append(no);
     }
 
-    private static void go(long seq) {
+    /** [Report] was clicked. Nothing happens unless {@code token} is the one this client's confirm for {@code seq} carried. */
+    static void go(long seq, String token) {
+        if (!ChatClickTokens.consume(ACTION, seq, token)) {
+            LOGGER.debug("[DungeonTrain] Live report: a report click without its confirm was ignored");
+            return;
+        }
         Flagged f = FLAGGED.get(seq);
         String uuid = CommunityLinkClient.ownUuid();
         if (f == null || uuid == null || !SENT.add(seq)) return;
@@ -258,6 +283,17 @@ public final class LiveBotReport {
     static void forget() {
         FLAGGED.clear();
         SENT.clear();
+        ChatClickTokens.clear(ACTION);
+    }
+
+    /** Test seam: whether a report for {@code seq} is in flight or done. */
+    static boolean sent(long seq) {
+        return SENT.contains(seq);
+    }
+
+    /** Test seam: a flag was put on {@code seq}. */
+    static void flagForTest(long seq, Flagged f) {
+        FLAGGED.put(seq, f);
     }
 
     private static void say(Component line) {
