@@ -16967,6 +16967,22 @@
       ]
     }
   },
+  "chat.dungeontrain.workbench.send.sent": {
+    "1": {
+      "label": "the name of the player who built it",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.suggestion.title": {
+    "1": {
+      "label": "the build's name",
+      "examples": [
+        "Brick Cabin"
+      ]
+    }
+  },
   "chat.dungeontrain.workbench.committed": {
     "1": {
       "label": "the staged build's Workbench id",
@@ -16985,6 +17001,26 @@
       "label": "the template name it landed under",
       "examples": [
         "brick_cabin"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.committed_renamed": {
+    "1": {
+      "label": "the template name that was asked for but already in use",
+      "examples": [
+        "brick_cabin"
+      ]
+    },
+    "2": {
+      "label": "the kind it became",
+      "examples": [
+        "contents"
+      ]
+    },
+    "3": {
+      "label": "the free name it landed under instead",
+      "examples": [
+        "brick_cabin_2"
       ]
     }
   },

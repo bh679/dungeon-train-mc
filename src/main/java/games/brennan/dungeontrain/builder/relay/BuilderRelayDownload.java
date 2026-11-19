@@ -308,9 +308,10 @@ public final class BuilderRelayDownload {
         }
 
         // The "Whole carriage room" destination: the build goes into the Whole pool and nowhere else.
-        boolean wholeRoom = BuilderRelayWholeRoom.requested(parentId) && BuilderRelayWholeRoom.supports(kind);
+        games.brennan.dungeontrain.train.WholeKind whole = BuilderRelayWholeRoom.kindOf(parentId);
+        boolean wholeRoom = whole != null && BuilderRelayWholeRoom.supports(kind);
         BuilderRelayInstall.Outcome installed = wholeRoom
-            ? BuilderRelayWholeRoom.install(level, kind, build.buildName(), build.stage(), template, resolution,
+            ? BuilderRelayWholeRoom.install(level, kind, whole, build.buildName(), build.stage(), template, resolution,
                 newName, build.sidecars(), mine)
             : BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
@@ -355,8 +356,7 @@ public final class BuilderRelayDownload {
         // a plot this download never wrote.
         if (wholeRoom) {
             TemplateLootPrefabs.relinkPlot(
-                games.brennan.dungeontrain.editor.BlockVariantPlot.wholeKey(
-                    games.brennan.dungeontrain.train.WholeKind.ROOM, installedAs),
+                games.brennan.dungeontrain.editor.BlockVariantPlot.wholeKey(whole, installedAs),
                 prefabs.renames(), prefabsWritten);
         } else {
             TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
