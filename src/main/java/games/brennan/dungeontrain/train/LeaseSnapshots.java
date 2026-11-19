@@ -33,7 +33,17 @@ public final class LeaseSnapshots {
      * @throws IOException when the base blob itself cannot be decoded — the lease is unusable
      */
     public static CompoundTag fold(PoolLease lease) throws IOException {
-        return adoptPhotos(foldDeltas(CarriageBlockSnapshot.decode(lease.blocks()), lease), lease);
+        RelayBlobLimits.FoldBudget budget = new RelayBlobLimits.FoldBudget();
+        try {
+            CompoundTag base = CarriageBlockSnapshot.decode(lease.blocks(), budget);
+            return adoptPhotos(foldDeltas(base, lease, budget), lease);
+        } catch (RelayBlobTooLargeException e) {
+            if (RelayBlobLimits.firstReport("lease:" + lease.id())) {
+                LOGGER.warn("[DungeonTrain] leased build id={} is over the size limit ({}) — skipping it.",
+                        lease.id(), e.getMessage());
+            }
+            throw e;
+        }
     }
 
     /**
@@ -52,15 +62,32 @@ public final class LeaseSnapshots {
         }
     }
 
-    /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
-    public static CompoundTag foldDeltas(CompoundTag base, PoolLease lease) {
+    /**
+     * Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot,
+     * every delta drawing on the build's one {@code budget}.
+     *
+     * @throws RelayBlobTooLargeException when the build as a whole is over its limits (too many deltas,
+     *                                    or the budget spent). Folding partway is not an option: the
+     *                                    build's seq seed claims every delta, so the holder's next save
+     *                                    would compact a state with edits missing.
+     */
+    static CompoundTag foldDeltas(CompoundTag base, PoolLease lease, RelayBlobLimits.FoldBudget budget)
+            throws RelayBlobTooLargeException {
         List<SharedCarriageClient.DeltaRec> pending =
                 SharedCarriageClient.pendingDeltas(lease.deltas(), lease.baseSeq());
         if (pending.isEmpty()) return base;
+        RelayBlobLimits.checkDeltaCount(pending.size());
         CompoundTag folded = base;
         for (SharedCarriageClient.DeltaRec d : pending) {
             try {
-                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells(), budget));
+            } catch (RelayBlobTooLargeException e) {
+                if (e.wholeBuild()) throw e;
+                // One oversize delta costs that frame, like an unreadable one.
+                if (RelayBlobLimits.firstReport("lease:" + lease.id() + ":" + d.seq())) {
+                    LOGGER.warn("[DungeonTrain] leased build id={} delta seq={} is over the size limit — skipping it.",
+                            lease.id(), d.seq());
+                }
             } catch (Exception e) {
                 // One unreadable frame costs that frame, not the build: the base and every other
                 // delta still stand, which is what the player was shown last time too.

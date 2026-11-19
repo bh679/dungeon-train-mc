@@ -154,7 +154,7 @@ public final class EditorGuiScreen extends Screen {
     public void removed() {
         super.removed();
         BuilderTilePreviews.clear();
-        RelayBuildPreviews.clear();
+        RelayBuildPreviews.screenClosed();
         games.brennan.dungeontrain.client.builder.WorkbenchPreviews.clear();
         games.brennan.dungeontrain.client.builder.StagePreviews.clear();
         games.brennan.dungeontrain.client.builder.LivePlotPreview.clear();

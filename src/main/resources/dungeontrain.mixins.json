@@ -250,6 +250,7 @@
     "client.ReceivingLevelScreenThemeMixin",
     "client.ProgressScreenThemeMixin",
     "client.WorldOpenFlowsDelayMixin",
+    "client.WorldOpenFlowsWoverFolderMixin",
     "client.AdvancementsScreenAccessor",
     "client.NativeImageAccessor",
     "client.AdvancementsScreenClickMixin",

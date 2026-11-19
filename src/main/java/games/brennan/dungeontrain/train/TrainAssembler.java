@@ -252,6 +252,8 @@ public final class TrainAssembler {
                     lease.id(), carriageOrigin, cellCount, placed == null ? "FAILED" : placed.size(),
                     ents.size(), lease.baseSeq(), lease.deltas() == null ? 0 : lease.deltas().size());
             return placed == null ? null : new RelayPlacement(placed, ents, fuelled.coal());
+        } catch (RelayBlobTooLargeException e) {
+            return null;                               // LeaseSnapshots.fold has already said so, once
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
             return null;

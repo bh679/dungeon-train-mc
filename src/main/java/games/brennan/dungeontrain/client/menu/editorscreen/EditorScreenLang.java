@@ -147,6 +147,11 @@ public final class EditorScreenLang {
     /** Load, for the kinds that land under a variant parent; and the parent button beside it. */
     public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
     public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
+    /** The confirm before loading or staging an oversized relay build. */
+    public static final String CREATOR_OVERSIZED_TITLE = PREFIX + "creator.oversized_title";
+    public static final String CREATOR_OVERSIZED_SIZE = PREFIX + "creator.oversized_size";
+    public static final String CREATOR_OVERSIZED_WARNING = PREFIX + "creator.oversized_warning";
+    public static final String CREATOR_OVERSIZED_CONFIRM = PREFIX + "creator.oversized_confirm";
     public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
     /** The Whole-pool destination in the "Load under" picker, and the top-level row a carriage gets. */
     public static final String CREATOR_PARENT_WHOLE_ROOM = PREFIX + "creator.parent_whole_room";
@@ -243,6 +248,9 @@ public final class EditorScreenLang {
     public static final String SOURCE_MINE = PREFIX + "source.mine";
     public static final String SOURCE_COMMUNITY = PREFIX + "source.community";
     public static final String SHEET_PENDING = PREFIX + "sheet.pending";
+    /** A relay build too big to preview: "Oversized", and its block count under it. */
+    public static final String SHEET_OVERSIZED = PREFIX + "sheet.oversized";
+    public static final String SHEET_OVERSIZED_BLOCKS = PREFIX + "sheet.oversized_blocks";
 
     public static final String ICON_SAVE = PREFIX + "icon.save";
     public static final String ICON_RENAME = PREFIX + "icon.rename";

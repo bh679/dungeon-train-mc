@@ -11,7 +11,6 @@ import games.brennan.dungeontrain.editor.WorkbenchEditor;
 import games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild;
 import games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
-import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -74,7 +73,7 @@ public final class BuilderRelayStage {
         }
         CompoundTag snapshot;
         try {
-            snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
+            snapshot = BuilderRelayDownload.decodeAndFold(build);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Workbench: relay id={} would not decode: {}", build.id(), t.toString());
             return BuilderRelayDownload.Result.of(BuilderRelayDownload.Outcome.FAILED);

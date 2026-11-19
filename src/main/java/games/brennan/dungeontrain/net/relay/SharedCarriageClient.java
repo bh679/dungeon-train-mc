@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net.relay;
 
 import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import com.google.gson.JsonArray;
+import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -289,7 +290,7 @@ public final class SharedCarriageClient {
         if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
         addNameId(body, nameId);
         addPhotos(body, photos);
-        return post("/carriages/submit", body).thenApply(resp -> {
+        return postBlocks("/carriages/submit", body, blocksBase64).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) return Optional.empty();
             String token = o.has("token") && !o.get("token").isJsonNull() ? o.get("token").getAsString() : null;
@@ -422,7 +423,7 @@ public final class SharedCarriageClient {
         // What made it. The relay keeps builder uploads and in-play captures in separate dedupe scopes,
         // so an identical blob never collapses one into the other.
         body.addProperty("source", "builder");
-        return post("/carriages/submit", body).thenApply(resp -> {
+        return postBlocks("/carriages/submit", body, blocksBase64).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) {
                 logFailure("/carriages/submit", resp);
@@ -1570,7 +1571,7 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
-        return statusPost("/carriages/save", body);
+        return statusPost("/carriages/save", body, blocksBase64);
     }
 
     /**
@@ -1654,7 +1655,7 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
-        return statusPost("/carriages/owner-save", body);
+        return statusPost("/carriages/owner-save", body, blocksBase64);
     }
 
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
@@ -1708,13 +1709,18 @@ public final class SharedCarriageClient {
         addFuel(body, fuel);
         body.addProperty("id", id);
         body.addProperty("token", token);
-        if (blocksBase64 != null && !blocksBase64.isEmpty()) {
-            body.addProperty("blocks", blocksBase64);
-            body.addProperty("baseSeq", baseSeq);
-            if (text != null && !text.isEmpty()) body.addProperty("text", text);
-            addPhotos(body, photos);
-        }
-        return statusPost("/carriages/return", body);
+        if (blocksBase64 == null || blocksBase64.isEmpty()) return statusPost("/carriages/return", body);
+        // A final blob other worlds would refuse is left off: the lease still goes back, and the relay
+        // keeps the build as it last accepted it.
+        return uploadable(blocksBase64, "/carriages/return").thenCompose(ok -> {
+            if (ok) {
+                body.addProperty("blocks", blocksBase64);
+                body.addProperty("baseSeq", baseSeq);
+                if (text != null && !text.isEmpty()) body.addProperty("text", text);
+                addPhotos(body, photos);
+            }
+            return statusPost("/carriages/return", body);
+        });
     }
 
     // ---- death / report (fire-and-forget) ----
@@ -1824,6 +1830,37 @@ public final class SharedCarriageClient {
     }
 
     /** POST that only cares about success/forbidden/unknown for save/heartbeat/return. */
+    /**
+     * Resolves true when {@code blocks} is within what other worlds will decode
+     * ({@link CarriageBlockSnapshot#withinRelayLimits}). The check decodes the blob, so it runs off the
+     * caller's thread. Uploading a build no world can read would only put it in every lease's way.
+     */
+    private static CompletableFuture<Boolean> uploadable(String blocks, String path) {
+        if (blocks == null || blocks.isEmpty()) return CompletableFuture.completedFuture(true);
+        return CompletableFuture.supplyAsync(() -> {
+            boolean ok = CarriageBlockSnapshot.withinRelayLimits(blocks);
+            if (!ok) {
+                LOGGER.warn("[DungeonTrain] {}: build is over the size other worlds accept ({} chars) — not uploading it.",
+                        path, blocks.length());
+            }
+            return ok;
+        });
+    }
+
+    /** {@link #post}, unless {@code blocks} is over the size limit: then resolves to null, as no answer does. */
+    private static CompletableFuture<HttpResponse<String>> postBlocks(String path, JsonObject body, String blocks) {
+        return uploadable(blocks, path).thenCompose(ok -> ok
+                ? post(path, body)
+                : CompletableFuture.completedFuture(null));
+    }
+
+    /** {@link #statusPost}, for a call that carries {@code blocks}; an oversize blob resolves to ERROR. */
+    private static CompletableFuture<CallStatus> statusPost(String path, JsonObject body, String blocks) {
+        return uploadable(blocks, path).thenCompose(ok -> ok
+                ? statusPost(path, body)
+                : CompletableFuture.completedFuture(CallStatus.ERROR));
+    }
+
     private static CompletableFuture<CallStatus> statusPost(String path, JsonObject body) {
         return post(path, body).thenApply(resp -> {
             if (resp == null) return CallStatus.ERROR;

@@ -101,6 +101,51 @@ class RunWorldCleanupTest {
         assertEquals(List.of(), RunWorldCleanup.selectNappedWorlds(dirs, Set.of()));
     }
 
+    private static final String RUN = "World 1795061779870";
+    private static final String WOVER = "data/wover-generator.nbt";
+
+    @Test
+    @DisplayName("a run folder holding only WorldWeaver's file is a shell")
+    void woverOnlyFolderIsShell() {
+        assertTrue(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER), null));
+        assertTrue(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER, "session.lock"), null));
+        assertTrue(RunWorldCleanup.isWoverShell(RUN, List.of("data/wover-other.nbt"), "World 1795061876892"));
+    }
+
+    @Test
+    @DisplayName("any world data, or no WorldWeaver file, keeps the folder")
+    void realOrEmptyFoldersAreKept() {
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER, "level.dat"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER, "level.dat_old"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of("level.dat_old"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER, "region/r.0.0.mca"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER, "data/raids.dat"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of("session.lock"), null));
+    }
+
+    @Test
+    @DisplayName("WorldWeaver-named files outside data/ don't count")
+    void woverFileOutsideDataIsNotShell() {
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of("wover-generator.nbt"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of("data/sub/wover-generator.nbt"), null));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of("data/wover-generator.dat"), null));
+    }
+
+    @Test
+    @DisplayName("hand-made and editor folders are never shells")
+    void otherNamesAreNeverShells() {
+        assertFalse(RunWorldCleanup.isWoverShell("My Castle", List.of(WOVER), null));
+        assertFalse(RunWorldCleanup.isWoverShell("train editor 3", List.of(WOVER), null));
+    }
+
+    @Test
+    @DisplayName("the world crash recovery names is never a shell")
+    void crashRecoveryWorldIsKept() {
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER), RUN));
+        assertFalse(RunWorldCleanup.isWoverShell(RUN, List.of(WOVER, "session.lock"), RUN));
+    }
+
     @Test
     @DisplayName("napped delete retries a few times within a few seconds")
     void retryDelaysBounded() {

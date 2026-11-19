@@ -3,26 +3,19 @@ package games.brennan.dungeontrain.client.links;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
  * Which outbound links the client will accept from the relay, and open.
  *
  * <p>Every link must be {@code https}, parse as a URI, carry no user-info and no port other than
- * 443. On top of that, a <b>payment</b> key accepts only its provider's own hosts plus the
- * first-party domains ({@code brennan.games}, {@code dungeon.training} and their subdomains). A
- * tampered {@code /links} response or a bad override saved on the relay's admin page therefore
- * cannot point a money button at someone else's page: the value is dropped and that key degrades
- * as it does offline (see {@link OfficialLinks}).</p>
+ * 443 (plain http only from a local test relay, on loopback).</p>
  *
- * <p><b>A new payment provider needs no release.</b> The relay serves a link on a host outside
- * this list through its own {@code /go/<key>} redirect on {@code brennan.games}, which passes the
- * client's query string on. Keep {@link #PAYMENT_HOSTS} in lock-step with the relay's copy in
- * {@code links.js}.</p>
- *
- * <p>Non-payment keys (Discord, channels, affiliate, mod whitelist) keep a looser rule: https and
- * the parse checks, any host, because those rotate to arbitrary sites and carry no money.</p>
+ * <p>A <b>payment</b> link must also be signed with Brennan's payment-link key: {@link OfficialLinks}
+ * takes a payment key's relay value only from {@link PaymentLinkSignature}, so a tampered
+ * {@code /links} response, a bad override on the relay's admin page or a compromised relay cannot
+ * point a money button anywhere new. Any host is fine once signed, so a new provider needs no
+ * release. This class only judges the URL's shape, which is also re-checked when the link opens.</p>
  *
  * <p>Pure: no Minecraft on any path.</p>
  */
@@ -40,17 +33,9 @@ public final class LinkPolicy {
     /** Our own domains: the domain itself and any subdomain (we control their DNS). */
     static final Set<String> FIRST_PARTY_DOMAINS = Set.of("brennan.games", "dungeon.training");
 
-    private static final Set<String> STRIPE = Set.of("buy.stripe.com", "checkout.stripe.com");
-
-    /** Payment key → its provider's hosts, matched exactly (no subdomains). */
-    static final Map<String, Set<String>> PAYMENT_HOSTS = Map.of(
-            KEY_PATREON, Set.of("www.patreon.com", "patreon.com"),
-            KEY_PAYMENT, Set.of("revolut.me"),
-            KEY_PAYMENT_CN, STRIPE,
-            KEY_PAYMENT_CN_CHECKOUT, STRIPE,
-            KEY_PAYMENT_CHECKOUT, STRIPE,
-            KEY_REWARDS_PAY, STRIPE
-    );
+    /** The keys whose relay value must carry a payment-link signature ({@link PaymentLinkSignature}). */
+    static final Set<String> PAYMENT_KEYS = Set.of(
+            KEY_PATREON, KEY_PAYMENT, KEY_PAYMENT_CN, KEY_PAYMENT_CN_CHECKOUT, KEY_PAYMENT_CHECKOUT, KEY_REWARDS_PAY);
 
     private static final Set<String> LOOPBACK = Set.of("127.0.0.1", "localhost", "[::1]", "::1");
 
@@ -62,24 +47,33 @@ public final class LinkPolicy {
 
     private LinkPolicy() {}
 
-    /** Whether {@code url} may be used for relay key {@code key}. */
+    /**
+     * Whether {@code url} has an acceptable shape for relay key {@code key}: https and well-formed, or
+     * http on loopback from a local test relay. Where a payment link came from (its signature) is
+     * {@link OfficialLinks}' check, not this one.
+     */
     public static boolean allowed(String key, String url) {
         URI uri = parse(url);
         if (uri == null) return false;
-        String host = uri.getHost().toLowerCase(Locale.ROOT);
         if ("http".equals(scheme(uri))) {
             // Only the local test relay may serve plain http, and only on loopback.
-            return localRelay() && LOOPBACK.contains(host);
+            return isLocalRelayLoopback(url);
         }
-        if (!isPaymentKey(key)) return true;
-        if (isFirstParty(host)) return true;
-        if (localRelay() && LOOPBACK.contains(host)) return true;
-        return PAYMENT_HOSTS.get(key).contains(host);
+        return true;
     }
 
-    /** True when {@code key} is one of the payment keys with a host allowlist. */
+    /**
+     * True when a local test relay is in use and {@code url} points at loopback. Such a relay cannot
+     * sign with the real key, so its payment links are taken unsigned; nothing else is.
+     */
+    public static boolean isLocalRelayLoopback(String url) {
+        URI uri = parse(url);
+        return uri != null && localRelay() && LOOPBACK.contains(uri.getHost().toLowerCase(Locale.ROOT));
+    }
+
+    /** True when {@code key} is one of the payment keys, whose relay value must be signed. */
     public static boolean isPaymentKey(String key) {
-        return key != null && PAYMENT_HOSTS.containsKey(key);
+        return key != null && PAYMENT_KEYS.contains(key);
     }
 
     /** The lower-cased host of a well-formed link, or null. For display on the confirm screen. */
