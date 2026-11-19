@@ -11,7 +11,8 @@
   "highlights": [
     "Flag 1 to Flag 8 in the Stage Blocks tab, placed on the floor or on a wall",
     "Every copy of the same flag number in a carriage matches, and different numbers never repeat a design",
-    "Break one to keep it as a Dungeon Train banner"
+    "Break one to keep it as a Dungeon Train banner",
+    "Dungeon Train flags can now turn up in the shop and dressing room carriages"
   ],
   "pr": 2749,
   "date": "2026-11-19",
