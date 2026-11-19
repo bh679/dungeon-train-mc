@@ -1,0 +1,24 @@
+{
+  "id": "x-menu-build-pictures",
+  "version": "0.1892.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "community",
+    "ui"
+  ],
+  "title": "Build pictures load faster in the X menu",
+  "summary": "Browsing a builder's creations in the train editor's X menu now fills every picture on screen first, shows the big builds too, and keeps the pictures while you scroll.",
+  "highlights": [
+    "Every build on screen gets its current picture before older versions start downloading. The build you select jumps the queue.",
+    "Big builds that only showed their name now show a picture.",
+    "Pictures stay loaded while you scroll and when you reopen the menu, and only download again when the build has changed.",
+    "A small arrow marks the build that is downloading."
+  ],
+  "pr": 2744,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
