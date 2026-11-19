@@ -26,6 +26,9 @@ public final class CreatorLoadParent {
     /** The sentinel a category remembers when the build should land in the Whole room pool. */
     public static final String WHOLE_ROOM = games.brennan.dungeontrain.builder.relay.BuilderRelayWholeRoom.WHOLE_ROOM_PARENT;
 
+    /** The sentinel for the Whole half pool — the corridor-length half box. */
+    public static final String WHOLE_HALF = games.brennan.dungeontrain.builder.relay.BuilderRelayWholeRoom.WHOLE_HALF_PARENT;
+
     /** Whether a relay build of {@code kind} has a destination to choose — a parent or the Whole pool. */
     public static boolean supports(String kind) {
         return BuilderRelayKinds.CONTENTS.equals(kind) || BuilderRelayKinds.PORTAL_ROOM.equals(kind)
@@ -63,6 +66,7 @@ public final class CreatorLoadParent {
     public static String labelFor(PlotCategory category, EditorRosterIndex index) {
         String id = parentFor(category);
         if (WHOLE_ROOM.equals(id)) return EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_ROOM);
+        if (WHOLE_HALF.equals(id)) return EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_HALF);
         if (id.isEmpty()) return EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_TOP_LEVEL);
         if (index != null) {
             for (EditorRosterIndex.Tile tile : index.allTiles()) {

@@ -78,6 +78,7 @@ public final class WorkbenchStagingStore {
     /** Forget everything read so far; the next call re-reads the folder. */
     public static synchronized void clearCache() {
         CACHE.clear();
+        WorkbenchStagedPlot.forgetAllSettings();
         scanned = false;
     }
 
@@ -125,6 +126,7 @@ public final class WorkbenchStagingStore {
         Files.writeString(folder.resolve(PREFABS), GSON.toJson(prefabsJson(build.lootPrefabs())), StandardCharsets.UTF_8);
         ensureScanned();
         CACHE.put(build.stagedId().toLowerCase(Locale.ROOT), build);
+        WorkbenchStagedPlot.forgetSettings(build.stagedId());
     }
 
     /** Replace only the block tag of {@code stagedId} — what a Save in the Workbench does. */
@@ -154,6 +156,7 @@ public final class WorkbenchStagingStore {
         String doc = sidecars == null ? "" : sidecars;
         Files.writeString(folder.resolve(SIDECARS), doc, StandardCharsets.UTF_8);
         CACHE.put(stagedId.toLowerCase(Locale.ROOT), build.withSidecars(doc));
+        WorkbenchStagedPlot.forgetSettings(stagedId);
     }
 
     /**
@@ -181,6 +184,7 @@ public final class WorkbenchStagingStore {
     public static synchronized boolean delete(String stagedId) throws IOException {
         ensureScanned();
         boolean known = CACHE.remove(stagedId.toLowerCase(Locale.ROOT)) != null;
+        WorkbenchStagedPlot.forgetSettings(stagedId);
         Path folder = folderFor(stagedId);
         if (!Files.isDirectory(folder)) return known;
         List<Path> files;
@@ -225,7 +229,8 @@ public final class WorkbenchStagingStore {
                     str(o, "ownerUuid", ""), str(o, "ownerName", ""),
                     o.has("mine") && o.get("mine").getAsBoolean(),
                     new Vec3i(o.get("l").getAsInt(), o.get("h").getAsInt(), o.get("w").getAsInt()),
-                    sidecars, prefabs, o.has("stagedAt") ? o.get("stagedAt").getAsLong() : 0L);
+                    sidecars, prefabs, o.has("stagedAt") ? o.get("stagedAt").getAsLong() : 0L,
+                    o.has("live") && o.get("live").getAsBoolean());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Workbench: skipping unreadable staged build at {}: {}", folder, e.toString());
             return null;
@@ -251,6 +256,7 @@ public final class WorkbenchStagingStore {
         o.addProperty("h", b.size().getY());
         o.addProperty("w", b.size().getZ());
         o.addProperty("stagedAt", b.stagedAt());
+        o.addProperty("live", b.live());
         return o;
     }
 

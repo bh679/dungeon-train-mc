@@ -71,15 +71,15 @@ class OfficialLinksTest {
     @Test
     void theGeneralCheckoutKeyWinsOverTheChinaOne() {
         OfficialLinks.accept(Map.of(
-                "payment_checkout", "https://relay.example/cap/pay/cn",
-                "payment_cn_checkout", "https://relay.example/othercap/pay/cn"));
-        assertEquals("https://relay.example/cap/pay/cn", OfficialLinks.paymentCheckout());
+                "payment_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn",
+                "payment_cn_checkout", "https://brennan.games/api/dp-relay/othercap/pay/cn"));
+        assertEquals("https://brennan.games/api/dp-relay/cap/pay/cn", OfficialLinks.paymentCheckout());
     }
 
     @Test
     void aRelayPredatingTheGeneralKeyStillLightsUpThePricePoints() {
-        OfficialLinks.accept(Map.of("payment_cn_checkout", "https://relay.example/cap/pay/cn"));
-        assertEquals("https://relay.example/cap/pay/cn", OfficialLinks.paymentCheckout());
+        OfficialLinks.accept(Map.of("payment_cn_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn"));
+        assertEquals("https://brennan.games/api/dp-relay/cap/pay/cn", OfficialLinks.paymentCheckout());
     }
 
     @Test
@@ -130,6 +130,46 @@ class OfficialLinksTest {
         assertEquals("https://example.com/aff", OfficialLinks.affiliate());
     }
 
+    // --- payment host allowlist ----------------------------------------------------------------
+
+    @Test
+    void theLinksTheRelayServesTodayAllPass() {
+        Map<String, String> live = Map.of(
+                "patreon", "https://www.patreon.com/brennanhatton",
+                "payment", "https://revolut.me/brennacg7?currency=AUD&amount=2500&note=Dungeon%20Train%20",
+                "payment_cn", "https://buy.stripe.com/00w5kDgTL9M31TDc6d8N202",
+                "payment_cn_checkout", "https://brennan.games/api/dp-relay/55800db4/pay/cn",
+                "payment_checkout", "https://brennan.games/api/dp-relay/55800db4/pay/cn",
+                "rewards_pay", "https://brennan.games/api/dp-relay/adc3dc43/rewards/pay",
+                "discord", "https://discord.gg/eH9by3bWjw",
+                "affiliate", "https://billing.kinetichosting.com/aff.php?aff=1461");
+        assertEquals(live, OfficialLinks.sanitize(live));
+    }
+
+    @Test
+    void anOffListPaymentHostIsDroppedAndTheKeyDegrades() {
+        OfficialLinks.accept(Map.of(
+                "patreon", "https://evil.example/patreon",
+                "payment", "https://www.patreon.com/brennanhatton",
+                "payment_checkout", "https://evil.example/pay",
+                "rewards_pay", "http://brennan.games/rewards/pay",
+                "payment_cn", "https://brennan.games.evil.example/x"));
+        assertEquals(OfficialLinks.FALLBACK_PATREON, OfficialLinks.patreon());
+        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment(), "a Patreon host is not Revolut's");
+        assertNull(OfficialLinks.paymentCheckout(), "price points hide, as offline");
+        assertNull(OfficialLinks.rewardsPay(), "Give reads Soon, as offline");
+        assertNull(OfficialLinks.paymentCn());
+    }
+
+    @Test
+    void aFirstPartyRedirectServesAnyPaymentKey() {
+        // The relay's /go/<key> redirect is how a new provider reaches already-shipped jars.
+        String go = "https://brennan.games/api/dp-relay/cap/go/payment?currency=AUD&note=Dungeon%20Train%20";
+        OfficialLinks.accept(Map.of("payment", go, "patreon", "https://dungeon.training/go/patreon"));
+        assertEquals(go, OfficialLinks.payment());
+        assertEquals("https://dungeon.training/go/patreon", OfficialLinks.patreon());
+    }
+
     // --- sanitize ----------------------------------------------------------------------------
 
     @Test
@@ -139,9 +179,9 @@ class OfficialLinksTest {
         raw.put("b", "");
         raw.put("c", null);
         raw.put("d", "ftp://nope.example");
-        raw.put("e", "http://also-ok.example");
+        raw.put("e", "http://plain-http.example");
         Map<String, String> out = OfficialLinks.sanitize(raw);
-        assertEquals(Map.of("a", "https://ok.example/x", "e", "http://also-ok.example"), out);
+        assertEquals(Map.of("a", "https://ok.example/x"), out);
     }
 
     @Test
@@ -153,9 +193,10 @@ class OfficialLinksTest {
     // --- isValidUrl --------------------------------------------------------------------------
 
     @Test
-    void isValidUrlAcceptsHttpAndHttps() {
+    void isValidUrlAcceptsHttpsOnly() {
         assertTrue(OfficialLinks.isValidUrl("https://discord.gg/x"));
-        assertTrue(OfficialLinks.isValidUrl("http://example.com/a?b=1&c=2"));
+        assertTrue(OfficialLinks.isValidUrl("https://example.com/a?b=1&c=2"));
+        assertFalse(OfficialLinks.isValidUrl("http://example.com/a?b=1&c=2"));
     }
 
     @Test

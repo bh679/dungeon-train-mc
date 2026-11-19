@@ -18,6 +18,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** {@link NapSnapshot} round trip and {@link NapStore}'s single-use rule. */
 final class NapStoreTest {
 
+    @org.junit.jupiter.api.BeforeEach
+    void installKey(@TempDir Path keyDir) {
+        games.brennan.dungeontrain.data.InstallKey.useDirectoryForTests(keyDir);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void resetKey() {
+        games.brennan.dungeontrain.data.InstallKey.resetForTests();
+    }
+
     private static NapSnapshot nap(String levelId) {
         CompoundTag player = new CompoundTag();
         player.putInt("XpLevel", 30);
@@ -126,7 +136,7 @@ final class NapStoreTest {
     }
 
     @Test
-    @DisplayName("the applied list is binary, and an old text list is migrated and removed")
+    @DisplayName("an old text list is migrated into the v3 list and removed")
     void legacyTextListMigrated(@TempDir Path root) throws Exception {
         NapStore store = new NapStore(root);
         UUID player = UUID.randomUUID();
@@ -135,76 +145,22 @@ final class NapStoreTest {
         Path dir = root.resolve(NapStore.DIR);
         Files.createDirectories(dir);
         Files.writeString(dir.resolve(NapAppliedLog.LEGACY_FILE), n.napId() + "\n");
-        store.save(player, slot, n);
+        NapTestFiles.writeUnmarked(store, player, slot, n);
 
         assertFalse(store.load(player, slot).isPresent(), "the id from the text list still counts");
         assertFalse(Files.exists(dir.resolve(NapAppliedLog.LEGACY_FILE)));
-        assertEquals(Set.of(n.napId()), NapAppliedLog.decode(Files.readAllBytes(dir.resolve(NapAppliedLog.FILE))).ids());
-    }
-
-    private static NapSnapshot napAt(String levelId, long savedAt) {
-        return new NapSnapshot(UUID.randomUUID(), savedAt, "0.1840.0", levelId, new CompoundTag(),
-            0, 1, "", 1, 1, false, "hard");
+        assertEquals(Set.of(n.napId()), NapAppliedLog.decode(Files.readAllBytes(dir.resolve(NapAppliedLog.FILE))).woken());
     }
 
     @Test
-    @DisplayName("a damaged applied list is set aside: naps from before it stay refused, later naps wake")
-    void damagedListRecovers(@TempDir Path root) throws Exception {
-        long damagedAt = 5_000L;
-        Path dir = root.resolve(NapStore.DIR);
-        NapAppliedLog log = new NapAppliedLog(dir, () -> damagedAt);
-        UUID used = UUID.randomUUID();
-        log.add(used);
-        Path list = dir.resolve(NapAppliedLog.FILE);
-        byte[] edited = Files.readAllBytes(list);
-        edited[20] ^= 1;
-        Files.write(list, edited);
-
-        NapAppliedLog.State state = log.read();
-        assertEquals(damagedAt, state.trustSince());
-        assertTrue(state.ids().isEmpty());
-        assertTrue(Files.exists(dir.resolve(NapAppliedLog.DAMAGED_PREFIX + damagedAt)), "damaged file kept aside");
-        assertEquals(state, NapAppliedLog.decode(Files.readAllBytes(list)), "a fresh, valid list replaced it");
-        assertFalse(state.trusts(napAt("World 1700000000005", damagedAt - 1)));
-        assertTrue(state.trusts(napAt("World 1700000000006", damagedAt)));
-
-        // Through the store: an older nap is refused and kept, a newer one wakes and is recorded.
-        NapStore store = new NapStore(root);
-        UUID player = UUID.randomUUID();
-        String slot = NapSlot.key(false, Difficulty.HARD);
-        NapSnapshot old = napAt("World 1700000000007", damagedAt - 1);
-        store.save(player, slot, old);
-        assertFalse(store.load(player, slot).isPresent());
-        assertTrue(store.hasFile(player, slot), "the refused nap is kept");
-        NapSnapshot fresh = napAt("World 1700000000008", damagedAt + 1);
-        store.save(player, slot, fresh);
-        assertEquals(fresh, store.load(player, slot).orElseThrow());
-        store.consume(player, slot, fresh);
-        assertFalse(store.hasFile(player, slot));
-        assertEquals(Set.of(fresh.napId()), log.read().ids());
-        assertEquals(damagedAt, log.read().trustSince(), "trustSince survives later writes");
-    }
-
-    @Test
-    @DisplayName("a truncated list is recovered the same way, and a v1 list still reads")
-    void truncatedAndV1(@TempDir Path root) throws Exception {
-        Path dir = root.resolve(NapStore.DIR);
-        NapAppliedLog log = new NapAppliedLog(dir, () -> 42L);
-        log.add(UUID.randomUUID());
-        Path list = dir.resolve(NapAppliedLog.FILE);
-        byte[] good = Files.readAllBytes(list);
-        Files.write(list, java.util.Arrays.copyOf(good, good.length - 3));
-        assertEquals(42L, log.read().trustSince());
-
+    @DisplayName("a v1 and a v2 list still decode for the move to v3")
+    void legacyBinaryDecodes() throws Exception {
         UUID id = UUID.randomUUID();
-        java.nio.ByteBuffer v1 = java.nio.ByteBuffer.allocate(4 + 1 + 4 + 16 + 8);
-        v1.putInt(0x44544E41).put((byte) 1).putInt(1).putLong(id.getMostSignificantBits())
-            .putLong(id.getLeastSignificantBits());
-        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
-        crc.update(v1.array(), 0, v1.position());
-        v1.putLong(crc.getValue());
-        NapAppliedLog.State state = NapAppliedLog.decode(v1.array());
-        assertEquals(Set.of(id), state.ids());
-        assertEquals(0L, state.trustSince());
+        NapAppliedLog.Legacy v1 = NapAppliedLog.decodeLegacy(NapTestFiles.legacyList((byte) 1, 0L, id));
+        assertEquals(Set.of(id), v1.ids());
+        assertEquals(0L, v1.trustSince());
+        NapAppliedLog.Legacy v2 = NapAppliedLog.decodeLegacy(NapTestFiles.legacyList((byte) 2, 77L, id));
+        assertEquals(Set.of(id), v2.ids());
+        assertEquals(77L, v2.trustSince());
     }
 }
