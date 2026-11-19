@@ -198,7 +198,8 @@ public final class EditorBrowserPane {
             float yaw = spin.advance(art == null ? String.valueOf(entry.relayId()) : art.spinKey(), hov, seconds);
             // On screen, so worth a picture: the ask is cheap to repeat and the cache answers for
             // everything already here.
-            RelayBuildPreviews.request(entry.relayId(), entry.ownerUuid(), BuilderProfileState.live());
+            RelayBuildPreviews.request(entry.relayId(), entry.ownerUuid(), BuilderProfileState.live(),
+                entry.changes());
             TemplateTilePainter.draw(g, font, art, EditorCreatorBuilds.label(entry),
                 EditorPlotLabelsPacket.NO_WEIGHT, x, y, size, yaw,
                 new TemplateTilePainter.Marks(selected, hov, false, false, false, false), entry.relayId());

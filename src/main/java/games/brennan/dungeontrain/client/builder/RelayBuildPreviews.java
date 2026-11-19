@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.PreviewSlimmer;
 import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
@@ -20,6 +21,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 import org.slf4j.Logger;
 
@@ -54,18 +58,27 @@ import java.util.Set;
  *
  * <p>Bounded and closed like every other mesh cache. Pictures of builds as they are now and pictures
  * of past versions are held apart, so a long history can never push a tile's current picture out:
- * past {@link #CAPACITY} (or twice what is on screen) the least recently drawn current picture is
- * dropped; past {@link #VERSION_CEILING} versions, those of builds no longer on screen go first, and
- * background history stops rather than drop what is on screen. Everything goes on the way out of
- * the screen.</p>
+ * current pictures stay for the play session, menu closes included, and only past
+ * {@link #CURRENT_BYTE_BUDGET} of GPU memory does the longest-unseen off-screen one go; past
+ * {@link #VERSION_CEILING} versions, those of builds no longer on screen go first, and
+ * background history stops rather than drop what is on screen. Everything goes on leaving the
+ * world.</p>
  */
 @OnlyIn(Dist.CLIENT)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class RelayBuildPreviews {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** A page of the grid is a dozen tiles; this is a few pages of scrollback. */
-    private static final int CAPACITY = 36;
+    /**
+     * Current pictures held at most. Pictures stay for the play session — scrolling back, or closing
+     * and reopening the menu, must not download them again — so this is a safety ceiling, and
+     * {@link #CURRENT_BYTE_BUDGET} is what normally binds.
+     */
+    private static final int CAPACITY = 1024;
+
+    /** GPU bytes current pictures may hold before the longest-unseen off-screen ones go. */
+    static final long CURRENT_BYTE_BUDGET = 256L * 1024 * 1024;
 
     /** Past versions held at most — a safety ceiling, not a working budget. */
     static final int VERSION_CEILING = 256;
@@ -122,7 +135,22 @@ public final class RelayBuildPreviews {
     private static int bakesLeftThisFrame;
 
     /** Who to ask on behalf of, for a build wished for this frame. */
-    private record Wish(String ownerUuid, boolean live) {}
+    private record Wish(String ownerUuid, boolean live, int stamp) {}
+
+    /** No stamp to compare: the caller does not know which revision of the build it lists. */
+    public static final int NO_STAMP = -1;
+
+    /** The revision stamp each build's current picture was asked for under. */
+    private static final Map<Integer, Integer> ASKED_STAMP = new HashMap<>();
+
+    /** The revision stamp of the current picture held for each build. */
+    private static final Map<Integer, Integer> HELD_STAMP = new HashMap<>();
+
+    /** Builds whose listing moved on past the picture held: asked again, old picture drawn till then. */
+    private static final Set<Integer> STALE = new HashSet<>();
+
+    /** Which relay the pictures held came from; switching relay starts the cache afresh. */
+    private static Boolean heldLive;
 
     /** Builds on screen this frame, in the order they were drawn. */
     private static final Map<Integer, Wish> WISHED = new LinkedHashMap<>();
@@ -133,7 +161,7 @@ public final class RelayBuildPreviews {
     /** The picked build, its owner, and the version it is paged to; id 0 for none. */
     private static int selectedId;
     private static int selectedSeq;
-    private static Wish selectedWish = new Wish("", false);
+    private static Wish selectedWish = new Wish("", false, -1);
     private static boolean selectedThisFrame;
 
     private RelayBuildPreviews() {}
@@ -158,6 +186,7 @@ public final class RelayBuildPreviews {
         Map<Integer, Wish> wished = new LinkedHashMap<>(WISHED);
         WISHED.clear();
         selectedThisFrame = false;
+        noticeUpdates(wished);
         int slots = MAX_IN_FLIGHT - IN_FLIGHT.size();
         if (slots <= 0) return;
         List<RelayPreviewQueue.Ask> asks = RelayPreviewQueue.next(onScreen, selectedId, selectedSeq,
@@ -171,7 +200,35 @@ public final class RelayBuildPreviews {
         }
     }
 
+    /**
+     * The update check, at no relay cost: the listing the tiles come from says how many changes each
+     * build has, and a picture held under a different count is a picture of an older revision. That
+     * build alone is asked again — its old picture stays up until the new one lands — and its
+     * version index is dropped, because the history has grown.
+     */
+    private static void noticeUpdates(Map<Integer, Wish> wished) {
+        for (Map.Entry<Integer, Wish> e : wished.entrySet()) {
+            Wish wish = e.getValue();
+            if (heldLive != null && heldLive != wish.live()) {
+                // Another relay's builds share no ids with this one's pictures.
+                LOGGER.debug("[DungeonTrain] Relay previews: relay switched, starting afresh");
+                clear();
+                heldLive = wish.live();
+                return;
+            }
+            heldLive = wish.live();
+            Integer held = HELD_STAMP.get(e.getKey());
+            if (wish.stamp() == NO_STAMP || held == null || held == NO_STAMP || held == wish.stamp()) continue;
+            if (STALE.add(e.getKey())) {
+                VERSIONS.remove(e.getKey());
+                LOGGER.debug("[DungeonTrain] Relay preview: id={} changed ({} -> {}), asking again",
+                    e.getKey(), held, wish.stamp());
+            }
+        }
+    }
+
     private static void send(int relayId, Wish wish, int seq) {
+        if (seq == 0) ASKED_STAMP.put(relayId, wish.stamp());
         IN_FLIGHT.add(new Key(relayId, seq));
         DungeonTrainNet.sendToServer(new RelayBuildPreviewRequestPacket(relayId,
             wish.ownerUuid() == null ? "" : wish.ownerUuid(), wish.live(), seq));
@@ -180,7 +237,7 @@ public final class RelayBuildPreviews {
     /** The cache as the queue sees it. */
     private static final RelayPreviewQueue.State QUEUE_STATE = new RelayPreviewQueue.State() {
         @Override public boolean has(int relayId, int seq) {
-            return seq == 0 ? CACHE.containsKey(new Key(relayId, 0))
+            return seq == 0 ? CACHE.containsKey(new Key(relayId, 0)) && !STALE.contains(relayId)
                 : HISTORY.containsKey(new Key(relayId, seq));
         }
         @Override public boolean inFlight(int relayId, int seq) {
@@ -207,8 +264,16 @@ public final class RelayBuildPreviews {
      * frame decides what is actually sent.
      */
     public static void request(int relayId, String ownerUuid, boolean live) {
+        request(relayId, ownerUuid, live, NO_STAMP);
+    }
+
+    /**
+     * As above, with the build's revision stamp from the listing (its change count): a held picture
+     * under another stamp is out of date, and is asked for again.
+     */
+    public static void request(int relayId, String ownerUuid, boolean live, int stamp) {
         if (relayId <= 0) return;
-        WISHED.putIfAbsent(relayId, new Wish(ownerUuid == null ? "" : ownerUuid, live));
+        WISHED.putIfAbsent(relayId, new Wish(ownerUuid == null ? "" : ownerUuid, live, stamp));
     }
 
     /**
@@ -220,7 +285,7 @@ public final class RelayBuildPreviews {
         if (relayId <= 0) return;
         selectedId = relayId;
         selectedSeq = Math.max(0, seq);
-        selectedWish = new Wish(ownerUuid == null ? "" : ownerUuid, live);
+        selectedWish = new Wish(ownerUuid == null ? "" : ownerUuid, live, NO_STAMP);
         selectedThisFrame = true;
     }
 
@@ -407,7 +472,11 @@ public final class RelayBuildPreviews {
     private static void hold(Key key, Entry entry) {
         Entry old = mapFor(key).put(key, entry);
         if (old != null && old != entry && old.mesh() != null) old.mesh().close();
-        if (key.seq() == 0) evictDown();
+        if (key.seq() == 0) {
+            STALE.remove(key.relayId());
+            HELD_STAMP.put(key.relayId(), ASKED_STAMP.getOrDefault(key.relayId(), NO_STAMP));
+            evictDown();
+        }
         else evictHistory();
     }
 
@@ -416,12 +485,25 @@ public final class RelayBuildPreviews {
         return mc.level == null ? null : mc.level.registryAccess().lookupOrThrow(Registries.BLOCK);
     }
 
+    /**
+     * Past the budget, drop the longest-unseen current pictures of builds not on screen. A picture
+     * on screen is never dropped: dropping it would only download it again.
+     */
     private static void evictDown() {
-        int capacity = Math.max(CAPACITY, onScreen.size() * 2);
+        long bytes = 0;
+        for (Entry entry : CACHE.values()) {
+            if (entry.mesh() != null) bytes += entry.mesh().bytes();
+        }
         Iterator<Map.Entry<Key, Entry>> it = CACHE.entrySet().iterator();
-        while (CACHE.size() > capacity && it.hasNext()) {
+        while ((CACHE.size() > CAPACITY || bytes > CURRENT_BYTE_BUDGET) && it.hasNext()) {
             Map.Entry<Key, Entry> oldest = it.next();
-            if (oldest.getValue().mesh() != null) oldest.getValue().mesh().close();
+            if (onScreen.contains(oldest.getKey().relayId())) continue;
+            BuilderTileMesh mesh = oldest.getValue().mesh();
+            if (mesh != null) {
+                bytes -= mesh.bytes();
+                mesh.close();
+            }
+            HELD_STAMP.remove(oldest.getKey().relayId());
             it.remove();
         }
     }
@@ -455,10 +537,29 @@ public final class RelayBuildPreviews {
     }
 
     /**
+     * The X menu closed. Pictures are kept for the play session, so reopening it, or scrolling back,
+     * draws them at once rather than downloading them again; only this screen's wishes go.
+     * Answers still on their way are baked the next time the menu is open.
+     */
+    public static void screenClosed() {
+        WISHED.clear();
+        onScreen = List.of();
+        selectedId = 0;
+        selectedSeq = 0;
+        selectedThisFrame = false;
+    }
+
+    /** Leaving the world: everything goes, GPU buffers closed. Render thread. */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        clear();
+    }
+
+    /**
      * Drop everything, closing the GPU buffers.
      *
-     * <p>Render thread only. Called on the way out of the editor screen: these are somebody else's
-     * builds and the next screen has no use for them.</p>
+     * <p>Render thread only. Called on leaving the world, and when the relay the pictures came from
+     * changes.</p>
      */
     public static void clear() {
         for (Entry entry : CACHE.values()) {
@@ -478,6 +579,10 @@ public final class RelayBuildPreviews {
         IN_FLIGHT.clear();
         RETRY_AFTER.clear();
         VERSIONS.clear();
+        ASKED_STAMP.clear();
+        HELD_STAMP.clear();
+        STALE.clear();
+        heldLive = null;
         bakesLeftThisFrame = 0;
     }
 }
