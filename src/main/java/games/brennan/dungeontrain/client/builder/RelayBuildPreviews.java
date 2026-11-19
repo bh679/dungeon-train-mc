@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.builder.relay.BuilderRelayPreview;
 import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -76,6 +77,12 @@ public final class RelayBuildPreviews {
     /** Every seq a build's history holds, oldest first, once an ask for a version has answered. */
     private static final Map<Integer, int[]> VERSIONS = new HashMap<>();
 
+    /**
+     * Builds that read fine but are over the preview caps, and their size. The X menu says
+     * "Oversized" for these instead of a blank, and asks before loading one.
+     */
+    private static final Map<Key, BuilderRelayPreview.Oversize> OVERSIZED = new HashMap<>();
+
     /** Answered and waiting for a frame with budget to bake in. */
     private static final Deque<Pending> PENDING = new ArrayDeque<>();
 
@@ -134,6 +141,13 @@ public final class RelayBuildPreviews {
      * enough that a relay having a hard time is not hammered by a grid full of tiles.</p>
      */
     public static void accept(int relayId, int seq, int[] seqs, CompoundTag template, boolean retryable) {
+        accept(relayId, seq, seqs, template, retryable, null);
+    }
+
+    /** As above; {@code oversize} is set when the build has no picture because it is too big for one. */
+    public static void accept(int relayId, int seq, int[] seqs, CompoundTag template, boolean retryable,
+                              BuilderRelayPreview.Oversize oversize) {
+        if (relayId > 0 && oversize != null) OVERSIZED.put(new Key(relayId, seq), oversize);
         // A version ask was sent as -1 and answered with the seq it resolved to; both keys are
         // released so neither the ask nor its answer stays "in flight" forever.
         IN_FLIGHT.remove(new Key(relayId, -1));
@@ -175,6 +189,15 @@ public final class RelayBuildPreviews {
         RETRY_AFTER.keySet().removeIf(k -> k.relayId() == relayId);
         PENDING.removeIf(p -> p.key().relayId() == relayId);
         VERSIONS.remove(relayId);
+        OVERSIZED.keySet().removeIf(k -> k.relayId() == relayId);
+    }
+
+    /**
+     * This build's size when it is too big to preview, or null when it is not (or nobody knows yet).
+     * {@code seq} 0 is the build as it is now.
+     */
+    public static BuilderRelayPreview.Oversize oversized(int relayId, int seq) {
+        return OVERSIZED.get(new Key(relayId, seq));
     }
 
     /** Draw this build, or answer false while it is still coming — the caller draws its slate. */
@@ -267,6 +290,7 @@ public final class RelayBuildPreviews {
         IN_FLIGHT.clear();
         RETRY_AFTER.clear();
         VERSIONS.clear();
+        OVERSIZED.clear();
         bakesLeftThisFrame = 0;
     }
 }

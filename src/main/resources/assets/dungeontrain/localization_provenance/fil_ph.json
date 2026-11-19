@@ -8,7 +8,9 @@
     "discordpresence": "*"
   },
   "source_changed": {
-    "dungeontrain": [],
+    "dungeontrain": [
+      "gui.dungeontrain.editor_screen.sheet.oversized_blocks"
+    ],
     "adventureitemnames": [],
     "playermob": [],
     "discordpresence": []

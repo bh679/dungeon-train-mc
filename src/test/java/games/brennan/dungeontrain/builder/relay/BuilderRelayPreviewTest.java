@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.builder.relay;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -65,5 +67,28 @@ final class BuilderRelayPreviewTest {
     @DisplayName("a structure with no blocks list is not treated as huge")
     void emptyStructureIsNotRefused() {
         assertNotNull(BuilderRelayPreview.encode(new CompoundTag()));
+    }
+
+    @Test
+    @DisplayName("an oversized build reports its block count and box from the structure tag")
+    void oversizeReadsBlocksAndBox() {
+        CompoundTag tag = structureWith(13_000);
+        ListTag size = new ListTag();
+        size.add(IntTag.valueOf(64));
+        size.add(IntTag.valueOf(80));
+        size.add(IntTag.valueOf(48));
+        tag.put("size", size);
+        assertNull(BuilderRelayPreview.encode(tag), "13,000 blocks is over the preview cap");
+        BuilderRelayPreview.Oversize o = BuilderRelayPreview.Oversize.of(tag);
+        assertEquals(new BuilderRelayPreview.Oversize(13_000, 64, 80, 48), o);
+        assertEquals(o, BuilderRelayPreview.Oversize.fromArray(o.toArray()));
+    }
+
+    @Test
+    @DisplayName("a malformed oversize array reads as not oversized")
+    void malformedOversizeArray() {
+        assertNull(BuilderRelayPreview.Oversize.fromArray(new int[0]));
+        assertNull(BuilderRelayPreview.Oversize.fromArray(new int[]{1, 2}));
+        assertNull(BuilderRelayPreview.Oversize.fromArray(null));
     }
 }

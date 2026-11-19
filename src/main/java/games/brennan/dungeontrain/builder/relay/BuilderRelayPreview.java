@@ -9,6 +9,7 @@ import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
@@ -75,10 +76,46 @@ public final class BuilderRelayPreview {
      *
      * @param bytes     the structure NBT to send, or null when there is no picture
      * @param retryable whether the failure was the moment rather than the build
+     * @param oversize  set when the build read fine but is over the preview caps, so the X menu can say
+     *                  "Oversized" and ask before loading it; null otherwise. It may come with
+     *                  {@code bytes} (a lighter picture of a big build) or without (no picture at all).
      */
-    public record Attempt(byte[] bytes, boolean retryable) {
-        static final Attempt GONE = new Attempt(null, false);
-        static final Attempt LATER = new Attempt(null, true);
+    public record Attempt(byte[] bytes, boolean retryable, Oversize oversize) {
+        static final Attempt GONE = new Attempt(null, false, null);
+        static final Attempt LATER = new Attempt(null, true, null);
+
+        public Attempt(byte[] bytes, boolean retryable) {
+            this(bytes, retryable, null);
+        }
+
+        static Attempt oversized(Oversize oversize) {
+            return new Attempt(null, false, oversize);
+        }
+    }
+
+    /**
+     * A build too big to preview: how many blocks it holds and its box. Over the preview caps, not
+     * over anything that stops it loading.
+     */
+    public record Oversize(int blocks, int l, int h, int w) {
+        /** The size of a converted structure tag: its block list and its {@code size} box. */
+        static Oversize of(CompoundTag template) {
+            ListTag size = template.getList("size", Tag.TAG_INT);
+            int l = size.size() == 3 ? size.getInt(0) : 0;
+            int h = size.size() == 3 ? size.getInt(1) : 0;
+            int w = size.size() == 3 ? size.getInt(2) : 0;
+            return new Oversize(template.getList("blocks", Tag.TAG_COMPOUND).size(), l, h, w);
+        }
+
+        /** As the packet carries it: {@code [blocks, l, h, w]}. */
+        public int[] toArray() {
+            return new int[]{blocks, l, h, w};
+        }
+
+        /** Back from {@link #toArray}; null for anything that is not four numbers. */
+        public static Oversize fromArray(int[] a) {
+            return a != null && a.length == 4 ? new Oversize(a[0], a[1], a[2], a[3]) : null;
+        }
     }
 
     private BuilderRelayPreview() {}
@@ -150,9 +187,13 @@ public final class BuilderRelayPreview {
     private static Attempt convertFrame(ServerLevel level, int relayId, SharedCarriageClient.HistoryFrame frame) {
         CompoundTag tag;
         try {
-            CompoundTag folded = CarriageBlockSnapshot.decode(frame.base());
+            // One budget for the frame's base and its deltas, as a lease fold has.
+            games.brennan.dungeontrain.train.RelayBlobLimits.FoldBudget budget =
+                    new games.brennan.dungeontrain.train.RelayBlobLimits.FoldBudget();
+            games.brennan.dungeontrain.train.RelayBlobLimits.checkDeltaCount(frame.deltas().size());
+            CompoundTag folded = CarriageBlockSnapshot.decode(frame.base(), budget);
             for (String cells : frame.deltas()) {
-                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(cells));
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(cells, budget));
             }
             HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
             tag = CarriageSnapshotTemplate.toTemplate(folded, blocks).save(new CompoundTag());
@@ -162,7 +203,7 @@ public final class BuilderRelayPreview {
             return Attempt.GONE;
         }
         byte[] bytes = encode(tag);
-        return bytes == null ? Attempt.GONE : new Attempt(bytes, false);
+        return bytes == null ? Attempt.oversized(Oversize.of(tag)) : new Attempt(bytes, false);
     }
 
     /**
@@ -171,7 +212,7 @@ public final class BuilderRelayPreview {
      */
     static StructureTemplate templateOf(ServerLevel level, SharedCarriageClient.BuildFetch build)
             throws java.io.IOException {
-        CompoundTag snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
+        CompoundTag snapshot = BuilderRelayDownload.decodeAndFold(build);
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         return CarriageSnapshotTemplate.toTemplate(snapshot, blocks);
     }
@@ -197,7 +238,7 @@ public final class BuilderRelayPreview {
                     build.id(), build.buildName(), build.kind(),
                     tag.getList("blocks", Tag.TAG_COMPOUND).size(), encodedSize(tag),
                     MAX_BLOCKS, MAX_WIRE_BYTES, MAX_ACCOUNTED_BYTES);
-            return Attempt.GONE;
+            return Attempt.oversized(Oversize.of(tag));
         }
         return new Attempt(bytes, false);
     }
