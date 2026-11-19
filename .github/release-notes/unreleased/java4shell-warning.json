@@ -1,0 +1,21 @@
+{
+  "id": "java4shell-warning",
+  "version": "0.1904.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility",
+    "ui"
+  ],
+  "title": "Java security warning",
+  "summary": "If the Java your game runs on has the Java4Shell security flaw, Dungeon Train now tells you when the game starts and shows you how to fix it: update Java, or add one setting to your launcher.",
+  "highlights": [
+    "The steps match your setup, whether your Java comes from the Minecraft Launcher, CurseForge, Modrinth, Prism or your own install.",
+    "Only computers the flaw affects see it. Macs with Apple chips never do."
+  ],
+  "pr": 2754,
+  "date": "2026-11-19",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
