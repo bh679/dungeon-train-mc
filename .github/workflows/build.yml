@@ -227,6 +227,14 @@ jobs:
       - name: No lang file or provenance sidecar repeats a key
         run: python3 scripts/localization/check-lang-duplicates.py
 
+      # The website's AI Policy (dungeon.training/ai-policy/) is generated from the in-game one
+      # (scripts/relay/export-ai-policy.py → sync-ai-policy.yml → a dp-relay PR). Fail here if
+      # the export would drop a line, so a broken policy never reaches main.
+      - name: AI Policy exports for the website
+        run: |
+          python3 scripts/relay/test_export_ai_policy.py
+          python3 scripts/relay/export-ai-policy.py --check
+
       # The full structural suite: key sets, file sets, and shape against the es_es template,
       # plus the value checks (placeholders, empty strings, trigger-book title length, note
       # offsets). It ran --values-only until the AIN overlay debt it was tripping over was paid
