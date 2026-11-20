@@ -455,7 +455,11 @@ public final class PortalTestCommand {
                 } else {
                     PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
                 }
-                if (tributeRoom) games.brennan.dungeontrain.portal.tribute.TributeRoomFloor.lay(overworld, roomOrigin, roomSize);
+                if (tributeRoom) {
+                    games.brennan.dungeontrain.portal.tribute.TributeRoomFloor.lay(overworld, roomOrigin, roomSize);
+                    games.brennan.dungeontrain.portal.tribute.TributeTvButton.place(overworld,
+                        net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(roomOrigin, roomOrigin.offset(roomSize.getX() - 1, roomSize.getY() - 1, roomSize.getZ() - 1)));
+                }
                 if (tributeBlob != null) {
                     games.brennan.dungeontrain.portal.tribute.TributeRoomHeads.dress(
                         overworld, roomOrigin, roomSize, tributeBlob.owner(), tributeBlob.ownerName());

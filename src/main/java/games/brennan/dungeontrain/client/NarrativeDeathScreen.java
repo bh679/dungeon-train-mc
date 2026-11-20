@@ -389,6 +389,9 @@ public final class NarrativeDeathScreen extends Screen {
     // The way back in for someone who muted a form: the muted page still draws its (ticked)
     // "Don't ask me this again" row, so reaching it is also how it gets un-muted.
     private Rect envelopeRect;
+    // Top-bar "✦" chip — final (platform) page of the tribute visit's own recap only: the perks
+    // menu back on the TV (TributeTvVisit.showPerks), whose Next Screen starts the recap over.
+    private Rect perksRect;
     // Ticks since the screen opened, for the respawn hold-off (see runEndReady).
     private int ticksOpen;
     /** Vanilla's death-screen button delay — one second before an exit control may fire. */
@@ -986,6 +989,7 @@ public final class NarrativeDeathScreen extends Screen {
         donateRect = null;
         dollarRect = null;
         envelopeRect = null;
+        perksRect = null;
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
@@ -1085,6 +1089,10 @@ public final class NarrativeDeathScreen extends Screen {
             if (settled() && dollarRect != null && dollarRect.has(mouseX, mouseY)) {
                 g.renderTooltip(this.font,
                         Component.translatable("gui.dungeontrain.death.narr.donate_chip_tip"), mouseX, mouseY);
+            }
+            // Perks chip hover — what it does.
+            if (settled() && perksRect != null && perksRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font, Component.translatable("key.dungeontrain.perks"), mouseX, mouseY);
             }
             // Envelope chip hover — what it does.
             if (settled() && envelopeRect != null && envelopeRect.has(mouseX, mouseY)) {
@@ -2678,6 +2686,14 @@ public final class NarrativeDeathScreen extends Screen {
             if (firstSurveyPageIndex() >= 0) {
                 envelopeRect = drawEnvelopeChip(g, dollarRect.x() - 6 - 14, 8);
             }
+            // "✦" → the perks menu, leftmost: only on the tribute visit's own recap, the one with a
+            // perks menu to go back to.
+            if (!foreign && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.canShowPerks(this)) {
+                int starAnchorX = envelopeRect != null ? envelopeRect.x() : dollarRect.x();
+                Component star = Component.literal("\u2726");
+                int starW = this.font.width(star) + 16;
+                perksRect = drawChip(g, starAnchorX - 6 - starW, 8, star, CHIP_PH_BORDER, CHIP_PH_TEXT);
+            }
         }
     }
 
@@ -2889,6 +2905,10 @@ public final class NarrativeDeathScreen extends Screen {
                     chipReturnPage = currentPage;
                     startTransition(donatePageIndex());
                 }
+                return true;
+            }
+            if (perksRect != null && perksRect.has(mx, my)) {
+                games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showPerks();
                 return true;
             }
             if (envelopeRect != null && envelopeRect.has(mx, my)) {
@@ -3403,6 +3423,19 @@ public final class NarrativeDeathScreen extends Screen {
         advance();
     }
 
+    /** Whether the page showing is the last one, the platform (board anew) page: the TV button loops from here. */
+    public boolean tvOnLastPage() {
+        return !pages.isEmpty() && pages.get(currentPage).kind() == Kind.PLATFORM;
+    }
+
+    /** Back to the first page, leaving any chip-opened detour: the TV starting the recap over. */
+    public void tvRestart() {
+        chipReturnPage = -1;
+        surveyTour = false;
+        returnToStartAfterBug = false;
+        if (!pages.isEmpty() && currentPage != 0) startTransition(0);
+    }
+
     /** Previous page, as the back button does. */
     public void tvBack() {
         back();
@@ -3544,7 +3577,7 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopTrain(GuiGraphics g) {
         int left = 12 + this.font.width(Component.translatable("gui.dungeontrain.death.narr.brand")) + TOP_TRAIN_MARGIN;
         int right = this.width - 10;
-        for (Rect r : new Rect[] {leaveRect, reboardRect, deleteWorldRect, photosRect, dollarRect, envelopeRect}) {
+        for (Rect r : new Rect[] {leaveRect, reboardRect, deleteWorldRect, photosRect, dollarRect, envelopeRect, perksRect}) {
             if (r != null) right = Math.min(right, r.x());
         }
         right -= TOP_TRAIN_MARGIN;

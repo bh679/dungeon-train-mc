@@ -52,8 +52,24 @@ public final class TributeTvClientEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!event.getLevel().isClientSide()) return;
+        if (pressedTvButton(event)) return;
         boolean sneak = event.getEntity().isShiftKeyDown();
         if (TributeTvVisit.onTvClicked(event.getPos(), sneak) || TributeTvShowcase.onTvClicked(event.getPos(), sneak)) event.setCanceled(true);
+    }
+
+    /**
+     * The button under a tribute TV ({@code TributeTvButton}): Next Screen on that TV's picture. Not
+     * cancelled, so the server still presses the button (its click and its pulse).
+     */
+    private static boolean pressedTvButton(PlayerInteractEvent.RightClickBlock event) {
+        net.minecraft.world.level.block.state.BlockState state = event.getLevel().getBlockState(event.getPos());
+        // One hand's pass: a button takes the main hand's use, so the off hand never asks again.
+        if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) return false;
+        if (!games.brennan.dungeontrain.portal.tribute.TributeTvButton.isButton(state)) return false;
+        if (state.getValue(net.minecraft.world.level.block.ButtonBlock.FACE) != net.minecraft.world.level.block.state.properties.AttachFace.WALL) return false;
+        net.minecraft.core.BlockPos tv = games.brennan.dungeontrain.portal.tribute.TributeTvButton.tvAbove(
+            event.getPos(), state.getValue(net.minecraft.world.level.block.ButtonBlock.FACING));
+        return TributeTvVisit.pressNext(tv) || TributeTvShowcase.pressNext(tv);
     }
 
     /**
