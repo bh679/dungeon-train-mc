@@ -2,9 +2,13 @@ package games.brennan.dungeontrain.perks;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PerkLivesPacket;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.slf4j.Logger;
 
@@ -13,6 +17,8 @@ import org.slf4j.Logger;
  * <ul>
  *   <li>login: load this difficulty's saved unlocks ({@link PerkProfiles}), sync the client, re-apply
  *       effects on the fresh entity;</li>
+ *   <li>death: record the perks this life activated ({@link PerkProfiles#onLifeEnded}), for the nap
+ *       sky's past-life paths; login and respawn send that history to the client;</li>
  *   <li>respawn after death: clear active points (unlocked set survives via
  *       {@code copyOnDeath}), sync, re-apply; the End-conquered respawn is not a death;</li>
  *   <li>dimension change: the attachment is copied but the client holder is not, so re-sync and
@@ -33,6 +39,7 @@ public final class PerkLifecycle {
         PerkProfiles.onLogin(player);
         Perks.sync(player);
         PerkBalances.sync(player);
+        syncLives(player);
         Perks.playerReady(player);
         LOGGER.debug("[DungeonTrain] perks on login for {}: {}", player.getScoreboardName(),
             Perks.describe(Perks.state(player)));
@@ -46,6 +53,7 @@ public final class PerkLifecycle {
         }
         Perks.sync(player);
         PerkBalances.sync(player);
+        syncLives(player);
         Perks.playerReady(player);
     }
 
@@ -55,5 +63,22 @@ public final class PerkLifecycle {
         Perks.sync(player);
         PerkBalances.sync(player);
         Perks.playerReady(player);
+    }
+
+    /** A life ends: remember its perks before respawn clears them. A cancelled death (a totem) is no death. */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        try {
+            PerkProfiles.onLifeEnded(player);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] could not record the perks of {}'s life: {}", player.getScoreboardName(), e.toString());
+        }
+    }
+
+    /** Send the past lives' perks; nothing while perks are off (the client then keeps the plain sky). */
+    private static void syncLives(ServerPlayer player) {
+        if (!PerksGate.isOn()) return;
+        DungeonTrainNet.sendTo(player, new PerkLivesPacket(PerkProfiles.pastLives(player)));
     }
 }

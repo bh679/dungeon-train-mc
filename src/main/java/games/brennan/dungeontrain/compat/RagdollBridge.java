@@ -5,15 +5,25 @@ import com.mojang.logging.LogUtils;
 import dev.leo.sableplayerragdoll.api.PlayerlessDespawnRule;
 import dev.leo.sableplayerragdoll.api.PlayerlessRagdollSession;
 import dev.leo.sableplayerragdoll.api.RagdollAPI;
+import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
+import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,6 +41,9 @@ public final class RagdollBridge {
 
     /** Mod id Sable: Ragdolls declares in its {@code neoforge.mods.toml}. */
     public static final String MOD_ID = "sable_player_ragdoll";
+
+    /** A part of a fresh body lies at most this far from its torso (blocks). */
+    static final double PART_REACH = 3.0;
 
     private static volatile boolean present = detectPresent();
 
@@ -75,6 +88,39 @@ public final class RagdollBridge {
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Sable: Ragdolls refused the death body: {}", e.toString());
             return null;
+        }
+    }
+
+    /** The ids of every Sable: Ragdolls sub-level in {@code level} right now; empty when the mod is off. */
+    public static Set<UUID> ragdollParts(ServerLevel level) {
+        if (!present) return Set.of();
+        try {
+            return Api.ragdollParts(level);
+        } catch (LinkageError e) {
+            disable(e);
+            return Set.of();
+        }
+    }
+
+    /**
+     * Add {@code velocityPerSecond} to every part of the body {@code bodyId}: its root, its torso, and
+     * the ragdoll sub-levels that were not in {@code before} (the parts this spawn made) within
+     * {@link #PART_REACH} of the torso. Applied as a velocity change through Sable's rigid-body handle,
+     * so every part moves together whatever its mass. Spawn velocity alone barely moves the body.
+     *
+     * @return how many parts took the push (read back from the physics body); 0 when the body's
+     *         physics is not up yet (call again next tick); -1 when the body is gone or the API failed
+     */
+    public static int throwBody(ServerLevel level, UUID bodyId, Set<UUID> before, Vec3 velocityPerSecond) {
+        if (!present || bodyId == null) return -1;
+        try {
+            return Api.throwBody(level, bodyId, before, velocityPerSecond);
+        } catch (LinkageError e) {
+            disable(e);
+            return -1;
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not throw death body {}: {}", bodyId, e.toString());
+            return -1;
         }
     }
 
@@ -124,6 +170,52 @@ public final class RagdollBridge {
             RagdollAPI.copyEquipmentFrom(level, id, equipmentFrom);
             RagdollAPI.setGrabDisabled(level, id, true);
             return id;
+        }
+
+        static Set<UUID> ragdollParts(ServerLevel level) {
+            ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+            if (container == null) return Set.of();
+            Set<UUID> ids = new HashSet<>();
+            for (SubLevel sub : container.getAllSubLevels()) {
+                if (!sub.isRemoved() && RagdollAPI.isRagdollSubLevel(sub)) ids.add(sub.getUniqueId());
+            }
+            return ids;
+        }
+
+        static int throwBody(ServerLevel level, UUID bodyId, Set<UUID> before, Vec3 v) {
+            ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+            if (container == null) return -1;
+            SubLevel root = container.getSubLevel(bodyId);
+            if (root != null && root.isRemoved()) return -1;
+            UUID torsoId = RagdollAPI.torsoSubLevelId(bodyId);
+            SubLevel torso = torsoId == null ? null : container.getSubLevel(torsoId);
+            SubLevel anchor = torso != null && !torso.isRemoved() ? torso : root;
+            if (anchor == null) return 0;
+            Vector3dc centre = anchor.logicalPose().position();
+            Map<UUID, ServerSubLevel> parts = new LinkedHashMap<>();
+            for (SubLevel sub : container.getAllSubLevels()) {
+                if (!(sub instanceof ServerSubLevel server) || sub.isRemoved()) continue;
+                UUID id = sub.getUniqueId();
+                boolean own = id.equals(bodyId) || id.equals(torsoId);
+                boolean fresh = !before.contains(id) && RagdollAPI.isRagdollSubLevel(sub)
+                    && sub.logicalPose().position().distance(centre) <= PART_REACH;
+                if (own || fresh) parts.put(id, server);
+            }
+            Vector3d dv = new Vector3d(v.x, v.y, v.z);
+            Vector3d before0 = new Vector3d();
+            Vector3d after = new Vector3d();
+            int took = 0;
+            for (ServerSubLevel part : parts.values()) {
+                RigidBodyHandle handle = RigidBodyHandle.of(part);
+                if (handle == null || !handle.isValid()) continue;
+                handle.getLinearVelocity(before0);
+                handle.addLinearAndAngularVelocity(dv, new Vector3d());
+                handle.getLinearVelocity(after);
+                if (after.distance(before0) > 0.5 * dv.length()) took++;
+            }
+            LOGGER.info("[DungeonTrain] Death body {} thrown {}: {}/{} parts took it (last read {} -> {})",
+                bodyId, v, took, parts.size(), before0, after);
+            return took;
         }
 
         static void release(UUID id) {

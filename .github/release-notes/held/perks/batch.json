@@ -1,6 +1,6 @@
 {
   "batch": "perks",
-  "bumps": 21,
+  "bumps": 22,
   "prs": [
     2299,
     2300,
@@ -22,13 +22,15 @@
     2509,
     2517,
     2572,
-    2695
+    2695,
+    2776
   ],
   "entries": [
     "cosmic-apples",
     "crafter-enchanting-perks",
     "death-perks-next-after-last-point",
     "knight-combat-perks",
+    "nap-sky-past-life-perks",
     "perk-points",
     "perks-archivist",
     "perks-button-advancements",
