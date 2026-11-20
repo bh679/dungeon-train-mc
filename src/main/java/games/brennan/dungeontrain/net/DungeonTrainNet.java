@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "197";
+    public static final String PROTOCOL_VERSION = "198";
 
     private DungeonTrainNet() {}
 
@@ -382,6 +382,7 @@ public final class DungeonTrainNet {
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.
         registrar.playToServer(NetworkConsentSyncPacket.TYPE, NetworkConsentSyncPacket.STREAM_CODEC, NetworkConsentSyncPacket::handle);
         registrar.playToServer(ContentModeSyncPacket.TYPE, ContentModeSyncPacket.STREAM_CODEC, ContentModeSyncPacket::handle);
+        registrar.playToServer(TributeWebhookSyncPacket.TYPE, TributeWebhookSyncPacket.STREAM_CODEC, TributeWebhookSyncPacket::handle);
 
         // Political Filter (community content): client → server login sync (+ on change) of the
         // player's preference, so per-player book selection can withhold politically-tagged content.

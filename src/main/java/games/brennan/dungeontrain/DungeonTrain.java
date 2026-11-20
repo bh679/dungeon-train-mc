@@ -408,6 +408,11 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 games.brennan.dungeontrain.config.MenuClientConfig.SPEC,
                 "dungeontrain-menu-client.toml");
+        // The player's own Discord webhook for tributed photos; a secret, kept apart in its own file.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.TributeWebhookClientConfig.SPEC,
+                "dungeontrain-tribute-webhook-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;
