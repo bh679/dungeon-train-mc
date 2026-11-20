@@ -6095,6 +6095,7 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.ai_policy.explainers.names.title",
       "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "advancements.dungeontrain.dungeon_train.the_enchiridion.description",
       "gui.dungeontrain.options.tribute_webhook.tip",

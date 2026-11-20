@@ -6108,6 +6108,7 @@
     "dungeontrain": [
       "gui.dungeontrain.support.button",
       "gui.dungeontrain.support.financial.desc",
+      "gui.dungeontrain.ai_policy.explainers.names.title",
       "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "gui.dungeontrain.options.tribute_webhook.tip",
       "gui.dungeontrain.tribute_webhook.line2"
