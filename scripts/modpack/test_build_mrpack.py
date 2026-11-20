@@ -357,7 +357,7 @@ def test_real_config_every_mod_has_modrinth_pins():
     assert sorted(o["slug"] for o in cf_only) == [
         "discord-presence", "dpi-bypass-detect", "dungeon-totems", "dungeon-train-backup",
         "dungeon-train-mod-verification", "edible-backpacks", "keep-trim",
-        "lost-city-terrain-fit-wwoo-and-vanilla", "pigman-villagers",
+        "lost-city-terrain-fit-wwoo-and-vanilla", "mc-java-safety-check", "pigman-villagers",
         "sable-fence-trapdoor-fix", "stream-detect",
     ], cf_only
     for opt in cf_only:

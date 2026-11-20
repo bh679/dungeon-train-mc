@@ -112,7 +112,7 @@ flag straight into the manifest:
   **TerraBlender**, **GlitchCore**). These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright. **Keep Trim**, **Dungeon Backup**, **Sable Fence & Trapdoor Fix**, **Stream Detect**, **DPI Bypass
-  Detect**, **Pigman Villagers** and **Lost City Terrain Fit** ride the same row on
+  Detect**, **Pigman Villagers**, **Lost City Terrain Fit** and **MC Java Safety Check** ride the same row on
   CurseForge only (`curseforge_only: true`): they are also jarJar'd inside the DT jar, so the
   Modrinth pack leaves them out and Modrinth players get them built in, while the CurseForge pack
   ships them as Includes so the CF app installs them from their own pages (NeoForge drops the
