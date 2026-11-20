@@ -37649,6 +37649,86 @@
       "released": true,
       "released_in": "v0.1916.0",
       "released_at": "2026-11-20T05:03:48Z"
+    },
+    {
+      "id": "ain-0-65-0-mob-names",
+      "version": "0.1919.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "More varied mob names",
+      "summary": "Creatures more often get made-up names, and a few more are named after their kind or colour. Now and then a made-up name starts with a vowel.",
+      "highlights": [],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1920.0",
+      "released_at": "2026-11-20T08:06:46Z"
+    },
+    {
+      "id": "echo-graph-reading-trading",
+      "version": "0.1917.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "ui"
+      ],
+      "title": "Echo reading and trading",
+      "summary": "The echo page on the death screen now shows how much your echo reads and trades. Its skill graph gains two corners, Reading and Trading, carried over from how you spent your life.",
+      "highlights": [
+        "Reading corner: the books you opened, how long you read them, and the books you wrote",
+        "Trading corner: how many of the villagers you met you actually traded with",
+        "Hover either corner to see its score"
+      ],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1920.0",
+      "released_at": "2026-11-20T08:06:46Z"
+    },
+    {
+      "id": "more-maze-trap-passenger-rooms",
+      "version": "0.1917.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "editor",
+        "train"
+      ],
+      "title": "More carriage rooms",
+      "summary": "New maze, trap and passenger rooms can now turn up on the train.",
+      "highlights": [
+        "Two new maze rooms",
+        "New trap rooms, so watch your step",
+        "A new passenger room and a new room full of columns"
+      ],
+      "pr": 2769,
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1920.0",
+      "released_at": "2026-11-20T08:06:46Z"
+    },
+    {
+      "id": "tribute-webhook",
+      "version": "0.1917.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Send your Tributes to your own Discord",
+      "summary": "Options > Account has a new Tribute webhook setting. Paste webhook links from your own Discord servers, up to 25, and every photo you pay Tribute to also posts in each of those channels.",
+      "highlights": [
+        "Works for your own photos and ones you find",
+        "Send test checks a link before you pay a Tribute"
+      ],
+      "pr": 2767,
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1920.0",
+      "released_at": "2026-11-20T08:06:46Z"
     }
   ]
 }
