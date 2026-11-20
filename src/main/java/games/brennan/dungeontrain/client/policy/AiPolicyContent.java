@@ -77,6 +77,8 @@ public final class AiPolicyContent {
                     new Bullet("gui.dungeontrain.ai_policy.used.1", Items.HOPPER),
                     new Bullet("gui.dungeontrain.ai_policy.used.2", Items.ENCHANTED_BOOK),
                     new Bullet("gui.dungeontrain.ai_policy.used.3", Items.PAPER),
+                    // Spyglass: debug logs are looked through, and only ones players send in.
+                    new Bullet("gui.dungeontrain.ai_policy.used.6", Items.SPYGLASS),
                     new Bullet("gui.dungeontrain.ai_policy.used.4", Items.CRAFTING_TABLE),
                     new Bullet("gui.dungeontrain.ai_policy.used.5", Items.REDSTONE_TORCH))),
 

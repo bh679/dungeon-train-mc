@@ -1912,6 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates di Discord",
   "gui.dungeontrain.ai_policy.used.4": "Bantuan pemrograman dan desain. Saya software engineer dengan pengalaman 20+ tahun memprogram video game.",
   "gui.dungeontrain.ai_policy.used.5": "Peringatan, pesan galat, dan teks teknis serupa — sudah ditentukan sebelumnya, tanpa AI yang berjalan di mesinmu.",
+  "gui.dungeontrain.ai_policy.used.6": "Meninjau log debug (selalu atas persetujuan)",
   "gui.dungeontrain.ai_policy.which.header": "AI yang mana",
   "gui.dungeontrain.ai_policy.which.body": "Saya memilih Anthropic sebagai pilihan AI yang paling bermoral. Ini berdasarkan keputusan-keputusan yang saya lihat diambil oleh pimpinan mereka, terutama sikap mereka soal pengaman dan soal mencegah penggunaan untuk persenjataan serta pengawasan pemerintah.",
   "gui.dungeontrain.ai_policy.closing": "Terima kasih sudah membaca, semoga kamu menikmati game saya.",

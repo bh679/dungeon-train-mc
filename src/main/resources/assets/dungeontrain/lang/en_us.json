@@ -2152,6 +2152,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates on Discord",
   "gui.dungeontrain.ai_policy.used.4": "Coding and design assistance. I am a software engineer with 20+ years experience coding video games.",
   "gui.dungeontrain.ai_policy.used.5": "Warnings, error messages and similar technical text content — predefined, with no AI run on your machine.",
+  "gui.dungeontrain.ai_policy.used.6": "Reviewing debug logs (always opt in)",
   "gui.dungeontrain.ai_policy.which.header": "Which AI",
   "gui.dungeontrain.ai_policy.which.body": "I choose Anthropic as the most moral choice of AI. This is based on decisions I've seen their leadership make, particularly around their stances on safeguards and on preventing use in weaponry and government surveillance.",
   "gui.dungeontrain.ai_policy.closing": "Thank you for reading, I hope you enjoy my game.",

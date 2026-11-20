@@ -1912,6 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "Discord 上的 #minor-updates",
   "gui.dungeontrain.ai_policy.used.4": "编程与设计辅助。我是一名有 20 多年电子游戏编程经验的软件工程师。",
   "gui.dungeontrain.ai_policy.used.5": "警告、错误提示等技术性文本内容：均为预先写好的，你的电脑上不会运行任何 AI。",
+  "gui.dungeontrain.ai_policy.used.6": "审阅调试日志（始终需主动选择加入）",
   "gui.dungeontrain.ai_policy.which.header": "用的是哪家 AI",
   "gui.dungeontrain.ai_policy.which.body": "我选择 Anthropic，认为它是道德上最好的 AI 选择。这基于我所看到的他们管理层做出的决定，尤其是他们在安全防护，以及反对将技术用于武器和政府监控方面的立场。",
   "gui.dungeontrain.ai_policy.closing": "感谢阅读，希望你喜欢我的游戏。",

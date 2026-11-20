@@ -1912,6 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates sa Discord",
   "gui.dungeontrain.ai_policy.used.4": "Tulong sa coding at disenyo. Ako ay software engineer na may 20+ taong karanasan sa pag-code ng video games.",
   "gui.dungeontrain.ai_policy.used.5": "Mga babala, mensahe ng error at katulad na teknikal na teksto — nakatakda na ang mga ito, at walang AI na tumatakbo sa makina mo.",
+  "gui.dungeontrain.ai_policy.used.6": "Pagsusuri ng mga debug log (laging opt-in)",
   "gui.dungeontrain.ai_policy.which.header": "Aling AI",
   "gui.dungeontrain.ai_policy.which.body": "Pinili ko ang Anthropic bilang pinakamakatuwirang pagpipilian ng AI. Nakabatay ito sa mga desisyong nakita kong ginawa ng kanilang pamunuan, lalo na sa paninindigan nila sa mga safeguard at sa pagpigil sa paggamit nito sa armas at sa pagmamanman ng gobyerno.",
   "gui.dungeontrain.ai_policy.closing": "Salamat sa pagbabasa, sana magustuhan mo ang laro ko.",
