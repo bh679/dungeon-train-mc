@@ -6074,6 +6074,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "正在发送...",
   "gui.dungeontrain.tribute_webhook.test_sent": "已发送。请查看你的频道。",
   "gui.dungeontrain.tribute_webhook.test_failed": "失败：请检查链接",
+  "gui.dungeontrain.tribute_webhook.test_offline": "请先在“地牢列车选项”中开启网络连接",
   "dungeontrain.discord_status.menu": "在菜单中",
   "dungeontrain.discord_status.overworld": "在主世界",
   "dungeontrain.discord_status.nether": "在下界",

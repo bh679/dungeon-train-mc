@@ -100,14 +100,14 @@ public final class TributeWebhook {
     }
 
     /**
-     * The webhook message body: the player's name as the poster, the embed, and no pings of any kind
-     * ({@code allowed_mentions.parse = []}) — names come from players and must never ping a channel.
+     * The webhook message body: the player's name and head as the poster, the embed, and no pings of any
+     * kind ({@code allowed_mentions.parse = []}) — names come from players and must never ping a channel.
      */
-    static JsonObject payload(String username, JsonObject embed) {
+    static JsonObject payload(String username, UUID uuid, JsonObject embed) {
         JsonObject root = new JsonObject();
-        if (username != null && !username.isBlank()) {
-            root.addProperty("username", username.length() > 80 ? username.substring(0, 80) : username);
-        }
+        String name = safeUsername(username);
+        if (name != null) root.addProperty("username", name);
+        if (uuid != null) root.addProperty("avatar_url", "https://mc-heads.net/avatar/" + uuid + "/64");
         JsonArray embeds = new JsonArray();
         embeds.add(embed);
         root.add("embeds", embeds);
@@ -118,15 +118,25 @@ public final class TributeWebhook {
     }
 
     /**
+     * A name Discord accepts as a webhook username, or null to keep the webhook's own. Discord refuses
+     * names containing "discord" or "clyde" (the whole post fails), the same rule DiscordPresence keeps.
+     */
+    static String safeUsername(String name) {
+        if (name == null || name.isBlank() || name.length() > 80) return null;
+        String lower = name.toLowerCase(Locale.ROOT);
+        return lower.contains("discord") || lower.contains("clyde") ? null : name;
+    }
+
+    /**
      * Post to {@code url}. Async, best-effort, no retry. Completes with whether Discord accepted it; never
      * completes exceptionally, never throws, and never logs the link.
      *
      * @param png the photo, or null for a text-only post (Send test)
      */
-    public static CompletableFuture<Boolean> post(String url, String username, JsonObject embed, byte[] png) {
+    public static CompletableFuture<Boolean> post(String url, String username, UUID uuid, JsonObject embed, byte[] png) {
         if (!isValid(url) || embed == null) return CompletableFuture.completedFuture(false);
         try {
-            HttpRequest request = request(normalize(url), payload(username, embed).toString(), png);
+            HttpRequest request = request(normalize(url), payload(username, uuid, embed).toString(), png);
             return HTTP.sendAsync(request, HttpResponse.BodyHandlers.discarding())
                     .thenApply(response -> {
                         boolean ok = response.statusCode() / 100 == 2;

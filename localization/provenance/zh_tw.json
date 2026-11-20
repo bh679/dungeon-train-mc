@@ -6074,6 +6074,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "286a3af7348e8312"},
   "gui.dungeontrain.tribute_webhook.test_sent": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "15255de4ca1ddfbf"},
   "gui.dungeontrain.tribute_webhook.test_failed": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6a1c4c7c3d93daf0"},
+  "gui.dungeontrain.tribute_webhook.test_offline": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "346e697c741a4c35"},
   "dungeontrain.discord_status.menu": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "24f9e55f7f19a868"},
   "dungeontrain.discord_status.overworld": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "44be388a95d842a3"},
   "dungeontrain.discord_status.nether": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "93774bee79831812"},

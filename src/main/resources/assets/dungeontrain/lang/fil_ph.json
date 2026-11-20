@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Ipinapadala...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Naipadala. Tingnan ang iyong channel.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Hindi gumana: suriin ang link",
+  "gui.dungeontrain.tribute_webhook.test_offline": "I-on muna ang internet connection sa Dungeon Train Options",
   "dungeontrain.discord_status.menu": "Nasa menu",
   "dungeontrain.discord_status.overworld": "Nasa Overworld",
   "dungeontrain.discord_status.nether": "Nasa Nether",

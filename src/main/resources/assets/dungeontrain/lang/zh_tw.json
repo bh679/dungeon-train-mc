@@ -6074,6 +6074,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "傳送中...",
   "gui.dungeontrain.tribute_webhook.test_sent": "已傳送。請查看你的頻道。",
   "gui.dungeontrain.tribute_webhook.test_failed": "失敗：請檢查連結",
+  "gui.dungeontrain.tribute_webhook.test_offline": "請先在 Dungeon Train 選項中開啟網路連線",
   "dungeontrain.discord_status.menu": "在選單中",
   "dungeontrain.discord_status.overworld": "在主世界",
   "dungeontrain.discord_status.nether": "在地獄",

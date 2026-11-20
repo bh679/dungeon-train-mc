@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Đang gửi...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Đã gửi. Hãy kiểm tra kênh của bạn.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Không được: hãy kiểm tra liên kết",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Hãy bật kết nối internet trong Tùy chọn Dungeon Train trước",
   "dungeontrain.discord_status.menu": "Ở menu",
   "dungeontrain.discord_status.overworld": "Ở Thế Giới Chính",
   "dungeontrain.discord_status.nether": "Ở Nether",

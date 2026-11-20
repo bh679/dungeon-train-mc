@@ -75,15 +75,23 @@ class TributeWebhookTest {
     @Test
     @DisplayName("posts can never ping anyone")
     void noPings() {
-        JsonObject payload = TributeWebhook.payload("@everyone", TributeWebhook.embed("t", "d", 1, true));
+        JsonObject payload = TributeWebhook.payload("@everyone", null, TributeWebhook.embed("t", "d", 1, true));
         assertEquals(0, payload.getAsJsonObject("allowed_mentions").getAsJsonArray("parse").size());
         assertEquals("attachment://photo.png",
                 payload.getAsJsonArray("embeds").get(0).getAsJsonObject().getAsJsonObject("image").get("url").getAsString());
     }
 
     @Test
+    @DisplayName("names Discord refuses are left off, so the post still goes")
+    void safeUsername() {
+        assertEquals("Steve", TributeWebhook.safeUsername("Steve"));
+        assertEquals(null, TributeWebhook.safeUsername("DiscordFan"));
+        assertEquals(null, TributeWebhook.safeUsername("xX_Clyde_Xx"));
+    }
+
+    @Test
     @DisplayName("an invalid link never posts")
     void invalidNeverPosts() {
-        assertFalse(TributeWebhook.post("https://evil.io/x", "Steve", TributeWebhook.embed("t", "", 1, false), null).join());
+        assertFalse(TributeWebhook.post("https://evil.io/x", "Steve", null, TributeWebhook.embed("t", "", 1, false), null).join());
     }
 }

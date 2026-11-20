@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.ContentModeMirror;
+import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
@@ -84,10 +85,12 @@ public final class TributePhotoReporter {
 
     /**
      * Whether {@code tributer}'s Tributes also go to their own Discord ({@link TributeWebhookMirror}). Kid
-     * mode never posts there, the same as the Options row it is set from.
+     * mode never posts there, the same as the Options row it is set from, and neither does a player who
+     * has Dungeon Train's internet connection turned off ({@link NetworkConsentMirror}, fail-closed).
      */
     public static boolean hasPersonalWebhook(ServerPlayer tributer) {
-        return tributer != null && TributeWebhookMirror.has(tributer.getUUID()) && !ContentModeMirror.isKid(tributer);
+        return tributer != null && TributeWebhookMirror.has(tributer.getUUID()) && !ContentModeMirror.isKid(tributer)
+                && NetworkConsentMirror.isGranted(tributer);
     }
 
     /**
@@ -99,7 +102,7 @@ public final class TributePhotoReporter {
         if (png == null || png.length == 0 || !hasPersonalWebhook(tributer)) return;
         try {
             TributeWebhookMirror.get(tributer.getUUID()).ifPresent(url -> TributeWebhook.post(url,
-                    tributer.getGameProfile().getName(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png));
+                    tributer.getGameProfile().getName(), tributer.getUUID(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] personal tribute webhook post failed: {}", t.getClass().getSimpleName());
         }

@@ -6198,6 +6198,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Отправка...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Отправлено. Проверьте канал.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Не вышло: проверьте ссылку",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Сначала включите подключение к интернету в настройках Dungeon Train",
   "dungeontrain.discord_status.menu": "В меню",
   "dungeontrain.discord_status.overworld": "В Верхнем мире",
   "dungeontrain.discord_status.nether": "В Незере",

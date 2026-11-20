@@ -4296,6 +4296,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Надсилання...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Надіслано. Перевірте канал.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Не вийшло: перевірте посилання",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Спершу увімкніть підключення до інтернету в налаштуваннях Dungeon Train",
   "dungeontrain.discord_status.menu": "У меню",
   "dungeontrain.discord_status.overworld": "У Верхньому світі",
   "dungeontrain.discord_status.nether": "У Незері",

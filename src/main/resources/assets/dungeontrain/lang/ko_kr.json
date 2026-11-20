@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "보내는 중...",
   "gui.dungeontrain.tribute_webhook.test_sent": "보냈습니다. 채널을 확인하세요.",
   "gui.dungeontrain.tribute_webhook.test_failed": "실패: 링크를 확인하세요",
+  "gui.dungeontrain.tribute_webhook.test_offline": "먼저 Dungeon Train 옵션에서 인터넷 연결을 켜세요",
   "dungeontrain.discord_status.menu": "메뉴에 있음",
   "dungeontrain.discord_status.overworld": "오버월드에 있음",
   "dungeontrain.discord_status.nether": "네더에 있음",

@@ -4159,6 +4159,7 @@
       "gui.dungeontrain.tribute_webhook.test_sending",
       "gui.dungeontrain.tribute_webhook.test_sent",
       "gui.dungeontrain.tribute_webhook.test_failed",
+      "gui.dungeontrain.tribute_webhook.test_offline",
       "dungeontrain.discord_status.menu",
       "dungeontrain.discord_status.overworld",
       "dungeontrain.discord_status.nether",

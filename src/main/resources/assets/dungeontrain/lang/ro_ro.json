@@ -4299,6 +4299,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Se trimite...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Trimis. Verifică-ți canalul.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Nu a mers: verifică linkul",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Pornește mai întâi conexiunea la internet în opțiunile Dungeon Train",
   "dungeontrain.discord_status.menu": "În meniu",
   "dungeontrain.discord_status.overworld": "În Overworld",
   "dungeontrain.discord_status.nether": "În Nether",

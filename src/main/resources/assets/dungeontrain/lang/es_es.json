@@ -6129,6 +6129,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Enviando...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Enviado. Revisa tu canal.",
   "gui.dungeontrain.tribute_webhook.test_failed": "No funcionó: revisa el enlace",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Activa primero la conexión a internet en las opciones de Dungeon Train",
   "dungeontrain.discord_status.menu": "En el menú",
   "dungeontrain.discord_status.overworld": "En el mundo superior",
   "dungeontrain.discord_status.nether": "En el Nether",

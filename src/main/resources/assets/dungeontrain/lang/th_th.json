@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "กำลังส่ง...",
   "gui.dungeontrain.tribute_webhook.test_sent": "ส่งแล้ว ตรวจดูช่องของคุณ",
   "gui.dungeontrain.tribute_webhook.test_failed": "ไม่สำเร็จ: ตรวจสอบลิงก์",
+  "gui.dungeontrain.tribute_webhook.test_offline": "เปิดการเชื่อมต่ออินเทอร์เน็ตในตัวเลือกของ Dungeon Train ก่อน",
   "dungeontrain.discord_status.menu": "อยู่ในเมนู",
   "dungeontrain.discord_status.overworld": "อยู่ในโลกปกติ",
   "dungeontrain.discord_status.nether": "อยู่ในเนเธอร์",

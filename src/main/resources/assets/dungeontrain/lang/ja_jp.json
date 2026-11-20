@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "送信中...",
   "gui.dungeontrain.tribute_webhook.test_sent": "送信しました。チャンネルを確認してください。",
   "gui.dungeontrain.tribute_webhook.test_failed": "失敗しました: リンクを確認してください",
+  "gui.dungeontrain.tribute_webhook.test_offline": "先に Dungeon Train オプションでインターネット接続をオンにしてください",
   "dungeontrain.discord_status.menu": "メニュー画面",
   "dungeontrain.discord_status.overworld": "オーバーワールドにいる",
   "dungeontrain.discord_status.nether": "ネザーにいる",

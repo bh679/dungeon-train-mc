@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Menghantar...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Dihantar. Semak saluran anda.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Gagal: semak pautan",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Hidupkan sambungan internet dalam Pilihan Dungeon Train dahulu",
   "dungeontrain.discord_status.menu": "Di menu",
   "dungeontrain.discord_status.overworld": "Di Dunia Atas",
   "dungeontrain.discord_status.nether": "Di Nether",

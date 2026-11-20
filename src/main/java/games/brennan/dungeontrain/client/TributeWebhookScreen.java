@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.TributeWebhookClientConfig;
+import games.brennan.dungeontrain.discord.DiscordMarkdown;
 import games.brennan.dungeontrain.discord.TributeWebhook;
+import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -58,8 +60,8 @@ public final class TributeWebhookScreen extends Screen {
             this.status = null;
             refreshButtons();
         });
+        // Not focused on open: a focused box hides its placeholder, which shows the saved link masked.
         addRenderableWidget(this.field);
-        setInitialFocus(this.field);
 
         int rowW = 4 * BUTTON_W + 3 * GAP;
         int x = cx - rowW / 2;
@@ -103,11 +105,15 @@ public final class TributeWebhookScreen extends Screen {
     private void sendTest() {
         String url = testTarget();
         if (!TributeWebhook.isValid(url)) return;
+        if (!DiscordPresenceClientConfig.isGranted()) {
+            this.status = Component.translatable(KEY + ".test_offline").withStyle(ChatFormatting.RED);
+            return;
+        }
         this.status = Component.translatable(KEY + ".test_sending").withStyle(ChatFormatting.GRAY);
         this.test.active = false;
         String name = this.minecraft.getUser().getName();
-        TributeWebhook.post(url, name, TributeWebhook.embed("📸 Dungeon Train is connected",
-                        "Photos " + name + " pays Tribute to will post here.", TEST_COLOR, false), null)
+        TributeWebhook.post(url, name, this.minecraft.getUser().getProfileId(), TributeWebhook.embed("📸 Dungeon Train is connected",
+                        "Photos " + DiscordMarkdown.escape(name) + " pays Tribute to will post here.", TEST_COLOR, false), null)
                 .thenAccept(ok -> this.minecraft.execute(() -> {
                     this.status = ok
                             ? Component.translatable(KEY + ".test_sent").withStyle(ChatFormatting.GREEN)

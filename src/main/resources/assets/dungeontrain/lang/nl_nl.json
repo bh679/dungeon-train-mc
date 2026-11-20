@@ -6129,6 +6129,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Versturen...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Verstuurd. Kijk in je kanaal.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Mislukt: controleer de link",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Zet eerst de internetverbinding aan in de Dungeon Train-opties",
   "dungeontrain.discord_status.menu": "In het menu",
   "dungeontrain.discord_status.overworld": "In de Bovenwereld",
   "dungeontrain.discord_status.nether": "In de Nether",

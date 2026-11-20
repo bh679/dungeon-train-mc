@@ -6060,6 +6060,7 @@
   "gui.dungeontrain.tribute_webhook.test_sending": "Mengirim...",
   "gui.dungeontrain.tribute_webhook.test_sent": "Terkirim. Periksa channel-mu.",
   "gui.dungeontrain.tribute_webhook.test_failed": "Gagal: periksa tautannya",
+  "gui.dungeontrain.tribute_webhook.test_offline": "Nyalakan dulu koneksi internet di Opsi Dungeon Train",
   "dungeontrain.discord_status.menu": "Di menu",
   "dungeontrain.discord_status.overworld": "Di Overworld",
   "dungeontrain.discord_status.nether": "Di Nether",
