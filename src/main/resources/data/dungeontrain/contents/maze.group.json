@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "2ndlevel",
-      "weight": 6
+      "weight": 5
     },
     {
       "id": "hall",
@@ -111,6 +111,14 @@
     {
       "id": "maze7",
       "weight": 1
+    },
+    {
+      "id": "maze8",
+      "weight": 2
+    },
+    {
+      "id": "maze9",
+      "weight": 2
     }
   ]
 }

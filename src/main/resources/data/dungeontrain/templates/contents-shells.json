@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "shells": {
     "basitan": "cargo",
+    "maze9": "windowed",
     "tntfull": "boxcar",
     "trees": "cargo"
   }
