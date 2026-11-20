@@ -2027,7 +2027,7 @@
   "gui.dungeontrain.ai_policy.signature": "— Бреннан Хэттон",
   "gui.dungeontrain.ai_policy.explainers.header": "Объяснения",
   "gui.dungeontrain.ai_policy.explainers.names.title": "15,6 септиллиона имён без ИИ",
-  "gui.dungeontrain.ai_policy.explainers.names.desc": "Как создаются имена.",
+  "gui.dungeontrain.ai_policy.explainers.names.desc": "Как Dungeon Train даёт имена мобам и предметам: база слов, написанных вручную, цепочки комбинаций и никакого ИИ.",
   "gui.dungeontrain.ai_policy.explainers.read": "Читать ↗",
   "gui.dungeontrain.video_tools.title": "Инструменты для видео",
   "gui.dungeontrain.video_tools.button": "Инструменты для видео",
