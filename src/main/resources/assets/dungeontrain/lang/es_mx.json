@@ -1962,7 +1962,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates en Discord",
   "gui.dungeontrain.ai_policy.used.4": "Asistencia con el código y el diseño. Soy ingeniero de software con más de 20 años de experiencia programando videojuegos.",
   "gui.dungeontrain.ai_policy.used.5": "Advertencias, mensajes de error y demás texto técnico: son predefinidos, sin ninguna IA ejecutándose en tu computadora.",
-  "gui.dungeontrain.ai_policy.used.6": "Revisión de registros de depuración (siempre opcional)",
+  "gui.dungeontrain.ai_policy.used.6": "Revisión de registros de depuración (opcional)",
   "gui.dungeontrain.ai_policy.live_chat.header": "Traducciones del chat en vivo",
   "gui.dungeontrain.ai_policy.live_chat.1": "Si te unes al sistema de transmisión en vivo, tu navegador puede enviar líneas del chat en vivo a Google Translate para que espectadores y jugadores las lean en su idioma. Apaga el botón 🌐 del chat para no participar. (Solo pasa si llevas en la cabeza el Live-Eye o la TV de transmisión en el juego)",
   "gui.dungeontrain.ai_policy.live_chat.2": "Mientras la recompensa de Traducciones en vivo está activa, el relay puede enviar las líneas del chat en vivo a Microsoft Azure Translator, Google Translate o Claude. El chat muestra una etiqueta mientras haya líneas traducidas en pantalla.",

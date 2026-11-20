@@ -9,6 +9,7 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.ai_policy.used.6",
       "gui.dungeontrain.ai_policy.explainers.names.title",
       "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "gui.dungeontrain.options.tribute_webhook.tip",

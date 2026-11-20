@@ -1912,7 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "Discord 上的 #minor-updates",
   "gui.dungeontrain.ai_policy.used.4": "编程与设计辅助。我是一名有 20 多年电子游戏编程经验的软件工程师。",
   "gui.dungeontrain.ai_policy.used.5": "警告、错误提示等技术性文本内容：均为预先写好的，你的电脑上不会运行任何 AI。",
-  "gui.dungeontrain.ai_policy.used.6": "审阅调试日志（始终需主动选择加入）",
+  "gui.dungeontrain.ai_policy.used.6": "审阅调试日志（需主动选择加入）",
   "gui.dungeontrain.ai_policy.live_chat.header": "直播聊天翻译",
   "gui.dungeontrain.ai_policy.live_chat.1": "如果你选择加入直播系统，你的浏览器可能会把直播聊天内容发送到 Google 翻译，让观众和玩家能用自己的语言阅读。关闭聊天中的 🌐 按钮即可退出。（只有当你在游戏中头戴直播用的 Live-Eye 或电视时才会这样做）",
   "gui.dungeontrain.ai_policy.live_chat.2": "在“直播翻译”奖励开启期间，中继服务器可能会改为把直播聊天内容发送到 Microsoft Azure Translator、Google 翻译或 Claude。屏幕上有翻译内容时，聊天会显示一个标签。",

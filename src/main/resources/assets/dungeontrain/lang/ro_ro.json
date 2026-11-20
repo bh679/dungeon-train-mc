@@ -2208,7 +2208,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates pe Discord",
   "gui.dungeontrain.ai_policy.used.4": "Asistență la programare și design. Sunt inginer software cu peste 20 de ani de experiență în programarea jocurilor video.",
   "gui.dungeontrain.ai_policy.used.5": "Avertismentele, mesajele de eroare și textele tehnice similare — predefinite, fără niciun AI rulat pe calculatorul tău.",
-  "gui.dungeontrain.ai_policy.used.6": "Verificarea jurnalelor de depanare (întotdeauna opțional)",
+  "gui.dungeontrain.ai_policy.used.6": "Verificarea jurnalelor de depanare (opțional)",
   "gui.dungeontrain.ai_policy.live_chat.header": "Traduceri pentru chatul live",
   "gui.dungeontrain.ai_policy.live_chat.1": "Dacă alegi să participi la sistemul de livestreaming, browserul tău poate trimite mesajele din chatul live către Google Translate, ca spectatorii și jucătorii să le citească în limba lor. Oprește butonul 🌐 din chat ca să renunți. (Asta se întâmplă doar dacă porți pe cap, în joc, Live-Eye-ul sau televizorul de streaming)",
   "gui.dungeontrain.ai_policy.live_chat.2": "Cât timp recompensa Traduceri live este activă, releul poate trimite în schimb mesajele din chatul live către Microsoft Azure Translator, Google Translate sau Claude. Chatul afișează o etichetă cât timp pe ecran sunt mesaje traduse.",

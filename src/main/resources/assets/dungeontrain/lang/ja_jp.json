@@ -1912,7 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "Discord の #minor-updates",
   "gui.dungeontrain.ai_policy.used.4": "コーディングと設計の補助。私はビデオゲームのコードを20年以上書いてきたソフトウェアエンジニアです。",
   "gui.dungeontrain.ai_policy.used.5": "警告文、エラーメッセージなどの技術的な文章——あらかじめ用意されたもので、あなたのマシン上でAIが動くことはありません。",
-  "gui.dungeontrain.ai_policy.used.6": "デバッグログの確認（必ず本人の同意制）",
+  "gui.dungeontrain.ai_policy.used.6": "デバッグログの確認（本人の同意制）",
   "gui.dungeontrain.ai_policy.live_chat.header": "ライブチャットの翻訳",
   "gui.dungeontrain.ai_policy.live_chat.1": "ライブ配信システムに参加すると、視聴者やプレイヤーが自分の言語で読めるよう、ブラウザがライブチャットの発言をGoogle翻訳に送ることがあります。送りたくない場合はチャットの🌐ボタンをオフにしてください。（これはゲーム内で配信用のLive-EyeかTVを頭にかぶっているときだけ行われます）",
   "gui.dungeontrain.ai_policy.live_chat.2": "ライブ翻訳の特典が有効な間は、リレーがライブチャットの発言をMicrosoft Azure Translator、Google翻訳、Claudeのいずれかに送ることがあります。翻訳された発言が画面にある間、チャットにはラベルが表示されます。",

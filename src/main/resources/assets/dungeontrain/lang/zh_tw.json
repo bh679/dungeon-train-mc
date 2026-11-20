@@ -1912,7 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "Discord 上的 #minor-updates",
   "gui.dungeontrain.ai_policy.used.4": "程式與設計輔助。我是一名擁有 20 年以上電玩程式開發經驗的軟體工程師。",
   "gui.dungeontrain.ai_policy.used.5": "警告、錯誤訊息等類似的技術文字內容：全都是預先寫好的，不會有 AI 在你的電腦上執行。",
-  "gui.dungeontrain.ai_policy.used.6": "審閱除錯日誌（一律需主動選擇加入）",
+  "gui.dungeontrain.ai_policy.used.6": "審閱除錯日誌（需主動選擇加入）",
   "gui.dungeontrain.ai_policy.live_chat.header": "直播聊天翻譯",
   "gui.dungeontrain.ai_policy.live_chat.1": "如果你選擇加入直播系統，你的瀏覽器可能會把直播聊天內容傳送到 Google 翻譯，讓觀眾和玩家能用自己的語言閱讀。關閉聊天中的 🌐 按鈕即可退出。（只有當你在遊戲中頭戴直播用的 Live-Eye 或電視時才會這樣做）",
   "gui.dungeontrain.ai_policy.live_chat.2": "在「直播翻譯」獎勵開啟期間，中繼伺服器可能會改為把直播聊天內容傳送到 Microsoft Azure Translator、Google 翻譯或 Claude。畫面上有翻譯內容時，聊天會顯示一個標籤。",

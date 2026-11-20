@@ -1962,7 +1962,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates auf Discord",
   "gui.dungeontrain.ai_policy.used.4": "Unterstützung beim Programmieren und Entwerfen. Ich bin Softwareentwickler mit über 20 Jahren Erfahrung in der Programmierung von Videospielen.",
   "gui.dungeontrain.ai_policy.used.5": "Warnungen, Fehlermeldungen und ähnliche technische Texte — vorgefertigt, ohne dass KI auf deinem Rechner läuft.",
-  "gui.dungeontrain.ai_policy.used.6": "Überprüfung von Debug-Protokollen (immer freiwillig)",
+  "gui.dungeontrain.ai_policy.used.6": "Überprüfung von Debug-Protokollen (freiwillig)",
   "gui.dungeontrain.ai_policy.live_chat.header": "Live-Chat-Übersetzungen",
   "gui.dungeontrain.ai_policy.live_chat.1": "Wenn du dich für das Livestreaming-System entscheidest, kann dein Browser Live-Chat-Zeilen an Google Translate senden, damit Zuschauer und Spieler sie in ihrer Sprache lesen können. Schalte die 🌐-Schaltfläche im Chat aus, um das abzulehnen. (Das passiert nur, wenn du im Spiel das Streaming-Live-Eye oder den Fernseher auf dem Kopf trägst)",
   "gui.dungeontrain.ai_policy.live_chat.2": "Solange die Belohnung „Live-Übersetzungen“ aktiv ist, kann das Relay Live-Chat-Zeilen stattdessen an Microsoft Azure Translator, Google Translate oder Claude senden. Der Chat zeigt einen Hinweis, solange übersetzte Zeilen zu sehen sind.",

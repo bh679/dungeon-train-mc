@@ -1912,7 +1912,7 @@
   "gui.dungeontrain.ai_policy.used.3.link": "#minor-updates บน Discord",
   "gui.dungeontrain.ai_policy.used.4": "ช่วยเขียนโค้ดและออกแบบ ผมเป็นวิศวกรซอฟต์แวร์ที่เขียนโค้ดวิดีโอเกมมากว่า 20 ปี",
   "gui.dungeontrain.ai_policy.used.5": "คำเตือน ข้อความแสดงข้อผิดพลาด และข้อความทางเทคนิคทำนองนี้ — กำหนดไว้ล่วงหน้า โดยไม่มี AI ทำงานบนเครื่องของคุณ",
-  "gui.dungeontrain.ai_policy.used.6": "ตรวจสอบบันทึกดีบัก (เฉพาะเมื่อเลือกเข้าร่วมเสมอ)",
+  "gui.dungeontrain.ai_policy.used.6": "ตรวจสอบบันทึกดีบัก (เฉพาะเมื่อเลือกเข้าร่วม)",
   "gui.dungeontrain.ai_policy.live_chat.header": "การแปลไลฟ์แชต",
   "gui.dungeontrain.ai_policy.live_chat.1": "หากคุณเลือกเข้าร่วมระบบไลฟ์สตรีม เบราว์เซอร์ของคุณอาจส่งข้อความในไลฟ์แชตไปยัง Google แปลภาษา เพื่อให้ผู้ชมและผู้เล่นอ่านเป็นภาษาของตนได้ ปิดปุ่ม 🌐 ในแชตเพื่อไม่เข้าร่วม (จะทำเฉพาะเมื่อคุณสวม Live-Eye หรือทีวีสำหรับสตรีมไว้บนหัวในเกมเท่านั้น)",
   "gui.dungeontrain.ai_policy.live_chat.2": "ขณะที่รางวัล Live Translations เปิดอยู่ รีเลย์อาจส่งข้อความในไลฟ์แชตไปยัง Microsoft Azure Translator, Google แปลภาษา หรือ Claude แทน แชตจะแสดงป้ายกำกับขณะที่มีข้อความที่แปลแล้วอยู่บนหน้าจอ",
