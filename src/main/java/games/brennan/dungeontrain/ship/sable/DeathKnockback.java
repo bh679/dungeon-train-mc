@@ -6,7 +6,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * How hard the death body ({@link DeathBodyRagdoll}) is thrown by what killed the player: along the
  * shot for a projectile, away from the centre for a blast. Pure maths, no world access; every result
- * is in blocks per second (what {@code RagdollBridge.spawnBody} takes) and capped, so a body never
+ * is in blocks per second (the velocity change {@code RagdollBridge.throwBody} gives every part of
+ * the body) and capped, so a body never
  * leaves the loaded area or picks up enough speed to tunnel through a carriage wall.
  */
 public final class DeathKnockback {

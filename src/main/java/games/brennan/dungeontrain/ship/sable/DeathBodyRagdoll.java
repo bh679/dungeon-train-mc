@@ -10,6 +10,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -45,10 +47,18 @@ public final class DeathBodyRagdoll {
     /** The sweep for over-age bodies runs this often. */
     private static final int SWEEP_INTERVAL_TICKS = 100;
 
+    /** A throw waits this many server ticks at most for the body's physics to come up. */
+    static final int THROW_ATTEMPTS = 10;
+
     private record Body(UUID id, long spawnedAt) {}
+
+    /** A throw still to give a just-spawned body: the ragdoll parts that existed before it, and the velocity. */
+    private record Throw(ServerLevel level, Set<UUID> partsBefore, Vec3 velocity, int attemptsLeft) {}
 
     /** Live bodies by the dead player's UUID. */
     private static final Map<UUID, Body> BODIES = new HashMap<>();
+    /** Throws not yet applied, by body id. Sable makes a ragdoll's physics a tick or so after the spawn call. */
+    private static final Map<UUID, Throw> THROWS = new HashMap<>();
     private static long serverTicks;
 
     private DeathBodyRagdoll() {}
@@ -63,7 +73,8 @@ public final class DeathBodyRagdoll {
         release(player);
         if (voidDeath || !RagdollBridge.isPresent()) return null;
         Vec3 thrown = throwFor(player, source);
-        Vec3 velocity = player.getDeltaMovement().scale(20.0).add(thrown);
+        Vec3 velocity = player.getDeltaMovement().scale(20.0);
+        Set<UUID> partsBefore = thrown.lengthSqr() > 0 ? RagdollBridge.ragdollParts(player.serverLevel()) : Set.of();
         UUID id = RagdollBridge.spawnBody(player.serverLevel(), player.position(), player.getYRot(),
             player.getGameProfile(), velocity, player, MAX_LIFETIME_TICKS);
         if (id == null) {
@@ -71,6 +82,7 @@ public final class DeathBodyRagdoll {
             return null;
         }
         BODIES.put(player.getUUID(), new Body(id, serverTicks));
+        if (thrown.lengthSqr() > 0) THROWS.put(id, new Throw(player.serverLevel(), partsBefore, thrown, THROW_ATTEMPTS));
         LOGGER.info("[DungeonTrain] Death body {} for {} at {} thrown {}", id, player.getGameProfile().getName(), player.position(), thrown);
         return id;
     }
@@ -108,7 +120,9 @@ public final class DeathBodyRagdoll {
     /** Remove {@code player}'s body, if any (respawned or left). */
     public static void release(ServerPlayer player) {
         Body body = BODIES.remove(player.getUUID());
-        if (body != null) RagdollBridge.release(body.id());
+        if (body == null) return;
+        THROWS.remove(body.id());
+        RagdollBridge.release(body.id());
     }
 
     /** The live body of {@code player}, or null. */
@@ -121,6 +135,7 @@ public final class DeathBodyRagdoll {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         serverTicks++;
+        applyThrows();
         if (serverTicks % SWEEP_INTERVAL_TICKS != 0 || BODIES.isEmpty()) return;
         for (Iterator<Body> it = BODIES.values().iterator(); it.hasNext(); ) {
             Body body = it.next();
@@ -130,9 +145,27 @@ public final class DeathBodyRagdoll {
         }
     }
 
+    /** Give each waiting body its throw once its physics is up; give up after {@link #THROW_ATTEMPTS} ticks. */
+    private static void applyThrows() {
+        if (THROWS.isEmpty()) return;
+        Map<UUID, Throw> next = new HashMap<>();
+        for (Map.Entry<UUID, Throw> e : THROWS.entrySet()) {
+            Throw t = e.getValue();
+            int took = RagdollBridge.throwBody(t.level(), e.getKey(), t.partsBefore(), t.velocity());
+            if (took == 0 && t.attemptsLeft() > 1) {
+                next.put(e.getKey(), new Throw(t.level(), t.partsBefore(), t.velocity(), t.attemptsLeft() - 1));
+            } else if (took <= 0) {
+                LOGGER.info("[DungeonTrain] Death body {} could not be thrown (result {})", e.getKey(), took);
+            }
+        }
+        THROWS.clear();
+        THROWS.putAll(next);
+    }
+
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         BODIES.clear();
+        THROWS.clear();
         RagdollBridge.clear();
     }
 }
