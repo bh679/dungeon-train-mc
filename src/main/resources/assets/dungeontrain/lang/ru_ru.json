@@ -1430,6 +1430,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Установка",
   "gui.dungeontrain.death.echo.skill.movement": "Движение",
   "gui.dungeontrain.death.echo.skill.items": "Быстрая смена",
+  "gui.dungeontrain.death.echo.skill.reading": "Чтение",
+  "gui.dungeontrain.death.echo.skill.trading": "Торговля",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "В ужасе",
   "gui.dungeontrain.death.echo.word.fight.0.1": "В панике",

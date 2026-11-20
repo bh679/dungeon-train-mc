@@ -11,7 +11,8 @@ import java.util.List;
  * The echo this death left behind, condensed for the death screen's echo page: its look (skin,
  * name and the six worn/held stacks), its disposition traits (fight/flight, friendliness, and
  * reaction speed overall plus per {@link EchoPersonality.Skill}), the backpack it carries, and the
- * armour points its worn gear gives. Read server-side from PlayerMob's death record by
+ * armour points its worn gear gives, and its two hobby scores on the skill graph ({@link
+ * EchoPersonality.Hobby}: reading and trading, 0–10). Read server-side from PlayerMob's death record by
  * {@link EchoSummaryReader} and carried in {@code DeathStatsPacket}.
  *
  * <p>The carried list holds at most {@link #MAX_CARRIED} non-empty stacks — PlayerMob's backpack
@@ -24,7 +25,9 @@ public record EchoSummary(
         int reactionSpeed,
         List<Integer> skills,
         List<ItemStack> carried,
-        int armour) {
+        int armour,
+        int reading,
+        int trading) {
 
     /** PlayerMob's backpack size ({@code PlayerMobEntity.INVENTORY_SIZE}). */
     public static final int MAX_CARRIED = 8;
@@ -36,6 +39,8 @@ public record EchoSummary(
         skills = clampSkills(skills, reactionSpeed);
         carried = List.copyOf(carried.size() > MAX_CARRIED ? carried.subList(0, MAX_CARRIED) : carried);
         armour = Math.max(0, armour);
+        reading = EchoPersonality.clamp(reading);
+        trading = EchoPersonality.clamp(trading);
     }
 
     /**
@@ -57,6 +62,14 @@ public record EchoSummary(
         return skills.get(skill.ordinal());
     }
 
+    /** This echo's score for {@code hobby}. */
+    public int hobby(EchoPersonality.Hobby hobby) {
+        return switch (hobby) {
+            case READING -> reading;
+            case TRADING -> trading;
+        };
+    }
+
     /** This echo's personality class. */
     public EchoPersonality.Kind personality() {
         return EchoPersonality.classify(fightFlight, friendliness);
@@ -75,6 +88,8 @@ public record EchoSummary(
             ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, stack);
         }
         buf.writeVarInt(armour);
+        buf.writeVarInt(reading);
+        buf.writeVarInt(trading);
     }
 
     public static EchoSummary decode(RegistryFriendlyByteBuf buf) {
@@ -95,6 +110,9 @@ public record EchoSummary(
             carried.add(ItemStack.OPTIONAL_STREAM_CODEC.decode(buf));
         }
         int armour = buf.readVarInt();
-        return new EchoSummary(appearance, fightFlight, friendliness, reactionSpeed, skills, carried, armour);
+        int reading = buf.readVarInt();
+        int trading = buf.readVarInt();
+        return new EchoSummary(appearance, fightFlight, friendliness, reactionSpeed, skills, carried, armour,
+                reading, trading);
     }
 }

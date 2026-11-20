@@ -18,8 +18,9 @@ import static games.brennan.dungeontrain.client.deathpages.EchoPaint.WORD;
 
 /**
  * The echo page's Stats tab: the personality class, then the three traits as minimal bars ("name:
- * Value" over a one-pixel line) beside a radar hexagon of the six reaction skills, with each skill's
- * icon at its corner. Hovering a corner icon names the skill and gives its score.
+ * Value" over a one-pixel line) beside a radar graph of the six reaction skills and the two hobbies
+ * (Reading, Trading), with each one's icon at its corner. Hovering a corner icon names it and gives
+ * its score.
  */
 final class EchoStatsTab {
 
@@ -32,7 +33,36 @@ final class EchoStatsTab {
     private static final int SHAPE_LINE = 0xFFC9A24A;
     private static final int GRID = 0xFF34363C;
 
-    private record SkillHit(int x, int y, EchoPersonality.Skill skill, int value) {
+    /** One corner of the graph: a reaction skill or a hobby, by lang key and icon. */
+    private record Corner(String langKey, EchoPersonality.Skill skill, EchoPersonality.Hobby hobby) {
+        int value(EchoSummary echo) {
+            return skill != null ? echo.skill(skill) : echo.hobby(hobby);
+        }
+
+        void icon(GuiGraphics g, int x, int y) {
+            if (skill != null) {
+                EchoPaint.skillIcon(g, skill, x, y);
+            } else {
+                EchoPaint.hobbyIcon(g, hobby, x, y);
+            }
+        }
+    }
+
+    /** The graph's corners clockwise from the top: the six skills, then the hobbies. */
+    private static final List<Corner> CORNERS = corners();
+
+    private static List<Corner> corners() {
+        List<Corner> out = new ArrayList<>();
+        for (EchoPersonality.Skill skill : EchoPersonality.Skill.values()) {
+            out.add(new Corner(skill.langKey(), skill, null));
+        }
+        for (EchoPersonality.Hobby hobby : EchoPersonality.Hobby.values()) {
+            out.add(new Corner(hobby.langKey(), null, hobby));
+        }
+        return List.copyOf(out);
+    }
+
+    private record SkillHit(int x, int y, String langKey, int value) {
         boolean has(double mx, double my) {
             return mx >= x && mx < x + ICON && my >= y && my < y + ICON;
         }
@@ -85,31 +115,32 @@ final class EchoStatsTab {
         by = bar(g, font, EchoPersonality.Trait.FRIENDLINESS, echo.friendliness(), x, by, barsW);
         bar(g, font, EchoPersonality.Trait.REACTION, echo.reactionSpeed(), x, by, barsW);
 
-        // Right: the skill hexagon in the rest of the width, icons just outside each corner, as high
+        // Right: the skill graph in the rest of the width, icons just outside each corner, as high
         // as it goes.
+        int n = CORNERS.size();
+        float halfWidth = SkillHexagon.halfWidth(n);
         int hx = x + barsW + 6;
         int hw = x + w - hx;
-        float r = Math.max(10, Math.min((hw / 2.0F - ICON - 2) / 0.87F, bodyH / 2.0F - ICON - 1));
+        float r = Math.max(10, Math.min((hw / 2.0F - ICON - 2) / halfWidth, bodyH / 2.0F - ICON - 1));
         float cx = hx + hw / 2.0F;
         // As high as it goes: the top corner's icon rises level with the personality row when the
         // personality name ends short of it, else it sits just under that row.
         boolean clear = personalityEnd + 4 < Math.round(cx - ICON / 2.0F);
         float cy = (clear ? y : top) + r + ICON + 1;
-        EchoPersonality.Skill[] skills = EchoPersonality.Skill.values();
-        int[] values = new int[skills.length];
-        for (int i = 0; i < skills.length; i++) {
-            values[i] = echo.skill(skills[i]);
+        int[] values = new int[n];
+        for (int i = 0; i < n; i++) {
+            values[i] = CORNERS.get(i).value(echo);
         }
         SkillHexagon.draw(g, cx, cy, r, values, EchoPersonality.MAX,
                 chrome.fade(GRID), chrome.fade(SHAPE_FILL), chrome.fade(SHAPE_LINE));
-        for (int i = 0; i < skills.length; i++) {
-            float[] p = SkillHexagon.corner(cx, cy, r + ICON / 2.0F + 1, i, skills.length);
+        for (int i = 0; i < n; i++) {
+            float[] p = SkillHexagon.corner(cx, cy, r + ICON / 2.0F + 1, i, n);
             int ix = Math.round(p[0] - ICON / 2.0F);
             int iy = Math.round(p[1] - ICON / 2.0F);
             if (settled) {
-                EchoPaint.skillIcon(g, skills[i], ix, iy);
+                CORNERS.get(i).icon(g, ix, iy);
             }
-            skillHits.add(new SkillHit(ix, iy, skills[i], values[i]));
+            skillHits.add(new SkillHit(ix, iy, CORNERS.get(i).langKey(), values[i]));
         }
     }
 
@@ -126,9 +157,9 @@ final class EchoStatsTab {
         return w;
     }
 
-    /** Width the tab needs: the bar column plus a hexagon of radius {@code 28} with its corner icons. */
+    /** Width the tab needs: the bar column plus a graph of radius {@code 28} with its corner icons. */
     int minWidth(Font font, EchoSummary echo) {
-        return barsWidth(font, echo) + 6 + Math.round(2 * (28 * 0.87F + ICON + 2));
+        return barsWidth(font, echo) + 6 + Math.round(2 * (28 * SkillHexagon.halfWidth(CORNERS.size()) + ICON + 2));
     }
 
     /** "trait: Value" over a one-pixel bar {@code w} wide; returns the y below it. */
@@ -151,7 +182,7 @@ final class EchoStatsTab {
         for (SkillHit hit : skillHits) {
             if (hit.has(mouseX, mouseY)) {
                 g.renderTooltip(chrome.font(), Component.translatable("gui.dungeontrain.death.echo.skill_tip",
-                        Component.translatable(hit.skill().langKey()), hit.value()), mouseX, mouseY);
+                        Component.translatable(hit.langKey()), hit.value()), mouseX, mouseY);
                 return true;
             }
         }

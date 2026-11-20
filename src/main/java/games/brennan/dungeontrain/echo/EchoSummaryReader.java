@@ -83,7 +83,29 @@ public final class EchoSummaryReader {
             skills.add(traits.reactionSpeed(channel));
         }
         return new EchoSummary(appearance, traits.fightFlight(), traits.friendliness(),
-                traits.reactionSpeed(), skills, carried(ghost), armour(ghost));
+                traits.reactionSpeed(), skills, carried(ghost), armour(ghost),
+                readingCorner(snapshot.getInt(TAG_READING), snapshot.getInt(TAG_READING_FOCUS),
+                        snapshot.getInt(TAG_WRITING)),
+                snapshot.getInt(TAG_SHOPPING));
+    }
+
+    /*
+     * PlayerMob's hobby keys on the echo snapshot (0–10 each, since 0.127.0 / 0.129.0). Read as plain
+     * NBT rather than through PlayerMob's accessors so an older PlayerMob still loads: a missing key
+     * reads 0.
+     */
+    static final String TAG_READING = "Reading";
+    static final String TAG_READING_FOCUS = "ReadingFocus";
+    static final String TAG_WRITING = "Writing";
+    static final String TAG_SHOPPING = "Shopping";
+
+    /**
+     * The graph's Reading corner: how often and how long the player read count equally, and writing
+     * books adds up to 5 more, capped at 10.
+     */
+    static int readingCorner(int reading, int focus, int writing) {
+        int read = Math.round((EchoPersonality.clamp(reading) + EchoPersonality.clamp(focus)) / 2.0F);
+        return EchoPersonality.clamp(read + Math.round(EchoPersonality.clamp(writing) / 2.0F));
     }
 
     /**

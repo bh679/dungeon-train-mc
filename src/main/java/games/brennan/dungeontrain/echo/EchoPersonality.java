@@ -88,6 +88,27 @@ public final class EchoPersonality {
         }
     }
 
+    /**
+     * The echo's hobbies that sit on the skill graph after the six {@link Skill}s: Reading (books
+     * opened, time spent reading, and writing) and Trading (PlayerMob's "Shopping" score). Each
+     * carries its lang-key suffix; the page picks the item icon.
+     */
+    public enum Hobby {
+        READING("reading"),
+        TRADING("trading");
+
+        private final String key;
+
+        Hobby(String key) {
+            this.key = key;
+        }
+
+        /** Lang key of this hobby's name. */
+        public String langKey() {
+            return "gui.dungeontrain.death.echo.skill." + key;
+        }
+    }
+
     private EchoPersonality() {
     }
 

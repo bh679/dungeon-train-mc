@@ -1337,6 +1337,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Paglalagay",
   "gui.dungeontrain.death.echo.skill.movement": "Galaw",
   "gui.dungeontrain.death.echo.skill.items": "Mabilisang palit",
+  "gui.dungeontrain.death.echo.skill.reading": "Pagbabasa",
+  "gui.dungeontrain.death.echo.skill.trading": "Pakikipagkalakalan",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "Takot na takot",
   "gui.dungeontrain.death.echo.word.fight.0.1": "Nagpa-panic",
