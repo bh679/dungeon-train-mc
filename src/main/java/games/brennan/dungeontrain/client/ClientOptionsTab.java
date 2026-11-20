@@ -259,6 +259,8 @@ public enum ClientOptionsTab {
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
         STREAM_SAVE_BANDWIDTH("gui.dungeontrain.options.stream_save_bandwidth"),
+        /** Whether the tab shows its viewer preview; off also stops the preview's frame copies. On by default. */
+        STREAM_PREVIEW("gui.dungeontrain.options.stream_preview"),
         /** The live feed pinned top-right on the HUD while you watch. */
         HEAD_VIEWER_SIZE("gui.dungeontrain.options.head_viewer_size"),
         /** Who is live, in a line under each pane of that pinned feed. On by default. */
@@ -465,6 +467,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_SECTION_PICTURE);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
+                rows.add(Row.STREAM_PREVIEW);
                 rows.add(Row.STREAM_SECTION_CHAT);
                 rows.add(Row.LIVE_CHAT);
                 rows.add(Row.LIVE_CHAT_TRANSLATION);

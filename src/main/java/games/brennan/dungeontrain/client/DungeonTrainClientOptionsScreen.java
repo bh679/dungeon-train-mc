@@ -158,6 +158,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     @Nullable private ClientOptionsTab.Row focusRow;
     /** When the highlight began; a rebuild carries on the same fade. Unset until the row is first shown. */
     private long focusStartMs = -1;
+    /**
+     * The Stream rows a click on the preview also flips, kept so the row shows the new value at once
+     * (a rebuild would lose the list's scroll). Set by {@link #build} on every init.
+     */
+    @Nullable private CycleButton<Boolean> streamGuiButton;
+    @Nullable private CycleButton<Boolean> streamChatButton;
+    @Nullable private CycleButton<LiveFeedClientConfig.NameTag> streamNameTagButton;
+    @Nullable private CycleButton<Integer> headViewerStreamingButton;
 
     /** The screen on {@link ClientOptionsTab#active()}, scrolled to {@code row} with that row highlighted. */
     public DungeonTrainClientOptionsScreen(Screen parent, ClientOptionsTab.Row row) {
@@ -337,7 +345,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 SettingsRowList.Entry entry = addRow(this.list, row);
                 if (entry != null) this.entries.put(row, entry);
             }
-            this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
+            this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget(DungeonTrainClientOptionsScreen.this::syncPreviewRow) : null;
         }
 
         @Override
@@ -353,7 +361,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
         @Override
         public void doLayout(ScreenRectangle rectangle) {
-            if (this.preview == null) {
+            if (this.preview != null) this.preview.visible = LiveFeedClientConfig.streamPreview();
+            if (this.preview == null || !this.preview.visible) {
                 this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
                 return;
             }
@@ -773,8 +782,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case FFMPEG -> Setting.of(new FfmpegSetupButton(CONTROL_W, ROW_H), key + ".tip");
 
             // What viewers see; the preview under the rows follows both switches live.
-            case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),
-                    key + ".tip");
+            case STREAM_GUI -> {
+                this.streamGuiButton = onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui);
+                yield Setting.of(this.streamGuiButton, key + ".tip");
+            }
 
             // Kid mode and Live chat off never stream chat: the switch shows Off and is greyed, whatever is stored.
             case STREAM_CHAT -> {
@@ -783,6 +794,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 CycleButton<Boolean> streamChat = onOff(Component.translatable(key),
                         !kid && !liveChatOff && LiveFeedClientConfig.streamChat(), LiveFeedClientConfig::setStreamChat);
                 streamChat.active = !kid && !liveChatOff;
+                this.streamChatButton = streamChat;
                 yield Setting.of(streamChat, kid ? key + ".kid_tip" : liveChatOff ? key + ".live_chat_off_tip" : key + ".tip");
             }
 
@@ -829,6 +841,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
                     LiveFeedClientConfig::setSaveBandwidth), key + ".tip");
 
+            // The viewer preview under the rows. Off hides it and gives the list the room; a hidden
+            // preview never asks StreamPreview for frames, so the copies stop too.
+            case STREAM_PREVIEW -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamPreview(), on -> {
+                LiveFeedClientConfig.setStreamPreview(on);
+                repositionElements();
+            }), key + ".tip");
+
             // Decoding live feeds onto TVs and the pinned viewer, and whether spawned TVs may come on
             // (TvSpawnPower); off = static, and the idle watchdog stops the decoder. On the
             // Performance tab too, as a frame-rate cost. TvSpawnPrefSyncClient tells the server.
@@ -852,6 +871,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                 .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                         (btn, tag) -> LiveFeedClientConfig.setStreamNameTag(tag));
                 nameTag.active = !kid;
+                this.streamNameTagButton = nameTag;
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
@@ -956,7 +976,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // The pinned top-right feed, one size while you watch and one while you stream (the
             // preview outlines the streaming one).
             case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
-            case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
+            case HEAD_VIEWER_SIZE_STREAMING -> {
+                Setting size = headViewerSize(key, true);
+                @SuppressWarnings("unchecked")
+                CycleButton<Integer> button = (CycleButton<Integer>) size.control;
+                this.headViewerStreamingButton = button;
+                yield size;
+            }
             // Who is live, under each pane of the pinned feed (HeadViewerCaption).
             case HEAD_VIEWER_NAMES -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.headViewerNames(),
                     LiveFeedClientConfig::setHeadViewerNames), key + ".tip");
@@ -1353,6 +1379,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     /** A pinned-feed size index as a percentage of its normal width: "150%". */
     /** One of the two pinned-feed size rows: {@code streaming} picks which size it sets. */
+    /** A click on the Stream preview flipped {@code part}'s setting: show the new value on its row. */
+    private void syncPreviewRow(games.brennan.dungeontrain.client.live.StreamPreviewRegions.Part part) {
+        switch (part) {
+            case GUI -> { if (this.streamGuiButton != null) this.streamGuiButton.setValue(LiveFeedClientConfig.streamGui()); }
+            case CHAT -> { if (this.streamChatButton != null) this.streamChatButton.setValue(LiveFeedClientConfig.streamChat()); }
+            case NAME_TAG -> { if (this.streamNameTagButton != null) this.streamNameTagButton.setValue(LiveFeedClientConfig.streamNameTag()); }
+            case HEAD_VIEWER -> { if (this.headViewerStreamingButton != null) this.headViewerStreamingButton.setValue(LiveFeedClientConfig.headViewerSize(true)); }
+        }
+    }
+
     private static Setting headViewerSize(String key, boolean streaming) {
         return Setting.of(
                 CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)

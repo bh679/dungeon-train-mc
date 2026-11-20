@@ -123,11 +123,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: eighty-six rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: eighty-seven rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(86, rows.size());
+        assertEquals(87, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -260,9 +260,9 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 85 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // 87 rows (section titles included), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(91, rows.size());
+        assertEquals(92, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -277,7 +277,7 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.STREAM_SECTION_MIC, ClientOptionsTab.Row.MIC_SUPPORT, ClientOptionsTab.Row.MIC_DEVICE,
                         ClientOptionsTab.Row.MIC_MODE, ClientOptionsTab.Row.MIC_HINT,
                         ClientOptionsTab.Row.STREAM_SECTION_PICTURE, ClientOptionsTab.Row.STREAM_SIZE,
-                        ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
+                        ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH, ClientOptionsTab.Row.STREAM_PREVIEW,
                         ClientOptionsTab.Row.STREAM_SECTION_CHAT, ClientOptionsTab.Row.LIVE_CHAT,
                         ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
                         ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT,
