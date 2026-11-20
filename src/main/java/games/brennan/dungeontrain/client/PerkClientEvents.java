@@ -17,5 +17,6 @@ public final class PerkClientEvents {
         PerkClientState.clear();
         games.brennan.dungeontrain.perks.PerksGate.clearClient();
         PerkClientBalances.clear();
+        PerkClientLives.clear();
     }
 }

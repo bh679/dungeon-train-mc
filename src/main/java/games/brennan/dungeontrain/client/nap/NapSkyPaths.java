@@ -1,8 +1,13 @@
 package games.brennan.dungeontrain.client.nap;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -12,9 +17,9 @@ import java.util.UUID;
  * solid lines, forking two ways at a star {@link #FORK} of the time, never visiting a star twice and
  * never deeper than {@link #MAX_DEPTH}. Pure (no Minecraft types), so it is unit-tested.
  *
- * <p>A past life's path is seeded by the player and the life's number, so it is the same every time
- * the page is opened. Later these become the perk path each life really unlocked; the painter only
- * needs a {@link Path}, so that swap is data-only.</p>
+ * <p>A life with perks is drawn from the stars it activated ({@link #fromStars}). A life from before
+ * perks, which has no record, gets a random path seeded by the player and the life's number
+ * ({@link #pastLife}), so it is the same every time the page is opened.</p>
  */
 public final class NapSkyPaths {
 
@@ -50,6 +55,75 @@ public final class NapSkyPaths {
         long seed = (player == null ? 0L : player.getMostSignificantBits() ^ Long.rotateLeft(player.getLeastSignificantBits(), 17))
             ^ (life * 0x9E3779B97F4A7C15L);
         return random(sky, rng(seed), -1);
+    }
+
+    /**
+     * The path through {@code lit} (the stars a life activated): out from the Engine along solid lines
+     * through lit stars, each line's depth its step from the Engine. A lit star no lit star leads to is
+     * joined by the shortest run of lines from the path so far (the stars on that run are drawn too),
+     * so every activation shows. Stars out of range and the Engine itself are ignored; nothing lit draws
+     * nothing.
+     */
+    public static Path fromStars(NapSky sky, Set<Integer> lit) {
+        Set<Integer> want = new HashSet<>();
+        for (Integer s : lit) if (s != null && s > 0 && s < sky.size()) want.add(s);
+        Map<Integer, Integer> depth = new LinkedHashMap<>();
+        depth.put(0, 0);
+        List<Edge> edges = new ArrayList<>();
+        spread(sky, want, depth, edges, List.of(0));
+        while (!depth.keySet().containsAll(want)) {
+            List<Integer> bridge = shortestBridge(sky, want, depth);
+            if (bridge.isEmpty()) break;
+            for (int i = 1; i < bridge.size(); i++) {
+                int from = bridge.get(i - 1), to = bridge.get(i);
+                depth.put(to, depth.get(from) + 1);
+                edges.add(new Edge(from, to, depth.get(to)));
+            }
+            spread(sky, want, depth, edges, bridge.subList(1, bridge.size()));
+        }
+        return new Path(edges, depthOf(edges), edges.isEmpty() ? -1 : edges.get(0).to());
+    }
+
+    /** Breadth first from {@code starts} through wanted stars not yet on the path. */
+    private static void spread(NapSky sky, Set<Integer> want, Map<Integer, Integer> depth, List<Edge> edges,
+                               List<Integer> starts) {
+        Deque<Integer> queue = new ArrayDeque<>(starts);
+        while (!queue.isEmpty()) {
+            int cur = queue.poll();
+            for (int n : sky.neighbours(cur)) {
+                if (!want.contains(n) || depth.containsKey(n)) continue;
+                depth.put(n, depth.get(cur) + 1);
+                edges.add(new Edge(cur, n, depth.get(n)));
+                queue.add(n);
+            }
+        }
+    }
+
+    /**
+     * The fewest lines from a star on the path to a wanted star not on it: the run of stars, starting
+     * with the one on the path. Empty when no such star can be reached.
+     */
+    private static List<Integer> shortestBridge(NapSky sky, Set<Integer> want, Map<Integer, Integer> depth) {
+        Map<Integer, Integer> prev = new HashMap<>();
+        Deque<Integer> queue = new ArrayDeque<>();
+        for (int s : depth.keySet()) {
+            prev.put(s, -1);
+            queue.add(s);
+        }
+        while (!queue.isEmpty()) {
+            int cur = queue.poll();
+            if (want.contains(cur) && !depth.containsKey(cur)) {
+                List<Integer> run = new ArrayList<>();
+                for (int s = cur; s != -1; s = prev.get(s)) run.add(0, s);
+                return run;
+            }
+            for (int n : sky.neighbours(cur)) {
+                if (prev.containsKey(n)) continue;
+                prev.put(n, cur);
+                queue.add(n);
+            }
+        }
+        return List.of();
     }
 
     /**
