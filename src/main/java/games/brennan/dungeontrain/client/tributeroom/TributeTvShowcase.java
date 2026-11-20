@@ -119,7 +119,9 @@ public final class TributeTvShowcase {
     public static boolean pressNext(BlockPos tv) {
         Entry e = at(tv);
         if (e == null) return false;
-        e.recap().tvAdvance();
+        // The last page loops back to the first.
+        if (e.recap().tvOnLastPage()) e.recap().tvRestart();
+        else e.recap().tvAdvance();
         return true;
     }
 

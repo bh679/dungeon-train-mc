@@ -58,6 +58,8 @@ public final class TributeTvVisit {
     @Nullable private static Supplier<Screen> recap;
     @Nullable private static ScreenToTexture texture;
     @Nullable private static NarrativeDeathScreen recapScreen;
+    /** The perks menu the visit opened on, kept so the TV can go back to it from the recap's last page. */
+    @Nullable private static Screen perksScreen;
     @Nullable private static BoundingBox screenBox;
     private static List<BoundingBox> tubes = List.of();
     /** How black the tube walk has the view, 0..1; held at 1 once a far end has ended the visit. */
@@ -82,6 +84,7 @@ public final class TributeTvVisit {
         recap = next;
         texture = new ScreenToTexture(games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG);
         texture.attach(perks);
+        perksScreen = perks;
         setPhase(Phase.AWAITING_ROOM);
         mc.setScreen(new TributeArrivalScreen());
         DungeonTrainNet.sendToServer(new TributeRoomVisitPacket(false));
@@ -286,8 +289,8 @@ public final class TributeTvVisit {
     public static boolean onTvClicked(BlockPos pos, boolean sneaking) {
         if (phase != Phase.WATCHING || !showsOn(pos) || texture == null) return false;
         Minecraft mc = Minecraft.getInstance();
-        if (recapScreen == null) {
-            // Still the perks menu: the click lands on its own buttons, and only Next Screen moves on
+        if (!recapShowing()) {
+            // The perks menu (first, or gone back to from the recap's last page): the click lands on its own buttons, and only Next Screen moves on
             // (PerksScreen.onClose → showRecap). A click off every button does nothing, as on the window.
             Screen page = texture.screen();
             if (page == null) return false;
@@ -326,8 +329,11 @@ public final class TributeTvVisit {
      */
     public static boolean pressNext(BlockPos tv) {
         if (phase != Phase.WATCHING || !showsOn(tv) || texture == null) return false;
-        if (recapScreen != null) {
-            recapScreen.tvAdvance();
+        if (recapShowing()) {
+            // The last page loops back to the first screen: the perks menu, whose Next Screen
+            // starts the recap over.
+            if (recapScreen.tvOnLastPage()) showPerks();
+            else recapScreen.tvAdvance();
             return true;
         }
         Screen page = texture.screen();
@@ -341,9 +347,16 @@ public final class TributeTvVisit {
      * {@code false} when {@code perks} is not the menu this visit is showing, so the menu closes as usual.
      */
     public static boolean showRecap(Screen perks) {
-        if (phase != Phase.WATCHING || texture == null || texture.screen() != perks || recapScreen != null) return false;
-        if (recap == null) return false;
+        if (phase != Phase.WATCHING || texture == null || texture.screen() != perks) return false;
         Minecraft mc = Minecraft.getInstance();
+        if (recapScreen != null) {
+            // Back on the perks menu from the recap's last page: the same recap, from its first page.
+            if (mc.screen == perks) mc.setScreen(null);
+            texture.attach(recapScreen);
+            recapScreen.tvRestart();
+            return true;
+        }
+        if (recap == null) return false;
         Screen next = recap.get();
         if (!(next instanceof NarrativeDeathScreen nds)) {
             mc.setScreen(next);
@@ -364,9 +377,34 @@ public final class TributeTvVisit {
         page.focusTextField();
     }
 
+    /**
+     * The perks menu back on the TV, from the recap's last page (the TV button, or the ✦ chip). Its
+     * Next Screen starts the recap over ({@link #showRecap}). A recap lifted onto the window goes back down.
+     */
+    public static void showPerks() {
+        if (phase != Phase.WATCHING || texture == null || perksScreen == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (recapScreen != null && mc.screen == recapScreen) {
+            recapScreen.blurTextField();
+            mc.setScreen(null);
+        }
+        texture.attach(perksScreen);
+    }
+
+    /** Whether {@code screen} is this visit's own recap with the perks menu to go back to: the ✦ chip. */
+    public static boolean canShowPerks(Screen screen) {
+        return games.brennan.dungeontrain.perks.PerksGate.isOnClient() && perksScreen != null
+            && recapScreen != null && recapScreen == screen && phase == Phase.WATCHING;
+    }
+
+    /** The recap is what the TV shows now (not the perks menu, before it or gone back to). */
+    private static boolean recapShowing() {
+        return recapScreen != null && texture != null && texture.screen() == recapScreen;
+    }
+
     /** The wheel while looking at the TV: the page scrolls, not the hotbar. {@code false} when not on the TV. */
     public static boolean onTvScrolled(double dx, double dy) {
-        if (phase != Phase.WATCHING || recapScreen == null || zoomed()) return false;
+        if (phase != Phase.WATCHING || !recapShowing() || zoomed()) return false;
         int[] m = tvMouse();
         if (m[0] == TvPointer.OFF_SCREEN) return false;
         recapScreen.mouseScrolled(m[0], m[1], dx, dy);
@@ -442,6 +480,7 @@ public final class TributeTvVisit {
         phase = Phase.IDLE;
         recap = null;
         recapScreen = null;
+        perksScreen = null;
         screenBox = null;
         tubes = List.of();
         tubeBlack = 0f;
