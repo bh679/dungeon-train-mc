@@ -47,6 +47,8 @@ public record PerkUnlockPacket(String perkId) implements CustomPacketPayload {
     public static void handle(PerkUnlockPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
+            // Perks off in this world: a forged request buys nothing.
+            if (!games.brennan.dungeontrain.perks.PerksGate.isOn()) return;
             String id = packet.perkId;
             if (id == null || id.isEmpty() || !PerkActionGuard.allow(player, id)) return;
             String refusal = refusal(player, id);

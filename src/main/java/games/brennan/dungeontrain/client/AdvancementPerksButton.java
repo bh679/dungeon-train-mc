@@ -57,6 +57,7 @@ public final class AdvancementPerksButton {
     public static void onInit(ScreenEvent.Init.Post event) {
         Screen screen = event.getScreen();
         if (!DefaultAdvancementsTab.isAdvancementsScreen(screen)) return;
+        if (!games.brennan.dungeontrain.perks.PerksGate.isOnClient()) return;
         Button button = new StarButton();
         button.setTooltip(Tooltip.create(TOOLTIP));
         button.visible = false;

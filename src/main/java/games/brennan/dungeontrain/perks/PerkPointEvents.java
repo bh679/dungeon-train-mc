@@ -81,7 +81,8 @@ public final class PerkPointEvents {
         int after = recompute(player);
         player.setData(ModDataAttachments.PERK_UNLOCK_EARNED.get(), after);
         PerkBalances.sync(player);
-        if (!silent && after > before) {
+        // The total is kept either way (it is only a count of advancements); the line is not.
+        if (!silent && after > before && PerksGate.isOn()) {
             // no balance: unlock points are spent after death, and play keeps them out of sight
             player.sendSystemMessage(Component.translatable(KEY_GAINED, after - before).withStyle(ChatFormatting.LIGHT_PURPLE));
         }

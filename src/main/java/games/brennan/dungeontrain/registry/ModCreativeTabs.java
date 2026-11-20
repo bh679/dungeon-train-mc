@@ -158,9 +158,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_STAT_BOOK.get());
                 output.accept(ModItems.STATS_BOOK.get());
                 output.accept(ModItems.RANDOM_POTION.get());
-                output.accept(ModItems.COSMIC_APPLE.get());
-                output.accept(ModItems.CELESTIAL_BITE.get());
-                output.accept(ModItems.VIOLET_CORE.get());
+                // Perk items stay out of the tab until perks launch (PerksGate).
+                if (games.brennan.dungeontrain.perks.PerksGate.LAUNCHED) {
+                    output.accept(ModItems.COSMIC_APPLE.get());
+                    output.accept(ModItems.CELESTIAL_BITE.get());
+                    output.accept(ModItems.VIOLET_CORE.get());
+                }
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModItems.RANDOM_POTTERY_SHERD.get());

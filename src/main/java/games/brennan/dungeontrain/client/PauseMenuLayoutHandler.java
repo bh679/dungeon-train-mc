@@ -158,8 +158,10 @@ public final class PauseMenuLayoutHandler {
         returnToMenu.active = false;
 
         // Perks: the constellation, first of the things you can do from here (also on P).
-        addPerksRow(event, slotX, slotY, slotW, slotH);
-        slotY += slotH + GAP;
+        if (games.brennan.dungeontrain.perks.PerksGate.isOnClient()) {
+            addPerksRow(event, slotX, slotY, slotW, slotH);
+            slotY += slotH + GAP;
+        }
 
         // My Builds, for a creative player — see addMyBuildsRow. It takes the Save-and-Quit slot and
         // pushes the exits down a row, which puts it last among the things you can *do* and first
@@ -217,8 +219,10 @@ public final class PauseMenuLayoutHandler {
             return;
         }
         // Perks takes the Disconnect slot and pushes Disconnect (and the Shift pair) down a row.
-        addPerksRow(event, disconnect.getX(), disconnect.getY(), disconnect.getWidth(), disconnect.getHeight());
-        disconnect.setY(disconnect.getY() + disconnect.getHeight() + GAP);
+        if (games.brennan.dungeontrain.perks.PerksGate.isOnClient()) {
+            addPerksRow(event, disconnect.getX(), disconnect.getY(), disconnect.getWidth(), disconnect.getHeight());
+            disconnect.setY(disconnect.getY() + disconnect.getHeight() + GAP);
+        }
         addShiftExitPair(event, disconnect.getX(), disconnect.getY(),
                 disconnect.getWidth(), disconnect.getHeight());
         disconnect.visible = !Screen.hasShiftDown();

@@ -59,7 +59,7 @@ public final class CosmicAppleDrops {
 
     /** True once any online player has spent {@link #UNLOCK_SPENT_TO_OPEN} unlock points. */
     public static boolean open(MinecraftServer server) {
-        if (server == null) return false;
+        if (server == null || !PerksGate.isOn()) return false;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (opensAt(PerkSpend.unlockSpent(player))) return true;
         }

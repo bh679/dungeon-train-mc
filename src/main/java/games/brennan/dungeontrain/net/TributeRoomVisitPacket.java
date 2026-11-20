@@ -33,6 +33,11 @@ public record TributeRoomVisitPacket(boolean prepareOnly) implements CustomPacke
     public static void handle(TributeRoomVisitPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
+            // Tribute rooms come with perks (PerksGate): none while they are off.
+            if (!games.brennan.dungeontrain.perks.PerksGate.isOn()) {
+                if (!packet.prepareOnly) DungeonTrainNet.sendTo(player, TributeRoomVisitStatePacket.none());
+                return;
+            }
             if (packet.prepareOnly) {
                 TributeRoomVisitService.prepare(player);
                 return;

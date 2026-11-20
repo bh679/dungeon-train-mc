@@ -26,6 +26,7 @@ public final class ArchivistCamera {
 
     /** Decides the camera's extra shots if it has none yet, and counts it as one of this life's cameras. Server side. */
     public static void rollIfNew(ServerPlayer player, ItemStack camera) {
+        if (!games.brennan.dungeontrain.perks.PerksGate.isOn()) return;
         if (tag(camera).contains(NBT_EXTRA_SHOTS, Tag.TAG_INT)) return;
         int rank = Perks.rank(player, ArchivistPerks.EXTRA_CAM_SHOTS);
         int used = player.getData(ModDataAttachments.PERK_CAMERAS_USED);

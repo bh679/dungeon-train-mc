@@ -120,6 +120,11 @@ public final class DeathMomentScreen extends Screen {
     private void handOver() {
         if (handedOver || minecraft == null) return;
         handedOver = true;
+        if (!games.brennan.dungeontrain.perks.PerksGate.isOnClient()) {
+            // Perks off (PerksGate): straight to the recap, as before perks.
+            minecraft.setScreen(new NarrativeDeathScreen());
+            return;
+        }
         // the perks menu (unlocking only) comes first; moving on from it opens the recap
         PerksScreen.openForDeath(NarrativeDeathScreen::new);
     }
@@ -166,7 +171,8 @@ public final class DeathMomentScreen extends Screen {
         if (black > 0.0f) g.fill(0, 0, this.width, this.height, scaleAlpha(0xFF000000, black));
         renderPrompt(g, partialTick);
         // Over the prompt too: the scene ends on the perks menu's night blue, and the menu opens on it.
-        float sky = DeathCameraCycle.skyAlpha(partialTick);
+        // The fade into the perks menu's night sky only leads somewhere while perks are on.
+        float sky = games.brennan.dungeontrain.perks.PerksGate.isOnClient() ? DeathCameraCycle.skyAlpha(partialTick) : 0.0f;
         if (sky > 0.0f) g.fill(0, 0, this.width, this.height, scaleAlpha(PerksScreen.SKY_BG, sky));
         String label = DeathCameraCycle.reviewLabel();
         if (label != null && minecraft != null) {

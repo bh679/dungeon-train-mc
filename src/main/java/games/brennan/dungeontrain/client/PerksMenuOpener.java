@@ -14,7 +14,7 @@ public final class PerksMenuOpener {
 
     public static void open(int activePoints) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        if (mc.player == null || !games.brennan.dungeontrain.perks.PerksGate.isOnClient()) return;
         if (mc.screen != null && !(mc.screen instanceof PerksScreen)) return;
         PerksScreen.open(true);
     }

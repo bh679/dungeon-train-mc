@@ -109,6 +109,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || games.brennan.dungeontrain.perks.PerksGate.isTestWorld()
             || PlayerFreePlayIntegrity.isWorldFreePlay()
             || ProfileIntegrity.isPlayerFreePlay(player)
             || isPermanentlyCheated(player);
@@ -156,6 +157,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || games.brennan.dungeontrain.perks.PerksGate.isTestWorld()
             || PlayerFreePlayIntegrity.isWorldFreePlay()
             || ProfileIntegrity.isPlayerFreePlay(player)
             || isPermanentlyCheated(player);
@@ -181,6 +183,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || games.brennan.dungeontrain.perks.PerksGate.isTestWorld()
             || PlayerFreePlayIntegrity.isWorldFreePlay();
     }
 
@@ -324,6 +327,9 @@ public final class RunIntegrity {
         }
         if (KeepInventoryIntegrity.isWorldFreePlay()) {
             causes.add(sessionCause("keep_inventory", List.of()));
+        }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            causes.add(sessionCause("perks_test", List.of()));
         }
         if (PlayerFreePlayIntegrity.isWorldFreePlay() && !PlayerFreePlayIntegrity.isSource(player)) {
             // Somebody else on this world went Free Play. Named, like the operator cause, because

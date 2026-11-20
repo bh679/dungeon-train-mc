@@ -36,9 +36,9 @@ public final class Perks {
         return state(player).isUnlocked(perkId);
     }
 
-    /** The whole state, for menus and the command. Never null. */
+    /** The whole state, for menus and the command. Never null; empty while perks are off ({@link PerksGate}). */
     public static PerkState state(Player player) {
-        if (player == null) return PerkState.EMPTY;
+        if (player == null || !PerksGate.isOn(player)) return PerkState.EMPTY;
         if (player instanceof ServerPlayer sp) return sp.getData(ModDataAttachments.PERK_STATE.get());
         if (player.level().isClientSide && FMLEnvironment.dist == Dist.CLIENT) {
             return PerkClientState.stateFor(player);
@@ -97,7 +97,7 @@ public final class Perks {
 
     /** Push the current state to the owning client. */
     public static void sync(ServerPlayer player) {
-        DungeonTrainNet.sendTo(player, new PerkStatePacket(state(player)));
+        DungeonTrainNet.sendTo(player, new PerkStatePacket(state(player), PerksGate.isOn()));
     }
 
     /** Called by the lifecycle once a fresh player entity has its state synced. */
@@ -106,6 +106,8 @@ public final class Perks {
     }
 
     private static void apply(ServerPlayer player, PerkState next) {
+        // Perks off: nothing is bought, spent or saved, so a player's stored state is left alone.
+        if (!PerksGate.isOn()) return;
         PerkState prev = state(player);
         if (prev.equals(next)) return;
         player.setData(ModDataAttachments.PERK_STATE.get(), next);

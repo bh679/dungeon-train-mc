@@ -15,6 +15,7 @@ public final class PerkClientEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         PerkClientState.clear();
+        games.brennan.dungeontrain.perks.PerksGate.clearClient();
         PerkClientBalances.clear();
     }
 }

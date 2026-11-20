@@ -19,12 +19,29 @@ import java.util.UUID;
  * <p>The save follows the player across worlds, so a new world brings back that difficulty's unlocks.
  * Free Play purchases are not saved, the same rule as Free Play advancements: they last in that world's
  * {@code PERK_STATE} only.</p>
+ *
+ * <p>Nothing here runs while perks are off ({@link PerksGate}). A perks test world is Free Play, but
+ * its unlocks are saved anyway, to their own partition ({@link #TEST_KEY}), so a tester keeps them
+ * from one test world to the next while the per-difficulty saves are never touched.</p>
  */
 public final class PerkProfiles {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** The save partition perks test worlds use, apart from every difficulty's. */
+    static final String TEST_KEY = "perktest";
+
     private PerkProfiles() {}
+
+    /** The partition this player's unlocks are saved to right now. */
+    private static String key(ServerPlayer player) {
+        return PerksGate.isTestWorld() ? TEST_KEY : AdvancementProfiles.currentKey(player);
+    }
+
+    /** Free Play for the save's purposes: a perks test world saves to its own partition, so it is not. */
+    private static boolean skipsSave(ServerPlayer player) {
+        return !PerksGate.isTestWorld() && RunIntegrity.isCheated(player);
+    }
 
     /**
      * The unlock levels a player logs in with.
@@ -54,9 +71,10 @@ public final class PerkProfiles {
 
     /** Line the live state up with the save. Runs on login, ahead of the client sync. */
     static void onLogin(ServerPlayer player) {
+        if (!PerksGate.isOn()) return;
         UUID uuid = player.getUUID();
-        String key = AdvancementProfiles.currentKey(player);
-        boolean freePlay = RunIntegrity.isCheated(player);
+        String key = key(player);
+        boolean freePlay = skipsSave(player);
         boolean hasSave = PerkProfileStore.exists(uuid);
         PerkState state = Perks.state(player);
         Map<String, Integer> saved = hasSave ? PerkProfileStore.unlocks(uuid, key) : Map.of();
@@ -71,13 +89,14 @@ public final class PerkProfiles {
 
     /** Save an unlock level to the difficulty being played, unless this run is Free Play. */
     static void onUnlockLevelChanged(ServerPlayer player, String perkId, int level) {
-        if (RunIntegrity.isCheated(player)) return;
-        PerkProfileStore.setUnlockLevel(player.getUUID(), AdvancementProfiles.currentKey(player), perkId, level);
+        if (!PerksGate.isOn() || skipsSave(player)) return;
+        PerkProfileStore.setUnlockLevel(player.getUUID(), key(player), perkId, level);
     }
 
     /** Dev reset: forget the current difficulty's save too, or the next login would bring it all back. */
     static void onCleared(ServerPlayer player) {
-        PerkProfileStore.setUnlocks(player.getUUID(), AdvancementProfiles.currentKey(player), Map.of());
+        if (!PerksGate.isOn()) return;
+        PerkProfileStore.setUnlocks(player.getUUID(), key(player), Map.of());
     }
 
     /**
@@ -90,6 +109,9 @@ public final class PerkProfiles {
      */
     public static void swap(ServerPlayer player, String from, String to) {
         if (from.equals(to)) return;
+        // Perks off: no perk files are read or written. A test world keeps one partition whatever
+        // the difficulty, so there is nothing to swap.
+        if (!PerksGate.isOn() || PerksGate.isTestWorld()) return;
         UUID uuid = player.getUUID();
         PerkProfileStore.Parked outgoing = new PerkProfileStore.Parked(
             Perks.state(player).active(), PerkPoints.active(player));

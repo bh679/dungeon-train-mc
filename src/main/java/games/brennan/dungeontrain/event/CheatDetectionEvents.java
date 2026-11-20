@@ -371,6 +371,13 @@ public final class CheatDetectionEvents {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
         }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            // A perks test world is Free Play from creation: perks are on here before they launch,
+            // so nothing earned in it may reach the leaderboards or the cross-world profile.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.perks_test"));
+        }
         // Load the player's sealed progress files now, ahead of the login replay that reads them,
         // so an edit caught in one of them is explained here with the other causes.
         ProfileIntegrity.refreshOnJoin(player);

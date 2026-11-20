@@ -43,7 +43,7 @@ public final class PerksHotkeyClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         while (KEY.consumeClick()) {
-            if (mc.screen == null) PerksScreen.open(false);
+            if (mc.screen == null && games.brennan.dungeontrain.perks.PerksGate.isOnClient()) PerksScreen.open(false);
         }
     }
 }
