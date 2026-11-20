@@ -1,0 +1,21 @@
+{
+  "id": "echo-graph-reading-trading",
+  "version": "0.1917.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "ui"
+  ],
+  "title": "Echo reading and trading",
+  "summary": "The echo page on the death screen now shows how much your echo reads and trades. Its skill graph gains two corners, Reading and Trading, carried over from how you spent your life.",
+  "highlights": [
+    "Reading corner: the books you opened, how long you read them, and the books you wrote",
+    "Trading corner: how many of the villagers you met you actually traded with",
+    "Hover either corner to see its score"
+  ],
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
