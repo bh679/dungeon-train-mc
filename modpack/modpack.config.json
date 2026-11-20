@@ -743,6 +743,24 @@
       "curseforge_only": true
     },
     {
+      "name": "MC Java Safety Check",
+      "slug": "mc-java-safety-check",
+      "mod_ids": [
+        "mcjavasafetycheck"
+      ],
+      "sha1": "d7f35b017ca00c37d276271b77623db44e3d7ada",
+      "packages": [
+        "games.brennan"
+      ],
+      "project_id": 1817670,
+      "file_id": 9708501,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.1.0",
+      "gradle_property": "mcjavasafetycheck_min_version",
+      "curseforge_only": true
+    },
+    {
       "name": "Discord Presence",
       "slug": "discord-presence",
       "mod_ids": [
