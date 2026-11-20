@@ -129,6 +129,9 @@ public final class ModCreativeTabs {
      *       the reader's current run.</li>
      *   <li>{@link ModItems#STATS_BOOK} — the loot-facing coin-flip between
      *       the two above, and the one ordinary loot tables place.</li>
+     *   <li>Dungeon Train Flags 1-8
+     *       ({@link games.brennan.dungeontrain.block.flag.FlagPlaceholders}) — roll into logo
+     *       banners when a template stamps.</li>
      *   <li>Edible Backpacks' backpack and golden backpack ({@link #EDIBLE_BACKPACK},
      *       {@link #GOLDEN_EDIBLE_BACKPACK}).</li>
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
@@ -160,6 +163,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_POTTERY_SHERD.get());
                 output.accept(ModItems.RANDOM_GOAT_HORN.get());
                 output.accept(ModItems.RANDOM_TOTEM.get());
+                // The Dungeon Train flags: editor-only placeholders that roll into logo banners.
+                for (var flag : games.brennan.dungeontrain.block.flag.FlagPlaceholders.items()) {
+                    output.accept(flag.get());
+                }
                 acceptIfPresent(output, EDIBLE_BACKPACK);
                 acceptIfPresent(output, GOLDEN_EDIBLE_BACKPACK);
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
@@ -196,12 +203,10 @@ public final class ModCreativeTabs {
                 for (var item : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items()) {
                     byName.put(item.getId().getPath(), item.get());
                 }
+                // Exactly the layout's items: CreativeStageBlocksLayoutMixin pads the rows only when
+                // the count matches, so anything extra here collapses the whole tab.
                 for (String name : games.brennan.dungeontrain.block.stage.StageBlocksTabLayout.names()) {
                     output.accept(byName.get(name));
-                }
-                // The Dungeon Train flags: editor-only placeholders that roll into logo banners.
-                for (var flag : games.brennan.dungeontrain.block.flag.FlagPlaceholders.items()) {
-                    output.accept(flag.get());
                 }
             })
             .build()

@@ -1,0 +1,22 @@
+{
+  "id": "more-maze-trap-passenger-rooms",
+  "version": "0.1917.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "editor",
+    "train"
+  ],
+  "title": "More carriage rooms",
+  "summary": "New maze, trap and passenger rooms can now turn up on the train.",
+  "highlights": [
+    "Two new maze rooms",
+    "New trap rooms, so watch your step",
+    "A new passenger room and a new room full of columns"
+  ],
+  "pr": 2769,
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

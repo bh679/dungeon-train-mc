@@ -222,6 +222,23 @@
     "weight": 1,
     "name": "zombiepigmen"
   },
+  "pistonwall": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ]
+  },
   "portal": 0,
   "portal_short": 0,
   "prison_broken": {
