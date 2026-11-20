@@ -37501,6 +37501,72 @@
       "released": true,
       "released_in": "v0.1905.0",
       "released_at": "2026-11-19T13:16:47Z"
+    },
+    {
+      "id": "death-crash-playermob-floor",
+      "version": "0.1908.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Fixed a crash when you die",
+      "summary": "Dying no longer crashes the game. The modpack now ships the Interactive Player Mobs version the death screen needs, and Dungeon Train asks for it if yours is older.",
+      "highlights": [],
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1908.0",
+      "released_at": "2026-11-19T23:16:54Z"
+    },
+    {
+      "id": "natural-bed-message",
+      "version": "0.1906.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Clearer bed messages",
+      "summary": "Using a bed you placed, or one you moved, now tells you in chat that the train only lets you rest in a naturally spawning bed.",
+      "highlights": [],
+      "pr": 2756,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1908.0",
+      "released_at": "2026-11-19T23:16:54Z"
+    },
+    {
+      "id": "gift-fix",
+      "version": "0.1911.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Gift fix",
+      "summary": "Gifts for friends now arrive in full.",
+      "highlights": [],
+      "pr": 2759,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1911.0",
+      "released_at": "2026-11-20T00:00:50Z"
+    },
+    {
+      "id": "rest-stop-fix",
+      "version": "0.1910.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Rest stop fix",
+      "summary": "Rest stop fix.",
+      "highlights": [],
+      "pr": 2760,
+      "date": "2026-11-19",
+      "released": true,
+      "released_in": "v0.1911.0",
+      "released_at": "2026-11-20T00:00:50Z"
     }
   ]
 }

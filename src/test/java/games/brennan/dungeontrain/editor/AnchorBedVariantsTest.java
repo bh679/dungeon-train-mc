@@ -268,4 +268,28 @@ final class AnchorBedVariantsTest {
                 RotationApplier.apply(headEntry.state(), headEntry, footPos.relative(Direction.WEST), seed, 1, 0).getBlock());
         }
     }
+
+    // ---- bundled End rest stop ----
+
+    @Test
+    @DisplayName("The End rest stop's obelisk rolls its gems 0..6, so it doesn't always spawn empty")
+    void bundledObeliskRoomRollsGems() throws java.io.IOException {
+        String path = "/data/dungeontrain/contents/respawnoblisk.variants.json";
+        try (java.io.InputStream in = AnchorBedVariantsTest.class.getResourceAsStream(path)) {
+            assertNotNull(in, path);
+            com.google.gson.JsonObject variants = JsonParser.parseReader(
+                    new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))
+                .getAsJsonObject().getAsJsonObject("variants");
+            // The obelisk's bottom block in respawnoblisk.nbt; gems key on the bottom part.
+            com.google.gson.JsonArray row = variants.getAsJsonArray("3,0,2");
+            assertNotNull(row, "the obelisk's bottom cell needs a row, or its gems never roll");
+            assertTrue(row.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY);
+            for (com.google.gson.JsonElement el : row) {
+                com.google.gson.JsonObject s = el.getAsJsonObject();
+                assertEquals("betterend:respawn_obelisk[shape=bottom]", s.get("state").getAsString());
+                assertEquals(VariantCharges.range(0, VariantCharges.MAX_GEMS),
+                    VariantCharges.parse(s.get("charges").getAsString()));
+            }
+        }
+    }
 }
