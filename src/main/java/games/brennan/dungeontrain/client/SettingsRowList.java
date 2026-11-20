@@ -67,6 +67,8 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
     private static final int HIGHLIGHT_PAD = 2;
 
     private final Font font;
+    /** Counts this list's frames, so a tall widget's lines draw it once per frame ({@link TallWidgetEntry}). */
+    private long frame;
     @Nullable private Entry highlighted;
     private long highlightStartMs;
 
@@ -86,6 +88,24 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
     /** A row that is not a setting — a caption or a tip line — drawn at the full row width. */
     public void addWidget(AbstractWidget widget) {
         addEntry(new WidgetEntry(widget));
+    }
+
+    /**
+     * A widget {@code lines} rows tall — the Stream tab's preview — added as that many entries, since every
+     * entry here is one row high. The first of them on screen draws the widget at the group's top, so it
+     * scrolls with the list and the list clips it; each forwards clicks to it.
+     */
+    public void addTallWidget(AbstractWidget widget, int lines) {
+        TallGroup group = new TallGroup(widget, lines);
+        for (int i = 0; i < lines; i++) {
+            addEntry(new TallWidgetEntry(group, i));
+        }
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        this.frame++;
+        super.renderWidget(g, mouseX, mouseY, partialTick);
     }
 
     /** Drop every row — for a list refilled in place, like a search result. */
@@ -266,6 +286,54 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
         @Override
         public List<? extends NarratableEntry> narratables() {
             return List.of(control);
+        }
+    }
+
+    /** One tall widget shared by its {@link TallWidgetEntry} lines; {@code drawnFrame} keeps it to one draw a frame. */
+    private static final class TallGroup {
+        final AbstractWidget widget;
+        final int lines;
+        long drawnFrame = -1;
+
+        TallGroup(AbstractWidget widget, int lines) {
+            this.widget = widget;
+            this.lines = lines;
+        }
+    }
+
+    private final class TallWidgetEntry extends Entry {
+
+        private final TallGroup group;
+        private final int line;
+
+        TallWidgetEntry(TallGroup group, int line) {
+            this.group = group;
+            this.line = line;
+        }
+
+        @Override
+        public void render(GuiGraphics g, int index, int top, int left, int width, int height,
+                           int mouseX, int mouseY, boolean hovered, float partialTick) {
+            if (group.drawnFrame == SettingsRowList.this.frame) return;
+            group.drawnFrame = SettingsRowList.this.frame;
+            AbstractWidget widget = group.widget;
+            widget.setX(left);
+            widget.setY(top - line * ROW_H);
+            widget.setWidth(width);
+            widget.setHeight(group.lines * ROW_H - 4);
+            // A part scrolled under the header or footer must not answer the mouse.
+            boolean inList = isMouseOver(mouseX, mouseY);
+            widget.render(g, inList ? mouseX : -1, inList ? mouseY : -1, partialTick);
+        }
+
+        @Override
+        public List<? extends GuiEventListener> children() {
+            return List.of(group.widget);
+        }
+
+        @Override
+        public List<? extends NarratableEntry> narratables() {
+            return line == 0 ? List.of(group.widget) : List.of();
         }
     }
 

@@ -42,6 +42,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
     public static final ModConfigSpec.BooleanValue SAVE_BANDWIDTH;
+    public static final ModConfigSpec.EnumValue<PreviewPlacement> STREAM_PREVIEW_PLACEMENT;
     public static final ModConfigSpec.BooleanValue ADAPTIVE_QUALITY;
     public static final ModConfigSpec.IntValue LEARNED_UPLOAD_KBPS;
     public static final ModConfigSpec.IntValue SEGMENT_SECONDS;
@@ -56,6 +57,9 @@ public final class LiveFeedClientConfig {
 
     /** Which of the streamer's names viewers see above the hotbar. */
     public enum NameTag { MINECRAFT, DISCORD, NONE }
+
+    /** Where the Options Stream tab's viewer preview goes, in the row's cycle order. */
+    public enum PreviewPlacement { PINNED_BELOW, UNDER_LIST, ABOVE_LIST, OFF }
 
     /** What a TV worn on the head shows while two streams are live, when the TV itself remembers no stream. */
     public enum WornTvStreams { BOTH, STREAM_1, STREAM_2 }
@@ -155,6 +159,9 @@ public final class LiveFeedClientConfig {
         SAVE_BANDWIDTH = b
             .comment("Compress the stream harder on your own computer: a slower x264 preset at about half of bitrateKbps, for roughly the same picture with less upload. Costs CPU and so frame rate. Off by default; takes effect from your next stream.")
             .define("saveBandwidth", false);
+        STREAM_PREVIEW_PLACEMENT = b
+            .comment("Where the Options Stream tab shows its 'What viewers see' preview: PINNED_BELOW (fixed under the rows, which scroll), UNDER_LIST or ABOVE_LIST (inside the list, scrolling with it), or OFF (no preview, and no frame copies for it).")
+            .defineEnum("streamPreviewPlacement", PreviewPlacement.PINNED_BELOW);
         ADAPTIVE_QUALITY = b
             .comment("Lower the stream's bitrate while your upload can't keep up, and raise it again when it can, so viewers don't see it stall. Never goes above bitrateKbps. Off = always send bitrateKbps.")
             .define("adaptiveQuality", true);
@@ -260,6 +267,17 @@ public final class LiveFeedClientConfig {
 
     /** Whether the encoder trades CPU for upload (slower preset, lower bitrate). Off unless the player turns it on. */
     public static boolean saveBandwidth() { return loaded() && SAVE_BANDWIDTH.get(); }
+
+    /** Where the Options Stream tab shows its viewer preview. Pinned below by default. */
+    public static PreviewPlacement streamPreviewPlacement() {
+        return loaded() ? STREAM_PREVIEW_PLACEMENT.get() : PreviewPlacement.PINNED_BELOW;
+    }
+
+    public static void setStreamPreviewPlacement(PreviewPlacement value) {
+        if (!loaded() || STREAM_PREVIEW_PLACEMENT.get() == value) return;
+        STREAM_PREVIEW_PLACEMENT.set(value);
+        STREAM_PREVIEW_PLACEMENT.save();
+    }
 
     public static boolean adaptiveQuality() { return !loaded() || ADAPTIVE_QUALITY.get(); }
 
@@ -545,7 +563,7 @@ public final class LiveFeedClientConfig {
         return Math.max(0, Math.min(HEAD_VIEWER_SIZES.length - 1, index));
     }
 
-    static int nextSize(int index) {
+    public static int nextSize(int index) {
         return (Math.floorMod(index, HEAD_VIEWER_SIZES.length) + 1) % HEAD_VIEWER_SIZES.length;
     }
 
