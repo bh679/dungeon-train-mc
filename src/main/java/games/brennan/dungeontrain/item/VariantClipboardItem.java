@@ -319,6 +319,17 @@ public final class VariantClipboardItem extends Item {
         plot.setCopyScope(localPos, copyScope);
         plot.setSpan(localPos, span);
         if (lockId > 0) {
+            // Rot Lock / Rot Free belongs to the group, and a group that already exists keeps its
+            // own: extending a group with a clipboard copied before its Rot toggle was flipped must
+            // not quietly flip it back. Only a paste that starts the group brings the copied value.
+            boolean joinsExistingGroup = false;
+            boolean existingFree = false;
+            for (net.minecraft.core.BlockPos member : plot.positionsWithLockId(lockId)) {
+                if (member.equals(localPos)) continue;
+                joinsExistingGroup = true;
+                existingFree |= plot.rotationFreeAt(member);
+            }
+            boolean groupRotationFree = joinsExistingGroup ? existingFree : rotationFree;
             plot.setLockId(localPos, lockId);
             // Every cell in a lock group draws one index, so they must agree about how they roll:
             // a member that repeated while the rest varied would show a different block from its
@@ -327,10 +338,9 @@ public final class VariantClipboardItem extends Item {
             for (net.minecraft.core.BlockPos sibling : plot.positionsWithLockId(lockId)) {
                 if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, copyRoll);
             }
-            // Rot Lock / Rot Free is a group setting too: the pasted value wins and every member
-            // follows it, as the menu's Rot button sets the whole group at once.
+            // Every member agrees, as the menu's Rot button sets the whole group at once.
             for (net.minecraft.core.BlockPos member : plot.positionsWithLockId(lockId)) {
-                plot.setRotationFree(member, rotationFree);
+                plot.setRotationFree(member, groupRotationFree);
             }
         }
 

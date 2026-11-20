@@ -203,6 +203,8 @@ public final class BlockVariantMenuInputHandler {
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.ADD, variantId, local, -1, "", 0));
             case LOCK -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_LOCK_ID, variantId, local, -1, "", 0));
+            case ROT_LOCK -> DungeonTrainNet.sendToServer(
+                new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_ROTATION_FREE, variantId, local, -1, "", 0));
             case COPY_ROLL -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_COPY_ROLL, variantId, local, -1, "", 0));
             case COPY_SCOPE -> DungeonTrainNet.sendToServer(

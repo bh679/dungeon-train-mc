@@ -48,8 +48,21 @@ public record BlockVariantSyncPacket(
     byte copyScope,
     byte spanMode,
     boolean connectSupported,
-    boolean growthSupported
+    boolean growthSupported,
+    boolean rotationFree
 ) implements CustomPacketPayload {
+
+    /**
+     * Pre-Rot-Free shape: the cell's lock group shares one rotation, the default. The menu draws
+     * the Rot pill only for a cell in a lock group ({@code lockId > 0}).
+     */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope,
+                                  byte spanMode, boolean connectSupported, boolean growthSupported) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported, false);
+    }
 
     /**
      * Pre-growth shape: the plot does not grow columns at spawn, so the menu hides
@@ -371,6 +384,8 @@ public record BlockVariantSyncPacket(
         buf.writeBoolean(connectSupported);
         // Whether this plot's spawn path grows columns from the per-row growth.
         buf.writeBoolean(growthSupported);
+        // The cell's lock group rolls rotation per cell (Rot Free) rather than sharing one.
+        buf.writeBoolean(rotationFree);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -426,6 +441,7 @@ public record BlockVariantSyncPacket(
         byte spanMode = buf.readByte();
         boolean connectSupported = buf.readBoolean();
         boolean growthSupported = buf.readBoolean();
+        boolean rotationFree = buf.readBoolean();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -466,7 +482,8 @@ public record BlockVariantSyncPacket(
                 candles, pot, trapped, charges, bedColours, slime));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);
+            copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported,
+            rotationFree);
     }
 
     @Override

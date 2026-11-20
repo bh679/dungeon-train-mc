@@ -355,7 +355,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
-            plot.supportsConnectMode(), plot.supportsGrowth());
+            plot.supportsConnectMode(), plot.supportsGrowth(),
+            plot.lockIdAt(localPos) > 0 && plot.rotationFreeAt(localPos));
     }
 
     /**
@@ -408,6 +409,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_ROLL) {
             cycleCopyRoll(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.TOGGLE_ROTATION_FREE) {
+            toggleRotationFree(player, plot, localPos);
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
@@ -1192,6 +1197,32 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             case EXACT -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_exact");
             case VARY -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_vary");
         }, ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Toggle the cell's lock group between one shared rotation (Rot Lock, the default) and a
+     * rotation rolled per cell (Rot Free). Written to every cell of the group, so the group always
+     * agrees — the setting belongs to the group, the cell is only where it is stored. Ignored on an
+     * ungrouped cell, which already rolls by its own position; the menu draws no Rot pill there.
+     */
+    private static void toggleRotationFree(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId <= 0 || plot.statesAt(localPos) == null) return;
+        boolean next = !plot.rotationFreeAt(localPos);
+        for (BlockPos member : plot.positionsWithLockId(lockId)) {
+            plot.setRotationFree(member, next);
+        }
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu rotation-free save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
+        }
+        actionBar(player, Component.translatable(next
+            ? "chat.dungeontrain.editor_bar.variant_menu.rotation_free"
+            : "chat.dungeontrain.editor_bar.variant_menu.rotation_locked", lockId), ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
 

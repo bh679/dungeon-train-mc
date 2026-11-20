@@ -289,6 +289,12 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     tint = isHover ? 0xC0AAAAAA : 0x60777777;
                 }
+            } else if (cellKind == BlockVariantMenu.CellKind.ROT_LOCK) {
+                // Grey at the default (one rotation for the group), lit teal once the group rolls
+                // rotation per cell — the non-default state is the one worth seeing across the panel.
+                tint = BlockVariantMenu.rotationFree()
+                    ? (isHover ? 0xC066E0B8 : 0x8033AA88)
+                    : (isHover ? 0xC0AAAAAA : 0x60777777);
             } else if (cellKind == BlockVariantMenu.CellKind.COPY_ROLL) {
                 // Same treatment as Lock: lit when the cell overrides its room, grey when it is
                 // simply following it — which is the thing worth seeing from across the panel.
@@ -322,6 +328,8 @@ public final class BlockVariantMenuRenderer {
                 case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
                 // "Exact" is the word the room's own Copies setting uses for repeating one roll,
                 // so the cell says whether it is following that or breaking from it.
+                case ROT_LOCK -> MenuLang.t(BlockVariantMenu.rotationFree()
+                    ? "block_variant.rotation_free" : "block_variant.rotation_locked");
                 case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
                 case SPAN -> SpanPopupLayout.shortLabel(BlockVariantMenu.resolvedSpan());
