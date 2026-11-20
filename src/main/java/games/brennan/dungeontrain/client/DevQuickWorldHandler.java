@@ -539,7 +539,8 @@ public final class DevQuickWorldHandler {
      */
     private static void launchPerksTestWorld(Screen lastScreen) {
         if (!games.brennan.dungeontrain.client.perks.PerkTesterStatus.isTester()) return;
-        String name = nextWorldName("Perks Test");
+        // Timestamped like the other run worlds, so a nap may save it (and delete it): RunWorldNames.
+        String name = "Perks Test " + System.currentTimeMillis();
         LevelSettings settings = new LevelSettings(
                 name,
                 GameType.SURVIVAL,
