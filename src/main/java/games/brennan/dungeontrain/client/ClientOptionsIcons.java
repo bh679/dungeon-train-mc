@@ -118,7 +118,7 @@ final class ClientOptionsIcons {
             case HEAD_VIEWER_SIZE_STREAMING -> Icon.item(Items.TINTED_GLASS);
             // Section titles are drawn as captions; they have no icon.
             case STREAM_SECTION_BROADCAST, STREAM_SECTION_SOUND, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
-                 STREAM_SECTION_WATCHING -> throw new IllegalArgumentException(row + " is a heading");
+                 STREAM_SECTION_WATCHING, ACCOUNT_SECTION_OWN_DISCORD -> throw new IllegalArgumentException(row + " is a heading");
 
             case SCALE_ALL -> ACCESSIBILITY;
             case SCALE_WORLDSPACE -> Icon.item(Items.FILLED_MAP);
@@ -131,6 +131,8 @@ final class ClientOptionsIcons {
             case CREATIVE_MOD_BLOCKS_IN_SEARCH -> SEARCH;
 
             case DISCORD_STATUS -> DISCORD_LINK;
+            // Tributes are paid in emeralds.
+            case TRIBUTE_WEBHOOK -> Icon.item(Items.EMERALD);
 
             case DISCORD_ACCOUNT, TWITCH_ACCOUNT, PERFORMANCE_TIPS ->
                     throw new IllegalArgumentException(row + " is expanded into several rows and has no icon of its own");

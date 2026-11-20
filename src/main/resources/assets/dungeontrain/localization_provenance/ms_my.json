@@ -9,7 +9,9 @@
   },
   "source_changed": {
     "dungeontrain": [
-      "gui.dungeontrain.editor_screen.sheet.oversized_blocks"
+      "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
+      "gui.dungeontrain.options.tribute_webhook.tip",
+      "gui.dungeontrain.tribute_webhook.line2"
     ],
     "adventureitemnames": [],
     "playermob": [],
