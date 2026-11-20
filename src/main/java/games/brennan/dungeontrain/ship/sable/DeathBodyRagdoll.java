@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.ship.sable;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import dev.ryanhcode.sable.Sable;
+import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.compat.RagdollBridge;
 import games.brennan.dungeontrain.event.RecentExplosions;
@@ -90,9 +92,21 @@ public final class DeathBodyRagdoll {
     /**
      * The throw what killed {@code player} gives the body (blocks per second): away from a blast,
      * along a projectile's flight, nothing for any other death. A blast is checked first, since a
-     * fireball or a firework is both.
+     * fireball or a firework is both. On a carriage the part across the track is cut short
+     * ({@link DeathKnockback#keepAboard}) and the carriage's own velocity is added, so the body
+     * stays on the train.
      */
     static Vec3 throwFor(ServerPlayer player, DamageSource source) {
+        Vec3 thrown = rawThrow(player, source);
+        if (thrown.lengthSqr() == 0) return thrown;
+        SubLevel carriage = Sable.HELPER.getTrackingSubLevel(player);
+        if (carriage == null || carriage.isRemoved()) return thrown;
+        // On a carriage: keep the body aboard, and give it the train's own speed so a body in the air
+        // keeps pace instead of the train sliding out from under it.
+        return DeathKnockback.keepAboard(thrown, carriageAxis(carriage)).add(carriageVelocity(carriage));
+    }
+
+    private static Vec3 rawThrow(ServerPlayer player, DamageSource source) {
         Vec3 body = player.position().add(0, player.getBbHeight() * 0.5, 0);
         if (source.is(DamageTypeTags.IS_EXPLOSION)) {
             RecentExplosions.Blast blast = RecentExplosions.nearest(player.level().dimension(), body,
@@ -107,6 +121,22 @@ public final class DeathBodyRagdoll {
                 shooter == null ? projectile.position() : shooter.position(), body);
         }
         return Vec3.ZERO;
+    }
+
+    /** The world direction of the track: the carriage's own X axis. */
+    private static Vec3 carriageAxis(SubLevel carriage) {
+        Vector3d origin = carriage.logicalPose().transformPosition(new Vector3d(0, 0, 0));
+        Vector3d ahead = carriage.logicalPose().transformPosition(new Vector3d(1, 0, 0));
+        return new Vec3(ahead.x - origin.x, ahead.y - origin.y, ahead.z - origin.z);
+    }
+
+    /** The carriage's linear velocity in the world (blocks per second); zero when its physics can't say. */
+    private static Vec3 carriageVelocity(SubLevel carriage) {
+        if (!(carriage instanceof ServerSubLevel server)) return Vec3.ZERO;
+        RigidBodyHandle handle = RigidBodyHandle.of(server);
+        if (handle == null || !handle.isValid()) return Vec3.ZERO;
+        Vector3d v = handle.getLinearVelocity(new Vector3d());
+        return new Vec3(v.x, v.y, v.z);
     }
 
     /** {@code pos} mapped out of the carriage plot {@code player} rides into the world; unchanged off a carriage. */

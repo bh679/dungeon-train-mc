@@ -33,6 +33,13 @@ public final class DeathKnockback {
     /** Radius assumed when the blast itself was not seen (a modded explosion with no event). */
     public static final float DEFAULT_RADIUS = 4.0f;
 
+    /**
+     * Fastest a body riding a carriage is thrown across the track (blocks per second). Along the
+     * track the carriage's walls and ends catch it; across an open flatbed nothing does, and a body
+     * thrown off the side is left behind by the train, out of the death camera's reach.
+     */
+    static final double ON_TRAIN_ACROSS_MAX = 1.5;
+
     private static final double EPSILON = 1.0e-6;
 
     private DeathKnockback() {}
@@ -72,6 +79,24 @@ public final class DeathKnockback {
         Vec3 dir = distance > EPSILON ? offset.scale(1.0 / distance) : new Vec3(0, 1, 0);
         double speed = Math.min(BLAST_SPEED * impact * powerFactor(radius), BLAST_MAX);
         return cap(dir.scale(speed).add(0, BLAST_LIFT * impact, 0), BLAST_MAX);
+    }
+
+    /**
+     * {@code thrown} with its part across the track (horizontal, square to {@code trackAxis}) cut to
+     * {@link #ON_TRAIN_ACROSS_MAX}; the part along the track and the lift are kept. A zero or vertical
+     * axis leaves the throw as it is.
+     */
+    public static Vec3 keepAboard(Vec3 thrown, Vec3 trackAxis) {
+        Vec3 axis = new Vec3(trackAxis.x, 0, trackAxis.z);
+        if (axis.lengthSqr() < EPSILON) return thrown;
+        axis = axis.normalize();
+        Vec3 horizontal = new Vec3(thrown.x, 0, thrown.z);
+        Vec3 along = axis.scale(horizontal.dot(axis));
+        Vec3 across = horizontal.subtract(along);
+        double acrossSpeed = across.length();
+        if (acrossSpeed <= ON_TRAIN_ACROSS_MAX) return thrown;
+        Vec3 cut = across.scale(ON_TRAIN_ACROSS_MAX / acrossSpeed);
+        return new Vec3(along.x + cut.x, thrown.y, along.z + cut.z);
     }
 
     /** {@code v} shortened to at most {@code max} long, lift included. */

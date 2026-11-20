@@ -94,4 +94,32 @@ class DeathKnockbackTest {
         Vec3 thrown = DeathKnockback.explosion(BODY.add(-0.5, 0, 0), BODY, 50f);
         assertEquals(DeathKnockback.BLAST_MAX, thrown.length(), EPS);
     }
+
+    @Test
+    void onATrainTheThrowAcrossTheTrackIsCut() {
+        Vec3 thrown = DeathKnockback.keepAboard(new Vec3(4, 2, 10), new Vec3(1, 0, 0));
+        assertEquals(4, thrown.x, EPS);
+        assertEquals(2, thrown.y, EPS);
+        assertEquals(DeathKnockback.ON_TRAIN_ACROSS_MAX, thrown.z, EPS);
+    }
+
+    @Test
+    void onATrainTheThrowAlongTheTrackIsKept() {
+        Vec3 along = new Vec3(-10, 3, 1);
+        assertEquals(along, DeathKnockback.keepAboard(along, new Vec3(-1, 0, 0)));
+    }
+
+    @Test
+    void keepAboardFollowsATurnedCarriage() {
+        // Track running along Z: the X part is the one across it.
+        Vec3 thrown = DeathKnockback.keepAboard(new Vec3(-8, 0, 5), new Vec3(0, 0.1, 2));
+        assertEquals(-DeathKnockback.ON_TRAIN_ACROSS_MAX, thrown.x, EPS);
+        assertEquals(5, thrown.z, EPS);
+    }
+
+    @Test
+    void keepAboardIgnoresAnAxisWithNoHeading() {
+        Vec3 thrown = new Vec3(5, 1, 5);
+        assertEquals(thrown, DeathKnockback.keepAboard(thrown, new Vec3(0, 1, 0)));
+    }
 }
