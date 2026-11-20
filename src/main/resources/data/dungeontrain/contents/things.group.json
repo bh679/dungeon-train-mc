@@ -17,6 +17,10 @@
     {
       "id": "tntfull",
       "weight": 1
+    },
+    {
+      "id": "collums",
+      "weight": 4
     }
   ]
 }
