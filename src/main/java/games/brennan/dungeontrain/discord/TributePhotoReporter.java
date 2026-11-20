@@ -82,18 +82,41 @@ public final class TributePhotoReporter {
         }
     }
 
+    /**
+     * Whether {@code tributer}'s Tributes also go to their own Discord ({@link TributeWebhookMirror}). Kid
+     * mode never posts there, the same as the Options row it is set from.
+     */
+    public static boolean hasPersonalWebhook(ServerPlayer tributer) {
+        return tributer != null && TributeWebhookMirror.has(tributer.getUUID()) && !ContentModeMirror.isKid(tributer);
+    }
+
+    /**
+     * Post a tributed photo to the tributer's own Discord webhook, if they set one. Every Tribute goes,
+     * whatever the public feed's rules (clean run, personal best, Public posts): it is their own channel.
+     * Server thread; the upload runs off-thread and never disturbs the Tribute.
+     */
+    public static void postPersonal(ServerPlayer tributer, String title, String description, byte[] png) {
+        if (png == null || png.length == 0 || !hasPersonalWebhook(tributer)) return;
+        try {
+            TributeWebhookMirror.get(tributer.getUUID()).ifPresent(url -> TributeWebhook.post(url,
+                    tributer.getGameProfile().getName(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png));
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] personal tribute webhook post failed: {}", t.getClass().getSimpleName());
+        }
+    }
+
     /** {@code "📸 Steve tributed their photo. Was it worth it?"} */
-    static String ownTitle(String tributer) {
+    public static String ownTitle(String tributer) {
         return "📸 " + DiscordMarkdown.escape(tributer) + " tributed their photo. Was it worth it?";
     }
 
     /** {@code "Tribute #2 this life · 9 emeralds"}. */
-    static String ownDescription(int tributeNumber, int cost) {
+    public static String ownDescription(int tributeNumber, int cost) {
         return "Tribute #" + Math.max(1, tributeNumber) + " this life · " + cost + (cost == 1 ? " emerald" : " emeralds");
     }
 
     /** {@code "📸 Steve paid tribute to a photo by Alex"}; a photo with no known photographer says so plainly. */
-    static String title(String tributer, String photographer) {
+    public static String title(String tributer, String photographer) {
         boolean known = photographer != null && !photographer.isBlank();
         boolean own = known && photographer.equals(tributer);
         String who = DiscordMarkdown.escape(tributer);
@@ -107,7 +130,7 @@ public final class TributePhotoReporter {
      * times this photo has been kept alive and what it cost, then how many hands it has passed through
      * and how close it came to burning out for good.
      */
-    static String description(int tributeNumber, int cost, int hands, int viewsLeft) {
+    public static String description(int tributeNumber, int cost, int hands, int viewsLeft) {
         int held = Math.max(1, hands);
         int left = Math.max(0, viewsLeft - 1);   // the tributer's own view is spent
         String fading = left == 0 ? "was on its last view"

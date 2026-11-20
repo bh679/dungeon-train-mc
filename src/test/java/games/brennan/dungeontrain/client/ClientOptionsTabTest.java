@@ -123,11 +123,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: eighty-four rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: eighty-six rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(84, rows.size());
+        assertEquals(86, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -137,6 +137,16 @@ final class ClientOptionsTabTest {
         assertTrue(rows.contains(ClientOptionsTab.Row.DISCORD_ACCOUNT));
         // So is the Twitch block (the screen hides it in Kid mode at draw time, not here).
         assertTrue(rows.contains(ClientOptionsTab.Row.TWITCH_ACCOUNT));
+    }
+
+    @Test
+    @DisplayName("The Tribute webhook closes the Account tab, under its own heading")
+    void tributeWebhookClosesAccount() {
+        List<ClientOptionsTab.Row> account = ClientOptionsTab.rowsFor(ClientOptionsTab.ACCOUNT, false, false, true);
+        assertEquals(List.of(ClientOptionsTab.Row.DISCORD_ACCOUNT, ClientOptionsTab.Row.DISCORD_STATUS,
+                ClientOptionsTab.Row.TWITCH_ACCOUNT, ClientOptionsTab.Row.ACCOUNT_SECTION_OWN_DISCORD,
+                ClientOptionsTab.Row.TRIBUTE_WEBHOOK), account);
+        assertTrue(ClientOptionsTab.isHeading(ClientOptionsTab.Row.ACCOUNT_SECTION_OWN_DISCORD));
     }
 
     @Test
@@ -252,7 +262,7 @@ final class ClientOptionsTabTest {
 
         // 85 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(89, rows.size());
+        assertEquals(91, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
