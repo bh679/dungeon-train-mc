@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Sapo",
+  "story": "Sapo gusta escribes",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "ola. yo es sapo\nmágico uno me dio regalo.\nmi primer escribir.\n\n\nregalo de voz\nde saber escribes\n..\nsapo gusta escribes"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "ola, sapo otra vez\ntren largo\nsapo dejó vagón estanque\n\n\nespera encontra mojado pronto\ntren seco"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "ola, es sapo\nquiero encontra hombre mágico\ndecir gracias\npor mi piel\nsapo no necesita mojado\n\n\nmi piel hace propio mojado\nlargo tren seco bien\nsapo sigue mojado"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "sapo hambre\ntren abejas son muy grande\narañas más grande que sapo\nyo no gusta eso\n\n\narañas miedo"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "próximo vagón es arañas\nmuchas arañas\n\n\nsapo es valiente\nmiedo\n...\nvaliente"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "ola, sapo aquí\nyo tiene nuevo amijo\n\n\naraña no tan miedo\nél gusta sapo\nno come\nser amijos\nnombre. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta siete",
+      "variants": [
+        "tuk y sapo\nvan de paso\ntren muy largo\ncanto canto\nhasta el fin\namijos sin fin"
+      ]
+    }
+  ]
+}

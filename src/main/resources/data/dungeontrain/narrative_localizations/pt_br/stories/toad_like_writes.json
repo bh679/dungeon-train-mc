@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Sapo",
+  "story": "Sapo gosta escritas",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta Um",
+      "variants": [
+        "oi. eu é sapo\nmágico um me deu presente.\nminha primeira escrever.\n\n\npresente de voz\nde saber escritas\n..\nsapo gosta escritas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta Dois",
+      "variants": [
+        "oi, sapo de novo\ntrem comprido\nsapo deixou vagão lagoa\n\n\nespera acha molhado logo\ntrem seco"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta Três",
+      "variants": [
+        "oi, é sapo\nquero acha homem mágico\ndizer obrigado\npela minha pele\nsapo não precisa molhado\n\n\nminha pele faz próprio molhado\nlongo trem seco tá bom\nsapo ainda molhado"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta Quatro",
+      "variants": [
+        "sapo fome\ntrem abelhas são muito grande\naranhas mais grande que sapo\neu não gosta disso\n\n\naranhas medo"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta Cinco",
+      "variants": [
+        "próximo vagão é aranhas\nmuitas aranhas\n\n\nsapo é corajoso\nmedo\n...\ncorajoso"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta Seis",
+      "variants": [
+        "oi, sapo aqui\neu tem novo amigu\n\n\naranha não tão medo\nele gosta sapo\nnão come\nser amigus\nnome. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta Sete",
+      "variants": [
+        "tuk e sapo\nlado a lado\ntrem comprido\ncanta cantiga\naté o fim\namigus sim"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Toad",
+  "story": "Toad Like Writes",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "helo. i is toad\nmagic one gave me gift.\nmy first writing.\n\n\ngift of voice\nof know writes\n..\ntoad like writes"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Letter Two",
+      "variants": [
+        "helo, toad again\ntrain long\ntoad left pond car\n\n\nhope find wet soon\ntrain dry"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Letter Three",
+      "variants": [
+        "helo, is toad\nwant find magic man\ntell thank\nfor my skin\ntoad not need wet\n\n\nmy skin make own wet\nlong dry train ok\ntoad still wet"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Letter Four",
+      "variants": [
+        "toad hungry\ntrain bees are too big\nspiders more big then toad\ni not like that\n\n\nspiders scary"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Letter Five",
+      "variants": [
+        "next car is spiders\nmany spiders\n\n\ntoad is brave\nscared\n...\nbrave"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Letter Six",
+      "variants": [
+        "helo, toad here\ni has new frend\n\n\nspider no so scary\nhim like toad\nno eats\nbe frens\nname. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Letter Seven",
+      "variants": [
+        "tuk n toad\non the road\ntrain long\nsing a song\ntil the end\nwe befrend"
+      ]
+    }
+  ]
+}

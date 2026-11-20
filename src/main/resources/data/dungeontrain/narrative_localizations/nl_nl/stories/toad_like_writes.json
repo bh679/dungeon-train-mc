@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Pad",
+  "story": "Pad houd van schrijfs",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief één",
+      "variants": [
+        "halo. ik is pad\nmagie een gaf mij kado.\nmijn eerst schrijven.\n\n\nkado van stem\nvan weten schrijfs\n..\npad houd van schrijfs"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief twee",
+      "variants": [
+        "halo, pad weer\ntrein lang\npad weg van vijver wagon\n\n\nhoop vind nat snel\ntrein droog"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drie",
+      "variants": [
+        "halo, is pad\nwil vind tover man\nzeg dank\nvoor mijn huid\npad niet nodig nat\n\n\nmijn huid maak eigen nat\nlang droog trein ok\npad nog steeds nat"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "pad honger\ntrein bijen zijn te groot\nspinnen meer groot dan pad\nik niet leuk dat\n\n\nspinnen eng"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief vijf",
+      "variants": [
+        "volgend wagon is spinnen\nveel spinnen\n\n\npad is dapper\nbang\n...\ndapper"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief zes",
+      "variants": [
+        "halo, pad hier\nik heb nieuw vrient\n\n\nspin niet zo eng\nhem vind pad leuk\nniet eet\nzijn vrienten\nnaam. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Brief zeven",
+      "variants": [
+        "tuk en pad\nop het pad\ntrein lang\nzing gezang\ntot het end\nwij zijn vrient"
+      ]
+    }
+  ]
+}

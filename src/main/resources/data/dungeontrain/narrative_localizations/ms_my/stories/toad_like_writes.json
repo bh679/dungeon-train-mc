@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Katak",
+  "story": "Katak suka tulis-tulis",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Pertama",
+      "variants": [
+        "helo. saya adalah katak\norang ajaib bagi saya hadiah.\ntulisan pertama saya.\n\n\nhadiah suara\nhadiah tahu tulis\n..\nkatak suka tulis-tulis"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Kedua",
+      "variants": [
+        "helo, katak lagi\nkereta api panjang\nkatak tinggal gerabak kolam\n\n\nharap jumpa basah cepat\nkereta api kering"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Ketiga",
+      "variants": [
+        "helo, ini katak\nmahu cari orang ajaib\ncakap terima kasih\nuntuk kulit saya\nkatak tak perlu basah\n\n\nkulit saya buat basah sendiri\nkereta api kering lama ok\nkatak masih basah"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Keempat",
+      "variants": [
+        "katak lapar\nkereta api lebah terlalu besar\nlabah-labah lebih besar dari katak\nsaya tak suka itu\n\n\nlabah-labah takut"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Kelima",
+      "variants": [
+        "gerabak depan adalah labah-labah\nbanyak labah-labah\n\n\nkatak berani\ntakut\n...\nberani"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Surat Keenam",
+      "variants": [
+        "helo, katak sini\nsaya ada kawen baru\n\n\nlabah-labah tak begitu takut\ndia suka katak\ntak makan\njadi kawen\nnama. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Surat Ketujuh",
+      "variants": [
+        "tuk dan katak\njalan tak penat\nkereta api panjang\nnyanyi riang\nsampai hujung\nkawen sentiasa"
+      ]
+    }
+  ]
+}

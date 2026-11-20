@@ -5409,7 +5409,8 @@
     "discordpresence": []
   },
   "books": [
-    "stories/the_querys_and_life_of_fourteen"
+    "stories/the_querys_and_life_of_fourteen",
+    "stories/toad_like_writes"
   ],
   "books_source_changed": [
     "death_lore/default",

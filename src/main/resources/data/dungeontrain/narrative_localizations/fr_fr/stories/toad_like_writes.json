@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Crapaud",
+  "story": "Crapaud aime écrits",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "bonjur. je est crapaud\nmagique un m'a donné cadeau.\nmon premier écrire.\n\n\ncadeau de voix\nde savoir écrits\n..\ncrapaud aime écrits"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "bonjur, crapaud encore\ntrain long\ncrapaud quitté wagon mare\n\n\nespère trouve mouillé bientôt\ntrain sec"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "bonjur, est crapaud\nveux trouve homme magique\ndire merci\npour ma peau\ncrapaud pas besoin mouillé\n\n\nma peau fait propre mouillé\nlong train sec ok\ncrapaud toujours mouillé"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "crapaud faim\ntrain abeilles sont trop gros\naraignées plus gros que crapaud\nje pas aime ça\n\n\naraignées peur"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "prochain wagon est araignées\nbeaucoup araignées\n\n\ncrapaud est brave\npeur\n...\nbrave"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "bonjur, crapaud ici\nj'ai nouveau ammi\n\n\naraignée pas si peur\nlui aime crapaud\npas mange\nêtre ammis\nnom. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettre sept",
+      "variants": [
+        "tuk n crapaud\nvont au trot\ntrain long\nchante chanson\njusqu'à la fin\non est copain"
+      ]
+    }
+  ]
+}
