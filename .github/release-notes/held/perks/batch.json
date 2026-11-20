@@ -1,6 +1,6 @@
 {
   "batch": "perks",
-  "bumps": 22,
+  "bumps": 23,
   "prs": [
     2299,
     2300,
@@ -23,7 +23,8 @@
     2517,
     2572,
     2695,
-    2776
+    2776,
+    2778
   ],
   "entries": [
     "cosmic-apples",
@@ -47,6 +48,7 @@
     "trader-perks-reduced-reduction-restock",
     "tribute-room-bigger-tv",
     "tribute-rooms",
+    "tribute-tv-button",
     "unlock-tab-before-perk-full"
   ]
 }
