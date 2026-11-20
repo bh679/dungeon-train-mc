@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+    "13,2,4": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "9,2,2": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "15,3,1": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "13,2,1": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "4,4,3": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "5,4,4": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "16,2,4": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "24,2,0": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "23,2,4": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "22,3,3": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "21,3,1": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "18,2,0": {
+      "fillMin": 1,
+      "fillMax": 7,
+      "entries": [
+        { "id": "minecraft:brown_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_mushroom", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:crimson_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:warped_fungus", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    }
+  },
+  "links": {
+    "10,0,4": "mushrooms",
+    "5,1,3": "trial_vault"
+  }
+}

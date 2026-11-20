@@ -16,6 +16,7 @@
   },
   "books": 11,
   "caggedzombs2": 1,
+  "camp": 2,
   "cargocontents": 15,
   "cows": 15,
   "craft": 7,
@@ -88,7 +89,7 @@
     "name": "End"
   },
   "enemies_group": {
-    "weight": 20,
+    "weight": 21,
     "minLevel": 1,
     "optIn": true
   },
