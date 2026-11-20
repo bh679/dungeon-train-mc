@@ -51,6 +51,7 @@ public final class TributeRoomRegistry {
             TributeRoomHeads.dress(level, origin, size, owner, name);
             games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(level, room);
         }
+        TributeTvButton.place(level, room);
     }
 
     public static void onStructureGone(int pairKey) {

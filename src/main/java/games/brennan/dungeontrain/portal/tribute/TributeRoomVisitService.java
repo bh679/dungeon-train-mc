@@ -162,6 +162,7 @@ public final class TributeRoomVisitService {
         TributeRoomHeads.dress(overworld, roomOrigin, roomSize, blob.owner(), blob.ownerName());
         TributeRoomFloor.lay(overworld, roomOrigin, roomSize);
         games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(overworld, room);
+        TributeTvButton.place(overworld, room);
         BoundingBox window = TributeRoomCorridors.window(room, tubes);
 
         List<BlockPos> screen = new ArrayList<>();

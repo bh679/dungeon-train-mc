@@ -115,6 +115,14 @@ public final class TributeTvShowcase {
         return true;
     }
 
+    /** The button under the TV pressed: the recap's next page, as Next Screen. {@code tv} is the TV block above it. */
+    public static boolean pressNext(BlockPos tv) {
+        Entry e = at(tv);
+        if (e == null) return false;
+        e.recap().tvAdvance();
+        return true;
+    }
+
     public static boolean onTvScrolled(double dx, double dy) {
         Minecraft mc = Minecraft.getInstance();
         if (!(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)) return false;

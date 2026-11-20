@@ -316,6 +316,23 @@ public final class TributeTvVisit {
     }
 
     /**
+     * The button under the TV ({@code TributeTvButton}) pressed: Next Screen on whatever the TV shows —
+     * the perks menu's Next Screen ({@code PerksScreen#onClose}), or the recap's next page.
+     * {@code tv} is the TV block above the button; {@code false} when it is not this visit's TV.
+     */
+    public static boolean pressNext(BlockPos tv) {
+        if (phase != Phase.WATCHING || !showsOn(tv) || texture == null) return false;
+        if (recapScreen != null) {
+            recapScreen.tvAdvance();
+            return true;
+        }
+        Screen page = texture.screen();
+        if (page == null) return false;
+        page.onClose();
+        return true;
+    }
+
+    /**
      * Next Screen pressed on the perks menu while it shows on the TV: the TV switches to the recap.
      * {@code false} when {@code perks} is not the menu this visit is showing, so the menu closes as usual.
      */
