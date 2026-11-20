@@ -1,0 +1,16 @@
+{
+  "id": "totem-tooltips-name-level",
+  "version": "0.1914.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Totem tooltips show their level",
+  "summary": "The Totem of Rage and Totem of Generosity tooltips now show the level and timer you will get for the stack you are holding, and the level they leave you at after they save you.",
+  "highlights": [],
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
