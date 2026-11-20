@@ -62,6 +62,8 @@ public final class ChunkFramePlot implements BlockVariantPlot {
     @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
     @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
     @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
+    @Override public boolean rotationFreeAt(BlockPos l) { return sidecar.rotationFreeAt(l); }
+    @Override public void setRotationFree(BlockPos l, boolean free) { sidecar.setRotationFree(l, free); }
     @Override public Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
     @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
     @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }

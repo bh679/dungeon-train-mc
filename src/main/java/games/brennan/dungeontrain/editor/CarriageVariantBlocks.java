@@ -171,6 +171,16 @@ public final class CarriageVariantBlocks {
      */
     static final String SPAN_KEY = "span";
 
+    /**
+     * Cell-level {@code "rotation": "free"}: a lock-group cell that rolls its own facing and flip
+     * instead of the group's shared one ({@link VariantDoc#rotationLockIdAt}). Absent = locked, the
+     * default (additive, no schema bump). Not a candidate's own {@code "rotation"} inside {@code states}.
+     */
+    static final String ROTATION_KEY = "rotation";
+
+    /** The one value {@link #ROTATION_KEY} is written with. */
+    static final String ROTATION_FREE = "free";
+
     static final String SUBDIR = "templates";
     static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
@@ -673,12 +683,20 @@ public final class CarriageVariantBlocks {
      * cell authored before v10.
      */
     public record ParsedCell(List<VariantState> states, int lockId, VariantCopyRoll roll,
-                             VariantCopyScope scope, VariantSpan span) {
+                             VariantCopyScope scope, VariantSpan span, boolean rotationFree) {
 
         public ParsedCell {
             if (roll == null) roll = VariantCopyRoll.DEFAULT;
             if (scope == null) scope = VariantCopyScope.BOTH;
             if (span == null) span = VariantSpan.NONE;
+            // Free rotation is a lock-group setting; an ungrouped cell has nothing to free.
+            if (lockId <= 0) rotationFree = false;
+        }
+
+        /** Five-arg form for callers that predate the lock group's free rotation. */
+        public ParsedCell(List<VariantState> states, int lockId, VariantCopyRoll roll,
+                          VariantCopyScope scope, VariantSpan span) {
+            this(states, lockId, roll, scope, span, false);
         }
 
         /** Four-arg form for callers that predate the per-cell {@link VariantSpan}. */
@@ -720,6 +738,7 @@ public final class CarriageVariantBlocks {
         VariantCopyRoll roll = VariantCopyRoll.DEFAULT;
         VariantCopyScope scope = VariantCopyScope.BOTH;
         VariantSpan span = VariantSpan.NONE;
+        boolean rotationFree = false;
         if (value.isJsonArray()) {
             arr = value.getAsJsonArray();
         } else if (value.isJsonObject()) {
@@ -752,6 +771,9 @@ public final class CarriageVariantBlocks {
                 scope = VariantCopyScope.parse(cellObj.get(SCOPE_KEY).getAsString());
             }
             span = parseSpan(cellObj);
+            rotationFree = cellObj.has(ROTATION_KEY) && cellObj.get(ROTATION_KEY).isJsonPrimitive()
+                && cellObj.get(ROTATION_KEY).getAsJsonPrimitive().isString()
+                && ROTATION_FREE.equals(cellObj.get(ROTATION_KEY).getAsString());
         } else {
             LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
                 contextId, contextPos);
@@ -762,7 +784,7 @@ public final class CarriageVariantBlocks {
             VariantState parsed = parseVariantElement(el, blocks, contextId, contextPos);
             if (parsed != null) states.add(parsed);
         }
-        return new ParsedCell(states, lockId, roll, scope, span);
+        return new ParsedCell(states, lockId, roll, scope, span, rotationFree);
     }
 
     /** The cell object's {@link #SPAN_KEY}, or {@link VariantSpan#NONE} when absent / malformed. */
@@ -814,12 +836,25 @@ public final class CarriageVariantBlocks {
      */
     public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
                                       VariantCopyRoll roll, VariantCopyScope scope, VariantSpan span) {
+        appendCellJson(sb, states, lockId, roll, scope, span, false);
+    }
+
+    /**
+     * The full cell writer plus the lock group's free rotation ({@link #ROTATION_KEY}). Written
+     * only on a cell in a lock group, so it never forces the object form on its own.
+     */
+    public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
+                                      VariantCopyRoll roll, VariantCopyScope scope, VariantSpan span,
+                                      boolean rotationFree) {
         if (roll == null) roll = VariantCopyRoll.DEFAULT;
         if (scope == null) scope = VariantCopyScope.BOTH;
         if (span == null) span = VariantSpan.NONE;
         if (lockId > 0 || !roll.isDefault() || !scope.isDefault() || !span.isDefault()) {
             sb.append("{ ");
             if (lockId > 0) sb.append("\"lockId\": ").append(lockId).append(", ");
+            if (lockId > 0 && rotationFree) {
+                sb.append('"').append(ROTATION_KEY).append("\": \"").append(ROTATION_FREE).append("\", ");
+            }
             if (!roll.isDefault()) {
                 sb.append('"').append(ROLL_KEY).append("\": \"").append(roll.id()).append("\", ");
             }

@@ -181,6 +181,8 @@ public final class WorkbenchVariantPlot implements BlockVariantPlot {
     @Override public int nextFreeLockId() { return doc().nextFreeLockId(); }
     @Override public VariantSpan spanAt(BlockPos localPos) { return doc().spanAt(localPos); }
     @Override public void setSpan(BlockPos localPos, VariantSpan span) { doc().setSpan(localPos, span); }
+    @Override public boolean rotationFreeAt(BlockPos localPos) { return doc().rotationFreeAt(localPos); }
+    @Override public void setRotationFree(BlockPos localPos, boolean free) { doc().setRotationFree(localPos, free); }
     @Override public VariantCopyRoll copyRollAt(BlockPos localPos) { return doc().copyRollAt(localPos); }
     @Override public void setCopyRoll(BlockPos localPos, VariantCopyRoll roll) { doc().setCopyRoll(localPos, roll); }
     @Override public VariantCopyScope copyScopeAt(BlockPos localPos) { return doc().copyScopeAt(localPos); }

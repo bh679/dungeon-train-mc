@@ -77,6 +77,7 @@ final class PortalRoomResizeSlabs {
             // growing the room back returns cells that have forgotten what they were set to.
             slabSidecar.setCopyRoll(local, sidecar.copyRollAt(e.getKey()));
             slabSidecar.setCopyScope(local, sidecar.copyScopeAt(e.getKey()));
+            if (e.getValue() > 0) slabSidecar.setRotationFree(local, sidecar.rotationFreeAt(e.getKey()));
             sidecar.remove(e.getKey());
             cells++;
         }
@@ -158,6 +159,7 @@ final class PortalRoomResizeSlabs {
             if (lock > 0) sidecar.setLockId(target, lock);
             sidecar.setCopyRoll(target, slabSidecar.copyRollAt(e.localPos()));
             sidecar.setCopyScope(target, slabSidecar.copyScopeAt(e.localPos()));
+            if (lock > 0) sidecar.setRotationFree(target, slabSidecar.rotationFreeAt(e.localPos()));
         }
 
         if (!slab.contentsJson().isEmpty()) {
@@ -195,22 +197,26 @@ final class PortalRoomResizeSlabs {
         Map<BlockPos, Integer> movedLocks = new LinkedHashMap<>();
         Map<BlockPos, VariantCopyRoll> movedRolls = new LinkedHashMap<>();
         Map<BlockPos, VariantCopyScope> movedScopes = new LinkedHashMap<>();
+        java.util.Set<BlockPos> movedFree = new java.util.LinkedHashSet<>();
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             BlockPos target = e.localPos().offset(shift);
             int lock = sidecar.lockIdAt(e.localPos());
             VariantCopyRoll roll = sidecar.copyRollAt(e.localPos());
             VariantCopyScope scope = sidecar.copyScopeAt(e.localPos());
+            boolean free = sidecar.rotationFreeAt(e.localPos());
             sidecar.remove(e.localPos());
             if (!inBounds(target, sizeAfter)) continue;
             moved.put(target, e.states());
             if (lock > 0) movedLocks.put(target, lock);
             if (!roll.isDefault()) movedRolls.put(target, roll);
             if (!scope.isDefault()) movedScopes.put(target, scope);
+            if (lock > 0 && free) movedFree.add(target);
         }
         moved.forEach(sidecar::put);
         movedLocks.forEach(sidecar::setLockId);
         movedRolls.forEach(sidecar::setCopyRoll);
         movedScopes.forEach(sidecar::setCopyScope);
+        movedFree.forEach(p -> sidecar.setRotationFree(p, true));
 
         ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey(name));
         Map<BlockPos, String> movedLinks = new LinkedHashMap<>();

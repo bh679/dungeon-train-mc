@@ -2113,7 +2113,7 @@ public final class PortalCarriageBuilder {
                     for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
                             worldSeed, cellIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
                                 games.brennan.dungeontrain.train.StagePlacementScope.resolve(v.state()), v,
-                                local, worldSeed, rollIndex, lockId))) {
+                                local, worldSeed, rollIndex, lockId, sidecar.rotationLockIdAt(local)))) {
                         BlockPos wWorld = roomOrigin.offset(w.localPos());
                         if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
                         if (w.isAir()) {
@@ -2154,7 +2154,7 @@ public final class PortalCarriageBuilder {
                 // frame, never the difficulty one — pairKey stays that, see the javadoc above.
                 BlockState placedState = games.brennan.dungeontrain.editor.RotationApplier.apply(
                     games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state()), picked,
-                    local, worldSeed, cellIndex, lockId);
+                    local, worldSeed, cellIndex, lockId, sidecar.rotationLockIdAt(local));
                 ContainerContentsPlacement.place(level, world,
                     placedState, picked.blockEntityNbt(),
                     plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,

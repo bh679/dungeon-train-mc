@@ -17,6 +17,10 @@
     {
       "id": "pass2",
       "weight": 7
+    },
+    {
+      "id": "kitchenlong",
+      "weight": 0
     }
   ]
 }
