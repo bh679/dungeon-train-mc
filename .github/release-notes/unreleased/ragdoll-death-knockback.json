@@ -1,0 +1,20 @@
+{
+  "id": "ragdoll-death-knockback",
+  "version": "0.1922.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Arrows and blasts send your body flying",
+  "summary": "Die to an arrow or an explosion and your body is thrown, along the shot or away from the blast. The death scene now opens on your body, so you see where it lands.",
+  "highlights": [
+    "Arrow and explosion deaths throw your body",
+    "The death scene starts on your body instead of your own view"
+  ],
+  "pr": 2777,
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

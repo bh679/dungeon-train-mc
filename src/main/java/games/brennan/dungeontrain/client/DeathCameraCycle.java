@@ -255,7 +255,8 @@ public final class DeathCameraCycle {
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
                                          boolean hasFeature, boolean hasHazard, boolean withLoop) {
         List<DeathShot> shots = new ArrayList<>();
-        shots.add(DeathShot.pov(15));
+        // No opening in the player's own view (the red wash and death tilt, DeathShot.pov): the scene
+        // opens straight on the body, so a body thrown by an arrow or a blast is seen in flight.
         // Where you died, riding with the carriage (the body stays on it): on the block that killed
         // you when one did, else on the body as the lead-in to who killed you, or, off the train, in
         // place of the carriage shot. Never for a void death. A blocked arc is answered by a tighter
@@ -518,7 +519,8 @@ public final class DeathCameraCycle {
         DeathShot shot = current();
         if (shot == null || shot.kind() == DeathShot.Kind.SKY_TILT) return 0.0f;
         double t = shotTicks + partialTick;
-        float alpha = blackAlpha(t, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV);
+        // The opening shot never fades in from black: a thrown body's flight is over in a second.
+        float alpha = blackAlpha(t, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV && index > 0);
         if (leadsIntoSky(shot, sequence)) alpha = blackAlpha(t, Integer.MAX_VALUE / 2, true);
         return alpha;
     }
