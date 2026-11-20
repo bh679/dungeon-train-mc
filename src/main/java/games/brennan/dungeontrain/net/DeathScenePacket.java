@@ -24,9 +24,11 @@ import java.util.UUID;
  * @param targets   features of the train near the body worth a tracking shot, best first (may be empty)
  * @param hazard    world centre of the block that killed them (fire, magma, cactus, powder snow...), or null
  * @param bodyId    root sub-level of the ragdoll body left where they died, or null when there is none
+ * @param thrown    the body was thrown by what killed them (an arrow, a blast): the camera opens on it,
+ *                  not on the player's own view
  */
 public record DeathScenePacket(boolean voidDeath, int killerId, int contactId, List<Target> targets, Vec3 hazard,
-                               @Nullable UUID bodyId) implements CustomPacketPayload {
+                               @Nullable UUID bodyId, boolean thrown) implements CustomPacketPayload {
 
     public static final int NONE = -1;
     public static final int MAX_TARGETS = 8;
@@ -37,11 +39,16 @@ public record DeathScenePacket(boolean voidDeath, int killerId, int contactId, L
     }
 
     public DeathScenePacket(boolean voidDeath, int killerId, int contactId) {
-        this(voidDeath, killerId, contactId, List.of(), null, null);
+        this(voidDeath, killerId, contactId, List.of(), null, null, false);
     }
 
     public DeathScenePacket(boolean voidDeath, int killerId, int contactId, List<Target> targets, Vec3 hazard) {
-        this(voidDeath, killerId, contactId, targets, hazard, null);
+        this(voidDeath, killerId, contactId, targets, hazard, null, false);
+    }
+
+    public DeathScenePacket(boolean voidDeath, int killerId, int contactId, List<Target> targets, Vec3 hazard,
+                            @Nullable UUID bodyId) {
+        this(voidDeath, killerId, contactId, targets, hazard, bodyId, false);
     }
 
     public static final Type<DeathScenePacket> TYPE =
@@ -72,6 +79,7 @@ public record DeathScenePacket(boolean voidDeath, int killerId, int contactId, L
         }
         buf.writeBoolean(bodyId != null);
         if (bodyId != null) buf.writeUUID(bodyId);
+        buf.writeBoolean(thrown);
     }
 
     public static DeathScenePacket decode(FriendlyByteBuf buf) {
@@ -90,7 +98,8 @@ public record DeathScenePacket(boolean voidDeath, int killerId, int contactId, L
         }
         Vec3 hazard = buf.readBoolean() ? new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()) : null;
         UUID body = buf.readBoolean() ? buf.readUUID() : null;
-        return new DeathScenePacket(voidDeath, killer, contact, List.copyOf(targets), hazard, body);
+        boolean thrown = buf.readBoolean();
+        return new DeathScenePacket(voidDeath, killer, contact, List.copyOf(targets), hazard, body, thrown);
     }
 
     @Override

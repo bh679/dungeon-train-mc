@@ -27,6 +27,19 @@ class DeathCameraCycleTest {
     }
 
     @Test
+    void thrownBodyOpensOnTheBodyNotTheOwnView() {
+        List<DeathShot> thrown = DeathCameraCycle.buildSequence(false, false, false, true, false, false, false, true);
+        assertEquals(List.of("carriage", "body-out"), labels(thrown).subList(0, 2));
+        List<DeathShot> offTrain = DeathCameraCycle.buildSequence(false, false, false, false, false, false, false, true);
+        assertEquals("spot", offTrain.get(0).label());
+    }
+
+    @Test
+    void anUnthrownDeathStillOpensOnTheOwnView() {
+        assertEquals("POV", DeathCameraCycle.buildSequence(false, false, false, true, false, false, false, false).get(0).label());
+    }
+
+    @Test
     void voidDeathSkipsTheDeathSpot() {
         assertEquals(List.of("POV", "killer", "carriage"),
             labels(DeathCameraCycle.buildSequence(true, true, false, true)).subList(0, 3));

@@ -36,6 +36,16 @@ class DeathScenePacketTest {
     }
 
     @Test
+    void thrownRoundTrips() {
+        DeathScenePacket in = new DeathScenePacket(false, -1, -1, List.of(), null, UUID.randomUUID(), true);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        in.encode(buf);
+        DeathScenePacket out = DeathScenePacket.decode(buf);
+        assertEquals(in, out);
+        org.junit.jupiter.api.Assertions.assertTrue(out.thrown());
+    }
+
+    @Test
     void noTargetsRoundTrips() {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         new DeathScenePacket(true, -1, 7).encode(buf);

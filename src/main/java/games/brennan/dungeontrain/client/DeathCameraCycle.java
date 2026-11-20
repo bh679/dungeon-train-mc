@@ -254,8 +254,17 @@ public final class DeathCameraCycle {
     /** {@code withLoop} false (the loop on hold, {@link #LOOP_ON}): phase one, then the sky, and nothing after. */
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
                                          boolean hasFeature, boolean hasHazard, boolean withLoop) {
+        return buildSequence(voidDeath, hasKiller, hasContact, onTrain, hasFeature, hasHazard, withLoop, false);
+    }
+
+    /**
+     * {@code thrown}: what killed them threw the body (an arrow, a blast), so the scene opens on the
+     * body in flight and the player's own view (the red wash) is left out.
+     */
+    static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
+                                         boolean hasFeature, boolean hasHazard, boolean withLoop, boolean thrown) {
         List<DeathShot> shots = new ArrayList<>();
-        shots.add(DeathShot.pov(15));
+        if (!thrown) shots.add(DeathShot.pov(15));
         // Where you died, riding with the carriage (the body stays on it): on the block that killed
         // you when one did, else on the body as the lead-in to who killed you, or, off the train, in
         // place of the carriage shot. Never for a void death. A blocked arc is answered by a tighter
@@ -325,7 +334,7 @@ public final class DeathCameraCycle {
         sequence = reviewSequence != null
             ? reviewSequence
             : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null, featureSub != null,
-                hazardLocal != null, LOOP_ON);
+                hazardLocal != null, LOOP_ON, hints.thrown() && !hints.voidDeath());
         lastPose = null;
         skyFrom = null;
         savedHideGui = mc.options.hideGui;
@@ -518,7 +527,8 @@ public final class DeathCameraCycle {
         DeathShot shot = current();
         if (shot == null || shot.kind() == DeathShot.Kind.SKY_TILT) return 0.0f;
         double t = shotTicks + partialTick;
-        float alpha = blackAlpha(t, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV);
+        // The opening shot never fades in from black: a thrown body's flight is over in a second.
+        float alpha = blackAlpha(t, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV && index > 0);
         if (leadsIntoSky(shot, sequence)) alpha = blackAlpha(t, Integer.MAX_VALUE / 2, true);
         return alpha;
     }

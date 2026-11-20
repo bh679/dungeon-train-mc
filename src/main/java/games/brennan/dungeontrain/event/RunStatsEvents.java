@@ -408,7 +408,7 @@ public final class RunStatsEvents {
         Vec3 hazard = voidDeath ? null : DeathHazard.find(player, source);
         // The body left where they died (a Sable: Ragdolls ragdoll); the spot and carriage shots track it.
         UUID body = DeathBodyRagdoll.spawn(player, source, voidDeath);
-        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard, body);
+        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard, body, DeathBodyRagdoll.isThrown(body));
     }
 
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
