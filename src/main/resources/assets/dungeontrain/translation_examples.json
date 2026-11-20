@@ -15045,6 +15045,24 @@
       ]
     }
   },
+  "chat.dungeontrain.editor_bar.variant_menu.rotation_free": {
+    "1": {
+      "label": "lock-group number",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_menu.rotation_locked": {
+    "1": {
+      "label": "lock-group number",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
   "chat.dungeontrain.editor_bar.clipboard.lock_suffix": {
     "1": {
       "label": "lock-id number",

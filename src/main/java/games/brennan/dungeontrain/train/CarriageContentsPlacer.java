@@ -696,7 +696,8 @@ public final class CarriageContentsPlacer {
                         entry.localPos(), seed, carriageIndex,
                         v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
                             StagePlacementScope.resolve(v.state()), v,
-                            entry.localPos(), seed, carriageIndex, lockId))) {
+                            entry.localPos(), seed, carriageIndex, lockId,
+                            sidecar.rotationLockIdAt(entry.localPos())))) {
                     BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
                     if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
                     if (w.isAir()) {

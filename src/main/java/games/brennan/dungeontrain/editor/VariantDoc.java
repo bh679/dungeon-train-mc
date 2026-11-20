@@ -90,6 +90,15 @@ public final class VariantDoc {
     /** pos → per-cell {@link VariantSpan} (door / bed / tall plant). Non-default only; see {@link #spanAt}. */
     private final Map<BlockPos, VariantSpan> spans = new LinkedHashMap<>();
 
+    /**
+     * Cells of a lock group whose rotation is <b>free</b>: the group still shares one block roll,
+     * but each such cell rolls its own facing and upside-down flip, keyed by its position instead of
+     * the group's id. The {@code "rotation": "free"} cell field; absent (the default) is a locked
+     * rotation, so every sidecar authored before it re-saves byte-identical. The editor's Rot toggle
+     * writes it to every cell of the group at once; see {@link #rotationLockIdAt}.
+     */
+    private final Set<BlockPos> rotationFree = new LinkedHashSet<>();
+
     /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
     private final VariantGroupResolver groupRefs;
 
@@ -183,7 +192,7 @@ public final class VariantDoc {
             new LinkedHashMap<>(src.entries), new LinkedHashMap<>(src.lockIds),
             new LinkedHashMap<>(src.copyRolls), new LinkedHashMap<>(src.copyScopes),
             src.defaults, src.pick, src.contextId, null,
-            src.mirrorX, src.mirrorY, src.mirrorZ, src.mirrorVariants, null), src.spans);
+            src.mirrorX, src.mirrorY, src.mirrorZ, src.mirrorVariants, null), src.spans, src.rotationFree);
     }
 
     /**
@@ -243,6 +252,7 @@ public final class VariantDoc {
         Map<BlockPos, VariantCopyRoll> outRolls = new LinkedHashMap<>();
         Map<BlockPos, VariantCopyScope> outScopes = new LinkedHashMap<>();
         Map<BlockPos, VariantSpan> outSpans = new LinkedHashMap<>();
+        Set<BlockPos> outFree = new LinkedHashSet<>();
         if (obj.has("variants") && obj.get("variants").isJsonObject()) {
             HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
             for (Map.Entry<String, JsonElement> field : obj.getAsJsonObject("variants").entrySet()) {
@@ -265,17 +275,24 @@ public final class VariantDoc {
                 if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
                 if (!cell.roll().isDefault()) outRolls.put(posI, cell.roll());
                 if (!cell.scope().isDefault()) outScopes.put(posI, cell.scope());
+                if (cell.rotationFree()) outFree.add(posI);
             }
             LOGGER.info("[DungeonTrain] Loaded {} variant entries for {} from {}", out.size(), ctx, origin);
         }
         return withSpans(new VariantDoc(out, outLocks, outRolls, outScopes, defaults, pick, ctx, address,
-            mirrorX, mirrorY, mirrorZ, mirrorVariants, null), outSpans);
+            mirrorX, mirrorY, mirrorZ, mirrorVariants, null), outSpans, outFree);
     }
 
-    /** Copy {@code from}'s spans for the cells {@code target} holds — parse, copy and crop all end here. */
-    private static VariantDoc withSpans(VariantDoc target, Map<BlockPos, VariantSpan> from) {
+    /**
+     * Copy {@code from}'s spans and free-rotation cells for the cells {@code target} holds — parse,
+     * copy and crop all end here.
+     */
+    private static VariantDoc withSpans(VariantDoc target, Map<BlockPos, VariantSpan> from, Set<BlockPos> free) {
         for (Map.Entry<BlockPos, VariantSpan> e : from.entrySet()) {
             if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
+        }
+        for (BlockPos pos : free) {
+            if (target.entries.containsKey(pos)) target.rotationFree.add(pos);
         }
         return target;
     }
@@ -312,7 +329,7 @@ public final class VariantDoc {
         }
         warnOutsideOnce(contextId, footprint, outside);
         VariantDoc view = withSpans(new VariantDoc(kept, keptLocks, keptRolls, keptScopes, defaults, pick, contextId,
-            address, mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans);
+            address, mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans, rotationFree);
         views.put(footprint, view);
         return view;
     }
@@ -476,6 +493,7 @@ public final class VariantDoc {
     /** Remove the entry at {@code localPos}, with its lock id, span and copy settings. True if one was present. */
     public synchronized boolean remove(BlockPos localPos) {
         spans.remove(localPos);
+        rotationFree.remove(localPos);
         if (source != null) source.remove(localPos);
         views.clear();
         lockIds.remove(localPos);
@@ -494,6 +512,7 @@ public final class VariantDoc {
         if (source != null) source.clearAll();
         views.clear();
         spans.clear();
+        rotationFree.clear();
         int n = entries.size();
         entries.clear();
         lockIds.clear();
@@ -528,9 +547,43 @@ public final class VariantDoc {
         views.clear();
         requireCell(localPos);
         if (lockId < 0) lockId = 0;
-        if (lockId == 0) lockIds.remove(localPos);
-        else lockIds.put(localPos.immutable(), lockId);
+        if (lockId == 0) {
+            lockIds.remove(localPos);
+            // Free rotation is a lock-group setting; a cell that leaves its group drops it, so it
+            // cannot come back on when the cell later joins another group.
+            rotationFree.remove(localPos);
+        } else {
+            lockIds.put(localPos.immutable(), lockId);
+        }
         groupRefs.invalidate();
+    }
+
+    /** True when the cell at {@code localPos} rolls its own rotation inside its lock group. */
+    public synchronized boolean rotationFreeAt(BlockPos localPos) {
+        return rotationFree.contains(localPos);
+    }
+
+    /**
+     * Free or lock the rotation of an existing cell. Refuses a position with no cell, like
+     * {@link #setLockId}. Meaningful only on a cell in a lock group; the editor sets every cell of
+     * the group together.
+     */
+    public synchronized void setRotationFree(BlockPos localPos, boolean free) {
+        if (source != null) source.setRotationFree(localPos, free);
+        views.clear();
+        requireCell(localPos);
+        if (free) rotationFree.add(localPos.immutable());
+        else rotationFree.remove(localPos);
+    }
+
+    /**
+     * The lock-id the cell's <b>rotation</b> rolls on: its lock group's id, or {@code 0} — roll by
+     * position, as an ungrouped cell does — when the group's rotation is free. What every placer
+     * passes to {@link RotationApplier} for facing and flip; the block pick, open/closed, bed
+     * colours and charges keep the group's own {@link #lockIdAt}.
+     */
+    public synchronized int rotationLockIdAt(BlockPos localPos) {
+        return rotationFree.contains(localPos) ? 0 : lockIds.getOrDefault(localPos, 0);
     }
 
     /**
@@ -710,7 +763,8 @@ public final class VariantDoc {
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
             CarriageVariantBlocks.appendCellJson(sb, groupRefs.refreshed(e.getValue(), lockId), lockId,
-                copyRollAt(e.getKey()), copyScopeAt(e.getKey()), spanAt(e.getKey()));
+                copyRollAt(e.getKey()), copyScopeAt(e.getKey()), spanAt(e.getKey()),
+                lockId > 0 && rotationFree.contains(e.getKey()));
         }
         sb.append("\n  }\n}\n");
         return sb.toString();

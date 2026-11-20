@@ -101,6 +101,12 @@ public final class EditorPlotTransformer {
         /** Set it. A no-op where the sidecar has nowhere to store it. */
         default void setSpan(BlockPos localPos, VariantSpan span) {}
 
+        /** The lock group's Rot Free flag on this cell. False where the sidecar doesn't store it. */
+        default boolean rotationFreeAt(BlockPos localPos) { return false; }
+
+        /** Set it. A no-op where the sidecar has nowhere to store it. */
+        default void setRotationFree(BlockPos localPos, boolean free) {}
+
         /** The v10 per-cell copy scope. {@code BOTH} everywhere but a portal room. */
         default VariantCopyScope copyScopeAt(BlockPos localPos) { return VariantCopyScope.BOTH; }
 
@@ -218,7 +224,7 @@ public final class EditorPlotTransformer {
         Vec3i size = region.size();
 
         record Moved(BlockPos to, List<VariantState> states, int lockId, VariantCopyRoll roll,
-                     VariantCopyScope scope, VariantSpan span) {}
+                     VariantCopyScope scope, VariantSpan span, boolean rotationFree) {}
         List<Moved> moved = new ArrayList<>();
         List<BlockPos> sources = List.copyOf(sidecar.positions());
         for (BlockPos from : sources) {
@@ -231,7 +237,7 @@ public final class EditorPlotTransformer {
             moved.add(new Moved(
                 transform.destination(from.getX(), from.getY(), from.getZ(), size),
                 transform.variants(states), sidecar.lockIdAt(from), sidecar.copyRollAt(from),
-                sidecar.copyScopeAt(from), sidecar.spanAt(from)));
+                sidecar.copyScopeAt(from), sidecar.spanAt(from), sidecar.rotationFreeAt(from)));
         }
         if (moved.isEmpty()) return 0;
 
@@ -249,6 +255,8 @@ public final class EditorPlotTransformer {
             if (!m.roll().isDefault()) sidecar.setCopyRoll(m.to(), m.roll());
             if (!m.scope().isDefault()) sidecar.setCopyScope(m.to(), m.scope());
             if (!m.span().isDefault()) sidecar.setSpan(m.to(), m.span());
+            // Group membership's own setting: after setLockId, which clears it on an ungrouped cell.
+            if (m.rotationFree()) sidecar.setRotationFree(m.to(), true);
         }
         sidecar.save();
         return moved.size();
@@ -325,6 +333,8 @@ public final class EditorPlotTransformer {
         @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { plot.setCopyScope(l, s); }
         @Override public VariantSpan spanAt(BlockPos l) { return plot.spanAt(l); }
         @Override public void setSpan(BlockPos l, VariantSpan s) { plot.setSpan(l, s); }
+        @Override public boolean rotationFreeAt(BlockPos l) { return plot.rotationFreeAt(l); }
+        @Override public void setRotationFree(BlockPos l, boolean f) { plot.setRotationFree(l, f); }
         @Override public void save() throws IOException { plot.save(); }
     }
 
@@ -358,6 +368,8 @@ public final class EditorPlotTransformer {
         @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { blocks.setCopyScope(l, s); }
         @Override public VariantSpan spanAt(BlockPos l) { return blocks.spanAt(l); }
         @Override public void setSpan(BlockPos l, VariantSpan s) { blocks.setSpan(l, s); }
+        @Override public boolean rotationFreeAt(BlockPos l) { return blocks.rotationFreeAt(l); }
+        @Override public void setRotationFree(BlockPos l, boolean f) { blocks.setRotationFree(l, f); }
         @Override public void save() throws IOException {
             blocks.save();
             if (EditorDevMode.isEnabled()) {

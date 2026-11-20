@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "6,0,0": { "lockId": 1, "rotation": "free", "states": [{"state": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "half": "bottom"}, {"state": "minecraft:mangrove_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "half": "bottom"}] },
+    "10,0,0": { "lockId": 1, "rotation": "free", "states": [{"state": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["west"]}, "half": "bottom"}, {"state": "minecraft:mangrove_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["west"]}, "half": "bottom"}] },
+    "7,2,0": { "lockId": 1, "rotation": "free", "states": [{"state": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "half": "bottom"}, {"state": "minecraft:mangrove_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "half": "bottom"}] },
+    "9,2,0": { "lockId": 1, "rotation": "free", "states": [{"state": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["west"]}, "half": "bottom"}, {"state": "minecraft:mangrove_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["west"]}, "half": "bottom"}] }
+  }
+}

@@ -355,7 +355,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
-            plot.supportsConnectMode(), plot.supportsGrowth());
+            plot.supportsConnectMode(), plot.supportsGrowth(),
+            plot.lockIdAt(localPos) > 0 && plot.rotationFreeAt(localPos));
     }
 
     /**
@@ -408,6 +409,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_ROLL) {
             cycleCopyRoll(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.TOGGLE_ROTATION_FREE) {
+            toggleRotationFree(player, plot, localPos);
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
@@ -1034,12 +1039,24 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
         if (targets.isEmpty()) targets = Set.of(localPos);
 
+        // Rot Free: each cell owns its rows' rotation and flip. An orientation edit stays on this
+        // cell; any other edit still reaches the whole group, but every sibling keeps its own
+        // orientation on the rows it already had (VariantRowOrientation).
+        boolean ownOrientation = lockId > 0 && plot.rotationFreeAt(localPos);
+        boolean orientationEdit = packet.op() == BlockVariantEditPacket.Op.SET_ROTATION_MODE
+            || packet.op() == BlockVariantEditPacket.Op.SET_ROTATION_DIRS
+            || packet.op() == BlockVariantEditPacket.Op.SET_HALF_MODE;
+        if (ownOrientation && orientationEdit) targets = Set.of(localPos);
+
         for (BlockPos target : targets) {
             if (dropCell) {
                 plot.remove(target);
                 VariantEditorPreviewState.clearPinned(plot.key(), target);
             } else if (mutated.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-                plot.put(target, mutated);
+                List<VariantState> rows = ownOrientation && !target.equals(localPos)
+                    ? VariantRowOrientation.keepOwnOrientation(plot.statesAt(target), mutated)
+                    : mutated;
+                plot.put(target, rows);
             }
         }
         try {
@@ -1192,6 +1209,39 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             case EXACT -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_exact");
             case VARY -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_vary");
         }, ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Toggle the cell's lock group between one shared rotation (Rot Lock, the default) and a
+     * rotation rolled per cell (Rot Free). Written to every cell of the group, so the group always
+     * agrees — the setting belongs to the group, the cell is only where it is stored. Ignored on an
+     * ungrouped cell, which already rolls by its own position; the menu draws no Rot pill there.
+     */
+    private static void toggleRotationFree(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId <= 0 || plot.statesAt(localPos) == null) return;
+        boolean next = !plot.rotationFreeAt(localPos);
+        // Back to Rot Lock: while free, the cells may each have taken their own rotation settings.
+        // Rot Lock means one rotation for the group, so every cell takes this cell's rows.
+        List<VariantState> rows = plot.statesAt(localPos);
+        for (BlockPos member : plot.positionsWithLockId(lockId)) {
+            if (!next && !member.equals(localPos) && rows != null
+                    && rows.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
+                plot.put(member, rows);
+            }
+            plot.setRotationFree(member, next);
+        }
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu rotation-free save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
+        }
+        actionBar(player, Component.translatable(next
+            ? "chat.dungeontrain.editor_bar.variant_menu.rotation_free"
+            : "chat.dungeontrain.editor_bar.variant_menu.rotation_locked", lockId), ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
 
@@ -1410,8 +1460,11 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             return;
         }
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        VariantClipboardItem.writeClipboardTag(stack,
-            VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group));
+        // The group's Rot Lock / Rot Free travels with it, so a group rebuilt from this copy faces
+        // the way the original did.
+        boolean rotationFree = plot.positionsWithLockId(group).stream().anyMatch(plot::rotationFreeAt);
+        VariantClipboardItem.writeClipboardTag(stack, VariantClipboardItem.withRotationFree(
+            VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group), rotationFree));
         giveToHotbar(player, new Clipboard(stack, Component.translatable("chat.dungeontrain.editor_bar.clipboard.summary",
             options.size(), Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", group),
             Component.empty(), Component.empty(), Component.empty())));
@@ -1500,8 +1553,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         VariantCopyRoll roll = plot.copyRollAt(localPos);
         VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos));
+        CompoundTag tag = VariantClipboardItem.withRotationFree(
+            VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
+                poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos)),
+            lockId > 0 && plot.rotationFreeAt(localPos));
         VariantClipboardItem.writeClipboardTag(stack, tag);
         Component lockSuffix = lockId > 0
             ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", lockId)

@@ -200,9 +200,23 @@ public final class RotationApplier {
         BlockState base, VariantRotation rot, VariantHalf half, VariantActive active,
         BlockPos localPos, long worldSeed, int carriageIndex, int lockId
     ) {
+        return apply(base, rot, half, active, localPos, worldSeed, carriageIndex, lockId, lockId);
+    }
+
+    /**
+     * {@link #apply(BlockState, VariantRotation, VariantHalf, VariantActive, BlockPos, long, int, int)}
+     * with the orientation keyed apart: facing and the upside-down flip roll on
+     * {@code rotationLockId}, the redstone toggle on {@code lockId}. A lock group whose rotation is
+     * free passes {@code rotationLockId = 0} ({@link VariantDoc#rotationLockIdAt}), so each cell
+     * faces its own way while the group still shares one block.
+     */
+    public static BlockState apply(
+        BlockState base, VariantRotation rot, VariantHalf half, VariantActive active,
+        BlockPos localPos, long worldSeed, int carriageIndex, int lockId, int rotationLockId
+    ) {
         if (rot == null) rot = VariantRotation.NONE;
         if (half == null) half = VariantHalf.NONE;
-        BlockState facingApplied = applyFacing(base, rot, localPos, worldSeed, carriageIndex, lockId);
+        BlockState facingApplied = applyFacing(base, rot, localPos, worldSeed, carriageIndex, rotationLockId);
         BlockState halfApplied;
         if (half.mode() == VariantHalf.Mode.RANDOM
             && rot.mode() != VariantRotation.Mode.RANDOM) {
@@ -210,7 +224,7 @@ public final class RotationApplier {
             // half (v7 semantics).
             halfApplied = facingApplied;
         } else {
-            halfApplied = applyHalf(facingApplied, half, localPos, worldSeed, carriageIndex, lockId);
+            halfApplied = applyHalf(facingApplied, half, localPos, worldSeed, carriageIndex, rotationLockId);
         }
         return RedstoneToggle.apply(halfApplied, active, localPos, worldSeed, carriageIndex, lockId);
     }
@@ -229,8 +243,21 @@ public final class RotationApplier {
         BlockState base, VariantState entry,
         BlockPos localPos, long worldSeed, int carriageIndex, int lockId
     ) {
+        return apply(base, entry, localPos, worldSeed, carriageIndex, lockId, lockId);
+    }
+
+    /**
+     * Whole-entry apply with the orientation keyed on {@code rotationLockId} (see the nine-arg
+     * {@link #apply(BlockState, VariantRotation, VariantHalf, VariantActive, BlockPos, long, int, int, int)}).
+     * Every stamp pass passes the sidecar's {@link VariantDoc#rotationLockIdAt} here, so a lock
+     * group's Rot Free setting takes effect wherever the group is placed.
+     */
+    public static BlockState apply(
+        BlockState base, VariantState entry,
+        BlockPos localPos, long worldSeed, int carriageIndex, int lockId, int rotationLockId
+    ) {
         BlockState placed = apply(base, entry.rotation(), entry.half(), entry.active(),
-            localPos, worldSeed, carriageIndex, lockId);
+            localPos, worldSeed, carriageIndex, lockId, rotationLockId);
         long key = posOrLockKey(localPos, lockId);
         placed = entry.candles().apply(placed, key, worldSeed, carriageIndex);
         placed = entry.pot().apply(placed, key, worldSeed, carriageIndex);
