@@ -1410,8 +1410,11 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             return;
         }
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        VariantClipboardItem.writeClipboardTag(stack,
-            VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group));
+        // The group's Rot Lock / Rot Free travels with it, so a group rebuilt from this copy faces
+        // the way the original did.
+        boolean rotationFree = plot.positionsWithLockId(group).stream().anyMatch(plot::rotationFreeAt);
+        VariantClipboardItem.writeClipboardTag(stack, VariantClipboardItem.withRotationFree(
+            VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group), rotationFree));
         giveToHotbar(player, new Clipboard(stack, Component.translatable("chat.dungeontrain.editor_bar.clipboard.summary",
             options.size(), Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", group),
             Component.empty(), Component.empty(), Component.empty())));
@@ -1500,8 +1503,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         VariantCopyRoll roll = plot.copyRollAt(localPos);
         VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos));
+        CompoundTag tag = VariantClipboardItem.withRotationFree(
+            VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
+                poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos)),
+            lockId > 0 && plot.rotationFreeAt(localPos));
         VariantClipboardItem.writeClipboardTag(stack, tag);
         Component lockSuffix = lockId > 0
             ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", lockId)

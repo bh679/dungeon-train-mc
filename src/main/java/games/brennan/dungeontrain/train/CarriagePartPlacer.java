@@ -233,7 +233,8 @@ public final class CarriagePartPlacer {
                         entry.localPos(), seed, carriageIndex,
                         v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
                             StagePlacementScope.resolve(v.state()), v,
-                            entry.localPos(), seed, carriageIndex, lockId))) {
+                            entry.localPos(), seed, carriageIndex, lockId,
+                            sidecar.rotationLockIdAt(entry.localPos())))) {
                     BlockPos world = transformLocal(stampOrigin, w.localPos(), p.mirror(), partSize);
                     if (w.isAir()) {
                         SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());

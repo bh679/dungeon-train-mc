@@ -77,6 +77,7 @@ public final class EditorVariantMirror {
         VariantCopyRoll srcRoll = plot.copyRollAt(localEdited);
         VariantCopyScope srcScope = plot.copyScopeAt(localEdited);
         VariantSpan srcSpan = plot.spanAt(localEdited);
+        boolean srcRotationFree = plot.rotationFreeAt(localEdited);
         boolean changed = false;
         for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
             BlockPos tgtWorld = origin.offset(img.local().getX(), img.local().getY(), img.local().getZ());
@@ -91,6 +92,7 @@ public final class EditorVariantMirror {
                 plot.setCopyRoll(img.local(), srcRoll);
                 plot.setCopyScope(img.local(), srcScope);
                 plot.setSpan(img.local(), srcSpan);
+                plot.setRotationFree(img.local(), srcRotationFree);
                 stampMirrorBase(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
@@ -133,6 +135,7 @@ public final class EditorVariantMirror {
                     VariantCopyRoll masterRoll = plot.copyRollAt(masterLocal);
                     VariantCopyScope masterScope = plot.copyScopeAt(masterLocal);
                     VariantSpan masterSpan = plot.spanAt(masterLocal);
+                    boolean masterRotationFree = plot.rotationFreeAt(masterLocal);
                     for (EditorMirror.Image img : EditorMirror.imagesOf(masterLocal, f, mx, my, mz)) {
                         if (masterPool == null || masterPool.isEmpty()) {
                             // No master pool — drop any stale far entry; the
@@ -146,6 +149,7 @@ public final class EditorVariantMirror {
                             plot.setCopyRoll(img.local(), masterRoll);
                             plot.setCopyScope(img.local(), masterScope);
                             plot.setSpan(img.local(), masterSpan);
+                            plot.setRotationFree(img.local(), masterRotationFree);
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
                             stampMirrorBase(level, tgtWorld, reflected.get(0).state());
