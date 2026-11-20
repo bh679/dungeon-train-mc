@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.ContentModeMirror;
+import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
@@ -82,18 +83,45 @@ public final class TributePhotoReporter {
         }
     }
 
+    /**
+     * Whether {@code tributer}'s Tributes also go to their own Discord ({@link TributeWebhookMirror}). Kid
+     * mode never posts there, the same as the Options row it is set from, and neither does a player who
+     * has Dungeon Train's internet connection turned off ({@link NetworkConsentMirror}, fail-closed).
+     */
+    public static boolean hasPersonalWebhook(ServerPlayer tributer) {
+        return tributer != null && TributeWebhookMirror.has(tributer.getUUID()) && !ContentModeMirror.isKid(tributer)
+                && NetworkConsentMirror.isGranted(tributer);
+    }
+
+    /**
+     * Post a tributed photo to each of the tributer's own Discord webhooks, if they set any. Every Tribute goes,
+     * whatever the public feed's rules (clean run, personal best, Public posts): it is their own channel.
+     * Server thread; the upload runs off-thread and never disturbs the Tribute.
+     */
+    public static void postPersonal(ServerPlayer tributer, String title, String description, byte[] png) {
+        if (png == null || png.length == 0 || !hasPersonalWebhook(tributer)) return;
+        try {
+            String name = tributer.getGameProfile().getName();
+            for (String url : TributeWebhookMirror.get(tributer.getUUID())) {
+                TributeWebhook.post(url, name, tributer.getUUID(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png);
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] personal tribute webhook post failed: {}", t.getClass().getSimpleName());
+        }
+    }
+
     /** {@code "📸 Steve tributed their photo. Was it worth it?"} */
-    static String ownTitle(String tributer) {
+    public static String ownTitle(String tributer) {
         return "📸 " + DiscordMarkdown.escape(tributer) + " tributed their photo. Was it worth it?";
     }
 
     /** {@code "Tribute #2 this life · 9 emeralds"}. */
-    static String ownDescription(int tributeNumber, int cost) {
+    public static String ownDescription(int tributeNumber, int cost) {
         return "Tribute #" + Math.max(1, tributeNumber) + " this life · " + cost + (cost == 1 ? " emerald" : " emeralds");
     }
 
     /** {@code "📸 Steve paid tribute to a photo by Alex"}; a photo with no known photographer says so plainly. */
-    static String title(String tributer, String photographer) {
+    public static String title(String tributer, String photographer) {
         boolean known = photographer != null && !photographer.isBlank();
         boolean own = known && photographer.equals(tributer);
         String who = DiscordMarkdown.escape(tributer);
@@ -107,7 +135,7 @@ public final class TributePhotoReporter {
      * times this photo has been kept alive and what it cost, then how many hands it has passed through
      * and how close it came to burning out for good.
      */
-    static String description(int tributeNumber, int cost, int hands, int viewsLeft) {
+    public static String description(int tributeNumber, int cost, int hands, int viewsLeft) {
         int held = Math.max(1, hands);
         int left = Math.max(0, viewsLeft - 1);   // the tributer's own view is spent
         String fading = left == 0 ? "was on its last view"

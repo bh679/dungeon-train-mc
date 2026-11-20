@@ -130,7 +130,12 @@ public final class OwnPhotoTribute {
             LOGGER.debug("[DungeonTrain] Own photo {} was never uploaded; posted, but nothing to boost.", frame.identifier().id());
         }
         SharedPhotos.encodeForDiscord(server, data.get(), PhotoPaperTextures.paper(PhotographType.REGULAR), frame.identifier().id(),
-                png -> TributePhotoReporter.postOwn(player, tributeNumber, cost, png));
+                png -> {
+                    TributePhotoReporter.postOwn(player, tributeNumber, cost, png);
+                    // Their own Discord too, if they set one: every Tribute, Public posts or not.
+                    TributePhotoReporter.postPersonal(player, TributePhotoReporter.ownTitle(player.getGameProfile().getName()),
+                            TributePhotoReporter.ownDescription(tributeNumber, cost), png);
+                });
         StartingBookEvents.dropAndBurnApproved(player, held);
         player.sendSystemMessage(SharedPhotos.tributePaidLine(player, cost, SharedPhotos.VIEWS_MAX));
         sync(player);
