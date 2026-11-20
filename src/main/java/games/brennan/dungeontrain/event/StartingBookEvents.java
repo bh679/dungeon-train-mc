@@ -846,7 +846,7 @@ public final class StartingBookEvents {
         if (!countsForMilestone) return;
         if (BookReadMarkerTag.isOpened(stack)) return;
         if (!(item.getOwner() instanceof ServerPlayer player)) return;
-        if (RunIntegrity.isCheated(player)) return; // global burn stat frozen for cheated runs
+        if (RunIntegrity.isOffRecord(player)) return; // global burn stat frozen for cheated runs
 
         long newTotal = GlobalBookBurnStats.addBooksBurnedUnread(player.getUUID(), 1L);
         AchievementEvents.notifyBooksBurnedUnread(player, newTotal);

@@ -12,28 +12,35 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * A perks test world keeps its advancements across test worlds like a live run, but only in the test
- * profile: {@link AdvancementProfiles#persists(boolean, boolean, String)}.
+ * Test mode keeps its advancements across test worlds like a live run, but only in the test profile,
+ * and Test plus Free Play keeps nothing: {@link AdvancementProfiles#persists(boolean, boolean, String)}.
  */
 final class PerksTestProfileTest {
 
     private static final String NORMAL = DifficultyPartition.LEGACY_KEY;
 
     @Test
-    @DisplayName("a test world banks into the test profile, never into a real one")
-    void testWorldBanksOnlyIntoTestProfile() {
-        assertTrue(AdvancementProfiles.persists(false, true, PerksGate.TEST_PROFILE));
-        assertFalse(AdvancementProfiles.persists(false, true, NORMAL), "test earns must never reach Normal");
-        assertFalse(AdvancementProfiles.persists(false, true, "hard"));
+    @DisplayName("Test mode banks into the test profile and the shared editor tab, never a real profile")
+    void testModeBanksOnlyIntoTestProfile() {
+        assertTrue(AdvancementProfiles.persists(true, true, PerksGate.TEST_PROFILE));
+        assertTrue(AdvancementProfiles.persists(true, true, GlobalAchievementStore.SHARED));
+        assertFalse(AdvancementProfiles.persists(true, true, NORMAL), "test earns must never reach Normal");
+        assertFalse(AdvancementProfiles.persists(true, true, "hard"));
     }
 
     @Test
-    @DisplayName("ordinary Free Play still banks nothing; clean runs and editor authoring are unchanged")
-    void ordinaryFreePlayUnchanged() {
-        assertFalse(AdvancementProfiles.persists(false, false, NORMAL));
-        assertFalse(AdvancementProfiles.persists(false, false, PerksGate.TEST_PROFILE));
+    @DisplayName("Test plus Free Play banks nothing, as Free Play")
+    void testPlusFreePlayBanksNothing() {
+        assertFalse(AdvancementProfiles.persists(false, true, PerksGate.TEST_PROFILE));
+        assertFalse(AdvancementProfiles.persists(false, true, NORMAL));
+    }
+
+    @Test
+    @DisplayName("live play and ordinary Free Play are unchanged")
+    void liveAndFreePlayUnchanged() {
         assertTrue(AdvancementProfiles.persists(true, false, NORMAL));
         assertTrue(AdvancementProfiles.persists(true, false, GlobalAchievementStore.SHARED));
+        assertFalse(AdvancementProfiles.persists(false, false, NORMAL));
     }
 
     @Test

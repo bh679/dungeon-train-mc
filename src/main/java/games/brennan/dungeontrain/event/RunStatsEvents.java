@@ -221,7 +221,7 @@ public final class RunStatsEvents {
         // Cheated runs don't accrue the cross-world lifetime counters. The death
         // screen still renders below — it reads the per-run state plus the current
         // (un-incremented) totals — so a cheating player still sees their summary.
-        boolean cheated = RunIntegrity.isCheated(player);
+        boolean cheated = RunIntegrity.isOffRecord(player);
         // Where this life started and where it ended, resolved ONCE — respawn re-stamps the origin
         // it is measured from, so there is exactly one moment this can be read. Shared by the
         // lifetime displacement counter below and by every reporter that describes this death.
@@ -445,7 +445,7 @@ public final class RunStatsEvents {
             LOGGER.debug("[DungeonTrain] {} has Public posts off — skipping public death feed",
                     player.getGameProfile().getName());
         }
-        if ((!cheated || DungeonTrain.isDevBuild()) && !shortRun && publicPosts) {
+        if ((!cheated || (DungeonTrain.isDevBuild() && !RunIntegrity.isOffRecordWorld())) && !shortRun && publicPosts) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -567,7 +567,7 @@ public final class RunStatsEvents {
         UUID id = player.getUUID();
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         // Time aboard accrues live (and not on a cheated run), so this life's share comes back out.
-        long ownTicks = RunIntegrity.isCheated(player) ? 0L : run.trainTimeTicks();
+        long ownTicks = RunIntegrity.isOffRecord(player) ? 0L : run.trainTimeTicks();
         return buildPacket(player,
                 GlobalPlayerStats.totalDeaths(id),
                 GlobalPlayerStats.totalCarriages(id),
@@ -619,7 +619,7 @@ public final class RunStatsEvents {
         if (previousLivesOnly) {
             // Encounters only reach the lifetime total off a cheated run (onLevelTick), so a cheated
             // life added none.
-            long ownMet = RunIntegrity.isCheated(player) ? 0L : run.encounteredCount();
+            long ownMet = RunIntegrity.isOffRecord(player) ? 0L : run.encounteredCount();
             lifePlayersEncountered = Math.max(0L, lifePlayersEncountered - ownMet);
             lifeEchos = Math.max(0L, lifeEchos - run.echoesMet());
             lifeAdvancements = Math.max(0L, lifeAdvancements - ownAdvancements(player, run));
@@ -789,7 +789,7 @@ public final class RunStatsEvents {
         if (players.isEmpty()) return;
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-            boolean cheated = RunIntegrity.isCheated(player);
+            boolean cheated = RunIntegrity.isOffRecord(player);
             // Behind a nap point, mobs met are re-rolled copies: neither met nor befriended.
             boolean behindNap = games.brennan.dungeontrain.nap.NapGateData.step(player) < 0;
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);

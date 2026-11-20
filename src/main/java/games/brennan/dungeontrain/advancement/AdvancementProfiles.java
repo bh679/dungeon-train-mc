@@ -104,10 +104,10 @@ public final class AdvancementProfiles {
 
     /**
      * May {@code holder} be banked into {@code partition} for {@code player}? {@link RunIntegrity}'s
-     * rule (a Free Play run banks nothing but editor authoring), plus one exception: a perks test world
-     * is Free Play yet keeps its progress like a live run, but ONLY in the test profile. Tying it to
-     * the partition means a test earn can never reach a real profile, not even when a test world's
-     * tree is banked into the profile it used to mirror on login.
+     * rule (a Free Play run banks nothing but editor authoring), and in Test mode (a perks test world)
+     * only into the test profile or the shared editor tab. Tying it to the partition means a test earn
+     * can never reach a real difficulty's profile, not even when a test world's tree is banked into
+     * the profile it used to mirror on login. Test and Free Play together bank nothing, as Free Play.
      */
     static boolean persists(ServerPlayer player, AdvancementHolder holder, String partition) {
         return persists(RunIntegrity.persistsAdvancement(player, holder), PerksGate.isTestWorld(), partition);
@@ -115,7 +115,8 @@ public final class AdvancementProfiles {
 
     /** {@link #persists(ServerPlayer, AdvancementHolder, String)} without the player, for tests. */
     static boolean persists(boolean integrityAllows, boolean testWorld, String partition) {
-        return integrityAllows || (testWorld && PerksGate.TEST_PROFILE.equals(partition));
+        if (!integrityAllows) return false;
+        return !testWorld || PerksGate.TEST_PROFILE.equals(partition) || GlobalAchievementStore.SHARED.equals(partition);
     }
 
     /** The partition {@code id} is banked in for {@code player}: shared for the editor tab, else their profile. */

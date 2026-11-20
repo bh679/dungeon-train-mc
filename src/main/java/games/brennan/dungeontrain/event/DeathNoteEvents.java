@@ -60,7 +60,7 @@ public final class DeathNoteEvents {
         // still uploaded either way; the receive side (DeathNoteRefreshEvents.spawnArrivedEchoes)
         // spawns it only for a target whose Free Play state matches — so a Free Play curse haunts
         // only Free Play runs and a legit curse only legit runs.
-        boolean freePlay = RunIntegrity.isCheated(player);
+        boolean freePlay = RunIntegrity.isOffRecord(player);
 
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());

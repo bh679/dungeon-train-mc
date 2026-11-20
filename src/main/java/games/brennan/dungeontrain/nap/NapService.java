@@ -159,7 +159,7 @@ public final class NapService {
         }
         NapSnapshot nap = capture(player, levelId, offer.bedPos());
         try {
-            NapStore.local().save(player.getUUID(), NapSlot.key(nap.cheated(), player.serverLevel().getDifficulty()), nap);
+            NapStore.local().save(player.getUUID(), NapSlot.keyFor(nap.cheated(), player.serverLevel().getDifficulty(), games.brennan.dungeontrain.perks.PerksGate.isTestWorld()), nap);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Nap for {} could not be saved", player.getName().getString(), e);
             refuse(player, "save failed");
@@ -231,7 +231,10 @@ public final class NapService {
         return new NapSnapshot(UUID.randomUUID(), System.currentTimeMillis(), modVersion(),
             levelId, playerTag, x, (int) Math.floor(x / BLOCKS_PER_CARRIAGE), band, facingAlongX(player),
             BoardingProgressData.get(server.overworld()).travelledCarriageIndex(), RunIntegrity.isCheated(player),
-            server.getWorldData().getDifficulty().getKey(), advancements, stats, narrative,
+            // Test mode records its own profile in place of the difficulty, so NapSlot can never match
+            // a test nap to a live slot.
+            games.brennan.dungeontrain.perks.PerksGate.isTestWorld() ? games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE : server.getWorldData().getDifficulty().getKey(),
+            advancements, stats, narrative,
             runExtras, difficultyOffset).withPlace(placeAt(server, x));
     }
 

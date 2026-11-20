@@ -33,7 +33,7 @@ public final class SharedCarriageMode {
     /** The pool {@code level} belongs to right now. An empty world is {@link #NORMAL}. */
     public static String current(ServerLevel level) {
         if (level == null) return NORMAL;
-        return of(level.players(), RunIntegrity::isCheated);
+        return of(level.players(), RunIntegrity::isOffRecord);
     }
 
     /**

@@ -109,10 +109,28 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
-            || games.brennan.dungeontrain.perks.PerksGate.isTestWorld()
             || PlayerFreePlayIntegrity.isWorldFreePlay()
             || ProfileIntegrity.isPlayerFreePlay(player)
             || isPermanentlyCheated(player);
+    }
+
+    /**
+     * Is this run kept off the live record? True in Free Play ({@link #isCheated}) and in Test mode
+     * (a perks test world, {@link games.brennan.dungeontrain.perks.PerksGate#isTestWorld}).
+     *
+     * <p>Test mode is live play plus perks: none of Free Play's behaviour (commands, prompts, the
+     * Free Play badge or chest), but like Free Play nothing it does may reach the live record. So
+     * every gate that keeps a run's results away from the relay, Discord, leaderboards, shared pools
+     * or the player's lifetime stats asks this; every gate that is Free Play behaviour asks
+     * {@link #isCheated}. The two combine: cheating inside a test world is both.</p>
+     */
+    public static boolean isOffRecord(ServerPlayer player) {
+        return isOffRecordWorld() || isCheated(player);
+    }
+
+    /** The world-only half of {@link #isOffRecord}, for callers with no player (relay queue, config gates). */
+    public static boolean isOffRecordWorld() {
+        return games.brennan.dungeontrain.perks.PerksGate.isTestWorld();
     }
 
     /**
@@ -157,7 +175,6 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
-            || games.brennan.dungeontrain.perks.PerksGate.isTestWorld()
             || PlayerFreePlayIntegrity.isWorldFreePlay()
             || ProfileIntegrity.isPlayerFreePlay(player)
             || isPermanentlyCheated(player);
@@ -183,7 +200,6 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
-            || games.brennan.dungeontrain.perks.PerksGate.isTestWorld()
             || PlayerFreePlayIntegrity.isWorldFreePlay();
     }
 
@@ -285,6 +301,22 @@ public final class RunIntegrity {
     }
 
 
+    /** Apply the permanent {@code Test} marker effect (Test mode), as {@link #applyFreePlayEffect} does Free Play's. */
+    public static void applyTestModeEffect(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(
+            ModMobEffects.TEST_MODE, -1, 0,
+            /* ambient */ true, /* visible particles */ false, /* showIcon */ true));
+    }
+
+    /** The {@code Test} badge on exactly while the world is a perks test world. */
+    public static void reconcileTestModeEffect(ServerPlayer player) {
+        if (isOffRecordWorld()) {
+            applyTestModeEffect(player);
+        } else {
+            player.removeEffect(ModMobEffects.TEST_MODE);
+        }
+    }
+
     /**
      * Why is this run Free Play right now — every currently-active reason, in the order the login
      * notices announce them ({@code CheatDetectionEvents.onLogin}): changed AIS data, changed DT
@@ -327,9 +359,6 @@ public final class RunIntegrity {
         }
         if (KeepInventoryIntegrity.isWorldFreePlay()) {
             causes.add(sessionCause("keep_inventory", List.of()));
-        }
-        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
-            causes.add(sessionCause("perks_test", List.of()));
         }
         if (PlayerFreePlayIntegrity.isWorldFreePlay() && !PlayerFreePlayIntegrity.isSource(player)) {
             // Somebody else on this world went Free Play. Named, like the operator cause, because

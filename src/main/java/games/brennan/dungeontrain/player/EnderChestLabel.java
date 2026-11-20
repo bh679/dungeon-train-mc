@@ -42,6 +42,12 @@ public final class EnderChestLabel {
 
     private EnderChestLabel() {}
 
+    /** The Test mode chest ({@code perktest} slot): "Ender Chest - Test", whatever the mode or difficulty. */
+    public static Optional<Component> testModeTitle(Component baseTitle) {
+        return Optional.of(Component.translatable(KEY_PROFILE, baseTitle,
+            join(List.of(Component.translatable("container.dungeontrain.enderchest.test_mode")))));
+    }
+
     /**
      * The chest's title, or empty to leave vanilla's alone.
      *

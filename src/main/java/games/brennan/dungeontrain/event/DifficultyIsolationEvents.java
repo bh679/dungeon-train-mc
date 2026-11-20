@@ -50,6 +50,11 @@ public final class DifficultyIsolationEvents {
         if (!DungeonTrainConfig.getDifficultyIsolatedStash()) {
             return;
         }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            // Test mode is one profile whatever the difficulty (ProfileKey): nothing to swap — no
+            // loadout, chest, advancements or perks, no loot clear, no messages.
+            return;
+        }
         Difficulty from = event.getOldDifficulty();
         Difficulty to = event.getDifficulty();
         if (from == to) {
@@ -76,11 +81,7 @@ public final class DifficultyIsolationEvents {
                 // ECP re-resolves the slot key, which now carries the new difficulty's suffix.
                 EnderChestLockBridge.engage(player);
                 // And the advancement tree: bank this difficulty's, put the new one's in its place.
-                // Not in a perks test world: its tree is the test profile's whatever the difficulty,
-                // and swapping would trade it for a real difficulty's (as the perk swap also skips).
-                if (!games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
-                    AdvancementProfiles.swap(player, fromKey, toKey);
-                }
+                AdvancementProfiles.swap(player, fromKey, toKey);
                 // And the perks those advancements paid for.
                 PerkProfiles.swap(player, fromKey, toKey);
                 player.sendSystemMessage(Component.translatable(

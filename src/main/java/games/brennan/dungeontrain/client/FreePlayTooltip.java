@@ -66,7 +66,7 @@ public final class FreePlayTooltip {
      * another mod's tooltip event) puts something else second, the tooltip is left alone rather than
      * silently swallowing a line.</p>
      */
-    private static void foldDurationIntoTitle(List<Component> tooltip) {
+    static void foldDurationIntoTitle(List<Component> tooltip) {
         if (tooltip.size() < 2 || !INFINITE_DURATION.equals(tooltip.get(1).getString().trim())) return;
         tooltip.set(0, tooltip.get(0).copy()
             .append(CommonComponents.SPACE)

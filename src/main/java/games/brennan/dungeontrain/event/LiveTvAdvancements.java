@@ -180,7 +180,7 @@ public final class LiveTvAdvancements {
         if (TOTAL_TO_CHECK.isEmpty()) return;
         for (UUID id : List.copyOf(TOTAL_TO_CHECK)) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player == null || RunIntegrity.isCheated(player) || !totalReached(GlobalLivestreamStats.streamTicks(id))) {
+            if (player == null || RunIntegrity.isOffRecord(player) || !totalReached(GlobalLivestreamStats.streamTicks(id))) {
                 TOTAL_TO_CHECK.remove(id);
             } else if (!CinematicIntroService.isIntroPendingOrActive(player) && !PlayerActivityTracker.isAfk(player)) {
                 fireIfTotalReached(player, GlobalLivestreamStats.streamTicks(id));
@@ -209,7 +209,7 @@ public final class LiveTvAdvancements {
      * never count twice. A Free Play run's stays where it is, out of the lifetime record.
      */
     private static void absorbWorldTotal(ServerPlayer player) {
-        if (RunIntegrity.isCheated(player)) return;
+        if (RunIntegrity.isOffRecord(player)) return;
         UUID id = player.getUUID();
         long world = player.getData(ModDataAttachments.LIVESTREAM_TICKS.get());
         if (world > 0L) {

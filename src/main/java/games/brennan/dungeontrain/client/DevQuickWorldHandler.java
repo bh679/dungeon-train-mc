@@ -533,7 +533,7 @@ public final class DevQuickWorldHandler {
     }
 
     /**
-     * A perks test world: a survival New World with perks on, in Free Play
+     * A perks test world: a survival New World in Test mode (perks on, off the record)
      * ({@link games.brennan.dungeontrain.perks.PerksGate}). Asks the custom-content question first,
      * like every New World, and publishes the perks flag only once the world is really being made.
      */

@@ -45,4 +45,17 @@ final class NapSlotTest {
         assertFalse(NapSlot.matches(NapSlot.key(true, Difficulty.HARD), nap(false, "")));
         assertFalse(NapSlot.matches(NapSlot.key(false, Difficulty.HARD), nap(false, "nightmare")));
     }
+
+    @Test
+    @DisplayName("a Test mode nap wakes only in a test slot, and only a Test mode nap wakes there")
+    void testModeNapsKeptApart() {
+        String test = games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE;
+        String testSlot = NapSlot.keyFor(false, Difficulty.HARD, true);
+        assertTrue(NapSlot.matches(testSlot, nap(false, test)));
+        assertFalse(NapSlot.matches(NapSlot.key(false, Difficulty.HARD), nap(false, test)), "test nap into a live slot");
+        assertFalse(NapSlot.matches(NapSlot.key(false, Difficulty.NORMAL), nap(false, test)));
+        assertFalse(NapSlot.matches(testSlot, nap(false, "hard")), "live nap into a test slot");
+        assertFalse(NapSlot.matches(testSlot, nap(true, test)), "a Free Play test nap keeps to its own kind");
+        assertTrue(NapSlot.matches(testSlot, nap(false, test), false), "kind unchecked still matches");
+    }
 }

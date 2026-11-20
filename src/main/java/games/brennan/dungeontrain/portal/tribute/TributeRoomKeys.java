@@ -24,7 +24,9 @@ public final class TributeRoomKeys {
      */
     public static String keyFor(ServerLevel level, @Nullable ServerPlayer player) {
         boolean freePlay = player != null ? RunIntegrity.isCheated(player) : RunIntegrity.isVisiblySessionFreePlay();
-        return freePlay ? FREE_PLAY : DifficultyPartition.keyFor(level);
+        if (freePlay) return FREE_PLAY;
+        // Test mode keeps its own tribute rooms, as a difficulty does.
+        return games.brennan.dungeontrain.perks.PerksGate.isTestWorld() ? games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE : DifficultyPartition.keyFor(level);
     }
 
     /** True for a key this class could have produced; a file name is never trusted further than that. */

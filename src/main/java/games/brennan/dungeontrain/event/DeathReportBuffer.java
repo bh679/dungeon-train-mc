@@ -47,6 +47,7 @@ public final class DeathReportBuffer {
      */
     public static void await(ServerPlayer player, String title, String description,
                              List<DeathField> fields, List<ItemStack> fallbackIcons, String webhookOverride) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         PENDING.put(player.getUUID(),
                 new Pending(player, title, description, fields, fallbackIcons,
                         DiscordPings.forPlayer(webhookOverride, player.getUUID(), PingType.DEATH), // @-ping them if linked

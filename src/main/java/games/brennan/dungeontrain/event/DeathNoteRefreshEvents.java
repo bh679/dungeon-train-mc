@@ -151,8 +151,8 @@ public final class DeathNoteRefreshEvents {
         // author's at signing — Free Play curses haunt only Free Play runs, legit only legit. Dev
         // builds bypass the match (spawn everything) for testing. A mismatched note is left in the
         // pool (not removed / marked used) so it can still fire on a later matching life.
-        boolean targetFreePlay = RunIntegrity.isCheated(player);
-        boolean enforce = !DungeonTrain.isDevBuild();
+        boolean targetFreePlay = RunIntegrity.isOffRecord(player);
+        boolean enforce = !DungeonTrain.isDevBuild() || RunIntegrity.isOffRecordWorld();
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
             if (enforce && note.freePlay() != targetFreePlay) continue; // provenance mismatch — wait for a matching life
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,

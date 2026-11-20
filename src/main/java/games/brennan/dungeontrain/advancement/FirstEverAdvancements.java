@@ -53,7 +53,7 @@ public final class FirstEverAdvancements {
         ResourceLocation id = advancement.id();
         if (!eligible(id) || onTrust <= 0) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;
-        if (RunIntegrity.isCheated(player)) return;            // onEarn's Free Play report covers it
+        if (RunIntegrity.isOffRecord(player)) return;            // onEarn's Free Play report covers it
         AdvancementFirstClient.reportUnverified(player.getUUID(), player.getGameProfile().getName(), id.toString(),
             DifficultyPartition.keyFor(player.level()), onTrust);
     }
@@ -71,7 +71,7 @@ public final class FirstEverAdvancements {
         ResourceLocation id = advancement.id();
         if (!eligible(id)) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;   // the relay is what knows; no relay, no firsts
-        if (RunIntegrity.isCheated(player)) {                  // Free Play earns are not feats
+        if (RunIntegrity.isOffRecord(player)) {                  // Free Play earns are not feats
             AdvancementFirstClient.reportFreePlay(player.getUUID(), id.toString());
             return;
         }

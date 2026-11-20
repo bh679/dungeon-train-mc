@@ -29,12 +29,13 @@ public final class FreePlayBridge {
         FreePlayQuery.install(new FreePlayQuery.Provider() {
             @Override
             public boolean isFreePlay(ServerPlayer player) {
-                return RunIntegrity.isCheated(player);
+                return RunIntegrity.isOffRecord(player);
             }
 
             @Override
             public boolean enforceMatch() {
-                return !DungeonTrain.isDevBuild();
+                // Test mode never takes the dev bypass: its deaths stay out of the live pool.
+                return !DungeonTrain.isDevBuild() || RunIntegrity.isOffRecordWorld();
             }
         });
     }

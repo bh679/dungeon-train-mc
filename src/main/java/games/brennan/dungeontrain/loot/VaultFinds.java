@@ -86,7 +86,7 @@ public final class VaultFinds {
             CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.put(TAG, claimTag(claim)));
         }
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;   // the relay is what counts; no relay, no number
-        if (RunIntegrity.isCheated(player)) return;            // Free Play finds are not feats
+        if (RunIntegrity.isOffRecord(player)) return;            // Free Play finds are not feats
         MinecraftServer server = player.getServer();
         if (server == null) return;
         UUID who = player.getUUID();

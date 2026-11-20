@@ -110,7 +110,7 @@ public final class LeaderboardRefreshEvents {
         if (event.isCanceled()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;
-        if (RunIntegrity.isCheated(player)) return;
+        if (RunIntegrity.isOffRecord(player)) return;
         PENDING.schedule(player.getUUID(), System.currentTimeMillis() + DEATH_RANK_DELAY_MS);
     }
 

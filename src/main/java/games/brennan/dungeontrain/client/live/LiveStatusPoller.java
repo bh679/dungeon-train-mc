@@ -59,7 +59,9 @@ public final class LiveStatusPoller {
         long now = System.currentTimeMillis();
         lastInterestMs = now;
         Minecraft mc = Minecraft.getInstance();
-        boolean fp = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
+        // Off the record: Free Play or Test mode (the relay treats both as not a live run).
+        boolean fp = mc.player != null
+            && (mc.player.hasEffect(ModMobEffects.FREE_PLAY) || mc.player.hasEffect(ModMobEffects.TEST_MODE));
         if (fp != freePlay) {
             freePlay = fp;
             reset();

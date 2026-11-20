@@ -93,6 +93,11 @@ public final class EnderChestLockBridge {
             if (RunIntegrity.isCheated(player)) {
                 return FREE_PLAY_SLOT;
             }
+            if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+                // Test mode is its own profile, like a difficulty — whatever the isolation config, so
+                // a test world can never read or write a live chest (ECP takes any slot string).
+                return defaultKey + DifficultyPartition.suffixFor(games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE);
+            }
             if (!DungeonTrainConfig.getDifficultyIsolatedStash()) {
                 return null; // defer to the plain game-mode key
             }
@@ -196,9 +201,13 @@ public final class EnderChestLockBridge {
         if (!active) {
             return Optional.empty();
         }
+        boolean cheated = RunIntegrity.isCheated(player);
+        if (!cheated && games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            return EnderChestLabel.testModeTitle(baseTitle);
+        }
         return EnderChestLabel.titleFor(
             baseTitle,
-            RunIntegrity.isCheated(player),
+            cheated,
             player.gameMode.getGameModeForPlayer(),
             player.level().getDifficulty(),
             DungeonTrainConfig.getDifficultyIsolatedStash());

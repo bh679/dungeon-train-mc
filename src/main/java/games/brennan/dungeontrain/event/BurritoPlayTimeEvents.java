@@ -39,7 +39,7 @@ public final class BurritoPlayTimeEvents {
     /** Is this player's burrito clock running in the world right now? */
     static boolean counts(ServerPlayer player) {
         return player.isAlive()
-            && !RunIntegrity.isCheated(player)
+            && !RunIntegrity.isOffRecord(player)
             && !PlayerActivityTracker.isPaused(player.getUUID());
     }
 }
