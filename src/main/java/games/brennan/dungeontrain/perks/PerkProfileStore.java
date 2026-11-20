@@ -36,6 +36,8 @@ final class PerkProfileStore {
     static final String TAG_UNLOCKS = "Unlocks";
     static final String TAG_PARKED_ACTIVE = "ParkedActive";
     static final String TAG_PARKED_POINTS = "ParkedPoints";
+    /** The perks each past life activated ({@link PerkLifeHistory}): at the root for real play, inside a partition for tests. */
+    static final String TAG_PAST_LIVES = "PastLives";
 
     private PerkProfileStore() {}
 
@@ -76,7 +78,37 @@ final class PerkProfileStore {
         return waiting;
     }
 
+    /** Past lives' perks: the global list, or {@code partition}'s own when non-null (perks test worlds). */
+    static PerkLifeHistory pastLives(UUID uuid, String partition) {
+        return pastLivesIn(read(uuid), partition);
+    }
+
+    /** Add one ended life to the list {@link #pastLives} reads; returns the new list. */
+    static PerkLifeHistory appendLife(UUID uuid, String partition, java.util.List<String> perks) {
+        CompoundTag root = read(uuid);
+        PerkLifeHistory next = pastLivesIn(root, partition).withLife(perks);
+        write(uuid, withPastLives(root, partition, next));
+        return next;
+    }
+
     // ---- tag logic (pure: each write returns a new root) ----
+
+    static PerkLifeHistory pastLivesIn(CompoundTag root, String partition) {
+        CompoundTag holder = partition == null ? root : root.getCompound(partition);
+        return PerkLifeHistory.fromTag(holder, TAG_PAST_LIVES);
+    }
+
+    static CompoundTag withPastLives(CompoundTag root, String partition, PerkLifeHistory history) {
+        CompoundTag next = root.copy();
+        if (partition == null) {
+            next.put(TAG_PAST_LIVES, history.toTag());
+        } else {
+            CompoundTag tag = next.getCompound(partition);
+            tag.put(TAG_PAST_LIVES, history.toTag());
+            next.put(partition, tag);
+        }
+        return next;
+    }
 
     static Map<String, Integer> unlocksIn(CompoundTag root, String partition) {
         return readInts(root.getCompound(partition).getCompound(TAG_UNLOCKS));

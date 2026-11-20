@@ -93,6 +93,32 @@ public final class PerkProfiles {
         PerkProfileStore.setUnlockLevel(player.getUUID(), key(player), perkId, level);
     }
 
+    /** Where a player's past lives are kept: one global list for real play, the test partition's own in a test world. */
+    private static String livesPartition() {
+        return PerksGate.isTestWorld() ? TEST_KEY : null;
+    }
+
+    /**
+     * A life just ended: remember the perks it activated, for the nap sky. Nothing is kept while perks
+     * are off (that life is "before perks") or on a Free Play run outside a test world.
+     *
+     * @return the history after the append, or null when nothing was recorded
+     */
+    static PerkLifeHistory onLifeEnded(ServerPlayer player) {
+        if (!PerksGate.isOn() || skipsSave(player)) return null;
+        java.util.List<String> perks = java.util.List.copyOf(Perks.state(player).active().keySet());
+        PerkLifeHistory next = PerkProfileStore.appendLife(player.getUUID(), livesPartition(), perks);
+        LOGGER.debug("[DungeonTrain] perk life recorded for {}: {} perk(s), {} life/lives kept",
+            player.getScoreboardName(), perks.size(), next.size());
+        return next;
+    }
+
+    /** The past lives' perks the nap sky draws; empty while perks are off. */
+    static PerkLifeHistory pastLives(ServerPlayer player) {
+        if (!PerksGate.isOn()) return PerkLifeHistory.EMPTY;
+        return PerkProfileStore.pastLives(player.getUUID(), livesPartition());
+    }
+
     /** Dev reset: forget the current difficulty's save too, or the next login would bring it all back. */
     static void onCleared(ServerPlayer player) {
         if (!PerksGate.isOn()) return;

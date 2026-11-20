@@ -9,7 +9,9 @@ import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
 import games.brennan.dungeontrain.client.nap.NapQuit;
 import games.brennan.dungeontrain.client.nap.NapSky;
+import games.brennan.dungeontrain.client.nap.NapSkyLives;
 import games.brennan.dungeontrain.client.nap.NapSkyPainter;
+import games.brennan.dungeontrain.client.nap.NapSkyStars;
 import games.brennan.dungeontrain.narrative.LocaleOrdinalWords;
 import games.brennan.dungeontrain.client.survey.KnownFeature;
 import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
@@ -1819,12 +1821,28 @@ public final class NarrativeDeathScreen extends Screen {
             if (s == null || sky == null) return;
             UUID player = this.minecraft != null && this.minecraft.getUser() != null
                 ? this.minecraft.getUser().getProfileId() : null;
-            napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime());
+            napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime(), napSkyLives(sky));
         }
         double top = NAP_SKY_TOP, bottom = this.height - NAP_SKY_BOTTOM_GAP;
         double size = Math.min(this.width - 24, (bottom - top) * 1.3);
         double cy = (top + bottom) / 2.0 + size * 0.04;
         napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, ongoingStart(), now, uiAlpha);
+    }
+
+    /**
+     * The perk history the nap sky draws: past lives' activated perks and this life's so far. The plain
+     * sky ({@link NapSkyLives#NONE}) while perks are off.
+     */
+    private NapSkyLives napSkyLives(NapSky sky) {
+        boolean on = games.brennan.dungeontrain.perks.PerksGate.isOnClient();
+        if (!on || this.minecraft == null || this.minecraft.player == null) {
+            return NapSkyLives.NONE;
+        }
+        NapSkyStars stars = NapSkyStars.match(sky,
+            games.brennan.dungeontrain.perks.PerkTreeLoader.get());
+        return NapSkyLives.of(sky, stars,
+            PerkClientLives.get().lives(),
+            games.brennan.dungeontrain.perks.Perks.state(this.minecraft.player).active().keySet(), true);
     }
 
     /** The six lifetime text tiles and the 3×3 icon grid, shared by "all your lives" and "a life ongoing". */
