@@ -2,8 +2,8 @@
   "locale": "ko_kr",
   "name": "인간 검수 없는 AI",
   "human_reviewed": false,
-  "total_keys": 6371,
-  "ai_authored": 6370,
-  "ai_unreviewed": 6370,
-  "counted_keys": 4393
+  "total_keys": 6374,
+  "ai_authored": 6373,
+  "ai_unreviewed": 6373,
+  "counted_keys": 4396
 }

@@ -35,6 +35,9 @@ public final class PerksHotkeyClient {
 
     @SubscribeEvent
     public static void onRegister(RegisterKeyMappingsEvent event) {
+        // Kept out of the Controls list until perks launch (PerksGate). An unregistered mapping still
+        // fires (vanilla keys clicks off every constructed mapping), so P works in a perks test world.
+        if (!games.brennan.dungeontrain.perks.PerksGate.LAUNCHED) return;
         event.register(KEY);
     }
 

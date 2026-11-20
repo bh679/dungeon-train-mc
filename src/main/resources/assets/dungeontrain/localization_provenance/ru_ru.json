@@ -162,6 +162,7 @@
       "gui.dungeontrain.difficulty_confirm.restart_dies",
       "gui.dungeontrain.difficulty_confirm.loss_run",
       "gui.dungeontrain.difficulty_confirm.stats",
+      "gui.dungeontrain.difficulty_confirm.stats_perks",
       "gui.dungeontrain.difficulty_confirm.next_run",
       "gui.dungeontrain.difficulty_confirm.restart_now",
       "chat.dungeontrain.difficulty_next_run",
@@ -5628,8 +5629,9 @@
   },
   "source_changed": {
     "dungeontrain": [
-      "gui.dungeontrain.difficulty_confirm.kept",
+      "gui.dungeontrain.difficulty_confirm.kept_perks",
       "chat.dungeontrain.difficulty_profile.swapped",
+      "chat.dungeontrain.difficulty_profile.swapped_perks",
       "gui.dungeontrain.loading.story.2.line.3",
       "gui.dungeontrain.loading.story.3.line.4",
       "gui.dungeontrain.loading.story.3.line.5",

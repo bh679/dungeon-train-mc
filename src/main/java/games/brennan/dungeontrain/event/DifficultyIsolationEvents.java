@@ -80,7 +80,10 @@ public final class DifficultyIsolationEvents {
                 // And the perks those advancements paid for.
                 PerkProfiles.swap(player, fromKey, toKey);
                 player.sendSystemMessage(Component.translatable(
-                    "chat.dungeontrain.difficulty_profile.swapped",
+                    // Perks are only named while they are on (PerksGate): the soft launch keeps them quiet.
+                    games.brennan.dungeontrain.perks.PerksGate.isOn()
+                        ? "chat.dungeontrain.difficulty_profile.swapped_perks"
+                        : "chat.dungeontrain.difficulty_profile.swapped",
                     Component.translatable(to.getKey()),
                     Component.translatable(from.getKey())).withStyle(ChatFormatting.YELLOW));
             } catch (Exception e) {
