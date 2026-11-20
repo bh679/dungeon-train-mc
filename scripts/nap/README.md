@@ -18,5 +18,8 @@ out={'source':'dev/perks data/dungeontrain/perks/tree.json v%d (geometry only)'%
 print(json.dumps(out,separators=(',',':')))" > src/main/resources/assets/dungeontrain/nap/sky.json
 ```
 
-Later, each past life's path will be the perk path that life really unlocked; until then the paths are
-generated (`NapSkyPaths`).
+Where perks are on, a past life with a perk record draws the perks it activated, and this life draws the
+perks activated so far (`NapSkyLives`, `NapSkyPaths#fromStars`). A perk is matched to its star by
+position (`NapSkyStars`), so **regenerate this file whenever `tree.json` positions change**:
+`NapSkyLivesTest#everyPerkHasAStar` fails until you do. Lives from before perks, and every life while
+perks are off, still get generated paths (`NapSkyPaths#pastLife`).
