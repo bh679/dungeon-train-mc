@@ -12,13 +12,13 @@ public final class RunWorldNames {
     /**
      * All auto-generated "<prefix><epoch-millis>" world names that are safe to delete: the death
      * screen's own runs, plus both title-screen New World buttons ({@code DevQuickWorldHandler}:
-     * "Dev World " creative, "World " survival). The remainder must be exactly
+     * "Dev World " creative, "World " survival, "Perks Test " the perks test world). The remainder must be exactly
      * {@link #EPOCH_MILLIS_DIGITS} digits, as {@code System.currentTimeMillis()} writes it: a
      * hand-named world like "World of Pain" or "World 2" never matches. Editor worlds
      * ("train editor N") are deliberately absent: they hold authored content.
      */
     private static final List<String> AUTO_WORLD_PREFIXES = List.of(
-            "Dungeon Train ", "Dev World ", "World ");
+            "Dungeon Train ", "Dev World ", "World ", "Perks Test ");
 
     /** Digits in an epoch-millis timestamp from 2001 until 2286, which is every name DT generates. */
     static final int EPOCH_MILLIS_DIGITS = 13;
