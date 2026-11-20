@@ -71,7 +71,7 @@ public final class OwnPhotoTribute {
      * the same rule as the run-ended manifest.
      */
     public static int currentCost(ServerPlayer player) {
-        if (RunIntegrity.isCheated(player) && !DungeonTrain.isDevBuild()) return 0;
+        if ((RunIntegrity.isCheated(player) && !DungeonTrain.isDevBuild()) || RunIntegrity.isOffRecordWorld()) return 0;
         if (!SharedBookGate.canContribute(player)) return 0;
         return cost(player.getData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get()));
     }

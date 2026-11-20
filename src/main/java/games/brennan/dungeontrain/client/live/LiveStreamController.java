@@ -547,7 +547,9 @@ public final class LiveStreamController {
         LiveClaimInfo info = LiveClaimInfo.of(VersionInfo.VERSION, LatestReleaseCache.latestVersion(),
             VersionInfo.LAST_UPDATE_DATE, LocalDate.now(ZoneOffset.UTC),
             LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode());
-        boolean freePlay = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
+        // Off the record: Free Play or Test mode.
+        boolean freePlay = mc.player != null
+            && (mc.player.hasEffect(ModMobEffects.FREE_PLAY) || mc.player.hasEffect(ModMobEffects.TEST_MODE));
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
         CompletableFuture<Boolean> aac = LiveFeedClientConfig.streamAudio()
             ? FfmpegSupport.aacEncoder() : CompletableFuture.completedFuture(false);

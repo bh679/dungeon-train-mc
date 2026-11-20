@@ -50,6 +50,11 @@ public final class DifficultyIsolationEvents {
         if (!DungeonTrainConfig.getDifficultyIsolatedStash()) {
             return;
         }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            // Test mode is one profile whatever the difficulty (ProfileKey): nothing to swap — no
+            // loadout, chest, advancements or perks, no loot clear, no messages.
+            return;
+        }
         Difficulty from = event.getOldDifficulty();
         Difficulty to = event.getDifficulty();
         if (from == to) {

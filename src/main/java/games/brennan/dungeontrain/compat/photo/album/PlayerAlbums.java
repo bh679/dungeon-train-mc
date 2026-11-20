@@ -97,7 +97,7 @@ public final class PlayerAlbums {
 
     /** Which of the player's two albums this run shows. */
     static AlbumKind kindFor(ServerPlayer player) {
-        return AlbumKind.forRun(RunIntegrity.isCheated(player));
+        return AlbumKind.forRun(RunIntegrity.isOffRecord(player));
     }
 
     /** Which album a copy of their own opens onto: the one it carries, but Free Play has only one. */

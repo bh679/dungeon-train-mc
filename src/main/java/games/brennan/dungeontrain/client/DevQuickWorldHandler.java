@@ -90,6 +90,8 @@ public final class DevQuickWorldHandler {
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.new_world");
     private static final Component PERKS_TEST_LABEL = Component.literal("\u2726");
     private static final Component PERKS_TEST_TOOLTIP = Component.translatable("gui.dungeontrain.perks_test_world");
+    /** Dark red tint for the perks test world button (multiplied over the vanilla button sprite). */
+    private static final float[] PERKS_TEST_TINT = {0.55F, 0.08F, 0.08F};
     private static final Component REBOARD_LABEL = Component.translatable("gui.dungeontrain.new_world.reboard");
     /** Sprite tint for a Reboard button (blue; blue channel stays 1). */
     private static final float REBOARD_TINT_R = 0.35F;
@@ -203,10 +205,12 @@ public final class DevQuickWorldHandler {
 
         // Approved perks testers only, and only while Shift is held: a perks test world.
         games.brennan.dungeontrain.client.perks.PerkTesterStatus.refresh();
-        Button perksTest = Button.builder(PERKS_TEST_LABEL, b -> launchPerksTestWorld(titleScreen))
-                .bounds(survivalX, spY, iconW, spH)
-                .tooltip(net.minecraft.client.gui.components.Tooltip.create(PERKS_TEST_TOOLTIP))
-                .build();
+        // Dark red, so a tester can tell it apart from the ordinary New World buttons at a glance.
+        Button perksTest = new games.brennan.dungeontrain.client.menu.ColorTintedButton(
+                survivalX, spY, iconW, spH, PERKS_TEST_LABEL,
+                PERKS_TEST_TINT[0], PERKS_TEST_TINT[1], PERKS_TEST_TINT[2],
+                b -> launchPerksTestWorld(titleScreen));
+        perksTest.setTooltip(net.minecraft.client.gui.components.Tooltip.create(PERKS_TEST_TOOLTIP));
         perksTest.visible = false;
 
         event.addListener(creativeNewWorld);
@@ -529,7 +533,7 @@ public final class DevQuickWorldHandler {
     }
 
     /**
-     * A perks test world: a survival New World with perks on, in Free Play
+     * A perks test world: a survival New World in Test mode (perks on, off the record)
      * ({@link games.brennan.dungeontrain.perks.PerksGate}). Asks the custom-content question first,
      * like every New World, and publishes the perks flag only once the world is really being made.
      */

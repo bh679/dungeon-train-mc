@@ -380,9 +380,18 @@ final class PerkDetailsBar {
             return;
         }
         if (perk == null) {
-            Component hint = Component.translatable(KEY + "hint");
-            g.drawString(font, hint, (width - font.width(hint)) / 2, top + (HEIGHT - font.lineHeight) / 2 + 1,
-                ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+            // Opened with P before anything is unlocked: nothing here can be used yet, so say so
+            // instead of inviting a click. The death screen's menu (where unlocking happens) keeps the hint.
+            boolean notReady = activeOnly && snap.unlocked().isEmpty();
+            Component hint = Component.translatable(KEY + (notReady ? "not_ready" : "hint"));
+            int colour = ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF);
+            java.util.List<net.minecraft.util.FormattedCharSequence> lines = font.split(hint, Math.max(40, width - 2 * STRIPE - 24));
+            int lineH = font.lineHeight + 2;
+            int y = top + (HEIGHT - lines.size() * lineH) / 2 + 2;
+            for (net.minecraft.util.FormattedCharSequence line : lines) {
+                g.drawString(font, line, (width - font.width(line)) / 2, y, colour, false);
+                y += lineH;
+            }
             return;
         }
         PerkTree.Perk p = perk;

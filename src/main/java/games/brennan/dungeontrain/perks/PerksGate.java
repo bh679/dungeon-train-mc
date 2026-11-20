@@ -34,6 +34,13 @@ public final class PerksGate {
     /** Perks are live for everyone. False until the launch. */
     public static final boolean LAUNCHED = false;
 
+    /**
+     * The save profile perks test worlds use for both perk unlocks and advancements, apart from every
+     * difficulty's: a tester's progress carries from one test world to the next and never reaches a
+     * real profile. Its files sit beside the difficulty ones ({@code <uuid>.perktest.json}).
+     */
+    public static final String TEST_PROFILE = "perktest";
+
     /** Mirror of the loaded world's {@code perksTest} flag (server side). */
     private static volatile boolean testWorld = false;
 
@@ -47,7 +54,7 @@ public final class PerksGate {
         return LAUNCHED || testWorld;
     }
 
-    /** Server side: is the loaded world a perks test world (and so Free Play)? */
+    /** Server side: is the loaded world a perks test world (Test mode: perks on, off the record, its own profile)? */
     public static boolean isTestWorld() {
         return testWorld;
     }
@@ -78,7 +85,7 @@ public final class PerksGate {
     public static void markTestWorld(ServerLevel overworld) {
         DungeonTrainWorldData.get(overworld).markPerksTest();
         testWorld = true;
-        LOGGER.info("[DungeonTrain] New perks test world: perks on, Free Play.");
+        LOGGER.info("[DungeonTrain] New perks test world: Test mode (perks on, off the record).");
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
@@ -87,7 +94,12 @@ public final class PerksGate {
         if (!overworld.dimension().equals(Level.OVERWORLD)) return;
         // Never lowers it: WorldLifecycleEvents may have marked this new world first.
         if (DungeonTrainWorldData.get(overworld).isPerksTest()) testWorld = true;
-        if (testWorld) LOGGER.info("[DungeonTrain] Perks test world: perks on, Free Play.");
+        if (testWorld) LOGGER.info("[DungeonTrain] Perks test world: Test mode (perks on, off the record).");
+    }
+
+    /** Unit tests only: set the server-side test world flag without a level. */
+    public static void setTestWorldForTests(boolean on) {
+        testWorld = on;
     }
 
     @SubscribeEvent

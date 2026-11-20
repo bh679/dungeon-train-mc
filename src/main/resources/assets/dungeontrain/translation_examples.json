@@ -18324,15 +18324,6 @@
       ]
     }
   },
-  "chat.dungeontrain.perks.unlock_gained": {
-    "1": {
-      "label": "unlock points just earned",
-      "examples": [
-        "1",
-        "3"
-      ]
-    }
-  },
   "gui.dungeontrain.perks.unlock_points": {
     "1": {
       "label": "how many unlock points are unspent",

@@ -131,7 +131,7 @@ public class NarrativeLecternBlock extends LecternBlock {
             data.markRead(id.storyBasename(), id.letterIndex());
             // Cross-world store is frozen for cheated runs; per-world `data` (the
             // login-absorption source + lectern selection) still records.
-            boolean cheated = RunIntegrity.isCheated(sp);
+            boolean cheated = RunIntegrity.isOffRecord(sp);
             if (!cheated) {
                 GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
             }

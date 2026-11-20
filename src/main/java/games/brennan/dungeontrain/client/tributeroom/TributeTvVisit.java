@@ -309,9 +309,13 @@ public final class TributeTvVisit {
         // The click lands where the crosshair is on the picture: the page's own buttons take it.
         int[] m = tvMouse();
         if (m[0] == TvPointer.OFF_SCREEN) return true;
-        recapScreen.mouseClicked(m[0], m[1], 0);
-        recapScreen.mouseReleased(m[0], m[1], 0);
-        if (recapScreen.textFieldFocused()) liftForTyping(mc, recapScreen);
+        // Held locally: the click can end the visit (a page's button that leaves the world, e.g.
+        // Board anew), which clears recapScreen before the release would reach it.
+        NarrativeDeathScreen page = recapScreen;
+        page.mouseClicked(m[0], m[1], 0);
+        if (recapScreen != page) return true;
+        page.mouseReleased(m[0], m[1], 0);
+        if (recapScreen == page && page.textFieldFocused()) liftForTyping(mc, page);
         return true;
     }
 

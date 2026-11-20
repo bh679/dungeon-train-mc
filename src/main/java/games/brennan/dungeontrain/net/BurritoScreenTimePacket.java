@@ -58,7 +58,7 @@ public record BurritoScreenTimePacket(long ms) implements CustomPacketPayload {
     public static void handle(BurritoScreenTimePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            if (!player.isAlive() || RunIntegrity.isCheated(player)) return;
+            if (!player.isAlive() || RunIntegrity.isOffRecord(player)) return;
             BurritoClock.addPlayTicks(player.getUUID(), ticksFor(packet.ms));
         });
     }

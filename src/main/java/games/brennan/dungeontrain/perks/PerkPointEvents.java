@@ -8,10 +8,8 @@ import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
-import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.DisplayInfo;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -35,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PerkPointEvents {
 
-    static final String KEY_GAINED = "chat.dungeontrain.perks.unlock_gained";
 
     /** Dirty players; the value is true when the recompute should stay quiet. */
     private static final Map<UUID, Boolean> DIRTY = new ConcurrentHashMap<>();
@@ -81,11 +78,8 @@ public final class PerkPointEvents {
         int after = recompute(player);
         player.setData(ModDataAttachments.PERK_UNLOCK_EARNED.get(), after);
         PerkBalances.sync(player);
-        // The total is kept either way (it is only a count of advancements); the line is not.
-        if (!silent && after > before && PerksGate.isOn()) {
-            // no balance: unlock points are spent after death, and play keeps them out of sight
-            player.sendSystemMessage(Component.translatable(KEY_GAINED, after - before).withStyle(ChatFormatting.LIGHT_PURPLE));
-        }
+        // No chat line when the total grows: unlock points can only be spent after death, so play
+        // keeps them out of sight until then (the death screen's perks menu shows the balance).
     }
 
     /** Sum of {@link UnlockPointLedger#weight} over every advancement this player has done. */

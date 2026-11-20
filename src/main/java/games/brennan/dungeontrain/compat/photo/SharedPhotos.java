@@ -188,7 +188,7 @@ public final class SharedPhotos {
      */
     static void lifeFields(ServerPlayer player, JsonObject json, boolean withVersion) {
         json.addProperty("lifeId", LifeKey.of(player));
-        json.addProperty("freePlay", RunIntegrity.isCheated(player));
+        json.addProperty("freePlay", RunIntegrity.isOffRecord(player));
         if (withVersion) {
             ModList.get().getModContainerById(DungeonTrain.MOD_ID)
                     .ifPresent(mod -> json.addProperty("modVersion", mod.getModInfo().getVersion().toString()));
@@ -223,7 +223,7 @@ public final class SharedPhotos {
                 .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals(),
                         games.brennan.dungeontrain.nap.NapGateData.step(player));
         // A Free Play photo stays with its photographer: it is never sent to be found by other players.
-        if (RunIntegrity.isCheated(player)) return;
+        if (RunIntegrity.isOffRecord(player)) return;
         String key = newKey();
         // The print carries its upload key, so a Tribute from its photographer can boost it later.
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
@@ -573,7 +573,7 @@ public final class SharedPhotos {
         boolean ownPhoto = isOwnPhoto(held, player.getGameProfile().getName());
         // Big Spender's running total: clean runs only, so Free Play emeralds can't bank progress for later.
         int totalToOthers = ownPhoto ? 0
-                : RunIntegrity.isCheated(player) ? GlobalTributeStats.totalPaidToOthers(player.getUUID())
+                : RunIntegrity.isOffRecord(player) ? GlobalTributeStats.totalPaidToOthers(player.getUUID())
                 : GlobalTributeStats.addPaidToOthers(player.getUUID(), cost);
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
@@ -617,7 +617,7 @@ public final class SharedPhotos {
         if (server == null) return;
         // The player's own Discord gets every Tribute; the public feed keeps its rules below.
         boolean personal = TributePhotoReporter.hasPersonalWebhook(player);
-        boolean clean = !RunIntegrity.isCheated(player);
+        boolean clean = !RunIntegrity.isOffRecord(player);
         if (!clean && !personal) return;
         Frame frame = held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         String photographer = frame == null ? "" : frame.extraData().getString(SHARED_AUTHOR_KEY);

@@ -20,16 +20,16 @@ import java.util.UUID;
  * Free Play purchases are not saved, the same rule as Free Play advancements: they last in that world's
  * {@code PERK_STATE} only.</p>
  *
- * <p>Nothing here runs while perks are off ({@link PerksGate}). A perks test world is Free Play, but
- * its unlocks are saved anyway, to their own partition ({@link #TEST_KEY}), so a tester keeps them
- * from one test world to the next while the per-difficulty saves are never touched.</p>
+ * <p>Nothing here runs while perks are off ({@link PerksGate}). A perks test world is Test mode, its
+ * own profile like a difficulty: its unlocks save to their own partition ({@link #TEST_KEY}), so a
+ * tester keeps them from one test world to the next while the per-difficulty saves are never touched.</p>
  */
 public final class PerkProfiles {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** The save partition perks test worlds use, apart from every difficulty's. */
-    static final String TEST_KEY = "perktest";
+    static final String TEST_KEY = PerksGate.TEST_PROFILE;
 
     private PerkProfiles() {}
 
@@ -38,9 +38,9 @@ public final class PerkProfiles {
         return PerksGate.isTestWorld() ? TEST_KEY : AdvancementProfiles.currentKey(player);
     }
 
-    /** Free Play for the save's purposes: a perks test world saves to its own partition, so it is not. */
+    /** Free Play saves no unlocks. Test mode is not Free Play: it saves to its own partition ({@link #TEST_KEY}). */
     private static boolean skipsSave(ServerPlayer player) {
-        return !PerksGate.isTestWorld() && RunIntegrity.isCheated(player);
+        return RunIntegrity.isCheated(player);
     }
 
     /**

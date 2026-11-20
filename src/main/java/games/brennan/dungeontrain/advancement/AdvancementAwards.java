@@ -54,7 +54,7 @@ public final class AdvancementAwards {
         try {
             ServerPlayer player = server.getPlayerList().getPlayer(uuid);
             if (player == null) return;
-            if (RunIntegrity.isCheated(player)) {
+            if (RunIntegrity.isOffRecord(player)) {
                 LOGGER.info("[DungeonTrain] Advancement awards: {} pending for {}, held for a clean run (Free Play)",
                     awards.size(), player.getName().getString());
                 return;
