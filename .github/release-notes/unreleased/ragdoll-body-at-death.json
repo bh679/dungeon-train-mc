@@ -1,21 +1,26 @@
 {
   "id": "ragdoll-body-at-death",
-  "version": "0.1922.0",
+  "version": "0.1926.0",
   "type": "feat",
   "tags": [
     "feature",
+    "ui",
     "compatibility"
   ],
-  "title": "Your body stays where you fell",
-  "summary": "When you die on the train, a body in your skin and gear now lies where you fell, and the death scene's shots follow it. Dungeon Train now requires Sable: Ragdolls, which the CurseForge and Modrinth apps install for you.",
+  "title": "Ragdoll deaths",
+  "summary": "When you die on the train, your body now falls as a ragdoll in your skin and gear, and a short death scene follows it with new camera angles before your recap. Dungeon Train now requires Sable: Ragdolls, which the CurseForge and Modrinth apps install for you.",
   "highlights": [
-    "A short death scene now plays before your recap, ending with a look up at the sky",
-    "The close shot and the carriage shot frame the body, wherever it tumbles",
-    "Your loot drops exactly as before; the body holds nothing and cannot be dragged",
-    "The body goes when you respawn"
+    "Your body ragdolls where you fall, in your skin and gear",
+    "Arrows and blasts send your body flying",
+    "New death camera angles: around your body, your killer and the mob you fought, then out from the carriage as it leaves",
+    "The scene ends with a look up at the sky. Left or Right changes the view, Space continues",
+    "Your loot drops exactly as before. The body holds nothing and goes when you respawn"
   ],
-  "date": "2026-11-20",
+  "date": "2026-11-21",
   "released": false,
   "released_in": null,
-  "released_at": null
+  "released_at": null,
+  "pr": 2777,
+  "major": true,
+  "notable": true
 }

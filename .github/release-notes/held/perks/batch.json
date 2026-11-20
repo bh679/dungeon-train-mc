@@ -1,6 +1,6 @@
 {
   "batch": "perks",
-  "bumps": 23,
+  "bumps": 24,
   "prs": [
     2299,
     2300,
@@ -24,7 +24,8 @@
     2572,
     2695,
     2776,
-    2778
+    2778,
+    2779
   ],
   "entries": [
     "cosmic-apples",
@@ -42,6 +43,7 @@
     "perks-menu-quicker-steps",
     "perks-per-difficulty",
     "perks-stats-and-descriptions",
+    "perks-test-world-naps",
     "perks-tier-one",
     "perks-tree-v18",
     "perks-unlock-after-death",
