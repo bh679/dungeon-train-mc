@@ -315,8 +315,9 @@ public final class CreditsScreen extends Screen {
                 names.add(to);
                 CreditsSelfEdits.recordRename(from, to);
             }
-            case REMOVE -> CreditsSelfEdits.setHidden(true);
-            case RESTORE -> CreditsSelfEdits.setHidden(false);
+            // Show my name: the same switch as the Options row, so the website's reviews follow.
+            case REMOVE -> PublicNameSwitch.onCreditsEdited(true);
+            case RESTORE -> PublicNameSwitch.onCreditsEdited(false);
             case HIDE_AMOUNT -> CreditsSelfEdits.setAmountHidden(true);
             case SHOW_AMOUNT -> CreditsSelfEdits.setAmountHidden(false);
             case HIDE_SKIN -> CreditsSelfEdits.setSkinHidden(true);
