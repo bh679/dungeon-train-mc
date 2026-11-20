@@ -2,8 +2,8 @@
   "locale": "id_id",
   "name": "AI tanpa tinjauan manusia",
   "human_reviewed": false,
-  "total_keys": 6105,
-  "ai_authored": 6105,
-  "ai_unreviewed": 6105,
-  "counted_keys": 4127
+  "total_keys": 6066,
+  "ai_authored": 6066,
+  "ai_unreviewed": 6066,
+  "counted_keys": 4088
 }

@@ -382,6 +382,15 @@ logoFile="logo.png"
     ordering="NONE"
     side="BOTH"
 
+# MC Java Safety Check — the Java4Shell warning card (client) and log line (server). jarJar'd inside
+# this jar; `optional` so DT still loads without it (compat/MCJavaSafetyCheckBridge does nothing then).
+[[dependencies.${mod_id}]]
+    modId="mcjavasafetycheck"
+    type="optional"
+    versionRange="[${mcjavasafetycheck_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="dpibypassdetect"
     type="optional"

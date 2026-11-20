@@ -22,6 +22,7 @@
     { "name": "ediblebackpacks-mc",          "repo": "bh679/ediblebackpacks-mc" },
     { "name": "lostcityterrainfit-mc",       "repo": "bh679/lostcityterrainfit-mc" },
     { "name": "dtmodverify-mc",              "repo": "bh679/dtmodverify-mc" },
+    { "name": "mcjavasafetycheck-mc",        "repo": "bh679/mcjavasafetycheck-mc" },
     { "name": "dungeonbackup-mc",            "repo": "bh679/dungeonbackup-mc" },
     { "name": "keeptrim-mc",                 "repo": "bh679/keeptrim-mc" },
     { "name": "pigmanvillagers-mc",          "repo": "bh679/pigmanvillagers-mc" },
