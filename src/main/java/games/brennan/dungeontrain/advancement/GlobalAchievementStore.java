@@ -159,9 +159,14 @@ public final class GlobalAchievementStore {
      */
     public static final String SHARED = "shared";
 
-    /** Every partition a player can have a file for — the four difficulties plus {@link #SHARED}. */
+    /**
+     * Every partition a player can have a file for — the four difficulties, {@link #SHARED} and the
+     * perks test profile ({@link games.brennan.dungeontrain.perks.PerksGate#TEST_PROFILE}), so a
+     * revocation or a profile reset reaches that one too.
+     */
     private static final List<String> ALL_PARTITIONS = Stream.concat(
-        Arrays.stream(Difficulty.values()).map(DifficultyPartition::keyFor), Stream.of(SHARED)).toList();
+        Arrays.stream(Difficulty.values()).map(DifficultyPartition::keyFor),
+        Stream.of(SHARED, games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE)).toList();
 
     private GlobalAchievementStore() {}
 

@@ -34,6 +34,13 @@ public final class PerksGate {
     /** Perks are live for everyone. False until the launch. */
     public static final boolean LAUNCHED = false;
 
+    /**
+     * The save profile perks test worlds use for both perk unlocks and advancements, apart from every
+     * difficulty's: a tester's progress carries from one test world to the next and never reaches a
+     * real profile. Its files sit beside the difficulty ones ({@code <uuid>.perktest.json}).
+     */
+    public static final String TEST_PROFILE = "perktest";
+
     /** Mirror of the loaded world's {@code perksTest} flag (server side). */
     private static volatile boolean testWorld = false;
 

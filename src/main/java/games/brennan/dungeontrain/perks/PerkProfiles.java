@@ -29,7 +29,7 @@ public final class PerkProfiles {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** The save partition perks test worlds use, apart from every difficulty's. */
-    static final String TEST_KEY = "perktest";
+    static final String TEST_KEY = PerksGate.TEST_PROFILE;
 
     private PerkProfiles() {}
 
