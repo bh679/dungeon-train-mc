@@ -147,11 +147,6 @@ public final class DeathBodyRagdoll {
         return new Vec3(world.x, world.y, world.z);
     }
 
-    /** Is a throw waiting for {@code bodyId}? True right after {@link #spawn} for an arrow or blast death. */
-    public static boolean isThrown(@Nullable UUID bodyId) {
-        return bodyId != null && THROWS.containsKey(bodyId);
-    }
-
     /** Remove {@code player}'s body, if any (respawned or left). */
     public static void release(ServerPlayer player) {
         Body body = BODIES.remove(player.getUUID());

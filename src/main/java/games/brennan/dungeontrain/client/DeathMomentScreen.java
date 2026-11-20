@@ -160,9 +160,10 @@ public final class DeathMomentScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // The red wash belongs to the player's own view only; it rises over the moment of death and
-        // goes out with the first cut to black. Every later cut fades through black and back.
-        boolean pov = !DeathCameraCycle.isActive() || DeathCameraCycle.isPov();
+        // The red wash belongs to the player's own view shot only. The scene no longer opens on that
+        // shot (it goes straight to the body), so there is no wash while the camera waits to start
+        // either. Every cut fades through black and back.
+        boolean pov = DeathCameraCycle.isActive() && DeathCameraCycle.isPov();
         if (pov) {
             float fade = Mth.clamp((ticks + partialTick) / FADE_TICKS, 0.0f, 1.0f);
             g.fillGradient(0, 0, this.width, this.height, scaleAlpha(WASH_TOP, fade), scaleAlpha(WASH_BOTTOM, fade));
