@@ -1708,6 +1708,22 @@
       ]
     }
   },
+  "chat.dungeontrain.difficulty_profile.swapped_perks": {
+    "1": {
+      "label": "the difficulty just switched to",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    },
+    "2": {
+      "label": "the difficulty left behind",
+      "examples": [
+        "Normal",
+        "Hard"
+      ]
+    }
+  },
   "chat.dungeontrain.familiar_book.1": {
     "1": {
       "label": "how many people have held the book, as a whole clause",
@@ -4882,6 +4898,16 @@
     }
   },
   "gui.dungeontrain.difficulty_confirm.kept": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.kept_perks": {
     "1": {
       "label": "a difficulty name",
       "examples": [
