@@ -1,0 +1,21 @@
+{
+  "id": "variant-group-rotation-lock",
+  "version": "0.1924.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "Block variant groups can rotate freely",
+  "summary": "Block variant groups in the train editor can now let each block face its own way while still sharing the same block, and there's a new carriage room to discover.",
+  "highlights": [
+    "Editor: a Rot Lock / Rot Free switch on block variant groups. Rot Free gives every block in the group its own facing and flip.",
+    "A new carriage room."
+  ],
+  "pr": 2775,
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
