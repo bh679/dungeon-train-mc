@@ -1430,6 +1430,8 @@
   "gui.dungeontrain.death.echo.skill.building": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4d1d1ac26f678cf7"},
   "gui.dungeontrain.death.echo.skill.movement": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "49ba63e89af69e4d"},
   "gui.dungeontrain.death.echo.skill.items": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9343c74c4609dd4a"},
+  "gui.dungeontrain.death.echo.skill.reading": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "463816d07097e1a7"},
+  "gui.dungeontrain.death.echo.skill.trading": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fde20a1b46218890"},
   "gui.dungeontrain.death.echo.skill_tip": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "a5163f27b695ac48"},
   "gui.dungeontrain.death.echo.word.fight.0.0": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "583401b2dee4e957"},
   "gui.dungeontrain.death.echo.word.fight.0.1": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "4b8198c2087eac71"},

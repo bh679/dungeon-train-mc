@@ -38,7 +38,7 @@ final class EchoSummaryCodecTest {
     @DisplayName("an echo survives the wire: look, traits, backpack in order, armour")
     void roundTrip() {
         EchoSummary original = new EchoSummary(appearance(), 7, 2, 6, List.of(8, 6, 5, 0, 7, 6),
-                List.of(new ItemStack(Items.BREAD, 5), new ItemStack(Items.TORCH, 12)), 9);
+                List.of(new ItemStack(Items.BREAD, 5), new ItemStack(Items.TORCH, 12)), 9, 4, 8);
         RegistryFriendlyByteBuf buf = buf();
         original.encode(buf);
         EchoSummary decoded = EchoSummary.decode(buf);
@@ -51,6 +51,8 @@ final class EchoSummaryCodecTest {
         assertEquals(6, decoded.skill(EchoPersonality.Skill.RANGED));
         assertEquals(0, decoded.skill(EchoPersonality.Skill.BUILDING));
         assertEquals(List.of(8, 6, 5, 0, 7, 6), decoded.skills());
+        assertEquals(4, decoded.hobby(EchoPersonality.Hobby.READING));
+        assertEquals(8, decoded.hobby(EchoPersonality.Hobby.TRADING));
         assertEquals(2, decoded.carried().size());
         assertTrue(ItemStack.matches(new ItemStack(Items.BREAD, 5), decoded.carried().get(0)));
         assertTrue(ItemStack.matches(new ItemStack(Items.TORCH, 12), decoded.carried().get(1)));
@@ -65,8 +67,10 @@ final class EchoSummaryCodecTest {
     void capsAndClamps() {
         List<ItemStack> many = new ArrayList<>();
         for (int i = 0; i < 12; i++) many.add(new ItemStack(Items.DIRT, i + 1));
-        EchoSummary s = new EchoSummary(appearance(), 15, -4, 12, List.of(11, -1), many, -2);
+        EchoSummary s = new EchoSummary(appearance(), 15, -4, 12, List.of(11, -1), many, -2, 14, -3);
         assertEquals(EchoSummary.MAX_CARRIED, s.carried().size());
+        assertEquals(10, s.reading());
+        assertEquals(0, s.trading());
         assertEquals(10, s.fightFlight());
         assertEquals(0, s.friendliness());
         assertEquals(0, s.armour());

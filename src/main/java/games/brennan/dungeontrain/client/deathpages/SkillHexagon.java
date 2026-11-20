@@ -25,6 +25,18 @@ public final class SkillHexagon {
     }
 
     /**
+     * How far the {@code n}-cornered shape reaches sideways from its centre, as a share of its
+     * radius: the largest {@code |cos|} among its corners (0.87 for a hexagon, 1 for an octagon).
+     */
+    public static float halfWidth(int n) {
+        double most = 0;
+        for (int i = 0; i < n; i++) {
+            most = Math.max(most, Math.abs(Math.cos(-Math.PI / 2 + 2 * Math.PI * i / n)));
+        }
+        return (float) most;
+    }
+
+    /**
      * Draw the grid (outer ring, half ring, spokes) in {@code gridArgb} and the value shape —
      * {@code values} each 0..max — filled with {@code fillArgb} and edged with {@code lineArgb}.
      */

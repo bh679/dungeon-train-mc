@@ -1568,6 +1568,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Placing",
   "gui.dungeontrain.death.echo.skill.movement": "Movement",
   "gui.dungeontrain.death.echo.skill.items": "Quickswap",
+  "gui.dungeontrain.death.echo.skill.reading": "Reading",
+  "gui.dungeontrain.death.echo.skill.trading": "Trading",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "Terrified",
   "gui.dungeontrain.death.echo.word.fight.0.1": "Panicked",

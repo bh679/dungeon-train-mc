@@ -1337,6 +1337,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Đặt khối",
   "gui.dungeontrain.death.echo.skill.movement": "Di chuyển",
   "gui.dungeontrain.death.echo.skill.items": "Đổi nhanh",
+  "gui.dungeontrain.death.echo.skill.reading": "Đọc sách",
+  "gui.dungeontrain.death.echo.skill.trading": "Giao dịch",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "Kinh hãi",
   "gui.dungeontrain.death.echo.word.fight.0.1": "Hoảng loạn",

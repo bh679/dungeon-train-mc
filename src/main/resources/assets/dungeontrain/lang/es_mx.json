@@ -1381,6 +1381,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Colocación",
   "gui.dungeontrain.death.echo.skill.movement": "Movimiento",
   "gui.dungeontrain.death.echo.skill.items": "Cambio rápido",
+  "gui.dungeontrain.death.echo.skill.reading": "Lectura",
+  "gui.dungeontrain.death.echo.skill.trading": "Comercio",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "aterrado",
   "gui.dungeontrain.death.echo.word.fight.0.1": "despavorido",

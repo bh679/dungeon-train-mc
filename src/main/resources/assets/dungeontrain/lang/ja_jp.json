@@ -1337,6 +1337,8 @@
   "gui.dungeontrain.death.echo.skill.building": "設置",
   "gui.dungeontrain.death.echo.skill.movement": "移動",
   "gui.dungeontrain.death.echo.skill.items": "持ち替え",
+  "gui.dungeontrain.death.echo.skill.reading": "読書",
+  "gui.dungeontrain.death.echo.skill.trading": "取引",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "怯えきった",
   "gui.dungeontrain.death.echo.word.fight.0.1": "パニック状態の",

@@ -1381,6 +1381,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Plaatsen",
   "gui.dungeontrain.death.echo.skill.movement": "Beweging",
   "gui.dungeontrain.death.echo.skill.items": "Snelwissel",
+  "gui.dungeontrain.death.echo.skill.reading": "Lezen",
+  "gui.dungeontrain.death.echo.skill.trading": "Handelen",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "doodsbang",
   "gui.dungeontrain.death.echo.word.fight.0.1": "in paniek",

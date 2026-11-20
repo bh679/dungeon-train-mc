@@ -45,6 +45,11 @@ final class EchoPaint {
         new ItemStack(Items.DIRT), ItemStack.EMPTY, new ItemStack(Items.BUCKET)
     };
 
+    /** The item that stands for each {@link EchoPersonality.Hobby}: a book for Reading, an emerald for Trading. */
+    private static final ItemStack[] HOBBY_ICONS = {
+        new ItemStack(Items.BOOK), new ItemStack(Items.EMERALD)
+    };
+
     private EchoPaint() {
     }
 
@@ -76,5 +81,10 @@ final class EchoPaint {
             return;
         }
         g.renderItem(SKILL_ICONS[skill.ordinal()], x, y);
+    }
+
+    /** Draw {@code hobby}'s icon (16×16) at ({@code x}, {@code y}). */
+    static void hobbyIcon(GuiGraphics g, EchoPersonality.Hobby hobby, int x, int y) {
+        g.renderItem(HOBBY_ICONS[hobby.ordinal()], x, y);
     }
 }

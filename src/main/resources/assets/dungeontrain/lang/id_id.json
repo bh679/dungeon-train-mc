@@ -1337,6 +1337,8 @@
   "gui.dungeontrain.death.echo.skill.building": "Menaruh",
   "gui.dungeontrain.death.echo.skill.movement": "Gerak",
   "gui.dungeontrain.death.echo.skill.items": "Tukar cepat",
+  "gui.dungeontrain.death.echo.skill.reading": "Membaca",
+  "gui.dungeontrain.death.echo.skill.trading": "Berdagang",
   "gui.dungeontrain.death.echo.skill_tip": "%s: %s",
   "gui.dungeontrain.death.echo.word.fight.0.0": "Ketakutan",
   "gui.dungeontrain.death.echo.word.fight.0.1": "Panik",
