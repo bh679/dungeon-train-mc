@@ -13,7 +13,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import org.slf4j.Logger;
 
 /**
- * Sends this player's Tribute webhook ({@link TributeWebhookClientConfig}) to the server on login, and
+ * Sends this player's Tribute webhooks ({@link TributeWebhookClientConfig}) to the server on login, and
  * again when they save or remove it in Options ({@link #syncNow()}). Mirrors {@link ContentModeSyncClient}.
  * Never logs the link.
  */
@@ -29,12 +29,11 @@ public final class TributeWebhookSyncClient {
         syncNow();
     }
 
-    /** Push the current link (or none) to the server now. No-op when not connected. No-throw. */
+    /** Push the current links (possibly none) to the server now. No-op when not connected. No-throw. */
     public static void syncNow() {
         try {
             if (Minecraft.getInstance().getConnection() == null) return;
-            String url = TributeWebhookClientConfig.isSet() ? TributeWebhookClientConfig.url() : "";
-            DungeonTrainNet.sendToServer(new TributeWebhookSyncPacket(url));
+            DungeonTrainNet.sendToServer(new TributeWebhookSyncPacket(TributeWebhookClientConfig.urls()));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] tribute webhook sync to server failed: {}", t.getClass().getSimpleName());
         }

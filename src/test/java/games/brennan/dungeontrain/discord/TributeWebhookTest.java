@@ -90,6 +90,23 @@ class TributeWebhookTest {
     }
 
     @Test
+    @DisplayName("the kept list drops invalid links and repeats, and stops at the cap")
+    void cleanList() {
+        java.util.List<String> raw = new java.util.ArrayList<>();
+        raw.add("https://evil.io/api/webhooks/1/x");
+        raw.add(GOOD);
+        raw.add(GOOD + "/");
+        raw.add("https://DISCORD.com/api/webhooks/123456789012345678/AbC-def_GHI123");
+        for (int i = 0; i < 40; i++) raw.add("https://discord.com/api/webhooks/" + (1000 + i) + "/t");
+        java.util.List<String> kept = TributeWebhook.cleanList(raw);
+        assertEquals(TributeWebhook.MAX_LINKS, kept.size());
+        assertEquals(GOOD, kept.get(0));
+        assertEquals("https://discord.com/api/webhooks/1000/t", kept.get(1));
+        assertTrue(TributeWebhook.contains(kept, GOOD + "/"));
+        assertFalse(TributeWebhook.contains(kept, "https://discord.com/api/webhooks/2000/t"));
+    }
+
+    @Test
     @DisplayName("an invalid link never posts")
     void invalidNeverPosts() {
         assertFalse(TributeWebhook.post("https://evil.io/x", "Steve", null, TributeWebhook.embed("t", "", 1, false), null).join());

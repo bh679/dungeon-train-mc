@@ -36,6 +36,11 @@ public final class TributeWebhook {
 
     /** Longest link accepted, in the Options field and on the wire. Real ones are about 120. */
     public static final int MAX_LENGTH = 256;
+    /**
+     * Most links a player can save. Each Tribute uploads the photo once per link, from the server on a
+     * multiplayer world, so this caps what one player can make a shared server do per Tribute.
+     */
+    public static final int MAX_LINKS = 25;
 
     private static final Set<String> HOSTS =
             Set.of("discord.com", "discordapp.com", "ptb.discord.com", "canary.discord.com");
@@ -83,6 +88,35 @@ public final class TributeWebhook {
         String url = normalize(raw);
         int cut = url.lastIndexOf('/', url.endsWith("/") ? url.length() - 2 : url.length() - 1);
         return url.substring(0, cut + 1) + "••••";
+    }
+
+    /**
+     * {@code raw} as the list that is kept: valid links only, trimmed, no repeats (a trailing slash is
+     * the same link), at most {@link #MAX_LINKS}, in their original order.
+     */
+    public static java.util.List<String> cleanList(java.util.Collection<? extends String> raw) {
+        java.util.LinkedHashMap<String, String> out = new java.util.LinkedHashMap<>();
+        if (raw == null) return java.util.List.of();
+        for (String s : raw) {
+            if (out.size() >= MAX_LINKS) break;
+            if (!isValid(s)) continue;
+            String url = normalize(s);
+            out.putIfAbsent(sameLinkKey(url), url);
+        }
+        return java.util.List.copyOf(out.values());
+    }
+
+    /** Two spellings of one link compare equal: host case and a trailing slash don't matter. */
+    static String sameLinkKey(String url) {
+        String u = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+        int path = u.indexOf("/api/");
+        return path < 0 ? u : u.substring(0, path).toLowerCase(Locale.ROOT) + u.substring(path);
+    }
+
+    /** Whether {@code url} is already in {@code links} (as {@link #sameLinkKey} sees it). */
+    public static boolean contains(java.util.List<String> links, String url) {
+        String key = sameLinkKey(normalize(url));
+        return links.stream().anyMatch(l -> sameLinkKey(l).equals(key));
     }
 
     /** One embed: title, description, colour, and the attached image when there is one. */

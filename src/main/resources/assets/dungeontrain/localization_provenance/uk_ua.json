@@ -4152,14 +4152,17 @@
       "gui.dungeontrain.tribute_webhook.footnote",
       "gui.dungeontrain.tribute_webhook.field",
       "gui.dungeontrain.tribute_webhook.invalid",
-      "gui.dungeontrain.tribute_webhook.saved",
-      "gui.dungeontrain.tribute_webhook.save",
       "gui.dungeontrain.tribute_webhook.test",
       "gui.dungeontrain.tribute_webhook.remove",
       "gui.dungeontrain.tribute_webhook.test_sending",
       "gui.dungeontrain.tribute_webhook.test_sent",
       "gui.dungeontrain.tribute_webhook.test_failed",
       "gui.dungeontrain.tribute_webhook.test_offline",
+      "gui.dungeontrain.tribute_webhook.add",
+      "gui.dungeontrain.tribute_webhook.added",
+      "gui.dungeontrain.tribute_webhook.none",
+      "gui.dungeontrain.tribute_webhook.already_added",
+      "gui.dungeontrain.tribute_webhook.full",
       "dungeontrain.discord_status.menu",
       "dungeontrain.discord_status.overworld",
       "dungeontrain.discord_status.nether",
@@ -6087,7 +6090,9 @@
   "source_changed": {
     "dungeontrain": [
       "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
-      "advancements.dungeontrain.dungeon_train.the_enchiridion.description"
+      "advancements.dungeontrain.dungeon_train.the_enchiridion.description",
+      "gui.dungeontrain.options.tribute_webhook.tip",
+      "gui.dungeontrain.tribute_webhook.line2"
     ],
     "adventureitemnames": [],
     "playermob": [],

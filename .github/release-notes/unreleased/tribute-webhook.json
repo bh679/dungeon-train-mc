@@ -8,10 +8,10 @@
     "ui"
   ],
   "title": "Send your Tributes to your own Discord",
-  "summary": "Options > Account has a new Tribute webhook setting. Paste a webhook link from your own Discord server and every photo you pay Tribute to also posts in that channel.",
+  "summary": "Options > Account has a new Tribute webhook setting. Paste webhook links from your own Discord servers, up to 25, and every photo you pay Tribute to also posts in each of those channels.",
   "highlights": [
     "Works for your own photos and ones you find",
-    "Send test checks the link before you pay a Tribute"
+    "Send test checks a link before you pay a Tribute"
   ],
   "pr": 2767,
   "date": "2026-11-20",

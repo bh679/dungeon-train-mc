@@ -94,15 +94,17 @@ public final class TributePhotoReporter {
     }
 
     /**
-     * Post a tributed photo to the tributer's own Discord webhook, if they set one. Every Tribute goes,
+     * Post a tributed photo to each of the tributer's own Discord webhooks, if they set any. Every Tribute goes,
      * whatever the public feed's rules (clean run, personal best, Public posts): it is their own channel.
      * Server thread; the upload runs off-thread and never disturbs the Tribute.
      */
     public static void postPersonal(ServerPlayer tributer, String title, String description, byte[] png) {
         if (png == null || png.length == 0 || !hasPersonalWebhook(tributer)) return;
         try {
-            TributeWebhookMirror.get(tributer.getUUID()).ifPresent(url -> TributeWebhook.post(url,
-                    tributer.getGameProfile().getName(), tributer.getUUID(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png));
+            String name = tributer.getGameProfile().getName();
+            for (String url : TributeWebhookMirror.get(tributer.getUUID())) {
+                TributeWebhook.post(url, name, tributer.getUUID(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png);
+            }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] personal tribute webhook post failed: {}", t.getClass().getSimpleName());
         }

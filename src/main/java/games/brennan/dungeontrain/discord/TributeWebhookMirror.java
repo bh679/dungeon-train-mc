@@ -7,44 +7,48 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Server-side, per-player copy of each client's Tribute webhook ({@link TributeWebhook}), seeded on login
+ * Server-side, per-player copy of each client's Tribute webhooks ({@link TributeWebhook}), seeded on login
  * and on every change by {@link games.brennan.dungeontrain.net.TributeWebhookSyncPacket}.
  *
  * <p>Memory only: never written to disk and never logged. Dropped on logout and wholesale on server stop,
- * so the link is held only while its owner is online. Only a link that passes {@link TributeWebhook#isValid}
- * is ever stored — this is where the server's own check happens, whatever the client sent.</p>
+ * so the links are held only while their owner is online. Only links that pass {@link TributeWebhook#isValid}
+ * are ever stored — this is where the server's own check happens, whatever the client sent.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TributeWebhookMirror {
 
-    private static final Map<UUID, String> LINKS = new ConcurrentHashMap<>();
+    private static final Map<UUID, List<String>> LINKS = new ConcurrentHashMap<>();
 
     private TributeWebhookMirror() {}
 
-    /** Store {@code player}'s link, or clear it when {@code url} is blank or not a Discord webhook link. */
-    public static void set(ServerPlayer player, String url) {
+    /**
+     * Store {@code player}'s links: only the Discord webhook links among {@code urls}, without repeats,
+     * at most {@link TributeWebhook#MAX_LINKS}. None left clears them.
+     */
+    public static void set(ServerPlayer player, List<String> urls) {
         if (player == null) return;
-        if (TributeWebhook.isValid(url)) {
-            LINKS.put(player.getUUID(), TributeWebhook.normalize(url));
-        } else {
+        List<String> links = TributeWebhook.cleanList(urls);
+        if (links.isEmpty()) {
             LINKS.remove(player.getUUID());
+        } else {
+            LINKS.put(player.getUUID(), links);
         }
     }
 
-    /** {@code playerId}'s link, if they set one this session. */
-    public static Optional<String> get(UUID playerId) {
-        return playerId == null ? Optional.empty() : Optional.ofNullable(LINKS.get(playerId));
+    /** {@code playerId}'s links this session; empty when none. */
+    public static List<String> get(UUID playerId) {
+        return playerId == null ? List.of() : LINKS.getOrDefault(playerId, List.of());
     }
 
-    /** Whether {@code playerId} has a link set. */
+    /** Whether {@code playerId} has at least one link set. */
     public static boolean has(UUID playerId) {
-        return get(playerId).isPresent();
+        return !get(playerId).isEmpty();
     }
 
     @SubscribeEvent
