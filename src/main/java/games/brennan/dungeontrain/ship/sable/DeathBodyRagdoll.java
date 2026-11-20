@@ -2,7 +2,14 @@ package games.brennan.dungeontrain.ship.sable;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import dev.ryanhcode.sable.Sable;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.compat.RagdollBridge;
+import games.brennan.dungeontrain.event.RecentExplosions;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -10,6 +17,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3d;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -51,10 +59,11 @@ public final class DeathBodyRagdoll {
      * Replaces any earlier body of the same player.
      */
     @Nullable
-    public static UUID spawn(ServerPlayer player, boolean voidDeath) {
+    public static UUID spawn(ServerPlayer player, DamageSource source, boolean voidDeath) {
         release(player);
         if (voidDeath || !RagdollBridge.isPresent()) return null;
-        Vec3 velocity = player.getDeltaMovement().scale(20.0);
+        Vec3 thrown = throwFor(player, source);
+        Vec3 velocity = player.getDeltaMovement().scale(20.0).add(thrown);
         UUID id = RagdollBridge.spawnBody(player.serverLevel(), player.position(), player.getYRot(),
             player.getGameProfile(), velocity, player, MAX_LIFETIME_TICKS);
         if (id == null) {
@@ -62,8 +71,38 @@ public final class DeathBodyRagdoll {
             return null;
         }
         BODIES.put(player.getUUID(), new Body(id, serverTicks));
-        LOGGER.info("[DungeonTrain] Death body {} for {} at {}", id, player.getGameProfile().getName(), player.position());
+        LOGGER.info("[DungeonTrain] Death body {} for {} at {} thrown {}", id, player.getGameProfile().getName(), player.position(), thrown);
         return id;
+    }
+
+    /**
+     * The throw what killed {@code player} gives the body (blocks per second): away from a blast,
+     * along a projectile's flight, nothing for any other death. A blast is checked first, since a
+     * fireball or a firework is both.
+     */
+    static Vec3 throwFor(ServerPlayer player, DamageSource source) {
+        Vec3 body = player.position().add(0, player.getBbHeight() * 0.5, 0);
+        if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+            RecentExplosions.Blast blast = RecentExplosions.nearest(player.level().dimension(), body,
+                player.level().getGameTime(), centre -> carriageToWorld(player, centre));
+            if (blast != null) return DeathKnockback.explosion(blast.centre(), body, blast.radius());
+            Vec3 from = source.getSourcePosition();
+            return from == null ? Vec3.ZERO : DeathKnockback.explosion(from, body, DeathKnockback.DEFAULT_RADIUS);
+        }
+        if (source.getDirectEntity() instanceof Projectile projectile) {
+            Entity shooter = source.getEntity();
+            return DeathKnockback.projectile(projectile.getDeltaMovement(),
+                shooter == null ? projectile.position() : shooter.position(), body);
+        }
+        return Vec3.ZERO;
+    }
+
+    /** {@code pos} mapped out of the carriage plot {@code player} rides into the world; unchanged off a carriage. */
+    private static Vec3 carriageToWorld(ServerPlayer player, Vec3 pos) {
+        SubLevel carriage = Sable.HELPER.getTrackingSubLevel(player);
+        if (carriage == null || carriage.isRemoved()) return pos;
+        Vector3d world = carriage.logicalPose().transformPosition(new Vector3d(pos.x, pos.y, pos.z));
+        return new Vec3(world.x, world.y, world.z);
     }
 
     /** Remove {@code player}'s body, if any (respawned or left). */
