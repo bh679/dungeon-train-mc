@@ -103,7 +103,7 @@ public final class GlobalCriteriaProgress {
 
     private static final List<String> ALL_PARTITIONS = Stream.concat(
         Arrays.stream(Difficulty.values()).map(DifficultyPartition::keyFor),
-        Stream.of(GlobalAchievementStore.SHARED)).toList();
+        Stream.of(GlobalAchievementStore.SHARED, games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE)).toList();
 
     private GlobalCriteriaProgress() {}
 

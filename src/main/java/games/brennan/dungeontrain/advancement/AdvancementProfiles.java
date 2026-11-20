@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.perks.PerksGate;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
@@ -90,11 +91,31 @@ public final class AdvancementProfiles {
         return holder.value().display().isPresent();
     }
 
-    /** The difficulty profile {@code player} is playing on right now. */
+    /**
+     * The profile {@code player} is playing on right now: their difficulty's, or the perks test
+     * profile in a perks test world (its own, whatever the difficulty, like its perk unlocks).
+     */
     public static String currentKey(ServerPlayer player) {
+        if (PerksGate.isTestWorld()) return PerksGate.TEST_PROFILE;
         return DungeonTrainConfig.getDifficultyIsolatedStash()
             ? DifficultyPartition.keyFor(player.level())
             : DifficultyPartition.LEGACY_KEY;
+    }
+
+    /**
+     * May {@code holder} be banked into {@code partition} for {@code player}? {@link RunIntegrity}'s
+     * rule (a Free Play run banks nothing but editor authoring), plus one exception: a perks test world
+     * is Free Play yet keeps its progress like a live run, but ONLY in the test profile. Tying it to
+     * the partition means a test earn can never reach a real profile, not even when a test world's
+     * tree is banked into the profile it used to mirror on login.
+     */
+    static boolean persists(ServerPlayer player, AdvancementHolder holder, String partition) {
+        return persists(RunIntegrity.persistsAdvancement(player, holder), PerksGate.isTestWorld(), partition);
+    }
+
+    /** {@link #persists(ServerPlayer, AdvancementHolder, String)} without the player, for tests. */
+    static boolean persists(boolean integrityAllows, boolean testWorld, String partition) {
+        return integrityAllows || (testWorld && PerksGate.TEST_PROFILE.equals(partition));
     }
 
     /** The partition {@code id} is banked in for {@code player}: shared for the editor tab, else their profile. */
@@ -124,7 +145,7 @@ public final class AdvancementProfiles {
     public static boolean record(ServerPlayer player, AdvancementHolder advancement) {
         return !replaying
             && shouldPersist(advancement)
-            && RunIntegrity.persistsAdvancement(player, advancement)
+            && persists(player, advancement, partitionFor(player, advancement.id()))
             && GlobalAchievementStore.append(player.getUUID(), partitionFor(player, advancement.id()), advancement.id());
     }
 
@@ -165,7 +186,8 @@ public final class AdvancementProfiles {
             if (TabGateways.isLinked(holder.id())) continue;
             // Don't absorb a cheated world's gameplay/vanilla earns into the
             // cross-world profile; editor/* authoring still flows through.
-            if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
+            String into = GlobalAchievementStore.isShared(holder.id()) ? GlobalAchievementStore.SHARED : profileKey;
+            if (!persists(player, holder, into)) continue;
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
             (GlobalAchievementStore.isShared(holder.id()) ? shared : profile).add(holder.id());
         }
@@ -274,7 +296,7 @@ public final class AdvancementProfiles {
         if (replaying || clearing || !tracksCriteria(holder)) return;
         UUID uuid = player.getUUID();
         String partition = partitionFor(player, holder.id());
-        boolean persists = RunIntegrity.persistsAdvancement(player, holder);
+        boolean persists = persists(player, holder, partition);
         if (progress.isDone()) {
             // Only once the finished advancement itself is banked: a cheated finish isn't, so the
             // honest progress behind it stays.
@@ -301,12 +323,12 @@ public final class AdvancementProfiles {
         int added = 0;
         for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
             if (!tracksCriteria(holder)) continue;
-            if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
+            String partition = GlobalAchievementStore.isShared(holder.id()) ? GlobalAchievementStore.SHARED : profileKey;
+            if (!persists(player, holder, partition)) continue;
             AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
             if (progress.isDone()) continue;
             List<String> held = completedCriteria(progress);
             if (held.isEmpty()) continue;
-            String partition = GlobalAchievementStore.isShared(holder.id()) ? GlobalAchievementStore.SHARED : profileKey;
             added += GlobalCriteriaProgress.addAll(uuid, partition, holder.id(), held);
         }
         if (added > 0) {
