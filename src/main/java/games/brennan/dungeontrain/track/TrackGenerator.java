@@ -503,7 +503,7 @@ public final class TrackGenerator {
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
                 picked.state(), picked,
                 local, worldSeed, (int) tileIndex,
-                sc.lockIdAt(local));
+                sc.lockIdAt(local), sc.rotationLockIdAt(local));
         }
 
         /**
@@ -813,7 +813,7 @@ public final class TrackGenerator {
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
                 picked.state(), picked,
                 local, worldSeed, pillarIndex,
-                sidecar.lockIdAt(local));
+                sidecar.lockIdAt(local), sidecar.rotationLockIdAt(local));
         }
     }
 
@@ -1744,7 +1744,8 @@ public final class TrackGenerator {
                         BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
                             picked.state(), picked,
                             entry.localPos(), worldSeed, centerX,
-                            stairsSidecar.lockIdAt(entry.localPos()));
+                            stairsSidecar.lockIdAt(entry.localPos()),
+                            stairsSidecar.rotationLockIdAt(entry.localPos()));
                         level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
                         games.brennan.dungeontrain.editor.GrowthPass.note(growTarget, wpos, picked, rotated,
                             entry.localPos(), worldSeed, centerX, shaft::isInside);
@@ -2223,7 +2224,7 @@ public final class TrackGenerator {
                         BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
                             picked.state(), picked,
                             entry.localPos(), worldSeed, centerX,
-                            sidecar.lockIdAt(entry.localPos()));
+                            sidecar.lockIdAt(entry.localPos()), sidecar.rotationLockIdAt(entry.localPos()));
                         level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
                         games.brennan.dungeontrain.editor.GrowthPass.note(growTarget, wpos, picked, rotated,
                             entry.localPos(), worldSeed, centerX, box::isInside);

@@ -284,6 +284,16 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     }
 
     @Override
+    public boolean rotationFreeAt(BlockPos localPos) {
+        return doc().rotationFreeAt(localPos);
+    }
+
+    @Override
+    public void setRotationFree(BlockPos localPos, boolean free) {
+        doc().setRotationFree(localPos, free);
+    }
+
+    @Override
     public Set<BlockPos> positionsWithLockId(int lockId) {
         return doc().positionsWithLockId(lockId);
     }

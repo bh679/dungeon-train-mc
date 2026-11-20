@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "11,0,0": "cookerfuel",
+    "12,0,0": "cookerfuel",
+    "13,0,0": "cookerfuel",
+    "14,0,0": "cookerfuel"
+  }
+}

@@ -1052,7 +1052,8 @@ public final class CarriagePlacer {
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
                         seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
                             StagePlacementScope.resolve(v.state()), v,
-                            e.localPos(), seed, carriageIndex, lockId))) {
+                            e.localPos(), seed, carriageIndex, lockId,
+                            sidecar.rotationLockIdAt(e.localPos())))) {
                     BlockPos world = origin.offset(w.localPos());
                     if (w.isAir()) {
                         SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());

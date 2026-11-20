@@ -259,6 +259,8 @@ public enum ClientOptionsTab {
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
         STREAM_SAVE_BANDWIDTH("gui.dungeontrain.options.stream_save_bandwidth"),
+        /** Whether the tab shows its viewer preview; off also stops the preview's frame copies. On by default. */
+        STREAM_PREVIEW("gui.dungeontrain.options.stream_preview"),
         /** The live feed pinned top-right on the HUD while you watch. */
         HEAD_VIEWER_SIZE("gui.dungeontrain.options.head_viewer_size"),
         /** Who is live, in a line under each pane of that pinned feed. On by default. */
@@ -357,6 +359,19 @@ public enum ClientOptionsTab {
             if (row != Row.FFMPEG) out.add(row);
         }
         return out;
+    }
+
+    /** The smallest share of the Stream tab a pinned preview keeps, and its floor in GUI pixels. */
+    static final float PINNED_PREVIEW_SHARE = 0.4f;
+    static final int PINNED_PREVIEW_MIN = 60;
+
+    /**
+     * The Stream list's height with the preview pinned below it: its rows' height when they fit and still
+     * leave the preview its share of {@code tabH}, else what the preview leaves (the rows then scroll).
+     */
+    public static int pinnedListHeight(int tabH, int rowsH) {
+        int previewMin = Math.max(Math.round(tabH * PINNED_PREVIEW_SHARE), PINNED_PREVIEW_MIN);
+        return Math.max(0, Math.min(rowsH, tabH - previewMin));
     }
 
     /** As a release build sees them: no dev-only rows. */
@@ -465,6 +480,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_SECTION_PICTURE);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
+                rows.add(Row.STREAM_PREVIEW);
                 rows.add(Row.STREAM_SECTION_CHAT);
                 rows.add(Row.LIVE_CHAT);
                 rows.add(Row.LIVE_CHAT_TRANSLATION);

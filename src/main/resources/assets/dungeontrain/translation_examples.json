@@ -1273,6 +1273,10 @@
       ]
     }
   },
+  "gui.dungeontrain.options.stream.preview.click": {
+    "1": { "label": "the setting's current value, the same word its Options button shows (On/Off, a name choice or a size)", "examples": ["ON", "Minecraft", "100%"] },
+    "2": { "label": "the value one click changes it to, in the same form", "examples": ["OFF", "Discord", "150%"] }
+  },
   "gui.dungeontrain.options.ffmpeg.downloading_percent": {
     "1": {
       "label": "how much of the download is done, a whole number from 0 to 100",
@@ -15064,6 +15068,24 @@
       "examples": [
         " +copies",
         ""
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_menu.rotation_free": {
+    "1": {
+      "label": "lock-group number",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_menu.rotation_locked": {
+    "1": {
+      "label": "lock-group number",
+      "examples": [
+        "2",
+        "9"
       ]
     }
   },
