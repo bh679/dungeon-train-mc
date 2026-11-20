@@ -1,0 +1,21 @@
+{
+  "id": "nap-sky-past-life-perks",
+  "version": "0.1922.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Your lives' perks in the nap sky",
+  "summary": "When you take a nap, the night sky now traces the perks each past life chose, and this life's path shows the perks you have chosen so far. Lives from before perks drift out of the sky once this life's path settles.",
+  "highlights": [
+    "Each past life draws the perks it really chose",
+    "This life's path shows your perks so far, and keeps searching until you choose one",
+    "Older lives from before perks fade away once this life's path settles"
+  ],
+  "pr": 2776,
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
