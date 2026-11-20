@@ -4671,7 +4671,8 @@
     "discordpresence": []
   },
   "books": [
-    "starting_books/cursed/no_one_came_back"
+    "starting_books/cursed/no_one_came_back",
+    "stories/toad_like_writes"
   ],
   "books_source_changed": [
     "death_lore/default",

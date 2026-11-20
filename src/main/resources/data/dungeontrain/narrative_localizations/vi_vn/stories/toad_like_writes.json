@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Cóc",
+  "story": "Cóc thích viết viết",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lá Thư Thứ Nhất",
+      "variants": [
+        "xin chao. tôi là cóc\nngười phép thuật cho quà.\nviết đầu của tôi.\n\n\nquà giọng nói\nquà biết viết\n..\ncóc thích viết viết"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lá Thư Thứ Hai",
+      "variants": [
+        "xin chao, cóc nữa\ntàu dài\ncóc rời toa ao\n\n\nmong tìm ướt sớm\ntàu khô"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lá Thư Thứ Ba",
+      "variants": [
+        "xin chao, là cóc\nmuốn tìm ông phép thuật\nnói cám ơn\nvì da tôi\ncóc không cần ướt\n\n\nda tôi tự làm ướt\ntàu khô dài cũng ok\ncóc vẫn ướt"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lá Thư Thứ Tư",
+      "variants": [
+        "cóc đói\ntàu ong to quá\nnhện to hơn cóc nữa\ntôi không thích thế\n\n\nnhện sợ"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lá Thư Thứ Năm",
+      "variants": [
+        "toa sau là nhện\nnhiều nhện\n\n\ncóc dũng cảm\nsợ\n...\ndũng cảm"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lá Thư Thứ Sáu",
+      "variants": [
+        "xin chao, cóc đây\ntôi có bạng mới\n\n\nnhện không sợ lắm\nnó thích cóc\nkhông ăn\nlàm bạng\ntên. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lá Thư Thứ Bảy",
+      "variants": [
+        "tuk với cóc\nđi đường dọc\ntàu dài\nhát hoài\ntới cuối cùng\nbạng chung"
+      ]
+    }
+  ]
+}

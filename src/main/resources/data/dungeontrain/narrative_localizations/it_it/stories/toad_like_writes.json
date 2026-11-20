@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Rospo",
+  "story": "Rospo piace scrivi",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "ciao. io è rospo\nmagico uno mi ha dato regalo.\nmio primo scrivere.\n\n\nregalo di voce\ndi sapere scrivi\n..\nrospo piace scrivi"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "ciao, rospo ancora\ntreno lungo\nrospo lasciato vagone stagno\n\n\nspera trova bagnato presto\ntreno secco"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "ciao, è rospo\nvoglio trova uomo magico\ndire grazie\nper mia pelle\nrospo non serve bagnato\n\n\nmia pelle fa suo bagnato\nlungo treno secco ok\nrospo ancora bagnato"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "rospo fame\ntreno api sono troppo grande\nragni più grande di rospo\nio non piace questo\n\n\nragni paura"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "prossimo vagone è ragni\ntanti ragni\n\n\nrospo è coraggioso\npaura\n...\ncoraggioso"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettera sei",
+      "variants": [
+        "ciao, rospo qui\nio ha nuovo amiko\n\n\nragno non così paura\nlui piace rospo\nnon mangia\nessere amiki\nnome. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettera sette",
+      "variants": [
+        "tuk e rospo\nsul treno grosso\ntreno lungo\ncanto canto\nfino alla fine\namiki senza confine"
+      ]
+    }
+  ]
+}
