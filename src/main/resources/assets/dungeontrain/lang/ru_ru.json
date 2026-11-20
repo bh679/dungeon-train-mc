@@ -3640,7 +3640,7 @@
   "gui.dungeontrain.options.show_name": "Показывать моё имя",
   "gui.dungeontrain.options.show_name.hint": "В титрах и отзывах на сайте",
   "gui.dungeontrain.options.show_name.tip": "Ваше имя рядом с вашими строками в титрах и вашими отзывами на сайте. Если выключено, вместо него показывается «Аноним».",
-  "gui.dungeontrain.options.show_name.kid_tip": "В режиме «Ребёнок» всегда выключено: ваше имя никогда не показывается в титрах или на сайте.",
+  "gui.dungeontrain.options.show_name.kid_tip": "В детском режиме всегда выключено: ваше имя никогда не показывается в отзывах на сайте.",
   "gui.dungeontrain.options.content_mode": "Контент",
   "gui.dungeontrain.options.content_mode.hint": "Взрослый или детский контент",
   "gui.dungeontrain.options.content_mode.tip": "Детский режим выключает чат с разработчиком, ограничивает книги и отключает Предсмертные записки и общие вагоны. Во взрослом режиме доступно всё.",

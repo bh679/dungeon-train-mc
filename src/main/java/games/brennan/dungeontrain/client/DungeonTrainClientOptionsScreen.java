@@ -986,7 +986,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case SHOW_NAME -> {
                 boolean kid = ClientDisplayConfig.isKidMode();
                 CycleButton<Boolean> showName = onOff(Component.translatable(key),
-                        !kid && PublicNameSwitch.storedShown(), PublicNameSwitch::setFromOptions);
+                        !kid && PublicNameSwitch.storedShown(), on -> PublicNameSwitch.setFromOptions(on, this::rebuildIfShown));
                 showName.active = !kid;
                 yield Setting.of(showName, kid ? key + ".kid_tip" : key + ".tip");
             }

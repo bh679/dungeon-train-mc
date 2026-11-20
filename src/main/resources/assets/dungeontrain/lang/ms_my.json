@@ -3519,7 +3519,7 @@
   "gui.dungeontrain.options.show_name": "Tunjukkan nama saya",
   "gui.dungeontrain.options.show_name.hint": "Di Kredit dan ulasan laman web",
   "gui.dungeontrain.options.show_name.tip": "Nama anda di sebelah baris Kredit anda dan ulasan anda di laman web. Jika dimatikan, Tanpa nama dipaparkan.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Sentiasa dimatikan dalam mod Kanak-kanak: nama anda tidak pernah dipaparkan di Kredit atau laman web.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Sentiasa mati dalam mod Kanak-kanak: nama anda tidak sekali-kali dipaparkan dalam ulasan laman web.",
   "gui.dungeontrain.options.content_mode": "Kandungan",
   "gui.dungeontrain.options.content_mode.hint": "Kandungan dewasa, atau selamat untuk kanak-kanak",
   "gui.dungeontrain.options.content_mode.tip": "Mod kanak-kanak mematikan sembang pembangun, mengehadkan buku dan melumpuhkan Nota Kematian serta gerabak kongsi. Mod dewasa ada semuanya.",

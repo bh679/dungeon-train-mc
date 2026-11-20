@@ -3519,7 +3519,7 @@
   "gui.dungeontrain.options.show_name": "Ipakita ang pangalan ko",
   "gui.dungeontrain.options.show_name.hint": "Sa Mga Kredito at mga review sa website",
   "gui.dungeontrain.options.show_name.tip": "Ang pangalan mo sa tabi ng mga linya mo sa Mga Kredito at ng mga review mo sa website. Kapag naka-off, Anonimo ang ipinapakita.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Laging naka-off sa Bata mode: hindi kailanman lalabas ang pangalan mo sa Mga Kredito o sa website.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Laging off sa Kid mode: hindi kailanman lalabas ang pangalan mo sa mga review sa website.",
   "gui.dungeontrain.options.content_mode": "Nilalaman",
   "gui.dungeontrain.options.content_mode.hint": "Pang-adulto, o pambata",
   "gui.dungeontrain.options.content_mode.tip": "Pinapatay ng Kid mode ang developer chat, nililimitahan ang mga aklat, at pinapatay ang Death Notes at mga shared na bagon. Lahat ay bukas sa Adult mode.",

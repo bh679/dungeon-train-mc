@@ -381,7 +381,6 @@ public enum ClientOptionsTab {
                 // from. Its Livestreaming switch lives on the Stream tab.
                 rows.add(Row.DEV_CHAT);
                 rows.add(Row.PUBLIC_POSTS);
-                rows.add(Row.SHOW_NAME);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.EVENT_REMINDERS);
@@ -411,6 +410,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.BOOK_LANGUAGES);
             }
             case ACCOUNT -> {
+                // First, and outside the Discord block: it is about the player's own name, linked or
+                // not, and must not wait on the Discord status check.
+                rows.add(Row.SHOW_NAME);
                 rows.add(Row.DISCORD_ACCOUNT);
                 rows.add(Row.DISCORD_STATUS);
                 rows.add(Row.TWITCH_ACCOUNT);

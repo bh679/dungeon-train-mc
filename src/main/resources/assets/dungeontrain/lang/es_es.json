@@ -3577,7 +3577,7 @@
   "gui.dungeontrain.options.show_name": "Mostrar mi nombre",
   "gui.dungeontrain.options.show_name.hint": "En Créditos y reseñas de la web",
   "gui.dungeontrain.options.show_name.tip": "Tu nombre junto a tus líneas de Créditos y tus reseñas en la web. Desactivado muestra Anónimo en su lugar.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Siempre desactivado en el modo Niño: tu nombre nunca aparece en Créditos ni en la web.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Siempre desactivado en modo infantil: tu nombre nunca aparece en las reseñas de la web.",
   "gui.dungeontrain.options.content_mode": "Contenido",
   "gui.dungeontrain.options.content_mode.hint": "Contenido adulto o apto para niños",
   "gui.dungeontrain.options.content_mode.tip": "El modo infantil desactiva el chat con el desarrollador, limita los libros y desactiva las Notas de muerte y los vagones compartidos. El modo adulto lo tiene todo.",

@@ -3519,7 +3519,7 @@
   "gui.dungeontrain.options.show_name": "显示我的名字",
   "gui.dungeontrain.options.show_name.hint": "在制作人员名单和网站评价中",
   "gui.dungeontrain.options.show_name.tip": "你在制作人员名单中的条目和网站评价旁显示的名字。关闭后改为显示“匿名”。",
-  "gui.dungeontrain.options.show_name.kid_tip": "儿童模式下始终关闭：你的名字不会出现在制作人员名单或网站上。",
+  "gui.dungeontrain.options.show_name.kid_tip": "儿童模式下始终关闭：你的名字永远不会出现在网站评价中。",
   "gui.dungeontrain.options.content_mode": "内容模式",
   "gui.dungeontrain.options.content_mode.hint": "成人内容，或儿童安全内容",
   "gui.dungeontrain.options.content_mode.tip": "儿童模式会关闭开发者聊天、限制书籍，并禁用死亡笔记和共享车厢。成人模式包含全部内容。",

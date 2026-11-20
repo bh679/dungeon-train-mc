@@ -4195,7 +4195,7 @@
   "gui.dungeontrain.options.show_name": "Arată-mi numele",
   "gui.dungeontrain.options.show_name.hint": "În Credite și recenziile de pe site",
   "gui.dungeontrain.options.show_name.tip": "Numele tău lângă rândurile tale din Credite și recenziile tale de pe site. Oprit afișează Anonim în schimb.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Mereu oprit în modul Copil: numele tău nu apare niciodată în Credite sau pe site.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Mereu oprit în modul Copil: numele tău nu apare niciodată în recenziile de pe site.",
   "gui.dungeontrain.options.content_mode": "Conținut",
   "gui.dungeontrain.options.content_mode.hint": "Conținut pentru adulți sau pentru copii",
   "gui.dungeontrain.options.content_mode.tip": "Modul copii oprește chatul cu dezvoltatorul, limitează cărțile și dezactivează Caietele morții și vagoanele partajate. Modul adulți are totul.",

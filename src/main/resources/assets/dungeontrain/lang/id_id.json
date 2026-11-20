@@ -3519,7 +3519,7 @@
   "gui.dungeontrain.options.show_name": "Tampilkan namaku",
   "gui.dungeontrain.options.show_name.hint": "Di Kredit dan ulasan situs web",
   "gui.dungeontrain.options.show_name.tip": "Namamu di samping barismu di Kredit dan ulasanmu di situs web. Jika mati, yang tampil adalah Anonim.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Selalu mati di mode Anak: namamu tidak pernah tampil di Kredit atau situs web.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Selalu mati di mode Anak: namamu tidak pernah tampil di ulasan situs web.",
   "gui.dungeontrain.options.content_mode": "Konten",
   "gui.dungeontrain.options.content_mode.hint": "Konten dewasa, atau aman untuk anak",
   "gui.dungeontrain.options.content_mode.tip": "Mode anak mematikan obrolan pengembang, membatasi buku, dan menonaktifkan Catatan Kematian serta gerbong bersama. Mode dewasa punya semuanya.",

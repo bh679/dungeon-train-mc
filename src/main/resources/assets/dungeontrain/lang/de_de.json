@@ -3577,7 +3577,7 @@
   "gui.dungeontrain.options.show_name": "Meinen Namen zeigen",
   "gui.dungeontrain.options.show_name.hint": "Bei Mitwirkenden und Website-Bewertungen",
   "gui.dungeontrain.options.show_name.tip": "Dein Name neben deinen Zeilen bei den Mitwirkenden und deinen Bewertungen auf der Website. Aus zeigt stattdessen Anonym.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Im Kindermodus immer aus: Dein Name erscheint nie bei den Mitwirkenden oder auf der Website.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Im Kindermodus immer aus: dein Name erscheint nie bei den Bewertungen auf der Website.",
   "gui.dungeontrain.options.content_mode": "Inhalt",
   "gui.dungeontrain.options.content_mode.hint": "Erwachsene oder kindgerechte Inhalte",
   "gui.dungeontrain.options.content_mode.tip": "Der Kindermodus schaltet den Entwickler-Chat ab, beschränkt Bücher und deaktiviert Todesnotizen und geteilte Waggons. Der Erwachsenenmodus hat alles.",

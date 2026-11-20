@@ -3577,7 +3577,7 @@
   "gui.dungeontrain.options.show_name": "Mijn naam tonen",
   "gui.dungeontrain.options.show_name.hint": "Bij credits en websitereviews",
   "gui.dungeontrain.options.show_name.tip": "Je naam naast je regels in de credits en je reviews op de website. Uit toont in plaats daarvan Anoniem.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Altijd uit in Kindmodus: je naam verschijnt nooit in de credits of op de website.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Altijd uit in kindermodus: je naam verschijnt nooit bij de reviews op de website.",
   "gui.dungeontrain.options.content_mode": "Inhoud",
   "gui.dungeontrain.options.content_mode.hint": "Volwassen of kindvriendelijke inhoud",
   "gui.dungeontrain.options.content_mode.tip": "Kindermodus zet de ontwikkelaarschat uit, beperkt boeken en schakelt Death Notes en gedeelde wagons uit. Volwassenmodus heeft alles.",

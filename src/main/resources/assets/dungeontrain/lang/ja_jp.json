@@ -3519,7 +3519,7 @@
   "gui.dungeontrain.options.show_name": "名前を表示",
   "gui.dungeontrain.options.show_name.hint": "クレジットとサイトのレビューに",
   "gui.dungeontrain.options.show_name.tip": "クレジットの行とサイトのレビューに表示されるあなたの名前。オフにすると代わりに「匿名」と表示されます。",
-  "gui.dungeontrain.options.show_name.kid_tip": "子どもモードでは常にオフ：クレジットにもサイトにも名前は表示されません。",
+  "gui.dungeontrain.options.show_name.kid_tip": "キッズモードでは常にオフ：サイトのレビューに名前は一切表示されません。",
   "gui.dungeontrain.options.content_mode": "コンテンツ",
   "gui.dungeontrain.options.content_mode.hint": "大人向け、または子ども向け",
   "gui.dungeontrain.options.content_mode.tip": "キッズモードでは開発者チャットを切り、本を制限し、デスノートと共有車両を無効にします。大人モードはすべて有効です。",

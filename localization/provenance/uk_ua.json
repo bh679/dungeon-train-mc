@@ -4192,7 +4192,7 @@
   "gui.dungeontrain.options.show_name": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3beb6ae77b5b88c2"},
   "gui.dungeontrain.options.show_name.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6dad789aef3aeaaa"},
   "gui.dungeontrain.options.show_name.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0ff9711749110b5b"},
-  "gui.dungeontrain.options.show_name.kid_tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1372bb257c737efe"},
+  "gui.dungeontrain.options.show_name.kid_tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "575d1066f155b27e"},
   "gui.dungeontrain.options.content_mode": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "47bd29075f8b8019"},
   "gui.dungeontrain.options.content_mode.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "8c2af479f5831c62"},
   "gui.dungeontrain.options.content_mode.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "dd1cd9c3d83ce1e2"},

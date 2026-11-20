@@ -3635,7 +3635,7 @@
   "gui.dungeontrain.options.show_name": "Pokazuj moje imię",
   "gui.dungeontrain.options.show_name.hint": "W Podziękowaniach i recenzjach na stronie",
   "gui.dungeontrain.options.show_name.tip": "Twoje imię przy twoich wpisach w Podziękowaniach i twoich recenzjach na stronie. Wyłączone pokazuje zamiast tego Anonim.",
-  "gui.dungeontrain.options.show_name.kid_tip": "Zawsze wyłączone w trybie Dziecko: twoje imię nigdy nie pojawia się w Podziękowaniach ani na stronie.",
+  "gui.dungeontrain.options.show_name.kid_tip": "Zawsze wyłączone w trybie dziecka: twoje imię nigdy nie pojawia się w recenzjach na stronie.",
   "gui.dungeontrain.options.content_mode": "Treści",
   "gui.dungeontrain.options.content_mode.hint": "Treści dla dorosłych lub dla dzieci",
   "gui.dungeontrain.options.content_mode.tip": "Tryb dziecięcy wyłącza czat z twórcą, ogranicza książki i wyłącza Notatniki Śmierci oraz wspólne wagony. Tryb dorosły ma wszystko.",

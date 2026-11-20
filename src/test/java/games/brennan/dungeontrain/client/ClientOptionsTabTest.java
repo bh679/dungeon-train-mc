@@ -143,7 +143,7 @@ final class ClientOptionsTabTest {
     @DisplayName("The Tribute webhook closes the Account tab, under its own heading")
     void tributeWebhookClosesAccount() {
         List<ClientOptionsTab.Row> account = ClientOptionsTab.rowsFor(ClientOptionsTab.ACCOUNT, false, false, true);
-        assertEquals(List.of(ClientOptionsTab.Row.DISCORD_ACCOUNT, ClientOptionsTab.Row.DISCORD_STATUS,
+        assertEquals(List.of(ClientOptionsTab.Row.SHOW_NAME, ClientOptionsTab.Row.DISCORD_ACCOUNT, ClientOptionsTab.Row.DISCORD_STATUS,
                 ClientOptionsTab.Row.TWITCH_ACCOUNT, ClientOptionsTab.Row.ACCOUNT_SECTION_OWN_DISCORD,
                 ClientOptionsTab.Row.TRIBUTE_WEBHOOK), account);
         assertTrue(ClientOptionsTab.isHeading(ClientOptionsTab.Row.ACCOUNT_SECTION_OWN_DISCORD));
@@ -160,7 +160,6 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.DEV_CHAT,
                         ClientOptionsTab.Row.PUBLIC_POSTS,
-                        ClientOptionsTab.Row.SHOW_NAME,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.UPDATE_NOTICE_CHAT,
                         ClientOptionsTab.Row.EVENT_REMINDERS,

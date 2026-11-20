@@ -3519,7 +3519,7 @@
   "gui.dungeontrain.options.show_name": "내 이름 표시",
   "gui.dungeontrain.options.show_name.hint": "크레딧과 웹사이트 리뷰에",
   "gui.dungeontrain.options.show_name.tip": "크레딧 줄과 웹사이트 리뷰 옆에 표시되는 이름입니다. 끄면 대신 익명으로 표시됩니다.",
-  "gui.dungeontrain.options.show_name.kid_tip": "어린이 모드에서는 항상 꺼짐: 크레딧이나 웹사이트에 이름이 표시되지 않습니다.",
+  "gui.dungeontrain.options.show_name.kid_tip": "어린이 모드에서는 항상 꺼짐: 웹사이트 리뷰에 이름이 절대 표시되지 않습니다.",
   "gui.dungeontrain.options.content_mode": "콘텐츠",
   "gui.dungeontrain.options.content_mode.hint": "성인용 또는 어린이용 콘텐츠",
   "gui.dungeontrain.options.content_mode.tip": "어린이 모드는 개발자 채팅을 끄고, 책을 제한하며, 데스노트와 공유 객차를 비활성화합니다. 성인 모드는 전부 켜집니다.",
