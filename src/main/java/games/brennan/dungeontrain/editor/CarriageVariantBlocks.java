@@ -397,7 +397,8 @@ public final class CarriageVariantBlocks {
                 }
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
                 return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab)
-                    .withCondition(parseCondition(obj.get("if"), contextId, contextPos));
+                    .withCondition(parseCondition(obj.get("if"), contextId, contextPos))
+                    .withSlime(parseSlime(obj.get("slime"), contextId, contextPos));
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -478,10 +479,13 @@ public final class CarriageVariantBlocks {
             VariantPot pot = parsePot(obj.get("pot"), contextId, contextPos);
             // Additive trapped-chest chance (0-100). Absent → 0, so older files spawn unchanged.
             int trapped = parseTrapped(obj.get("trapped"), contextId, contextPos);
+            // Additive respawn anchor charge range / white bed colours. Absent → as placed / white.
+            VariantCharges charges = parseCharges(obj.get("charges"), contextId, contextPos);
+            VariantBedColours bedColours = parseBedColours(obj.get("colours"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
                 VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
                 groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
-                condition, candles, pot, trapped);
+                condition, candles, pot, trapped, charges, bedColours);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -878,6 +882,7 @@ public final class CarriageVariantBlocks {
                 sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
             }
             appendConditionJson(sb, s.condition());
+            appendSlimeJson(sb, s.slime());
             sb.append("}");
             return;
         }
@@ -945,6 +950,18 @@ public final class CarriageVariantBlocks {
         }
         if (s.trapped() > 0) {
             sb.append(", \"trapped\": ").append(s.trapped());
+        }
+        if (!s.charges().isDefault()) {
+            sb.append(", \"charges\": \"").append(s.charges().id()).append("\"");
+        }
+        if (!s.bedColours().isDefault()) {
+            sb.append(", \"colours\": [");
+            List<String> names = s.bedColours().names();
+            for (int i = 0; i < names.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("\"").append(names.get(i)).append("\"");
+            }
+            sb.append("]");
         }
         sb.append("}");
     }
@@ -1112,6 +1129,99 @@ public final class CarriageVariantBlocks {
             return VariantCandles.AS_PLACED;
         }
         return candles;
+    }
+
+    /** Parse an optional {@code "charges"} range ({@code "1-4"}). Absent or malformed → as placed. */
+    private static VariantCharges parseCharges(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantCharges.AS_PLACED;
+        String token = el.isJsonPrimitive() ? el.getAsString() : null;
+        VariantCharges charges = token == null ? null : VariantCharges.parse(token);
+        if (charges == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown charges '{}', using as placed.",
+                contextId, contextPos, el);
+            return VariantCharges.AS_PLACED;
+        }
+        return charges;
+    }
+
+    /** Emit {@code , "slime": {"sizes": [...], "types": [...]}} when any part is set. */
+    private static void appendSlimeJson(StringBuilder sb, VariantSlime slime) {
+        if (slime.isDefault()) return;
+        sb.append(", \"slime\": {");
+        boolean first = true;
+        if (slime.sizesSet()) {
+            sb.append("\"sizes\": [");
+            List<Integer> sizes = slime.litSizes();
+            for (int i = 0; i < sizes.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(sizes.get(i));
+            }
+            sb.append("]");
+            first = false;
+        }
+        if (slime.typesSet()) {
+            if (!first) sb.append(", ");
+            sb.append("\"types\": [");
+            List<String> names = slime.typeNames();
+            for (int i = 0; i < names.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("\"").append(names.get(i)).append("\"");
+            }
+            sb.append("]");
+        }
+        sb.append("}");
+    }
+
+    /** Parse an optional {@code "slime"} object. Absent or malformed → any size / type. */
+    static VariantSlime parseSlime(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantSlime.NONE;
+        VariantSlime slime = null;
+        try {
+            if (el.isJsonObject()) {
+                JsonObject obj = el.getAsJsonObject();
+                List<Integer> sizes = new ArrayList<>();
+                List<String> types = new ArrayList<>();
+                if (obj.has("sizes")) {
+                    for (JsonElement n : obj.getAsJsonArray("sizes")) sizes.add(n.getAsInt());
+                }
+                if (obj.has("types")) {
+                    for (JsonElement n : obj.getAsJsonArray("types")) types.add(n.getAsString());
+                }
+                slime = VariantSlime.fromLists(sizes, types);
+            }
+        } catch (RuntimeException e) {
+            slime = null;
+        }
+        if (slime == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: bad slime options '{}', using any.",
+                contextId, contextPos, el);
+            return VariantSlime.NONE;
+        }
+        return slime;
+    }
+
+    /** Parse an optional {@code "colours"} array of dye names. Absent or malformed → white only. */
+    private static VariantBedColours parseBedColours(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantBedColours.WHITE_ONLY;
+        VariantBedColours colours = null;
+        if (el.isJsonArray()) {
+            List<String> names = new ArrayList<>();
+            boolean ok = true;
+            for (JsonElement n : el.getAsJsonArray()) {
+                if (!n.isJsonPrimitive()) {
+                    ok = false;
+                    break;
+                }
+                names.add(n.getAsString());
+            }
+            if (ok) colours = VariantBedColours.fromNames(names);
+        }
+        if (colours == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown colours '{}', using white.",
+                contextId, contextPos, el);
+            return VariantBedColours.WHITE_ONLY;
+        }
+        return colours;
     }
 
     /** Parse an optional {@code "pot"} token ({@code "random"}, {@code "minecraft:poppy,…"}). Absent or malformed → off. */

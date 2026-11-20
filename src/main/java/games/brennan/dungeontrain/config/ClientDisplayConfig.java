@@ -340,6 +340,14 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue EVENT_REMINDERS;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /**
+     * LEGACY: the Java runtime the player said "don't show again" to on DT's own Java security
+     * warning, before it moved to the bundled MC Java Safety Check mod. Kept only so
+     * {@code compat/MCJavaSafetyCheckBridge} can hand the value over and clear it. Empty = nothing to hand over.
+     */
+    public static final ModConfigSpec.ConfigValue<String> JAVA_RCE_WARNING_DISMISSED_FOR;
+    /** Show "Playing Dungeon Train" and where you are on your Discord profile — see {@code client.discord.DiscordRichPresence}. On by default. */
+    public static final ModConfigSpec.BooleanValue DISCORD_RICH_PRESENCE;
     /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
@@ -502,6 +510,8 @@ public final class ClientDisplayConfig {
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         EVENT_REMINDERS = pair.getLeft().eventReminders;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        JAVA_RCE_WARNING_DISMISSED_FOR = pair.getLeft().javaRceWarningDismissedFor;
+        DISCORD_RICH_PRESENCE = pair.getLeft().discordRichPresence;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
         HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
@@ -992,6 +1002,18 @@ public final class ClientDisplayConfig {
                          "has been given less than 5 GB of memory on a computer with 8 GB or more, suggesting you",
                          "allocate 6 GB or more in your launcher. Nothing is sent anywhere. On by default.")
                 .define("lowMemoryNoticeChat", true);
+        ModConfigSpec.ConfigValue<String> javaRceWarningDismissedFor = b
+                .comment("Legacy: moved to config/mcjavasafetycheck-client.toml (warningDismissedFor).",
+                         "Dungeon Train hands this value over once and then empties it.")
+                .define("javaRceWarningDismissedFor", "");
+        b.pop();
+
+        b.push("discord");
+        ModConfigSpec.BooleanValue discordRichPresence = b
+                .comment("Discord status: show \"Playing Dungeon Train\" and where you are (the Overworld, the Nether,",
+                         "the End, or riding the train) on your Discord profile. Talks only to the Discord app",
+                         "running on this computer; nothing is sent anywhere else. On by default; turn it off in Options → Account.")
+                .define("richPresence", true);
         b.pop();
 
         b.push("dev");
@@ -1049,7 +1071,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat, eventReminders,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
+                lowMemoryNoticeChat, javaRceWarningDismissedFor, discordRichPresence, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme, placeholderCollision,
@@ -1581,6 +1603,22 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * The Discord status switch (Options row, Account tab): whether this client shows its game on the
+     * player's Discord profile through the local Discord app. On by default, but off until the config has
+     * loaded, so nothing reaches Discord before the player's own setting is known.
+     */
+    public static boolean isDiscordRichPresence() {
+        return isLoaded() && DISCORD_RICH_PRESENCE.get();
+    }
+
+    /** Persist the Discord status switch. Idempotent; no-op pre-load. */
+    public static void setDiscordRichPresence(boolean value) {
+        if (!isLoaded() || DISCORD_RICH_PRESENCE.get() == value) return;
+        DISCORD_RICH_PRESENCE.set(value);
+        DISCORD_RICH_PRESENCE.save();
+    }
+
+    /**
      * Whether the advancements screen hides every tab outside the {@code dungeontrain} namespace. On
      * by default, pre-load included, so the screen never flashes the vanilla tabs before the config
      * loads. Read each time the screen is opened — see {@code AdvancementTabGate}.
@@ -1617,6 +1655,16 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         LOW_MEMORY_NOTICE_CHAT.set(value);
         LOW_MEMORY_NOTICE_CHAT.save();
+    }
+
+    public static String getJavaRceWarningDismissedFor() {
+        return isLoaded() ? JAVA_RCE_WARNING_DISMISSED_FOR.get() : "";
+    }
+
+    public static void setJavaRceWarningDismissedFor(String runtimeVersion) {
+        if (!isLoaded()) return;
+        JAVA_RCE_WARNING_DISMISSED_FOR.set(runtimeVersion);
+        JAVA_RCE_WARNING_DISMISSED_FOR.save();
     }
 
     /** Whether a dev build draws its top-left developer read-out. On by default, and before the config loads. */
@@ -2507,6 +2555,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue eventReminders,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.ConfigValue<String> javaRceWarningDismissedFor,
+            ModConfigSpec.BooleanValue discordRichPresence,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
             ModConfigSpec.BooleanValue hideOtherAdvancementCards,

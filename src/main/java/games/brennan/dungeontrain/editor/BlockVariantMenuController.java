@@ -348,7 +348,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
                 conditionValuesToken(plot, localPos, s.condition()),
-                s.candles().id(), s.pot().id(), s.trapped()));
+                s.candles().id(), s.pot().id(), s.trapped(),
+                s.charges().toInt(), s.bedColours().mask(), s.slime().mask()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -843,6 +844,29 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
+            case SET_CHARGES -> {
+                // delta = VariantCharges.toInt(); the canonical constructor clamps the range.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !VariantCharges.isChargeable(entry.state())) return;
+                mutated.set(idx, entry.withCharges(
+                    VariantCharges.fromInt(packet.delta()).clampedTo(VariantCharges.maxFor(entry.state()))));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_BED_COLOURS -> {
+                // delta = VariantBedColours mask; an empty mask falls back to white only.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !VariantBedColours.isWhiteBed(entry.state())) return;
+                mutated.set(idx, entry.withBedColours(new VariantBedColours(packet.delta())));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             case SET_POT, ADD_POT_PLANT, REMOVE_POT_PLANT -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -852,6 +876,20 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantPot next = potEdit(entry.pot(), packet, player);
                 if (next == null) return;
                 mutated.set(idx, entry.withPot(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_SLIME -> {
+                // delta = VariantSlime mask; the canonical VariantState constructor drops the type
+                // bits on a slime / magma cube row.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob() || !VariantSlime.isSlime(entry.entityId())) return;
+                VariantSlime next = new VariantSlime(packet.delta());
+                if (next.equals(entry.slime())) return;
+                mutated.set(idx, entry.withSlime(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

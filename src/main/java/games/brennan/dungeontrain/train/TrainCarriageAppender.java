@@ -3761,6 +3761,17 @@ public final class TrainCarriageAppender {
      * null-pointer ghost that silently dead-ends train extension. Called at
      * every group birth — bootstrap eager-fill and both auto-spawn lanes.
      */
+    /**
+     * Hold a new train's seed group resident from birth, the same as every other group. Without it
+     * the seed relies on a player's chunk tickets, which on {@code /dtp} only move once the client
+     * confirms the teleport: the chunks the spawn loaded drop first and Sable files the seed into
+     * holding. It resurfaces later, but in the slow-generating upside-down band that took longer
+     * than the {@code /dtp} wait, so the player was never landed.
+     */
+    static void holdSpawnedSeed(ServerLevel level, UUID trainId, ManagedShip ship) {
+        holdGroupResident(level, trainId, ship);
+    }
+
     private static void holdGroupResident(ServerLevel level, UUID trainId, ManagedShip ship) {
         Shipyards.of(level).forceLoad(ship);
         FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(ship.subLevelId());

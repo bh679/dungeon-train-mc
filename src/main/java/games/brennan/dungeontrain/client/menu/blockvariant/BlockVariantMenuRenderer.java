@@ -399,8 +399,9 @@ public final class BlockVariantMenuRenderer {
             boolean painting = concrete && BlockVariantMenu.growthSupported()
                 && BlockVariantMenu.isPaintingRow(entry, parsed);
             // Candle and flower pot rows do the same with their Candles / Plant pills.
-            boolean slotRow = concrete && BlockVariantMenu.growthSupported()
-                && BlockVariantMenu.usesGrowSlot(entry, parsed);
+            boolean slotRow = (concrete && BlockVariantMenu.growthSupported()
+                && BlockVariantMenu.usesGrowSlot(entry, parsed))
+                || BlockVariantMenu.isSlimeRow(entry);
             boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
                 && GrowthShapes.canGrow(parsed)) || slotRow;
             double growthCellR = armsCellL;
@@ -570,7 +571,14 @@ public final class BlockVariantMenuRenderer {
             BlockState growthState = BlockVariantMenu.parseState(entries.get(growthRow).stateString());
             BlockVariantMenu.SlotPopup slot = growthState == null ? null
                 : BlockVariantMenu.slotPopup(entries.get(growthRow), growthState, panelW, halfH);
-            if (slot != null) {
+            if (slot != null && slot.kind() == BlockVariantMenu.CellKind.SLIME_OPTION) {
+                games.brennan.dungeontrain.editor.VariantSlime slime = BlockVariantMenu.slime(entries.get(growthRow));
+                drawPopupRows(ps, buffer, font, slot.rows(), slot.kind(), hovered,
+                    (row, i) -> SlimePopupLayout.isSelected(slime, row, i));
+            } else if (slot != null && slot.kind() == BlockVariantMenu.CellKind.BED_COLOUR_OPTION) {
+                drawBedColourPopup(ps, buffer, font, slot.rows(),
+                    BlockVariantMenu.bedColours(entries.get(growthRow)), hovered);
+            } else if (slot != null) {
                 drawPopupRows(ps, buffer, font, slot.rows(), slot.kind(), hovered);
             } else if (growthState != null) {
                 drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
@@ -726,8 +734,9 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * The pill a painting, candle, flower pot or chest row shows in the Grow slot: its key word when off,
-     * a short read-out ({@code 2×1}, {@code Rnd}, {@code ×3}, a plant) in green when on, lit while
+     * The pill a painting, candle, flower pot, respawn anchor, white bed or chest row shows in the
+     * Grow slot: its key word when off, a short read-out ({@code 2×1}, {@code Rnd}, {@code ×3}, a plant,
+     * {@code 1-4}, {@code 3 col}) in green when on, lit while
      * its popup is open — the Grow pill's look.
      */
     private static void drawSlotCell(PoseStack ps, MultiBufferSource buffer, Font font,
@@ -737,7 +746,11 @@ public final class BlockVariantMenuRenderer {
                                      BlockVariantMenu.Hit hovered) {
         boolean on;
         String label;
-        if (BlockVariantMenu.isPaintingRow(entry, parsed)) {
+        if (BlockVariantMenu.isSlimeRow(entry)) {
+            games.brennan.dungeontrain.editor.VariantSlime slime = BlockVariantMenu.slime(entry);
+            on = !slime.isDefault();
+            label = SlimePopupLayout.shortLabel(slime);
+        } else if (BlockVariantMenu.isPaintingRow(entry, parsed)) {
             games.brennan.dungeontrain.editor.VariantPainting painting = BlockVariantMenu.painting(entry);
             on = painting.on();
             label = PaintingPopupLayout.shortLabel(painting);
@@ -745,6 +758,14 @@ public final class BlockVariantMenuRenderer {
             games.brennan.dungeontrain.editor.VariantCandles candles = BlockVariantMenu.candles(entry);
             on = !candles.isDefault();
             label = CandlePopupLayout.shortLabel(candles);
+        } else if (BlockVariantMenu.isAnchorRow(entry, parsed)) {
+            games.brennan.dungeontrain.editor.VariantCharges charges = BlockVariantMenu.charges(entry);
+            on = !charges.isDefault();
+            label = ChargePopupLayout.shortLabel(charges);
+        } else if (BlockVariantMenu.isWhiteBedRow(entry, parsed)) {
+            games.brennan.dungeontrain.editor.VariantBedColours colours = BlockVariantMenu.bedColours(entry);
+            on = !colours.isDefault();
+            label = BedColourPopupLayout.shortLabel(colours);
         } else if (BlockVariantMenu.isTrapRow(entry, parsed)) {
             on = entry.trapped() > 0;
             label = on ? MenuLang.t("block_variant.trap_pct", entry.trapped()) : MenuLang.t("block_variant.trap");
@@ -761,6 +782,32 @@ public final class BlockVariantMenuRenderer {
         drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
         drawCenteredText(ps, buffer, font, label,
             (cellL + cellR) / 2.0, rowCY, on || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
+    /**
+     * The Colours popup: {@link #drawPopupRows}' tinted buttons (lit = enabled) with each dye's
+     * swatch inset over its button and a tick on the enabled ones.
+     */
+    private static void drawBedColourPopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                           List<GrowthPopupLayout.Row> rows,
+                                           games.brennan.dungeontrain.editor.VariantBedColours colours,
+                                           BlockVariantMenu.Hit hovered) {
+        drawPopupRows(ps, buffer, font, rows, BlockVariantMenu.CellKind.BED_COLOUR_OPTION, hovered,
+            (row, i) -> BedColourPopupLayout.isSelected(colours, row, i));
+        for (GrowthPopupLayout.Row row : rows) {
+            double bBot = row.bottom() + 0.04;
+            double bTop = row.top() - 0.04;
+            double cy = (bBot + bTop) / 2.0;
+            for (int i = 0; i < row.buttons().length; i++) {
+                net.minecraft.world.item.DyeColor dye = BedColourPopupLayout.colour(row.section(), i);
+                double bL = row.buttonLeft(i) + 0.025;
+                double bR = row.buttonLeft(i) + row.buttonWidth() - 0.025;
+                drawQuad(ps, buffer, bL, bBot, bR, bTop, BedColourPopupLayout.swatchColour(dye));
+                if (colours.has(dye)) {
+                    drawCenteredText(ps, buffer, font, "✔", (bL + bR) / 2.0, cy, BedColourPopupLayout.tickColour(dye));
+                }
+            }
+        }
     }
 
     /** The Grow popup: the visible sections of {@link GrowthPopupLayout} for one row. */

@@ -182,7 +182,7 @@ public final class WorkbenchRooms {
 
     /** Whether {@code box} overlaps any recorded plot but {@code stagedId}'s own. */
     private static boolean collides(ServerLevel overworld, String stagedId, BoundingBox box) {
-        for (var e : DungeonTrainWorldData.get(overworld).workbenchPlotBoxes().entrySet()) {
+        for (var e : DungeonTrainWorldData.get(overworld).workbenchPlotBoxesView().entrySet()) {
             if (e.getKey().equalsIgnoreCase(stagedId)) continue;
             BoundingBox other = WorkbenchPlacement.boxOf(e.getValue());
             if (other != null && other.intersects(box)) return true;

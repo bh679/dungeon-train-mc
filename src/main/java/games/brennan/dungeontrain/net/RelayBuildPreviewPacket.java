@@ -25,12 +25,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * else.</p>
  */
 public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean found, boolean retryable,
-                                      byte[] template)
+                                      byte[] template, int[] oversize)
         implements CustomPacketPayload {
 
     /** The build as it is now — no version, no index. */
     public RelayBuildPreviewPacket(int relayId, boolean found, boolean retryable, byte[] template) {
-        this(relayId, 0, new int[0], found, retryable, template);
+        this(relayId, 0, new int[0], found, retryable, template, new int[0]);
     }
 
     /** Ceiling on the wire, under NeoForge's own payload limit. The server sends well below it. */
@@ -48,9 +48,10 @@ public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean 
                 buf.writeBoolean(packet.found);
                 buf.writeBoolean(packet.retryable);
                 buf.writeByteArray(packet.template);
+                buf.writeVarIntArray(packet.oversize);
             },
             buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarIntArray(4096),
-                buf.readBoolean(), buf.readBoolean(), buf.readByteArray(MAX_BYTES))
+                buf.readBoolean(), buf.readBoolean(), buf.readByteArray(MAX_BYTES), buf.readVarIntArray(4))
         );
 
     /**
@@ -63,6 +64,24 @@ public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean 
         return new RelayBuildPreviewPacket(relayId, false, retryable, new byte[0]);
     }
 
+    /**
+     * The answer for one preview attempt: its picture when there is one, and its size when the build
+     * is over the preview caps. The two travel together: a big build may still come with a lighter
+     * picture, and the X menu asks before loading it either way.
+     */
+    public static RelayBuildPreviewPacket of(int relayId, int seq, int[] seqs, BuilderRelayPreview.Attempt attempt) {
+        byte[] bytes = attempt.bytes();
+        int[] oversize = attempt.oversize() == null ? new int[0] : attempt.oversize().toArray();
+        return new RelayBuildPreviewPacket(relayId, seq, seqs, bytes != null, attempt.retryable(),
+            bytes == null ? new byte[0] : bytes, oversize);
+    }
+
+    /** A build over the preview caps with no picture at all: its size, and nothing to draw. */
+    public static RelayBuildPreviewPacket oversized(int relayId, int seq, int[] seqs,
+                                                    BuilderRelayPreview.Oversize oversize) {
+        return of(relayId, seq, seqs, new BuilderRelayPreview.Attempt(null, false, oversize));
+    }
+
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
@@ -71,7 +90,8 @@ public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean 
     public static void handle(RelayBuildPreviewPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             CompoundTag tag = packet.found() ? BuilderRelayPreview.decode(packet.template()) : null;
-            RelayBuildPreviews.accept(packet.relayId(), packet.seq(), packet.seqs(), tag, packet.retryable());
+            RelayBuildPreviews.accept(packet.relayId(), packet.seq(), packet.seqs(), tag, packet.retryable(),
+                BuilderRelayPreview.Oversize.fromArray(packet.oversize()));
         });
     }
 }

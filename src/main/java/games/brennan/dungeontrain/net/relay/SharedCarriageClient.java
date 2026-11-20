@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net.relay;
 
 import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import com.google.gson.JsonArray;
+import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -289,7 +290,7 @@ public final class SharedCarriageClient {
         if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
         addNameId(body, nameId);
         addPhotos(body, photos);
-        return post("/carriages/submit", body).thenApply(resp -> {
+        return postBlocks("/carriages/submit", body, blocksBase64).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) return Optional.empty();
             String token = o.has("token") && !o.get("token").isJsonNull() ? o.get("token").getAsString() : null;
@@ -322,12 +323,24 @@ public final class SharedCarriageClient {
                                int changeCount, long updatedTs,
                                boolean favourite, String ownerUuid, String ownerName,
                                boolean templateCopy, SubmitNote note, String reviewComment,
-                               String reviewVersion, String reviewVersionOp) {
+                               String reviewVersion, String reviewVersionOp, long blocksChars) {
         public ProfileBuild {
             note = note == null ? SubmitNote.EMPTY : note;
             reviewComment = reviewComment == null ? "" : reviewComment;
             reviewVersion = reviewVersion == null ? "" : reviewVersion;
             reviewVersionOp = reviewVersionOp == null ? "" : reviewVersionOp;
+            blocksChars = Math.max(0L, blocksChars);
+        }
+
+        /** A row without its stored size — what every listing carried before {@code blocksChars} was read. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy, SubmitNote note, String reviewComment,
+                            String reviewVersion, String reviewVersionOp) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, note, reviewComment,
+                    reviewVersion, reviewVersionOp, 0L);
         }
 
         /** A row with a comment but no resubmit rule. */
@@ -410,7 +423,7 @@ public final class SharedCarriageClient {
         // What made it. The relay keeps builder uploads and in-play captures in separate dedupe scopes,
         // so an identical blob never collapses one into the other.
         body.addProperty("source", "builder");
-        return post("/carriages/submit", body).thenApply(resp -> {
+        return postBlocks("/carriages/submit", body, blocksBase64).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) {
                 logFailure("/carriages/submit", resp);
@@ -505,7 +518,8 @@ public final class SharedCarriageClient {
                 r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
                         && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
                         && r.get("templateCopy").getAsBoolean(),
-                noteOf(r), str(r, "reviewComment"), str(r, "reviewVersion"), str(r, "reviewVersionOp"));
+                noteOf(r), str(r, "reviewComment"), str(r, "reviewVersion"), str(r, "reviewVersionOp"),
+                longOf(r, "blocksChars"));
     }
 
     /**
@@ -930,7 +944,7 @@ public final class SharedCarriageClient {
     }
 
     /** What a note (or review) write came back with. */
-    private static CallStatus noteStatus(HttpResponse<String> resp) {
+    static CallStatus noteStatus(HttpResponse<String> resp) {
         if (resp == null) {
             logFailure("/carriages/note", null);
             return CallStatus.ERROR;
@@ -1166,7 +1180,7 @@ public final class SharedCarriageClient {
     }
 
     /** Read a fetch response into a result — the HTTP status first, then the body's shape. */
-    private static FetchResult parseFetch(HttpResponse<String> resp) {
+    static FetchResult parseFetch(HttpResponse<String> resp) {
         int sc = resp.statusCode();
         if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
         if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
@@ -1557,7 +1571,7 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
-        return statusPost("/carriages/save", body);
+        return statusPost("/carriages/save", body, blocksBase64);
     }
 
     /**
@@ -1585,7 +1599,7 @@ public final class SharedCarriageClient {
      * second parse. Silence (null/blank/unparseable) sends nothing, which the relay reads as
      * "leave the links alone".
      */
-    private static void addLootPrefabs(JsonObject body, String lootPrefabs) {
+    static void addLootPrefabs(JsonObject body, String lootPrefabs) {
         if (lootPrefabs == null || lootPrefabs.isBlank()) return;
         try {
             JsonElement doc = JsonParser.parseString(lootPrefabs);
@@ -1641,7 +1655,7 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
-        return statusPost("/carriages/owner-save", body);
+        return statusPost("/carriages/owner-save", body, blocksBase64);
     }
 
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
@@ -1695,13 +1709,18 @@ public final class SharedCarriageClient {
         addFuel(body, fuel);
         body.addProperty("id", id);
         body.addProperty("token", token);
-        if (blocksBase64 != null && !blocksBase64.isEmpty()) {
-            body.addProperty("blocks", blocksBase64);
-            body.addProperty("baseSeq", baseSeq);
-            if (text != null && !text.isEmpty()) body.addProperty("text", text);
-            addPhotos(body, photos);
-        }
-        return statusPost("/carriages/return", body);
+        if (blocksBase64 == null || blocksBase64.isEmpty()) return statusPost("/carriages/return", body);
+        // A final blob other worlds would refuse is left off: the lease still goes back, and the relay
+        // keeps the build as it last accepted it.
+        return uploadable(blocksBase64, "/carriages/return").thenCompose(ok -> {
+            if (ok) {
+                body.addProperty("blocks", blocksBase64);
+                body.addProperty("baseSeq", baseSeq);
+                if (text != null && !text.isEmpty()) body.addProperty("text", text);
+                addPhotos(body, photos);
+            }
+            return statusPost("/carriages/return", body);
+        });
     }
 
     // ---- death / report (fire-and-forget) ----
@@ -1736,7 +1755,7 @@ public final class SharedCarriageClient {
 
     // ---- transport ----
 
-    private static JsonObject dims(int l, int h, int w) {
+    static JsonObject dims(int l, int h, int w) {
         JsonObject d = new JsonObject();
         d.addProperty("l", l);
         d.addProperty("h", h);
@@ -1756,7 +1775,7 @@ public final class SharedCarriageClient {
      * production pool from a dev build. Everything else goes through {@link #post(String, JsonObject)}
      * and cannot address another relay by accident.</p>
      */
-    private static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
+    static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
         return postAttempt(baseUrl, path, body, REQUEST_TIMEOUT).thenApply(RelayRetry.Transport::resp);
     }
 
@@ -1811,6 +1830,37 @@ public final class SharedCarriageClient {
     }
 
     /** POST that only cares about success/forbidden/unknown for save/heartbeat/return. */
+    /**
+     * Resolves true when {@code blocks} is within what other worlds will decode
+     * ({@link CarriageBlockSnapshot#withinRelayLimits}). The check decodes the blob, so it runs off the
+     * caller's thread. Uploading a build no world can read would only put it in every lease's way.
+     */
+    private static CompletableFuture<Boolean> uploadable(String blocks, String path) {
+        if (blocks == null || blocks.isEmpty()) return CompletableFuture.completedFuture(true);
+        return CompletableFuture.supplyAsync(() -> {
+            boolean ok = CarriageBlockSnapshot.withinRelayLimits(blocks);
+            if (!ok) {
+                LOGGER.warn("[DungeonTrain] {}: build is over the size other worlds accept ({} chars) — not uploading it.",
+                        path, blocks.length());
+            }
+            return ok;
+        });
+    }
+
+    /** {@link #post}, unless {@code blocks} is over the size limit: then resolves to null, as no answer does. */
+    private static CompletableFuture<HttpResponse<String>> postBlocks(String path, JsonObject body, String blocks) {
+        return uploadable(blocks, path).thenCompose(ok -> ok
+                ? post(path, body)
+                : CompletableFuture.completedFuture(null));
+    }
+
+    /** {@link #statusPost}, for a call that carries {@code blocks}; an oversize blob resolves to ERROR. */
+    private static CompletableFuture<CallStatus> statusPost(String path, JsonObject body, String blocks) {
+        return uploadable(blocks, path).thenCompose(ok -> ok
+                ? statusPost(path, body)
+                : CompletableFuture.completedFuture(CallStatus.ERROR));
+    }
+
     private static CompletableFuture<CallStatus> statusPost(String path, JsonObject body) {
         return post(path, body).thenApply(resp -> {
             if (resp == null) return CallStatus.ERROR;
@@ -1849,7 +1899,7 @@ public final class SharedCarriageClient {
     }
 
     /** Parse a 2xx JSON object with {@code ok:true}, or null. */
-    private static JsonObject okJson(HttpResponse<String> resp) {
+    static JsonObject okJson(HttpResponse<String> resp) {
         if (resp == null || resp.statusCode() / 100 != 2) return null;
         try {
             JsonElement root = JsonParser.parseString(resp.body());

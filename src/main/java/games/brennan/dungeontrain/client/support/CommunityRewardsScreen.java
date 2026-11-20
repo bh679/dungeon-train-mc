@@ -61,6 +61,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     /** Only for Give's link handling (confirm + analytics); never laid out. */
     private final ContributePanel links;
     private final CurrencyPicker currency = new CurrencyPicker(UiAnalytics.SURFACE_REWARDS_PAGE, this::rebuildWidgets);
+    private final RecipientPicker recipient = new RecipientPicker(this::rebuildWidgets);
     private final long openedAtMs = System.currentTimeMillis();
     private boolean timeReported;
 
@@ -101,6 +102,11 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     public CommunityRewardsScreen(@Nullable Screen parent) {
         super(Component.translatable("gui.dungeontrain.rewards.title"));
         this.parent = parent;
+        // Opened from See All Rewards the "on behalf of" choice carries over; from anywhere else it
+        // starts on the player themself, like the Contribute screens.
+        if (!(parent instanceof ContributeScreen) && !(parent instanceof games.brennan.dungeontrain.client.DonationOptionsScreen)) {
+            DonationRecipient.reset();
+        }
         this.links = new ContributePanel(this, UiAnalytics.SURFACE_REWARDS_PAGE, ContributePanel.Style.PAGE, () -> {});
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_REWARDS_PAGE);
         OfficialLinks.ensureFetched();
@@ -208,6 +214,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
 
         // Top right of the column, level with the title; drawn by render() above the scrolling cards.
         currency.layout(this.font, colX + colW, viewportTop - 3, this.height, this::addWidget);
+        int faceRight = currency.button() != null ? currency.button().getX() - 3 : colX + colW;
+        recipient.layout(this.font, faceRight, viewportTop - 3, this::addWidget);
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(this.width / 2 - 100, rowY, 200, 20).build());
     }
@@ -442,11 +450,17 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             currency.button().visible = scrollY == 0;
             currency.button().render(g, mouseX, mouseY, partialTick);
         }
+        if (recipient.button() != null) {
+            recipient.button().visible = scrollY == 0;
+            recipient.button().render(g, mouseX, mouseY, partialTick);
+        }
         currency.render(g, this.font, mouseX, mouseY);
+        recipient.render(g, this.font, mouseX, mouseY, partialTick);
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (recipient.mouseClicked(mx, my, button)) return true;
         if (currency.mouseClicked(mx, my, button)) return true;
         if (button == 0 && my >= viewportTop && my <= viewportBottom) {
             int off = viewportTop - scrollY;
@@ -466,7 +480,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        return currency.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
+        return recipient.keyPressed(keyCode, scanCode, modifiers) || currency.keyPressed(keyCode)
+                || super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char c, int modifiers) {
+        return recipient.charTyped(c, modifiers) || super.charTyped(c, modifiers);
     }
 
     /** Dev preview: scroll to the bottom (the Personal Rewards section). */

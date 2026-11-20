@@ -25,6 +25,11 @@
     {
       "id": "waterparkour",
       "weight": 1
+    },
+    {
+      "id": "parkourup",
+      "weight": 2,
+      "minLevel": 8
     }
   ]
 }

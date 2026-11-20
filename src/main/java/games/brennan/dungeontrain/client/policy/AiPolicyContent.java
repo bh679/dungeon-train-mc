@@ -27,8 +27,12 @@ public final class AiPolicyContent {
     public static final int ACCENT_NOT_AI = 0xFF5FBF5F;
     /** The death-screen amber (see {@code DonationOptionsScreen}) — the honest-disclosure list. */
     public static final int ACCENT_USED = 0xFFE0B56A;
+    /** Violet for the Live chat translations card: what leaves your machine when you stream. */
+    public static final int ACCENT_LIVE_CHAT = 0xFFB48CFF;
     /** The page's own link blue, for the closing "which AI" note. */
     public static final int ACCENT_WHICH = 0xFF5B9BFF;
+    /** Cyan for the Explainers card: posts on the website that go deeper than this page. */
+    public static final int ACCENT_EXPLAINERS = 0xFF55D6D6;
 
     private AiPolicyContent() {}
 
@@ -75,8 +79,16 @@ public final class AiPolicyContent {
                     new Bullet("gui.dungeontrain.ai_policy.used.1", Items.HOPPER),
                     new Bullet("gui.dungeontrain.ai_policy.used.2", Items.ENCHANTED_BOOK),
                     new Bullet("gui.dungeontrain.ai_policy.used.3", Items.PAPER),
+                    // Spyglass: debug logs are looked through, and only ones players send in.
+                    new Bullet("gui.dungeontrain.ai_policy.used.6", Items.SPYGLASS),
                     new Bullet("gui.dungeontrain.ai_policy.used.4", Items.CRAFTING_TABLE),
                     new Bullet("gui.dungeontrain.ai_policy.used.5", Items.REDSTONE_TORCH))),
+
+            // Mirrors the website's "Live chat translations" section. Ender eye for the Live-Eye
+            // you wear to stream; the hanging sign is the label chat shows on translated lines.
+            Section.list("gui.dungeontrain.ai_policy.live_chat.header", ACCENT_LIVE_CHAT, List.of(
+                    new Bullet("gui.dungeontrain.ai_policy.live_chat.1", Items.ENDER_EYE),
+                    new Bullet("gui.dungeontrain.ai_policy.live_chat.2", Items.OAK_HANGING_SIGN))),
 
             Section.paragraph("gui.dungeontrain.ai_policy.which.header", ACCENT_WHICH,
                     "gui.dungeontrain.ai_policy.which.body"));
@@ -84,5 +96,22 @@ public final class AiPolicyContent {
     /** The cards, in render order. */
     public static List<Section> sections() {
         return SECTIONS;
+    }
+
+    /**
+     * One explainer: a post on the website that goes deeper into something this page says. Drawn as
+     * its own section of the Explainers card: glyph and title, a one-line description, then a button
+     * that opens {@code url}. Baked here like the screen's Discord link: these are fixed pages.
+     */
+    public record Explainer(String titleKey, String descKey, String url, Item glyph) {}
+
+    private static final List<Explainer> EXPLAINERS = List.of(
+            new Explainer("gui.dungeontrain.ai_policy.explainers.names.title",
+                    "gui.dungeontrain.ai_policy.explainers.names.desc",
+                    "https://dungeon.training/blog/names-without-ai/", Items.NAME_TAG));
+
+    /** The Explainers card's sections, in render order. */
+    public static List<Explainer> explainers() {
+        return EXPLAINERS;
     }
 }

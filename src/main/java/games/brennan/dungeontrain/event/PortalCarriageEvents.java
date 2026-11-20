@@ -2048,7 +2048,8 @@ public final class PortalCarriageEvents {
         // eight rooms out takes their followers there rather than leaving them at the original twin.
         PortalEntityTransit.run(level, frames, occupants, carriageIndex, disconnected(level, pairKey),
             PortalExitBindings.followerTwinFor(level, built, dims, pairKey, role,
-                level.getGameTime()));
+                level.getGameTime()),
+            built.settings().entrance().blocksMove(PortalFrames.FRAME_CARRIAGE, role, false));
 
         // Stand-ins for whoever is in the other copy, so two players either side of the midpoint can
         // still see each other. Last, so everything is described from where it ended up this tick
@@ -2219,6 +2220,22 @@ public final class PortalCarriageEvents {
                         player.getName().getString(),
                         "carriage=" + carriageIndex + " until=" + COOLDOWNS.get(id)
                             + " now=" + level.getGameTime());
+                }
+                continue;
+            }
+
+            // A one-way room's entrance does not lead back to the train: once across its portal the
+            // traveller stays in the twin, facing its plugged dummy door, and has to find the exit.
+            // Deliberately kept out of REFUSED_THIS_TICK and the connection stats — this is the room
+            // working as authored, and counting it would have PortalWalkThrough open the centre
+            // plate and close both ends as though the pair were broken. See PortalRoomEntrance.
+            if (structure.settings().entrance().blocksMove(move.toFrame(), role, copyOnly)) {
+                if (PortalSwapDiagnostics.due(
+                        level, PortalSwapDiagnostics.Reason.ONE_WAY_ENTRANCE, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.ONE_WAY_ENTRANCE,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex + " pair=" + pairKey
+                            + " room=" + structure.roomName());
                 }
                 continue;
             }
@@ -2793,6 +2810,7 @@ public final class PortalCarriageEvents {
         }
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)),
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
         // Smaller saves must write where the room now stands: DT's stamp is not a player change, and

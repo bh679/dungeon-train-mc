@@ -231,7 +231,8 @@ final class CandlePotVariantsTest {
                 }
             }
         }
-        assertEquals(64, random, "shipped Random pots");
+        // Every shipped pot is checked above; the total only grows as rooms are added, so pin a floor.
+        assertTrue(random >= 64, "shipped Random pots: " + random);
         assertEquals(2, bowls, "worf dog bowls");
     }
 

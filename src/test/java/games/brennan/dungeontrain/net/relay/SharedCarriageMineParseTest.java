@@ -71,4 +71,19 @@ final class SharedCarriageMineParseTest {
         assertNull(SharedCarriageClient.parseMine(json("{\"ok\":true}")));
         assertNull(SharedCarriageClient.parseMine(null));
     }
+
+    @Test
+    @DisplayName("a row's dims and stored blob length are read; a relay without them reads as zero")
+    void sizeFields() {
+        SharedCarriageClient.Mine mine = SharedCarriageClient.parseMine(json(
+                "{\"ok\":true,\"cap\":10,\"carriages\":[{\"id\":7,\"dims\":{\"l\":64,\"h\":64,\"w\":64},"
+                + "\"blocksChars\":543128},{\"id\":8}]}"));
+        assertNotNull(mine);
+        SharedCarriageClient.ProfileBuild big = mine.builds().get(0);
+        assertEquals(64, big.l());
+        assertEquals(64, big.w());
+        assertEquals(543_128L, big.blocksChars());
+        assertEquals(0L, mine.builds().get(1).blocksChars());
+        assertEquals(0, mine.builds().get(1).l());
+    }
 }

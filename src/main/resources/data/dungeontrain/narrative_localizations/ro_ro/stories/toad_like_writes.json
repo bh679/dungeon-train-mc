@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Broască",
+  "story": "Broască place scrisuri",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea întâi",
+      "variants": [
+        "salu. eu este broască\nmagic unu dat mie cadou.\na mea prima scriere.\n\n\ncadou de voce\nde știe scrisuri\n..\nbroască place scrisuri"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea a doua",
+      "variants": [
+        "salu, broască iar\ntren lung\nbroască plecat vagon baltă\n\n\nsperă găsește ud curând\ntren uscat"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea a treia",
+      "variants": [
+        "salu, este broască\nvreau găsește om magic\nspune mulțumesc\npentru pielea mea\nbroască nu trebuie ud\n\n\npielea mea face ud singur\nlung tren uscat ok\nbroască tot ud"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea a patra",
+      "variants": [
+        "broască foame\ntren albine sunt prea mare\npăianjeni mai mare decât broască\neu nu place asta\n\n\npăianjeni frică"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea a cincea",
+      "variants": [
+        "vagon următor este păianjeni\nmulți păianjeni\n\n\nbroască este curajos\nfrică\n...\ncurajos"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea a șasea",
+      "variants": [
+        "salu, broască aici\neu are prieden nou\n\n\npăianjen nu așa frică\nel place broască\nnu mănâncă\nfi priedeni\nnume. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Scrisoarea a șaptea",
+      "variants": [
+        "tuk și broască\ndrumul ne așteaptă\ntren lung\ncântec ajung\npână la sfârșit\npriedeni de găsit"
+      ]
+    }
+  ]
+}

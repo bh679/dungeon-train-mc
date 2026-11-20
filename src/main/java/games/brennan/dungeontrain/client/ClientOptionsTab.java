@@ -157,6 +157,19 @@ public enum ClientOptionsTab {
          * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
          */
         TWITCH_ACCOUNT(null),
+        /**
+         * Show "Playing Dungeon Train" and where you are on your Discord profile, through the Discord app on
+         * this computer — see {@code client.discord.DiscordRichPresence}. Off by default; hidden in Kid mode
+         * by the screen at draw time.
+         */
+        DISCORD_STATUS("gui.dungeontrain.options.discord_status"),
+        /** The "Your own Discord server" heading over {@link #TRIBUTE_WEBHOOK}. Hidden in Kid mode. */
+        ACCOUNT_SECTION_OWN_DISCORD("gui.dungeontrain.options.section.own_discord"),
+        /**
+         * The player's own Discord webhook: every photo they pay Tribute to also posts there. Opens
+         * {@code TributeWebhookScreen}; the row never shows the link itself. Hidden in Kid mode.
+         */
+        TRIBUTE_WEBHOOK("gui.dungeontrain.options.tribute_webhook"),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -319,7 +332,8 @@ public enum ClientOptionsTab {
      * themselves.
      */
     private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.STREAM_SECTION_BROADCAST,
-            Row.STREAM_SECTION_SOUND, Row.STREAM_SECTION_MIC, Row.STREAM_SECTION_PICTURE, Row.STREAM_SECTION_CHAT, Row.STREAM_SECTION_WATCHING);
+            Row.STREAM_SECTION_SOUND, Row.STREAM_SECTION_MIC, Row.STREAM_SECTION_PICTURE, Row.STREAM_SECTION_CHAT, Row.STREAM_SECTION_WATCHING,
+            Row.ACCOUNT_SECTION_OWN_DISCORD);
 
     /** Whether {@code row} is a caption rather than a setting. */
     public static boolean isHeading(Row row) {
@@ -396,7 +410,10 @@ public enum ClientOptionsTab {
             }
             case ACCOUNT -> {
                 rows.add(Row.DISCORD_ACCOUNT);
+                rows.add(Row.DISCORD_STATUS);
                 rows.add(Row.TWITCH_ACCOUNT);
+                rows.add(Row.ACCOUNT_SECTION_OWN_DISCORD);
+                rows.add(Row.TRIBUTE_WEBHOOK);
             }
             case BACKUPS -> {
                 // Its own tab: the block outgrew a heading on General once it had four rows and

@@ -34,15 +34,15 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV",
-        "CLASSIC",
         "SKYLANDS",
+        "INFDEV",
         "FLOATING",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -62,15 +62,15 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV",
-        "CLASSIC",
         "SKYLANDS",
+        "INFDEV",
         "FLOATING",
         "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "LOST_CITY"
       ]
     },
     {
@@ -102,6 +102,18 @@
       "id": "very_dangerouds_1",
       "weight": 1,
       "minLevel": 61
+    },
+    {
+      "id": "pistonwall",
+      "weight": 1
+    },
+    {
+      "id": "pistonoff",
+      "weight": 2
+    },
+    {
+      "id": "tripwire",
+      "weight": 2
     }
   ]
 }

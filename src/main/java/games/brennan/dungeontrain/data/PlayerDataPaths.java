@@ -62,6 +62,14 @@ public final class PlayerDataPaths {
     /** Per-player Ender Chest flags (Free Play expansion). New store — never lived in {@code config/}. */
     public static final String ENDER_CHEST = "enderchest";
 
+    /**
+     * The Live chat report keys ({@code client.live.ReportKeyStore}), a file at the root. A credential: Dungeon Backup
+     * leaves it out of its archives ({@link DungeonTrainBackup}). Never lived here under another name; it moved from
+     * {@code config/dungeontrain/live-report-key.json}, which the store migrates itself (not a {@link #RELOCATIONS}
+     * entry: those run only when a server starts, and a player who only joins servers never starts one).
+     */
+    public static final String REPORT_KEY = ".live-report-key.json";
+
     /** Folder name used outside the instance, under the OS's per-user application data dir. */
     public static final String EXTERNAL_DIR = "DungeonTrain";
 

@@ -62,6 +62,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml), and the log says `[SableMobPaths] active`. A, D and G include Pathfinder, proving its mixins apply against production bytecode, and log `[SableMobPaths] off` |
 | **M** | minus VanillaBackport (Platform present) | Fails — names `vanillabackport` with its `[x,)` floor |
 | **A/O (`dmv`)** | top-level DT Mod Verify (`dtmodverify`, the Free Play file-verification engine; jarJar'd like the hybrid trio, so G runs on the nested copy) | Server starts cleanly; `JarJar: nested copy skipped` for `dtmodverify` too |
+| **A/O/S (`jsc`)** | top-level MC Java Safety Check (`mcjavasafetycheck`, the Java4Shell warning; jarJar'd, so G runs on the nested copy) | Server starts cleanly; `JarJar: nested copy skipped` for `mcjavasafetycheck`, and the log has a `[MC Java Safety Check] CVE-2026-114938` line |
 | **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |
 | **O** | Case A + What Are They Up To + CoroUtil (a server carrying the modpack's two-sided companion) | Server starts cleanly |
 | **P** | WATUT without CoroUtil | Fails — names `coroutil`, requested by `watut`, with its `[1.21.0-1.3.7,)` floor |

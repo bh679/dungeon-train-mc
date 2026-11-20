@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.discord.DiscordRichPresence;
 import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
@@ -30,6 +31,7 @@ import games.brennan.dungeontrain.client.sound.StreamVolumeOption;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.TributeWebhookClientConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -374,6 +376,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      */
     @Nullable
     private SettingsRowList.Entry addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        // Discord is 13+: no own-Discord webhook in Kid mode, heading included.
+        if ((row == ClientOptionsTab.Row.ACCOUNT_SECTION_OWN_DISCORD || row == ClientOptionsTab.Row.TRIBUTE_WEBHOOK)
+                && ClientDisplayConfig.isKidMode()) {
+            return null;
+        }
         if (ClientOptionsTab.isHeading(row)) {
             list.addWidget(caption(Component.translatable(row.captionKey()).withStyle(ChatFormatting.BOLD)));
             return null;
@@ -382,14 +389,24 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
             case TWITCH_ACCOUNT -> addTwitchAccount(list);
+            // Discord is 13+: no Discord status in Kid mode, like the Twitch block.
+            case DISCORD_STATUS -> {
+                if (ClientDisplayConfig.isKidMode()) return null;
+                return addSettingRow(list, row);
+            }
             default -> {
-                Setting setting = build(row);
-                return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
-                        setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
-                        setting.control, setting.tooltip);
+                return addSettingRow(list, row);
             }
         }
         return null;
+    }
+
+    /** One ordinary setting row: icon, caption, hint and the control {@link #build} makes for it. */
+    private SettingsRowList.Entry addSettingRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        Setting setting = build(row);
+        return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
+                setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
+                setting.control, setting.tooltip);
     }
 
     /**
@@ -986,6 +1003,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     ContentModeSyncClient.syncNow();
                 }), key + ".tip");
 
+            // "Playing Dungeon Train" on the player's Discord profile, through the local Discord app.
+            case DISCORD_STATUS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDiscordRichPresence(), on -> {
+                    ClientDisplayConfig.setDiscordRichPresence(on);
+                    DiscordRichPresence.setEnabled(on);
+                }), key + ".tip");
+
+            // Set / Change opens the paste screen; the hint says whether one is set, never the link.
+            case TRIBUTE_WEBHOOK -> {
+                boolean set = TributeWebhookClientConfig.isSet();
+                Button edit = Button.builder(Component.translatable(key + (set ? ".change" : ".set")),
+                        b -> openChild(new TributeWebhookScreen(this), TributeWebhookSyncClient::syncNow))
+                        .bounds(0, 0, CONTROL_W, ROW_H).build();
+                yield new Setting(edit, Component.translatable(key + ".tip"),
+                        Component.translatable(key + (set ? ".hint_set" : ".hint")));
+            }
+
             // "Minecraft only has N GB of memory" — title-screen card + chat line, once a session each.
             case LOW_MEMORY_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isLowMemoryNoticeChatEnabled(),
                     ClientDisplayConfig::setLowMemoryNoticeChat), key + ".tip");
@@ -1210,7 +1243,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
             case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
             case STREAM_SECTION_BROADCAST, STREAM_SECTION_SOUND, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
-                 STREAM_SECTION_WATCHING -> throw new IllegalStateException(row + " is a heading, not built");
+                 STREAM_SECTION_WATCHING, ACCOUNT_SECTION_OWN_DISCORD -> throw new IllegalStateException(row + " is a heading, not built");
             case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
         };
     }

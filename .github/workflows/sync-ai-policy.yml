@@ -1,0 +1,43 @@
+# Keep dungeon.training/ai-policy/ identical to the in-game AI Policy.
+#
+# The game is the source of truth (en_us.json gui.dungeontrain.ai_policy.* + AiPolicyContent.java).
+# On every push to main that touches it, export it and open/refresh ONE PR on bh679/dp-relay
+# (branch auto/ai-policy) carrying policy.json and the re-rendered page. No change → no PR.
+# The relay's ai-policy-sync.test.js fails if anyone edits the website copy by hand.
+name: Sync AI Policy to the website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/main/resources/assets/dungeontrain/lang/en_us.json
+      - src/main/java/games/brennan/dungeontrain/client/policy/**
+      - scripts/relay/export-ai-policy.py
+      - scripts/relay/sync-ai-policy.sh
+  workflow_dispatch:
+
+concurrency:
+  group: sync-ai-policy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Open or refresh the dp-relay AI Policy PR
+        env:
+          RELAY_REPO_TOKEN: ${{ secrets.RELAY_REPO_TOKEN }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$RELAY_REPO_TOKEN" ]; then
+            echo "::warning::RELAY_REPO_TOKEN is not set — website AI Policy PR not opened (gh secret set RELAY_REPO_TOKEN)."
+            exit 0
+          fi
+          bash scripts/relay/sync-ai-policy.sh

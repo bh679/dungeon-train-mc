@@ -68,6 +68,7 @@ public final class OfferEyeCommand {
             }
             List<String> viewers = LiveFeedClient.parseGiftViewers(r);
             lastViewers = viewers;
+            LiveGiftClient.startOfferList(); // the last list's [Offer] buttons stop working
             if (viewers.isEmpty()) {
                 LiveGiftClient.say(mc, Component.translatable(KEY + "none").withStyle(ChatFormatting.GRAY));
                 return;

@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Kodok",
+  "story": "Kodok suka tulis-tulis",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Satu",
+      "variants": [
+        "halo. aku adalah kodok\nsatu ajaib kasih aku hadiah.\ntulisan pertama aku.\n\n\nhadiah suara\nhadiah tahu tulis\n..\nkodok suka tulis-tulis"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Dua",
+      "variants": [
+        "halo, kodok lagi\nkereta panjang\nkodok tinggal gerbong kolam\n\n\nharap cari basah cepat\nkereta kering"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Tiga",
+      "variants": [
+        "halo, ini kodok\nmau cari orang ajaib\nbilang makasih\nuntuk kulit aku\nkodok tidak perlu basah\n\n\nkulit aku bikin basah sendiri\nkereta kering lama oke\nkodok tetap basah"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Empat",
+      "variants": [
+        "kodok lapar\nkereta lebah terlalu besar\nlaba-laba lebih besar dari kodok\naku tidak suka itu\n\n\nlaba-laba seram"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Lima",
+      "variants": [
+        "gerbong depan adalah laba-laba\nbanyak laba-laba\n\n\nkodok berani\ntakut\n...\nberani"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Surat Enam",
+      "variants": [
+        "halo, kodok di sini\naku punya temen baru\n\n\nlaba-laba tidak begitu seram\ndia suka kodok\ntidak makan\njadi temen\nnama. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Surat Tujuh",
+      "variants": [
+        "tuk dan kodok\njalan di pojok\nkereta panjang\nnyanyi senang\nsampai ujung\ntemen terus"
+      ]
+    }
+  ]
+}

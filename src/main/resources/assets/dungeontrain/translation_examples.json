@@ -1482,6 +1482,23 @@
       ]
     }
   },
+  "chat.dungeontrain.nap.obelisk_needs.one": {
+    "1": {
+      "label": "how many more Amber Gems the obelisk needs (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.nap.obelisk_needs.other": {
+    "1": {
+      "label": "how many more Amber Gems the obelisk needs, 2 to 6",
+      "examples": [
+        "3",
+        "6"
+      ]
+    }
+  },
   "gui.dungeontrain.photo_tribute.viewer.st": {
     "1": {
       "label": "which viewer of the photo the player is (a number taking this ending)",
@@ -3932,6 +3949,47 @@
       ]
     }
   },
+  "gui.dungeontrain.death.echo.mood_pair": {
+    "1": {
+      "label": "how friendly the echo is, as a personality word",
+      "examples": [
+        "Very Friendly",
+        "Skeptical"
+      ]
+    },
+    "2": {
+      "label": "how ready the echo is to fight, as a personality word",
+      "examples": [
+        "Shy",
+        "Very Aggressive"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.echo.skill_tip": {
+    "1": {
+      "label": "the reaction skill's name",
+      "examples": [
+        "Ranged",
+        "Building"
+      ]
+    },
+    "2": {
+      "label": "the echo's reaction speed for that skill, 0 to 10",
+      "examples": [
+        "7",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.echo.armour_tip": {
+    "1": {
+      "label": "the echo's armour points, as the armour bar shows them",
+      "examples": [
+        "14",
+        "7"
+      ]
+    }
+  },
   "echo.dungeontrain.mob_name": {
     "1": {
       "label": "the player this echo is a copy of",
@@ -4739,6 +4797,33 @@
       ]
     }
   },
+  "gui.dungeontrain.nap.ongoing.headline": {
+    "1": {
+      "label": "which ride this is, as an ordinal in your language (previous deaths + 1)",
+      "examples": [
+        "fifth",
+        "37th"
+      ]
+    }
+  },
+  "gui.dungeontrain.nap.ongoing.subline_past.one": {
+    "1": {
+      "label": "how many lives came before this one (digits)",
+      "examples": [
+        "1",
+        "21"
+      ]
+    }
+  },
+  "gui.dungeontrain.nap.ongoing.subline_past.other": {
+    "1": {
+      "label": "how many lives came before this one (digits)",
+      "examples": [
+        "4",
+        "37"
+      ]
+    }
+  },
   "gui.dungeontrain.death.narr.photos": {
     "1": {
       "label": "how many photos this ride captured",
@@ -5032,6 +5117,34 @@
       "label": "the display name of the variant parent that will be created when the build is loaded",
       "examples": [
         "User builds"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.oversized_size": {
+    "1": {
+      "label": "the build's name, as its creator typed it",
+      "examples": [
+        "Grand Hall"
+      ]
+    },
+    "2": {
+      "label": "the build's size in blocks, length by height by width",
+      "examples": [
+        "64×64×64"
+      ]
+    },
+    "3": {
+      "label": "how many blocks the build holds, already formatted with thousands separators",
+      "examples": [
+        "63,669"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.oversized_blocks": {
+    "1": {
+      "label": "how many blocks the build holds, already formatted with thousands separators",
+      "examples": [
+        "63,669"
       ]
     }
   },
@@ -7006,6 +7119,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.entrance": {
+    "1": {
+      "label": "the Entrance setting, already translated",
+      "examples": [
+        "Two-way",
+        "One-way"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.room_walls": {
     "1": {
       "label": "the Room Walls setting, already translated",
@@ -7427,6 +7549,15 @@
       "examples": [
         "walls",
         "doors_a"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.bed_colours_count": {
+    "1": {
+      "label": "how many bed colours are switched on",
+      "examples": [
+        "2",
+        "16"
       ]
     }
   },
@@ -11647,6 +11778,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_drift_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_entrance_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [
@@ -16895,6 +17036,22 @@
       ]
     }
   },
+  "chat.dungeontrain.workbench.send.sent": {
+    "1": {
+      "label": "the name of the player who built it",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.suggestion.title": {
+    "1": {
+      "label": "the build's name",
+      "examples": [
+        "Brick Cabin"
+      ]
+    }
+  },
   "chat.dungeontrain.workbench.committed": {
     "1": {
       "label": "the staged build's Workbench id",
@@ -16913,6 +17070,26 @@
       "label": "the template name it landed under",
       "examples": [
         "brick_cabin"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.committed_renamed": {
+    "1": {
+      "label": "the template name that was asked for but already in use",
+      "examples": [
+        "brick_cabin"
+      ]
+    },
+    "2": {
+      "label": "the kind it became",
+      "examples": [
+        "contents"
+      ]
+    },
+    "3": {
+      "label": "the free name it landed under instead",
+      "examples": [
+        "brick_cabin_2"
       ]
     }
   },
@@ -17805,6 +17982,15 @@
         "affiliate link"
       ]
     }
+  },
+  "gui.dungeontrain.contribute.recipient.self": {
+    "1": { "label": "the player's own Minecraft name", "examples": ["Brennan", "Steve"] }
+  },
+  "gui.dungeontrain.contribute.recipient.gifting": {
+    "1": { "label": "the Minecraft name the player typed to donate on behalf of", "examples": ["Steve", "Alex_42"] }
+  },
+  "gui.dungeontrain.contribute.recipient.confirm": {
+    "1": { "label": "the Minecraft name the player typed to donate on behalf of", "examples": ["Steve", "Alex_42"] }
   },
   "gui.dungeontrain.currency.approx": {
     "1": {
@@ -19021,6 +19207,37 @@
       "examples": [
         "You already have a trash slot",
         "Multiplayer is coming"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.confirm": {
+    "1": {
+      "label": "the name of the Kick or Twitch account being reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    },
+    "2": {
+      "label": "the streaming site the message came from",
+      "examples": [
+        "Kick",
+        "Twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.done": {
+    "1": {
+      "label": "the name of the Kick or Twitch account that was reported",
+      "examples": [
+        "viewbot_4421"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_bot_report.relink": {
+    "1": {
+      "label": "the in-game command that gives a link code",
+      "examples": [
+        "/discord"
       ]
     }
   }

@@ -28,7 +28,6 @@ public final class DeathScreenText {
     public static final int SUBLINE = 0xFF948A70;
     static final int RED = 0xFFFF5555;
     static final int RAIL = 0xFF43454E;
-    static final int INF = 0xFF5A5C66;
 
     /** Content column: at most this wide, and 40px in from a narrow window's edges. */
     public static final int MAX_CONTENT_WIDTH = 360;
@@ -115,10 +114,10 @@ public final class DeathScreenText {
         g.fill(left + 2, railY, left + w - 2, railY + 2, fade.applyAsInt(RAIL));
         int carW = 22, carH = 14, gap = 4, spacing = carW + gap;
         int startX = left + 6;
-        int rightEdge = left + w - 14;            // leave room for the ∞
+        int rightEdge = left + w - 6;
         int slots = Math.max(1, (rightEdge - startX) / spacing);
         // "Full" is the whole rail — the fade tail does NOT count toward it, so the final screen
-        // fills completely (only the ∞ beyond), while earlier screens trail off into the fade.
+        // fills completely, while earlier screens trail off into the fade.
         boolean lastPage = advance >= pageCount - 1;
         int full = slots;
         int solid = pageCount > 1
@@ -146,6 +145,5 @@ public final class DeathScreenText {
                 g.fill(cxp, railY - fh, fw, railY, fade.applyAsInt(tail[j]));
             }
         }
-        g.drawString(font, "∞", left + w - 12, railY - 8, fade.applyAsInt(INF), false);
     }
 }

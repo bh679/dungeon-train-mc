@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Palaka",
+  "story": "Palaka gusto sulat",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "helo. ako ay palaka\nmahika isa bigay ako regalo.\nuna ko sulat.\n\n\nregalo ng boses\nregalo alam sulat\n..\npalaka gusto sulat"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "helo, palaka ulit\ntren mahaba\npalaka alis bagon ng lawa\n\n\nsana hanap basa agad\ntren tuyo"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "helo, ito palaka\ngusto hanap mahika lalaki\nsabi salamat\npara balat ko\npalaka hindi kailangan basa\n\n\nbalat ko gawa sariling basa\nmahabang tuyong tren ok\npalaka basa pa rin"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "palaka gutom\ntren bubuyog sobra laki\ngagamba mas laki kaysa palaka\nako ayaw yon\n\n\ngagamba nakakatakot"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "susunod na bagon ay gagamba\nmaraming gagamba\n\n\npalaka matapang\ntakot\n...\nmatapang"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Ikaanim na Liham",
+      "variants": [
+        "helo, palaka dito\nako may bagong kaybigan\n\n\ngagamba hindi masyado takot\nsiya gusto palaka\nhindi kain\nmaging kaybigan\npangalan. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Ikapitong Liham",
+      "variants": [
+        "si tuk at palaka\nsa daan masaya\ntren mahaba\nkanta kami sama\nhanggang dulo\nkaybigan totoo"
+      ]
+    }
+  ]
+}

@@ -220,7 +220,8 @@ public final class SharedPhotos {
         PhotoSubjectTally.Subjects subjects = shot.subjects();
         // This life's tally, for the Faulthurst note that twins the one-life photo boards.
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
+                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals(),
+                        games.brennan.dungeontrain.nap.NapGateData.step(player));
         // A Free Play photo stays with its photographer: it is never sent to be found by other players.
         if (RunIntegrity.isCheated(player)) return;
         String key = newKey();
@@ -613,7 +614,11 @@ public final class SharedPhotos {
      */
     private static void announceTribute(ServerPlayer player, ItemStack held, int photoId, int cost) {
         MinecraftServer server = player.getServer();
-        if (server == null || RunIntegrity.isCheated(player)) return;
+        if (server == null) return;
+        // The player's own Discord gets every Tribute; the public feed keeps its rules below.
+        boolean personal = TributePhotoReporter.hasPersonalWebhook(player);
+        boolean clean = !RunIntegrity.isCheated(player);
+        if (!clean && !personal) return;
         Frame frame = held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         String photographer = frame == null ? "" : frame.extraData().getString(SHARED_AUTHOR_KEY);
         // The frame carries the Tributes the photo had when handed out; this one is the next.
@@ -624,17 +629,26 @@ public final class SharedPhotos {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
             return;
         }
-        if (!GlobalTributeStats.recordIfHighest(player.getUUID(), cost)) {
-            LOGGER.debug("[DungeonTrain] Tribute of {} to photo {} is not {}'s best (best {}); not posted.",
+        boolean announce = clean && GlobalTributeStats.recordIfHighest(player.getUUID(), cost);
+        if (clean && !announce) {
+            LOGGER.debug("[DungeonTrain] Tribute of {} to photo {} is not {}'s best (best {}); not posted publicly.",
                     cost, photoId, player.getGameProfile().getName(), GlobalTributeStats.highestTributePaid(player.getUUID()));
-            return;
         }
+        if (!announce && !personal) return;
         // As the tributer held it: how many hands before theirs, and the paper those views had worn.
         int hands = viewsSeen(held) + 1;
         int viewsLeft = viewsLeft(held);
         Optional<int[]> paper = PhotoPaperTextures.paper(WornPhotographs.forViewsLeft(viewsLeft, maxViews(held), photoId));
         encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), exposureId,
-                png -> TributePhotoReporter.post(player, photographer, photoId, tributeNumber, cost, hands, viewsLeft, png));
+                png -> {
+                    if (announce) {
+                        TributePhotoReporter.post(player, photographer, photoId, tributeNumber, cost, hands, viewsLeft, png);
+                    }
+                    if (personal) {
+                        TributePhotoReporter.postPersonal(player, TributePhotoReporter.title(player.getGameProfile().getName(), photographer),
+                                TributePhotoReporter.description(tributeNumber, cost, hands, viewsLeft), png);
+                    }
+                });
     }
 
     /** Registration only — no network, no game state. Called once at mod construction. */

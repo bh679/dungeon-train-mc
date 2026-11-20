@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+    "30,1,26": {
+      "fillMin": 1,
+      "fillMax": 10,
+      "entries": [
+        {
+          "id": "minecraft:stone_sword",
+          "count": 1,
+          "weight": 20,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_sword",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:golden_sword",
+          "count": 1,
+          "weight": 2,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:wooden_axe",
+          "count": 1,
+          "weight": 20,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:stone_axe",
+          "count": 1,
+          "weight": 20,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_axe",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:golden_axe",
+          "count": 1,
+          "weight": 2,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:shield",
+          "count": 1,
+          "weight": 10,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:chainmail_helmet",
+          "count": 1,
+          "weight": 10,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:chainmail_chestplate",
+          "count": 1,
+          "weight": 10,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:chainmail_leggings",
+          "count": 1,
+          "weight": 10,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:chainmail_boots",
+          "count": 1,
+          "weight": 10,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_helmet",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_chestplate",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_leggings",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_boots",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:golden_helmet",
+          "count": 1,
+          "weight": 3,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:golden_chestplate",
+          "count": 1,
+          "weight": 3,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:golden_leggings",
+          "count": 1,
+          "weight": 3,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:golden_boots",
+          "count": 1,
+          "weight": 3,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:wooden_sword",
+          "count": 1,
+          "weight": 20,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_ingot",
+          "count": 2,
+          "weight": 20,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:iron_nugget",
+          "count": 4,
+          "weight": 60,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:gold_ingot",
+          "count": 2,
+          "weight": 15,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:gold_nugget",
+          "count": 4,
+          "weight": 50,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:raw_gold",
+          "count": 3,
+          "weight": 20,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:raw_iron",
+          "count": 3,
+          "weight": 30,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "dungeontrain:random_book",
+          "count": 1,
+          "weight": 2,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        },
+        {
+          "id": "minecraft:ender_chest",
+          "count": 1,
+          "weight": 1,
+          "randDur": true,
+          "durChance": 100,
+          "randEnch": true,
+          "enchChance": 25
+        }
+      ]
+    }
+  },
+  "links": {
+    "37,1,42": "mining2",
+    "36,1,42": "meats",
+    "35,1,42": "fish",
+    "50,5,48": "amorer_chest",
+    "48,5,48": "amorer_chest",
+    "46,5,48": "amorer_chest",
+    "44,5,48": "amorer_chest",
+    "42,5,48": "amorer_chest",
+    "40,5,48": "amorer_chest",
+    "38,5,48": "amorer_chest",
+    "36,5,48": "amorer_chest",
+    "34,5,48": "amorer_chest",
+    "42,5,36": "amorer_chest",
+    "40,5,36": "amorer_chest",
+    "44,5,36": "amorer_chest",
+    "46,5,36": "amorer_chest",
+    "48,5,36": "amorer_chest",
+    "3,2,36": "meat",
+    "4,2,36": "gamble",
+    "12,8,53": "meat",
+    "8,4,52": "potionbarrel",
+    "0,1,53": "end",
+    "60,3,57": "writing",
+    "60,3,52": "writing",
+    "4,12,28": "fruit_veg",
+    "4,12,27": "fruit_veg",
+    "5,0,4": "fruit_veg",
+    "12,9,54": "fish",
+    "25,14,26": "horse",
+    "25,14,43": "horse",
+    "25,14,44": "horse",
+    "26,14,25": "horse",
+    "26,14,45": "horse",
+    "41,14,24": "horse",
+    "42,14,24": "horse",
+    "44,14,45": "horse",
+    "45,14,44": "horse",
+    "42,15,24": "horse",
+    "44,15,45": "horse",
+    "23,20,32": "horse",
+    "23,20,38": "horse",
+    "32,20,23": "horse",
+    "32,20,47": "horse",
+    "38,20,23": "horse",
+    "38,20,47": "horse",
+    "47,20,33": "horse",
+    "47,20,37": "horse"
+  }
+}

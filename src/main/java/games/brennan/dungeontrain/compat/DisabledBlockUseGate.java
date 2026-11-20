@@ -20,7 +20,12 @@ public final class DisabledBlockUseGate {
     public static boolean veto(PlayerInteractEvent.RightClickBlock event) {
         Player player = event.getEntity();
         if (player.isCreative()) return false;
-        Block block = event.getLevel().getBlockState(event.getPos()).getBlock();
+        net.minecraft.world.level.block.state.BlockState state = event.getLevel().getBlockState(event.getPos());
+        // The Respawn Obelisk is the End's nap spot: its click goes through to the server, where
+        // NapBedEvents decides it (nap, explosion, or still blocked). Cancelling here on the client
+        // would stop the click ever reaching it.
+        if (games.brennan.dungeontrain.nap.RespawnObelisks.isObelisk(state)) return false;
+        Block block = state.getBlock();
         if (!DisabledModContent.isDisabledBlock(BuiltInRegistries.BLOCK.getKey(block))) return false;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.FAIL);

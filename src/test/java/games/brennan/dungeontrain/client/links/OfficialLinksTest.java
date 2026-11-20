@@ -70,16 +70,16 @@ class OfficialLinksTest {
 
     @Test
     void theGeneralCheckoutKeyWinsOverTheChinaOne() {
-        OfficialLinks.accept(Map.of(
-                "payment_checkout", "https://relay.example/cap/pay/cn",
-                "payment_cn_checkout", "https://relay.example/othercap/pay/cn"));
-        assertEquals("https://relay.example/cap/pay/cn", OfficialLinks.paymentCheckout());
+        OfficialLinks.accept(Map.of(), Map.of(
+                "payment_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn",
+                "payment_cn_checkout", "https://brennan.games/api/dp-relay/othercap/pay/cn"));
+        assertEquals("https://brennan.games/api/dp-relay/cap/pay/cn", OfficialLinks.paymentCheckout());
     }
 
     @Test
     void aRelayPredatingTheGeneralKeyStillLightsUpThePricePoints() {
-        OfficialLinks.accept(Map.of("payment_cn_checkout", "https://relay.example/cap/pay/cn"));
-        assertEquals("https://relay.example/cap/pay/cn", OfficialLinks.paymentCheckout());
+        OfficialLinks.accept(Map.of(), Map.of("payment_cn_checkout", "https://brennan.games/api/dp-relay/cap/pay/cn"));
+        assertEquals("https://brennan.games/api/dp-relay/cap/pay/cn", OfficialLinks.paymentCheckout());
     }
 
     @Test
@@ -94,10 +94,10 @@ class OfficialLinksTest {
     void invalidRelayValueKeepsFallbackForThatKey() {
         Map<String, String> raw = new HashMap<>();
         raw.put("discord", "javascript:alert(1)");
-        raw.put("patreon", "https://www.patreon.com/other");
+        raw.put("affiliate", "https://example.com/other");
         OfficialLinks.accept(raw);
         assertEquals(OfficialLinks.FALLBACK_DISCORD, OfficialLinks.discord());
-        assertEquals("https://www.patreon.com/other", OfficialLinks.patreon());
+        assertEquals("https://example.com/other", OfficialLinks.affiliate());
     }
 
     // --- payment_cn: relay-only, no baked fallback ---------------------------------------------
@@ -110,7 +110,7 @@ class OfficialLinksTest {
 
     @Test
     void paymentCnServedFromRelay() {
-        OfficialLinks.accept(Map.of("payment_cn", "https://buy.stripe.com/test_abc123"));
+        OfficialLinks.accept(Map.of(), Map.of("payment_cn", "https://buy.stripe.com/test_abc123"));
         assertEquals("https://buy.stripe.com/test_abc123", OfficialLinks.paymentCn());
     }
 
@@ -130,6 +130,58 @@ class OfficialLinksTest {
         assertEquals("https://example.com/aff", OfficialLinks.affiliate());
     }
 
+    // --- payment keys: signed links only ------------------------------------------------------
+
+    @Test
+    void anUnsignedPaymentLinkIsIgnoredAndTheKeyDegrades() {
+        // The relay's plain `links` map is what old jars read; for a payment key it is never trusted.
+        OfficialLinks.accept(Map.of(
+                "patreon", "https://www.patreon.com/brennanhatton",
+                "payment", "https://revolut.me/someone-else",
+                "payment_checkout", "https://evil.example/pay",
+                "rewards_pay", "https://brennan.games/api/dp-relay/cap/rewards/pay",
+                "payment_cn", "https://buy.stripe.com/x"));
+        assertEquals(OfficialLinks.FALLBACK_PATREON, OfficialLinks.patreon());
+        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment());
+        assertNull(OfficialLinks.paymentCheckout(), "price points hide, as offline");
+        assertNull(OfficialLinks.rewardsPay(), "Give reads Soon, as offline");
+        assertNull(OfficialLinks.paymentCn());
+    }
+
+    @Test
+    void aSignedPaymentLinkOnAnyHostIsUsed() {
+        // Signed, so a new provider needs no release.
+        OfficialLinks.accept(
+                Map.of("payment", "https://revolut.me/ignored"),
+                Map.of("payment", "https://pay.example.com/brennan?note=Dungeon%20Train%20"));
+        assertEquals("https://pay.example.com/brennan?note=Dungeon%20Train%20", OfficialLinks.payment());
+    }
+
+    @Test
+    void aSignedLinkThatIsNotHttpsIsStillDropped() {
+        OfficialLinks.accept(Map.of(), Map.of("payment", "http://pay.example.com/x"));
+        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment());
+    }
+
+    @Test
+    void signedEntriesNeverSetNonPaymentKeys() {
+        OfficialLinks.accept(Map.of(), Map.of("discord", "https://discord.gg/sneaky"));
+        assertEquals(OfficialLinks.FALLBACK_DISCORD, OfficialLinks.discord());
+    }
+
+    @Test
+    void aLocalTestRelayMayServeLoopbackPaymentLinksUnsigned() {
+        String local = "http://127.0.0.1:8787/cap/pay/cn";
+        try {
+            LinkPolicy.setLocalRelayForTest(true);
+            OfficialLinks.accept(Map.of("payment_checkout", local, "payment_cn", "https://buy.stripe.com/x"));
+            assertEquals(local, OfficialLinks.paymentCheckout());
+            assertNull(OfficialLinks.paymentCn(), "only loopback is taken unsigned");
+        } finally {
+            LinkPolicy.setLocalRelayForTest(null);
+        }
+    }
+
     // --- sanitize ----------------------------------------------------------------------------
 
     @Test
@@ -139,9 +191,9 @@ class OfficialLinksTest {
         raw.put("b", "");
         raw.put("c", null);
         raw.put("d", "ftp://nope.example");
-        raw.put("e", "http://also-ok.example");
+        raw.put("e", "http://plain-http.example");
         Map<String, String> out = OfficialLinks.sanitize(raw);
-        assertEquals(Map.of("a", "https://ok.example/x", "e", "http://also-ok.example"), out);
+        assertEquals(Map.of("a", "https://ok.example/x"), out);
     }
 
     @Test
@@ -153,9 +205,10 @@ class OfficialLinksTest {
     // --- isValidUrl --------------------------------------------------------------------------
 
     @Test
-    void isValidUrlAcceptsHttpAndHttps() {
+    void isValidUrlAcceptsHttpsOnly() {
         assertTrue(OfficialLinks.isValidUrl("https://discord.gg/x"));
-        assertTrue(OfficialLinks.isValidUrl("http://example.com/a?b=1&c=2"));
+        assertTrue(OfficialLinks.isValidUrl("https://example.com/a?b=1&c=2"));
+        assertFalse(OfficialLinks.isValidUrl("http://example.com/a?b=1&c=2"));
     }
 
     @Test

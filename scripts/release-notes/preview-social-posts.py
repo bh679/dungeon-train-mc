@@ -12,6 +12,9 @@ An entry with its own clip (`video`, an .mp4 with sound) is shown as the relay p
 feed video, the story video and the TikTok video, all built from the clip with its own sound and the song under it,
 and the clip's cover frame. The clip is read from the same images folder by its file name.
 
+The Instagram feed card is shown both ways, crop (fill the 4:5 card) and fit (the whole picture over a blurred copy,
+the entry's `"feed": "fit"`), the entry's own choice marked, with the set-major.py command that switches it.
+
 Each card shows that platform's caption: an entry with a `description` carries the whole update as plain text, links
 kept on Facebook and shown as their text, or the `mentions` handle, on Instagram and TikTok.
 
@@ -26,6 +29,10 @@ Usage:
   python3 scripts/release-notes/preview-social-posts.py [--version 0.1746.0] [--port 8766]
                                                         [--relay ~/Projects/dp-relay] [--relay-ref origin/main]
                                                         [--music <entry-id>=<track-id>] [--vibe <entry-id>=<vibe>]
+                                                        [--id <entry-id>]
+
+--id previews that entry (repeatable) whether or not it has been released, in place of the unreleased set: the posts
+a released update will still make, after changing its picture or feed fit with set-major.py.
 
 Needs node and a dp-relay clone with its node_modules installed. Keeps serving until stopped. Exits 1 when no
 unreleased major or notable entry has a picture.
@@ -129,7 +136,14 @@ async function clipPosts(e, save, log) {
     }
     if (!hasClip) {
       save('facebook.jpg', await card.pictureJpeg(bytes, { log }));
-      save('instagram.jpg', await card.buildUpdateCard(e, bytes, { format: 'feed', log }));
+      // the feed card both ways (crop, fit), when this relay ref can fit; instagram.jpg is the entry's own choice
+      const band = { top: 1000, h: 350 };
+      const canFit = card.updateGraph('feed', band, { fit: true }) !== card.updateGraph('feed', band);
+      for (const fit of canFit ? [false, true] : [false]) {
+        const jpeg = await card.buildUpdateCard(e, bytes, { format: 'feed', fit, log });
+        save(`instagram-${fit ? 'fit' : 'crop'}.jpg`, jpeg);
+        if (fit === (canFit && e.feed === 'fit')) save('instagram.jpg', jpeg);
+      }
       save('story.jpg', await card.buildUpdateCard(e, bytes, { format: 'story', isNew: true, log }));
     }
     done.push({ id: e.id, title: e.title, files,
@@ -196,17 +210,28 @@ def text_fields(e: dict) -> dict:
     return {k: e[k] for k in ("description", "mentions") if e.get(k)}
 
 
-def postable(entries: list[dict], version: str) -> list[dict]:
-    """The unreleased major/notable entries with a local picture, shaped as the relay's update entries."""
+def postable(entries: list[dict], version: str, ids: list[str] | None = None) -> list[dict]:
+    """The unreleased major/notable entries with a local picture, shaped as the relay's update entries; with `ids`,
+    those entries instead, released or not (a released one keeps its own version and release time)."""
+    if ids:
+        missing = [i for i in ids if changelog_io.find_entry(entries, i) is None]
+        if missing:
+            raise ValueError(f"no changelog entry with id {', '.join(missing)}")
+        chosen = [e for e in entries if e["id"] in ids]
+    else:
+        chosen = changelog_io.unreleased_entries(entries)
     out = []
-    for e in changelog_io.unreleased_entries(entries):
+    for e in chosen:
         local = local_file(e.get("image") or "")
         if not e.get("major") or not local or not os.path.exists(local):
             continue
+        released = bool(e.get("released_in") and e.get("released_at"))
         out.append({
             "id": e["id"], "title": e["title"], "summary": e.get("summary", ""), "tags": e.get("tags", []),
-            "version": f"v{version}", "released_at": e.get("date", "") + "T00:00:00Z",
+            "version": e["released_in"] if released else f"v{version}",
+            "released_at": e["released_at"] if released else e.get("date", "") + "T00:00:00Z",
             "notable": bool(e.get("notable")), "milestone": bool(e.get("milestone")),
+            "feed": "fit" if e.get("feed") == "fit" else "crop",
             "picturePath": os.path.abspath(local),
             **clip_fields(e),
             **text_fields(e),
@@ -236,6 +261,24 @@ def media_block(post: dict, platform: str, video_key: str = "feed-video") -> str
     # Not muted: the song is part of what is being checked. Browsers won't autoplay sound, so press play.
     video = f'<video src="{files[video_key]}" poster="{cover or ""}" controls loop playsinline></video>'
     return video + '<p class="k">Cover:</p>' + still
+
+
+def feed_fit_block(post: dict, choice: str) -> str:
+    """The Instagram feed card both ways, crop and fit, side by side: the entry's own choice marked, and the command
+    that switches to the other. Empty when the relay ref can't fit (one variant only)."""
+    files = post["files"]
+    if "instagram-fit" not in files:
+        return ""
+    cells = []
+    for variant in ("crop", "fit"):
+        on = variant == choice
+        label = f"{variant.capitalize()}{' (this entry)' if on else ''}"
+        cells.append(f'<figure class="{"on" if on else ""}"><img src="{files["instagram-" + variant]}" alt="">'
+                     f"<figcaption>{label}</figcaption></figure>")
+    other = "fit" if choice == "crop" else "crop"
+    switch = f"python3 scripts/release-notes/set-major.py --id {post['id']} --feed {other}"
+    return (f"<p class=k>Feed card, crop or fit:</p><div class=pair>{''.join(cells)}</div>"
+            f"<p class=k>Switch to {other}:</p><pre>{html.escape(switch)}</pre>")
 
 
 def tiktok_block(post: dict) -> str:
@@ -288,6 +331,7 @@ def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = 
             f"<div class=card><h3>Facebook Page</h3>{media_block(post, 'facebook')}"
             f"<pre>{html.escape(post['captions']['facebook'])}</pre></div>"
             f"<div class=card><h3>Instagram feed</h3>{media_block(post, 'instagram')}"
+            f"{feed_fit_block(post, e.get('feed', 'crop'))}"
             f"<pre>{html.escape(post['captions']['instagram'])}</pre></div>"
             f"<div class=card><h3>Story (Instagram and Facebook)</h3>{media_block(post, 'story', 'story-video')}</div>"
             f"{tiktok_block(post)}"
@@ -308,6 +352,8 @@ def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = 
         "table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}"
         "td,th{text-align:left;padding:3px 6px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}"
         "tr.on td{font-weight:600}"
+        ".pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pair figure{margin:0;padding:3px;border-radius:10px;"
+        "border:2px solid transparent}.pair figure.on{border-color:#8cc45e}figcaption{font-size:13px;text-align:center}"
         "pre{white-space:pre-wrap;font:13px/1.45 system-ui;background:var(--bg);border-radius:8px;padding:10px}</style>"
         f"<h1>v{html.escape(version)}: social posts</h1>"
         f"<p class=k>Rendered by dp-relay's own code at {html.escape(relay_ref)}. Hashtags rotate by the update's place in the "
@@ -324,12 +370,14 @@ def main(argv: list[str] | None = None) -> int:
                         help="dp-relay commit to render with (default origin/main; a branch to preview its changes)")
     parser.add_argument("--music", action="append", default=[], metavar="ENTRY=TRACK",
                         help="preview this track on that entry's video (repeatable)")
+    parser.add_argument("--id", action="append", default=[], dest="ids", metavar="ENTRY",
+                        help="preview this entry, released or not, in place of the unreleased set (repeatable)")
     parser.add_argument("--vibe", action="append", default=[], metavar="ENTRY=VIBE",
                         help="pick the song from this vibe instead of the one the tags give (repeatable)")
     args = parser.parse_args(argv)
     version = args.version or read_version()
     try:
-        entries = postable(changelog_io.load_changelog()["entries"], version)
+        entries = postable(changelog_io.load_changelog()["entries"], version, args.ids or None)
         tracks, vibes = parse_picks(args.music, "--music"), parse_picks(args.vibe, "--vibe")
     except ValueError as e:
         print(e, file=sys.stderr)

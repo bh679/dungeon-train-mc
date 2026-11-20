@@ -127,6 +127,8 @@ public final class ContributePanel {
     private int cardIconX, cardIconY;
     /** The middle tier's bounds, outlined green like the website's featured tier; w 0 = none. */
     private int featX, featY, featW, featH;
+    /** Where the "on behalf of" status line goes (right edge, top); y -1 = not shown. */
+    private int recipientX, recipientY = -1;
 
     public ContributePanel(Screen host, String surface, Style style, Runnable relayout) {
         this.host = host;
@@ -160,6 +162,18 @@ public final class ContributePanel {
         }
         int lh = font.lineHeight;
         int top = y;
+
+        // "Gifting for Steve" (or "Enter a Minecraft name") while the face picker is on Someone else:
+        // right-aligned on the first group label's line, so the column keeps its height. Only a label
+        // too long to share its line pushes the status onto a row of its own.
+        if (commit) recipientY = -1;
+        if (DonationRecipient.isOther()) {
+            Component first = Component.translatable(PaymentLinks.tiersAvailable()
+                    ? "gui.dungeontrain.contribute.group.dev" : "gui.dungeontrain.contribute.group.everyone");
+            boolean ownRow = font.width(first) + GAP * 2 + RecipientPicker.statusWidth(font) > w;
+            if (commit) { recipientX = x + w; recipientY = y; }
+            if (ownRow) y += lh + GAP;
+        }
 
         // The thank-you this player already has waiting, in boosts: "30 Book Boosts waiting".
         int boosts = BookCredits.boostsLeftOrEstimate();
@@ -403,6 +417,7 @@ public final class ContributePanel {
 
     public void render(GuiGraphics g, Font font, int mouseX, int mouseY) {
         render(g, font);
+        if (recipientY >= 0) RecipientPicker.drawStatus(g, font, recipientX, recipientY);
         if (cardW > 0) {
             boolean overLeft = overArrow(font, mouseX, mouseY, true);
             boolean overRight = overArrow(font, mouseX, mouseY, false);
@@ -491,6 +506,12 @@ public final class ContributePanel {
     /** Payment confirm for money targets, vanilla's for the rest; returns to the host either way. */
     void openLink(String url, String target) {
         if (url == null) return;
+        // Someone else is chosen but no valid name is typed: open the picker on its name box instead.
+        if (DonationRecipient.blocked() && !UiAnalytics.TARGET_PATREON.equals(target)
+                && !UiAnalytics.TARGET_AFFILIATE.equals(target)) {
+            RecipientPicker.openActive();
+            return;
+        }
         if (target != null) UiAnalytics.click(surface, target);
         if (PaymentConfirmScreen.tryOpen(host, surface, target, url)) return;
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {

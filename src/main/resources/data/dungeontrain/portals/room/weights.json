@@ -30,7 +30,7 @@
   },
   "backrooms": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:20:10"
+    "mode": "endless_repetition/dynamic/off/random:20:10/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way"
   },
   "beam": {
     "weight": 3,
@@ -240,6 +240,10 @@
     "mode": "bedrock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
   "gravityfalls": 1,
+  "gridpath": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/random:64:10/off/none/repeated/-1/1"
+  },
   "tribute": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
@@ -256,6 +260,11 @@
       "name": "AntonioMacarely"
     }
   },
+  "housetown": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "endless_repetition/dynamic/off/random:50:10"
+  },
   "icebears": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on:20/off/end"
@@ -267,7 +276,7 @@
   "kfc": 1,
   "labrynth": {
     "weight": 2,
-    "mode": "endless_repetition/dynamic/off/random:20:8"
+    "mode": "endless_repetition/dynamic/off/random:20:8/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way"
   },
   "largerlibrary": {
     "weight": 1,
@@ -276,7 +285,7 @@
   "library_dimension": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
+    "mode": "endless_repetition/dynamic/off/random:25:4/off/none/repeated/0/0/0/0/minecraft:bedrock/off"
   },
   "lowkeyabridge": {
     "weight": 1,
@@ -332,6 +341,25 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on:15"
   },
+  "nnout": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "void/exact/off/off/off/none/sealed/0/7"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "void"
@@ -344,18 +372,28 @@
       "name": "AntonioMacarely"
     }
   },
+  "onionman": 1,
   "outsidethebox": {
     "weight": 3,
-    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14"
+    "mode": "void/exact/off/off/off/day/sealed/0/13/0/14",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "parkour": {
     "weight": 2,
     "minLevel": 2,
     "mode": "void"
   },
+  "parkourup": {
+    "weight": 2,
+    "minLevel": 2,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/3/0/11/dungeontrain:skybox_surface"
+  },
   "paths": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/random:10:10"
+    "mode": "endless_repetition/dynamic/off/random:10:10/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way"
   },
   "pathsforever": {
     "weight": 1,
@@ -456,6 +494,10 @@
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/1/-1/1"
   },
+  "staircase": {
+    "weight": 1,
+    "mode": "void/exact/off/off/off/end/sealed/0/0/0/43/minecraft:bedrock/on"
+  },
   "statue2": {
     "weight": 1,
     "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
@@ -517,12 +559,67 @@
       "name": "AntonioMacarely"
     }
   },
+  "taslibrary1": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "bedrock/exact/off/off/mix/day/sealed/0/0/0/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
+  },
+  "tassortinghouse": {
+    "weight": 0,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/0/0/dungeontrain:skybox_surface/off",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
+    }
+  },
   "terrarium": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/day/sealed/0/73/0/19",
     "builder": {
       "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
       "name": "Firefly_on_ytb"
+    }
+  },
+  "thearchivistsociety": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/0/1/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
+      "name": "Nikeeta"
     }
   },
   "tntlong": {
@@ -550,6 +647,14 @@
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
+    }
+  },
+  "vaultchambers": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/random:50:10/off/none/repeated/0/0/0/0/minecraft:bedrock/auto/on/bottom/one_way",
+    "builder": {
+      "uuid": "7b7774bd61fc44b59b8b3f38ce70a443",
+      "name": "AshSeven"
     }
   },
   "waterparkour": {

@@ -88,7 +88,7 @@ public final class RunRestore {
     }
 
     /** The world's carriage counter gates room templates and contents; bring it up to the run's depth. */
-    private static void raiseWorldProgress(ServerLevel level, int travelled) {
+    public static void raiseWorldProgress(ServerLevel level, int travelled) {
         BoardingProgressData data = BoardingProgressData.get(level);
         int delta = Math.abs(travelled) - Math.abs(data.travelledCarriageIndex());
         if (delta > 0) data.advance(delta, data.lastLeaderCarriage());

@@ -9,7 +9,9 @@ import net.minecraft.client.User;
 /**
  * Whether this player has given enough to unlock the supporter perks — today, the book screen's Copy
  * button ({@code BookCopyButton}). A supporter is anyone whose all-time contribution on the relay's
- * ledger is at least {@link #MIN_TOTAL_AUD}.
+ * ledger is at least {@link #MIN_TOTAL_AUD}, counting gift splits: perks a payment sent to a friend are
+ * theirs, not the payer's. The relay decides and sends a yes/no ({@code you.supporter}), so a gifted perk
+ * never shows as an amount on the friend's name; an older relay without it falls back to the total.
  *
  * <p>Read from the relay's {@code GET /donations/summary?name=&uuid=} {@code you} block. Its
  * {@code totalUsd} key is a legacy name: the relay fills it in AUD (dp-relay {@code backers.js}), the
@@ -48,7 +50,11 @@ public final class SupporterStatus {
 
     /** The rule itself, apart from where the summary came from. */
     static boolean qualifies(DonationSummaryClient.Summary summary) {
-        return summary != null && summary.hasYou() && summary.youTotalUsd() >= MIN_TOTAL_AUD;
+        // Split-aware (a gift can send a payment's supporter perks to a friend, or keep them while the
+        // funding credit goes): the relay's yes/no when it sends one, else the all-time total.
+        if (summary == null || !summary.hasYou()) return false;
+        if (summary.youSupporter() != null) return summary.youSupporter();
+        return summary.youTotalUsd() >= MIN_TOTAL_AUD;
     }
 
     /**

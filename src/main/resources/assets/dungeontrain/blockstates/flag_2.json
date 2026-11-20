@@ -1,0 +1,63 @@
+{
+  "variants": {
+    "rotation=0": {
+      "model": "dungeontrain:block/flag_2"
+    },
+    "rotation=1": {
+      "model": "dungeontrain:block/flag_2"
+    },
+    "rotation=2": {
+      "model": "dungeontrain:block/flag_2"
+    },
+    "rotation=3": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 90
+    },
+    "rotation=4": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 90
+    },
+    "rotation=5": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 90
+    },
+    "rotation=6": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 180
+    },
+    "rotation=7": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 180
+    },
+    "rotation=8": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 180
+    },
+    "rotation=9": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 180
+    },
+    "rotation=10": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 180
+    },
+    "rotation=11": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 270
+    },
+    "rotation=12": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 270
+    },
+    "rotation=13": {
+      "model": "dungeontrain:block/flag_2",
+      "y": 270
+    },
+    "rotation=14": {
+      "model": "dungeontrain:block/flag_2"
+    },
+    "rotation=15": {
+      "model": "dungeontrain:block/flag_2"
+    }
+  }
+}

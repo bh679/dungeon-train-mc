@@ -175,6 +175,7 @@ public final class BlockVariantMenuInputHandler {
             case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
             case ENTRY_GROWTH -> isTrapRow(hit.index());
             case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(GrowthPopupLayout.section(hit.secondary()));
+            case CHARGE_OPTION -> hit.secondary() >= 0 && ChargePopupLayout.isNumber(GrowthPopupLayout.section(hit.secondary()));
             default -> false;
         };
     }
@@ -298,6 +299,9 @@ public final class BlockVariantMenuInputHandler {
                     BlockVariantEditPacket.Op.SET_CANDLES, variantId, local, hit.index(), next.id(), 0));
             }
             case POT_OPTION -> dispatchPot(hit, variantId, local);
+            case CHARGE_OPTION -> dispatchCharges(hit, variantId, local, shift, button);
+            case BED_COLOUR_OPTION -> dispatchBedColours(hit, variantId, local);
+            case SLIME_OPTION -> dispatchSlime(hit, variantId, local);
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -454,6 +458,87 @@ public final class BlockVariantMenuInputHandler {
      * The number behind one row's weight or difficulty cell: click and shift/right-click send the
      * stepping op, cmd-click types an absolute value with its SET twin.
      */
+    /**
+     * A respawn anchor row's Charge popup. Same modal rules as the Grow popup: -2 closes, -1 is the
+     * popup's own margin. As is / Range set the mode; Min / Max are number cells (click steps,
+     * shift- or right-click steps down, cmd-click types).
+     */
+    private static void dispatchCharges(BlockVariantMenu.Hit hit, String variantId,
+                                        net.minecraft.core.BlockPos local, boolean shift, int button) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        int row = hit.index();
+        int section = GrowthPopupLayout.section(code);
+        games.brennan.dungeontrain.editor.VariantCharges current =
+            BlockVariantMenu.charges(BlockVariantMenu.entries().get(row));
+        int max = games.brennan.dungeontrain.editor.VariantCharges.maxFor(
+            BlockVariantMenu.parseState(BlockVariantMenu.entries().get(row).stateString()));
+        if (ChargePopupLayout.isNumber(section)) {
+            int value = ChargePopupLayout.value(current, section);
+            java.util.function.IntConsumer setValue = v -> DungeonTrainNet.sendToServer(
+                new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_CHARGES, variantId, local, row, "",
+                    ChargePopupLayout.withValue(current, section, v, max).toInt()));
+            String kind = ChargePopupLayout.isGems(max) ? "gems" : "charges";
+            NumberStepper.click(new NumberField(
+                    NumberTitle.of(kind + (section == ChargePopupLayout.SECTION_MIN ? "_min" : "_max")),
+                    value, 0, max, false,
+                    () -> setValue.accept(value + 1), () -> setValue.accept(value - 1), setValue),
+                button, shift, MenuClickModifiers.cmdDown(), pad());
+            return;
+        }
+        games.brennan.dungeontrain.editor.VariantCharges next =
+            ChargePopupLayout.applyMode(current, GrowthPopupLayout.option(code), max);
+        if (next.equals(current)) return;
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+            BlockVariantEditPacket.Op.SET_CHARGES, variantId, local, row, "", next.toInt()));
+    }
+
+    /**
+     * A white bed row's Colours popup: a swatch switches its colour on or off. Clearing the last
+     * enabled colour is ignored, so one always stays on. Same modal rules as the Grow popup.
+     */
+    private static void dispatchBedColours(BlockVariantMenu.Hit hit, String variantId,
+                                           net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        games.brennan.dungeontrain.editor.VariantBedColours current =
+            BlockVariantMenu.bedColours(BlockVariantMenu.entries().get(hit.index()));
+        games.brennan.dungeontrain.editor.VariantBedColours next = current.toggled(
+            BedColourPopupLayout.colour(GrowthPopupLayout.section(code), GrowthPopupLayout.option(code)));
+        if (next.equals(current)) return;
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+            BlockVariantEditPacket.Op.SET_BED_COLOURS, variantId, local, hit.index(), "", next.mask()));
+    }
+
+    /**
+     * A slime-type row's Slime popup: a size or End slime type button switches it in or out of the
+     * spawn's pool (none lit = any). Same modal rules as the Grow popup.
+     */
+    private static void dispatchSlime(BlockVariantMenu.Hit hit, String variantId,
+                                      net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        games.brennan.dungeontrain.editor.VariantSlime current =
+            BlockVariantMenu.slime(BlockVariantMenu.entries().get(hit.index()));
+        games.brennan.dungeontrain.editor.VariantSlime next = SlimePopupLayout.toggled(
+            current, GrowthPopupLayout.section(code), GrowthPopupLayout.option(code));
+        if (next.equals(current)) return;
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+            BlockVariantEditPacket.Op.SET_SLIME, variantId, local, hit.index(), "", next.mask()));
+    }
+
     private static NumberField rowNumber(BlockVariantMenu.CellKind kind, String variantId,
                                          net.minecraft.core.BlockPos local, int row,
                                          BlockVariantSyncPacket.Entry entry) {

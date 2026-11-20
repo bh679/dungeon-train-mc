@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import net.minecraft.nbt.CompoundTag;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -176,6 +177,7 @@ public final class VariantOverlayRenderer {
      * Same {@code null}-means-empty convention as {@link #LAST_DOOR_GHOSTS_KEY}.
      */
     private static final Map<UUID, String> LAST_TUNNEL_ENVELOPE_KEY = new HashMap<>();
+    private static final Map<UUID, String> LAST_SHELL_FADE_KEY = new HashMap<>();
 
     /**
      * Per-player dedup key for the variant-cell mob ghosts — the plot key plus every ghosted cell and
@@ -210,6 +212,7 @@ public final class VariantOverlayRenderer {
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
         LAST_TUNNEL_ENVELOPE_KEY.clear();
+        LAST_SHELL_FADE_KEY.clear();
         LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
         EditorMirrorPlotSync.clearAll();
@@ -335,6 +338,7 @@ public final class VariantOverlayRenderer {
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
             pushTunnelEnvelopeSnapshot(player, dims);
+            pushShellFadeSnapshot(player, level);
             pushMobGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
@@ -1198,6 +1202,36 @@ public final class VariantOverlayRenderer {
             new games.brennan.dungeontrain.net.EditorTunnelEnvelopePacket(boxes));
     }
 
+    /**
+     * Push the shell boxes of the Workbench's staged contents builds while the Workbench is resident,
+     * so the client draws the shells' stage placeholders faint. Keyed on the boxes like the tunnel
+     * envelope: a steady Workbench sends nothing, and leaving it clears.
+     */
+    private static void pushShellFadeSnapshot(ServerPlayer player, ServerLevel level) {
+        if (!EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH)) {
+            clearShellFadeIfStale(player);
+            return;
+        }
+        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes =
+            WorkbenchEditor.shellBoxes(level.getServer().overworld());
+        if (boxes.isEmpty()) {
+            clearShellFadeIfStale(player);
+            return;
+        }
+        String key = EditorTunnelEnvelopes.key(boxes);
+        UUID uuid = player.getUUID();
+        if (key.equals(LAST_SHELL_FADE_KEY.get(uuid))) return;
+        LAST_SHELL_FADE_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.WorkbenchShellFadePacket(boxes));
+    }
+
+    /** Send the empty shell-fade packet if the player previously had a non-empty snapshot. */
+    private static void clearShellFadeIfStale(ServerPlayer player) {
+        if (LAST_SHELL_FADE_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.WorkbenchShellFadePacket.empty());
+        }
+    }
+
     /** Send the empty tunnel-envelope packet if the player previously had a non-empty snapshot. */
     private static void clearTunnelEnvelopeIfStale(ServerPlayer player) {
         if (LAST_TUNNEL_ENVELOPE_KEY.remove(player.getUUID()) != null) {
@@ -1249,9 +1283,11 @@ public final class VariantOverlayRenderer {
             VariantState shown = states.get(
                 VariantEditorPreviewTicker.pickEntryIndex(plot.key(), local, states.size(), previewTick));
             if (!shown.isMob() || shown.entityId() == null) continue;
+            CompoundTag ghostNbt = slimeGhostNbt(shown, previewTick);
             ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
-                plot.origin().offset(local), shown.entityId().toString(), shown.blockEntityNbt()));
+                plot.origin().offset(local), shown.entityId().toString(), ghostNbt));
             key.append('|').append(local.asLong()).append('=').append(shown.entityId());
+            if (ghostNbt != null) key.append(ghostNbt);
         }
         if (ghosts.isEmpty()) {
             clearMobGhostsIfStale(player);
@@ -1264,6 +1300,29 @@ public final class VariantOverlayRenderer {
     }
 
     /** Send the empty mob-ghost packet if the player previously had a non-empty snapshot. */
+    /**
+     * The ghost NBT for {@code shown}: its egg NBT, plus — on a slime, magma cube or End slime row —
+     * the {@link VariantSlime} size and End slime type it would spawn as, stepping through the lit
+     * ones (all of them when none is lit) on the preview's beat. An egg that bakes its own
+     * {@code Size} / {@code Variant} keeps it, as the spawn does.
+     */
+    static @org.jetbrains.annotations.Nullable CompoundTag slimeGhostNbt(VariantState shown, long previewTick) {
+        CompoundTag nbt = shown.blockEntityNbt();
+        if (!VariantSlime.isSlime(shown.entityId())) return nbt;
+        CompoundTag out = nbt == null ? new CompoundTag() : nbt.copy();
+        VariantSlime slime = shown.slime();
+        if (!out.contains("Size")) {
+            List<Integer> sizes = slime.sizes();
+            // Slime NBT stores size - 1.
+            out.putInt("Size", sizes.get((int) Math.floorMod(previewTick, (long) sizes.size())) - 1);
+        }
+        if (VariantSlime.isEndSlime(shown.entityId()) && !out.contains("Variant")) {
+            List<Integer> types = slime.types();
+            out.putInt("Variant", types.get((int) Math.floorMod(previewTick, (long) types.size())));
+        }
+        return out;
+    }
+
     private static void clearMobGhostsIfStale(ServerPlayer player) {
         if (LAST_MOB_GHOSTS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,

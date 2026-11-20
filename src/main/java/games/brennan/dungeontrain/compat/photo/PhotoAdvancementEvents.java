@@ -79,7 +79,7 @@ public final class PhotoAdvancementEvents {
         // A shot is play wherever it is taken: it restarts the progress window and refreshes the idle
         // clocks before the triggers below run, so the shot itself can never be refused as idle.
         PlayerActivityTracker.creditProgress(player, "took a photo");
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotoShots();
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotoShots(games.brennan.dungeontrain.nap.NapGateData.step(player));
         rememberSubjects(player, event);
         LiveMomentPhotos.onFrameAdded(player, event.getFrame());
         // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.

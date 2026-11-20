@@ -1,0 +1,893 @@
+{
+  "_comment": "Dungeon Train flag designs: vanilla banner base colour + pattern layers (minecraft: namespace). Rolled by block/flag/FlagRoll; ids are the design numbers from the design sheets.",
+  "designs": [
+    {
+      "id": "1",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "circle",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "stripe_center",
+          "color": "gray"
+        },
+        {
+          "pattern": "stripe_top",
+          "color": "black"
+        },
+        {
+          "pattern": "stripe_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "flower",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "square_top_left",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_bottom_right",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_top_right",
+          "color": "gray"
+        },
+        {
+          "pattern": "square_bottom_left",
+          "color": "gray"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "square_top_left",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_bottom_right",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_top_right",
+          "color": "gray"
+        },
+        {
+          "pattern": "square_bottom_left",
+          "color": "gray"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "base": "light_gray",
+      "layers": [
+        {
+          "pattern": "half_vertical_right",
+          "color": "gray"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "circle",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "base": "gray",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "black"
+        },
+        {
+          "pattern": "circle",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "square_top_left",
+          "color": "lime"
+        },
+        {
+          "pattern": "square_bottom_right",
+          "color": "lime"
+        },
+        {
+          "pattern": "square_top_right",
+          "color": "cyan"
+        },
+        {
+          "pattern": "square_bottom_left",
+          "color": "cyan"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "circle",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "stripe_center",
+          "color": "gray"
+        },
+        {
+          "pattern": "stripe_top",
+          "color": "black"
+        },
+        {
+          "pattern": "stripe_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "flower",
+          "color": "black"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "bricks",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "stripe_top",
+          "color": "black"
+        },
+        {
+          "pattern": "stripe_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        },
+        {
+          "pattern": "flower",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "base": "gray",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "black"
+        },
+        {
+          "pattern": "rhombus",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "base": "gray",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "black"
+        },
+        {
+          "pattern": "rhombus",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "base": "gray",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "black"
+        },
+        {
+          "pattern": "flower",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "base": "light_gray",
+      "layers": [
+        {
+          "pattern": "half_vertical_right",
+          "color": "gray"
+        },
+        {
+          "pattern": "half_horizontal_bottom",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_bottom_left",
+          "color": "gray"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "rhombus",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "square_top_left",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_bottom_right",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "square_top_right",
+          "color": "gray"
+        },
+        {
+          "pattern": "square_bottom_left",
+          "color": "gray"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        },
+        {
+          "pattern": "gradient",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "bricks",
+          "color": "gray"
+        },
+        {
+          "pattern": "circle",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "flower",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "15",
+      "base": "cyan",
+      "layers": [
+        {
+          "pattern": "circle",
+          "color": "white"
+        },
+        {
+          "pattern": "stripe_center",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "stripe_top",
+          "color": "cyan"
+        },
+        {
+          "pattern": "stripe_bottom",
+          "color": "cyan"
+        },
+        {
+          "pattern": "flower",
+          "color": "cyan"
+        }
+      ]
+    },
+    {
+      "id": "16",
+      "base": "cyan",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "lime"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "lime"
+        },
+        {
+          "pattern": "cross",
+          "color": "black"
+        },
+        {
+          "pattern": "circle",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "square_top_left",
+          "color": "orange"
+        },
+        {
+          "pattern": "square_bottom_right",
+          "color": "orange"
+        },
+        {
+          "pattern": "square_top_right",
+          "color": "red"
+        },
+        {
+          "pattern": "square_bottom_left",
+          "color": "red"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        },
+        {
+          "pattern": "gradient_up",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "18",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "flow",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "19",
+      "base": "lime",
+      "layers": [
+        {
+          "pattern": "half_vertical_right",
+          "color": "cyan"
+        },
+        {
+          "pattern": "straight_cross",
+          "color": "black"
+        },
+        {
+          "pattern": "circle",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "20",
+      "base": "cyan",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "lime"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "lime"
+        },
+        {
+          "pattern": "cross",
+          "color": "black"
+        },
+        {
+          "pattern": "rhombus",
+          "color": "black"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "21",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "cross",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "light_gray"
+        }
+      ]
+    },
+    {
+      "id": "22",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "stripe_downleft",
+          "color": "gray"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "gray"
+        },
+        {
+          "pattern": "stripe_downright",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "light_gray"
+        }
+      ]
+    },
+    {
+      "id": "23",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "stripe_downleft",
+          "color": "gray"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "gray"
+        },
+        {
+          "pattern": "stripe_downright",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "24",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "stripe_downleft",
+          "color": "cyan"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "cyan"
+        },
+        {
+          "pattern": "stripe_downright",
+          "color": "lime"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "lime"
+        }
+      ]
+    },
+    {
+      "id": "25",
+      "base": "cyan",
+      "layers": [
+        {
+          "pattern": "cross",
+          "color": "white"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "white"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "white"
+        },
+        {
+          "pattern": "border",
+          "color": "cyan"
+        }
+      ]
+    },
+    {
+      "id": "26",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "stripe_downleft",
+          "color": "red"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "red"
+        },
+        {
+          "pattern": "stripe_downright",
+          "color": "orange"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "orange"
+        },
+        {
+          "pattern": "gradient_up",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "27",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "bricks",
+          "color": "gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "light_gray"
+        }
+      ]
+    },
+    {
+      "id": "28",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "stripe_center",
+          "color": "black"
+        },
+        {
+          "pattern": "circle",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "light_gray"
+        }
+      ]
+    },
+    {
+      "id": "29",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "triangle_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "gray"
+        },
+        {
+          "pattern": "stripe_center",
+          "color": "black"
+        },
+        {
+          "pattern": "circle",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_top",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangles_bottom",
+          "color": "gray"
+        }
+      ]
+    },
+    {
+      "id": "31",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "border",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_top",
+          "color": "black"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "cross",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "curly_border",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "33",
+      "base": "white",
+      "layers": [
+        {
+          "pattern": "creeper",
+          "color": "black"
+        },
+        {
+          "pattern": "triangle_top",
+          "color": "black"
+        },
+        {
+          "pattern": "half_horizontal_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "stripe_top",
+          "color": "black"
+        }
+      ]
+    },
+    {
+      "id": "34",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "border",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "cross",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "triangle_top",
+          "color": "black"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "cross",
+          "color": "light_gray"
+        },
+        {
+          "pattern": "stripe_downleft",
+          "color": "gray"
+        }
+      ]
+    },
+    {
+      "id": "35",
+      "base": "black",
+      "layers": [
+        {
+          "pattern": "border",
+          "color": "lime"
+        },
+        {
+          "pattern": "cross",
+          "color": "lime"
+        },
+        {
+          "pattern": "triangle_top",
+          "color": "black"
+        },
+        {
+          "pattern": "triangle_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "cross",
+          "color": "lime"
+        },
+        {
+          "pattern": "stripe_downleft",
+          "color": "cyan"
+        }
+      ]
+    },
+    {
+      "id": "36",
+      "base": "lime",
+      "layers": [
+        {
+          "pattern": "creeper",
+          "color": "black"
+        },
+        {
+          "pattern": "triangle_top",
+          "color": "black"
+        },
+        {
+          "pattern": "half_horizontal_bottom",
+          "color": "black"
+        },
+        {
+          "pattern": "stripe_top",
+          "color": "black"
+        }
+      ]
+    }
+  ]
+}

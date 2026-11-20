@@ -52,6 +52,11 @@ public final class UnsupportedModsPopupHandler {
 
     private UnsupportedModsPopupHandler() {}
 
+    /** True once this launch's popup has been decided (shown or not), so later title-screen notices can follow it. */
+    static boolean isDone() {
+        return done;
+    }
+
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
         if (done || armed || !(event.getScreen() instanceof TitleScreen)) return;

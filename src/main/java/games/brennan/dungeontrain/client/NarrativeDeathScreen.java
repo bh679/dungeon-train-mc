@@ -7,6 +7,10 @@ import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
+import games.brennan.dungeontrain.client.nap.NapQuit;
+import games.brennan.dungeontrain.client.nap.NapSky;
+import games.brennan.dungeontrain.client.nap.NapSkyPainter;
+import games.brennan.dungeontrain.narrative.LocaleOrdinalWords;
 import games.brennan.dungeontrain.client.survey.KnownFeature;
 import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
 import games.brennan.dungeontrain.client.survey.KnownFeatureNotes;
@@ -32,6 +36,7 @@ import games.brennan.dungeontrain.client.deathphotos.DeathPhoto;
 import games.brennan.dungeontrain.client.deathphotos.DeathPhotoSet;
 import games.brennan.dungeontrain.client.deathphotos.PhotoStripPage;
 import games.brennan.dungeontrain.client.deathphotos.PhotoViewerOverlay;
+import games.brennan.dungeontrain.client.deathpages.EchoPage;
 import games.brennan.dungeontrain.client.live.deathpages.BroadcastPage;
 import games.brennan.dungeontrain.client.live.deathpages.CrowdPage;
 import games.brennan.dungeontrain.client.live.deathpages.LiveDeathChrome;
@@ -70,6 +75,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.advancements.AdvancementHolder;
@@ -123,10 +129,15 @@ import java.util.concurrent.ThreadLocalRandom;
  * cached {@link DeathStatsPacket} ({@link DeathStatsCache}); the screen reads
  * it live each frame so a one-tick-late packet simply fills in. The survey
  * page set is rebuilt if the cached questions arrive after the screen opens.</p>
+ *
+ * <p><b>Nap mode</b> ({@link #afterNap}): after a nap is saved ({@code nap/NapService}) the same
+ * screen shows "a life ongoing" first, then the feedback questions and the Contribute page, with Main Menu in place of
+ * Board anew / Leave. It pauses the world, sends no death photos and no death-funnel analytics, and
+ * leaves through {@code NapQuit#leaveNow}, which deletes the napped world.</p>
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM }
+    private enum Kind { FALL, ECHO, BROADCAST, CROWD, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM, ONGOING }
 
     /** {@code slot} is which of its form's notes a NOTE page shows (see {@link #notes}); 0 elsewhere. */
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey, int slot) {
@@ -281,6 +292,8 @@ public final class NarrativeDeathScreen extends Screen {
     private String openedPage = null;
     private String openedQuestionId = null;
     private long pageOpenedAtMs = 0L;
+    /** "a life ongoing": how far a click has fast-forwarded the page's animation clock, in millis. */
+    private long ongoingSkipMs = 0L;
     // Plea variants shown above the 2nd (and any later) survey question. The 1st question keeps the
     // calm "ledger" intro; the 2nd swaps to one of these urgent pleas, chosen at random per death
     // (see surveyIntro2Choice).
@@ -356,6 +369,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Renders the DEEDS-page befriended/killed PlayerMob portrait; cleared on removal. */
     private final DeathPortraitRenderer portrait = new DeathPortraitRenderer();
+    /** The echo page, drawn with this screen's fade and bevels; its portrait is cleared on removal. */
+    private EchoPage echoPage;
+    /** Whether the deck was last built with an echo page (rebuilt when the packet's echo lands). */
+    private boolean lastHasEcho;
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect, fullscreenRect;
@@ -442,8 +459,34 @@ public final class NarrativeDeathScreen extends Screen {
     private Rect advViewport;               // advancements scroll viewport (hover / scroll hit-test)
     private final List<AdvIcon> gearAdvIcons = new ArrayList<>();  // resolved this frame, for hover
 
+    /** The napped world's save folder in nap mode ({@link #afterNap}); null on a death. */
+    private String napLevelId = null;
+    /** The space under a page's kicker, now that the train rides in the top bar ({@link #drawTopTrain}). */
+    private static final int TRAIN_GAP = 10;
+    private static final int TOP_TRAIN_MARGIN = 14, TOP_TRAIN_MIN_W = 80;
+    /** Halo behind the nap sky's text: rings out, each ring's alpha, and the eight directions. */
+    private static final int HALO_RINGS = 3;
+    /** Where every page starts (its kicker), and the gap kept above the footer's buttons when centring. */
+    private static final int CONTENT_TOP_Y = 40, CENTRE_FOOT_Y = 40;
+    /** Room between the bottom of the donation page's supporter list and the footer's buttons. */
+    private static final int DONATE_LIST_FOOT_GAP = 8;
+    private static final float[] HALO_ALPHA = {1.0f, 0.55f, 0.25f};
+    private static final int[][] HALO_DIRS = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
+    /** Set once a nap-mode exit has started, so a second click can't leave twice. */
+    private boolean napLeaving = false;
+    /** The "a life ongoing" sky (nap mode), made once the lifetime stats arrive. */
+    private NapSkyPainter napSky = null;
+    /** The nap sky's band: from this far down the screen to this far above its bottom edge. */
+    private static final int NAP_SKY_TOP = 44, NAP_SKY_BOTTOM_GAP = 34;
+    /** The bottom question / answer line under the nap sky. */
+    private static final int NAP_SKY_TEXT = 0xFFD8C79A;
+
     public NarrativeDeathScreen() {
-        super(Component.translatable("gui.dungeontrain.death.narr.title"));
+        this(Component.translatable("gui.dungeontrain.death.narr.title"));
+    }
+
+    private NarrativeDeathScreen(Component title) {
+        super(title);
         // The bug-report response and the platform page's Update button read the launcher
         // listings + changelog; start (or reuse) that fetch now so it has landed by then.
         VersionCompareState.ensureFetched();
@@ -466,6 +509,37 @@ public final class NarrativeDeathScreen extends Screen {
     @Nullable
     private DeathStatsPacket stats() {
         return reportOverride != null ? reportOverride : DeathStatsCache.get();
+    }
+
+    /**
+     * The nap farewell: "a life ongoing", the feedback questions and the Contribute page, shown once the nap is saved
+     * and before the player leaves {@code levelId} for the title screen.
+     */
+    public static NarrativeDeathScreen afterNap(String levelId) {
+        NarrativeDeathScreen screen = new NarrativeDeathScreen(Component.translatable("gui.dungeontrain.nap.main_menu"));
+        screen.napLevelId = levelId;
+        return screen;
+    }
+
+    /** True for the nap farewell rather than a death. */
+    private boolean nap() {
+        return napLevelId != null;
+    }
+
+    /**
+     * Leave the napped run (world deleted); nap mode only. To the title screen, or with Shift held
+     * out to the desktop: render and click both poll {@link Screen#hasShiftDown()}, so the action
+     * matches the drawn "Main Menu" / "Quit Game" label ({@link #napLeaveLabel}).
+     */
+    private void leaveNap() {
+        if (napLeaving) return;
+        napLeaving = true;
+        NapQuit.leaveNow(napLevelId, Screen.hasShiftDown());
+    }
+
+    /** The nap farewell's way out: "Quit Game" while Shift is held, else "Main Menu". */
+    private static Component napLeaveLabel() {
+        return Component.translatable(Screen.hasShiftDown() ? "menu.quit" : "gui.dungeontrain.nap.main_menu");
     }
 
     /** Dev builds only: a death screen telling {@code lifeId}'s Live Eye pages, opened on "the broadcast". */
@@ -502,6 +576,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private List<Page> buildPages() {
+        if (nap()) return buildNapPages();
         List<Page> list = new ArrayList<>();
         list.add(Page.of(Kind.FALL));
         // "The broadcast" and "the crowd" — straight after the fall, on a life that went out on the
@@ -512,7 +587,37 @@ public final class NarrativeDeathScreen extends Screen {
         }
         list.add(Page.of(Kind.DEEDS));
         list.add(Page.of(Kind.GEAR));
+        // "The echo" — the echo this death left behind, after the cargo it now carries, when
+        // PlayerMob captured one (the death packet carries it; it can land a tick after the screen opens).
+        lastHasEcho = hasEcho();
+        if (lastHasEcho) {
+            list.add(Page.of(Kind.ECHO));
+        }
         list.add(Page.of(Kind.LIVES));
+        addSurveyPages(list);
+        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
+        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
+        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
+        // after it can move freely.
+        list.add(Page.of(Kind.DONATE));
+        // The photo page shows off this run's photos and photo stats, right before the final page,
+        // only when there are photos or any of the stats is above zero.
+        lastPhotoCount = photoSet().size();
+        lastPhotoStats = hasPhotoStats(stats());
+        if (lastPhotoCount > 0 || lastPhotoStats) list.add(Page.of(Kind.PHOTOS));
+        list.add(Page.of(Kind.PLATFORM));
+        if (foreign) {
+            // Another player's replayed report: the story pages only, nothing that asks or sends.
+            list.removeIf(p -> switch (p.kind()) {
+                case ECHO, SURVEY, BUG_RESPONSE, NOTE, DONATE, BROADCAST, CROWD -> true;
+                default -> false;
+            });
+        }
+        return list;
+    }
+
+    /** One page per feedback question, each followed by its bug-response or note pages. */
+    private void addSurveyPages(List<Page> list) {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             // A muted form stays in the deck but sits out of the normal Next-Screen flow (see
             // outOfFlow), exactly like the gated-out donation page — that keeps it reachable
@@ -527,23 +632,17 @@ public final class NarrativeDeathScreen extends Screen {
                 for (int slot = 0; slot < KNOWN_FEATURE_NOTE_PAGES; slot++) list.add(Page.note(e, slot));
             }
         }
-        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
-        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
-        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
-        // after it can move freely.
+    }
+
+    /** Nap mode's deck: "a life ongoing" first, then the feedback questions (with their answer pages), then Contribute. */
+    private List<Page> buildNapPages() {
+        List<Page> list = new ArrayList<>();
+        list.add(Page.of(Kind.ONGOING));
+        addSurveyPages(list);
         list.add(Page.of(Kind.DONATE));
-        // The photo page shows off this run's photos and photo stats, right before the final page,
-        // only when there are photos or any of the stats is above zero.
+        // Kept in step with what tick() compares, so it doesn't rebuild every tick.
         lastPhotoCount = photoSet().size();
-        lastPhotoStats = hasPhotoStats(stats());
-        if (lastPhotoCount > 0 || lastPhotoStats) list.add(Page.of(Kind.PHOTOS));
-        list.add(Page.of(Kind.PLATFORM));
-        if (foreign) {
-            list.removeIf(p -> switch (p.kind()) {
-                case SURVEY, BUG_RESPONSE, DONATE, BROADCAST, CROWD -> true;
-                default -> false;
-            });
-        }
+        lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
         return list;
     }
 
@@ -625,9 +724,10 @@ public final class NarrativeDeathScreen extends Screen {
         if (broadcastPage == null) {
             broadcastPage = new BroadcastPage(liveChrome);
             crowdPage = new CrowdPage(liveChrome);
+            echoPage = new EchoPage(liveChrome);
         }
         pages = buildPages();
-        donateInFlow = shouldShowDonate();
+        donateInFlow = nap() || shouldShowDonate();
         // chipReturnPage is deliberately NOT reset here: init() re-runs on every page swap, so
         // clearing it would wipe the return index between a chip click and the page landing —
         // Next Screen then paged forward instead of going back where the chip was pressed. A new
@@ -638,11 +738,12 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
-        if (!foreign) {
+        if (!foreign && !nap()) {
+            // Death-report photos: a nap is not a death, and a replayed tribute report is not ours.
             maybeSendRidePhoto();
             maybeSendRideGallery();
-            kickDonationFetch();
         }
+        if (!foreign) kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
         donateScroll = 0f;
@@ -762,7 +863,8 @@ public final class NarrativeDeathScreen extends Screen {
         // screen opens. If the survey set changed, rebuild so the pages match.
         if (SurveyClientState.questions().size() != lastSurveyCount
                 || photoSet().size() != lastPhotoCount
-                || hasPhotoStats(stats()) != lastPhotoStats) {
+                || hasPhotoStats(stats()) != lastPhotoStats
+                || (!nap() && hasEcho() != lastHasEcho)) {
             this.rebuildWidgets();
         }
     }
@@ -838,7 +940,7 @@ public final class NarrativeDeathScreen extends Screen {
                 : (fromShot != null ? fromShot : bgFor(currentPage));
         int backdropPage = photoNew && toShot != null ? toPage : (fromShot != null ? fromPage : currentPage);
         // A live streamer's death clip loops behind the opening page, under the same dip-to-black.
-        boolean clip = !foreign && backdropPage == openingPage && openingPage >= 0
+        boolean clip = !foreign && !nap() && backdropPage == openingPage && openingPage >= 0
             && DeathClipBackground.draw(g, this.width, this.height, ticksOpen, partialTick);
         if (clip || photo != null) {
             if (!clip) DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
@@ -860,13 +962,19 @@ public final class NarrativeDeathScreen extends Screen {
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE) {
             g.fill(0, 0, this.width, this.height, DONATE_WASH);
         }
+        // "a life ongoing" (nap): the perks sky, its paths traced out from the Engine.
+        if (nap() && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.ONGOING) {
+            drawNapSky(g, now);
+        }
 
         // Train engine: full on the first screen (as if aboard), fading evenly to
         // silence by the last screen — and rising again if the player steps back.
-        TrainEngineSound.deathScreenActive = true;
-        TrainEngineSound.deathFade = pages.size() > 1
-                ? Math.max(0.0f, 1.0f - (float) currentPage / (pages.size() - 1))
-                : 1.0f;
+        if (!nap()) {
+            TrainEngineSound.deathScreenActive = true;
+            TrainEngineSound.deathFade = pages.size() > 1
+                    ? Math.max(0.0f, 1.0f - (float) currentPage / (pages.size() - 1))
+                    : 1.0f;
+        }
 
         // Clickable regions are set by the page body / footer each frame; clear
         // any from last frame so a page that doesn't draw one can't be clicked.
@@ -905,13 +1013,19 @@ public final class NarrativeDeathScreen extends Screen {
         if (commentBox != null) commentBox.visible = settled();
         if (uiAlpha > UI_EPS) {
             drawTopBar(g, mouseX, mouseY);
+            drawTopTrain(g);
 
-            int y = 40;
+            // The kicker stays at the top; everything under it is centred in the room above the
+            // footer, using where this page's content ended last frame (measured unshifted).
+            contentShift = centredShift(page);
+            int y = CONTENT_TOP_Y + contentShift;
             switch (page.kind()) {
                 case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+                case ECHO -> y = drawEcho(g, stats, cx, contentW, y, mouseX, mouseY);
                 case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, partialTick);
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
+                case ONGOING -> y = drawOngoing(g, stats, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
                 case NOTE -> y = drawNote(g, page, left, contentW, cx, y);
@@ -923,6 +1037,8 @@ public final class NarrativeDeathScreen extends Screen {
                 case PHOTOS -> y = drawPhotos(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
+            contentBottoms.put(currentPage, y - contentShift);
+            contentShift = 0;
 
             drawFooter(g, page, mouseX, mouseY);
 
@@ -934,6 +1050,10 @@ public final class NarrativeDeathScreen extends Screen {
             // Cargo-page hover tooltips last, above everything — only when settled.
             if (page.kind() == Kind.GEAR && stats != null && settled()) {
                 drawCargoTooltips(g, stats, mouseX, mouseY);
+            }
+            // Echo-page item and armour-bar tooltips (same "settled" gate).
+            if (page.kind() == Kind.ECHO && settled()) {
+                echoPage.drawTooltips(g, mouseX, mouseY);
             }
             // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
             if (page.kind() == Kind.LIVES && stats != null && settled()) {
@@ -1007,9 +1127,10 @@ public final class NarrativeDeathScreen extends Screen {
     private static List<SnapshotTag> chainFor(Kind kind) {
         return switch (kind) {
             case FALL     -> List.of(SnapshotTag.SCENIC);
+            case ECHO     -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
-            case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
+            case LIVES, ONGOING -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
             case BROADCAST, CROWD, SURVEY, BUG_RESPONSE, NOTE, DONATE, PHOTOS, PLATFORM -> List.of();
         };
     }
@@ -1033,15 +1154,19 @@ public final class NarrativeDeathScreen extends Screen {
             case DONATE -> UiAnalytics.PAGE_DONATE;
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
             // Untracked: UiAnalytics PAGE_* ids are lock-step with the relay's ui-events.js.
-            case PHOTOS -> null;
+            case PHOTOS, ECHO -> null;
+            // Nap mode only, and nap mode sends no analytics.
+            case ONGOING -> null;
         };
     }
 
     /** Start timing a newly-shown page and fire its {@code open} funnel event (consent-gated). */
     private void openPageAnalytics(Page page) {
-        openedPage = pageAnalyticsId(page.kind());
+        // Naps stay out of the death funnel (and the relay accepts no nap surface).
+        openedPage = nap() ? null : pageAnalyticsId(page.kind());
         openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
         pageOpenedAtMs = Util.getMillis();
+        ongoingSkipMs = 0L;
         if (openedPage == null || foreign) return; // untracked page — leavePageAnalytics skips it too
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId);
     }
@@ -1225,15 +1350,14 @@ public final class NarrativeDeathScreen extends Screen {
         // place") when the server sent one, wrapped in the kicker style so a long cause
         // can't clip; otherwise the static "the fall" kicker.
         if (foreign && !foreignTitle.isEmpty()) {
-            y = drawCentered(g, Component.literal(foreignTitle), cx, w, y, KICKER) + 3;
+            y = drawCentered(g, Component.literal(foreignTitle), cx, w, y - contentShift, KICKER) + 3 + contentShift;
         } else if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
-            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y, KICKER) + 3;
+            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y - contentShift, KICKER) + 3 + contentShift;
         } else {
             drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
             y += 14;
         }
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);
         y = drawNarration(g, n.fallNarration(), cx, w, y);
         y += 10;
@@ -1246,12 +1370,29 @@ public final class NarrativeDeathScreen extends Screen {
         return y + 34;
     }
 
+    /** "The echo": kicker, question, then the inventory-style panel ({@link EchoPage}). */
+    private int drawEcho(GuiGraphics g, DeathStatsPacket s, int cx, int w, int y, int mouseX, int mouseY) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.echo.kicker");
+        // No train gap here: the card takes that room to grow (it fills down to the footer).
+        y += 14;
+        y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.echo.question").getString(), cx, w, y);
+        y += 1;
+        if (s == null || s.echo() == null) return y;
+        return echoPage.draw(g, s.echo(), s.cartsTravelled(), cx, y, this.height - 32 + contentShift, w,
+                mouseX, mouseY, settled());
+    }
+
+    /** Whether the death packet carries this death's echo (the echo page's subject). */
+    private static boolean hasEcho() {
+        DeathStatsPacket s = DeathStatsCache.get();
+        return s != null && s.echo() != null;
+    }
+
     private int drawDeeds(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
                           int left, int w, int cx, int y, float partialTick) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_deeds");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.deedsQuestion(), cx, w, y);
         y = drawNarration(g, n.deedsNarration(), cx, w, y);
         y += 10;
@@ -1296,8 +1437,7 @@ public final class NarrativeDeathScreen extends Screen {
                          int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_gear");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.gearQuestion(), cx, w, y);
         y = drawNarration(g, n.gearNarration(), cx, w, y);
         y += 8;
@@ -1481,8 +1621,7 @@ public final class NarrativeDeathScreen extends Screen {
                           int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_lives");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, n.livesQuestion(), cx, w, y);
         if (!n.livesSubline().isEmpty()) {
             y = drawCentered(g, styled(n.livesSubline()), cx, w, y, SUBLINE);
@@ -1490,6 +1629,198 @@ public final class NarrativeDeathScreen extends Screen {
         }
         y = drawNarration(g, n.livesNarration(), cx, w, y);
         y += 10;
+        return drawLifetimeTotals(g, s, left, w, y);
+    }
+
+    /**
+     * The nap farewell's first page: "a life ongoing". The ride count as an ordinal ("The fifth to ride,
+     * and not yet to fall.") over the perks sky ({@link #drawNapSky}): one line per previous life, then
+     * this life's, still open. The quiet totals line holds only the lives before this one
+     * ({@code RunStatsEvents#napPacket}); a first life has none.
+     */
+    private int drawOngoing(GuiGraphics g, DeathStatsPacket s, int left, int w, int cx, int y) {
+        // Every line here sits over the sky's star lines, so each gets a halo in the sky's own colour.
+        drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.kicker"), cx, w, y, KICKER);
+        y += 14;
+        y += TRAIN_GAP;
+        if (s == null) return y;
+        long past = Math.max(0L, s.lifeDeaths());
+        String locale = Minecraft.getInstance().getLanguageManager().getSelected();
+        String nth = LocaleOrdinalWords.forLocale(locale, past + 1L, LocaleOrdinalWords.Gender.MASCULINE);
+        String headline = Component.translatable("gui.dungeontrain.nap.ongoing.headline", nth).getString();
+        y = drawHaloed(g, styled(headline), cx, w, y + 2, QUESTION) + 2;
+        y += 2;
+        Component sub = past == 0L ? Component.translatable("gui.dungeontrain.nap.ongoing.subline_first")
+            : PluralRules.clause(locale, "gui.dungeontrain.nap.ongoing.subline_past", past);
+        y = drawHaloed(g, sub, cx, w, y, NARR);
+
+        int rowY = this.height - 28;
+        // The question asks while the paths cycle; once this life's path settles the sky speaks for itself.
+        boolean settled = napSky != null && napSky.settled(ongoingStart(), Util.getMillis());
+        if (!settled) {
+            drawHaloed(g, Component.translatable("gui.dungeontrain.nap.ongoing.question"), cx, w, rowY - 14, NAP_SKY_TEXT);
+        }
+        if (past > 0L) drawOngoingCards(g, s, y);
+        return y;
+    }
+
+    /** Width of one "a life ongoing" totals card, and the gap between cards and to the screen edge. */
+    private static final int ONGOING_CARD_W = 76, ONGOING_CARD_GAP = 4, ONGOING_CARD_EDGE = 12;
+    /** A totals card's height, as {@link #drawCell} draws it. */
+    private static final int ONGOING_CARD_H = 26;
+    /** The cards appear one at a time: the first this long after the sky's path settles, then one per step. */
+    private static final long ONGOING_CARD_DELAY_MS = 300L, ONGOING_CARD_STEP_MS = 450L, ONGOING_CARD_FADE_MS = 500L;
+    /** Next Screen and Main Menu show by this long into "a life ongoing", whatever is still coming. */
+    private static final long ONGOING_REVEAL_CAP_MS = 12_000L;
+    /** Next Screen and Main Menu fade in over this long once the last card is in. */
+    private static final long ONGOING_CONTROLS_FADE_MS = 400L;
+    /** How far a card rises as it fades in, in GUI pixels. */
+    private static final int ONGOING_CARD_RISE = 4;
+    /** Below this a card isn't drawn: the font draws near-zero alpha text fully opaque. */
+    private static final float ONGOING_CARD_MIN_ALPHA = 0.03f;
+
+    /**
+     * The lives before this one, as a column of cards down the right edge of "a life ongoing": how
+     * many lives, time aboard, carriages, distance. Centred on the sky's middle but never above {@code textBottom}
+     * (the headline lines run wide), each card backed by the sky's colour so the star lines don't
+     * show through it. They wait for this life's path to settle on the sky, then fade in one at a
+     * time, top first, each rising a little as it comes.
+     */
+    private void drawOngoingCards(GuiGraphics g, DeathStatsPacket s, int textBottom) {
+        List<String[]> cards = ongoingCards(s);
+        int columnH = cards.size() * ONGOING_CARD_H + (cards.size() - 1) * ONGOING_CARD_GAP;
+        int skyMid = (NAP_SKY_TOP + (this.height - NAP_SKY_BOTTOM_GAP)) / 2;
+        int top = Math.max(textBottom + ONGOING_CARD_GAP * 2, skyMid - columnH / 2);
+        int centerX = this.width - ONGOING_CARD_EDGE - ONGOING_CARD_W / 2;
+        int x = centerX - ONGOING_CARD_W / 2;
+        long from = ongoingCardsFrom();
+        if (from == Long.MAX_VALUE) return; // the sky is still coming
+        long shown = Util.getMillis() - from - ONGOING_CARD_DELAY_MS;
+        float pageAlpha = uiAlpha;
+        try {
+            for (int i = 0; i < cards.size(); i++) {
+                float k = Mth.clamp((shown - i * ONGOING_CARD_STEP_MS) / (float) ONGOING_CARD_FADE_MS, 0.0f, 1.0f);
+                float cardAlpha = pageAlpha * smooth(k);
+                if (cardAlpha < ONGOING_CARD_MIN_ALPHA) continue;
+                uiAlpha = cardAlpha;
+                int y = top + i * (ONGOING_CARD_H + ONGOING_CARD_GAP) + Math.round((1.0f - smooth(k)) * ONGOING_CARD_RISE);
+                g.fill(x, y, x + ONGOING_CARD_W, y + ONGOING_CARD_H, fade(0xFF000000 | NapSkyPainter.BG));
+                drawCell(g, centerX, y, cards.get(i)[0], cards.get(i)[1], ONGOING_CARD_W);
+            }
+        } finally {
+            uiAlpha = pageAlpha;
+        }
+    }
+
+    /** The totals cards, top to bottom, as {value, label key}: lives first, then the lifetime totals. */
+    private List<String[]> ongoingCards(DeathStatsPacket s) {
+        return List.of(
+            new String[] {Long.toString(s.lifeDeaths()), "gui.dungeontrain.nap.ongoing.lbl_lives"},
+            new String[] {fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard"},
+            new String[] {Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages"},
+            new String[] {fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance"});
+    }
+
+    /** True while "a life ongoing" is the page on screen in the nap farewell. */
+    private boolean onOngoingPage() {
+        return nap() && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.ONGOING;
+    }
+
+    /** The start of "a life ongoing"'s animation clock: the page's open time, pulled back by any skip. */
+    private long ongoingStart() {
+        return pageOpenedAtMs - ongoingSkipMs;
+    }
+
+    /**
+     * When the cards start counting: this life's path settling on the sky, or the page opening when no
+     * sky geometry is bundled (nothing will settle). {@link Long#MAX_VALUE} while the sky is still coming.
+     */
+    private long ongoingCardsFrom() {
+        if (napSky != null) return napSky.settledAt(ongoingStart());
+        return NapSky.get() == null ? ongoingStart() : Long.MAX_VALUE;
+    }
+
+    /**
+     * When "a life ongoing" has finished showing itself: the last card fully in, or the path settled
+     * when there are no cards (a first life). Never later than {@link #ONGOING_REVEAL_CAP_MS} into the
+     * page, so missing stats (the server's send can fail) can't leave the farewell with no way out.
+     */
+    private long ongoingRevealDoneAt() {
+        long cap = ongoingStart() + ONGOING_REVEAL_CAP_MS;
+        DeathStatsPacket s = DeathStatsCache.get();
+        long from = ongoingCardsFrom();
+        if (s == null || from == Long.MAX_VALUE) return cap;
+        int cards = s.lifeDeaths() > 0L ? ongoingCards(s).size() : 0;
+        if (cards == 0) return Math.min(cap, from);
+        return Math.min(cap, from + ONGOING_CARD_DELAY_MS + (cards - 1) * ONGOING_CARD_STEP_MS + ONGOING_CARD_FADE_MS);
+    }
+
+    /**
+     * How present Next Screen and Main Menu are: on "a life ongoing" they wait for the cards, then
+     * fade in; on every other page they are simply there.
+     */
+    private float ongoingControlsAlpha() {
+        if (!onOngoingPage()) return 1.0f;
+        long doneAt = ongoingRevealDoneAt();
+        return smooth(Mth.clamp((Util.getMillis() - doneAt) / (float) ONGOING_CONTROLS_FADE_MS, 0.0f, 1.0f));
+    }
+
+    /**
+     * A click on "a life ongoing" before it has finished: jump the sky and the cards to their end, so
+     * the controls fade in now. Returns false when there is nothing left to skip.
+     */
+    private boolean skipOngoingReveal() {
+        if (!onOngoingPage()) return false;
+        long doneAt = ongoingRevealDoneAt();
+        long now = Util.getMillis();
+        if (doneAt <= now) return false;
+        ongoingSkipMs += doneAt - now;
+        return true;
+    }
+
+    /**
+     * {@code text} centred and wrapped like {@link #drawCentered}, over a soft halo in the nap sky's
+     * background colour: rings of copies 1 to {@link #HALO_RINGS} pixels out, fainter further out.
+     * The halo copies are unstyled, so styled figures do not tint it.
+     */
+    private int drawHaloed(GuiGraphics g, Component text, int cx, int w, int y, int color) {
+        Component plain = Component.literal(text.getString());
+        PoseStack ps = g.pose();
+        for (int r = HALO_RINGS; r >= 1; r--) {
+            int a = Math.round(0xFF * HALO_ALPHA[r - 1]);
+            int halo = fade((a << 24) | NapSkyPainter.BG);
+            for (int[] d : HALO_DIRS) {
+                ps.pushPose();
+                ps.translate(d[0] * r, d[1] * r, 0);
+                DeathScreenText.drawCentered(g, this.font, plain, cx, w, y, halo);
+                ps.popPose();
+            }
+        }
+        return drawCentered(g, text, cx, w, y, color);
+    }
+
+    /**
+     * The perks sky behind "a life ongoing" ({@link NapSkyPainter}), filling the screen under the text,
+     * the constellation centred in the space between the headline and the footer. Waits for the
+     * lifetime stats (the number of past lives).
+     */
+    private void drawNapSky(GuiGraphics g, long now) {
+        DeathStatsPacket s = DeathStatsCache.get();
+        if (napSky == null) {
+            NapSky sky = NapSky.get();
+            if (s == null || sky == null) return;
+            UUID player = this.minecraft != null && this.minecraft.getUser() != null
+                ? this.minecraft.getUser().getProfileId() : null;
+            napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime());
+        }
+        double top = NAP_SKY_TOP, bottom = this.height - NAP_SKY_BOTTOM_GAP;
+        double size = Math.min(this.width - 24, (bottom - top) * 1.3);
+        double cy = (top + bottom) / 2.0 + size * 0.04;
+        napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, ongoingStart(), now, uiAlpha);
+    }
+
+    /** The six lifetime text tiles and the 3×3 icon grid, shared by "all your lives" and "a life ongoing". */
+    private int drawLifetimeTotals(GuiGraphics g, DeathStatsPacket s, int left, int w, int y) {
         if (s != null) {
             // Left: the six lifetime text tiles (narrowed, 3 cols × 2 rows). Right: a 3×3 hover-icon
             // grid, top-aligned with the tiles, so the icons sit beside — not below — the text.
@@ -1582,8 +1913,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawBugResponse(GuiGraphics g, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_upgrades");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         if (bugCard == null) return y;
         // Wider than the page column: the card carries buttons and release titles.
         int cardW = Math.max(w, Math.min(this.width - 24, 460));
@@ -1594,8 +1924,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawNote(GuiGraphics g, Page page, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.known_feature.kicker");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         KnownFeature note = noteFor(page);
         if (note == null) return y;
         y = drawQuestion(g, KnownFeatureNotes.title(note).getString(), cx, w, y);
@@ -1618,8 +1947,7 @@ public final class NarrativeDeathScreen extends Screen {
         scoreRects.clear();
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         // The first survey question keeps the calm "ledger" intro; the second (and any later)
         // question switches to a more urgent plea. drawSurvey only runs for the current page, so
         // the survey's ordinal is how many SURVEY pages occur up to and including this one.
@@ -1722,8 +2050,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawDonate(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
 
         DonationSummaryClient.Summary s = DonationSummaryCache.get();
         // Resolved before the narration, not with the tiles below, because the pitch itself quotes
@@ -1799,7 +2126,7 @@ public final class NarrativeDeathScreen extends Screen {
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
         int ly = y + 30;
-        String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
+        String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "?";
 
         // Slot 1 — the ask. One card with three renderings, picked off the ladder: the running cost
         // in orange while the bill is what is being asked for; the next rung's cost in orange, with
@@ -1860,7 +2187,10 @@ public final class NarrativeDeathScreen extends Screen {
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
                 rightX + colW / 2, y, KICKER);
         int listTop = y + 12;
-        int listH = Math.max(this.font.lineHeight + 2, leftBottom - listTop); // align to the left block
+        // Down to just above the footer's buttons, so the names use the room under the tiles; never
+        // shorter than the left block.
+        int listBottom = Math.max(leftBottom, this.height - 28 - DONATE_LIST_FOOT_GAP);
+        int listH = Math.max(this.font.lineHeight + 2, listBottom - listTop);
         int rowH = this.font.lineHeight + 2;
         List<DonationSummaryClient.Entry> board = s.monthly();
         donateListMaxScroll = Math.max(0, board.size() * rowH - listH);
@@ -2074,8 +2404,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_platform");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         // Fallback so the final page is never blank — e.g. a low-deaths Free Play
         // (creative) death where no conditioned platform lore entry matched.
         String platformNarration = n.platformNarration();
@@ -2185,11 +2514,6 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         @Override
-        public void train(GuiGraphics g, int left, int w, int y) {
-            drawTrain(g, left, w, y, currentPage);
-        }
-
-        @Override
         public void cell(GuiGraphics g, int centerX, int y, String value, Component label, int cw) {
             drawCell(g, centerX, y, value, label, cw, VALUE);
         }
@@ -2236,6 +2560,34 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopBar(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
+        if (nap()) {
+            // One way out at any point: Main Menu, which leaves the napped run. Holding Shift turns
+            // it into the death screen's darker "Quit Game" chip, which quits to the desktop.
+            // On "a life ongoing" it waits, with Next Screen, for the page to finish showing itself.
+            boolean quit = Screen.hasShiftDown();
+            Component menu = napLeaveLabel();
+            int menuW = this.font.width(menu) + 16;
+            int menuX = this.width - 10 - menuW;
+            leaveRect = null;
+            float controls = ongoingControlsAlpha();
+            if (controls >= ONGOING_CARD_MIN_ALPHA) {
+                float pageAlpha = uiAlpha;
+                uiAlpha = pageAlpha * controls;
+                try {
+                    leaveRect = quit
+                            ? drawChip(g, menuX, 8, menu, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
+                            : drawChip(g, menuX, 8, menu, CHIP_LV_BORDER, CHIP_LV_TEXT);
+                } finally {
+                    uiAlpha = pageAlpha;
+                }
+            }
+            reboardRect = null;
+            // "$" beside it, as on a death's last page: jumps to the Contribute page from any question.
+            Component dollar = Component.literal("$");
+            int dollarW = this.font.width(dollar) + 16;
+            dollarRect = drawChip(g, menuX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
+            return;
+        }
         // Right-aligned: [photos] [reboard] [leave]. leave on the far right. Holding
         // Shift turns the leave chip into a "Quit Game" chip (darker, lighter border + text)
         // and turns the reboard chip blue — signalling reboard will preserve the current
@@ -2436,37 +2788,53 @@ public final class NarrativeDeathScreen extends Screen {
 
         // Continue (centered) on every page except the platform, where Board anew /
         // Leave live in the page body instead.
-        if (page.kind() != Kind.PLATFORM) {
-            Component cont = Component.translatable("gui.dungeontrain.death.continue");
-            int bw = 120, h = 18;
-            int bx = this.width / 2 - bw / 2;
-            continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
-
-            // Right of Next Screen: the bug shortcut (start page) or a per-form "Sent" badge.
-            int slotX = bx + bw + 8;
-            if (page.kind() == Kind.FALL && bugPageIndex() >= 0) {
-                if (bugReported()) {
-                    // Faded-green status — not clickable (bugReportRect stays null).
-                    Component done = Component.translatable("gui.dungeontrain.death.narr.bug_submitted");
-                    int dw = this.font.width(done) + 16;
-                    drawBevel(g, slotX, rowY, dw, h, done, BTN_DONE_BG, BTN_DONE_LIGHT, BTN_DONE_DARK, BTN_DONE_TEXT);
-                } else {
-                    Component submit = Component.translatable("gui.dungeontrain.death.narr.bug_submit");
-                    int sw = this.font.width(submit) + 16;
-                    // Prompt above the button inviting a report (red state only).
-                    drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.bug_prompt"),
-                            slotX + sw / 2, rowY - this.font.lineHeight - 2, BTN_BUG_LIGHT);
-                    bugReportRect = drawBevel(g, slotX, rowY, sw, h, submit, BTN_BUG_BG, BTN_BUG_LIGHT, BTN_DARK, BTN_BUG_TEXT);
-                }
-            } else if (page.kind() == Kind.SURVEY && page.survey() != null
-                    && submitted.contains(page.survey().id())) {
-                // Confirmation that this feedback form was sent (clears if the answer changes).
-                drawChip(g, slotX, rowY + 2, Component.translatable("gui.dungeontrain.death.narr.feedback_sent"),
-                        CHIP_RB_BORDER, CHIP_RB_TEXT);
+        float controls = ongoingControlsAlpha();
+        if (page.kind() != Kind.PLATFORM && controls >= ONGOING_CARD_MIN_ALPHA) {
+            float pageAlpha = uiAlpha;
+            uiAlpha = pageAlpha * controls;
+            try {
+                drawContinueRow(g, page, rowY);
+            } finally {
+                uiAlpha = pageAlpha;
             }
         }
+        drawBackArrow(g, page, rowY, mouseX, mouseY);
+    }
 
-        // Bare back-arrow (icon only), left of the button row — hidden on page 0.
+    /** Next Screen, centred, and what sits to its right (the bug shortcut or a "Sent" badge). */
+    private void drawContinueRow(GuiGraphics g, Page page, int rowY) {
+        Component cont = nap() && lastNapPage()
+                ? napLeaveLabel() : Component.translatable("gui.dungeontrain.death.continue");
+        int bw = 120, h = 18;
+        int bx = this.width / 2 - bw / 2;
+        continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+
+        // Right of Next Screen: the bug shortcut (start page) or a per-form "Sent" badge.
+        int slotX = bx + bw + 8;
+        if (page.kind() == Kind.FALL && bugPageIndex() >= 0) {
+            if (bugReported()) {
+                // Faded-green status — not clickable (bugReportRect stays null).
+                Component done = Component.translatable("gui.dungeontrain.death.narr.bug_submitted");
+                int dw = this.font.width(done) + 16;
+                drawBevel(g, slotX, rowY, dw, h, done, BTN_DONE_BG, BTN_DONE_LIGHT, BTN_DONE_DARK, BTN_DONE_TEXT);
+            } else {
+                Component submit = Component.translatable("gui.dungeontrain.death.narr.bug_submit");
+                int sw = this.font.width(submit) + 16;
+                // Prompt above the button inviting a report (red state only).
+                drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.bug_prompt"),
+                        slotX + sw / 2, rowY - this.font.lineHeight - 2, BTN_BUG_LIGHT);
+                bugReportRect = drawBevel(g, slotX, rowY, sw, h, submit, BTN_BUG_BG, BTN_BUG_LIGHT, BTN_DARK, BTN_BUG_TEXT);
+            }
+        } else if (page.kind() == Kind.SURVEY && page.survey() != null
+                && submitted.contains(page.survey().id())) {
+            // Confirmation that this feedback form was sent (clears if the answer changes).
+            drawChip(g, slotX, rowY + 2, Component.translatable("gui.dungeontrain.death.narr.feedback_sent"),
+                    CHIP_RB_BORDER, CHIP_RB_TEXT);
+        }
+    }
+
+    /** Bare back-arrow (icon only), left of the button row; hidden on page 0. */
+    private void drawBackArrow(GuiGraphics g, Page page, int rowY, int mouseX, int mouseY) {
         if (currentPage > 0) {
             int ax = this.width / 2 - (page.kind() == Kind.PLATFORM ? 110 : 60) - 22;
             boolean hover = mouseX >= ax - 4 && mouseX < ax + 14 && mouseY >= rowY && mouseY < rowY + 18;
@@ -2486,7 +2854,14 @@ public final class NarrativeDeathScreen extends Screen {
         // on the fading / hidden controls beneath. Once settled (incl. the slow image
         // rise) clicks fall through, so only the Continue button advances — not empty space.
         if (photoViewer.isOpen()) return photoViewer.mouseClicked(photos(), mx, my, button);
-        if (button == 0 && uiBusy) { skipTransition(); return true; }
+        if (button == 0 && uiBusy) {
+            // One click skips everything: the page's fade, and on "a life ongoing" its sky and cards too.
+            skipTransition();
+            skipOngoingReveal();
+            return true;
+        }
+        // "a life ongoing" still showing itself: a click skips to its end (the "$" chip still works).
+        if (button == 0 && !(dollarRect != null && dollarRect.has(mx, my)) && skipOngoingReveal()) return true;
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
             if (dollarRect != null && dollarRect.has(mx, my)) {
@@ -2531,6 +2906,8 @@ public final class NarrativeDeathScreen extends Screen {
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             if (fullscreenRect != null && fullscreenRect.has(mx, my)) { toggleFullscreen(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+            // The echo page's tabs and inventory slots.
+            if (page.kind() == Kind.ECHO && echoPage != null && echoPage.mouseClicked(mx, my)) return true;
             if (bugReportRect != null && bugReportRect.has(mx, my)) {
                 // Jump straight to the bug-report question; Next Screen there returns here.
                 returnToStartAfterBug = true;
@@ -2682,7 +3059,20 @@ public final class NarrativeDeathScreen extends Screen {
             // can be a run of them, so this is a loop rather than a single skip.
             while (next < pages.size() && outOfFlow(pages.get(next))) next++;
             if (next < pages.size()) startTransition(next);
+            else if (nap()) leaveNap();
+        } else if (nap()) {
+            leaveNap();
         }
+    }
+
+    /** Nap mode: no in-flow page after this one, so Next Screen leaves (and reads Main Menu). */
+    private boolean lastNapPage() {
+        // Opened from the "$" chip: Next Screen goes back to the question, so it isn't the last page.
+        if (chipReturnPage >= 0) return false;
+        for (int i = currentPage + 1; i < pages.size(); i++) {
+            if (!outOfFlow(pages.get(i))) return false;
+        }
+        return true;
     }
 
     private void back() {
@@ -2754,7 +3144,7 @@ public final class NarrativeDeathScreen extends Screen {
         // Funnel: record the chosen rating for scale questions (the score drives the death-screen
         // survey-response distribution). Text-only questions have no meaningful score, so they're
         // left out — never the free-text comment either way.
-        if (e.scaleMax() >= e.scaleMin()) {
+        if (!nap() && e.scaleMax() >= e.scaleMin()) {
             UiAnalytics.surveyAnswer(UiAnalytics.SURFACE_DEATH_SCREEN, e.id(), score, e.scaleMax());
         }
         // For a real-bug answer, collect + ship logs (shared with the /bug + /feedback path).
@@ -2805,7 +3195,11 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void leaveOrQuit() {
         if (foreign) return;
-        if (!foreign) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_LEAVE);
+        if (nap()) {
+            leaveNap();
+            return;
+        }
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_LEAVE);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
         if (Screen.hasShiftDown()) {
             DeathScreenLayoutHandler.quitToDesktop();
@@ -2843,7 +3237,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
     private void openDonateLink() {
-        if (!foreign) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
+        if (!foreign && !nap()) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
         Minecraft.getInstance().setScreen(new DonationOptionsScreen(this));
     }
 
@@ -2857,8 +3251,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawPhotos(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.photos.kicker");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        y += TRAIN_GAP;
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.photos.title").getString(), cx, w, y);
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.subtitle"), cx, y + 2, KICKER);
         y += this.font.lineHeight + 4;
@@ -3010,7 +3403,8 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawKicker(GuiGraphics g, int cx, int y, String key) {
-        drawCenteredStr(g, Component.translatable(key), cx, y, KICKER);
+        // Pinned to the top: the page's y arrives shifted down by the centring.
+        drawCenteredStr(g, Component.translatable(key), cx, y - contentShift, KICKER);
     }
 
     private void drawSecLabel(GuiGraphics g, int cx, int y, String key) {
@@ -3095,11 +3489,52 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * The train fading into the dark — solid carriages on the left dissolving
-     * into fainter ones, then the ∞. The solid run grows with the page: a
+     * into fainter ones. The solid run grows with the page: a
      * single carriage on the first screen, filling the whole rail by the last,
-     * where the fade falls away and only the assembled train and its ∞ remain
+     * where the fade falls away and only the assembled train remains
      * — a train that completes itself exactly as the narrative ends.
      */
+    /**
+     * The page's train, in the top bar between the brand and the leftmost chip, its rail on the chips'
+     * bottom edge, so every page's text starts just under its kicker. Left out when the bar is too
+     * narrow for a few carriages.
+     */
+    /** This frame's centring offset; the kicker draws {@code contentShift} higher so it stays put. */
+    private int contentShift;
+    /** Each page's content bottom from its last frame, as if drawn unshifted. */
+    private final java.util.Map<Integer, Integer> contentBottoms = new java.util.HashMap<>();
+
+    /**
+     * How far down to move a page's content (all but its kicker) so it sits centred between the
+     * kicker and the footer. Zero for pages laid out against the bottom of the screen (the nap sky,
+     * the supporter list, the photo strip, the live pages), whose height follows the screen.
+     */
+    private int centredShift(Page page) {
+        switch (page.kind()) {
+            case ONGOING, DONATE, BROADCAST, CROWD -> { return 0; }
+            case PHOTOS -> { if (!photos().isEmpty()) return 0; }
+            default -> { }
+        }
+        Integer bottom = contentBottoms.get(currentPage);
+        if (bottom == null) return 0;
+        int top = CONTENT_TOP_Y + 14 + TRAIN_GAP;   // where content starts under the kicker
+        int room = (this.height - CENTRE_FOOT_Y) - top;
+        int used = bottom - top;
+        return Math.max(0, (room - used) / 2);
+    }
+
+    private void drawTopTrain(GuiGraphics g) {
+        int left = 12 + this.font.width(Component.translatable("gui.dungeontrain.death.narr.brand")) + TOP_TRAIN_MARGIN;
+        int right = this.width - 10;
+        for (Rect r : new Rect[] {leaveRect, reboardRect, deleteWorldRect, photosRect, dollarRect, envelopeRect}) {
+            if (r != null) right = Math.min(right, r.x());
+        }
+        right -= TOP_TRAIN_MARGIN;
+        if (right - left < TOP_TRAIN_MIN_W) return;
+        // drawTrain puts the rail 30 below y: -8 lays it along the chips' bottom edge (y 22).
+        drawTrain(g, left, right - left, -8, currentPage);
+    }
+
     private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
         DeathScreenText.drawTrain(g, this.font, left, w, y, advance, pages.size(), this::fade);
     }
@@ -3273,8 +3708,9 @@ public final class NarrativeDeathScreen extends Screen {
     public boolean isPauseScreen() {
         // Like the vanilla death screen, do NOT pause — so the world keeps
         // ticking and the train engine keeps sounding behind the screen (which
-        // we then fade out page by page).
-        return false;
+        // we then fade out page by page). A nap is the exception: it is already
+        // saved, so nothing may happen to the player behind the farewell.
+        return nap();
     }
 
     @Override
@@ -3292,6 +3728,7 @@ public final class NarrativeDeathScreen extends Screen {
         TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
         portrait.clear();
+        if (echoPage != null) echoPage.clear();
         if (crowdPage != null) crowdPage.clear();
         // Lift the gallery freeze. The world-leave paths clear the gallery anyway, but if the
         // screen is ever dismissed without disconnecting, capture/offload must resume normally.

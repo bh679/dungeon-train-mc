@@ -68,6 +68,25 @@ final class DonationSummaryClientTest {
     }
 
     @Test
+    @DisplayName("you.supporter: read as a yes/no when sent, null (use the total) when not")
+    void parsesTheSupporterFlag() {
+        assertNull(DonationSummaryClient.parse(realRelayBody()).youSupporter());
+        Summary gifted = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":0,"totalUsd":0,"supporter":true}}
+        """);
+        assertEquals(Boolean.TRUE, gifted.youSupporter());
+        assertEquals(0, gifted.youTotalUsd());
+        Summary no = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":30,"totalUsd":30,"supporter":false}}
+        """);
+        assertEquals(Boolean.FALSE, no.youSupporter());
+        Summary odd = DonationSummaryClient.parse("""
+        {"ok":true,"you":{"monthlyUsd":0,"totalUsd":0,"supporter":"yes"}}
+        """);
+        assertNull(odd.youSupporter());
+    }
+
+    @Test
     @DisplayName("an updates block the relay could not fill is treated as absent")
     void anEmptyUpdatesBlockIsAbsent() {
         // windowMonths 0 is meaningful ("this year"), so the count is what decides. A block whose

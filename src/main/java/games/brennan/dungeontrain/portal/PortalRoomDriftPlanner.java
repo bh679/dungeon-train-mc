@@ -90,8 +90,10 @@ public final class PortalRoomDriftPlanner {
             log(pairKey, roomName, own ? "POOL_HIT_OWN" : "POOL_HIT", lease);
             return blob;
         } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] drifted room id={} for '{}' failed to decode: {} — returning it.",
-                lease.id(), roomName, e.toString());
+            if (!(e instanceof games.brennan.dungeontrain.train.RelayBlobTooLargeException)) { // already logged once
+                LOGGER.warn("[DungeonTrain] drifted room id={} for '{}' failed to decode: {} — returning it.",
+                    lease.id(), roomName, e.toString());
+            }
             SharedRoomPool.returnLease(lease);
             return null;
         }

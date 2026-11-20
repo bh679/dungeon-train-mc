@@ -17,6 +17,7 @@ public final class RunTameTracker {
     /** Credit {@code animal} to {@code player}'s run. Server-thread only; never throws. */
     public static void record(ServerPlayer player, Entity animal) {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-            .recordTame(EntityType.getKey(animal.getType()));
+            .recordTame(EntityType.getKey(animal.getType()),
+                games.brennan.dungeontrain.nap.NapGateData.step(player));
     }
 }

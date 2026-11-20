@@ -183,6 +183,34 @@
       "keys": [],
       "key_prefixes": []
     },
+    "toad": {
+      "name": "Toad",
+      "mentions": ["toad"],
+      "pronouns": "",
+      "gender": "",
+      "age": "",
+      "about": "A toad from the pond carriage, newly given a voice and the knack of writing by a magic stranger.",
+      "notes": "Writes in deliberately broken, toddler-like grammar and spelling (\"helo\", \"i is toad\", \"frend\"). Keep it broken in translation: short lines, wrong verb forms, misspelt hello and friend. Letter Seven is a rhyming chant.",
+      "books": [
+        "stories/toad_like_writes"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "tuk": {
+      "name": "Tuk",
+      "mentions": ["tuk"],
+      "pronouns": "he/him",
+      "gender": "Male",
+      "age": "",
+      "about": "A spider in the spider carriage who befriends Toad instead of eating it.",
+      "notes": "Toad calls him \"him\". Keep the name Tuk (transliterate only).",
+      "books": [
+        "stories/toad_like_writes"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
     "tomas_aaro": {
       "name": "Tomas Aaro",
       "mentions": ["Tomas"],

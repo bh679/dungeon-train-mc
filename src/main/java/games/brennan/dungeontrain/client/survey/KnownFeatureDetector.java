@@ -30,12 +30,6 @@ public final class KnownFeatureDetector {
     private static final Map<KnownFeature, Rule> RULES = new EnumMap<>(KnownFeature.class);
 
     static {
-        RULES.put(KnownFeature.SAVE_QUIT, rule(
-                "save\\s*(?:and|&|n)\\s*quit|quit\\s*(?:and|&)\\s*save|sav(?:e|ing)|checkpoints?"
-                        + "|pause\\s+(?:button|the\\s+run)|leave\\s+mid[\\s-]*run|guardar|sauvegard\\p{L}*"
-                        + "|speicher\\p{L}*|сохран\\p{L}*",
-                "保存|存档|存檔|セーブ|저장",
-                null));
         RULES.put(KnownFeature.BACKPACK, rule(
                 "backpacks?|rucksacks?|portable\\s+storage|mochilas?|sacs?\\s+[àa]\\s+dos|plecak\\p{L}*|рюкзак\\p{L}*",
                 "背包|リュック|배낭",

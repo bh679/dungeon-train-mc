@@ -193,6 +193,7 @@ public final class DebugCommand {
             // /dungeontrain debug carriage-id [rebuild <id>|verify|back] — the id of the carriage you're in,
             // that carriage's group stood up again from an id, and a cell-by-cell check against the train.
             .then(CarriageIdDebug.build())
+            .then(NapGateDebug.build())
             // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
             // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
             .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))

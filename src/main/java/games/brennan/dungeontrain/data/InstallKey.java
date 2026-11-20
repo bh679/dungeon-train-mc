@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Instant;
+import games.brennan.dungeontrain.util.StrictBase64;
 import java.util.Base64;
 import java.util.function.Supplier;
 
@@ -86,7 +87,7 @@ public final class InstallKey {
     private static byte[] readKey(Path path) {
         if (!Files.isRegularFile(path)) return new byte[0];
         try {
-            byte[] decoded = Base64.getDecoder().decode(Files.readString(path, StandardCharsets.US_ASCII).trim());
+            byte[] decoded = StrictBase64.decode(Files.readString(path, StandardCharsets.US_ASCII).trim());
             if (decoded.length >= KEY_BYTES) return decoded;
             LOGGER.warn("[DungeonTrain] InstallKey: {} is too short; making a new one", path);
         } catch (IOException | IllegalArgumentException e) {

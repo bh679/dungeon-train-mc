@@ -1,18 +1,18 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "cubes",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "blocks",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "bigger",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "smallpat",
@@ -28,8 +28,18 @@
     },
     {
       "id": "traineditor",
-      "weight": 1,
+      "weight": 3,
       "minLevel": 30
+    },
+    {
+      "id": "housetown",
+      "weight": 3,
+      "minLevel": 5
+    },
+    {
+      "id": "gridpath",
+      "weight": 1,
+      "minLevel": 36
     }
   ]
 }

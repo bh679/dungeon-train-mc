@@ -200,6 +200,45 @@ final class BlockVariantSyncPacketTest {
         assertEquals(false, decoded.entries().get(1).isConditional());
     }
 
+    @Test
+    @DisplayName("round-trip preserves the anchor charge range and bed colour mask; short ctor defaults them")
+    void roundTrip_chargesAndBedColours() {
+        int charges = games.brennan.dungeontrain.editor.VariantCharges.range(1, 3).toInt();
+        int colours = 0b0100_0000_0000_0001; // white + red
+        BlockVariantSyncPacket.Entry anchor = new BlockVariantSyncPacket.Entry(
+            "minecraft:respawn_anchor", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, charges, colours);
+        BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "");
+        BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 2, 3), List.of(anchor, plain), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
+        assertEquals(charges, decoded.entries().get(0).charges());
+        assertEquals(colours, decoded.entries().get(0).bedColours());
+        assertEquals(games.brennan.dungeontrain.editor.VariantCharges.AS_PLACED.toInt(),
+            decoded.entries().get(1).charges());
+        assertEquals(games.brennan.dungeontrain.editor.VariantBedColours.WHITE_ONLY.mask(),
+            decoded.entries().get(1).bedColours());
+    }
+
+    @Test
+    @DisplayName("round-trip preserves a slime row's size / type mask; the shorter ctor defaults it to any")
+    void roundTrip_slime() {
+        int mask = games.brennan.dungeontrain.editor.VariantSlime.NONE.toggledSize(4).toggledType(1).mask();
+        BlockVariantSyncPacket.Entry slime = new BlockVariantSyncPacket.Entry(
+            "dungeontrain:variant_placeholder", null, 1, (byte) 1, (byte) 0, null, "betterend:end_slime",
+            (byte) 0, 0, -1, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, 0, 1, mask);
+        BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, 0, 1);
+        BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 2, 3), List.of(slime, plain), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
+        assertEquals(mask, decoded.entries().get(0).slime());
+        assertEquals(0, decoded.entries().get(1).slime());
+    }
+
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);

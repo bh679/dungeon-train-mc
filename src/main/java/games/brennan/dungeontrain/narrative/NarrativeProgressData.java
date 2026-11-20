@@ -831,6 +831,71 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
+     * What a nap carries of this world's narrative progress for {@code player}: the world's story and
+     * book progress (a nap is singleplayer, so that is theirs), plus only {@code player}'s own entries
+     * from the per-player lists (welcome-book receipt, letter series, series reports). Read back by
+     * {@link #importFor} in the world the nap wakes in.
+     */
+    public CompoundTag exportFor(UUID player) {
+        CompoundTag tag = save(new CompoundTag(), null);
+        ListTag started = new ListTag();
+        if (startingBookReceived.contains(player)) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID(TAG_UUID, player);
+            started.add(entry);
+        }
+        tag.put(TAG_STARTING_BOOK_RECEIVED, started);
+        ListTag letters = new ListTag();
+        ListTag allLetters = tag.getList(TAG_LETTER_SERIES, Tag.TAG_COMPOUND);
+        for (int i = 0; i < allLetters.size(); i++) {
+            CompoundTag e = allLetters.getCompound(i);
+            if (e.hasUUID(TAG_UUID) && player.equals(e.getUUID(TAG_UUID))) letters.add(e.copy());
+        }
+        tag.put(TAG_LETTER_SERIES, letters);
+        ListTag reported = new ListTag();
+        String suffix = "|" + player;
+        for (String key : reportedSeries) {
+            if (key.endsWith(suffix)) reported.add(StringTag.valueOf(key));
+        }
+        tag.put(TAG_REPORTED_SERIES, reported);
+        return tag;
+    }
+
+    /**
+     * Merges a nap's {@link #exportFor} tag into this world: read sets are unioned, so nothing this
+     * world already holds is lost, and {@code player}'s letter series is taken from the nap. Entries for
+     * any other player in {@code napped} are ignored.
+     */
+    public void importFor(UUID player, CompoundTag napped) {
+        if (napped == null || napped.isEmpty()) return;
+        NarrativeProgressData other = load(napped);
+        mergeProgress(byStory, other.byStory);
+        mergeProgress(randomBooksSeen, other.randomBooksSeen);
+        mergeProgress(startingBooksSeen, other.startingBooksSeen);
+        mergeProgress(storyVariantsSeen, other.storyVariantsSeen);
+        mergeProgress(randomBookVariantsEverRead, other.randomBookVariantsEverRead);
+        sharedBooksEverRead.addAll(other.sharedBooksEverRead);
+        playerLettersEverRead.addAll(other.playerLettersEverRead);
+        if (other.startingBookReceived.contains(player)) startingBookReceived.add(player);
+        LetterSeriesState series = other.letterSeries.get(player);
+        if (series != null) letterSeries.put(player, series);
+        String suffix = "|" + player;
+        for (String key : other.reportedSeries) {
+            if (key.endsWith(suffix)) reportedSeries.add(key);
+        }
+        setDirty();
+    }
+
+    private static void mergeProgress(Map<String, NarrativeProgress> into, Map<String, NarrativeProgress> from) {
+        for (var entry : from.entrySet()) {
+            NarrativeProgress mine = into.get(entry.getKey());
+            TreeSet<Integer> union = new TreeSet<>(entry.getValue().readLetters());
+            if (mine != null) union.addAll(mine.readLetters());
+            into.put(entry.getKey(), new NarrativeProgress(union));
+        }
+    }
+
+    /**
      * Shared encoder for both the story-progress map and the random-book
      * map — same shape ({@code basename -> Set<Integer>}), so the same
      * ListTag layout works for both. Returns an empty ListTag when the

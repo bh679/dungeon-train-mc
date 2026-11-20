@@ -82,7 +82,7 @@ final class BuilderTileMesh implements AutoCloseable {
     /** Lowest occupied cell. Normally the origin, but a template need not start at it. */
     private final Vec3i min;
 
-    private record Layer(RenderType type, VertexBuffer buffer) {}
+    private record Layer(RenderType type, VertexBuffer buffer, long bytes) {}
 
     private BuilderTileMesh(List<Layer> layers, Vec3i size, Vec3i min) {
         this.layers = layers;
@@ -92,6 +92,13 @@ final class BuilderTileMesh implements AutoCloseable {
 
     Vec3i size() {
         return size;
+    }
+
+    /** Vertex bytes uploaded for this mesh — what a cache budgets GPU memory by. */
+    long bytes() {
+        long total = 0;
+        for (Layer layer : layers) total += layer.bytes();
+        return total;
     }
 
     Vec3i min() {
@@ -124,9 +131,9 @@ final class BuilderTileMesh implements AutoCloseable {
         List<Layer> layers = new ArrayList<>();
 
         for (RenderType type : layersPresent(cells)) {
-            VertexBuffer buffer = bakeLayer(cells, blocks, random, type);
-            if (buffer != null) {
-                layers.add(new Layer(type, buffer));
+            Layer layer = bakeLayer(cells, blocks, random, type);
+            if (layer != null) {
+                layers.add(layer);
             }
         }
         if (layers.isEmpty()) {
@@ -169,7 +176,7 @@ final class BuilderTileMesh implements AutoCloseable {
     }
 
     /** One render layer's worth of geometry, or null when this layer contributed nothing. */
-    private static VertexBuffer bakeLayer(Map<BlockPos, BlockState> cells,
+    private static Layer bakeLayer(Map<BlockPos, BlockState> cells,
                                           BlockRenderDispatcher blocks, RandomSource random,
                                           RenderType type) {
         PoseStack pose = new PoseStack();
@@ -192,11 +199,12 @@ final class BuilderTileMesh implements AutoCloseable {
             if (mesh == null) {
                 return null;
             }
+            long bytes = mesh.vertexBuffer().remaining();
             VertexBuffer buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
             buffer.bind();
             buffer.upload(mesh);
             VertexBuffer.unbind();
-            return buffer;
+            return new Layer(type, buffer, bytes);
         }
     }
 

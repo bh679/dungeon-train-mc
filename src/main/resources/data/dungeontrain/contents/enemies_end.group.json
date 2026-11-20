@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "endslime",
-      "weight": 5,
+      "weight": 2,
       "phases": [
         "VOID",
         "END",
@@ -24,7 +24,6 @@
         "CHUNCKS",
         "SPHERES",
         "STACKS",
-        "FLOATING",
         "FAR_LANDS",
         "DEEPER_DARK"
       ]
@@ -39,7 +38,6 @@
         "CHUNCKS",
         "SPHERES",
         "STACKS",
-        "FLOATING",
         "FAR_LANDS",
         "DEEPER_DARK"
       ]
@@ -47,7 +45,51 @@
     {
       "id": "shulker",
       "weight": 2,
-      "minLevel": 20
+      "minLevel": 20,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "mossslime",
+      "weight": 1,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "lakeslime",
+      "weight": 1,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "amberslime",
+      "weight": 1,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
     }
   ]
 }

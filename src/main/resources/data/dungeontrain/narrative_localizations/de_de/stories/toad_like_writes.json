@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Kröte",
+  "story": "Kröte mag Schreibs",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "halo. ich is kröte\nmagisch eine gab mir gabe.\nmein erst schreiben.\n\n\ngabe von stimme\nvon wissen schreibs\n..\nkröte mag schreibs"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "halo, kröte wieder\nzug lang\nkröte weg von teich-wagen\n\n\nhoff find nass bald\nzug trocken"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "halo, is kröte\nwill find zauber mann\nsag danke\nfür mein haut\nkröte nicht brauch nass\n\n\nmein haut mach eigen nass\nlang trocken zug ok\nkröte immer noch nass"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "kröte hunger\nzug bienen sind zu groß\nspinnen mehr groß als kröte\nich nicht mag das\n\n\nspinnen gruselig"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "nächst wagen is spinnen\nviel spinnen\n\n\nkröte is mutig\nangst\n...\nmutig"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief sechs",
+      "variants": [
+        "halo, kröte hier\nich hab neu freunt\n\n\nspinne nich so gruselig\ner mag kröte\nnich fressen\nsein freunte\nname. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Brief sieben",
+      "variants": [
+        "tuk n kröte\nkeine nöte\nzug lang\nsing gesang\nbis zum end\nwir sind freunt"
+      ]
+    }
+  ]
+}

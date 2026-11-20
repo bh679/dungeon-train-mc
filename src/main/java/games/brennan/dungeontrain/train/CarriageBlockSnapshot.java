@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import games.brennan.dungeontrain.util.StrictBase64;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -508,6 +509,11 @@ public final class CarriageBlockSnapshot {
                 // leasing train is the first place that knows which stage they land in.
                 BlockState state = StagePlacementScope.resolve(
                         NbtUtils.readBlockState(blocks, cell.getCompound("s")));
+                // Dungeon Train flags in an uploaded build roll into banners for the leasing train.
+                games.brennan.dungeontrain.block.flag.FlagPlaceholders.Resolved flag =
+                        games.brennan.dungeontrain.block.flag.FlagPlaceholders.resolveInScope(
+                                state, registries, level.getSeed());
+                if (flag != null) state = flag.state();
                 if (state.isAir()) {
                     // An unresolvable state decodes to air — placing it would silently punch a hole.
                     LOGGER.warn("[DungeonTrain] shared-carriage cell at {} decoded to AIR from {} — skipping.",
@@ -516,7 +522,13 @@ public final class CarriageBlockSnapshot {
                 }
                 wanted++;
                 level.setBlock(abs, state, PLACE_FLAGS);
-                if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                if (flag != null) {
+                    BlockEntity be = level.getBlockEntity(abs);
+                    if (be != null) {
+                        be.loadWithComponents(flag.nbt(), registries);
+                        be.setChanged();
+                    }
+                } else if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
                     BlockEntity be = level.getBlockEntity(abs);
                     if (be != null) {
                         be.loadCustomOnly(cell.getCompound("b"), registries);
@@ -551,9 +563,84 @@ public final class CarriageBlockSnapshot {
         return Base64.getEncoder().encodeToString(baos.toByteArray());
     }
 
+    /**
+     * The tag a relay blob encodes. The blob may come from another player, so it is decoded with
+     * {@link StrictBase64}, never the JDK decoder (CVE-2026-114938).
+     *
+     * <p>Bounded by {@link RelayBlobLimits}: a blob over {@link RelayBlobLimits#MAX_ENCODED_CHARS} is
+     * refused before it is Base64-decoded, and the NBT is read through an accounter capped at
+     * {@link RelayBlobLimits#MAX_ACCOUNTED_BYTES}, so a gzip bomb stops at the cap rather than at the heap.</p>
+     *
+     * @throws RelayBlobTooLargeException when the blob is over either limit
+     * @throws IOException                when {@code base64} is not canonical Base64 or not compressed NBT
+     */
     public static CompoundTag decode(String base64) throws IOException {
-        byte[] raw = Base64.getDecoder().decode(base64);
-        return NbtIo.readCompressed(new ByteArrayInputStream(raw), NbtAccounter.unlimitedHeap());
+        return read(base64, NbtAccounter.create(RelayBlobLimits.MAX_ACCOUNTED_BYTES));
+    }
+
+    /**
+     * {@link #decode(String)}, charged to one build's {@code budget}: the base and every delta of a
+     * build draw on it together, so a long delta log cannot multiply the per-blob cap.
+     *
+     * @throws RelayBlobTooLargeException with {@link RelayBlobTooLargeException#wholeBuild()} true when
+     *                                    the budget is spent, false when only this blob is over
+     */
+    public static CompoundTag decode(String base64, RelayBlobLimits.FoldBudget budget) throws IOException {
+        long cap = budget.capForNext();
+        if (cap <= 0) throw new RelayBlobTooLargeException("fold budget spent", true);
+        NbtAccounter accounter = NbtAccounter.create(cap);
+        try {
+            CompoundTag tag = read(base64, accounter);
+            budget.charge(accounter.getUsage());
+            return tag;
+        } catch (RelayBlobTooLargeException e) {
+            // What a refused read got through still cost the time, so it counts: a log of oversize
+            // deltas spends the budget and ends the fold rather than costing a full cap each.
+            budget.charge(accounter.getUsage());
+            // Over a cap that was the budget's remainder, not the per-blob cap: the build is spent.
+            // (An over-long string is refused before any accounting, so it stays a per-blob refusal.)
+            if (!e.wholeBuild() && cap < RelayBlobLimits.MAX_ACCOUNTED_BYTES && accounter.getUsage() > 0) {
+                throw new RelayBlobTooLargeException("fold budget spent: " + e.getMessage(), true);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Whether other worlds will decode {@code base64}: false only when it is over {@link RelayBlobLimits}.
+     * A blob unreadable for any other reason is not this check's call, so it answers true.
+     */
+    public static boolean withinRelayLimits(String base64) {
+        try {
+            decode(base64);
+            return true;
+        } catch (RelayBlobTooLargeException e) {
+            return false;
+        } catch (IOException e) {
+            return true;
+        }
+    }
+
+    private static CompoundTag read(String base64, NbtAccounter accounter) throws IOException {
+        if (base64 == null) throw new IOException("shared-carriage blob is missing");
+        if (base64.length() > RelayBlobLimits.MAX_ENCODED_CHARS) {
+            throw new RelayBlobTooLargeException("shared-carriage blob is " + base64.length()
+                    + " chars, over the " + RelayBlobLimits.MAX_ENCODED_CHARS + " cap", false);
+        }
+        byte[] raw;
+        try {
+            raw = StrictBase64.decode(base64);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("shared-carriage blob is not canonical base64: " + e.getMessage(), e);
+        }
+        try {
+            return NbtIo.readCompressed(new ByteArrayInputStream(raw), accounter);
+        } catch (net.minecraft.nbt.NbtAccounterException e) {
+            throw new RelayBlobTooLargeException("shared-carriage blob decodes past its budget: " + e.getMessage(), false);
+        } catch (RuntimeException e) {
+            // Corrupt NBT surfaces as a runtime ReportedNbtException; callers expect an IOException.
+            throw new IOException("shared-carriage blob is not readable NBT: " + e, e);
+        }
     }
 
     // ---- live block-entity reads ----

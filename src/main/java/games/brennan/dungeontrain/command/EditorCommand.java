@@ -247,6 +247,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_ENTRANCE_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomEntrance entrance
+                    : games.brennan.dungeontrain.portal.PortalRoomEntrance.values()) {
+                builder.suggest(entrance.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_DRIFT_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomDrift drift
@@ -6497,6 +6506,31 @@ public final class EditorCommand {
         return applyPortalRoomSettings(source, name, current.withGround(current.ground().withLevel(wanted)));
     }
 
+    /** {@code /dt editor portals entrance next} — step Two-way → One-way. */
+    private static int runPortalRoomEntranceCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextEntrance());
+    }
+
+    /** {@code /dt editor portals entrance <two_way|one_way>} — set it outright. Rejects a misspelling. */
+    private static int runPortalRoomEntrance(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomEntrance wanted =
+            games.brennan.dungeontrain.portal.PortalRoomEntrance.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_entrance_option_try", raw));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withEntrance(wanted));
+    }
+
     /** {@code /dt editor portals drift next} — step On → Off. */
     private static int runPortalRoomDriftCycle(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
@@ -6794,6 +6828,16 @@ public final class EditorCommand {
                     .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
                     .executes(ctx -> runPortalRoomFog(ctx,
                         StringArgumentType.getString(ctx, "fog")))))
+            // Whether the entrance hallway leads back to the train. Two-way by default; One-way
+            // closes the way back once a traveller crosses its portal. Means something under
+            // every mode.
+            .then(Commands.literal("entrance")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomEntranceCycle(ctx)))
+                .then(Commands.argument("entrance", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_ENTRANCE_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomEntrance(ctx,
+                        StringArgumentType.getString(ctx, "entrance")))))
             // Whether a Bedrock room drifts — is uploaded when edited and may be served from
             // the shared pool. On by default; means nothing under the modes a blob cannot describe.
             .then(Commands.literal("drift")
@@ -7316,7 +7360,11 @@ public final class EditorCommand {
             ? ", ground: " + settings.ground().level().displayName()
                 + (settings.ground().below() ? " and everything below" : "")
             : "";
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock + ground, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
+        // Same rule again: two-way is what every entrance did before this could be chosen.
+        String entrance = settings.entrance().oneWay()
+            ? ", entrance: " + settings.entrance().displayName()
+            : "";
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock + ground + entrance, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

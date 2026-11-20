@@ -114,6 +114,11 @@ public final class ThirdPartyMixinTargets {
             Map.of("org.betterx.wover.ui.impl.client.VersionCheckerClient", List.of(
                 method("presentUpdateScreen", "(Ljava/util/List;)V"))),
             Map.of(), "WorldWeaver's welcome and update screens show at startup", false)),
+        Map.entry(MIXIN_PACKAGE + "wover.WoverWorldConfigInvoker", new Spec(
+            Map.of("org.betterx.wover.state.impl.WorldConfigImpl", List.of(
+                method("loadForWorld", "(Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;)V"))),
+            Map.of(), "WorldWeaver saves a new run's generator file into the previous world's folder; "
+                    + "RunWorldCleanup removes the left-over folders at the title screen", false)),
 
         // ── BCLib ────────────────────────────────────────────────────────────────────────────────
         Map.entry(MIXIN_PACKAGE + "bclib.BclibFixPromptMixin", new Spec(

@@ -1,0 +1,56 @@
+{
+  "id": "toad_like_writes",
+  "character": "Ropucha",
+  "story": "Ropucha lubić pisy",
+  "letters": [
+    {
+      "index": 1,
+      "label": "List pierwszy",
+      "variants": [
+        "cześć. ja jest ropucha\nmagiczny jeden dać mi prezent.\nmój pierwszy pisanie.\n\n\nprezent głos\nprezent wiedzieć pisy\n..\nropucha lubić pisy"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "List drugi",
+      "variants": [
+        "cześć, ropucha znowu\npociąg długi\nropucha zostawić wagon staw\n\n\nmieć nadzieja znaleźć mokro szybko\npociąg suchy"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "List trzeci",
+      "variants": [
+        "cześć, jest ropucha\nchcieć znaleźć magiczny pan\npowiedzieć dziękuję\nza moja skóra\nropucha nie potrzebować mokro\n\n\nmoja skóra robić swój mokro\ndługi suchy pociąg ok\nropucha dalej mokra"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "List czwarty",
+      "variants": [
+        "ropucha głodna\npociąg pszczoły są za duże\npająki bardziej duże niż ropucha\nja nie lubić to\n\n\npająki straszne"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "List piąty",
+      "variants": [
+        "następny wagon jest pająki\ndużo pająki\n\n\nropucha jest dzielna\nboi się\n...\ndzielna"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "List szósty",
+      "variants": [
+        "cześć, ropucha tu\nja mieć nowy psyjaciel\n\n\npająk nie tak straszny\non lubić ropucha\nnie jeść\nbyć psyjaciele\nimię. tuk"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "List siódmy",
+      "variants": [
+        "tuk i ropucha\nw drogę rusza\npociąg długi\nśpiew nie krótki\naż do końca\npsyjaciele z serca"
+      ]
+    }
+  ]
+}

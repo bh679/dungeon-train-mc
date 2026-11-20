@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
+import games.brennan.dungeontrain.client.ChatClickTokens;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.event.LiveEyeLootResolver;
 import games.brennan.dungeontrain.net.ClientActionPacket;
@@ -22,9 +23,11 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,14 +45,33 @@ import java.util.Set;
  * <p><b>Viewer:</b> an offer made out to this player (a {@code gifts[]} notice) prints
  * <b>[Accept]</b> / <b>[No thanks]</b>; accepting asks this player's own server to redeem it
  * ({@link LiveGiftAcceptPacket}), which hands over the item.</p>
+ *
+ * <p>Any sender can print a {@code dungeontrain:} click, so every button here carries a {@link ChatClickTokens}
+ * token minted when this client printed it: {@code <step>/<button>/<token>}, where {@code <button>} is a number this
+ * client gave the line. What the button acts on (the join, the gift, the viewer's name) stays on this client, never
+ * in the click. A copy from anyone else does nothing. Typed {@code /offereye} calls {@link #offerTo}/{@link #offerAll}
+ * directly and needs none.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveGiftClient {
 
     /** The streamer sees the gift prompt at most this often. */
     public static final long PROMPT_GAP_MS = 12L * 60L * 1000L;
-    /** The buttons' action ({@link ChatClick}): {@code live-gift/give|accept|decline/<id>}. */
+    /** The buttons' action ({@link ChatClick}): {@code live-gift/give|accept|decline|offer|offer-all/<button>/<token>}. */
     static final String CLICK_ACTION = "live-gift";
+    /** Token scope of the join prompts' and offers' buttons. */
+    static final String GIFT_SCOPE = CLICK_ACTION;
+    /** Token scope of the {@code /offereye} list's buttons: a new list drops the last one's. */
+    static final String OFFER_SCOPE = "live-gift-offer";
+    /** How long a gift button works; the {@code /offereye} list can be printed again. */
+    static final long TOKEN_TTL_MS = 5L * 60L * 1000L;
+    static final String GIVE = "give";
+    static final String ACCEPT = "accept";
+    static final String DECLINE = "decline";
+    static final String OFFER = "offer";
+    static final String OFFER_ALL = "offer-all";
+    /** {@link #OFFER_TARGETS}' entry for the list's All [Offer]. Never a name: names are at least 3 characters. */
+    static final String ALL = "*";
     private static final String KEY = "chat.dungeontrain.live_gift.";
     static final String OFFER_KEY = "command.dungeontrain.offer_eye.";
     private static final String CLOSE_KEY = "chat.dungeontrain.live.close_call.";
@@ -60,6 +82,13 @@ public final class LiveGiftClient {
     private static final Map<String, String> PROMPTED_JOINS = new LinkedHashMap<>(); // joinId → viewer name
     private static final Map<String, Offer> OFFERS = new LinkedHashMap<>();          // giftId → offer
     private static final Set<String> SEEN_GIFTS = new LinkedHashSet<>();
+
+    /** What a printed button acts on: {@code kind} is {@link #GIVE} (a joinId) or {@link #ACCEPT} (a giftId, for both buttons). */
+    record Button(String kind, String target) {}
+
+    private static long nextButton = 1;
+    private static final Map<Long, Button> BUTTONS = new LinkedHashMap<>();       // button → join or gift
+    private static final Map<Long, String> OFFER_TARGETS = new LinkedHashMap<>(); // button → viewer name, or ALL
 
     private record Offer(String from, Channel channel) {}
 
@@ -99,7 +128,7 @@ public final class LiveGiftClient {
         put(PROMPTED_JOINS, join.joinId(), join.name());
         MutableComponent line = Component.translatable(KEY + "prompt", join.name()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(KEY + "give", ChatClick.event(CLICK_ACTION, "give", join.joinId()), ChatFormatting.GOLD, false));
+            .append(button(KEY + "give", giveClick(join.joinId()), ChatFormatting.GOLD, false));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
@@ -112,7 +141,7 @@ public final class LiveGiftClient {
         put(PROMPTED_JOINS, join.joinId(), join.name());
         MutableComponent line = Component.translatable(CLOSE_KEY + "prompt", join.name()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(CLOSE_KEY + "give", ChatClick.event(CLICK_ACTION, "give", join.joinId()), ChatFormatting.GOLD, false));
+            .append(button(CLOSE_KEY + "give", giveClick(join.joinId()), ChatFormatting.GOLD, false));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
@@ -125,34 +154,117 @@ public final class LiveGiftClient {
         put(OFFERS, offer.giftId(), new Offer(offer.from(), channel));
         String offerKey = offer.all() ? KEY + "offer_all"
             : LiveCloseCallWatch.watching() ? CLOSE_KEY + "offer" : KEY + "offer";
+        long b = remember(BUTTONS, new Button(ACCEPT, offer.giftId()));
+        String token = ChatClickTokens.mint(GIFT_SCOPE, b, TOKEN_TTL_MS);
         MutableComponent line = Component.translatable(offerKey, offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(KEY + "accept", ChatClick.event(CLICK_ACTION, "accept", offer.giftId()), ChatFormatting.GREEN, true))
+            .append(button(KEY + "accept", click(ACCEPT, b, token), ChatFormatting.GREEN, true))
             .append(Component.literal(" "))
-            .append(button(KEY + "decline", ChatClick.event(CLICK_ACTION, "decline", offer.giftId()), ChatFormatting.GRAY, true));
+            .append(button(KEY + "decline", click(DECLINE, b, token), ChatFormatting.GRAY, true));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
     /** Wire the gift buttons ({@code DungeonTrainClient.clientSetup}). */
     public static void registerClicks() {
-        ChatClickActions.register(CLICK_ACTION, args -> {
-            if (args.size() < 2) return;
-            String id = args.get(1);
-            switch (args.get(0)) {
-                case "give" -> give(id);
-                case "offer" -> offerTo(id);
-                case "offer-all" -> offerAll();
-                case "accept" -> answer(id, true);
-                case "decline" -> answer(id, false);
-                default -> { }
+        ChatClickActions.register(CLICK_ACTION, LiveGiftClient::onClick);
+    }
+
+    /** A gift button was clicked. Nothing happens unless its token is the one this client printed it with. */
+    private static void onClick(List<String> args) {
+        long b = buttonOf(args);
+        if (b <= 0) return;
+        String step = args.get(0);
+        String token = args.get(2);
+        Minecraft mc = Minecraft.getInstance();
+        switch (step) {
+            case GIVE -> {
+                String joinId = redeem(BUTTONS, GIFT_SCOPE, b, GIVE, token);
+                if (joinId == null) say(mc, Component.translatable(KEY + "give_expired").withStyle(ChatFormatting.GRAY));
+                else give(joinId);
             }
-        });
+            case ACCEPT, DECLINE -> {
+                String giftId = redeem(BUTTONS, GIFT_SCOPE, b, ACCEPT, token);
+                if (giftId == null) say(mc, Component.translatable(KEY + "expired").withStyle(ChatFormatting.GRAY));
+                else answer(giftId, ACCEPT.equals(step));
+            }
+            case OFFER, OFFER_ALL -> {
+                String name = redeemOffer(b, token);
+                if (name == null || ALL.equals(name) != OFFER_ALL.equals(step)) {
+                    say(mc, Component.translatable(KEY + "give_expired").withStyle(ChatFormatting.GRAY));
+                } else if (ALL.equals(name)) {
+                    offerAll();
+                } else {
+                    offerTo(name);
+                }
+            }
+            default -> { }
+        }
+    }
+
+    /** {@code [step, button, token]} → the button, or -1 for any other shape (an older click among them). Pure. */
+    static long buttonOf(List<String> args) {
+        if (args.size() != 3 || args.get(2).isEmpty()) return -1;
+        try {
+            long b = Long.parseLong(args.get(1));
+            return b > 0 ? b : -1;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * What button {@code b} of {@code kind} acts on, when {@code token} is its live one; null otherwise. The token is
+     * used up either way. A refused click leaves the button's entry: its join or gift is still there to act on.
+     */
+    @Nullable
+    static String redeem(Map<Long, Button> buttons, String scope, long b, String kind, String token) {
+        Button button = buttons.get(b);
+        if (button == null || !button.kind().equals(kind)) return null;
+        if (!ChatClickTokens.consume(scope, b, token)) return null;
+        buttons.remove(b);
+        return button.target();
+    }
+
+    /** The name (or {@link #ALL}) offer button {@code b} was printed for, when {@code token} is its live one. */
+    @Nullable
+    static String redeemOffer(long b, String token) {
+        String target = OFFER_TARGETS.get(b);
+        if (target == null || !ChatClickTokens.consume(OFFER_SCOPE, b, token)) return null;
+        OFFER_TARGETS.remove(b);
+        return target;
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         PROMPTED_JOINS.clear();
         OFFERS.clear();
+        BUTTONS.clear();
+        startOfferList();
+        ChatClickTokens.clear(GIFT_SCOPE);
+    }
+
+    /** A new {@code /offereye} list is about to print: the last list's buttons stop working. Client thread. */
+    static void startOfferList() {
+        OFFER_TARGETS.clear();
+        ChatClickTokens.clear(OFFER_SCOPE);
+    }
+
+    /** A join prompt's [Gift it to them]: a fresh button and token for {@code joinId}. */
+    static ClickEvent giveClick(String joinId) {
+        long b = remember(BUTTONS, new Button(GIVE, joinId));
+        return click(GIVE, b, ChatClickTokens.mint(GIFT_SCOPE, b, TOKEN_TTL_MS));
+    }
+
+    static ClickEvent click(String step, long b, String token) {
+        return ChatClick.event(CLICK_ACTION, step, Long.toString(b), token);
+    }
+
+    /** {@code value} under a new button number, the oldest dropped past {@link #CAP}. */
+    private static <V> long remember(Map<Long, V> map, V value) {
+        long b = nextButton++;
+        map.put(b, value);
+        while (map.size() > CAP) map.remove(map.keySet().iterator().next());
+        return b;
     }
 
     private static int give(String joinId) {
@@ -238,13 +350,34 @@ public final class LiveGiftClient {
     static Component offerAllButton() {
         return Component.literal("[").append(Component.translatable(OFFER_KEY + "button")).append("]")
             .withStyle(s -> s.withColor(ChatFormatting.GOLD).withBold(true)
-                .withClickEvent(ChatClick.event(CLICK_ACTION, "offer-all", "all"))
+                .withClickEvent(offerClick(OFFER_ALL, ALL))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(OFFER_KEY + "all_tip"))));
     }
 
     /** A gold {@code [Offer]} button for {@code name} ({@link OfferEyeCommand}'s list). */
     static Component offerButton(String name) {
-        return button(OFFER_KEY + "button", ChatClick.event(CLICK_ACTION, "offer", name), ChatFormatting.GOLD, true);
+        return button(OFFER_KEY + "button", offerClick(OFFER, name), ChatFormatting.GOLD, true);
+    }
+
+    /** A list button's click: a fresh button and token for {@code target} (a name, or {@link #ALL}). */
+    static ClickEvent offerClick(String step, String target) {
+        long b = nextButton++;
+        OFFER_TARGETS.put(b, target);
+        // A list is at most MAX_GIFT_VIEWERS + 1 lines and startOfferList clears the last; this only guards a caller that forgot.
+        while (OFFER_TARGETS.size() > CAP) OFFER_TARGETS.remove(OFFER_TARGETS.keySet().iterator().next());
+        return click(step, b, ChatClickTokens.mint(OFFER_SCOPE, b, TOKEN_TTL_MS));
+    }
+
+    /** Test seam: what {@code /offereye} list button {@code b} offers to, or null. */
+    @Nullable
+    static String offerTarget(long b) {
+        return OFFER_TARGETS.get(b);
+    }
+
+    /** Test seam: the join or gift button {@code b} acts on, or null. */
+    @Nullable
+    static Button buttonFor(long b) {
+        return BUTTONS.get(b);
     }
 
     private static int answer(String giftId, boolean accept) {

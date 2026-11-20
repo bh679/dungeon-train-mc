@@ -401,6 +401,15 @@ logoFile="logo.png"
     ordering="NONE"
     side="BOTH"
 
+# MC Java Safety Check — the Java4Shell warning card (client) and log line (server). jarJar'd inside
+# this jar; `optional` so DT still loads without it (compat/MCJavaSafetyCheckBridge does nothing then).
+[[dependencies.${mod_id}]]
+    modId="mcjavasafetycheck"
+    type="optional"
+    versionRange="[${mcjavasafetycheck_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="dpibypassdetect"
     type="optional"
@@ -574,3 +583,10 @@ logoFile="logo.png"
 # wind (client/wind/WindVisuals). @Pseudo, so DT has no compile dependency on Windy.
 [[mixins]]
     config="${mod_id}.windy.mixins.json"
+
+# Stream-muted music mods (Show the Lyrics, Dango Music, Concerto: ApprovedModList#streamMuted). Their lyrics
+# are drawn into the frame Live Eye captures, so dungeontrain.musicmods.mixins.json (gated by
+# MusicModsMixinPlugin: each mixin only when its mod is installed) skips them while this client streams.
+# @Pseudo, so DT has no compile dependency on any of them.
+[[mixins]]
+    config="${mod_id}.musicmods.mixins.json"

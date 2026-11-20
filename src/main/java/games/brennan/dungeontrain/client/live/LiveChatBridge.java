@@ -276,6 +276,7 @@ public final class LiveChatBridge {
         lastPollMs = 0;
         room = LiveChatRoom.roomOf(pick);
         signatures.clear();
+        LiveBotReport.onJoined(); // Discord-linked readers get a report flag on Kick and Twitch lines
         Component connectedLine = Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY, ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVE_CHAT)).withStyle(ChatFormatting.GRAY);
         // [Report streamer] rides on the last line: the room line when there is one.
@@ -302,6 +303,7 @@ public final class LiveChatBridge {
         printed.clear();
         ChatReactionTracker.forgetLive();
         LiveChatFlip.forget();
+        LiveBotReport.forget();
         if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
         channelLink.reset();
         if (joinedViaTv) {
@@ -361,6 +363,7 @@ public final class LiveChatBridge {
         printed.clear();
         ChatReactionTracker.forgetLive();
         LiveChatFlip.forget();
+        LiveBotReport.forget();
         LiveChatTranslatedPill.reset();
     }
 
@@ -392,6 +395,8 @@ public final class LiveChatBridge {
             printed.clear();
             ChatReactionTracker.forgetLive();
             LiveChatFlip.forget();
+            LiveBotReport.forget();
+        LiveBotReport.forget();
             if (joinedViaTv) join(mc); // the restart forgot this viewer was in the room
             if (LiveRelayRestart.inWindow(System.currentTimeMillis())) {
                 // An announced restart: the new ring holds only what was said since the boot (the "back"
@@ -594,6 +599,11 @@ public final class LiveChatBridge {
         chat.addMessage(Component.translatable(LiveChatTranslations.ON_KEY,
             LiveChatTranslations.langName(lang == null ? "en_us" : lang),
             LiveOptionsCommand.pathLink(LiveChatTranslations.PATH_KEY, ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION)).withStyle(ChatFormatting.GRAY));
+    }
+
+    /** The relay this client reads the chat from right now (a report goes where its line came from). */
+    static String currentBase() {
+        return base(LiveStreamController.get().streaming());
     }
 
     static String base(boolean streaming) {

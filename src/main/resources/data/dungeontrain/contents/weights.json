@@ -1,5 +1,9 @@
 {
   "armor": 1,
+  "bed2": {
+    "weight": 1,
+    "name": "crib"
+  },
   "bedroom": {
     "weight": 1,
     "optIn": true
@@ -95,6 +99,31 @@
   "enemies_odd": {
     "weight": 9,
     "name": "Odd ones"
+  },
+  "enemies_outside": {
+    "weight": 1,
+    "minLevel": 5,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "name": "Enemies Outside",
+    "optIn": true
   },
   "enemies_path": {
     "weight": 1,
@@ -192,6 +221,23 @@
   "piglin2": {
     "weight": 1,
     "name": "zombiepigmen"
+  },
+  "pistonwall": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ]
   },
   "portal": 0,
   "portal_short": 0,
