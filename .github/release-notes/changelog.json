@@ -37567,6 +37567,88 @@
       "released": true,
       "released_in": "v0.1911.0",
       "released_at": "2026-11-20T00:00:50Z"
+    },
+    {
+      "id": "ain-0-64-0-names",
+      "version": "0.1915.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot"
+      ],
+      "title": "Longer, smoother made-up names",
+      "summary": "Made-up names on gear and creatures sometimes gain a second ending, and very rarely a third, with a vowel now and then to join them so they read easily. There are a few new endings too.",
+      "highlights": [],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1916.0",
+      "released_at": "2026-11-20T05:03:48Z"
+    },
+    {
+      "id": "generosity-totem-forgiving",
+      "version": "0.1912.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "balance"
+      ],
+      "title": "Totem of Generosity is more forgiving",
+      "summary": "The Totem of Generosity gives you more time to give a gift (90 seconds instead of 60), and hurts half as often once you are late.",
+      "highlights": [],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1916.0",
+      "released_at": "2026-11-20T05:03:48Z"
+    },
+    {
+      "id": "java-safety-check-own-mod",
+      "version": "0.1912.0",
+      "type": "refactor",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Java safety check is now its own mod",
+      "summary": "The Java safety warning now comes from MC Java Safety Check, a small mod bundled with Dungeon Train that any modpack can use. It looks and works the same, and if you chose \"Don't show me again\" it stays hidden.",
+      "highlights": [],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1916.0",
+      "released_at": "2026-11-20T05:03:48Z"
+    },
+    {
+      "id": "toad-like-writes",
+      "version": "0.1916.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "books"
+      ],
+      "title": "New letters: a small writer",
+      "summary": "A new set of letters waits on the train's lecterns, written by a very small, very brave new author who has only just learned to write.",
+      "highlights": [],
+      "pr": 2766,
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1916.0",
+      "released_at": "2026-11-20T05:03:48Z"
+    },
+    {
+      "id": "totem-tooltips-name-level",
+      "version": "0.1914.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Totem tooltips show their level",
+      "summary": "The Totem of Rage and Totem of Generosity tooltips now show the level and timer you will get for the stack you are holding, and the level they leave you at after they save you.",
+      "highlights": [],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1916.0",
+      "released_at": "2026-11-20T05:03:48Z"
     }
   ]
 }
