@@ -1039,12 +1039,24 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
         if (targets.isEmpty()) targets = Set.of(localPos);
 
+        // Rot Free: each cell owns its rows' rotation and flip. An orientation edit stays on this
+        // cell; any other edit still reaches the whole group, but every sibling keeps its own
+        // orientation on the rows it already had (VariantRowOrientation).
+        boolean ownOrientation = lockId > 0 && plot.rotationFreeAt(localPos);
+        boolean orientationEdit = packet.op() == BlockVariantEditPacket.Op.SET_ROTATION_MODE
+            || packet.op() == BlockVariantEditPacket.Op.SET_ROTATION_DIRS
+            || packet.op() == BlockVariantEditPacket.Op.SET_HALF_MODE;
+        if (ownOrientation && orientationEdit) targets = Set.of(localPos);
+
         for (BlockPos target : targets) {
             if (dropCell) {
                 plot.remove(target);
                 VariantEditorPreviewState.clearPinned(plot.key(), target);
             } else if (mutated.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-                plot.put(target, mutated);
+                List<VariantState> rows = ownOrientation && !target.equals(localPos)
+                    ? VariantRowOrientation.keepOwnOrientation(plot.statesAt(target), mutated)
+                    : mutated;
+                plot.put(target, rows);
             }
         }
         try {
@@ -1210,7 +1222,14 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         int lockId = plot.lockIdAt(localPos);
         if (lockId <= 0 || plot.statesAt(localPos) == null) return;
         boolean next = !plot.rotationFreeAt(localPos);
+        // Back to Rot Lock: while free, the cells may each have taken their own rotation settings.
+        // Rot Lock means one rotation for the group, so every cell takes this cell's rows.
+        List<VariantState> rows = plot.statesAt(localPos);
         for (BlockPos member : plot.positionsWithLockId(lockId)) {
+            if (!next && !member.equals(localPos) && rows != null
+                    && rows.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
+                plot.put(member, rows);
+            }
             plot.setRotationFree(member, next);
         }
         try {
