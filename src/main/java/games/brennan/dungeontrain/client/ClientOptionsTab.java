@@ -361,6 +361,19 @@ public enum ClientOptionsTab {
         return out;
     }
 
+    /** The smallest share of the Stream tab a pinned preview keeps, and its floor in GUI pixels. */
+    static final float PINNED_PREVIEW_SHARE = 0.4f;
+    static final int PINNED_PREVIEW_MIN = 60;
+
+    /**
+     * The Stream list's height with the preview pinned below it: its rows' height when they fit and still
+     * leave the preview its share of {@code tabH}, else what the preview leaves (the rows then scroll).
+     */
+    public static int pinnedListHeight(int tabH, int rowsH) {
+        int previewMin = Math.max(Math.round(tabH * PINNED_PREVIEW_SHARE), PINNED_PREVIEW_MIN);
+        return Math.max(0, Math.min(rowsH, tabH - previewMin));
+    }
+
     /** As a release build sees them: no dev-only rows. */
     public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
                                     boolean trainSettingsWritable) {

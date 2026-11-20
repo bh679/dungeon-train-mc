@@ -504,4 +504,13 @@ final class ClientOptionsTabTest {
             assertFalse(hint.endsWith("."), row + ": a hint is a fragment, not a sentence: \"" + hint + "\"");
         }
     }
+
+    @Test
+    @DisplayName("Pinned preview: rows that fit keep their height; too many leave the preview 40% and scroll")
+    void pinnedListHeight_keepsThePreviewItsShare() {
+        assertEquals(300, ClientOptionsTab.pinnedListHeight(800, 300), "short list: the preview gets the rest");
+        assertEquals(480, ClientOptionsTab.pinnedListHeight(800, 830), "long list: 40% of 800 stays the preview's");
+        assertEquals(40, ClientOptionsTab.pinnedListHeight(100, 830), "tiny tab: the preview keeps its 60 px floor");
+        assertEquals(0, ClientOptionsTab.pinnedListHeight(50, 830), "never negative");
+    }
 }
