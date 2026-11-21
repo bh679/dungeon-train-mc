@@ -4584,6 +4584,7 @@
       "item.dungeontrain.live_cassette_2.tooltip"
     ],
     "adventureitemnames": [
+      "screen.adventureitemnames.spawn_chances.mob_hostile",
       "screen.adventureitemnames.action.delete",
       "screen.adventureitemnames.action.reset"
     ],

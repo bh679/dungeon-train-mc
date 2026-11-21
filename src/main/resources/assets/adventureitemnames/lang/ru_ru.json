@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Название пассивных мобов",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Название жителей",
   "screen.adventureitemnames.spawn_chances.mob_player": "Название мобов-игроков",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Название враждебных мобов",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Описание созданных предметов",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Описание купленных предметов",
   "screen.adventureitemnames.spawn_chances.trade_item": "Название товаров жителей",
