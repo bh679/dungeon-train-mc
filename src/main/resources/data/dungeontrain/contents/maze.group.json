@@ -119,6 +119,10 @@
     {
       "id": "maze9",
       "weight": 2
+    },
+    {
+      "id": "maze10",
+      "weight": 1
     }
   ]
 }
