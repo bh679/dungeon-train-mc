@@ -803,11 +803,22 @@ public final class SharedPhotos {
 
     /** Images from the relay at {@code base}, over {@link #HTTP}. */
     static PoolSelection.ImageFetcher imageFetcher(String base) {
-        return id -> {
-            HttpRequest image = HttpRequest.newBuilder(URI.create(base + "/photos/" + id + "/image"))
-                    .timeout(REQUEST_TIMEOUT).GET().build();
-            HttpResponse<byte[]> bytes = HTTP.send(image, HttpResponse.BodyHandlers.ofByteArray());
-            return bytes.statusCode() == 200 ? Optional.of(bytes.body()) : Optional.empty();
+        return new PoolSelection.ImageFetcher() {
+            @Override
+            public Optional<byte[]> fetch(int id) throws Exception {
+                return fetch(id, "");
+            }
+
+            @Override
+            public Optional<byte[]> fetch(PoolSelection.Row row) throws Exception {
+                return fetch(row.id(), row.image());
+            }
+
+            // The relay's CDN copy when the pool names one (keeps the bytes off the relay box), else the relay.
+            private Optional<byte[]> fetch(int id, String cdnUrl) throws Exception {
+                HttpResponse<byte[]> bytes = PhotoCdn.send(HTTP, cdnUrl, base + "/photos/" + id + "/image", REQUEST_TIMEOUT);
+                return bytes.statusCode() == 200 ? Optional.of(bytes.body()) : Optional.empty();
+            }
         };
     }
 

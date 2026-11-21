@@ -458,9 +458,9 @@ public final class PlayerAlbums {
         for (AlbumSavePayload.Page page : pages) {
             if (page.hash() == null || pngs.containsKey(page.hash())) continue;
             try {
-                HttpRequest image = HttpRequest.newBuilder(URI.create(base + IMAGE_PATH + "/" + page.hash()))
-                        .timeout(REQUEST_TIMEOUT).GET().build();
-                HttpResponse<byte[]> bytes = HTTP.send(image, HttpResponse.BodyHandlers.ofByteArray());
+                // The relay's CDN copy when the album names one, else the relay's own route.
+                HttpResponse<byte[]> bytes = games.brennan.dungeontrain.compat.photo.PhotoCdn.send(HTTP, page.url(),
+                        base + IMAGE_PATH + "/" + page.hash(), REQUEST_TIMEOUT);
                 if (bytes.statusCode() == 200) pngs.put(page.hash(), bytes.body());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

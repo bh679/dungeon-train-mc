@@ -38,7 +38,17 @@ final class PoolSelection {
 
     /** One photo as the relay's pool lists it, before its image is fetched. */
     record Row(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
-               List<String> advancements) {
+               List<String> advancements, String image) {
+        /** A row with no CDN URL (an older relay, or a picture not mirrored yet). */
+        Row(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
+            List<String> advancements) {
+            this(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements, "");
+        }
+
+        Row {
+            if (image == null) image = "";
+        }
+
         /** A photographer's own tributed photo, returned to them. */
         boolean owed() { return !tributedBy.isBlank(); }
 
@@ -71,6 +81,11 @@ final class PoolSelection {
     @FunctionalInterface
     interface ImageFetcher {
         Optional<byte[]> fetch(int id) throws Exception;
+
+        /** {@code row}'s image: by default by id; the relay fetcher also tries the row's CDN URL ({@link PhotoCdn}). */
+        default Optional<byte[]> fetch(Row row) throws Exception {
+            return fetch(row.id());
+        }
     }
 
     // ---- parsing --------------------------------------------------------------
@@ -93,7 +108,9 @@ final class PoolSelection {
                     integer(row, "maxViews", SharedPhotos.VIEWS_MAX),
                     // What the photo earned its photographer, shown under it in the viewer (older relays send none).
                     PhotoAdvancementBadges.idsFrom(row.has("advancements") && row.get("advancements").isJsonArray()
-                            ? row.getAsJsonArray("advancements") : null)));
+                            ? row.getAsJsonArray("advancements") : null),
+                    // The relay's CDN copy of the image (relay v0.373+), or "".
+                    PhotoCdn.urlOf(row, "image")));
         }
         return List.copyOf(rows);
     }
@@ -149,7 +166,7 @@ final class PoolSelection {
             try {
                 PhotoPngCodec.Decoded image = heldImages.get(row.id());
                 if (image == null) {
-                    Optional<byte[]> bytes = fetcher.fetch(row.id());
+                    Optional<byte[]> bytes = fetcher.fetch(row);
                     if (bytes.isEmpty()) continue;
                     image = PhotoPngCodec.decode(bytes.get());
                 }
