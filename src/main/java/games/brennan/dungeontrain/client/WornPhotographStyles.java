@@ -12,9 +12,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -32,7 +29,6 @@ import java.util.stream.Stream;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class WornPhotographStyles {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
 
     private WornPhotographStyles() {}
@@ -50,10 +46,7 @@ public final class WornPhotographStyles {
 
     /** Hands every worn type to {@code registrar} the first time only; false when already done. */
     static boolean registerOnce(AtomicBoolean done, Consumer<PhotographType> registrar) {
-        if (!done.compareAndSet(false, true)) {
-            LOGGER.info("[DungeonTrain] Worn photograph styles already registered; client setup ran again");
-            return false;
-        }
+        if (!SetupOnce.first(done, "Worn photograph styles")) return false;
         types().forEach(registrar);
         return true;
     }

@@ -199,6 +199,8 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.ExposureClientInitOnceMixin",
+    "client.ExposurePolaroidClientInitOnceMixin",
     "client.MerchantScreenExtraCostsMixin",
     "client.SlotPositionAccessor",
     "client.IntegratedServerPublishGameModeMixin",
