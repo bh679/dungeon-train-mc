@@ -249,7 +249,8 @@ public final class WorkbenchEditor {
             PortalClear.clearBoxRelit(overworld, WorkbenchPlacement.boxAt(frameOrigin, frameSize), PortalCorridorMask.NONE);
             // The bedrock cage goes round the frame — outside the shell, as in the Contents editor.
             EditorPlotCage.setOutline(overworld, frameOrigin, frameSize, EditorPlotCage.OUTLINE_BLOCK);
-            if (shell.isPresent()) {
+            // Frame Off (X menu quick toggle) leaves the shell ring as the air the clear left.
+            if (shell.isPresent() && EditorQuickToggles.frameOn()) {
                 CarriagePlacer.placeAt(overworld, origin.offset(-1, -1, -1), shell.get(), dims);
             }
             if (blocks.isPresent()) {
@@ -277,6 +278,39 @@ public final class WorkbenchEditor {
             return Optional.empty();
         }
         return CarriageVariantRegistry.find(PoolScratch.defaultShellId(PoolTier.of(contentsSize)));
+    }
+
+    /**
+     * Bring every standing staged contents build in line with the Frame setting just chosen: Off
+     * clears its shell ring, On stamps the shell back and puts the build's interior back over it as it
+     * stands, unsaved edits included.
+     */
+    static void applyFrame(ServerLevel overworld) {
+        if (!EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH)) return;
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        for (WorkbenchStagedBuild build : WorkbenchStagingStore.list()) {
+            BlockPos origin = plotOrigin(overworld, build.stagedId());
+            Optional<CarriageVariant> shell = shellFor(build, dims);
+            if (origin == null || shell.isEmpty()) continue;
+            BlockPos shellOrigin = origin.offset(-1, -1, -1);
+            Vec3i size = build.size();
+            if (!EditorQuickToggles.frameOn()) {
+                EditorQuickToggles.clearRing(overworld, shellOrigin, size.offset(2, 2, 2));
+                continue;
+            }
+            net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate kept =
+                new net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate();
+            kept.fillFromWorld(overworld, origin, size, /*includeEntities*/ false, null);
+            for (BlockPos pos : BlockPos.betweenClosed(origin,
+                    origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1))) {
+                net.minecraft.world.Clearable.tryClear(overworld.getBlockEntity(pos));
+            }
+            CarriagePlacer.placeAt(overworld, shellOrigin, shell.get(), dims);
+            kept.placeInWorld(overworld, origin, origin,
+                new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings()
+                    .setIgnoreEntities(true),
+                overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS);
+        }
     }
 
     /**

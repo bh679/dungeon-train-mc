@@ -466,6 +466,10 @@ public final class EditorMenuScreen implements MenuScreen {
         // why it is a server round-trip rather than a client preference like Plot Lighting.
         out.add(observersRow());
 
+        // Frame — whether Contents plots stand inside their carriage shell. World state like
+        // Observers; also one of the X menu's quick toggles (the ▼ beside Settings).
+        out.add(frameRow());
+
         // Redstone / TNT — Off cuts every redstone signal in an editor plot / makes TNT fizzle
         // there, so a contraption can be wired and TNT placed without either going off. World state
         // like Observers, so a server round-trip.
@@ -639,6 +643,16 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Label(MenuLang.t("editor.observers")),
             new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor observers on", on),
             new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor observers off", !on),
+            0.46, 0.73);
+    }
+
+    /** Frame | On | Off — same shape as Observers. */
+    public static CommandMenuEntry frameRow() {
+        boolean on = games.brennan.dungeontrain.client.EditorQuickTogglesState.frameOn();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.frame")),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor frame on", on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor frame off", !on),
             0.46, 0.73);
     }
 

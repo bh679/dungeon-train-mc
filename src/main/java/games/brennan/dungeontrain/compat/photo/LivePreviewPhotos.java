@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.compat.photo;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.compat.photo.SharedPhotos.PoolPhoto;
+import games.brennan.dungeontrain.compat.photo.PoolSelection.PoolPhoto;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

@@ -90,6 +90,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
     private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
+    private static final String TAG_EDITOR_MIRROR_ON = "editorMirrorOn";
+    private static final String TAG_EDITOR_FRAME_ON = "editorFrameOn";
     private static final String TAG_EDITOR_REDSTONE_ON = "editorRedstoneOn";
     private static final String TAG_EDITOR_TNT_ON = "editorTntOn";
     private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
@@ -360,6 +362,10 @@ public final class DungeonTrainWorldData extends SavedData {
     private boolean portalTestReseed = false;
     /** Editor Settings → Observers. Off mutes every observer inside an editor plot; see {@code EditorObservers}. */
     private boolean editorObserversOn = true;
+    /** X menu quick toggle → Mirror. Off pauses every template's live mirroring; see {@code EditorQuickToggles}. */
+    private boolean editorMirrorOn = true;
+    /** X menu quick toggle / Settings → Frame. Off clears the carriage shell round Contents plots. */
+    private boolean editorFrameOn = true;
     /** Editor Settings → Redstone. Off cuts every redstone signal inside an editor plot; see {@code EditorRedstone}. */
     private boolean editorRedstoneOn = true;
     /** Editor Settings → TNT. Off stops TNT exploding inside an editor plot; see {@code EditorTnt}. */
@@ -705,6 +711,12 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_OBSERVERS_ON)) {
             data.editorObserversOn = tag.getBoolean(TAG_EDITOR_OBSERVERS_ON);
         }
+        if (tag.contains(TAG_EDITOR_MIRROR_ON)) {
+            data.editorMirrorOn = tag.getBoolean(TAG_EDITOR_MIRROR_ON);
+        }
+        if (tag.contains(TAG_EDITOR_FRAME_ON)) {
+            data.editorFrameOn = tag.getBoolean(TAG_EDITOR_FRAME_ON);
+        }
         if (tag.contains(TAG_EDITOR_REDSTONE_ON)) {
             data.editorRedstoneOn = tag.getBoolean(TAG_EDITOR_REDSTONE_ON);
         }
@@ -842,6 +854,8 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
         if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
+        if (!editorMirrorOn) tag.putBoolean(TAG_EDITOR_MIRROR_ON, false);
+        if (!editorFrameOn) tag.putBoolean(TAG_EDITOR_FRAME_ON, false);
         if (!editorRedstoneOn) tag.putBoolean(TAG_EDITOR_REDSTONE_ON, false);
         if (!editorTntOn) tag.putBoolean(TAG_EDITOR_TNT_ON, false);
         if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
@@ -868,6 +882,30 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorObserversOn(boolean on) {
         if (editorObserversOn == on) return;
         editorObserversOn = on;
+        setDirty();
+    }
+
+    /** True unless the X menu's Mirror quick toggle is Off: live mirroring runs as each template's axes say. */
+    public boolean isEditorMirrorOn() {
+        return editorMirrorOn;
+    }
+
+    /** X menu → Mirror On / Off. Go through {@code EditorQuickToggles.setMirror}, which tells every client. */
+    public void setEditorMirrorOn(boolean on) {
+        if (editorMirrorOn == on) return;
+        editorMirrorOn = on;
+        setDirty();
+    }
+
+    /** True unless the Frame setting is Off: Contents plots stand inside their carriage shell. */
+    public boolean isEditorFrameOn() {
+        return editorFrameOn;
+    }
+
+    /** X menu / Settings → Frame On / Off. Go through {@code EditorQuickToggles.setFrame}, which restamps the plots. */
+    public void setEditorFrameOn(boolean on) {
+        if (editorFrameOn == on) return;
+        editorFrameOn = on;
         setDirty();
     }
 

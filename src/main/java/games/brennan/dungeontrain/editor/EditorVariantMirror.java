@@ -65,6 +65,7 @@ public final class EditorVariantMirror {
                                       @Nullable List<VariantState> updatedOrNull, boolean retarget) {
         boolean mx = plot.mirrorX(), my = plot.mirrorY(), mz = plot.mirrorZ();
         if (!plot.mirrorVariants() || (!mx && !my && !mz)) return;
+        if (!EditorQuickToggles.mirrorOn()) return;
         if (!plot.inBounds(localEdited)) return;
 
         BlockPos origin = plot.origin();

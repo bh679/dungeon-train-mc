@@ -45,6 +45,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -69,6 +70,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import games.brennan.dungeontrain.compat.photo.PoolSelection.PoolPhoto;
 
 /**
  * Community photos — the picture counterpart of shared books. A disposable-camera print is uploaded
@@ -139,6 +142,12 @@ public final class SharedPhotos {
     private static final int PIXEL_WAIT_TICKS = 100;
     private static final int REFRESH_PERIOD_TICKS = 600;
     private static final int FIRST_REFRESH_DELAY_TICKS = 100;
+    /** A join asks for a pool the relay has checked against the newcomer, this soon. */
+    private static final int JOIN_REFRESH_DELAY_TICKS = 20;
+    /** A refresh that falls due while one is still in flight tries again this soon. */
+    private static final int BUSY_RETRY_TICKS = 20;
+    /** An ordinary find held longer than this is dropped, unseen: its views and Tributes have gone stale. */
+    static final long HELD_MAX_AGE_MS = 60 * 60 * 1000L;
     static final int POOL_FETCH_LIMIT = 10;
     private static final int POOL_MAX = 40;
     /** How many handed-out or opened photo ids this server remembers, so it never asks for them again. */
@@ -158,10 +167,6 @@ public final class SharedPhotos {
     private record PendingMobPost(UUID playerId, String photographer, String exposureId, int ticksLeft) {
         PendingMobPost tick() { return new PendingMobPost(playerId, photographer, exposureId, ticksLeft - 1); }
     }
-
-    /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
-    record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
-                             List<String> advancements, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
@@ -710,8 +715,34 @@ public final class SharedPhotos {
         tickUploads(server);
         tickMobPosts(server);
         if (--ticksUntilRefresh > 0) return;
+        // Still waiting on the last answer: try again shortly rather than a whole period later, so a
+        // join's refresh is never lost behind one already in flight.
+        if (fetchInFlight.get()) {
+            ticksUntilRefresh = BUSY_RETRY_TICKS;
+            return;
+        }
         ticksUntilRefresh = REFRESH_PERIOD_TICKS;
+        // Nobody here to find a photo: nothing to fetch until someone joins.
+        if (server.getPlayerList().getPlayerCount() == 0) return;
         if (SharedBookGate.canDiscover()) refreshPool(server);
+    }
+
+    /**
+     * A newcomer: drop what the relay never checked against them (they may have opened it in another
+     * world), and ask for a pool that it has, shortly.
+     */
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.getServer() == null) return;
+        Set<String> online = new HashSet<>(onlineUuids(player.getServer()));
+        online.add(bare(player.getUUID()));
+        pool = PoolSelection.prune(pool, System.currentTimeMillis(), HELD_MAX_AGE_MS, online, spentIds());
+        ticksUntilRefresh = Math.min(ticksUntilRefresh, JOIN_REFRESH_DELAY_TICKS);
+    }
+
+    private static Set<String> onlineUuids(MinecraftServer server) {
+        return server.getPlayerList().getPlayers().stream().map(p -> bare(p.getUUID()))
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
     }
 
     @SubscribeEvent
@@ -726,14 +757,17 @@ public final class SharedPhotos {
 
     private static void refreshPool(MinecraftServer server) {
         if (!fetchInFlight.compareAndSet(false, true)) return;
-        List<PoolPhoto> held = pool;
+        long now = System.currentTimeMillis();
+        Set<String> online = onlineUuids(server);
+        List<PoolPhoto> held = PoolSelection.prune(pool, now, HELD_MAX_AGE_MS, online, spentIds());
+        pool = held;
         String base = DungeonTrain.relayBaseUrl();
         StringBuilder url = new StringBuilder(base).append("/photos/pool?limit=").append(POOL_FETCH_LIMIT);
         // Who is here, so the relay can skip what they have already opened and lead with their own tributed photos.
-        String uuids = server.getPlayerList().getPlayers().stream().map(p -> bare(p.getUUID())).collect(Collectors.joining(","));
-        if (!uuids.isEmpty()) url.append("&uuids=").append(uuids);
+        if (!online.isEmpty()) url.append("&uuids=").append(String.join(",", online));
         // The Tribute prices they still need a photo at, so the relay can hold those photos to a floor.
-        String needs = PhotoTierNeed.needsOf(server);
+        List<Integer> needCosts = PhotoTierNeed.costsOf(server);
+        String needs = PhotoTierNeed.param(needCosts);
         if (!needs.isEmpty()) url.append("&needs=").append(needs);
         String exclude = Stream.concat(held.stream().map(PoolPhoto::id), spentIds().stream())
                 .map(String::valueOf).collect(Collectors.joining(","));
@@ -741,59 +775,46 @@ public final class SharedPhotos {
         HttpRequest request = HttpRequest.newBuilder(URI.create(url.toString()))
                 .timeout(REQUEST_TIMEOUT).header("Accept", "application/json").GET().build();
         HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApplyAsync(response -> fetchNew(base, response, total -> relayTotal = total))
+                .thenApplyAsync(response -> {
+                    List<PoolSelection.Row> rows = PoolSelection.parseRows(okBody(response), total -> relayTotal = total);
+                    // Only what there is room for, plus what must not be lost: the rest stay on the relay.
+                    List<PoolSelection.Row> chosen = PoolSelection.toDownload(rows, held, POOL_MAX, needCosts);
+                    return PoolSelection.download(chosen, held, imageFetcher(base), now, online);
+                })
                 .whenComplete((fetched, error) -> {
                     fetchInFlight.set(false);
                     if (error != null) {
                         LOGGER.debug("[DungeonTrain] Shared-photo pool refresh failed: {}", error.toString());
                         return;
                     }
-                    server.execute(() -> pool = merge(pool, fetched, spentIds()));
+                    server.execute(() -> {
+                        // Someone may have joined while this was in flight: what wasn't checked against them goes.
+                        List<PoolPhoto> vetted = PoolSelection.prune(fetched, System.currentTimeMillis(),
+                                HELD_MAX_AGE_MS, onlineUuids(server), spentIds());
+                        pool = PoolSelection.merge(pool, vetted, spentIds(), POOL_MAX, needCosts);
+                    });
                 });
+    }
+
+    private static String okBody(HttpResponse<String> response) {
+        if (response.statusCode() != 200) throw new IllegalStateException("pool answered " + response.statusCode());
+        return response.body();
+    }
+
+    /** Images from the relay at {@code base}, over {@link #HTTP}. */
+    static PoolSelection.ImageFetcher imageFetcher(String base) {
+        return id -> {
+            HttpRequest image = HttpRequest.newBuilder(URI.create(base + "/photos/" + id + "/image"))
+                    .timeout(REQUEST_TIMEOUT).GET().build();
+            HttpResponse<byte[]> bytes = HTTP.send(image, HttpResponse.BodyHandlers.ofByteArray());
+            return bytes.statusCode() == 200 ? Optional.of(bytes.body()) : Optional.empty();
+        };
     }
 
     /** Off-thread: download and decode every photo in the response; {@code onTotal} hears the pool's size. */
     static List<PoolPhoto> fetchNew(String base, HttpResponse<String> response, IntConsumer onTotal) {
-        if (response.statusCode() != 200) throw new IllegalStateException("pool answered " + response.statusCode());
-        JsonObject body = JsonParser.parseString(response.body()).getAsJsonObject();
-        if (body.has("total")) onTotal.accept(body.get("total").getAsInt());
-        JsonArray photos = body.getAsJsonArray("photos");
-        List<PoolPhoto> fetched = new ArrayList<>();
-        for (int i = 0; photos != null && i < photos.size(); i++) {
-            JsonObject row = photos.get(i).getAsJsonObject();
-            int id = row.get("id").getAsInt();
-            String author = row.has("author") ? row.get("author").getAsString() : "";
-            String tributedBy = row.has("tributedBy") ? row.get("tributedBy").getAsString() : "";
-            try {
-                HttpRequest image = HttpRequest.newBuilder(URI.create(base + "/photos/" + id + "/image"))
-                        .timeout(REQUEST_TIMEOUT).GET().build();
-                HttpResponse<byte[]> bytes = HTTP.send(image, HttpResponse.BodyHandlers.ofByteArray());
-                if (bytes.statusCode() != 200) continue;
-                int tributes = row.has("tributes") ? row.get("tributes").getAsInt() : 0;
-                int viewsLeft = row.has("viewsLeft") ? row.get("viewsLeft").getAsInt() : VIEWS_MAX;
-                int views = row.has("views") ? row.get("views").getAsInt() : 0;
-                int maxViews = row.has("maxViews") ? row.get("maxViews").getAsInt() : VIEWS_MAX;
-                // What the photo earned its photographer — shown under it in the viewer (older relays send none).
-                List<String> advancements = PhotoAdvancementBadges.idsFrom(
-                        row.has("advancements") && row.get("advancements").isJsonArray() ? row.getAsJsonArray("advancements") : null);
-                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements,
-                        PhotoPngCodec.decode(bytes.body())));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                LOGGER.debug("[DungeonTrain] Shared photo {} could not be fetched: {}", id, e.toString());
-            }
-        }
-        return fetched;
-    }
-
-    /** Newly fetched photos replace a held copy of the same id; spent ids stay out; the oldest give way. */
-    private static List<PoolPhoto> merge(List<PoolPhoto> held, List<PoolPhoto> fetched, List<Integer> spentIds) {
-        Set<Integer> fresh = fetched.stream().map(PoolPhoto::id).collect(Collectors.toSet());
-        List<PoolPhoto> merged = Stream.concat(held.stream().filter(p -> !fresh.contains(p.id())), fetched.stream())
-                .filter(p -> !spentIds.contains(p.id())).toList();
-        return List.copyOf(merged.subList(Math.max(0, merged.size() - POOL_MAX), merged.size()));
+        List<PoolSelection.Row> rows = PoolSelection.parseRows(okBody(response), onTotal);
+        return PoolSelection.download(rows, List.of(), imageFetcher(base), System.currentTimeMillis(), Set.of());
     }
 
     // ---- found photo ----------------------------------------------------------
