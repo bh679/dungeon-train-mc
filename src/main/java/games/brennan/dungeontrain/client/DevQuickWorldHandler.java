@@ -249,6 +249,9 @@ public final class DevQuickWorldHandler {
      */
     private static void applyVisibility() {
         boolean shift = Screen.hasShiftDown();
+        // Holding Shift is asking for the perks square: check again if the answer is due (it is rate
+        // limited, so most frames do nothing). A player who linked Discord here sees it appear.
+        if (shift) games.brennan.dungeontrain.client.perks.PerkTesterStatus.refresh();
         applyVisibility(currentMode(shift), shift);
     }
 

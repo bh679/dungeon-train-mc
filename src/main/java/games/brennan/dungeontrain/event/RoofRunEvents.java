@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.event.RoofRunStreaks.Kind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -11,14 +12,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Awards the "Roof Runner" advancement: travel the length of N carriage
@@ -49,8 +53,9 @@ import java.util.UUID;
  * Per player we track the min and max group-anchor pIdx reached during the
  * current uninterrupted on-roof streak; {@code groups = (max − min) /
  * groupSize}. The streak is "continuous" only if it is touched on consecutive
- * scans ({@link #SCAN_PERIOD_TICKS} apart) — any gap (dropping inside, falling
- * off, changing dimension, disconnecting) restarts it. Transient per-player
+ * scans ({@link #SCAN_PERIOD_TICKS} apart) in the same level — any gap (dropping
+ * inside, falling off, changing dimension, disconnecting, dying, a new world) restarts
+ * it. The bookkeeping lives in {@link RoofRunStreaks}. Transient per-player
  * state only; advancement completion is persisted by vanilla, so nothing here
  * touches {@link games.brennan.dungeontrain.player.PlayerRunState}.
  *
@@ -93,8 +98,8 @@ public final class RoofRunEvents {
     /** World-Y headroom above a group's AABB top kept in the cheap pre-filter (covers jumps). */
     private static final double JUMP_HEADROOM = 3.0;
 
-    /** Per-player in-progress roof run. Presence ⇒ a streak is active. */
-    private static final Map<UUID, Streak> STREAKS = new HashMap<>();
+    /** Per-player in-progress roof runs. Presence ⇒ a streak is active. */
+    private static final RoofRunStreaks STREAKS = new RoofRunStreaks(SCAN_PERIOD_TICKS);
 
     private RoofRunEvents() {}
 
@@ -104,51 +109,57 @@ public final class RoofRunEvents {
         long now = level.getGameTime();
         if (now % SCAN_PERIOD_TICKS != 0) return;
 
+        // Drop streaks for players who have fully disconnected, so the map doesn't leak. Runs before
+        // the empty-train return so it is not skipped while no train is loaded.
+        STREAKS.retainOnly(level.getServer().getPlayerList().getPlayers().stream()
+            .map(ServerPlayer::getUUID).collect(Collectors.toSet()));
+
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (carriages.isEmpty()) return;
 
         for (ServerPlayer player : level.players()) {
             UUID id = player.getUUID();
+            // A dead body, a spectator or a player still waiting to be put on the train is not running
+            // anything: it ends any streak rather than being classified like a runner.
+            if (!player.isAlive() || player.isSpectator() || PlayerJoinEvents.isPlacementPending(id)) {
+                STREAKS.clear(id);
+                continue;
+            }
             RoofStatus status = classify(carriages, player);
-            switch (status.kind()) {
-                case ON_ROOF -> {
-                    int groupSize = Math.max(1, status.groupSize());
-                    Streak s = STREAKS.get(id);
-                    if (s == null || s.lastScan != now - SCAN_PERIOD_TICKS) {
-                        // No prior streak, or a gap broke continuity → start fresh.
-                        s = new Streak(status.anchorPIdx(), now, groupSize);
-                        STREAKS.put(id, s);
-                    } else {
-                        s.min = Math.min(s.min, status.anchorPIdx());
-                        s.max = Math.max(s.max, status.anchorPIdx());
-                        s.lastScan = now;
-                        s.groupSize = groupSize;
-                    }
-                    int groups = (s.max - s.min) / groupSize;
-                    if (groups > 0) {
-                        ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, groups);
-                    }
-                }
-                case ON_TOP_OTHER -> {
-                    // On a pad deck / airborne over the top: keep an existing streak
-                    // alive across the coupling. Also fires the trigger with groups+1
-                    // so that traversing one enclosed group roof (then landing on the
-                    // pad) satisfies threshold=1 without needing to climb a second roof.
-                    Streak s = STREAKS.get(id);
-                    if (s != null && s.lastScan == now - SCAN_PERIOD_TICKS) {
-                        int gs = Math.max(1, s.groupSize);
-                        ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, (s.max - s.min) / gs + 1);
-                        s.lastScan = now;
-                    }
-                }
-                case BELOW_ROOF, OFF -> STREAKS.remove(id);
+            OptionalInt groups = STREAKS.observe(id, level, status.kind(), status.anchorPIdx(),
+                status.groupSize(), now);
+            if (groups.isPresent()) {
+                ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, groups.getAsInt());
             }
         }
+    }
 
-        // Drop streaks for players who have fully disconnected, so the map
-        // doesn't leak. (Dimension changes / off-roof are handled by the
-        // lastScan continuity check above.)
-        STREAKS.keySet().removeIf(uuid -> level.getServer().getPlayerList().getPlayer(uuid) == null);
+    // A run is one life in one place: any of these ends it. Board anew starts a new server in the same
+    // JVM with the same player UUID, so without these a streak from the dying world would carry over.
+
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        STREAKS.clearAll();
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        STREAKS.clear(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        STREAKS.clear(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        STREAKS.clear(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) STREAKS.clear(player.getUUID());
     }
 
     /**
@@ -228,23 +239,6 @@ public final class RoofRunEvents {
         }
         return best;
     }
-
-    /** Mutable per-player streak: min/max group-anchor pIdx + last-touched scan tick. */
-    private static final class Streak {
-        int min;
-        int max;
-        long lastScan;
-        int groupSize;
-
-        Streak(int anchor, long scan, int groupSize) {
-            this.min = anchor;
-            this.max = anchor;
-            this.lastScan = scan;
-            this.groupSize = groupSize;
-        }
-    }
-
-    private enum Kind { OFF, ON_TOP_OTHER, BELOW_ROOF, ON_ROOF }
 
     /** Outcome of classifying a player against one (or all) groups. */
     private record RoofStatus(Kind kind, int anchorPIdx, int groupSize) {
