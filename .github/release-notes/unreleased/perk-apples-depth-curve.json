@@ -1,0 +1,17 @@
+{
+  "id": "perk-apples-depth-curve",
+  "version": "0.1934.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Rarer perk apples ripen with depth",
+  "summary": "The rarer perk apples now turn up gradually the further down the line you ride, rather than all at once. They are scarcer early on and reach their best odds much deeper into a run.",
+  "highlights": [],
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
