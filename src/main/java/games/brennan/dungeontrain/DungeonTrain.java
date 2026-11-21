@@ -614,6 +614,8 @@ public class DungeonTrain {
                             boolean publicPosts = publicPostsStart(picked);
                             consentCardReopened = false;
                             ClientDisplayConfig.setContentMode(picked);
+                            // Kid mode always sends Show my name off; Adult sends the stored choice.
+                            games.brennan.dungeontrain.client.social.WebsiteNameRelay.syncNow();
                             // The switches land here, after the mode, so an untouched switch takes the
                             // start value of the mode actually confirmed. A non-button close lands here
                             // too: the master consent is DENIED then, and every gate also checks that,
