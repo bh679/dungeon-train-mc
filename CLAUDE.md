@@ -135,7 +135,8 @@ python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/ap
 (`client/BotLaunch`). `./gradlew runClient -Pbot` skips both and grants nothing; `-Pbot=grant` also
 grants consent; it is on (no grant) by default from an agent shell, so pass `-Pbot=false` when
 launching a client for Brennan to see those cards. Jars launched outside Gradle:
-`-Ddungeontrain.bot=deny|grant` or env `DUNGEONTRAIN_BOT`. No player-facing trace.
+`-Ddungeontrain.bot=deny|grant` or env `DUNGEONTRAIN_BOT`. Dev builds only (any branch but main):
+release jars ignore it. No player-facing trace.
 
 ### Community item trade values
 

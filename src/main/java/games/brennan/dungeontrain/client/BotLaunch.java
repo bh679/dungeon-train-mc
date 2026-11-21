@@ -20,8 +20,8 @@ import java.util.Locale;
  * answer: Discord Presence's internet-consent card and DT's update card. With the switch on, neither
  * card ever opens; the title screen just stays.
  *
- * <p>Invisible to players by design: no UI, no lang key, no command, no chat line. It is set only at
- * launch, by {@code -Ddungeontrain.bot=<mode>} or env {@code DUNGEONTRAIN_BOT=<mode>}
+ * <p>Invisible to players by design: no UI, no lang key, no command, no chat line, and inert in release
+ * jars ({@link DungeonTrain#isDevBuild()}: any branch but main). It is set only at launch, by {@code -Ddungeontrain.bot=<mode>} or env {@code DUNGEONTRAIN_BOT=<mode>}
  * ({@code ./gradlew runClient -Pbot}, on by default from an agent shell; see build.gradle):</p>
  * <ul>
  *   <li>{@code deny} (or {@code 1}/{@code true}/{@code yes}): skip the cards, record nothing. Consent
@@ -40,7 +40,10 @@ public final class BotLaunch {
 
     enum Mode { OFF, DENY, GRANT }
 
-    private static final Mode MODE = parse(System.getProperty(PROPERTY, System.getenv(ENV)));
+    /** Dev builds only: a release jar (built from main) ignores the switch, so players can't use it. */
+    private static final Mode MODE = DungeonTrain.isDevBuild()
+            ? parse(System.getProperty(PROPERTY, System.getenv(ENV)))
+            : Mode.OFF;
 
     private static boolean consentLogged;
     private static boolean updateLogged;
