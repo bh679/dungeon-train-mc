@@ -1,0 +1,17 @@
+{
+  "id": "build-restore-finds-saved-builds",
+  "version": "0.1942.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "editor",
+    "community"
+  ],
+  "title": "Shared build fix",
+  "summary": "Builds still saved on your computer that went missing from your profile now come back too, not only the ones kept in backups.",
+  "highlights": [],
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
