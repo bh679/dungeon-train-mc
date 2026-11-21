@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Đặt tên sinh vật ôn hòa",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Đặt tên dân làng",
   "screen.adventureitemnames.spawn_chances.mob_player": "Đặt tên sinh vật người chơi",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Đặt tên sinh vật thù địch",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Mô tả vật phẩm chế tạo",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Mô tả vật phẩm đã mua",
   "screen.adventureitemnames.spawn_chances.trade_item": "Đặt tên giao dịch dân làng",

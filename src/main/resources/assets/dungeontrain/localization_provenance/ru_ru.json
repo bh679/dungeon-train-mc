@@ -5286,6 +5286,7 @@
       "screen.adventureitemnames.spawn_chances.title",
       "screen.adventureitemnames.spawn_chances.description_plain",
       "screen.adventureitemnames.spawn_chances.description_enchanted",
+      "screen.adventureitemnames.spawn_chances.mob_hostile",
       "screen.adventureitemnames.spawn_chances.crafted_description",
       "screen.adventureitemnames.spawn_chances.purchased_description",
       "screen.adventureitemnames.spawn_chances.configure_selectors",

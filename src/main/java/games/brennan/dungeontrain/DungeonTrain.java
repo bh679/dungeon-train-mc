@@ -499,8 +499,8 @@ public class DungeonTrain {
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Dungeon Train common setup");
 
-        // Restrict Adventure Item Names' ambient mob naming (villagers + passive
-        // animals) to entities on the train: off-train / vanilla-world mobs are
+        // Restrict Adventure Item Names' ambient mob naming (villagers, passive
+        // animals and the 3% hostile roll, see HostileTrainNameEvents) to entities on the train: off-train / vanilla-world mobs are
         // no longer auto-named while DT is installed. PlayerMob naming is left
         // untouched (it bypasses the gate inside AIN). AIN is always bundled via
         // jarJar, so NamingConfig is always present — no ModList.isLoaded guard
