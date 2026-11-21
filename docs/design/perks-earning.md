@@ -114,11 +114,15 @@ carriage's contents pass, before a fresh shared carriage registers, so it never 
   whole-room carriages have no contents pass), so the real rate is a little under one in five.
 - No loot prefab carries any of them (`CosmicAppleLootTest`).
 - Which apple depends on the drop's Diff-Level (`CosmicAppleDrops.tierFor`, its own seeded roll), so
-  the rarer ones only turn up deeper. At the default 20 carriages per level, Celestial Bites start
-  about 100 carriages in and Violet Cores about 200:
+  the rarer ones only turn up deeper. The chance of each rarer apple follows a curve over Diff-Level
+  (`AppleTierCurve.BITE` / `.CORE`, cubic bezier segments, flat outside their ends): Celestial Bites
+  ease in from level 5 and reach 25% at 100; Violet Cores ease in from 25 and reach 10% at 150. At the
+  default 20 carriages per level, level 100 is about 2,000 carriages in and level 150 about 3,000:
 
   | Diff-Level | Cosmic Apple | Celestial Bite | Violet Core |
   |---|---|---|---|
-  | 1 to 4 | 100% | | |
-  | 5 to 9 | 80% | 20% | |
-  | 10 and up | 65% | 25% | 10% |
+  | 1 to 5 | 100% | | |
+  | 25 | 93.4% | 6.6% | |
+  | 50 | 81.9% | 17.3% | 0.8% |
+  | 100 | 69.8% | 25% | 5.2% |
+  | 150 and up | 65% | 25% | 10% |

@@ -24,8 +24,9 @@ import java.util.List;
 /**
  * A cosmic apple turns up in about one carriage group in {@link #EVERY}: one stack of one, in one chest,
  * barrel or shulker box of that group, never at Diff-Level 0 (the first 40 carriages). Which apple depends on depth
- * ({@link #tierFor}): only Cosmic Apples until Diff-Level {@link #BITE_FROM}, Celestial Bites from there,
- * Violet Cores from {@link #CORE_FROM}. Deterministic per world seed and group, so a regenerated group
+ * ({@link #tierFor}): the chance of a Celestial Bite and of a Violet Core each follow a curve over Diff-Level
+ * ({@link AppleTierCurve#BITE}, {@link AppleTierCurve#CORE}), rising gently to 25% and 10%; the rest are
+ * Cosmic Apples. Deterministic per world seed and group, so a regenerated group
  * rolls the same way the rest of its loot does. Called from {@code TrainAssembler.spawnGroup} right after
  * a carriage's contents pass, before a fresh shared carriage registers (so the apple never counts as an
  * author's edit). Nothing drops until someone has unlocked a perk ({@link #open}).
@@ -36,15 +37,8 @@ public final class CosmicAppleDrops {
 
     /** One group in this many gets an apple. */
     static final int EVERY = 5;
-    /** First Diff-Level that can hold a Celestial Bite. */
-    static final int BITE_FROM = 5;
-    /** First Diff-Level that can hold a Violet Core. */
-    static final int CORE_FROM = 10;
-    /** Chance in 100 of a Celestial Bite from {@link #BITE_FROM}, before {@link #CORE_FROM}. */
-    static final int BITE_SHALLOW = 20;
-    /** Chances in 100 from {@link #CORE_FROM}: Celestial Bite, then Violet Core. */
-    static final int BITE_DEEP = 25;
-    static final int CORE_DEEP = 10;
+    /** The tier roll is out of this many: basis points, so the curves keep two decimals of a per cent. */
+    static final int ROLL_RANGE = 10_000;
     /** Salt so this draw is independent of the portal lottery and the loot rolls. */
     private static final long SALT = 0xC05_41C_DEB_215L;
 
@@ -85,11 +79,22 @@ public final class CosmicAppleDrops {
 
     /** Apple tier for a drop at {@code diffLevel}: 1 Cosmic Apple, 2 Celestial Bite, 3 Violet Core. */
     static int tierFor(long seed, long index, int diffLevel) {
-        if (diffLevel < BITE_FROM) return 1;
-        int roll = (int) Math.floorMod(hash(seed + 3, index), 100L);
-        if (diffLevel < CORE_FROM) return roll < BITE_SHALLOW ? 2 : 1;
-        if (roll < CORE_DEEP) return 3;
-        return roll < CORE_DEEP + BITE_DEEP ? 2 : 1;
+        int core = coreChance(diffLevel);
+        int bite = biteChance(diffLevel);
+        if (core + bite <= 0) return 1;
+        int roll = (int) Math.floorMod(hash(seed + 3, index), (long) ROLL_RANGE);
+        if (roll < core) return 3;
+        return roll < core + bite ? 2 : 1;
+    }
+
+    /** Chance of a Celestial Bite at {@code diffLevel}, in basis points of {@link #ROLL_RANGE}. */
+    static int biteChance(int diffLevel) {
+        return AppleTierCurve.BITE.basisPointsAt(diffLevel);
+    }
+
+    /** Chance of a Violet Core at {@code diffLevel}, in basis points of {@link #ROLL_RANGE}. */
+    static int coreChance(int diffLevel) {
+        return AppleTierCurve.CORE.basisPointsAt(diffLevel);
     }
 
     private static Item appleFor(int tier) {
