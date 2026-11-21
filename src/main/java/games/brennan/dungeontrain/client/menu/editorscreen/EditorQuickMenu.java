@@ -13,9 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The X menu's quick toggles: the list the ▼ beside Settings drops down, one icon row each for
+ * The X menu's quick toggles: the row of icons the ▼ beside Settings drops down, one each for
  * <b>Mirror</b> (pause every template's live mirroring), <b>Menus</b> (the world-space editor
- * panels) and <b>Frame</b> (the carriage shell round Contents plots). Green icon = on, grey = off.
+ * panels) and <b>Frame</b> (the carriage shell round Contents plots). Green icon = on, grey = off;
+ * no text, the hover tooltip names each one and its state.
  *
  * <p>Mirror and Frame are world settings and Menus is the player's Editor Menus mode; each row sends
  * the same command its Settings row does, so the server stays the one owner and the next packet
@@ -43,16 +44,18 @@ final class EditorQuickMenu {
         }
     }
 
-    /** A laid-out row. */
+    /** A laid-out icon cell. */
     record Row(Item item, int x, int y, int w) {
         boolean contains(double px, double py) {
             return px >= x && px < x + w && py >= y && py < y + ROW_H;
         }
     }
 
-    static final int ROW_H = 20;
+    /** One icon cell: square, the 18 px icon box plus a pixel of air round it. */
+    static final int CELL = 20;
+    static final int ROW_H = CELL;
     static final int PAD = 3;
-    static final int W = 104;
+    static final int W = Item.values().length * CELL + PAD * 2;
     static final int ICON_BOX = 18;
     static final int ON_FILL = 0xFF55C855;
     static final int OFF_FILL = 0xFF8B8B8B;
@@ -74,23 +77,29 @@ final class EditorQuickMenu {
         open = false;
     }
 
-    /** The rows hung under {@code arrow}, right edge flush with its right edge. */
+    /** The icon cells hung under {@code arrow}, left to right, the panel's right edge flush with the arrow's. */
     static List<Row> layout(EditorTabBar.Tab arrow, InventoryEditorLayout.Rect strip) {
-        int x = arrow.x() + arrow.w() - W;
+        int x = arrow.x() + arrow.w() - W + PAD;
         int y = strip.bottom() + 1 + PAD;
         List<Row> out = new ArrayList<>();
         for (Item item : Item.values()) {
-            out.add(new Row(item, x + PAD, y, W - PAD * 2));
-            y += ROW_H;
+            out.add(new Row(item, x, y, CELL));
+            x += CELL;
         }
         return out;
     }
 
-    /** The whole dropdown panel's rectangle, rows and padding included. */
+    /** The whole dropdown panel's rectangle, cells and padding included. */
     static InventoryEditorLayout.Rect bounds(EditorTabBar.Tab arrow, InventoryEditorLayout.Rect strip) {
         int x = arrow.x() + arrow.w() - W;
         int y = strip.bottom() + 1;
-        return new InventoryEditorLayout.Rect(x, y, W, Item.values().length * ROW_H + PAD * 2);
+        return new InventoryEditorLayout.Rect(x, y, W, ROW_H + PAD * 2);
+    }
+
+    /** The hover text for {@code item}: "Name: On/Off", then what it does. */
+    static List<String> tooltip(Item item) {
+        String state = EditorScreenLang.text(isOn(item) ? EditorScreenLang.QUICK_ON : EditorScreenLang.QUICK_OFF);
+        return List.of(EditorScreenLang.text(item.labelKey) + ": " + state, EditorScreenLang.text(item.tipKey));
     }
 
     /** The row under the point, or null. */
@@ -143,16 +152,11 @@ final class EditorQuickMenu {
         for (Row r : layout(arrow, strip)) {
             boolean on = isOn(r.item());
             if (r.contains(mouseX, mouseY)) g.fill(r.x(), r.y(), r.x() + r.w(), r.y() + ROW_H, theme.tabHover());
-            int ix = r.x() + 1;
+            int ix = r.x() + (CELL - ICON_BOX) / 2;
             int iy = r.y() + (ROW_H - ICON_BOX) / 2;
             g.fill(ix, iy, ix + ICON_BOX, iy + ICON_BOX, theme.bevelDark());
             g.fill(ix + 1, iy + 1, ix + ICON_BOX - 1, iy + ICON_BOX - 1, on ? ON_FILL : OFF_FILL);
             g.blitSprite(r.item().icon, ix + 1, iy + 1, 16, 16);
-            int ty = r.y() + (ROW_H - font.lineHeight) / 2 + 1;
-            g.drawString(font, EditorScreenLang.text(r.item().labelKey), ix + ICON_BOX + 4, ty, theme.tabTextActive(), false);
-            String state = EditorScreenLang.text(on ? EditorScreenLang.QUICK_ON : EditorScreenLang.QUICK_OFF);
-            g.drawString(font, state, r.x() + r.w() - 3 - font.width(state), ty,
-                on ? 0xFF2B7A2B : theme.tabTextActive(), false);
         }
         g.pose().popPose();
     }

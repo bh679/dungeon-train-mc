@@ -34,6 +34,8 @@ public final class EditorQuickToggles {
     private static volatile boolean mirrorOn = true;
     /** Mirror of the running world's Frame setting. */
     private static volatile boolean frameOn = true;
+    /** Mirror of the running world's Auto fly setting — read by {@link EditorAutoFly} every player tick. */
+    private static volatile boolean autoFlyOn = true;
 
     private EditorQuickToggles() {}
 
@@ -45,6 +47,18 @@ public final class EditorQuickToggles {
     /** False while Frame is Off: Contents plots stand without their carriage shell. */
     public static boolean frameOn() {
         return frameOn;
+    }
+
+    /** False while Settings → Auto fly is Off: falling below the plots' frame is left alone. */
+    public static boolean autoFlyOn() {
+        return autoFlyOn;
+    }
+
+    /** Settings → Auto fly On / Off: persist, move the fast path, tell every client. */
+    public static void setAutoFly(MinecraftServer server, boolean on) {
+        DungeonTrainWorldData.get(server.overworld()).setEditorAutoFlyOn(on);
+        autoFlyOn = on;
+        broadcast(server);
     }
 
     /** X menu → Mirror On / Off: persist, move the fast path, tell every client. */
@@ -66,6 +80,12 @@ public final class EditorQuickToggles {
                 CarriageContentsEditor.applyFrame(overworld, data.dims());
                 WorkbenchEditor.applyFrame(overworld);
             });
+            // Off takes the floor out from under anyone standing in a plot: lift them first.
+            if (!on) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    if (EditorWorldLayout.isEditorWorld(player.serverLevel())) EditorAutoFly.startFlying(player);
+                }
+            }
         }
         broadcast(server);
     }
@@ -73,7 +93,7 @@ public final class EditorQuickToggles {
     /** The packet every client's quick toggles and Settings row draw from. */
     public static EditorQuickTogglesPacket packet(MinecraftServer server) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
-        return new EditorQuickTogglesPacket(data.isEditorMirrorOn(), data.isEditorFrameOn());
+        return new EditorQuickTogglesPacket(data.isEditorMirrorOn(), data.isEditorFrameOn(), data.isEditorAutoFlyOn());
     }
 
     /** Tell one player (login). */
@@ -93,12 +113,14 @@ public final class EditorQuickToggles {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
         mirrorOn = data.isEditorMirrorOn();
         frameOn = data.isEditorFrameOn();
+        autoFlyOn = data.isEditorAutoFlyOn();
     }
 
     /** No world running: the defaults. */
     static void reset() {
         mirrorOn = true;
         frameOn = true;
+        autoFlyOn = true;
     }
 
     /**
