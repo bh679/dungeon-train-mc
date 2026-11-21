@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 final class DeathVideoSaver {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String FOLDER = "death-videos";
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss", Locale.ROOT);
     static final long REMUX_TIMEOUT_S = 30;
 

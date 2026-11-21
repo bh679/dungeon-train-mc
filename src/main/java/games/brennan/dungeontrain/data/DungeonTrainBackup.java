@@ -76,6 +76,8 @@ public final class DungeonTrainBackup {
             .excludeTopLevel(PlayerDataPaths.BACKUPS)
             // A credential, not progress: kept out of archives people hand over for help.
             .excludeTopLevel(PlayerDataPaths.REPORT_KEY)
+            // Videos, not progress: several MB each, and a backup is taken on every death.
+            .excludeTopLevel(PlayerDataPaths.DEATH_VIDEOS)
             // A player's saved packages are their builds too, and they live outside the data root.
             .alsoBackUp("dtpacks", dtpacks)
             // Keeps <AppData>/DungeonTrain/backups — where every existing mirror already is.

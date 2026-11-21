@@ -61,7 +61,8 @@ public final class DeathRecorder {
     static final long RETRY_MS = 60_000;
     static final long CLOSE_GRACE_MS = 3_000;
 
-    private static final DeathRecRing RING = new DeathRecRing(PRE_ROLL_MS + KEYFRAME_MARGIN_MS, HOLD_CAP_MS);
+    /** How long game shutdown waits for a save in progress (the raw file is written first, so it is kept). */
+    static final long SHUTDOWN_SAVE_WAIT_MS = 5_000;
     private static final ExecutorService SAVER = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "dt-death-rec-save");
         t.setDaemon(true);
@@ -71,6 +72,15 @@ public final class DeathRecorder {
     @Nullable private static LiveFrameGrabber grabber;
     @Nullable private static DeathRecEncoder encoder;
     @Nullable private static LiveAudioPump pump;
+    /** The running encoder's memory. Each encoder gets a new one, so a late write from the last can't reach it. */
+    @Nullable private static DeathRecRing ring;
+    /** The game is closing: saves skip the remux and keep the raw recording. */
+    private static volatile boolean shuttingDown;
+    /**
+     * Between login and logout. {@code mc.level} outlives the logout event by a few ticks, so it
+     * alone would start a new encoder while the old world is being torn down.
+     */
+    private static boolean connected;
     private static long lastGrabNs;
     private static long retryAtMs;
 
@@ -86,7 +96,8 @@ public final class DeathRecorder {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        boolean want = ClientDisplayConfig.isDeathRecordingEnabled() && mc.level != null && mc.player != null
+        boolean want = connected && !shuttingDown && ClientDisplayConfig.isDeathRecordingEnabled()
+            && mc.level != null && mc.player != null
             && !ReplayModRecordingProbe.isReplaying();
         DeathRecEncoder enc = encoder;
         if (enc != null && enc.died()) {
@@ -98,7 +109,7 @@ public final class DeathRecorder {
         }
         if (want && encoder == null && System.currentTimeMillis() >= retryAtMs) tryStart(mc);
         // Never mid-death: the cinematic's own close saves first.
-        if (!want && encoder != null && !RING.holding()) stop(false);
+        if (!want && encoder != null && !holding()) stop(false);
     }
 
     private static void tryStart(Minecraft mc) {
@@ -111,12 +122,13 @@ public final class DeathRecorder {
         int[] size = LiveAspect.frameSize(BOX_W, BOX_H, main.width, main.height);
         LiveFrameGrabber grab = new LiveFrameGrabber(size[0], size[1], false);
         LiveAudioPump audio = sound ? LiveAudioPump.open(true) : null;
-        RING.takeAndReset();
+        DeathRecRing memory = new DeathRecRing(PRE_ROLL_MS + KEYFRAME_MARGIN_MS, HOLD_CAP_MS);
         try {
-            DeathRecEncoder enc = new DeathRecEncoder(ffmpeg, grab, FPS, audio == null ? 0 : audio.port(), RING);
+            DeathRecEncoder enc = new DeathRecEncoder(ffmpeg, grab, FPS, audio == null ? 0 : audio.port(), memory);
             if (audio != null) audio.start(enc::framesWritten, FPS);
             grabber = grab;
             pump = audio;
+            ring = memory;
             encoder = enc;
             LOGGER.info("[DungeonTrain] death recording on: {}x{} at {} fps, {}", size[0], size[1], FPS,
                 audio != null ? "with sound" : "silent");
@@ -139,6 +151,7 @@ public final class DeathRecorder {
         encoder = null;
         pump = null;
         grabber = null;
+        ring = null;
         if (enc == null) return;
         LOGGER.info("[DungeonTrain] death recording off");
         if (now) {
@@ -158,17 +171,30 @@ public final class DeathRecorder {
     }
 
     @SubscribeEvent
+    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        connected = true;
+    }
+
+    @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        connected = false;
         finish();
         stop(false);
     }
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        // No time for a remux: keep the raw recording (it plays as it is).
-        if (RING.holding()) {
-            byte[] ts = RING.takeAndReset();
-            DeathVideoSaver.save(videoDir(), ts, LocalDateTime.now(), null, false);
+        // No time for a remux: keep the raw recording (it plays as it is). A save the logout
+        // already queued is waited for, so the game does not exit in the middle of writing it.
+        shuttingDown = true;
+        finish();
+        SAVER.shutdown();
+        try {
+            if (!SAVER.awaitTermination(SHUTDOWN_SAVE_WAIT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                LOGGER.warn("[DungeonTrain] death video still saving as the game closes");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
         stop(true);
     }
@@ -191,28 +217,41 @@ public final class DeathRecorder {
 
     /** The death cinematic opened: keep the pre-roll and everything from here. */
     public static void markDeath() {
-        if (encoder == null) return;
-        RING.hold(System.currentTimeMillis());
-        LOGGER.info("[DungeonTrain] death recording: holding {} s before the death", RING.spanMs(System.currentTimeMillis()) / 1000);
+        DeathRecRing memory = ring;
+        if (encoder == null || memory == null) return;
+        long now = System.currentTimeMillis();
+        memory.hold(now);
+        LOGGER.info("[DungeonTrain] death recording: holding {} s before the death", memory.spanMs(now) / 1000);
+    }
+
+    private static boolean holding() {
+        DeathRecRing memory = ring;
+        return memory != null && memory.holding();
     }
 
     /** The death cinematic closed (any way): save what was held. A no-op when nothing is held. */
     public static void finish() {
-        if (!RING.holding()) return;
-        byte[] ts = RING.takeAndReset();
+        DeathRecRing memory = ring;
+        if (memory == null || !memory.holding()) return;
+        byte[] ts = memory.takeAndReset();
         if (ts.length == 0) return;
         LocalDateTime when = LocalDateTime.now();
         FFmpeg ffmpeg = FfmpegSupport.get();
         Path dir = videoDir();
         Minecraft mc = Minecraft.getInstance();
+        if (SAVER.isShutdown()) {
+            // Past the shutdown wait (a screen closed during the game's own teardown): write it here.
+            DeathVideoSaver.save(dir, ts, when, null, false);
+            return;
+        }
         SAVER.execute(() -> {
-            Path file = DeathVideoSaver.save(dir, ts, when, ffmpeg, true);
+            Path file = DeathVideoSaver.save(dir, ts, when, ffmpeg, !shuttingDown);
             if (file != null) LOGGER.info("[DungeonTrain] death video saved: {} ({} KB)", file, ts.length / 1024);
-            mc.execute(() -> DeathVideoSaver.announce(file));
+            if (!shuttingDown) mc.execute(() -> DeathVideoSaver.announce(file));
         });
     }
 
     static Path videoDir() {
-        return PlayerDataPaths.root().resolve(DeathVideoSaver.FOLDER);
+        return PlayerDataPaths.dir(PlayerDataPaths.DEATH_VIDEOS);
     }
 }
