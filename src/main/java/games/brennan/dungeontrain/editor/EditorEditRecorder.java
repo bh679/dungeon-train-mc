@@ -338,6 +338,8 @@ public final class EditorEditRecorder {
     private static List<BlockPos> mirrorImagesOf(@Nullable BlockVariantPlot plot, BlockPos worldPos) {
         if (plot == null) return List.of();
         if (!plot.mirrorX() && !plot.mirrorY() && !plot.mirrorZ()) return List.of();
+        // Mirror paused (X menu): the live handler placed no images, so the undo record has none.
+        if (!EditorQuickToggles.mirrorOn()) return List.of();
 
         BlockPos local = worldPos.subtract(plot.origin());
         if (!plot.inBounds(local)) return List.of();

@@ -21,11 +21,13 @@ public final class EditorSettingEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         EditorRedstone.sync(event.getServer());
+        EditorQuickToggles.sync(event.getServer());
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         EditorRedstone.reset();
+        EditorQuickToggles.reset();
     }
 
     /** Start, not Detonate: cancelling here also spares the entities the blast would have hurt. */

@@ -59,6 +59,8 @@ public final class EffortlessBuildingPreviewMirror {
         if (broken || set.isEmpty()) return;
         EditorMirrorPlotPacket plot = EditorMirrorPlotClient.get();
         if (plot == null) return;
+        // Mirror paused from the X menu: the server mirrors nothing, so the preview shows nothing.
+        if (!games.brennan.dungeontrain.client.EditorQuickTogglesState.mirrorOn()) return;
         try {
             List<Object> sources = new ArrayList<>(set.values());
             resolve(sources.get(0).getClass());

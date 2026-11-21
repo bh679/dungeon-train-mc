@@ -75,6 +75,8 @@ public final class EditorGuiScreen extends Screen {
     private final EditorDetailPane detail = new EditorDetailPane();
     private final EditorCreatorPane creatorPane = new EditorCreatorPane();
     private final EditorSettingsPane settingsPane = new EditorSettingsPane();
+    /** The Mirror / Menus / Frame toggles the ▼ beside Settings drops down. */
+    private final EditorQuickMenu quickMenu = new EditorQuickMenu();
     private final EditorLayoutPane layoutPane = new EditorLayoutPane(this::selectOrEnter);
     private final EditorStagesPane stagesPane = new EditorStagesPane();
     private final EditorNavPane navPane = new EditorNavPane();
@@ -282,11 +284,12 @@ public final class EditorGuiScreen extends Screen {
         // wears the dot; the browser pane marks the cell itself.
         EditorTabBar.draw(g, this.font, layout.tabs(), tabs, EditorScreenState.page(),
             ctx.standing() == null ? null : EditorScreenPage.TEMPLATES,
-            ctx.dirty(), hoveredTab, theme);
+            ctx.dirty(), hoveredTab, theme, quickMenu.isOpen());
 
         boolean overlaid = modal.isOpen() || search.isOpen();
-        // Rows under an open stage dropdown don't light up through it.
-        boolean covered = overlaid || (onStages() && stagesPane.overDropdown(mouseX, mouseY));
+        // Rows under an open stage dropdown, or the quick toggles, don't light up through them.
+        boolean covered = overlaid || (onStages() && stagesPane.overDropdown(mouseX, mouseY))
+            || overQuickMenu(mouseX, mouseY);
         int mx = covered ? -1 : mouseX;
         int my = covered ? -1 : mouseY;
         if (filtering) {
@@ -347,6 +350,8 @@ public final class EditorGuiScreen extends Screen {
 
         // A stage family's dropdown spills over the detail pane, so it goes on after every pane.
         if (onStages()) stagesPane.renderDropdown(g, this.font, index, this.width, this.height,
+            overlaid ? -1 : mouseX, overlaid ? -1 : mouseY);
+        quickMenu.render(g, this.font, theme, quickArrow(), layout.tabs(),
             overlaid ? -1 : mouseX, overlaid ? -1 : mouseY);
         inlineEdit.render(g, this.font);
         search.render(g, this.font, layout, theme, mouseX, mouseY);
@@ -546,8 +551,11 @@ public final class EditorGuiScreen extends Screen {
             return;
         }
         if (modal.isOpen() || inlineEdit.active()) return;
+        boolean overQuick = overQuickMenu(mouseX, mouseY);
         for (EditorPane pane : panes) {
             if (!pane.active()) continue;
+            // Only the quick toggles speak while the cursor is over them.
+            if (overQuick && !(pane instanceof QuickMenuPane)) return;
             EditorPane.Tooltip tip = pane.tooltipAt(mouseX, mouseY);
             if (tip.isEmpty()) continue;
             List<Component> text = tip.lines().stream().map(l -> (Component) Component.literal(l)).toList();
@@ -574,7 +582,7 @@ public final class EditorGuiScreen extends Screen {
      * columns, so the right-column panes stand down while either is up.
      */
     private final List<EditorPane> panes = List.of(
-        new TabsPane(), new FilterPane(),
+        new QuickMenuPane(), new TabsPane(), new FilterPane(),
         new BrowserPane(), new SettingsPanePane(), new LayoutPanePane(), new StagesListPane(),
         new GroupsPane(), new NavPane(),
         new CreatorPanePane(), new StageDetailPane(), new DetailPanePane());
@@ -582,6 +590,60 @@ public final class EditorGuiScreen extends Screen {
     /** Whether the right column shows a pane of its own — not under Groups or Nav. */
     private static boolean rightColumnShown() {
         return !onGroups() && !onNav();
+    }
+
+    /** The ▼ arrow's tab as last laid out, or null before the first frame. */
+    private EditorTabBar.Tab quickArrow() {
+        for (EditorTabBar.Tab t : tabs) {
+            if (t.kind() == EditorTabBar.Kind.QUICK) return t;
+        }
+        return null;
+    }
+
+    /** Whether the point is over the open quick-toggles dropdown. */
+    private boolean overQuickMenu(double mx, double my) {
+        EditorTabBar.Tab arrow = quickArrow();
+        return quickMenu.isOpen() && arrow != null && layout != null
+            && EditorQuickMenu.bounds(arrow, layout.tabs()).contains(mx, my);
+    }
+
+    /**
+     * The open quick-toggles dropdown, first in line: a row flips its setting through the same
+     * command its Settings row sends, and the list stays down so several can be flipped. A click
+     * anywhere else shuts it and carries on to whatever is there, the arrow excepted (its tab toggles).
+     */
+    private final class QuickMenuPane implements EditorPane {
+        @Override public boolean active() { return quickMenu.isOpen(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorTabBar.Tab arrow = quickArrow();
+            if (arrow == null) return false;
+            EditorQuickMenu.Item item = EditorQuickMenu.hit(EditorQuickMenu.layout(arrow, layout.tabs()), mx, my);
+            if (item != null) {
+                click();
+                CommandRunner.run(EditorQuickMenu.flipCommand(item));
+                afterCommand();
+                return true;
+            }
+            if (overQuickMenu(mx, my)) return true;
+            EditorTabBar.Tab tab = EditorTabBar.hit(tabs, layout.tabs(), mx, my);
+            if (tab == null || tab.kind() != EditorTabBar.Kind.QUICK) quickMenu.close();
+            return false;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            return overQuickMenu(mx, my);
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            EditorTabBar.Tab arrow = quickArrow();
+            if (arrow == null) return Tooltip.NONE;
+            EditorQuickMenu.Item item = EditorQuickMenu.hit(EditorQuickMenu.layout(arrow, layout.tabs()), mx, my);
+            return item == null ? Tooltip.NONE : Tooltip.of(EditorScreenLang.text(item.tipKey));
+        }
     }
 
     private final class TabsPane implements EditorPane {
@@ -598,8 +660,13 @@ public final class EditorGuiScreen extends Screen {
 
         @Override
         public Tooltip tooltipAt(double mx, double my) {
-            return hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT
-                ? Tooltip.of(EditorScreenLang.text(EditorScreenLang.TAB_EXIT)) : Tooltip.NONE;
+            if (hoveredTab == null) return Tooltip.NONE;
+            return switch (hoveredTab.kind()) {
+                case EXIT -> Tooltip.of(EditorScreenLang.text(EditorScreenLang.TAB_EXIT));
+                case QUICK -> quickMenu.isOpen() ? Tooltip.NONE
+                    : Tooltip.of(EditorScreenLang.text(EditorScreenLang.TAB_QUICK));
+                case PAGE -> Tooltip.NONE;
+            };
         }
     }
 
@@ -999,6 +1066,7 @@ public final class EditorGuiScreen extends Screen {
         EditorRosterIndex index = EditorRosterClient.index();
         switch (tab.kind()) {
             case EXIT -> modal.runAndClose("dungeontrain editor exit");
+            case QUICK -> quickMenu.toggle();
             case PAGE -> {
                 EditorScreenState.setPage(tab.page());
                 browser.resetScroll();
@@ -1415,6 +1483,10 @@ public final class EditorGuiScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (quickMenu.isOpen()) {
+                quickMenu.close();
+                return true;
+            }
             if (onStages() && stagesPane.dropdownOpen()) {
                 stagesPane.closeDropdown();
                 return true;
