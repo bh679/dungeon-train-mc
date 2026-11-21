@@ -1,0 +1,17 @@
+{
+  "id": "startup-crash-extra-mods",
+  "version": "0.1932.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Startup crash fix",
+  "summary": "The game no longer crashes at startup when another installed mod has trouble loading. It now recovers to the title screen.",
+  "highlights": [],
+  "pr": 2787,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
