@@ -109,7 +109,7 @@ final class PoolSelection {
                     // What the photo earned its photographer, shown under it in the viewer (older relays send none).
                     PhotoAdvancementBadges.idsFrom(row.has("advancements") && row.get("advancements").isJsonArray()
                             ? row.getAsJsonArray("advancements") : null),
-                    // The relay's CDN copy of the image (relay v0.373+), or "".
+                    // The relay's CDN copy of the image, or "" (older relays send none).
                     PhotoCdn.urlOf(row, "image")));
         }
         return List.copyOf(rows);

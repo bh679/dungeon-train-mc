@@ -16,7 +16,7 @@ import java.util.function.Predicate;
 /**
  * Photo and album pictures from the relay's CDN copy, falling back to the relay.
  *
- * <p>Since relay v0.373 the pool, lease, album and tributes JSON carry an {@code image} (albums:
+ * <p>The relay's pool, lease, album and tributes JSON carry an {@code image} (albums:
  * {@code url}) on Cloudflare for every picture it has mirrored. Fetching that instead of the relay's
  * own image route keeps the bytes off the relay box, whose bandwidth is billed. The relay route still
  * answers exactly as before, so a picture with no CDN URL, a CDN answer that isn't a 200, or a CDN that
@@ -86,6 +86,20 @@ public final class PhotoCdn {
         return accept.test(cdnUrl) && !breakerOpen(System.currentTimeMillis());
     }
 
+    /**
+     * Whether a CDN answer is the picture: a 200 with an image type. Anything else that is not a 404 (the
+     * picture was just removed) counts against the CDN: a 403/429 from a bot check or a challenge page would
+     * otherwise cost every photo a wasted round trip without ever tripping the breaker.
+     */
+    static boolean isPicture(HttpResponse<?> resp) {
+        return resp.statusCode() == 200
+                && resp.headers().firstValue("content-type").orElse("").toLowerCase(java.util.Locale.ROOT).startsWith("image/");
+    }
+
+    static boolean cdnHealthy(HttpResponse<?> resp) {
+        return isPicture(resp) || resp.statusCode() == 404;
+    }
+
     private static HttpRequest get(String url, Duration timeout) {
         return HttpRequest.newBuilder(URI.create(url)).timeout(timeout).GET().build();
     }
@@ -105,8 +119,8 @@ public final class PhotoCdn {
         if (useCdn(cdnUrl, accept)) {
             try {
                 HttpResponse<byte[]> cdn = http.send(get(cdnUrl, CDN_TIMEOUT), HttpResponse.BodyHandlers.ofByteArray());
-                recordCdn(cdn.statusCode() < 500, System.currentTimeMillis());
-                if (cdn.statusCode() == 200) return cdn;
+                recordCdn(cdnHealthy(cdn), System.currentTimeMillis());
+                if (isPicture(cdn)) return cdn;
             } catch (java.io.IOException e) {
                 recordCdn(false, System.currentTimeMillis());
                 LOGGER.debug("[DungeonTrain] Photo CDN fetch failed, using the relay: {}", e.toString());
@@ -120,8 +134,8 @@ public final class PhotoCdn {
         if (!useCdn(cdnUrl, PhotoCdn::acceptable)) return http.sendAsync(get(relayUrl, timeout), HttpResponse.BodyHandlers.ofByteArray());
         return http.sendAsync(get(cdnUrl, CDN_TIMEOUT), HttpResponse.BodyHandlers.ofByteArray())
                 .handle((cdn, error) -> {
-                    recordCdn(error == null && cdn.statusCode() < 500, System.currentTimeMillis());
-                    return error == null && cdn.statusCode() == 200 ? cdn : null;
+                    recordCdn(error == null && cdnHealthy(cdn), System.currentTimeMillis());
+                    return error == null && isPicture(cdn) ? cdn : null;
                 })
                 .thenCompose(cdn -> cdn != null
                         ? CompletableFuture.completedFuture(cdn)

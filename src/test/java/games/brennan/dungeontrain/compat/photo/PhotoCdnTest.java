@@ -21,6 +21,7 @@ class PhotoCdnTest {
     private HttpServer server;
     private String base;
     private final AtomicInteger cdnStatus = new AtomicInteger(200);
+    private final java.util.concurrent.atomic.AtomicReference<String> cdnType = new java.util.concurrent.atomic.AtomicReference<>("image/jpeg");
     private final AtomicInteger cdnHits = new AtomicInteger();
     private final AtomicInteger relayHits = new AtomicInteger();
     private final HttpClient http = HttpClient.newHttpClient();
@@ -32,6 +33,7 @@ class PhotoCdnTest {
         server.createContext("/cdn", ex -> {
             cdnHits.incrementAndGet();
             byte[] body = "cdn".getBytes(StandardCharsets.UTF_8);
+            ex.getResponseHeaders().set("Content-Type", cdnType.get());
             ex.sendResponseHeaders(cdnStatus.get(), body.length);
             ex.getResponseBody().write(body);
             ex.close();
@@ -112,6 +114,21 @@ class PhotoCdnTest {
     @Test
     void anUnreachableCdnFallsBack() throws Exception {
         assertEquals("relay", fetch("http://127.0.0.1:1/cdn"));
+        assertEquals(1, relayHits.get());
+    }
+
+    @Test
+    void aBotCheckOrChallengePageCountsAgainstTheCdn() throws Exception {
+        cdnStatus.set(403);
+        for (int i = 0; i < PhotoCdn.BREAKER_FAILURES; i++) assertEquals("relay", fetch(base + "/cdn"));
+        assertEquals("relay", fetch(base + "/cdn"));
+        assertEquals(PhotoCdn.BREAKER_FAILURES, cdnHits.get(), "403s trip the breaker");
+    }
+
+    @Test
+    void aNonImage200IsNotThePicture() throws Exception {
+        cdnType.set("text/html");
+        assertEquals("relay", fetch(base + "/cdn"));
         assertEquals(1, relayHits.get());
     }
 }
