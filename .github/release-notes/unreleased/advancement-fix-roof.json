@@ -1,0 +1,17 @@
+{
+  "id": "advancement-fix-roof",
+  "version": "0.1933.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "advancements"
+  ],
+  "title": "Advancement fix",
+  "summary": "Fixed an advancement that could be awarded without doing it.",
+  "highlights": [],
+  "pr": 2789,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
