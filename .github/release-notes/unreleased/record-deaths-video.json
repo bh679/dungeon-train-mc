@@ -1,0 +1,20 @@
+{
+  "id": "record-deaths-video",
+  "version": "0.1944.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Record your deaths as videos",
+  "summary": "A new option saves each death as a video: the 8 seconds before you died and the whole death scene, with game sound. Turn on Record Deaths in Options, General. It is off by default, since it keeps recording in the background while you play.",
+  "highlights": [
+    "Your death also replays behind the death screen",
+    "Videos are saved to the dungeontrain/death-videos folder; click the file name in chat to watch"
+  ],
+  "pr": 2799,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

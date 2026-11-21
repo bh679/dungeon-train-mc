@@ -268,6 +268,7 @@ public final class ClientDisplayConfig {
     /** Whether BetterX's title-screen popups and version check are skipped. See {@link #isBetterXStartupScreensSuppressed()}. */
     public static final ModConfigSpec.BooleanValue BETTERX_SUPPRESS_STARTUP_SCREENS;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
+    public static final ModConfigSpec.BooleanValue DEATH_RECORDING_ENABLED;
     public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
     /** Whether the biome mods' creative tabs are drawn. See {@link #isCreativeModBlockTabs()}. */
     public static final ModConfigSpec.BooleanValue CREATIVE_MOD_BLOCK_TABS;
@@ -479,6 +480,7 @@ public final class ClientDisplayConfig {
         SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE = pair.getLeft().scribbleInsertPageButtonVisible;
         BETTERX_SUPPRESS_STARTUP_SCREENS = pair.getLeft().betterXSuppressStartupScreens;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
+        DEATH_RECORDING_ENABLED = pair.getLeft().deathRecordingEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         CREATIVE_MOD_BLOCK_TABS = pair.getLeft().creativeModBlockTabs;
         CREATIVE_MOD_BLOCKS_IN_SEARCH = pair.getLeft().creativeModBlocksInSearch;
@@ -731,6 +733,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue cinematicHotkeyEnabled = b
                 .comment("Let the cinematographer hotkey (C by default, rebindable under Controls > Dungeon Train) replay the intro cinematic while you are in spectator mode. Turn this off to reclaim the key for something else without unbinding it. Only the hotkey is affected - /dungeontrain cinematic still works either way.")
                 .define("hotkeyEnabled", true);
+        b.pop();
+
+        b.push("deathRecording");
+        ModConfigSpec.BooleanValue deathRecordingEnabled = b
+                .comment("Save each death cinematic as a video in dungeontrain/death-videos/, with the 8 seconds before the death. While on, the game keeps the last few seconds recorded in memory (an ffmpeg encoder runs the whole time you are in a world), so it costs some performance. Needs ffmpeg (the Live Feed's). Off by default.")
+                .define("enabled", false);
         b.pop();
 
         b.push("creative");
@@ -1060,7 +1068,7 @@ public final class ClientDisplayConfig {
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
                 sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
-                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, deathRecordingEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1987,6 +1995,22 @@ public final class ClientDisplayConfig {
         return !isLoaded() || CINEMATIC_HOTKEY_ENABLED.get();
     }
 
+    /**
+     * Is the death cinematic saved to a video ({@code client.live.deathrec.DeathRecorder})? Off by
+     * default and pre-load: recording costs an always-running encoder, so it is strictly opt-in.
+     */
+    public static boolean isDeathRecordingEnabled() {
+        return isLoaded() && DEATH_RECORDING_ENABLED.get();
+    }
+
+    /** Persist the death-recording toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setDeathRecordingEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (DEATH_RECORDING_ENABLED.get() == value) return;
+        DEATH_RECORDING_ENABLED.set(value);
+        DEATH_RECORDING_ENABLED.save();
+    }
+
     /** Persist the cinematic-hotkey toggle. Idempotent: skips the TOML write when unchanged. */
     public static void setCinematicHotkeyEnabled(boolean value) {
         if (!isLoaded()) return;
@@ -2523,6 +2547,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue scribbleInsertPageButtonVisible,
             ModConfigSpec.BooleanValue betterXSuppressStartupScreens,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
+            ModConfigSpec.BooleanValue deathRecordingEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
             ModConfigSpec.BooleanValue creativeModBlockTabs,
             ModConfigSpec.BooleanValue creativeModBlocksInSearch,

@@ -1,4 +1,7 @@
 {
+  "chat.dungeontrain.death_video.saved": {
+    "1": { "label": "the saved video's file name, a clickable link; never translated", "examples": ["death-2026-11-21_23-58-04.mp4"] }
+  },
   "chat.dungeontrain.event.in_24h": {
     "1": { "label": "the event's name, from the website, never translated; shown in bold", "examples": ["AshSeven goes for Everything Burrito"] }
   },

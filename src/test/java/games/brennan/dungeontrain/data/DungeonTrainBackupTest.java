@@ -177,6 +177,22 @@ class DungeonTrainBackupTest {
     }
 
     @Test
+    void deathVideosAreNeverArchived() throws IOException {
+        write(dataRoot().resolve(PlayerDataPaths.DEATH_VIDEOS + "/death-2026-11-22_00-08-35.mp4"), "video");
+        write(dataRoot().resolve(PlayerDataPaths.STATS + "/s.json"), "{}");
+        assertTrue(reg().excludeTopLevel().contains(PlayerDataPaths.DEATH_VIDEOS));
+
+        Path archive = BackupArchiver.create(tmp.resolve("backups"), "dungeontrain", reg().sources(),
+            "test", "0.0.0").archive().orElseThrow();
+
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            assertNotNull(zip.getEntry("dungeontrain/" + PlayerDataPaths.STATS + "/s.json"));
+            assertTrue(zip.stream().noneMatch(e -> e.getName().contains(PlayerDataPaths.DEATH_VIDEOS)),
+                "death videos must not be in any archive");
+        }
+    }
+
+    @Test
     void aBackupHoldsTheChestFromTheOutsideStoreAndItsBackup() throws IOException {
         // The bug: every archive held config/enderchestpersistence/ (abandoned since ECP 0.3.0) and
         // never the app-data store, so no restore point had the player's chest in it.

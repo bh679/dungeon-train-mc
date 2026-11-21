@@ -47,8 +47,19 @@ public final class LiveFrameGrabber implements AutoCloseable {
     private final long[] fences = new long[RING];
     /** Read by the encoder's writer thread in {@link #recycle}; the pool's lock orders it against {@link #close}. */
     private volatile boolean closed;
+    /** A Live Feed frame (name tag, pop-ups and perf counters), or a plain local copy (the death recorder). */
+    private final boolean broadcast;
 
     public LiveFrameGrabber(int width, int height) {
+        this(width, height, true);
+    }
+
+    /**
+     * {@code broadcast} false: the frame is exactly the player's screen, with no viewers' name tag,
+     * and it stays off the stream's perf line ({@code deathrec.DeathRecorder}).
+     */
+    public LiveFrameGrabber(int width, int height, boolean broadcast) {
+        this.broadcast = broadcast;
         this.width = width;
         this.height = height;
         this.frameBytes = width * height * 4;
@@ -77,8 +88,10 @@ public final class LiveFrameGrabber implements AutoCloseable {
             int[] crop = LiveAspect.cropRect(main.width, main.height, width, height);
             GL30C.glBlitFramebuffer(crop[0], crop[1], crop[2], crop[3], 0, 0, width, height,
                 GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
-            StreamNameTag.drawInto(target); // viewers' copy only — the main target is untouched
-            LiveToastRects.copyOver(main, target, crop); // popups back over the name tag
+            if (broadcast) {
+                StreamNameTag.drawInto(target); // viewers' copy only — the main target is untouched
+                LiveToastRects.copyOver(main, target, crop); // popups back over the name tag
+            }
             int slot = ring.issue();
             if (slot >= 0) {
                 // Into the bound pack buffer at offset 0: queued on the GPU, returns at once.
@@ -89,11 +102,11 @@ public final class LiveFrameGrabber implements AutoCloseable {
                 fences[slot] = GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             }
             // else: every buffer still waits on the GPU — skip this frame rather than stall.
-            else LivePerfStats.grabSkipped();
+            else if (broadcast) LivePerfStats.grabSkipped();
         } finally {
             GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, 0);
             main.bindWrite(true);
-            LivePerfStats.grab(System.nanoTime() - startNs);
+            if (broadcast) LivePerfStats.grab(System.nanoTime() - startNs);
         }
     }
 
