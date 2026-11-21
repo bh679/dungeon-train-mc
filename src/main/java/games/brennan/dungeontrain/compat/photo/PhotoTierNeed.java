@@ -46,14 +46,14 @@ public final class PhotoTierNeed {
         return new TreeSet<>(costs).stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
-    /** {@link #param} for everyone online. Free Play earns no advancements, so it needs nothing. Server thread. */
-    static String needsOf(MinecraftServer server) {
-        return param(server.getPlayerList().getPlayers().stream()
+    /** The prices everyone online still needs, distinct, lowest first. Free Play earns no advancements, so it needs nothing. Server thread. */
+    static List<Integer> costsOf(MinecraftServer server) {
+        return List.copyOf(new TreeSet<>(server.getPlayerList().getPlayers().stream()
                 .filter(player -> !RunIntegrity.isOffRecord(player))
                 .map(player -> nextCost(path -> earned(server, player, path)))
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)
-                .toList());
+                .toList()));
     }
 
     /** A tier this build's data doesn't carry counts as earned: nothing can be earned from it. */
