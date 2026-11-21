@@ -37783,6 +37783,39 @@
       "released": true,
       "released_in": "v0.1924.0",
       "released_at": "2026-11-20T15:53:01Z"
+    },
+    {
+      "id": "stream-preview-clickable",
+      "version": "0.1924.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Click the Stream preview to change what viewers see",
+      "summary": "On the Options Stream tab, click the HUD, chat, name or pinned live feed in the preview to show or hide it for viewers. Hover a part to see what a click does. The new Preview setting puts the preview pinned below the settings, above or under the list, or turns it off.",
+      "highlights": [],
+      "date": "2026-11-20",
+      "released": true,
+      "released_in": "v0.1926.0",
+      "released_at": "2026-11-21T05:19:17Z"
+    },
+    {
+      "id": "hostile-mob-names",
+      "version": "0.1926.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Named monsters",
+      "summary": "Now and then a monster on the train has a name over its head.",
+      "highlights": [],
+      "pr": 2781,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1926.0",
+      "released_at": "2026-11-21T05:19:17Z"
     }
   ]
 }

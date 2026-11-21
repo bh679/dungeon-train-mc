@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Nommage de créature passive",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Nommage de villageois",
   "screen.adventureitemnames.spawn_chances.mob_player": "Nommage de créature joueur",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Nommage de créature hostile",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Description d'objet fabriqué",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Description d'objet acheté",
   "screen.adventureitemnames.spawn_chances.trade_item": "Nommage d'échange de villageois",
