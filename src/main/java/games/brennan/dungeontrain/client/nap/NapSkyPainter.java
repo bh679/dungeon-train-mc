@@ -19,6 +19,11 @@ import java.util.UUID;
  * regrowing a branch (it can still change). A first life gets {@link #FIRST_LIFE_TRIES} passing paths
  * instead. Each path starts as the one before begins to fade.
  *
+ * <p>Where perks are on ({@link NapSkyLives}), a past life with a perk record draws the perks it
+ * activated, a life from before perks draws a random path that fades out completely once this life's
+ * path settles, and this life draws the perks activated so far, settled and still (it regrows at random
+ * only while nothing is activated).</p>
+ *
  * <p>One per screen. The timeline runs from the page's open time, so stepping back to the page replays
  * it; past paths come out the same every time ({@link NapSkyPaths#pastLife}).</p>
  */
@@ -38,7 +43,11 @@ public final class NapSkyPainter {
     /** The mockup's sky size in pixels: radii and widths below are in those pixels. */
     private static final double MOCK_SIZE = 496.0;
 
-    private record Slot(NapSkyPaths.Path path, long at, boolean keep) {}
+    private record Slot(NapSkyPaths.Path path, long at, NapSkyLives.Kind kind) {
+        boolean keep() {
+            return kind != NapSkyLives.Kind.TRY;
+        }
+    }
 
     private final NapSky sky;
     private final double[] fx = new double[FIELD], fy = new double[FIELD], fr = new double[FIELD],
@@ -48,6 +57,8 @@ public final class NapSkyPainter {
     private final long liveStart;
     private final NapSkyPaths.Path livePath;
     private final Random liveRng;
+    /** False when this life's path is its real activated perks: then it holds still. */
+    private final boolean regrows;
 
     private long openedAt = Long.MIN_VALUE;
     private NapSkyPaths.Path live;
@@ -56,8 +67,12 @@ public final class NapSkyPainter {
     private long fadingAt;
     private long nextRegrowAt;
 
-    /** {@code pastLives}: lives before this one; {@code seed}: this visit's own randomness (the live path). */
-    public NapSkyPainter(NapSky sky, UUID player, long pastLives, long seed) {
+    /**
+     * {@code pastLives}: lives before this one (the death stats' count); {@code seed}: this visit's own
+     * randomness (the live path); {@code lives}: the perk history, {@link NapSkyLives#NONE} for the
+     * plain sky.
+     */
+    public NapSkyPainter(NapSky sky, UUID player, long pastLives, long seed, NapSkyLives lives) {
         this.sky = sky;
         Random field = new Random(7L);
         for (int i = 0; i < FIELD; i++) {
@@ -67,28 +82,32 @@ public final class NapSkyPainter {
             fb[i] = field.nextDouble() * 0.5 + 0.15;
             fp[i] = field.nextDouble();
         }
+        NapSkyLives l = lives == null ? NapSkyLives.NONE : lives;
         this.liveRng = NapSkyPaths.rng(seed);
-        long drawn = Math.min(Math.max(0L, pastLives), MAX_PAST);
+        List<NapSkyLives.Kind> plan = NapSkyLives.plan(pastLives, l.records().size(), l.perksOn(), MAX_PAST,
+            FIRST_LIFE_TRIES - 1);
+        long drawn = plan.isEmpty() || plan.get(0) == NapSkyLives.Kind.TRY ? 0 : plan.size();
         this.stepMs = drawn > FAST_AFTER ? STEP_MS * (double) FAST_AFTER / drawn : STEP_MS;
+        long total = NapSkyLives.totalLives(pastLives, l.records().size(), l.perksOn());
+        int real = (int) plan.stream().filter(k -> k == NapSkyLives.Kind.REAL).count();
+        int realIndex = l.records().size() - real;
+        long life = total - drawn;
         long at = 0;
         int lastFirst = -1;
-        if (pastLives > 0) {
-            for (long life = pastLives - drawn; life < pastLives; life++) {
-                NapSkyPaths.Path p = NapSkyPaths.pastLife(sky, player, life);
-                slots.add(new Slot(p, at, true));
-                at += Math.round(p.depth() * stepMs) + HOLD_MS;
-                lastFirst = p.first();
-            }
-        } else {
-            for (int i = 0; i < FIRST_LIFE_TRIES - 1; i++) {
-                NapSkyPaths.Path p = NapSkyPaths.random(sky, liveRng, lastFirst);
-                slots.add(new Slot(p, at, false));
-                at += Math.round(p.depth() * stepMs) + HOLD_MS;
-                lastFirst = p.first();
-            }
+        for (NapSkyLives.Kind kind : plan) {
+            NapSkyPaths.Path p = switch (kind) {
+                case TRY -> NapSkyPaths.random(sky, liveRng, lastFirst);
+                case REAL -> l.records().get(realIndex++);
+                case PAST, PRE_PERKS -> NapSkyPaths.pastLife(sky, player, life);
+            };
+            life++;
+            slots.add(new Slot(p, at, kind));
+            at += Math.round(p.depth() * stepMs) + HOLD_MS;
+            if (p.first() >= 0) lastFirst = p.first();
         }
         this.liveStart = at;
-        this.livePath = NapSkyPaths.random(sky, liveRng, lastFirst);
+        this.regrows = !l.hasThisLife();
+        this.livePath = regrows ? NapSkyPaths.random(sky, liveRng, lastFirst) : l.thisLife();
         this.live = livePath;
     }
 
@@ -124,6 +143,8 @@ public final class NapSkyPainter {
             disc(g, sx(i, cx, size), sy(i, cy, size), Math.max(0.6, r), argb(DIM, 0.45 * starsIn * alpha));
         }
         long tt = t - START_MS;
+        // Lives from before perks leave once this life's path has settled.
+        double preK = clamp(1 - (now - settledAt(pageOpenedAt)) / (double) FADE_MS);
         if (tt > 0) {
             for (Slot s : slots) {
                 long su = tt - s.at();
@@ -131,6 +152,7 @@ public final class NapSkyPainter {
                 double traced = s.path().depth() * stepMs + HOLD_MS;
                 double a = 1.0;
                 if (su > traced) a = s.keep() ? Math.max(0.5, 1 - (su - traced) / FADE_MS * 0.5) : 1 - (su - traced) / FADE_MS;
+                if (s.kind() == NapSkyLives.Kind.PRE_PERKS) a *= preK;
                 if (a <= 0) continue;
                 drawPath(g, s.path(), su, stepMs, a * alpha, PATH, PATH, s.keep() ? 1.3 : 1.4, cx, cy, size);
             }
@@ -152,7 +174,7 @@ public final class NapSkyPainter {
         double step = STEP_MS * SETTLE_SLOW;
         boolean done = settled(pageOpenedAt, now);
         if (done && nextRegrowAt == Long.MAX_VALUE) nextRegrowAt = now + REGROW_MS;
-        if (done && now >= nextRegrowAt) {
+        if (done && regrows && now >= nextRegrowAt) {
             NapSkyPaths.Regrowth r = NapSkyPaths.regrow(sky, live, liveRng);
             live = r.path();
             fading = r.removed();

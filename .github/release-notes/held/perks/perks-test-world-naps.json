@@ -1,0 +1,16 @@
+{
+  "id": "perks-test-world-naps",
+  "version": "0.1922.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "internal"
+  ],
+  "title": "Test world save fix",
+  "summary": "Train beds in perks test worlds now offer Save and Quit, like any other run.",
+  "highlights": [],
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

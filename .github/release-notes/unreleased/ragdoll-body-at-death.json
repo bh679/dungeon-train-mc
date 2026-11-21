@@ -1,0 +1,64 @@
+{
+  "id": "ragdoll-body-at-death",
+  "version": "0.1932.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui",
+    "compatibility"
+  ],
+  "title": "Go Out in Style",
+  "summary": "Down but not out of frame. Ragdoll your way into the next life, on screen. Every death captured from a new dramatic camera angle. This update is setting up for something else big. What that is? You'll have to wait and see.",
+  "highlights": [],
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "pr": 2777,
+  "major": true,
+  "notable": true,
+  "bilibili": {
+    "title": {
+      "zh": "\u5730\u7262\u5217\u8f66 \u66f4\u65b0\uff1a\u534e\u4e3d\u8c22\u5e55 | \u6211\u7684\u4e16\u754c\u6a21\u7ec4",
+      "en": "Dungeon Train Update: Go Out in Style | Minecraft Mod"
+    },
+    "description": {
+      "zh": "\u5012\u4e0b\u4e86\uff0c\u4f46\u6ca1\u51fa\u955c\u3002\u5316\u4f5c\u5e03\u5a03\u5a03\uff0c\u4f53\u9762\u5730\u8fc8\u5411\u4e0b\u4e00\u6bb5\u4eba\u751f\u3002\u6bcf\u4e00\u6b21\u6b7b\u4ea1\uff0c\u90fd\u7528\u5168\u65b0\u7684\u620f\u5267\u6027\u955c\u5934\u8bb0\u5f55\u4e0b\u6765\u3002\u8fd9\u6b21\u66f4\u65b0\u8fd8\u5728\u4e3a\u53e6\u4e00\u4ef6\u5927\u4e8b\u505a\u51c6\u5907\u3002\u662f\u4ec0\u4e48\uff1f\u656c\u8bf7\u671f\u5f85\u3002\n\n\u5b8c\u6574\u66f4\u65b0\u8bf4\u660e\uff1adungeon.training/update\n\u4e0b\u8f7d\uff1a\u5728 CurseForge \u6216 Modrinth \u641c\u7d22 Dungeon Train\uff08\u9700\u8981 Sable: Ragdolls\uff0c\u542f\u52a8\u5668\u4f1a\u81ea\u52a8\u5b89\u88c5\uff09\n\u5730\u7262\u5217\u8f66\u662f\u4e00\u4e2a Minecraft\uff08\u6211\u7684\u4e16\u754c\uff09NeoForge 1.21.1 \u6a21\u7ec4\uff1a\u5728\u4e00\u5217\u6c38\u4e0d\u505c\u6b47\u7684\u5217\u8f66\u4e0a\u5192\u9669\u3001\u641c\u522e\u3001\u751f\u5b58\u3002",
+      "en": "Down but not out of frame. Ragdoll your way into the next life, on screen. Every death captured from a new dramatic camera angle. This update is setting up for something else big. What that is? You'll have to wait and see.\n\nFull notes: dungeon.training/update\nDownload: search Dungeon Train on CurseForge or Modrinth (needs Sable: Ragdolls, which the launchers install for you)\nDungeon Train is a Minecraft NeoForge 1.21.1 mod: loot, fight and survive aboard a train that never stops."
+    },
+    "tags": {
+      "zh": [
+        "\u6211\u7684\u4e16\u754c",
+        "Minecraft",
+        "\u6a21\u7ec4",
+        "\u5730\u7262\u5217\u8f66",
+        "\u5e03\u5a03\u5a03",
+        "\u6b7b\u4ea1\u955c\u5934",
+        "\u751f\u5b58",
+        "\u6e38\u620f\u66f4\u65b0",
+        "NeoForge",
+        "MOD"
+      ],
+      "en": [
+        "Minecraft",
+        "mod",
+        "Dungeon Train",
+        "ragdoll",
+        "death camera",
+        "survival",
+        "game update",
+        "NeoForge"
+      ]
+    },
+    "by": "Claude Opus 5.5"
+  },
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/go-out-in-style.gif",
+  "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/go-out-in-style.mp4",
+  "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/go-out-in-style.loop.mp4",
+  "video_cover": 3.77,
+  "videos": {
+    "feed": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/go-out-in-style-feed.mp4",
+    "story": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/go-out-in-style-story.mp4",
+    "tiktok": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/go-out-in-style-story.mp4"
+  }
+}

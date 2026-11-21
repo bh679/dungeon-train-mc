@@ -117,4 +117,60 @@ class NapSkyPathsTest {
         assertFalse(p.edges().isEmpty());
         assertEquals(0, p.edges().get(0).from());
     }
+
+    @Test
+    void fromStarsWalksOutThroughLitStarsByDepth() {
+        NapSky sky = sky();
+        int a = sky.neighbours(0)[0];
+        int b = -1;
+        for (int n : sky.neighbours(a)) if (n != 0 && !sky.joined(0, n)) { b = n; break; }
+        assertTrue(b > 0, "need a star two lines out");
+        NapSkyPaths.Path p = NapSkyPaths.fromStars(sky, Set.of(a, b));
+        assertEquals(java.util.List.of(new NapSkyPaths.Edge(0, a, 1), new NapSkyPaths.Edge(a, b, 2)), p.edges());
+        assertEquals(2, p.depth());
+        assertEquals(a, p.first());
+    }
+
+    @Test
+    void fromStarsBridgesALitStarNoLitStarLeadsTo() {
+        NapSky sky = sky();
+        int a = sky.neighbours(0)[0];
+        int b = -1;
+        for (int n : sky.neighbours(a)) if (n != 0 && !sky.joined(0, n)) { b = n; break; }
+        NapSkyPaths.Path p = NapSkyPaths.fromStars(sky, Set.of(b));
+        Set<Integer> reached = new HashSet<>();
+        for (NapSkyPaths.Edge e : p.edges()) {
+            assertTrue(sky.joined(e.from(), e.to()));
+            reached.add(e.to());
+        }
+        assertTrue(reached.contains(b), "the lit star is reached");
+        assertEquals(2, p.edges().size(), "by the shortest run");
+    }
+
+    @Test
+    void fromStarsWithNothingLitDrawsNothing() {
+        NapSky sky = sky();
+        assertTrue(NapSkyPaths.fromStars(sky, Set.of()).edges().isEmpty());
+        assertTrue(NapSkyPaths.fromStars(sky, Set.of(0, -3, 9999)).edges().isEmpty());
+        assertEquals(-1, NapSkyPaths.fromStars(sky, Set.of()).first());
+    }
+
+    @Test
+    void fromStarsReachesEveryLitStarOnce() {
+        NapSky sky = sky();
+        Random rng = new Random(5);
+        for (int k = 0; k < 200; k++) {
+            Set<Integer> lit = new HashSet<>();
+            int n = 1 + rng.nextInt(12);
+            for (int i = 0; i < n; i++) lit.add(1 + rng.nextInt(sky.size() - 1));
+            NapSkyPaths.Path p = NapSkyPaths.fromStars(sky, lit);
+            Set<Integer> to = new HashSet<>();
+            for (NapSkyPaths.Edge e : p.edges()) {
+                assertTrue(sky.joined(e.from(), e.to()));
+                assertTrue(to.add(e.to()), "a star is reached twice");
+                assertTrue(e.depth() >= 1);
+            }
+            assertTrue(to.containsAll(lit), "every lit star drawn");
+        }
+    }
 }

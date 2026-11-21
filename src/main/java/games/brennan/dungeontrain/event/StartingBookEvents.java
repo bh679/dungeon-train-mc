@@ -263,7 +263,15 @@ public final class StartingBookEvents {
         if (event.isEndConquered()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (isBuilderWorld(player)) return;
+        // A tribute room visit is not the train: the strike waits for the way out (strikeAfterTributeRoom).
+        if (games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
         // Respawn context is unambiguous; pre-resolve at enqueue.
+        PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
+    }
+
+    /** The respawn strike, once a tribute room visit has put the player on the train. */
+    public static void strikeAfterTributeRoom(ServerPlayer player) {
+        if (isBuilderWorld(player)) return;
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }
 
@@ -838,7 +846,7 @@ public final class StartingBookEvents {
         if (!countsForMilestone) return;
         if (BookReadMarkerTag.isOpened(stack)) return;
         if (!(item.getOwner() instanceof ServerPlayer player)) return;
-        if (RunIntegrity.isCheated(player)) return; // global burn stat frozen for cheated runs
+        if (RunIntegrity.isOffRecord(player)) return; // global burn stat frozen for cheated runs
 
         long newTotal = GlobalBookBurnStats.addBooksBurnedUnread(player.getUUID(), 1L);
         AchievementEvents.notifyBooksBurnedUnread(player, newTotal);

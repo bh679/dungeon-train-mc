@@ -64,12 +64,20 @@ public final class LoadingStories {
         cumulativeMs = new long[pickedKeys.size()];
         long running = 0;
         for (int i = 0; i < pickedKeys.size(); i++) {
-            int length = Component.translatable(pickedKeys.get(i)).getString().length();
-            long duration = Math.max(MIN_LINE_MS, Math.min(MAX_LINE_MS, BASE_LINE_MS + PER_CHAR_MS * length));
-            running += duration;
+            running += lineMs(Component.translatable(pickedKeys.get(i)).getString());
             cumulativeMs[i] = running;
         }
         totalMs = running;
+    }
+
+    /** How long a line of story stays up: longer for a longer line, within a floor and a ceiling. */
+    public static long lineMs(String text) {
+        return Math.max(MIN_LINE_MS, Math.min(MAX_LINE_MS, BASE_LINE_MS + PER_CHAR_MS * text.length()));
+    }
+
+    /** The shortest a line stays up. */
+    public static long minLineMs() {
+        return MIN_LINE_MS;
     }
 
     private static int indexForTime(long t) {

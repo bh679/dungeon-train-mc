@@ -26,6 +26,7 @@ import html
 import http.server
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -44,6 +45,20 @@ CHANGELOG_SOURCE = (
     ".github/release-notes/changelog.json',"
 )
 NEWEST_SOURCE = "const newest = listed || newestReleased(changelog);"
+# Release pictures live on GitHub main, so an update's picture 404s until it merges. The preview serves
+# this checkout's copies instead, under the update page.
+IMAGES_URL = "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/"
+IMAGES_DIR = os.path.join(".github", "release-notes", "images")
+LOCAL_IMAGES = "release-images/"
+# The page takes https: pictures only; the preview's own copies are served from localhost over http.
+HTTPS_ONLY_SOURCE = (
+    "const url = new URL(text);\n      return url.protocol === 'https:' ? url.href : null;"
+)
+HTTPS_OR_PREVIEW = (
+    "const url = new URL(text, location.href);\n"
+    "      return url.protocol === 'https:' || url.origin === location.origin ? url.href : null;"
+)
+MEDIA_FIELDS = ("image", "loop", "video")
 
 
 def read_version(path: str = changelog_io.GRADLE_PROPERTIES_FILE) -> str:
@@ -56,17 +71,27 @@ def read_version(path: str = changelog_io.GRADLE_PROPERTIES_FILE) -> str:
 
 def patch_update_js(source: str) -> str:
     """The page's script, reading the local changelog and ignoring what the stores list as newest."""
-    for needle in (CHANGELOG_SOURCE, NEWEST_SOURCE):
+    for needle in (CHANGELOG_SOURCE, NEWEST_SOURCE, HTTPS_ONLY_SOURCE):
         if source.count(needle) != 1:
             raise ValueError(f"update.js has changed; can't find: {needle}")
     return source.replace(CHANGELOG_SOURCE, f"changelog: '{LOCAL_CHANGELOG}',").replace(
         NEWEST_SOURCE, "const newest = newestReleased(changelog);"
-    )
+    ).replace(HTTPS_ONLY_SOURCE, HTTPS_OR_PREVIEW)
 
 
 def preview_changelog(data: dict, version: str, now: str) -> tuple[dict, int]:
     entries, count = changelog_io.mark_all_released(data["entries"], f"v{version}", now)
     return {**data, "entries": entries}, count
+
+
+def local_media(entries: list[dict], available: set[str]) -> list[dict]:
+    """Entries whose pictures point at this checkout's copies, where it has the file."""
+    def local(url: object) -> object:
+        if isinstance(url, str) and url.startswith(IMAGES_URL) and url[len(IMAGES_URL):] in available:
+            return LOCAL_IMAGES + url[len(IMAGES_URL):]
+        return url
+
+    return [{**e, **{k: local(e[k]) for k in MEDIA_FIELDS if k in e}} for e in entries]
 
 
 def notes_page(version: str, markdown: str) -> str:
@@ -119,6 +144,9 @@ def build_site(relay: str, version: str, target: str) -> int:
         patched = patch_update_js(f.read())
     with open(script, "w", encoding="utf-8") as f:
         f.write(patched)
+    images = os.path.join(site, "update", LOCAL_IMAGES)
+    shutil.copytree(IMAGES_DIR, images)
+    preview = {**preview, "entries": local_media(preview["entries"], set(os.listdir(images)))}
     with open(os.path.join(site, "update", LOCAL_CHANGELOG), "w", encoding="utf-8") as f:
         json.dump(preview, f, ensure_ascii=False)
     with open(os.path.join(site, "notes.html"), "w", encoding="utf-8") as f:

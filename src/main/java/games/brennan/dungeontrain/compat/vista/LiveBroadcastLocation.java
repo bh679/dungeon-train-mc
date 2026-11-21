@@ -55,6 +55,7 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
     static {
         TYPES.register("live", () -> TYPE);
         TYPES.register("live_second", () -> SECOND_TYPE);
+        TYPES.register("tribute_tv", () -> TributeTvBroadcast.TYPE);
     }
 
     private final LiveBroadcastSource source;
@@ -79,6 +80,7 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
             BroadcastManager manager = BroadcastManager.getInstance(level);
             manager.linkFeed(LiveBroadcastSource.MAIN_FEED_UUID, INSTANCE);
             manager.linkFeed(LiveBroadcastSource.SECOND_FEED_UUID, SECOND);
+            manager.linkFeed(TributeTvBroadcast.FEED_UUID, TributeTvBroadcast.LOCATION);
             // An unchanged link is not saved again; this rewrites a save that still holds the old
             // second-stream type, so an older Dungeon Train can read the file.
             manager.setDirty();

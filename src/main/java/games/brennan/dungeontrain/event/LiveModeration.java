@@ -208,7 +208,7 @@ public final class LiveModeration {
     }
 
     private static void record(ServerPlayer player, String source, List<String> hits, String text) {
-        if (skipsStrikes(DungeonTrain.isDevBuild(), RunIntegrity.isCheated(player))) return;
+        if (skipsStrikes(DungeonTrain.isDevBuild(), RunIntegrity.isCheated(player)) || RunIntegrity.isOffRecordWorld()) return;
         long now = System.currentTimeMillis();
         UUID uuid = player.getUUID();
         Long last = LAST_STRIKE_MS.get(uuid);

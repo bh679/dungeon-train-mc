@@ -1117,6 +1117,9 @@ public final class DungeonTrainConfig {
 
     /** Whether to POST per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
     public static boolean isWorldInfoToRelay() {
+        // Test mode (a perks test world) is off the record: none of its telemetry, claims or
+        // leaderboard traffic reaches the relay, whatever the config says.
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) return false;
         return isLoaded() ? WORLD_INFO_TO_RELAY.get() : DEFAULT_WORLD_INFO_TO_RELAY;
     }
 

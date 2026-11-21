@@ -168,7 +168,7 @@ public final class LiveFeedEvents {
 
     /** {@link #streamBlocked(boolean, boolean)} for {@code player} now; also the gift backstop ({@code LiveGiftServer}). */
     static boolean streamBlocked(ServerPlayer player) {
-        return streamBlocked(DungeonTrain.isDevBuild(), RunIntegrity.isCheated(player));
+        return streamBlocked(DungeonTrain.isDevBuild(), RunIntegrity.isCheated(player)) || RunIntegrity.isOffRecordWorld();
     }
 
     /** Once a second, end the stream of a streamer whose run has turned Free Play. */

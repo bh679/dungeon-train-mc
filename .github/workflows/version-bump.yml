@@ -75,8 +75,52 @@ jobs:
 
           echo "✓ gradle.properties valid (mod_version=$CURRENT)"
 
+      # A soft-launched feature's changelog waits in .github/release-notes/held/<batch>/ with the
+      # MINOR bumps it is owed in batch.json (scripts/release-notes/held.py). Launch day deletes
+      # that file; this push then bumps once per owed bump, one commit each so the death screen's
+      # update count moves by the same amount, instead of the usual single bump below.
+      - name: Detect a launched held batch
+        id: held
+        run: |
+          set -euo pipefail
+          BUMPS=0
+          if [ "${{ github.event_name }}" = "push" ]; then
+            for f in $(git diff --name-only --diff-filter=D HEAD^ HEAD -- '.github/release-notes/held/*/batch.json'); do
+              N=$(git show "HEAD^:$f" | python3 -c 'import json,sys; print(int(json.load(sys.stdin)["bumps"]))')
+              echo "Launched $f: owed $N bump(s)"
+              BUMPS=$((BUMPS + N))
+            done
+          fi
+          echo "bumps=$BUMPS" >> "$GITHUB_OUTPUT"
+
+      - name: Bump once per owed bump (held batch launched)
+        if: steps.held.outputs.bumps != '0'
+        env:
+          BUMPS: ${{ steps.held.outputs.bumps }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          for i in $(seq 1 "$BUMPS"); do
+            NEW_VERSION="$MAJOR.$((MINOR + i)).0"
+            sed -i "s/^mod_version=.*/mod_version=$NEW_VERSION/" gradle.properties
+            python3 scripts/version-history/collect.py || echo "::warning::version-history refresh failed at $NEW_VERSION"
+            git add gradle.properties docs/version-history/index.json
+            git commit -m "chore(version): bump to $NEW_VERSION (MINOR — held batch launch $i/$BUMPS) [skip ci]"
+          done
+          python3 scripts/localization/stamp-provenance.py --refresh || true
+          if [ -n "$(git status --porcelain -- $GENERATED_L10N)" ]; then
+            git add $GENERATED_L10N
+            git commit -m "chore(version): refresh version-history index for $NEW_VERSION [skip ci]"
+          fi
+          git push
+
       - name: Compute and apply MINOR bump
         id: bump
+        if: steps.held.outputs.bumps == '0'
         run: |
           set -euo pipefail
           CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
@@ -115,7 +159,7 @@ jobs:
       # is included even though it isn't committed yet. A failure here must not block the bump —
       # a stale index degrades to a slightly low count, a missing bump breaks the release chain.
       - name: Refresh the version-history index
-        if: steps.bump.outputs.skipped != 'true'
+        if: steps.held.outputs.bumps == '0' && steps.bump.outputs.skipped != 'true'
         continue-on-error: true
         run: python3 scripts/version-history/collect.py
 
@@ -128,6 +172,7 @@ jobs:
       # contract as the index: a failed refresh never blocks the bump.
       - name: Refresh the generated translation counts
         id: counts
+        if: steps.held.outputs.bumps == '0'
         continue-on-error: true
         run: |
           set -euo pipefail
@@ -140,7 +185,7 @@ jobs:
           fi
 
       - name: Commit and push
-        if: steps.bump.outputs.skipped != 'true'
+        if: steps.held.outputs.bumps == '0' && steps.bump.outputs.skipped != 'true'
         env:
           NEW_VERSION: ${{ steps.bump.outputs.version }}
         run: |

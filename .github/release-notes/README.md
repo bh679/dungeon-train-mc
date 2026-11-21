@@ -16,6 +16,16 @@ Released entries live in `changelog.json`. Each **unreleased** entry is its own 
 `changelog.json`, so open PRs don't conflict with each other or with a release marking entries
 released. That matters on GitHub, where a conflicting PR gets no CI run at all.
 
+### A third place: `held/<batch>/` (soft launches)
+
+A feature merged to main switched off (a soft launch) keeps its entries in
+`held/<batch>/<id>.json`, with `held/<batch>/batch.json` recording the MINOR bumps it is owed.
+Nothing else reads `held/`, so those entries stay out of every release's notes, the release
+marking step and the website. `scripts/release-notes/held.py launch <batch>` (in the PR that
+switches the feature on) moves them into `unreleased/`, restamped to the launch version, and
+deletes `batch.json`; `version-bump.yml` then bumps main once per owed bump. Today:
+`held/perks/` (21 entries, 21 bumps), launched by also flipping `PerksGate.LAUNCHED`.
+
 Every script reads and writes through `changelog_io.load_changelog` / `save_changelog`, which
 present one merged `entries` list (ledger first, then the unreleased files ordered by `date`, `id`)
 and split it back on save. Outside readers of `changelog.json` (the in-game Versions page and

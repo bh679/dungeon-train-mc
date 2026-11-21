@@ -33,6 +33,7 @@ public final class DifficultyLevelReport {
      * never disrupts the boarding-progress tick that called it.
      */
     public static void post(ServerPlayer player, int tier) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         if (!DungeonTrainConfig.isDifficultyLevelNoticeToDiscord()) return;
         try {
             String title = "⚔ " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " reached Difficulty Level " + tier;

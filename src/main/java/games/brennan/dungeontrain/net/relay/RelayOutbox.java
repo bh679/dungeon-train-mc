@@ -201,6 +201,11 @@ public final class RelayOutbox {
         if (path == null || path.isBlank() || body == null || body.isBlank()) {
             return;
         }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            // Test mode is off the record: nothing it does is queued, so nothing can flush later
+            // from a live world either.
+            return;
+        }
         boolean flushNow;
         synchronized (this) {
             ensureLoaded();

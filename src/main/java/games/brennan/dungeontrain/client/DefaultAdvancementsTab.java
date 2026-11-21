@@ -138,7 +138,7 @@ public final class DefaultAdvancementsTab {
         }
     }
 
-    private static boolean isAdvancementsScreen(Screen screen) {
+    static boolean isAdvancementsScreen(Screen screen) {
         return screen instanceof AdvancementsScreen
                 || (screen != null && BETTER_ADVANCEMENTS_SCREEN.equals(screen.getClass().getName()));
     }

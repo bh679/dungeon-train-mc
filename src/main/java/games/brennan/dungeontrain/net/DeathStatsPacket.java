@@ -94,6 +94,10 @@ public record DeathStatsPacket(
         int photosViewed,
         int tributesMade,
         int tributeEmeralds,
+        // This life's advancements that earn unlock points, and the unlock points they earned: the
+        // death perks menu's opening line.
+        int lifeUnlockAdvancements,
+        int lifeUnlockPoints,
         // The echo this death left behind (the echo page); null when none was captured, and
         // always null on the nap / logout summaries.
         EchoSummary echo
@@ -170,6 +174,8 @@ public record DeathStatsPacket(
         buf.writeVarInt(photosViewed);
         buf.writeVarInt(tributesMade);
         buf.writeVarInt(tributeEmeralds);
+        buf.writeVarInt(lifeUnlockAdvancements);
+        buf.writeVarInt(lifeUnlockPoints);
         buf.writeBoolean(echo != null);
         if (echo != null) {
             echo.encode(buf);
@@ -239,6 +245,8 @@ public record DeathStatsPacket(
         int photosViewed = buf.readVarInt();
         int tributesMade = buf.readVarInt();
         int tributeEmeralds = buf.readVarInt();
+        int lifeUnlockAdvancements = buf.readVarInt();
+        int lifeUnlockPoints = buf.readVarInt();
         EchoSummary echo = buf.readBoolean() ? EchoSummary.decode(buf) : null;
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, trainTimeTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
@@ -247,7 +255,8 @@ public record DeathStatsPacket(
                 lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
                 lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
                 narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals,
-                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds, echo);
+                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds,
+                lifeUnlockAdvancements, lifeUnlockPoints, echo);
     }
 
     @Override

@@ -106,6 +106,7 @@ public final class RemoteEchoEncounters {
      * near enough to be the story's audience.
      */
     public static void onRemoteEchoSpawned(PlayerMobEntity mob, ReincarnationRecord record) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         // The pool record was consumed the moment PlayerMob embodied it — report usage before any
         // journal gating so the relay's per-death echo count doesn't depend on the story feature.
         EchoUsageReporter.report(record, mob);
@@ -145,6 +146,7 @@ public final class RemoteEchoEncounters {
     public static void onDeathNoteEchoSpawned(PlayerMobEntity mob, UUID authorId, String authorName,
                                               int deathCarriage, ServerPlayer target, int noteId,
                                               NoteKind kind) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (target == null) return;
         if (ACTIVE.size() >= MAX_ACTIVE) return;   // outcome still reported by DeathNoteEvents' fallback

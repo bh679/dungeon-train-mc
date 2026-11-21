@@ -153,6 +153,21 @@ class RelayOutboxTest {
     }
 
     @Test
+    void testModeQueuesNothing(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
+        games.brennan.dungeontrain.perks.PerksGate.setTestWorldForTests(true);
+        try {
+            box.enqueue("/telemetry/run-summary", "{\"a\":1}");
+        } finally {
+            games.brennan.dungeontrain.perks.PerksGate.setTestWorldForTests(false);
+        }
+        assertEquals(0, batch.urls.size(), "Test mode is off the record: nothing is sent");
+        assertEquals(0, box.pendingCount(), "and nothing is queued to flush later from a live world");
+    }
+
+    @Test
     void heldWhenOfflineAndSurvivesReload(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
         RecordingBatchSender offline = new RecordingBatchSender(200);

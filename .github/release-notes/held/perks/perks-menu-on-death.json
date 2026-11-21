@@ -1,0 +1,22 @@
+{
+  "id": "perks-menu-on-death",
+  "version": "0.1566.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "translations",
+    "ui"
+  ],
+  "title": "Perks menu when you die",
+  "summary": "When you die the camera tilts up to the night sky and your perks menu fades in, one piece at a time, while the train tells you what this life earned. First time here? It walks you through it at your own pace. Unlocking now has its own button on the details bar, showing the level you are buying and what it costs.",
+  "highlights": [
+    "The death camera pans up into the stars and the perks menu builds up layer by layer",
+    "A few lines from the train count this life's advancements and the points they earned",
+    "A guided first visit: click or press Space to move on, and nothing is picked for you",
+    "A new Unlock button shows the level and the cost, and only acts on the perk you selected"
+  ],
+  "date": "2026-10-31",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

@@ -12,6 +12,9 @@ Usage:
   python3 scripts/release-notes/set-social-music.py --entry <id> --show
   python3 scripts/release-notes/set-social-music.py --entry <id> --track <track-id> [--vibe <vibe>]
   python3 scripts/release-notes/set-social-music.py --entry <id> --track ''      # unpin: the vibe picks again
+  python3 scripts/release-notes/set-social-music.py --entry <id> --track <track-id> --start 49.7
+      # where that track starts, in seconds. The start belongs to the track, so it holds for every update that
+      # plays it; --start '' clears it back to TikTok's clip start or the measured highlight.
 
 Env: DEPLOY_HOST (bitnami@brennan.games), DEPLOY_SSH_KEY (~/.ssh/claude-lightsail), DEPLOY_PORT (3005).
 """
@@ -50,7 +53,8 @@ def show(entry: str, page: dict) -> None:
     music = (page.get("updates") or {}).get("music") or page.get("music") or {}
     on = music.get("on", {})
     pinned = (music.get("trackFor") or {}).get(entry)
-    titles = {t["id"]: f"{t['title']} by {t['composer']}" for v in music.get("vibes", []) for t in v.get("tracks", [])}
+    tracks = {t["id"]: t for v in music.get("vibes", []) for t in v.get("tracks", [])}
+    titles = {i: f"{t['title']} by {t['composer']}" for i, t in tracks.items()}
     print(f"entry:  {entry}")
     print(f"music:  facebook/instagram {'on' if on.get('meta') else 'OFF'}, tiktok {'on' if on.get('tiktok') else 'OFF'}")
     print(f"vibe:   {(music.get('vibeFor') or {}).get(entry) or '(from its tags)'}")
@@ -58,6 +62,8 @@ def show(entry: str, page: dict) -> None:
         print("song:   (this relay has no per-update song yet; deploy dp-relay 0.330.0 or later)")
     else:
         print(f"song:   {titles.get(pinned, pinned) if pinned else '(not pinned: the vibe picks)'}")
+        if pinned in tracks and "start" in tracks[pinned]:
+            print(f"start:  {tracks[pinned]['start']} s ({tracks[pinned].get('from', '?')})")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -65,16 +71,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--entry", required=True, help="changelog entry id")
     parser.add_argument("--track", help="track id from the preview's song card; '' unpins")
     parser.add_argument("--vibe", help="also set the entry's vibe")
+    parser.add_argument("--start", help="with --track: where that track starts, in seconds; '' clears it")
     parser.add_argument("--show", action="store_true", help="print what the relay has for the entry")
     args = parser.parse_args(argv)
     if args.track is None and args.vibe is None and not args.show:
         parser.error("give --track, --vibe or --show")
+    if args.start is not None and not args.track:
+        parser.error("--start needs --track")
+    try:
+        start = None if args.start in (None, "") else float(args.start)
+    except ValueError:
+        parser.error("--start takes seconds, e.g. 49.7")
     try:
         page = None
         if args.vibe is not None:
             page = relay("PUT", "socials/music", {"entry": args.entry, "vibe": args.vibe})
         if args.track is not None:
             page = relay("PUT", "socials/music", {"entry": args.entry, "track": args.track})
+        if args.start is not None:
+            page = relay("PUT", "socials/music", {"track": args.track, "start": start})
         show(args.entry, page or relay("GET", "socials"))
     except (RuntimeError, subprocess.TimeoutExpired) as e:
         print(f"set-social-music: {e}", file=sys.stderr)

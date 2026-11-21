@@ -5,7 +5,9 @@ import games.brennan.dungeontrain.compat.DisabledModContent;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.registration.IExtraIngredientRegistration;
+import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -41,5 +43,17 @@ public final class DungeonTrainJeiPlugin implements IModPlugin {
                 .ifPresent(extras::add);
         }
         registration.addExtraItemStacks(extras);
+    }
+
+    /** Perk items stay out of JEI until perks launch (PerksGate), as they stay out of the creative tab. */
+    @Override
+    public void onRuntimeAvailable(IJeiRuntime runtime) {
+        if (games.brennan.dungeontrain.perks.PerksGate.LAUNCHED) return;
+        List<ItemStack> perkItems = List.of(
+            new ItemStack(games.brennan.dungeontrain.registry.ModItems.COSMIC_APPLE.get()),
+            new ItemStack(games.brennan.dungeontrain.registry.ModItems.CELESTIAL_BITE.get()),
+            new ItemStack(games.brennan.dungeontrain.registry.ModItems.VIOLET_CORE.get()),
+            new ItemStack(games.brennan.dungeontrain.registry.ModItems.TRIBUTE_CASSETTE.get()));
+        runtime.getIngredientManager().removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, perkItems);
     }
 }

@@ -1,0 +1,149 @@
+package games.brennan.dungeontrain.perks;
+
+import games.brennan.dungeontrain.client.PerkClientState;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PerkStatePacket;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.api.distmarker.Dist;
+
+import java.util.Map;
+
+/**
+ * The perks API. Effect code anywhere in the mod asks one question:
+ * <pre>int r = Perks.rank(player, TierOnePerks.HEALTH);</pre>
+ * and scales by {@code r} (0 means "no perk"). Works on the server (reads the attachment) and
+ * on the client for the local player (reads the synced mirror; other players read as 0).
+ *
+ * <p>The mutators are server-only and are what the debug command and the unlock / point
+ * earning flows call. Each one persists, syncs the owning client and notifies
+ * {@link PerkEffects}.</p>
+ */
+public final class Perks {
+
+    private Perks() {}
+
+    // ---------------- reads (both sides) ----------------
+
+    /** Active points while unlocked, else 0. Unknown ids and null players read 0. */
+    public static int rank(Player player, String perkId) {
+        return state(player).rank(perkId);
+    }
+
+    public static boolean isUnlocked(Player player, String perkId) {
+        return state(player).isUnlocked(perkId);
+    }
+
+    /** The whole state, for menus and the command. Never null; empty while perks are off ({@link PerksGate}). */
+    public static PerkState state(Player player) {
+        if (player == null || !PerksGate.isOn(player)) return PerkState.EMPTY;
+        if (player instanceof ServerPlayer sp) return sp.getData(ModDataAttachments.PERK_STATE.get());
+        if (player.level().isClientSide && FMLEnvironment.dist == Dist.CLIENT) {
+            return PerkClientState.stateFor(player);
+        }
+        return PerkState.EMPTY;
+    }
+
+    // ---------------- writes (server only) ----------------
+
+    public static void unlock(ServerPlayer player, String perkId) {
+        requireKnown(perkId);
+        PerkState next = state(player).withUnlockedOnce(perkId);
+        apply(player, next);
+        PerkProfiles.onUnlockLevelChanged(player, perkId, next.unlockLevel(perkId));
+    }
+
+    /** Set the unlock level directly (dev command). Zero locks the perk. */
+    public static void setUnlockLevel(ServerPlayer player, String perkId, int level) {
+        requireKnown(perkId);
+        apply(player, state(player).withUnlockLevel(perkId, level));
+        PerkProfiles.onUnlockLevelChanged(player, perkId, Math.max(0, level));
+    }
+
+    /** Set active points (clamped to the perk's unlock level). Does not unlock. */
+    public static void setActive(ServerPlayer player, String perkId, int points) {
+        requireKnown(perkId);
+        PerkState s = state(player);
+        apply(player, s.withActive(perkId, clamp(points, s.unlockLevel(perkId))));
+    }
+
+    /** Add active points (clamped). Returns the new rank. */
+    public static int addActive(ServerPlayer player, String perkId, int delta) {
+        requireKnown(perkId);
+        PerkState before = state(player);
+        PerkState after = before.withActive(perkId,
+            clamp(before.activePoints(perkId) + delta, before.unlockLevel(perkId)));
+        apply(player, after);
+        return after.rank(perkId);
+    }
+
+    /** New life: every active point goes, the unlocked set stays. */
+    public static void clearActive(ServerPlayer player) {
+        apply(player, state(player).clearedActive());
+    }
+
+    /** Dev only: forget everything. */
+    public static void clearAll(ServerPlayer player) {
+        apply(player, PerkState.EMPTY);
+        PerkProfiles.onCleared(player);
+    }
+
+    /** Swap in another save's state without writing it back to any save. {@link PerkProfiles} only. */
+    static void replaceState(ServerPlayer player, PerkState next) {
+        apply(player, next);
+    }
+
+    /** Push the current state to the owning client. */
+    public static void sync(ServerPlayer player) {
+        DungeonTrainNet.sendTo(player, new PerkStatePacket(state(player), PerksGate.isOn()));
+    }
+
+    /** Called by the lifecycle once a fresh player entity has its state synced. */
+    static void playerReady(ServerPlayer player) {
+        PerkEffects.firePlayerReady(player);
+    }
+
+    private static void apply(ServerPlayer player, PerkState next) {
+        // Perks off: nothing is bought, spent or saved, so a player's stored state is left alone.
+        if (!PerksGate.isOn()) return;
+        PerkState prev = state(player);
+        if (prev.equals(next)) return;
+        player.setData(ModDataAttachments.PERK_STATE.get(), next);
+        sync(player);
+        fireChanges(player, prev, next);
+    }
+
+    private static void fireChanges(ServerPlayer player, PerkState prev, PerkState next) {
+        java.util.Set<String> touched = new java.util.LinkedHashSet<>();
+        touched.addAll(prev.active().keySet());
+        touched.addAll(next.active().keySet());
+        touched.addAll(prev.unlocked());
+        touched.addAll(next.unlocked());
+        for (String id : touched) {
+            PerkEffects.fireRankChanged(player, id, prev.rank(id), next.rank(id));
+        }
+    }
+
+    private static int clamp(int points, int unlockLevel) {
+        return Math.max(0, Math.min(unlockLevel, points));
+    }
+
+    private static PerkDef requireKnown(String perkId) {
+        PerkRegistry.bootstrap();
+        return PerkRegistry.get(perkId)
+            .orElseThrow(() -> new IllegalArgumentException("unknown perk id: " + perkId));
+    }
+
+    /** For log lines: {@code health=3 speed=1}. */
+    public static String describe(PerkState state) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Integer> e : state.active().entrySet()) {
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(e.getKey()).append('=').append(e.getValue());
+            if (!state.isUnlocked(e.getKey())) sb.append("(locked)");
+        }
+        return sb.length() == 0 ? "none" : sb.toString();
+    }
+}

@@ -136,10 +136,12 @@ public final class DifficultyChangeConfirmScreen extends Screen {
         }
         lossLines = List.copyOf(loss);
 
+        // Perks are only named while they are on (PerksGate): the soft launch keeps them quiet.
+        String perks = games.brennan.dungeontrain.perks.PerksGate.isOnClient() ? "_perks" : "";
         noteLines = isolated
             ? this.font.split(
-                Component.translatable("gui.dungeontrain.difficulty_confirm.kept", from.getDisplayName()), innerW)
-            : this.font.split(Component.translatable("gui.dungeontrain.difficulty_confirm.stats"), innerW);
+                Component.translatable("gui.dungeontrain.difficulty_confirm.kept" + perks, from.getDisplayName()), innerW)
+            : this.font.split(Component.translatable("gui.dungeontrain.difficulty_confirm.stats" + perks), innerW);
         List<Choice> choices = choices();
 
         int y = PADDING;

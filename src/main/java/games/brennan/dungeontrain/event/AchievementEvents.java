@@ -476,7 +476,7 @@ public final class AchievementEvents {
      * nothing removes from it. A cheated run adds nothing, as with the other cross-world stats.
      */
     public static void recordLifetimeBiomes(ServerPlayer player, Set<ResourceLocation> biomes) {
-        if (biomes.isEmpty() || RunIntegrity.isCheated(player)) return;
+        if (biomes.isEmpty() || RunIntegrity.isOffRecord(player)) return;
         if (!GlobalBiomeProgress.addAll(player.getUUID(), biomes)) return;
         checkTerraOmnia(player);
         syncRiddenBiomes(player);
@@ -1010,7 +1010,7 @@ public final class AchievementEvents {
      */
     private static void absorbWorldRandomBooksIntoLifetime(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        if (server == null || RunIntegrity.isCheated(player)) return;
+        if (server == null || RunIntegrity.isOffRecord(player)) return;
         Map<String, Set<Integer>> world = new HashMap<>();
         NarrativeProgressData.get(server.overworld()).randomBookSnapshot()
             .forEach((basename, p) -> world.put(basename, p.readLetters()));

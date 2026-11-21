@@ -27,6 +27,10 @@ public final class ModMobEffects {
     public static final DeferredHolder<MobEffect, FreePlayEffect> FREE_PLAY =
         MOB_EFFECTS.register("free_play", FreePlayEffect::new);
 
+    /** "Test" — marker shown in a perks test world (Test mode: live play + perks, off the record). */
+    public static final DeferredHolder<MobEffect, games.brennan.dungeontrain.registry.effect.TestModeEffect> TEST_MODE =
+        MOB_EFFECTS.register("test_mode", games.brennan.dungeontrain.registry.effect.TestModeEffect::new);
+
     /** "Drifting" — marker shown while inside a drifting carriage or drifting room. */
     public static final DeferredHolder<MobEffect, DriftingEffect> DRIFTING =
         MOB_EFFECTS.register("drifting", DriftingEffect::new);

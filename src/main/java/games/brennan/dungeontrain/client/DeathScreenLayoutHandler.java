@@ -191,6 +191,8 @@ public final class DeathScreenLayoutHandler {
         if (overworld != null) {
             try {
                 DungeonTrainWorldData dt = DungeonTrainWorldData.get(overworld);
+                // "Board anew" from a perks test world boards another one; from any other world, not.
+                games.brennan.dungeontrain.perks.PendingPerksTest.set(dt != null && dt.isPerksTest());
                 if (dt != null && dt.dims() != null) {
                     PendingWorldChoices.set(
                             dt.getTrainY(),

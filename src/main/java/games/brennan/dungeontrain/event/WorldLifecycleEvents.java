@@ -80,6 +80,13 @@ public final class WorldLifecycleEvents {
             data.recordDungeonTrainPreset(dungeonTrainPreset);
         }
 
+        // A perks test world (the title screen's tester-only button): taken on every load so a
+        // stale value can't reach an existing save, written only into a brand-new world.
+        boolean perksTest = games.brennan.dungeontrain.perks.PendingPerksTest.take();
+        if (newWorld && perksTest) {
+            games.brennan.dungeontrain.perks.PerksGate.markTestWorld(overworld);
+        }
+
         // Starting dimension is published unconditionally by the World-Type
         // mixin (defaults to OVERWORLD), so it must be committed even when the
         // user did not open the Dungeon Train Options sub-screen — otherwise a

@@ -18,7 +18,9 @@ final class LiveEyeEligibility {
 
     /** A Free Play run never goes live; dev builds stream in it for testing, as the server allows (LiveFeedEvents#streamBlocked). */
     static boolean freePlayBlocks(Player player) {
-        return player.hasEffect(ModMobEffects.FREE_PLAY) && !DungeonTrain.isDevBuild();
+        // Test mode never streams, dev build or not (its badge is the client's off-the-record signal).
+        return (player.hasEffect(ModMobEffects.FREE_PLAY) && !DungeonTrain.isDevBuild())
+            || player.hasEffect(ModMobEffects.TEST_MODE);
     }
 
     /** Live Eye streaming switched on, behind the internet consent. */

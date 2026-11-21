@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
@@ -111,6 +112,63 @@ public final class CarriageOcclusion {
                 || segmentHitsCarriage(carriage, camWorld, bodyHigh)) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    /**
+     * The nearest point to {@code from} on the world segment {@code from → to} where a carriage
+     * block stands, or null when the segment is clear. Used to pull a lens back out of a carriage.
+     */
+    public static Vec3 firstHit(List<Carriage> carriages, Vec3 from, Vec3 to) {
+        Vec3 best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (Carriage carriage : carriages) {
+            Vec3 localFrom = carriage.pose().transformPositionInverse(from);
+            Vec3 localTo = carriage.pose().transformPositionInverse(to);
+            if (localFrom.distanceToSqr(localTo) < 1.0e-6) continue;
+            Map<Long, LevelChunk> chunks = carriage.chunks();
+            BlockPos hit = BlockGetter.<BlockPos, Map<Long, LevelChunk>>traverseBlocks(
+                    localFrom, localTo, chunks,
+                    (map, pos) -> occludes(map, pos) ? pos.immutable() : null,
+                    map -> null);
+            if (hit == null) continue;
+            Vec3 world = carriage.pose().transformPosition(Vec3.atCenterOf(hit));
+            double d = world.distanceToSqr(from);
+            if (d < bestDist) {
+                bestDist = d;
+                best = world;
+            }
+        }
+        return best;
+    }
+
+    /** The carriage whose plot has a chunk under {@code world} (the one a body stands in), or null. */
+    public static Carriage carriageAt(List<Carriage> carriages, Vec3 world) {
+        for (Carriage carriage : carriages) {
+            Vec3 local = carriage.pose().transformPositionInverse(world);
+            BlockPos pos = BlockPos.containing(local);
+            if (carriage.chunks().get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4)) != null) return carriage;
+        }
+        return null;
+    }
+
+    /** The block at a plot-space position of this carriage (air when the chunk is not built). */
+    public static BlockState blockAt(Carriage carriage, BlockPos local) {
+        LevelChunk chunk = carriage.chunks().get(ChunkPos.asLong(local.getX() >> 4, local.getZ() >> 4));
+        return chunk == null ? Blocks.AIR.defaultBlockState() : chunk.getBlockState(local);
+    }
+
+    /** A solid, view-blocking block at a plot-space position of this carriage. */
+    public static boolean solidAt(Carriage carriage, BlockPos local) {
+        return occludes(carriage.chunks(), local);
+    }
+
+    /** True when {@code world} lies inside a solid block of any of these carriages. */
+    public static boolean insideBlock(List<Carriage> carriages, Vec3 world) {
+        for (Carriage carriage : carriages) {
+            Vec3 local = carriage.pose().transformPositionInverse(world);
+            if (occludes(carriage.chunks(), BlockPos.containing(local))) return true;
         }
         return false;
     }

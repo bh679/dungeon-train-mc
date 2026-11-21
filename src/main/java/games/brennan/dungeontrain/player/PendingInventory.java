@@ -79,7 +79,7 @@ public final class PendingInventory {
         xpLevel = player.experienceLevel;
         xpProgress = player.experienceProgress;
         xpTotal = player.totalExperience;
-        partition = DifficultyPartition.keyFor(player.level());
+        partition = ProfileKey.current(player);
         LOGGER.info("[DungeonTrain] keepInventory carry: captured {} item stack(s) + level {} XP for {} ({})",
                 saved.size(), xpLevel, player.getName().getString(), partition);
     }
@@ -99,7 +99,7 @@ public final class PendingInventory {
      */
     public static boolean matchesPartition(ServerPlayer player) {
         String captured = partition;
-        return captured == null || captured.equals(DifficultyPartition.keyFor(player.level()));
+        return captured == null || captured.equals(ProfileKey.current(player));
     }
 
     /** The difficulty partition the pending snapshot was captured on, or {@code null} when there is none. */

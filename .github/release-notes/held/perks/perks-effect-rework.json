@@ -1,0 +1,23 @@
+{
+  "id": "perks-effect-rework",
+  "version": "0.1559.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Perk reworks",
+  "summary": "Enchant Max and Enchant Bonus now grow with every point: each point brings more of your enchantments along, starting with Protection, and every ten points add another level. Extra Cam-Shots no longer leaves it to chance: one point gives every second camera an extra shot. Vampirism and Cooking Time keep getting better with every point. Pet Health now takes effect on your pets straight away, and Live Eye Safe Duration lengthens both stages of your protection.",
+  "highlights": [
+    "Enchant Max and Enchant Bonus grow with every point",
+    "Extra camera shots without the luck",
+    "Pet Health applies to your pets straight away",
+    "Live Eye Safe Duration lengthens both stages of protection"
+  ],
+  "pr": 2364,
+  "date": "2026-10-27",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
