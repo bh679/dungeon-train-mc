@@ -139,7 +139,16 @@ public final class CreditsScreen extends Screen {
     /** In-page control links carry this prefix in a RUN_COMMAND click event; see {@link #mouseClicked}. */
     private static final String CONTROL_PREFIX = "dt:credits/";
     private boolean askedForOwnNames;
+    /** Opened from Options' Credited name row: raise the Edit dialog on the first own line laid out, once. */
+    private boolean openOwnEdit;
     private final List<EditSlot> editSlots = new ArrayList<>();
+
+    /** The Credits page that opens the Edit dialog on the player's own line as soon as it finds one. */
+    public static CreditsScreen openingOwnEdit(Screen parent) {
+        CreditsScreen screen = new CreditsScreen(parent);
+        screen.openOwnEdit = true;
+        return screen;
+    }
 
     public CreditsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.credits.title"));
@@ -354,6 +363,17 @@ public final class CreditsScreen extends Screen {
                              boolean amountHidden, int innerX, int innerW, int y) {
         if (!own) {
             return canvas.addWrappedAt(line, innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+        if (openOwnEdit) {
+            // Cleared first so a re-layout never raises it twice. tell, not execute: execute runs
+            // inline on the render thread, and this is mid-layout.
+            openOwnEdit = false;
+            Minecraft.getInstance().tell(() -> {
+                if (Minecraft.getInstance().screen == this) {
+                    Minecraft.getInstance().setScreen(
+                            new CreditEditScreen(this, section, name, hidden, amountHidden, this::onEdited));
+                }
+            });
         }
         DarkTintedButton edit = new DarkTintedButton(innerX + innerW - EDIT_W, 0, EDIT_W, EDIT_H,
                 Component.translatable("gui.dungeontrain.credits.translations.edit"),

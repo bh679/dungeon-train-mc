@@ -53,6 +53,7 @@ final class ClientOptionsIcons {
             case DEV_CHAT -> Icon.item(Items.WRITABLE_BOOK);
             case PUBLIC_POSTS -> Icon.item(Items.PAINTING);
             case SHOW_NAME -> Icon.item(Items.NAME_TAG);
+            case CREDITED_NAME -> Icon.item(Items.WRITABLE_BOOK);
             case POLITICAL_FILTER -> Icon.item(Items.BARRIER);
             case BOOK_AUTHOR_CHAT -> Icon.item(Items.BOOK);
             case PROTECT_OWN_PETS -> Icon.item(Items.BONE);

@@ -990,6 +990,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 showName.active = !kid;
                 yield Setting.of(showName, kid ? key + ".kid_tip" : key + ".tip");
             }
+            // The Credits Edit dialog, reached from here: Credits works out which line is the
+            // player's, so it opens there and raises the dialog on that line by itself.
+            case CREDITED_NAME -> {
+                boolean online = games.brennan.dungeontrain.client.chat.RelayChatClient.canConnect();
+                Button change = Button.builder(Component.translatable(key + ".button"),
+                                b -> openChild(games.brennan.dungeontrain.client.credits.CreditsScreen.openingOwnEdit(this),
+                                        () -> {}))
+                        .bounds(0, 0, CONTROL_W, ROW_H).build();
+                change.active = online;
+                yield Setting.of(change, online ? key + ".tip" : "gui.dungeontrain.credits.rename.no_consent");
+            }
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.
