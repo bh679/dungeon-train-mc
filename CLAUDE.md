@@ -131,6 +131,12 @@ scripts/ci/run-local.sh   # Run the four build.yml CI jobs locally before pushin
 python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/approved_hashes.json (see below)
 ```
 
+**Bot launch:** an unattended client never stops at the internet-consent or update card
+(`client/BotLaunch`). `./gradlew runClient -Pbot` skips both and grants nothing; `-Pbot=grant` also
+grants consent; it is on (no grant) by default from an agent shell, so pass `-Pbot=false` when
+launching a client for Brennan to see those cards. Jars launched outside Gradle:
+`-Ddungeontrain.bot=deny|grant` or env `DUNGEONTRAIN_BOT`. No player-facing trace.
+
 ### Community item trade values
 
 What each item trades for (Trade Everything, sixteenths of an emerald) is tuned by the community
