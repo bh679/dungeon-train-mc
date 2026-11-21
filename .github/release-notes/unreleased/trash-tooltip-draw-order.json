@@ -1,0 +1,18 @@
+{
+  "id": "trash-tooltip-draw-order",
+  "version": "0.1937.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility",
+    "ui"
+  ],
+  "title": "Trash slot tooltip fix",
+  "summary": "The trash slot's tooltip no longer has item durability bars drawn over its text.",
+  "highlights": [],
+  "pr": 2792,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
