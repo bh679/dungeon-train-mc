@@ -40,7 +40,8 @@ No `data/` folder, no registries, no payloads.
 
 | Check | Result |
 |---|---|
-| Existing mods | No id clash. Its one mixin is on vanilla `ItemRenderer`; booted with Sodium 0.8.12 + Iris 1.8.14 with no mixin errors. No shader pack was active during testing |
+| Existing mods | No id clash, no keybinds. Its one mixin is a `WrapOperation` on the item-model lookup in vanilla `ItemRenderer`, which chains with other mods' hooks. Sodium, Exposure, Exposure Polaroid and Platform also mix into `ItemRenderer`; all applied with no errors. DT's only item-renderer mixin (`mixin/vista/TvItemRendererMixin`) targets Vista's TV head, not this method |
+| Shaders | Tested with Complementary Unbound r5.8.1 on Iris 1.8.14: the book renders correctly in hand and in the hotbar (screenshots 07, 08), with no BEB errors in the log |
 | Item display | Written books (loot books, Shared Books) are untouched: BEB only swaps the model of `minecraft:enchanted_book` by its stored enchantment. Six vanilla enchantments checked in game (screenshot 01). Not checked: how a book with an enchantment it has no art for looks |
 | World gen, loot, vanilla data, economy | Untouched |
 
@@ -50,10 +51,30 @@ No `data/` folder, no registries, no payloads.
 |---|---|
 | Sable | Nothing physical; inventory rendering only |
 | Commands, HUD, network | None |
-| Text | No player-facing text |
+| Text | None: the jar has no `lang` files and no keybinds |
 | Saves | Nothing saved |
 
 ## Performance cost
+
+### BEB alone
+
+Every arm had Sodium and Iris; nothing else extra. Alternated, 5 runs each. The machine was busy with other work (load
+average 11 to 18), so expect a few seconds of noise.
+
+| Measure | With BEB (median, range) | Without (median, range) |
+|---|---|---|
+| Client: JVM start to title screen | 24.5 s (22.8–31.3) | 27.0 s (23.6–33.6) |
+| Client: new world on a pinned seed (⏱ perf world button) to in-world | 7.7 s (7.6–8.9) | 8.3 s (7.1–14.8) |
+| Client: rejoin that save to in-world | 4.7 s (4.3–7.0) | 4.6 s (4.3–5.3) |
+| Client setup crashes | 0 of 5 (plus 0 of 1 warm-up) | 0 of 5 |
+| Dedicated server: JVM start to `Done (`, 10 runs each | 24.5 s (22–49) | 24 s (22–26) |
+| Dedicated server: the game's own `Done (` timer | 7.2 s (5.4–8.9) | 6.7 s (5.3–8.4) |
+
+**No measurable change anywhere.** The server's first round had two slow BEB runs (41 s, 49 s), but their extra time
+was in other mods' loading (VanillaBackport, BetterEnd) and the machine's load average was 13 to 18. A second round
+of 5 v 5 gave medians of 24 s in both arms.
+
+### All three candidates together
 
 Measured for all three candidates together (ismah + BEB + xali's Potions), against the same client without them.
 Sodium and Iris were in both arms. Client JVM start to title screen, 5 runs each, alternated:
@@ -85,9 +106,9 @@ add their own mods, so fix DT's handler first and re-run these boots before addi
 
 | Cost | Result |
 |---|---|
-| Download size | +1.7 MB (BEB) + 48 KB (ismah) + 0.34 MB (xali's Potions) |
-| World load time | Not measured: none of the three adds world data, registries or chunk work |
-| Runtime | Client render only: one model lookup per enchanted book drawn. No tick handlers, no server code. Tick A/B not run |
+| Download size | BEB +1.77 MB, **0.39%** of the Modrinth pack (452 MB: 79 pinned files + DT's jar). ismah +48 KB, xali's Potions +0.34 MB |
+| World load time | BEB alone: no measurable change (table above) |
+| Runtime | Client render only: one model lookup per enchanted book drawn. No tick handlers and no server code, so the tick A/B (`run-ab.sh`) has nothing to measure and was not run |
 | Memory | Its book textures, under 1.7 MB compressed, join the item atlas |
 
 ## Pack and release checks
@@ -103,7 +124,11 @@ add their own mods, so fix DT's handler first and re-run these boots before addi
 
 ## Verdict
 
-Fits the pack, **after DT's client-setup crash is fixed** (above) and the boots are re-run with BEB in. Wiring for that PR: `modpack.config.json` entry (`slug: beautiful-enchanted-books`,
+**Every `newmod.md` check that applies passes.** One thing is left: DT's client-setup crash (above) must be fixed and
+the boots re-run with BEB in. BEB alone booted cleanly 6 of 6 times, but the crash rate only showed up across 10+
+boots.
+
+Wiring for that PR: `modpack.config.json` entry (`slug: beautiful-enchanted-books`,
 `project_id: 1083202`, `file_id: 7268159`, `modrinth_project: pcqEicMM`, `modrinth_version: XeLhIDWZ`,
 `required: true`, `mod_ids: ["beb"]`), `beautiful-enchanted-books(optional)` in `release.yml`
 `curseforge-dependencies`, roster row in `modpack/README.md`. Its Modrinth slug differs:
