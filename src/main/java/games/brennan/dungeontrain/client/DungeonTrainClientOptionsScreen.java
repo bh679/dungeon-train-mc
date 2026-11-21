@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.client.social.PublicPostsRelay;
 import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
+import games.brennan.dungeontrain.client.credits.PublicNameSwitch;
 import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
 import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
@@ -1036,6 +1037,27 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     ContentModeSyncClient.syncNow();
                     PublicPostsRelay.syncNow();
                 }), key + ".tip");
+
+            // Show my name: Credits and the website's player reviews, one switch (PublicNameSwitch).
+            // Inert in Kid mode, where the name never shows whatever this says.
+            case SHOW_NAME -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<Boolean> showName = onOff(Component.translatable(key),
+                        !kid && PublicNameSwitch.storedShown(), on -> PublicNameSwitch.setFromOptions(on, this::rebuildIfShown));
+                showName.active = !kid;
+                yield Setting.of(showName, kid ? key + ".kid_tip" : key + ".tip");
+            }
+            // The Credits Edit dialog, reached from here: Credits works out which line is the
+            // player's, so it opens there and raises the dialog on that line by itself.
+            case CREDITED_NAME -> {
+                boolean online = games.brennan.dungeontrain.client.chat.RelayChatClient.canConnect();
+                Button change = Button.builder(Component.translatable(key + ".button"),
+                                b -> openChild(games.brennan.dungeontrain.client.credits.CreditsScreen.openingOwnEdit(this),
+                                        () -> {}))
+                        .bounds(0, 0, CONTROL_W, ROW_H).build();
+                change.active = online;
+                yield Setting.of(change, online ? key + ".tip" : "gui.dungeontrain.credits.rename.no_consent");
+            }
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.

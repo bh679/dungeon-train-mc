@@ -26,6 +26,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Denumire creatură pașnică",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Denumire sătean",
   "screen.adventureitemnames.spawn_chances.mob_player": "Denumire creatură-jucător",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Denumire creatură ostilă",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Descriere obiect fabricat",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Descriere obiect cumpărat",
   "screen.adventureitemnames.spawn_chances.trade_item": "Denumire schimb cu săteanul",

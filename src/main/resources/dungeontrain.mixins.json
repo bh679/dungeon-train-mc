@@ -170,6 +170,8 @@
     "ServerChunkCacheWorldEdgeMixin",
     "SubLevelEntityCollisionNoLoadMixin",
     "EntityOnPosNoSyncLoadMixin",
+    "EvokerFangCarriageFloorMixin",
+    "MoveControlCarriageWalkableMixin",
     "StructureManagerNoSyncLoadMixin",
     "LivingEntityClimbPushMixin",
     "CombatRulesArmorCurveMixin",

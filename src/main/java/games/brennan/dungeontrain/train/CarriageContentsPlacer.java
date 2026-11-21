@@ -1044,6 +1044,8 @@ public final class CarriageContentsPlacer {
             // template otherwise — the duplicate-villager bug. Runs before the Tags
             // augmentation below so the carriage-contents tag is still added.
             stripBakedVillagerState(entityNbt);
+            // Same for a hostile mob AIN named while it stood in the editor.
+            games.brennan.dungeontrain.event.HostileTrainNameEvents.stripBakedHostileName(entityNbt);
             // Fresh UUID so spawning the same template at N carriages doesn't
             // collide on the UUID index (MC silently drops duplicate UUIDs).
             entityNbt.putUUID("UUID", UUID.randomUUID());

@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "被動生物命名",
   "screen.adventureitemnames.spawn_chances.mob_villager": "村民命名",
   "screen.adventureitemnames.spawn_chances.mob_player": "玩家生物命名",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "敵對生物命名",
   "screen.adventureitemnames.spawn_chances.crafted_description": "合成物品描述",
   "screen.adventureitemnames.spawn_chances.purchased_description": "購買物品描述",
   "screen.adventureitemnames.spawn_chances.trade_item": "村民交易命名",

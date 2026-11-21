@@ -277,6 +277,19 @@ neoForge {
             if (muted) {
                 systemProperty 'dungeontrain.muteSound', 'true'
             }
+            // Bot launch (client/BotLaunch): the internet-consent and update cards never open.
+            // -Pbot = skip them, grant nothing; -Pbot=grant = skip and grant consent; -Pbot=false = off.
+            // On (skip, grant nothing) by default from an agent shell or a headless seam, same rule as
+            // muteSound, so an unattended client is never stuck behind a card. Jars launched outside
+            // Gradle use -Ddungeontrain.bot=deny|grant or env DUNGEONTRAIN_BOT. Dev builds only: a
+            // jar built from main ignores it (DungeonTrain.isDevBuild).
+            def bot = project.findProperty('bot')
+            def botMode = bot != null
+                    ? (bot.toString() == 'false' ? null : (bot.toString() == 'grant' ? 'grant' : 'deny'))
+                    : ((agentShell || headlessSeam) ? 'deny' : null)
+            if (botMode) {
+                systemProperty 'dungeontrain.bot', botMode
+            }
             // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
             // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
             // quits (client/TradeValueIconDump).
