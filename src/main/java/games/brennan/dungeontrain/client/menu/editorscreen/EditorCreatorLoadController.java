@@ -4,7 +4,6 @@ import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
-import games.brennan.dungeontrain.builder.relay.BuilderRelayPreview;
 import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
@@ -12,7 +11,6 @@ import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
-import games.brennan.dungeontrain.client.menu.OversizedLoadConfirmScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
@@ -183,23 +181,7 @@ final class EditorCreatorLoadController {
         // One fetch at a time: the pane withholds the button while a Load is out, and nothing else
         // should get to send the same build down twice either.
         if (entry == null || loading) return;
-        if (confirmOversized(entry, () -> loadNow(entry))) return;
         loadNow(entry);
-    }
-
-    /**
-     * Ask first when {@code entry} is known to be too big to preview: opens the confirm and answers
-     * true, so the caller sends nothing yet. "Load anyway" pops the confirm and runs {@code press}.
-     * Unknown size (its preview has not answered) loads without asking.
-     */
-    private boolean confirmOversized(BuilderProfilePacket.Entry entry, Runnable press) {
-        BuilderRelayPreview.Oversize oversize = RelayBuildPreviews.tooBigToSend(entry.relayId());
-        if (oversize == null) return false;
-        host.modal().open(new OversizedLoadConfirmScreen(EditorCreatorBuilds.label(entry), oversize, () -> {
-            host.modal().pop();
-            if (!loading && entry.equals(selected())) press.run();
-        }));
-        return true;
     }
 
     private void loadNow(BuilderProfilePacket.Entry entry) {
@@ -262,7 +244,6 @@ final class EditorCreatorLoadController {
     void stageSelected() {
         BuilderProfilePacket.Entry entry = selected();
         if (entry == null || loading) return;
-        if (confirmOversized(entry, () -> stageNow(entry))) return;
         stageNow(entry);
     }
 
