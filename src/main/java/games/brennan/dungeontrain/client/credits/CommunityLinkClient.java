@@ -149,6 +149,8 @@ public final class CommunityLinkClient {
                 .thenApply(start -> {
                     // Kept as pending: it becomes the link's key only if the player runs this code in Discord.
                     if (start.ok() && !start.reportKey().isEmpty()) ReportKeyStore.savePending(uuid, start.reportKey());
+                    // A code is out: the perks tester answer may change soon, so ask about it often.
+                    if (start.ok()) games.brennan.dungeontrain.client.perks.PerkTesterStatus.linkStarted();
                     return start;
                 })
                 .exceptionally(t -> {

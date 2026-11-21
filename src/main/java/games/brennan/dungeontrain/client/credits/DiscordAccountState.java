@@ -89,6 +89,18 @@ public final class DiscordAccountState {
         }));
     }
 
+    /**
+     * The player's Discord link just landed (the {@code /discord} watch or the link screen saw it).
+     * Ask again about everything that hangs on the link: this account state, read at once by the Live
+     * chat's report flags, and whether they are a perks tester.
+     */
+    public static void onLinked() {
+        invalidate();
+        refresh(() -> {});
+        games.brennan.dungeontrain.client.perks.PerkTesterStatus.invalidate();
+        games.brennan.dungeontrain.client.perks.PerkTesterStatus.refresh();
+    }
+
     /** Forget the cached answer, e.g. after opening the link screen — the next tab draw asks again. */
     public static void invalidate() {
         status = null;
