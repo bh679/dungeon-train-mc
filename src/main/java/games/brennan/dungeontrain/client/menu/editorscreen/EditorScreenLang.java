@@ -147,11 +147,6 @@ public final class EditorScreenLang {
     /** Load, for the kinds that land under a variant parent; and the parent button beside it. */
     public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
     public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
-    /** The confirm before loading or staging an oversized relay build. */
-    public static final String CREATOR_OVERSIZED_TITLE = PREFIX + "creator.oversized_title";
-    public static final String CREATOR_OVERSIZED_SIZE = PREFIX + "creator.oversized_size";
-    public static final String CREATOR_OVERSIZED_WARNING = PREFIX + "creator.oversized_warning";
-    public static final String CREATOR_OVERSIZED_CONFIRM = PREFIX + "creator.oversized_confirm";
     public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
     /** The Whole-pool destination in the "Load under" picker, and the top-level row a carriage gets. */
     public static final String CREATOR_PARENT_WHOLE_ROOM = PREFIX + "creator.parent_whole_room";
