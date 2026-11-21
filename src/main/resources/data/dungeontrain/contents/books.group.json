@@ -210,6 +210,10 @@
     {
       "id": "bedbooks",
       "weight": 1
+    },
+    {
+      "id": "bedhigh",
+      "weight": 1
     }
   ]
 }
