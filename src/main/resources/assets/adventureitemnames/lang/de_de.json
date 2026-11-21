@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Benennung friedlicher Kreaturen",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Benennung von Dorfbewohnern",
   "screen.adventureitemnames.spawn_chances.mob_player": "Benennung von Spieler-Kreaturen",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Benennung feindlicher Kreaturen",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Beschreibung hergestellter Gegenstände",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Beschreibung gekaufter Gegenstände",
   "screen.adventureitemnames.spawn_chances.trade_item": "Benennung von Dorfbewohner-Handelswaren",

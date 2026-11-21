@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Naamgeving van passieve wezens",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Naamgeving van dorpelingen",
   "screen.adventureitemnames.spawn_chances.mob_player": "Naamgeving van spelerwezens",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Naamgeving van vijandige wezens",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Beschrijving van gemaakte voorwerpen",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Beschrijving van gekochte voorwerpen",
   "screen.adventureitemnames.spawn_chances.trade_item": "Naamgeving van dorpelingenhandel",

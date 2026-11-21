@@ -108,6 +108,9 @@ public enum ClientOptionsTab {
         DEV_CHAT("gui.dungeontrain.options.dev_chat"),
         /** Your photos and deaths on Discord and the socials — the consent card's Public posts switch. */
         PUBLIC_POSTS("gui.dungeontrain.options.public_posts"),
+        SHOW_NAME("gui.dungeontrain.options.show_name"),
+        /** Opens Credits with the Edit dialog up on the player's own line (CreditsScreen#openingOwnEdit). */
+        CREDITED_NAME("gui.dungeontrain.options.credited_name"),
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER("gui.dungeontrain.political_filter.option"),
         BOOK_AUTHOR_CHAT("gui.dungeontrain.options.book_author_chat"),
@@ -424,6 +427,10 @@ public enum ClientOptionsTab {
                 rows.add(Row.BOOK_LANGUAGES);
             }
             case ACCOUNT -> {
+                // First, and outside the Discord block: it is about the player's own name, linked or
+                // not, and must not wait on the Discord status check.
+                rows.add(Row.SHOW_NAME);
+                rows.add(Row.CREDITED_NAME);
                 rows.add(Row.DISCORD_ACCOUNT);
                 rows.add(Row.DISCORD_STATUS);
                 rows.add(Row.TWITCH_ACCOUNT);

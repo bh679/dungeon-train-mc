@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Denominazione creatura pacifica",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Denominazione abitante del villaggio",
   "screen.adventureitemnames.spawn_chances.mob_player": "Denominazione creatura giocatore",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Denominazione creatura ostile",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Descrizione oggetto fabbricato",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Descrizione oggetto acquistato",
   "screen.adventureitemnames.spawn_chances.trade_item": "Denominazione scambio con abitante",
