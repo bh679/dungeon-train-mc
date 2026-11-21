@@ -143,18 +143,8 @@ public final class ContributePreviewCommand {
         if (queue.isEmpty()) {
             Path flag = mc.gameDirectory.toPath().resolve(FLAG_FILE);
             if (!Files.isRegularFile(flag)) return;
-            // A dev jar is always "behind" the newest release, so the update card can cover the title
-            // screen; a headless sweep closes it rather than waiting forever.
-            if (mc.screen instanceof games.brennan.dungeontrain.client.version.UpdatePromptScreen) {
-                mc.setScreen(new TitleScreen());
-                return;
-            }
-            // A fresh run dir opens Discord Presence's network-consent prompt over the title: close it
-            // unanswered (nothing is granted), as a player pressing Esc would.
-            if (mc.screen != null && mc.screen.getClass().getSimpleName().equals("NetworkConsentScreen")) {
-                mc.screen.onClose();
-                return;
-            }
+            // The update and internet-consent cards are kept off a headless sweep by BotLaunch
+            // (-Pbot, on by default from an agent shell).
             if (!(mc.screen instanceof TitleScreen)) {
                 if (++screenWaitTicks % 200 == 1) LOGGER.info("[DungeonTrain] contribute preview waiting on {}",
                         mc.screen == null ? "no screen" : mc.screen.getClass().getName());
