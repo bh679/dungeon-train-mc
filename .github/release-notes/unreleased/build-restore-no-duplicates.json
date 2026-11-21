@@ -1,0 +1,22 @@
+{
+  "id": "build-restore-no-duplicates",
+  "version": "0.1939.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "editor",
+    "community"
+  ],
+  "title": "Shared build fix",
+  "summary": "Your shared builds no longer show up twice in your profile.",
+  "highlights": [
+    "Builds put back after a lost upload now land on their existing entry instead of making a copy.",
+    "Put-back builds upload at their real size, not several times larger.",
+    "Saving a new build twice in quick succession makes one entry, not two."
+  ],
+  "pr": 2794,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
