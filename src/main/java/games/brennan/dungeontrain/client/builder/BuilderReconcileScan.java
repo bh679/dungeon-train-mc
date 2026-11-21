@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderTemplateSource;
 import games.brennan.dungeonbackup.core.BackupArchiver;
 import games.brennan.dungeontrain.data.DungeonTrainBackup;
@@ -43,8 +44,21 @@ public final class BuilderReconcileScan {
     public record Build(BuilderPhotoPaths.Kind kind, String subKind, String id) {
         /** The identity the relay listing is matched on: kind, sub kind, and the build's name. */
         String key() {
-            return kind.id() + '\0' + (subKind == null ? "" : subKind) + '\0' + id;
+            return keyFor(kind.id(), subKind, id);
         }
+    }
+
+    /**
+     * The one way a build's identity is spelled for matching, on both sides of the comparison.
+     *
+     * <p>The sub kind goes through {@link BuilderRelayKinds#canonicalSubKind}, so a relay row an older
+     * restore filed as {@code portal_room / portal_room / name} still counts as the room it is. Without
+     * that, a player whose only relay copy is one of those rows would be offered it again.</p>
+     */
+    public static String keyFor(String kindId, String subKind, String name) {
+        String kind = kindId == null ? "" : kindId;
+        return kind + '\0' + BuilderRelayKinds.canonicalSubKind(kind, subKind) + '\0'
+                + (name == null ? "" : name);
     }
 
     /**

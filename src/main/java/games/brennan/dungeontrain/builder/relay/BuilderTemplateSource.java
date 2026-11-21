@@ -134,11 +134,13 @@ public final class BuilderTemplateSource {
                     CarriagePartTemplateStore.SUBDIR_BASE + "/" + part.id()));
         }
         for (TrackKind track : TrackKind.values()) {
-            // A portal room is its own relay kind, though it is a track directory on disk.
-            BuilderPhotoPaths.Kind kind = track == TrackKind.PORTAL_ROOM
-                    ? BuilderPhotoPaths.Kind.PORTAL_ROOM
-                    : BuilderPhotoPaths.Kind.TRACK;
-            out.add(new Slug(kind, track.id(), track.subdir()));
+            // A portal room is its own relay kind, though it is a track directory on disk, and like
+            // every kind with one flat namespace it has no sub kind. Uploads send it with none, so a
+            // restore that filed it under the track id would never match its own relay row.
+            boolean room = track == TrackKind.PORTAL_ROOM;
+            out.add(room
+                    ? new Slug(BuilderPhotoPaths.Kind.PORTAL_ROOM, "", track.subdir())
+                    : new Slug(BuilderPhotoPaths.Kind.TRACK, track.id(), track.subdir()));
         }
         out.add(new Slug(BuilderPhotoPaths.Kind.BUILDING, "",
                 games.brennan.dungeontrain.building.Buildings.SUBDIR));
