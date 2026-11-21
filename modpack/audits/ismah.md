@@ -12,7 +12,7 @@ yet:** this audit is the report for that decision.
 | NeoForge floor | `[1,)`, cleared by DT's 21.1.230 |
 | Dependencies | None |
 | Size | 48 KB |
-| Fair play | Not approved. Adding it to the pack approves it at build time. In testing it put the session into Free Play, as an unapproved mod should |
+| Fair play | **Approved** (2026-11-21, `visual` group in `approved_mods.curated.json`, all 55 Modrinth files hash-baked). Players who install it themselves keep normal runs; this is separate from adding it to the pack |
 
 ## What it does
 
