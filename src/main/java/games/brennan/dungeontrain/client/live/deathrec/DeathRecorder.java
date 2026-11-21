@@ -109,7 +109,7 @@ public final class DeathRecorder {
         boolean sound = Boolean.TRUE.equals(aac.getNow(false));
         RenderTarget main = mc.getMainRenderTarget();
         int[] size = LiveAspect.frameSize(BOX_W, BOX_H, main.width, main.height);
-        LiveFrameGrabber grab = new LiveFrameGrabber(size[0], size[1]);
+        LiveFrameGrabber grab = new LiveFrameGrabber(size[0], size[1], false);
         LiveAudioPump audio = sound ? LiveAudioPump.open(true) : null;
         RING.takeAndReset();
         try {

@@ -1137,8 +1137,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     ClientDisplayConfig::setCinematicHotkeyEnabled), key + ".tip");
 
             // Opt-in: while on, DeathRecorder keeps the last seconds in memory and saves each death cinematic.
+            // Turning it on without ffmpeg starts the same setup as the Stream tab's button (it says so in chat).
             case DEATH_RECORDING -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDeathRecordingEnabled(),
-                    ClientDisplayConfig::setDeathRecordingEnabled), key + ".tip");
+                    on -> {
+                        ClientDisplayConfig.setDeathRecordingEnabled(on);
+                        if (on && games.brennan.dungeontrain.client.live.FfmpegSupport.state()
+                                != games.brennan.dungeontrain.client.live.FfmpegSupport.State.READY) {
+                            games.brennan.dungeontrain.client.live.FfmpegHint.startInstall();
+                        }
+                    }), key + ".tip");
 
             // The top-left developer read-out. Listed on dev builds only; takes effect next frame.
             case DEV_HUD -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDevHudEnabled(),
