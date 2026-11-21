@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "การตั้งชื่อม็อบไม่ก้าวร้าว",
   "screen.adventureitemnames.spawn_chances.mob_villager": "การตั้งชื่อชาวบ้าน",
   "screen.adventureitemnames.spawn_chances.mob_player": "การตั้งชื่อม็อบผู้เล่น",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "การตั้งชื่อม็อบก้าวร้าว",
   "screen.adventureitemnames.spawn_chances.crafted_description": "คำบรรยายไอเทมที่คราฟต์",
   "screen.adventureitemnames.spawn_chances.purchased_description": "คำบรรยายไอเทมที่ซื้อ",
   "screen.adventureitemnames.spawn_chances.trade_item": "การตั้งชื่อการค้าชาวบ้าน",

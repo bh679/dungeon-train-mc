@@ -26,6 +26,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Іменування мирних мобів",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Іменування жителів",
   "screen.adventureitemnames.spawn_chances.mob_player": "Іменування мобів-гравців",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Іменування ворожих мобів",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Опис створених предметів",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Опис куплених предметів",
   "screen.adventureitemnames.spawn_chances.trade_item": "Іменування товарів жителів",

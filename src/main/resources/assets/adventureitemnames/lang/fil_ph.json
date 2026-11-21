@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Pagpapangalan ng mapayapang mob",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Pagpapangalan ng villager",
   "screen.adventureitemnames.spawn_chances.mob_player": "Pagpapangalan ng player mob",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Pagpapangalan ng mapanganib na mob",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Paglalarawan ng ginawang item",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Paglalarawan ng biniling item",
   "screen.adventureitemnames.spawn_chances.trade_item": "Pagpapangalan ng trade ng villager",
