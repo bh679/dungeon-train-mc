@@ -8,7 +8,7 @@ yet:** this audit is the report for that decision.
 | Mod id | `ismah` |
 | Candidate pins | CurseForge 1174111 / file 8988346; Modrinth `o0hnW3gN` / `ibAgWcaO` (same SHA-1 on both: `d6cee42e…31c1e5`) |
 | Licence | MIT in the jar, on CurseForge and on Modrinth |
-| Sides | Client only in practice. The toml says `BOTH` and the mixins sit in the common list, but every target is a client renderer, model or packet listener. A client with it joined a dedicated server without it |
+| Sides | **Client only, and it crashes a dedicated server.** The toml says `BOTH` and its mixins sit in the common list, so NeoForge loads them on a server too; `LivingEntityMixin` adds a field of the client-only type `PartPose`, and the server dies at boot (`ClassMetadataNotFoundException: net.minecraft.client.model.geom.PartPose`). A client with it joined a dedicated server without it |
 | NeoForge floor | `[1,)`, cleared by DT's 21.1.230 |
 | Dependencies | None |
 | Size | 48 KB |
@@ -55,7 +55,7 @@ packets.
 | Check | Result |
 |---|---|
 | Existing mods | No id clash with anything in the pack. First-person Model (`firstperson`) is approved for fair play but not in the pack; it also draws the first-person body, so a player who adds both may see the two overlap. Not tested |
-| Render stack | Booted and rendered with Sodium 0.8.12 + Iris 1.8.14 (the pack's pins) with no mixin errors |
+| Render stack | Booted and rendered with Sodium 0.8.12 + Iris 1.8.14 (the pack's pins) with no mixin errors. **No shader pack was active**: first-person arms under an Iris shader pack are untested |
 | World gen, loot, vanilla data, economy | Untouched |
 
 ## DT systems it can reach
@@ -83,13 +83,21 @@ packets.
 | Licence | MIT everywhere |
 | Same build on both platforms | Yes |
 | NeoForge floor | Clear |
-| Sides | Client only; safe on a server without it |
-| Enabled or opt-in | Recommend **on by default** (`required: true`): cosmetic and small |
+| Sides | **Fails.** It must never reach a server. Modrinth marks it `server_side: unsupported`, but anyone who builds a server from the CurseForge pack, or a host's one-click install of it, gets a server that will not start |
+| Enabled or opt-in | Not until the server crash is handled |
 | Config defaults | None shipped |
 
 ## Verdict
 
-Fits the pack. Wiring for the follow-up PR: `modpack.config.json` entry (`slug: i-see-my-armored-hand`,
+**Don't add it yet.** It works well on the client, but it crashes any dedicated server it lands on, and the pack is
+installed on servers (Kinetic Hosting is bundled). Options, in order of effort:
+
+1. Ask its author to move the mixins to the `client` list (a one-line change on their side), then re-audit.
+2. Ship it opt-in and confirm both packs' server installs leave it out. Not verified for CurseForge.
+
+DT's client-setup crash (see `beautiful-enchanted-books.md`) should be fixed first in any case.
+
+Wiring, once it is safe: `modpack.config.json` entry (`slug: i-see-my-armored-hand`,
 `project_id: 1174111`, `file_id: 8988346`, `modrinth_project: o0hnW3gN`, `modrinth_version: ibAgWcaO`,
 `required: true`, `mod_ids: ["ismah"]`), `i-see-my-armored-hand(optional)` in `release.yml`
 `curseforge-dependencies`, roster row in `modpack/README.md`.

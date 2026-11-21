@@ -34,10 +34,10 @@ third-party pack and no NC licence question.
 
 The modpack pipeline ships no third-party resource packs today. It would need:
 
-- CurseForge: the pack as a manifest file entry (project 510849), which the CurseForge app installs into
-  `resourcepacks/`.
+- CurseForge: the pack as a manifest file entry (project 510849). Whether the CurseForge app then places it in
+  `resourcepacks/` is not verified.
 - Modrinth: a `files[]` entry in the `.mrpack` with `path: resourcepacks/...` and the Modrinth URL + hashes.
-  `build-mrpack.py` only emits `mods/` today.
+  Whether `build-mrpack.py` can emit a non-`mods/` path today is not checked.
 - Selection: an installed pack is off until the player selects it. DT's `CompanionResourcePackAutoEnabler` only
   auto-selects its own `DungeonTrain-*-compat.zip` packs.
 - `check-overrides.py`: no change if it ships as a file entry rather than an override.

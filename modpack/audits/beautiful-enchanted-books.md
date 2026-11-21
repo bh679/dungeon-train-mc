@@ -8,7 +8,7 @@ yet:** this audit is the report for that decision.
 | Mod id | `beb` |
 | Candidate pins | CurseForge 1083202 / file 7268159; Modrinth `pcqEicMM` / `XeLhIDWZ` (same SHA-1 on both: `4a1828c6…a48e`) |
 | Licence | **Disagrees:** Apache-2.0 in the jar, All Rights Reserved on CurseForge and Modrinth. The CurseForge page says it may be used in modpacks. We copy nothing from it, so only the modpack permission matters |
-| Sides | Client only in practice. Modrinth says the server needs it and the toml says `BOTH`, but its only mixin is client-side (`ItemRendererMixin`) and it registers no payloads. A client with it joined a dedicated server without it |
+| Sides | Client only in practice. Modrinth says the server needs it and the toml says `BOTH`, but its only mixin is client-side (`ItemRendererMixin`) and it registers no payloads. Tested both ways: a client with it joined a server without it, and a dedicated server with it booted and accepted a client that had it |
 | NeoForge floor | `[21,)`, cleared by DT's 21.1.230 |
 | Dependencies | MixinExtras 0.3.5, jarJar'd inside it (NeoForge already provides a newer one) |
 | Size | 1.7 MB |
@@ -40,7 +40,7 @@ No `data/` folder, no registries, no payloads.
 
 | Check | Result |
 |---|---|
-| Existing mods | No id clash. Its one mixin is on vanilla `ItemRenderer`; booted with Sodium 0.8.12 + Iris 1.8.14 with no mixin errors |
+| Existing mods | No id clash. Its one mixin is on vanilla `ItemRenderer`; booted with Sodium 0.8.12 + Iris 1.8.14 with no mixin errors. No shader pack was active during testing |
 | Item display | Written books (loot books, Shared Books) are untouched: BEB only swaps the model of `minecraft:enchanted_book` by its stored enchantment. Six vanilla enchantments checked in game (screenshot 01). Not checked: how a book with an enchantment it has no art for looks |
 | World gen, loot, vanilla data, economy | Untouched |
 
@@ -65,16 +65,23 @@ Sodium and Iris were in both arms. Client JVM start to title screen, 5 runs each
 
 **Boot time: no measurable change.** The 1.7 s median gap is inside each arm's own 3 to 5 s spread.
 
-**The crashes are not in these mods.** Both happened during `FMLClientSetupEvent`, which NeoForge runs on parallel
-threads, and both are an existing thread race that adding any mods can expose by shifting the timing:
+### Client crashes at startup
 
-- DT's `client/WornPhotographStyles` writes Exposure's style map straight from its setup handler, with no
-  `enqueueWork`: `IllegalStateException: PhotographStyle for type 'dungeontrain:worn_1' is already registered`.
-- Creeper Overhaul writes vanilla's `EntityRenderers` map from its own setup handler:
-  `ArrayIndexOutOfBoundsException` in `Object2ObjectOpenHashMap.rehash`.
+**With extra mods installed, 3 of 10 client boots crashed during startup. Without them, 0 of 21 did.** "Extra mods"
+means ismah + BEB, or all five tested mods; Sodium and Iris were in every boot. Each crash happened in
+`FMLClientSetupEvent`, which NeoForge runs on parallel threads, and in a thread race that neither ismah nor BEB takes
+part in:
 
-Neither stack touches ismah, BEB or the pack. Players can hit the same crash today; fix DT's handler before adding
-mods, whichever are picked.
+- **2 crashes:** DT's `client/WornPhotographStyles` writes Exposure's style map straight from its setup handler, with
+  no `enqueueWork`. Exposure's own client init also registers into that map; which thread it runs on is not checked:
+  `IllegalStateException: PhotographStyle for type 'dungeontrain:worn_1' is already registered`.
+- **1 crash:** Creeper Overhaul writes vanilla's `EntityRenderers` map from its setup handler, with no `enqueueWork`:
+  `ArrayIndexOutOfBoundsException` in `Object2ObjectOpenHashMap.rehash`. The other writer is not identified. DT's own
+  creeper renderer is queued correctly (`VanillaCreeperRendererClient`).
+
+ismah's setup handler only logs, and BEB does its work in `ModelEvent.RegisterAdditional`, so the likely cause is
+timing: more mods in the parallel pool make the existing races more likely to land. The same would apply to players who
+add their own mods, so fix DT's handler first and re-run these boots before adding anything.
 
 | Cost | Result |
 |---|---|
@@ -90,13 +97,13 @@ mods, whichever are picked.
 | Licence | See above: jar and listings disagree; modpack use is allowed on CurseForge |
 | Same build on both platforms | Yes |
 | NeoForge floor | Clear |
-| Sides | Client only; safe on a server without it |
+| Sides | Safe either way: boots on a dedicated server, and a server without it accepts clients that have it |
 | Enabled or opt-in | Recommend **on by default** (`required: true`) |
 | Config defaults | None |
 
 ## Verdict
 
-Fits the pack. Wiring for the follow-up PR: `modpack.config.json` entry (`slug: beautiful-enchanted-books`,
+Fits the pack, **after DT's client-setup crash is fixed** (above) and the boots are re-run with BEB in. Wiring for that PR: `modpack.config.json` entry (`slug: beautiful-enchanted-books`,
 `project_id: 1083202`, `file_id: 7268159`, `modrinth_project: pcqEicMM`, `modrinth_version: XeLhIDWZ`,
 `required: true`, `mod_ids: ["beb"]`), `beautiful-enchanted-books(optional)` in `release.yml`
 `curseforge-dependencies`, roster row in `modpack/README.md`. Its Modrinth slug differs:
