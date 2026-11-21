@@ -48,18 +48,26 @@ final class EchoStatsTab {
         }
     }
 
-    /** The graph's corners clockwise from the top: the six skills, then the hobbies. */
-    private static final List<Corner> CORNERS = corners();
+    /**
+     * The graph's corners clockwise from the top: Melee (top), Blocking, Quickswap, Movement,
+     * Placing, Reading, Trading, Ranged (top-left, beside Melee).
+     */
+    private static final List<Corner> CORNERS = List.of(
+            skill(EchoPersonality.Skill.MELEE),
+            skill(EchoPersonality.Skill.DEFENCE),
+            skill(EchoPersonality.Skill.ITEMS),
+            skill(EchoPersonality.Skill.MOVEMENT),
+            skill(EchoPersonality.Skill.BUILDING),
+            hobby(EchoPersonality.Hobby.READING),
+            hobby(EchoPersonality.Hobby.TRADING),
+            skill(EchoPersonality.Skill.RANGED));
 
-    private static List<Corner> corners() {
-        List<Corner> out = new ArrayList<>();
-        for (EchoPersonality.Skill skill : EchoPersonality.Skill.values()) {
-            out.add(new Corner(skill.langKey(), skill, null));
-        }
-        for (EchoPersonality.Hobby hobby : EchoPersonality.Hobby.values()) {
-            out.add(new Corner(hobby.langKey(), null, hobby));
-        }
-        return List.copyOf(out);
+    private static Corner skill(EchoPersonality.Skill skill) {
+        return new Corner(skill.langKey(), skill, null);
+    }
+
+    private static Corner hobby(EchoPersonality.Hobby hobby) {
+        return new Corner(hobby.langKey(), null, hobby);
     }
 
     private record SkillHit(int x, int y, String langKey, int value) {
