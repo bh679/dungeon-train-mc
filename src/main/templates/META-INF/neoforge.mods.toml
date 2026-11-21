@@ -553,6 +553,12 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.journeymap.mixins.json"
 
+# TrashSlot (modpack companion, not a dependency) draws its bin tooltip in the background pass, under the
+# slots, so durability bars painted over it. dungeontrain.trashslot.mixins.json, gated by
+# TrashSlotMixinPlugin, defers it to after the screen (client/DeferredTrashTooltip). No-op without TrashSlot.
+[[mixins]]
+    config="${mod_id}.trashslot.mixins.json"
+
 # Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
 # copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).
 # Every Iris install has Sodium under it, and the modpack ships both. No dependency is declared here:
