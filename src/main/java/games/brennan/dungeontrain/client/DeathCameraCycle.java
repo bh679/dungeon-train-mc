@@ -476,12 +476,26 @@ public final class DeathCameraCycle {
 
     /** Right arrow. */
     public static void next() {
-        if (active) select(nextIndex(sequence, index));
+        if (active) changeView(nextIndex(sequence, index));
     }
 
     /** Left arrow. */
     public static void previous() {
-        if (active) select(previousIndex(sequence, index));
+        if (active) changeView(previousIndex(sequence, index));
+    }
+
+    private static void changeView(int target) {
+        if (isViewChange(sequence, index, target)) select(target);
+    }
+
+    /**
+     * Pure: whether stepping from {@code current} to {@code target} is a change of view. Stepping to
+     * the shot already showing would only replay it, and stepping into the sky ends the scene, which
+     * is a skip, not a view; both are ignored.
+     */
+    static boolean isViewChange(List<DeathShot> shots, int current, int target) {
+        if (target == current || target < 0 || target >= shots.size()) return false;
+        return shots.get(target).kind() != DeathShot.Kind.SKY_TILT;
     }
 
     /** Pure: the shot after {@code current}; past the end, the looping train shots start over. */
