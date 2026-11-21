@@ -26,28 +26,32 @@ final class EditorTabBarTest {
     void releaseHidesWorkbench() {
         List<EditorTabBar.Tab> t = EditorTabBar.layout(new Rect(6, 4, 640 - 12, 16), s -> s.length() * 6,
             EditorScreenPage::name, false, false);
-        assertEquals(6, t.size());
+        assertEquals(7, t.size());
         for (EditorTabBar.Tab tab : t) assertTrue(tab.page() != EditorScreenPage.WORKBENCH, "no Workbench tab");
         assertEquals(EditorScreenPage.NAV, t.get(3).page());
         assertEquals(EditorScreenPage.SETTINGS, t.get(4).page());
-        assertEquals(EditorTabBar.Kind.EXIT, t.get(5).kind());
-        assertEquals(6 + 640 - 12, t.get(5).x() + t.get(5).w());
+        assertEquals(EditorTabBar.Kind.QUICK, t.get(5).kind());
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(6).kind());
+        assertEquals(6 + 640 - 12, t.get(6).x() + t.get(6).w());
         assertTrue(EditorScreenPage.WORKBENCH.devOnly() && !EditorScreenPage.TEMPLATES.devOnly());
     }
 
     @Test
-    @DisplayName("Templates, Layout, Stages then Nav from the left; Settings and Exit are locked to the right")
+    @DisplayName("Templates, Layout, Stages then Nav from the left; Settings, the quick arrow and Exit are locked to the right")
     void order() {
         List<EditorTabBar.Tab> t = tabs(640);
-        assertEquals(7, t.size());
+        assertEquals(8, t.size());
         assertEquals(EditorScreenPage.TEMPLATES, t.get(0).page());
         assertEquals(EditorScreenPage.LAYOUT, t.get(1).page());
         assertEquals(EditorScreenPage.STAGES, t.get(2).page());
         assertEquals(EditorScreenPage.NAV, t.get(3).page());
         assertEquals(EditorScreenPage.WORKBENCH, t.get(4).page());
         assertEquals(EditorScreenPage.SETTINGS, t.get(5).page());
-        assertEquals(EditorTabBar.Kind.EXIT, t.get(6).kind());
-        EditorTabBar.Tab exit = t.get(6);
+        assertEquals(EditorTabBar.Kind.QUICK, t.get(6).kind());
+        assertEquals(EditorTabBar.QUICK_W, t.get(6).w());
+        assertEquals(t.get(5).x() + t.get(5).w() + EditorTabBar.GAP, t.get(6).x(), "the arrow hugs Settings");
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(7).kind());
+        EditorTabBar.Tab exit = t.get(7);
         assertEquals(6 + 640 - 12, exit.x() + exit.w());
         for (int i = 1; i < t.size(); i++) {
             assertTrue(t.get(i - 1).x() + t.get(i - 1).w() <= t.get(i).x());
@@ -60,7 +64,7 @@ final class EditorTabBarTest {
     void groupsTabSitsAfterNavOnlyWhenShown() {
         List<EditorTabBar.Tab> t = EditorTabBar.layout(new Rect(6, 4, 640 - 12, 16), s -> s.length() * 6,
             EditorScreenPage::name, true, true);
-        assertEquals(8, t.size());
+        assertEquals(9, t.size());
         assertEquals(EditorScreenPage.NAV, t.get(3).page());
         assertEquals(EditorScreenPage.GROUPS, t.get(4).page());
         assertEquals(EditorScreenPage.WORKBENCH, t.get(5).page());

@@ -597,6 +597,10 @@ public final class EditorCommand {
                 .then(mirrorAxisNode("y"))
                 .then(mirrorAxisNode("z"))
                 .then(mirrorAxisNode("v"))
+                // X menu quick toggle: pause / resume every template's live mirroring.
+                .then(Commands.literal("live")
+                    .then(Commands.literal("on").executes(ctx -> runMirrorLive(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> runMirrorLive(ctx.getSource(), false))))
                 .then(Commands.literal("rebuild")
                     .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
@@ -756,6 +760,9 @@ public final class EditorCommand {
             .then(Commands.literal("helppanel")
                 .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
+            .then(Commands.literal("frame")
+                .then(Commands.literal("on").executes(ctx -> runFrame(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runFrame(ctx.getSource(), false))))
             .then(Commands.literal("observers")
                 .then(Commands.literal("on").executes(ctx -> runObservers(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runObservers(ctx.getSource(), false))))
@@ -4090,6 +4097,30 @@ public final class EditorCommand {
         games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
             .setHelpPanelDismissed(player.getUUID(), !on);
         source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.editor.welcome_panel") : Component.translatable("chat.dungeontrain.editor.welcome_panel_off_press")).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * X menu → Mirror On / Off for this world: while Off no edit is mirrored live, whatever each
+     * template's X / Y / Z / V axes say; the axes are kept ({@link games.brennan.dungeontrain.editor.EditorQuickToggles}).
+     */
+    private static int runMirrorLive(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.editor.EditorQuickToggles.setMirror(source.getServer(), on);
+        source.sendSuccess(() -> Component.translatable(on
+                ? "chat.dungeontrain.editor.mirror_live_on" : "chat.dungeontrain.editor.mirror_live_off")
+            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * X menu / Settings → Frame On / Off for this world: whether Contents plots stand inside their
+     * carriage shell. Applies to every standing plot at once; the interiors are kept.
+     */
+    private static int runFrame(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.editor.EditorQuickToggles.setFrame(source.getServer(), on);
+        source.sendSuccess(() -> Component.translatable(on
+                ? "chat.dungeontrain.editor.frame_on" : "chat.dungeontrain.editor.frame_off")
+            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 

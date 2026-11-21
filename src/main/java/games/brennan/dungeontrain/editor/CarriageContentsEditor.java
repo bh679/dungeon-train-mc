@@ -188,12 +188,44 @@ public final class CarriageContentsEditor {
         emptyInventories(overworld, interiorOrigin, interior);
 
         CarriagePlacer.eraseAt(overworld, origin, box);
-        CarriagePlacer.placeAt(overworld, origin, shell, dims);
+        placeShell(overworld, origin, shell, dims, box);
         kept.placeInWorld(overworld, interiorOrigin, interiorOrigin,
             new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings()
                 .setIgnoreEntities(true),
             overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS);
         setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
+    }
+
+    /**
+     * Stamp {@code shell} round the plot at {@code origin} — or, while the Frame quick toggle is Off,
+     * leave its ring of the plot's {@code box} as air. Every shell stamp in this editor comes here, so
+     * the setting holds whichever flow (enter, reroll, new, save-as) stamped the plot.
+     */
+    private static void placeShell(ServerLevel overworld, BlockPos origin, CarriageVariant shell,
+                                   CarriageDims dims, CarriageDims box) {
+        CarriagePlacer.placeAt(overworld, origin, shell, dims);
+        if (!EditorQuickToggles.frameOn()) {
+            EditorQuickToggles.clearRing(overworld, origin, new Vec3i(box.length(), box.height(), box.width()));
+        }
+    }
+
+    /**
+     * Bring every standing Contents plot in line with the Frame setting just chosen: Off clears each
+     * shell ring, On stamps each plot's shell back with its interior kept as it stands (unsaved edits
+     * included). Nothing to do while the Contents category is not stamped.
+     */
+    static void applyFrame(ServerLevel overworld, CarriageDims dims) {
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)) return;
+        for (CarriageContents c : residentContents()) {
+            BlockPos origin = plotOrigin(c, dims);
+            if (origin == null) continue;
+            if (EditorQuickToggles.frameOn()) {
+                restampShellOnly(overworld, c, shellFor(c), dims);
+            } else {
+                CarriageDims box = plotDims(c, dims);
+                EditorQuickToggles.clearRing(overworld, origin, new Vec3i(box.length(), box.height(), box.width()));
+            }
+        }
     }
 
     private static void emptyInventories(ServerLevel level, BlockPos origin, Vec3i size) {
@@ -238,7 +270,7 @@ public final class CarriageContentsEditor {
         CarriageDims box = plotDims(contents, dims);
         CarriagePlacer.eraseAt(overworld, origin, box);
         CarriageContentsPlacer.eraseAt(overworld, origin, box);
-        CarriagePlacer.placeAt(overworld, origin, shellFor(contents), dims);
+        placeShell(overworld, origin, shellFor(contents), dims, box);
         CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
         setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
 
@@ -606,7 +638,7 @@ public final class CarriageContentsEditor {
             // Stamp the shell first — this fills floor/walls/ceiling as context.
             // Uses the 4-arg placeAt so variant-block sidecar entries don't get
             // applied here (the author is editing contents, not the shell).
-            CarriagePlacer.placeAt(overworld, origin, shell, dims);
+            placeShell(overworld, origin, shell, dims, box);
             // Stamp the current contents template on top of the air interior.
             CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
             setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
@@ -757,7 +789,7 @@ public final class CarriageContentsEditor {
 
         CarriagePlacer.eraseAt(overworld, targetOrigin, box);
         CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
-        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(sizedAs), dims);
+        placeShell(overworld, targetOrigin, shellFor(sizedAs), dims, box);
 
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
         CarriageContentsStore.save(target, template);
@@ -797,7 +829,7 @@ public final class CarriageContentsEditor {
         CarriageDims sourceBox = plotDims(source, dims);
         CarriagePlacer.eraseAt(overworld, targetOrigin, sourceBox);
         CarriageContentsPlacer.eraseAt(overworld, targetOrigin, sourceBox);
-        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(source), dims);
+        placeShell(overworld, targetOrigin, shellFor(source), dims, sourceBox);
         CarriageContentsPlacer.placeAt(overworld, targetOrigin, source, dims);
 
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, sourceBox);
@@ -842,7 +874,7 @@ public final class CarriageContentsEditor {
         CarriageDims box = plotDims(source, dims);
         CarriagePlacer.eraseAt(overworld, targetOrigin, box);
         CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
-        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(source), dims);
+        placeShell(overworld, targetOrigin, shellFor(source), dims, box);
         CarriageContentsPlacer.placeAt(overworld, targetOrigin, source, dims);
 
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
@@ -878,7 +910,7 @@ public final class CarriageContentsEditor {
         CarriageDims box = plotDims(target, dims);
         CarriagePlacer.eraseAt(overworld, targetOrigin, box);
         CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
-        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(target), dims);
+        placeShell(overworld, targetOrigin, shellFor(target), dims, box);
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
         CarriageContentsStore.save(target, template);
         // Restamp through the ordinary path so the cage and the dirty baseline match every other plot.
