@@ -157,11 +157,12 @@ public final class DeathMomentScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == InputConstants.KEY_LEFT || keyCode == InputConstants.KEY_A) {
+        // Arrows only: players still holding WASD from the moment they died mustn't cut the scene.
+        if (keyCode == InputConstants.KEY_LEFT) {
             DeathCameraCycle.previous();
             return true;
         }
-        if (keyCode == InputConstants.KEY_RIGHT || keyCode == InputConstants.KEY_D) {
+        if (keyCode == InputConstants.KEY_RIGHT) {
             DeathCameraCycle.next();
             return true;
         }
