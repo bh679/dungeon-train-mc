@@ -88,6 +88,23 @@ public final class BuilderRelayKinds {
     }
 
     /**
+     * The sub kind a build is identified by on the relay.
+     *
+     * <p>A portal room has none: it is its own kind, and every upload (the X editor's and the Train
+     * Builder's) sends it with an empty sub kind. Its files happen to live in a track directory whose
+     * id is {@code portal_room}, and the build restore once filed rooms under that id. The relay
+     * matched nothing, so every room looked lost and was uploaded again as a second row. Rows and
+     * records made that way still carry {@code portal_room}, so this folds it back to empty wherever
+     * a build's identity is compared.</p>
+     *
+     * @return the empty string for a portal room or a null sub kind, otherwise {@code subKind}
+     */
+    public static String canonicalSubKind(String kindId, String subKind) {
+        if (subKind == null || PORTAL_ROOM.equals(kindId)) return "";
+        return subKind;
+    }
+
+    /**
      * The builder mode a template of this kind is edited in — which arm of the Train Builder has to
      * be standing before the thing can be opened.
      *

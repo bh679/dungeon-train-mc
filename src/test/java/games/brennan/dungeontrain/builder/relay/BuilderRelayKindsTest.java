@@ -118,4 +118,14 @@ final class BuilderRelayKindsTest {
         assertFalse(BuilderRelayKinds.canJoinTheTrain("something_new"));
         assertFalse(BuilderRelayKinds.canJoinTheTrain((String) null));
     }
+
+    @Test
+    @DisplayName("a portal room's sub kind is always empty; every other kind keeps its own")
+    void canonicalSubKind() {
+        assertEquals("", BuilderRelayKinds.canonicalSubKind(BuilderRelayKinds.PORTAL_ROOM, "portal_room"));
+        assertEquals("", BuilderRelayKinds.canonicalSubKind(BuilderRelayKinds.PORTAL_ROOM, ""));
+        assertEquals("", BuilderRelayKinds.canonicalSubKind(BuilderRelayKinds.PORTAL_ROOM, null));
+        assertEquals("floor", BuilderRelayKinds.canonicalSubKind(BuilderRelayKinds.PART, "floor"));
+        assertEquals("", BuilderRelayKinds.canonicalSubKind(BuilderRelayKinds.TRACK, null));
+    }
 }

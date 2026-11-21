@@ -303,4 +303,26 @@ final class CarriageSnapshotTemplateTest {
             return new List3(tag.getInt(0), tag.getInt(1), tag.getInt(2));
         }
     }
+
+    @Test
+    @DisplayName("withoutAir keeps blocks and block entities, drops every kind of air, and leaves its input alone")
+    void withoutAirDropsOnlyAir() {
+        CompoundTag chest = new CompoundTag();
+        chest.putString("id", "minecraft:chest");
+        CompoundTag snapshot = snapshot(4, 4, 4,
+                cell(0, 0, 0, "minecraft:stone", null),
+                cell(1, 0, 0, "minecraft:air", null),
+                cell(2, 0, 0, "minecraft:cave_air", null),
+                cell(3, 0, 0, "minecraft:void_air", null),
+                cell(0, 1, 0, "minecraft:chest", chest));
+
+        CompoundTag out = CarriageSnapshotTemplate.withoutAir(snapshot);
+
+        ListTag cells = out.getList("cells", Tag.TAG_COMPOUND);
+        assertEquals(2, cells.size());
+        assertEquals("minecraft:stone", cells.getCompound(0).getCompound("s").getString("Name"));
+        assertEquals("minecraft:chest", cells.getCompound(1).getCompound("b").getString("id"));
+        assertEquals(4, out.getInt("l"));
+        assertEquals(5, snapshot.getList("cells", Tag.TAG_COMPOUND).size(), "the input is not changed");
+    }
 }

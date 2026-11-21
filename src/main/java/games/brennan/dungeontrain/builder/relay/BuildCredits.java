@@ -84,9 +84,26 @@ public final class BuildCredits {
         }
     }
 
-    /** The key one template is filed under — the download path's own {@code (kind, subKind, id)}. */
+    /**
+     * The key one template is filed under — the download path's own {@code (kind, subKind, id)}, with
+     * the sub kind made canonical ({@link BuilderRelayKinds#canonicalSubKind}) so a room downloaded
+     * from a row an older restore filed as {@code portal_room} and the same room read off disk agree.
+     */
     public static String keyOf(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        return BuilderRelayBuilds.keyOf(kind == null ? "" : kind.id(), subKind, id);
+        String kindId = kind == null ? "" : kind.id();
+        return BuilderRelayBuilds.keyOf(kindId, BuilderRelayKinds.canonicalSubKind(kindId, subKind), id);
+    }
+
+    /**
+     * A stored key re-spelt through {@link #keyOf}'s rule. Credits filed before that rule kept a
+     * room's {@code portal_room} sub kind, and would otherwise never be found again.
+     */
+    static String canonicalKey(String key) {
+        String kindId = BuilderRelayBuilds.kindOfKey(key);
+        if (kindId.isEmpty()) return key;
+        return BuilderRelayBuilds.keyOf(kindId,
+                BuilderRelayKinds.canonicalSubKind(kindId, BuilderRelayBuilds.subKindOfKey(key)),
+                BuilderRelayBuilds.idOfKey(key));
     }
 
     /** Who built {@code id}, or null when this install has no record of anyone but the player. */
@@ -177,7 +194,8 @@ public final class BuildCredits {
             if (!root.isJsonObject()) return out;
             for (Map.Entry<String, JsonElement> e : root.getAsJsonObject().entrySet()) {
                 Credit credit = decode(e.getValue());
-                if (credit != null) out.put(e.getKey(), credit);
+                // putIfAbsent: two spellings of one key keep the first, as put() would have.
+                if (credit != null) out.putIfAbsent(canonicalKey(e.getKey()), credit);
             }
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Build credits: could not read {}: {}", path, e.toString());

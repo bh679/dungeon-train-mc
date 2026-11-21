@@ -106,4 +106,16 @@ final class BuilderTemplateSourceTest {
         assertNull(BuilderTemplateSource.entryNameFor(
             tmp.resolve("dungeontrain/backups/old/alpha.nbt"), sources()));
     }
+
+    @Test
+    @DisplayName("a portal room is listed with no sub kind, as every upload of one is")
+    void portalRoomHasNoSubKind() {
+        BuilderTemplateSource.Slug room = BuilderTemplateSource.slugs().stream()
+            .filter(s -> s.kind() == BuilderPhotoPaths.Kind.PORTAL_ROOM)
+            .findFirst().orElseThrow();
+        // The restore matches its keys against relay rows; a room filed as portal_room never matched
+        // the editor's empty sub kind, so every room was re-uploaded as a second row.
+        assertEquals("", room.subKind());
+        assertEquals("", BuilderTemplateSource.identityOf("portals/room", "man.nbt").orElseThrow().subKind());
+    }
 }

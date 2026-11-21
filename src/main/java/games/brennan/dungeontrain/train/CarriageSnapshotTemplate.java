@@ -33,12 +33,12 @@ import java.util.Map;
  * exactly what a block entry's {@code nbt} is. What is actually done here is palette
  * de-duplication.</p>
  *
- * <p><b>Air is absent from both</b>, and means the same thing in both. A snapshot stores only
- * non-air cells; a builder save captures with {@code fillFromWorld(…, Blocks.AIR)}, which excludes
- * air for the same reason. So a round trip through the relay neither gains nor loses empty space.
- * (The one exception is a tunnel, whose editor captures against {@code STRUCTURE_VOID} and so keeps
- * its air — but the snapshot dropped that air at <em>upload</em> time, long before this code, so
- * there is nothing here that could put it back.)</p>
+ * <p><b>Air is absent from a snapshot a world capture makes</b>: {@link CarriageBlockSnapshot#captureLevel}
+ * stores only non-air cells. A template file is not always the same. Tunnels and portal rooms are
+ * captured against {@code STRUCTURE_VOID}, and buildings keep the air inside them, so their files list
+ * air cells, and {@link #fromTemplateTag} copies whatever the file holds. An upload built from such a
+ * file and meant to match a world capture goes through {@link #withoutAir} as well; without it a
+ * restored room carried every empty cell of its volume, about four times the data.</p>
  *
  * <p><b>What a local save would keep comes across; nothing else does.</b> A v2 blob's {@code ents}
  * list becomes the template's {@code entities}, filtered through {@link TemplateDecor#carries} —
@@ -242,6 +242,34 @@ public final class CarriageSnapshotTemplate {
         out.putInt("w", w);
         out.put("cells", cells);
         return out;
+    }
+
+    /**
+     * {@code snapshot} with its air cells left out: what {@link CarriageBlockSnapshot#captureLevel}
+     * would have produced for the same blocks.
+     *
+     * <p>Returns a new tag; {@code snapshot} is not changed. A cell whose state is air, cave air or
+     * void air is dropped. Every other cell, and every other field, is copied across.</p>
+     */
+    public static CompoundTag withoutAir(CompoundTag snapshot) {
+        CompoundTag out = snapshot.copy();
+        ListTag kept = new ListTag();
+        ListTag cells = snapshot.getList("cells", Tag.TAG_COMPOUND);
+        for (int i = 0; i < cells.size(); i++) {
+            CompoundTag cell = cells.getCompound(i);
+            if (isAirCell(cell)) continue;
+            kept.add(cell.copy());
+        }
+        out.put("cells", kept);
+        return out;
+    }
+
+    private static final java.util.Set<String> AIR_NAMES =
+            java.util.Set.of("minecraft:air", "minecraft:cave_air", "minecraft:void_air");
+
+    private static boolean isAirCell(CompoundTag cell) {
+        return cell.contains("s", Tag.TAG_COMPOUND)
+                && AIR_NAMES.contains(cell.getCompound("s").getString("Name"));
     }
 
     /**

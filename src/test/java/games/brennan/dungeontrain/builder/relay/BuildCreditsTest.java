@@ -90,4 +90,19 @@ final class BuildCreditsTest {
         assertEquals("aa-bb", new Credit("aa-bb", "", 0L).display());
         assertTrue(new Credit(null, null, 0L).display().isEmpty());
     }
+
+    @Test
+    @DisplayName("A room credit filed under the old portal_room sub kind is still found")
+    void legacyRoomKeyIsFolded(@TempDir Path dir) throws Exception {
+        Credit credit = new Credit("aa-bb", "Edda", 1_700_000_000_000L);
+        Path file = dir.resolve(BuildCredits.FILENAME);
+        Files.writeString(file, BuildCredits.toJson(
+                map(BuilderRelayBuilds.keyOf("portal_room", "portal_room", "courtyard"), credit)).toString(),
+                StandardCharsets.UTF_8);
+
+        Map<String, Credit> read = BuildCredits.readFrom(file);
+        assertEquals(credit, read.get(BuildCredits.keyOf(BuilderPhotoPaths.Kind.PORTAL_ROOM, "", "courtyard")));
+        assertEquals(BuildCredits.keyOf(BuilderPhotoPaths.Kind.PORTAL_ROOM, "", "courtyard"),
+                BuildCredits.keyOf(BuilderPhotoPaths.Kind.PORTAL_ROOM, "portal_room", "courtyard"));
+    }
 }

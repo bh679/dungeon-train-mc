@@ -104,6 +104,13 @@ public final class BuilderRelayUpload {
     public static void afterSave(ServerPlayer player, ServerLevel level, BuilderSave.Written written,
                                  String stageId, CompoundTag template) {
         if (written == null || !canUpload(player)) return;
+        String gateKey = BuilderRelayBuilds.keyOf(BuilderRelayKinds.idOf(written.kind()), written.subKind(), written.id());
+        if (SUBMITS.isSubmitting(gateKey)) {
+            // This build's first upload is still out. Wait for it, so this save lands on the row it
+            // makes instead of submitting a second one (see BuilderSubmitGate).
+            SUBMITS.holdLatest(gateKey, () -> afterSave(player, level, written, stageId, template));
+            return;
+        }
         String blocks;
         String text;
         try {
@@ -163,7 +170,7 @@ public final class BuilderRelayUpload {
         Extras extras = new Extras(sidecars, lootPrefabs);
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        String key = BuilderRelayBuilds.keyOf(BuilderRelayKinds.idOf(written.kind()), written.subKind(), written.id());
+        String key = gateKey;
         BuilderRelayBuilds.Entry known = data.builderRelayBuilds().get(key);
         if (known != null && !known.token().isEmpty()) {
             saveThrough(player, level, key, known, blocks, text, extras, written);
@@ -180,7 +187,24 @@ public final class BuilderRelayUpload {
             }
             return;
         }
+        if (!SUBMITS.begin(key)) {
+            SUBMITS.holdLatest(key, () -> afterSave(player, level, written, stageId, template));
+            return;
+        }
         submitNew(player, level, key, blocks, text, extras, written, stageId);
+    }
+
+    /** One first upload per build at a time — see {@link BuilderSubmitGate}. */
+    private static final BuilderSubmitGate SUBMITS = new BuilderSubmitGate();
+
+    /**
+     * End {@code key}'s first upload, however it went, and run the save that waited for it. Must be
+     * reached on every path out of {@link #submitNew}: a key left claimed would hold every later save
+     * of that build forever.
+     */
+    private static void releaseSubmit(ServerLevel level, String key) {
+        Runnable waiting = SUBMITS.finish(key);
+        if (waiting != null) onServer(level, waiting);
     }
 
     /**
@@ -204,11 +228,15 @@ public final class BuilderRelayUpload {
                         tell(player, "gui.dungeontrain.builder.profile.full", ChatFormatting.YELLOW,
                                 mine.cap());
                         settle(player, written, false, 0);
+                        releaseSubmit(level, key);
                         return;
                     }
                     submitNewNow(player, level, key, blocks, text, extras, written, stageId);
                 }))
-                .exceptionally(t -> failed(player, level, written, t));
+                .exceptionally(t -> {
+                    releaseSubmit(level, key);
+                    return failed(player, level, written, t);
+                });
     }
 
     /** The upload itself, once there is known to be room for it. */
@@ -225,6 +253,7 @@ public final class BuilderRelayUpload {
                     if (result.isEmpty()) {
                         tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
                         settle(player, written, false, 0);
+                        releaseSubmit(level, key);
                         return;
                     }
                     SharedCarriageClient.BuildUpload up = result.get();
@@ -234,8 +263,13 @@ public final class BuilderRelayUpload {
                     live.markBuilderRelayBuildsDirty();
                     tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
                     settle(player, written, true, up.id());
+                    // After the record is written, so the waiting save finds it and saves through it.
+                    releaseSubmit(level, key);
                 }))
-                .exceptionally(t -> failed(player, level, written, t));
+                .exceptionally(t -> {
+                    releaseSubmit(level, key);
+                    return failed(player, level, written, t);
+                });
     }
 
     /** A later save of a template this world still holds the lease on. */
