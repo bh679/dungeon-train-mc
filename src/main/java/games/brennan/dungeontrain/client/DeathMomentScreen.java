@@ -16,8 +16,9 @@ import net.minecraft.util.Mth;
  * The beat between dying and the death recap: the live world keeps drawing, the train still
  * rolling on. First the player's own view under a red wash, then {@link DeathCameraCycle}'s shots
  * (riding the carriage, then watching it leave), each cut fading through black, then a tilt up to
- * the sky that fades into the perks menu on its own (Space skips there sooner). Left and Right step
- * through the shots.
+ * the sky that fades into the perks menu on its own (Space skips there sooner, but never in the
+ * first {@link #MIN_SKIP_TICKS} ticks, and never on the player's first-ever death:
+ * {@link DeathCutsceneSeen}). Left and Right step through the shots.
  *
  * <p>It also keeps the frame of death smooth. {@link NarrativeDeathScreen} needs this run's
  * ride photos decoded and uploaded to the GPU, and opening it straight away did that work on the
@@ -33,8 +34,8 @@ public final class DeathMomentScreen extends Screen {
 
     /** Ticks for the wash to rise to full. */
     private static final int FADE_TICKS = 10;
-    /** Ignore Space and clicks this early so one already in flight at death can't skip the moment. */
-    private static final int MIN_SKIP_TICKS = 10;
+    /** No skipping for the first 3 seconds of every death cinematic. */
+    private static final int MIN_SKIP_TICKS = 60;
     /** Vanilla DeathScreen's wash, top and bottom (ARGB), at half strength so the train reads through it. POV only. */
     private static final int WASH_TOP = 0x30500000;
     private static final int WASH_BOTTOM = 0x50803030;
@@ -49,10 +50,14 @@ public final class DeathMomentScreen extends Screen {
     /** The prompt fades in after the wash, so the first frames are just the moment. */
     private static final int PROMPT_DELAY_TICKS = 20;
     private static final int PROMPT_FADE_TICKS = 10;
+    /** Below about 4/255 alpha Minecraft's font renders text fully opaque. */
+    private static final float MIN_TEXT_ALPHA = 0.02f;
 
     private RideSnapshot[] prewarm = new RideSnapshot[0];
     private boolean started;
     private boolean handedOver;
+    /** The player's first-ever death: the cinematic plays to its end, no skip at all. */
+    private boolean skipLocked;
     private int ticks;
     private int uploadCursor;
 
@@ -65,6 +70,7 @@ public final class DeathMomentScreen extends Screen {
         // init() re-runs on a window resize; the prewarm is started once per death.
         if (started) return;
         started = true;
+        skipLocked = DeathCutsceneSeen.get().isFirstEver();
         // Freeze now, not when the recap opens: no capture, flush or eviction may touch the
         // photos being decoded for it.
         RideSnapshotGallery.freeze();
@@ -120,6 +126,7 @@ public final class DeathMomentScreen extends Screen {
     private void handOver() {
         if (handedOver || minecraft == null) return;
         handedOver = true;
+        DeathCutsceneSeen.get().markSeen();
         if (!games.brennan.dungeontrain.perks.PerksGate.isOnClient()) {
             // Perks off (PerksGate): straight to the recap, as before perks.
             minecraft.setScreen(new NarrativeDeathScreen());
@@ -130,7 +137,15 @@ public final class DeathMomentScreen extends Screen {
     }
 
     private boolean maySkip() {
-        return ticks >= MIN_SKIP_TICKS && photosReady();
+        return !firstDeathLock() && ticks >= MIN_SKIP_TICKS && photosReady();
+    }
+
+    /**
+     * The first-ever death's no-skip lock. It holds only while the camera is running, because the
+     * camera's sky is the only other way out: should it never start or stop early, Space is back.
+     */
+    private boolean firstDeathLock() {
+        return skipLocked && DeathCameraCycle.isActive();
     }
 
     @Override
@@ -142,11 +157,12 @@ public final class DeathMomentScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == InputConstants.KEY_LEFT || keyCode == InputConstants.KEY_A) {
+        // Arrows only: players still holding WASD from the moment they died mustn't cut the scene.
+        if (keyCode == InputConstants.KEY_LEFT) {
             DeathCameraCycle.previous();
             return true;
         }
-        if (keyCode == InputConstants.KEY_RIGHT || keyCode == InputConstants.KEY_D) {
+        if (keyCode == InputConstants.KEY_RIGHT) {
             DeathCameraCycle.next();
             return true;
         }
@@ -185,19 +201,28 @@ public final class DeathMomentScreen extends Screen {
         }
     }
 
-    /** Bottom-centre prompt, in the intro cinematic's style, faded in after the wash. */
+    /**
+     * Bottom-centre prompt, in the intro cinematic's style, faded in after the wash. The "continue"
+     * line only appears once Space can actually skip: after {@link #MIN_SKIP_TICKS}, and never on
+     * the first-ever death.
+     */
     private void renderPrompt(GuiGraphics g, float partialTick) {
         float t = Mth.clamp((ticks + partialTick - PROMPT_DELAY_TICKS) / PROMPT_FADE_TICKS, 0.0f, 1.0f);
         if (t <= 0.0f || minecraft == null) return;
+        float c = firstDeathLock() ? 0.0f
+                : Mth.clamp((ticks + partialTick - MIN_SKIP_TICKS) / PROMPT_FADE_TICKS, 0.0f, 1.0f);
+        // Font draws a near-zero alpha as fully opaque, so the line waits for a visible alpha.
+        boolean showContinue = c >= MIN_TEXT_ALPHA;
         Font font = minecraft.font;
         int lineHeight = HudText.scaledLineHeight(font);
-        int w1 = HudText.scaledWidth(font, CONTINUE);
+        int w1 = showContinue ? HudText.scaledWidth(font, CONTINUE) : 0;
         int w2 = HudText.scaledWidth(font, CHANGE_VIEW);
         int width = Math.max(w1, w2);
         int x = (this.width - width) / 2;
         int y = this.height - BOTTOM_MARGIN - lineHeight;
-        g.fill(x - PAD, y - PAD, x + width + PAD, y + 2 * lineHeight + PAD, scaleAlpha(BACKDROP_COLOR, t));
-        HudText.drawScaled(g, font, CONTINUE, x + (width - w1) / 2, y, scaleAlpha(TEXT_COLOR, t), true);
+        int top = showContinue ? y : y + lineHeight;
+        g.fill(x - PAD, top - PAD, x + width + PAD, y + 2 * lineHeight + PAD, scaleAlpha(BACKDROP_COLOR, t));
+        if (showContinue) HudText.drawScaled(g, font, CONTINUE, x + (width - w1) / 2, y, scaleAlpha(TEXT_COLOR, c), true);
         HudText.drawScaled(g, font, CHANGE_VIEW, x + (width - w2) / 2, y + lineHeight, scaleAlpha(HINT_COLOR, t), true);
     }
 
