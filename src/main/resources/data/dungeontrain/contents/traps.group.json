@@ -114,6 +114,11 @@
     {
       "id": "tripwire",
       "weight": 2
+    },
+    {
+      "id": "door",
+      "weight": 1,
+      "minLevel": 10
     }
   ]
 }
