@@ -159,6 +159,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     @Nullable private ClientOptionsTab.Row focusRow;
     /** When the highlight began; a rebuild carries on the same fade. Unset until the row is first shown. */
     private long focusStartMs = -1;
+    /**
+     * The Stream rows a click on the preview also flips, kept so the row shows the new value at once
+     * (a rebuild would lose the list's scroll). Set by {@link #build} on every init.
+     */
+    @Nullable private CycleButton<Boolean> streamGuiButton;
+    @Nullable private CycleButton<Boolean> streamChatButton;
+    @Nullable private CycleButton<LiveFeedClientConfig.NameTag> streamNameTagButton;
+    @Nullable private CycleButton<Integer> headViewerStreamingButton;
 
     /** The screen on {@link ClientOptionsTab#active()}, scrolled to {@code row} with that row highlighted. */
     public DungeonTrainClientOptionsScreen(Screen parent, ClientOptionsTab.Row row) {
@@ -322,23 +330,34 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         /** The list's top and bottom padding around its rows. */
         private static final int LIST_PAD = 8;
         private static final int PREVIEW_MARGIN = 20;
+        /** Rows the preview takes inside the list (Under list / Above list): a caption and a 310-wide picture. */
+        private static final int PREVIEW_LINES = 8;
 
         private final ClientOptionsTab id;
         private final SettingsRowList list;
         /** This tab's setting rows, for a chat link to find one. */
         private final Map<ClientOptionsTab.Row, SettingsRowList.Entry> entries = new EnumMap<>(ClientOptionsTab.Row.class);
-        /** Stream tab only: what viewers would see, under the rows that change it. */
+        /** Stream tab only, unless its placement is Off: what viewers would see. */
         @Nullable private final StreamPreviewWidget preview;
+        /** The preview sits under the list rather than inside it (Pinned below). */
+        private final boolean previewPinned;
 
         OptionsTab(ClientOptionsTab id, List<ClientOptionsTab.Row> rows) {
             this.id = id;
             this.list = new SettingsRowList(DungeonTrainClientOptionsScreen.this.minecraft,
                     DungeonTrainClientOptionsScreen.this.width, 0, 0);
+            LiveFeedClientConfig.PreviewPlacement placement = id == ClientOptionsTab.STREAM
+                    ? LiveFeedClientConfig.streamPreviewPlacement() : LiveFeedClientConfig.PreviewPlacement.OFF;
+            // Off: no widget at all, so nothing asks StreamPreview for frames.
+            this.preview = placement == LiveFeedClientConfig.PreviewPlacement.OFF ? null
+                    : new StreamPreviewWidget(DungeonTrainClientOptionsScreen.this::syncPreviewRow);
+            this.previewPinned = placement == LiveFeedClientConfig.PreviewPlacement.PINNED_BELOW;
+            if (placement == LiveFeedClientConfig.PreviewPlacement.ABOVE_LIST) this.list.addTallWidget(this.preview, PREVIEW_LINES);
             for (ClientOptionsTab.Row row : rows) {
                 SettingsRowList.Entry entry = addRow(this.list, row);
                 if (entry != null) this.entries.put(row, entry);
             }
-            this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
+            if (placement == LiveFeedClientConfig.PreviewPlacement.UNDER_LIST) this.list.addTallWidget(this.preview, PREVIEW_LINES);
         }
 
         @Override
@@ -349,18 +368,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         @Override
         public void visitChildren(Consumer<AbstractWidget> consumer) {
             consumer.accept(this.list);
-            if (this.preview != null) consumer.accept(this.preview);
+            // In the list, the list draws it and passes it clicks.
+            if (this.preview != null && this.previewPinned) consumer.accept(this.preview);
         }
 
         @Override
         public void doLayout(ScreenRectangle rectangle) {
-            if (this.preview == null) {
+            if (this.preview == null || !this.previewPinned) {
                 this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
                 return;
             }
-            // The list shrinks to its rows; the preview takes the rest (the widget hides itself
-            // when that is too small to show a picture).
-            int listH = Math.min(rectangle.height(), this.list.rowCount() * SettingsRowList.ROW_H + LIST_PAD);
+            // Pinned below: the list shrinks to its rows but leaves the preview at least its share of
+            // the tab, scrolling the rows in what is left.
+            int listH = ClientOptionsTab.pinnedListHeight(rectangle.height(), this.list.rowCount() * SettingsRowList.ROW_H + LIST_PAD);
             this.list.updateSizeAndPosition(rectangle.width(), listH, rectangle.top());
             this.preview.setX(rectangle.left() + PREVIEW_MARGIN);
             this.preview.setY(rectangle.top() + listH + 4);
@@ -705,6 +725,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * the very {@code init()} that was still adding its own tab bar, Done button and list. The outer
      * init then finished on top of the rebuilt screen, and every reopen stacked another tab bar.</p>
      */
+    /**
+     * {@link #rebuildIfShown}, with the current tab's list left where it was scrolled: the preview's
+     * placement adds or removes list rows, and the row that changed it should stay under the mouse.
+     */
+    private void rebuildKeepingScroll() {
+        this.minecraft.tell(() -> {
+            if (this.minecraft.screen != this) return;
+            double scroll = this.tabManager.getCurrentTab() instanceof OptionsTab t ? t.list.getScrollAmount() : 0;
+            rebuildWidgets();
+            if (this.tabManager.getCurrentTab() instanceof OptionsTab t) t.list.setScrollAmount(scroll);
+        });
+    }
+
     private void rebuildIfShown() {
         this.minecraft.tell(() -> {
             if (this.minecraft.screen == this) {
@@ -774,8 +807,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case FFMPEG -> Setting.of(new FfmpegSetupButton(CONTROL_W, ROW_H), key + ".tip");
 
             // What viewers see; the preview under the rows follows both switches live.
-            case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),
-                    key + ".tip");
+            case STREAM_GUI -> {
+                this.streamGuiButton = onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui);
+                yield Setting.of(this.streamGuiButton, key + ".tip");
+            }
 
             // Kid mode and Live chat off never stream chat: the switch shows Off and is greyed, whatever is stored.
             case STREAM_CHAT -> {
@@ -784,6 +819,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 CycleButton<Boolean> streamChat = onOff(Component.translatable(key),
                         !kid && !liveChatOff && LiveFeedClientConfig.streamChat(), LiveFeedClientConfig::setStreamChat);
                 streamChat.active = !kid && !liveChatOff;
+                this.streamChatButton = streamChat;
                 yield Setting.of(streamChat, kid ? key + ".kid_tip" : liveChatOff ? key + ".live_chat_off_tip" : key + ".tip");
             }
 
@@ -830,6 +866,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
                     LiveFeedClientConfig::setSaveBandwidth), key + ".tip");
 
+            // The viewer preview under the rows. Off hides it and gives the list the room; a hidden
+            // preview never asks StreamPreview for frames, so the copies stop too.
+            case STREAM_PREVIEW -> Setting.of(
+                    CycleButton.<LiveFeedClientConfig.PreviewPlacement>builder(p -> Component.translatable(
+                                    key + "." + p.name().toLowerCase(java.util.Locale.ROOT)))
+                            .withValues(LiveFeedClientConfig.PreviewPlacement.values())
+                            .withInitialValue(LiveFeedClientConfig.streamPreviewPlacement())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, p) -> {
+                                LiveFeedClientConfig.setStreamPreviewPlacement(p);
+                                rebuildKeepingScroll();
+                            }),
+                    key + ".tip");
+
             // Decoding live feeds onto TVs and the pinned viewer, and whether spawned TVs may come on
             // (TvSpawnPower); off = static, and the idle watchdog stops the decoder. On the
             // Performance tab too, as a frame-rate cost. TvSpawnPrefSyncClient tells the server.
@@ -853,6 +903,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                 .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                         (btn, tag) -> LiveFeedClientConfig.setStreamNameTag(tag));
                 nameTag.active = !kid;
+                this.streamNameTagButton = nameTag;
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
@@ -957,7 +1008,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // The pinned top-right feed, one size while you watch and one while you stream (the
             // preview outlines the streaming one).
             case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
-            case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
+            case HEAD_VIEWER_SIZE_STREAMING -> {
+                Setting size = headViewerSize(key, true);
+                @SuppressWarnings("unchecked")
+                CycleButton<Integer> button = (CycleButton<Integer>) size.control;
+                this.headViewerStreamingButton = button;
+                yield size;
+            }
             // Who is live, under each pane of the pinned feed (HeadViewerCaption).
             case HEAD_VIEWER_NAMES -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.headViewerNames(),
                     LiveFeedClientConfig::setHeadViewerNames), key + ".tip");
@@ -1375,6 +1432,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     /** A pinned-feed size index as a percentage of its normal width: "150%". */
     /** One of the two pinned-feed size rows: {@code streaming} picks which size it sets. */
+    /** A click on the Stream preview flipped {@code part}'s setting: show the new value on its row. */
+    private void syncPreviewRow(games.brennan.dungeontrain.client.live.StreamPreviewRegions.Part part) {
+        switch (part) {
+            case GUI -> { if (this.streamGuiButton != null) this.streamGuiButton.setValue(LiveFeedClientConfig.streamGui()); }
+            case CHAT -> { if (this.streamChatButton != null) this.streamChatButton.setValue(LiveFeedClientConfig.streamChat()); }
+            case NAME_TAG -> { if (this.streamNameTagButton != null) this.streamNameTagButton.setValue(LiveFeedClientConfig.streamNameTag()); }
+            case HEAD_VIEWER -> { if (this.headViewerStreamingButton != null) this.headViewerStreamingButton.setValue(LiveFeedClientConfig.headViewerSize(true)); }
+        }
+    }
+
     private static Setting headViewerSize(String key, boolean streaming) {
         return Setting.of(
                 CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)

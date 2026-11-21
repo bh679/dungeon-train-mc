@@ -195,7 +195,8 @@ public final class ChunkFramePlacer {
                             // The roll's authored facing / half / toggle, not just its captured state.
                             state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null
                                 : games.brennan.dungeontrain.editor.RotationApplier.apply(roll.state(), roll,
-                                    local.immutable(), seed, rollIndex, variants.lockIdAt(local.immutable()));
+                                    local.immutable(), seed, rollIndex, variants.lockIdAt(local.immutable()),
+                                    variants.rotationLockIdAt(local.immutable()));
                             blockEntity = roll.blockEntityNbt();
                         }
                         if (state == null || state.isAir()) continue;

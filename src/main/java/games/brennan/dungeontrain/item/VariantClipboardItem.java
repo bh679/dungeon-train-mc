@@ -105,6 +105,8 @@ public final class VariantClipboardItem extends Item {
     public static final String NBT_COPY_SCOPE = "dt_copyScope";
     /** The cell's multi-space {@code VariantSpan} token. Absent when AUTO. */
     public static final String NBT_SPAN = "dt_span";
+    /** True when the source cell's lock group rolls rotation per cell (Rot Free). Absent when locked. */
+    public static final String NBT_ROTATION_FREE = "dt_rotFree";
 
     /**
      * Top-level NBT key carrying the source cell's container contents pool
@@ -265,6 +267,7 @@ public final class VariantClipboardItem extends Item {
         VariantCopyRoll copyRoll = decodeCopyRoll(tag);
         VariantCopyScope copyScope = decodeCopyScope(tag);
         games.brennan.dungeontrain.editor.VariantSpan span = decodeSpan(tag);
+        boolean rotationFree = decodeRotationFree(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             return PasteOutcome.fail(Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_needs_min_variants",
                 CarriageVariantBlocks.MIN_STATES_PER_ENTRY), ChatFormatting.YELLOW);
@@ -316,6 +319,17 @@ public final class VariantClipboardItem extends Item {
         plot.setCopyScope(localPos, copyScope);
         plot.setSpan(localPos, span);
         if (lockId > 0) {
+            // Rot Lock / Rot Free belongs to the group, and a group that already exists keeps its
+            // own: extending a group with a clipboard copied before its Rot toggle was flipped must
+            // not quietly flip it back. Only a paste that starts the group brings the copied value.
+            boolean joinsExistingGroup = false;
+            boolean existingFree = false;
+            for (net.minecraft.core.BlockPos member : plot.positionsWithLockId(lockId)) {
+                if (member.equals(localPos)) continue;
+                joinsExistingGroup = true;
+                existingFree |= plot.rotationFreeAt(member);
+            }
+            boolean groupRotationFree = joinsExistingGroup ? existingFree : rotationFree;
             plot.setLockId(localPos, lockId);
             // Every cell in a lock group draws one index, so they must agree about how they roll:
             // a member that repeated while the rest varied would show a different block from its
@@ -323,6 +337,10 @@ public final class VariantClipboardItem extends Item {
             // it — the same thing the menu's own button does.
             for (net.minecraft.core.BlockPos sibling : plot.positionsWithLockId(lockId)) {
                 if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, copyRoll);
+            }
+            // Every member agrees, as the menu's Rot button sets the whole group at once.
+            for (net.minecraft.core.BlockPos member : plot.positionsWithLockId(lockId)) {
+                plot.setRotationFree(member, groupRotationFree);
             }
         }
 
@@ -409,6 +427,17 @@ public final class VariantClipboardItem extends Item {
             root.putString(NBT_SPAN, span.toToken());
         }
         return root;
+    }
+
+    /** Add the lock group's Rot Free setting to an encoded clipboard tag (omitted when locked). */
+    public static CompoundTag withRotationFree(CompoundTag root, boolean free) {
+        if (free) root.putBoolean(NBT_ROTATION_FREE, true);
+        return root;
+    }
+
+    /** The captured Rot Free setting; false (locked) for a clipboard that carries none. */
+    public static boolean decodeRotationFree(@Nullable CompoundTag tag) {
+        return tag != null && tag.getBoolean(NBT_ROTATION_FREE);
     }
 
     /** The captured multi-space span; AUTO for a clipboard that carries none. */

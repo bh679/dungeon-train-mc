@@ -82,6 +82,7 @@ public final class BuilderSidecarCarry {
                     target.setCopyRoll(local, source.copyRollAt(pos));
                     target.setCopyScope(local, source.copyScopeAt(pos));
                     target.setSpan(local, source.spanAt(pos));
+                    if (lockId > 0) target.setRotationFree(local, source.rotationFreeAt(pos));
                 }
                 BuilderVariantStore.save(level, target, footprint);
             } catch (Throwable t) {
@@ -129,6 +130,7 @@ public final class BuilderSidecarCarry {
                     target.setCopyRoll(local, doc.copyRollAt(entry.localPos()));
                     target.setCopyScope(local, doc.copyScopeAt(entry.localPos()));
                     target.setSpan(local, doc.spanAt(entry.localPos()));
+                    if (lockId > 0) target.setRotationFree(local, doc.rotationFreeAt(entry.localPos()));
                 }
                 target.save();
             } catch (Throwable t) {
@@ -222,6 +224,7 @@ public final class BuilderSidecarCarry {
                     target.setCopyRoll(local, doc.copyRollAt(entry.localPos()));
                     target.setCopyScope(local, doc.copyScopeAt(entry.localPos()));
                     target.setSpan(local, doc.spanAt(entry.localPos()));
+                    if (lockId > 0) target.setRotationFree(local, doc.rotationFreeAt(entry.localPos()));
                 }
             }
             target.save();
@@ -259,6 +262,7 @@ public final class BuilderSidecarCarry {
         target.setCopyRoll(to, source.copyRollAt(from));
         target.setCopyScope(to, source.copyScopeAt(from));
         target.setSpan(to, source.spanAt(from));
+        if (lockId > 0) target.setRotationFree(to, source.rotationFreeAt(from));
     }
 
     /**

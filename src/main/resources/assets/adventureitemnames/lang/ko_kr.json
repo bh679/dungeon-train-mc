@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "평화로운 몹 이름 지정",
   "screen.adventureitemnames.spawn_chances.mob_villager": "주민 이름 지정",
   "screen.adventureitemnames.spawn_chances.mob_player": "플레이어 몹 이름 지정",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "적대적 몹 이름 지정",
   "screen.adventureitemnames.spawn_chances.crafted_description": "제작된 아이템 설명",
   "screen.adventureitemnames.spawn_chances.purchased_description": "구매한 아이템 설명",
   "screen.adventureitemnames.spawn_chances.trade_item": "주민 거래 이름 지정",

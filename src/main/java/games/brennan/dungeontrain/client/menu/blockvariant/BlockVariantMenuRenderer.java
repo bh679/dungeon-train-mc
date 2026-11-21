@@ -100,9 +100,17 @@ public final class BlockVariantMenuRenderer {
      */
     static final double SPAN_EXTRA_PANEL_WIDTH = 0.5;
 
+    /**
+     * Extra minimum width while the Rot pill is on the toolbar (any cell in a lock group): one more
+     * toolbar cell, sized so "Rot Free" fits at full text scale (it overran into Remove without it,
+     * Gate 2 screenshot). Longer translations shrink to their cell instead ({@link #drawCenteredTextFit}).
+     */
+    static final double ROT_EXTRA_PANEL_WIDTH = 0.9;
+
     /** The minimum width this opening of the panel draws at — see {@link #COPY_SETTINGS_MIN_PANEL_WIDTH}. */
     static double minPanelWidth() {
         double base = BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        if (BlockVariantMenu.lockId() > 0) base += ROT_EXTRA_PANEL_WIDTH;
         return BlockVariantMenu.spanButtonShown() ? base + SPAN_EXTRA_PANEL_WIDTH : base;
     }
 
@@ -289,6 +297,12 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     tint = isHover ? 0xC0AAAAAA : 0x60777777;
                 }
+            } else if (cellKind == BlockVariantMenu.CellKind.ROT_LOCK) {
+                // Grey at the default (one rotation for the group), lit teal once the group rolls
+                // rotation per cell — the non-default state is the one worth seeing across the panel.
+                tint = BlockVariantMenu.rotationFree()
+                    ? (isHover ? 0xC066E0B8 : 0x8033AA88)
+                    : (isHover ? 0xC0AAAAAA : 0x60777777);
             } else if (cellKind == BlockVariantMenu.CellKind.COPY_ROLL) {
                 // Same treatment as Lock: lit when the cell overrides its room, grey when it is
                 // simply following it — which is the thing worth seeing from across the panel.
@@ -322,6 +336,8 @@ public final class BlockVariantMenuRenderer {
                 case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
                 // "Exact" is the word the room's own Copies setting uses for repeating one roll,
                 // so the cell says whether it is following that or breaking from it.
+                case ROT_LOCK -> MenuLang.t(BlockVariantMenu.rotationFree()
+                    ? "block_variant.rotation_free" : "block_variant.rotation_locked");
                 case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
                 case SPAN -> SpanPopupLayout.shortLabel(BlockVariantMenu.resolvedSpan());
@@ -331,7 +347,9 @@ public final class BlockVariantMenuRenderer {
                 default -> "";
             };
             int colour = isHover ? 0xFF000000 : 0xFFFFFFFF;
-            drawCenteredText(ps, buffer, font, label, (xL + xR) / 2.0, toolbarCY, colour);
+            // Shrunk to its cell when a translation runs long, so it never paints over a neighbour.
+            drawCenteredTextFit(ps, buffer, font, label, (xL + xR) / 2.0, toolbarCY, colour,
+                cellW - TOOLBAR_LABEL_PAD);
         }
 
         // Grid
@@ -1431,6 +1449,31 @@ public final class BlockVariantMenuRenderer {
         float scale = (float) TEXT_SCALE;
         ps.scale(scale, -scale, scale);
         int textWidth = font.width(text);
+        float x = -textWidth / 2f;
+        float y = -font.lineHeight / 2f;
+        Matrix4f mat = ps.last().pose();
+        font.drawInBatch(text, x, y, colour, false, mat, buffer,
+            Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
+        ps.popPose();
+    }
+
+    /** Space kept clear on each toolbar label so a shrunk label still reads as inside its cell. */
+    static final double TOOLBAR_LABEL_PAD = 0.06;
+
+    /**
+     * {@link #drawCenteredText}, scaled down (never up) so the label fits {@code maxWorldWidth}.
+     * Toolbar cells share the panel width equally, and several of their labels are translated.
+     */
+    static void drawCenteredTextFit(PoseStack ps, MultiBufferSource buffer, Font font,
+                                    String text, double worldX, double worldY, int colour,
+                                    double maxWorldWidth) {
+        int textWidth = font.width(text);
+        double full = textWidth * TEXT_SCALE;
+        float scale = (float) (full > maxWorldWidth && maxWorldWidth > 0
+            ? TEXT_SCALE * (maxWorldWidth / full) : TEXT_SCALE);
+        ps.pushPose();
+        ps.translate(worldX, worldY, 0.001f);
+        ps.scale(scale, -scale, scale);
         float x = -textWidth / 2f;
         float y = -font.lineHeight / 2f;
         Matrix4f mat = ps.last().pose();

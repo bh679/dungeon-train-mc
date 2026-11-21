@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Nombrado de criatura pasiva",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Nombrado de aldeano",
   "screen.adventureitemnames.spawn_chances.mob_player": "Nombrado de criatura jugador",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Nombrado de criatura hostil",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Descripción de objeto fabricado",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Descripción de objeto comprado",
   "screen.adventureitemnames.spawn_chances.trade_item": "Nombrado de trueque de aldeano",

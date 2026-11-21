@@ -60,6 +60,8 @@ public final class BlockVariantMenu {
         REMOVE,
         CLEAR,
         LOCK,
+        /** Toolbar Rot pill — Rot Lock / Rot Free for the cell's lock group. Only on a grouped cell. */
+        ROT_LOCK,
         COPY_ROLL,
         COPY_SCOPE,
         SPAN,
@@ -132,6 +134,8 @@ public final class BlockVariantMenu {
     @Nullable private static BlockPos localPos;
     private static List<BlockVariantSyncPacket.Entry> entries = Collections.emptyList();
     private static int lockId = 0;
+    /** The cell's lock group rolls rotation per cell (Rot Free); false = one shared rotation. */
+    private static boolean rotationFree;
     private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
     private static boolean copySettingsSupported;
     /** Whether this plot's spawn path honours the fence / wall connect mode — gates the row pill. */
@@ -196,6 +200,8 @@ public final class BlockVariantMenu {
     @Nullable public static BlockPos localPos() { return localPos; }
     public static List<BlockVariantSyncPacket.Entry> entries() { return entries; }
     public static int lockId() { return lockId; }
+    /** True when the cell's lock group rolls rotation per cell (Rot Free). */
+    public static boolean rotationFree() { return rotationFree; }
 
     /** How this cell rolls across the copies of the repeating room it belongs to. */
     public static VariantCopyRoll copyRoll() { return copyRoll; }
@@ -374,6 +380,9 @@ public final class BlockVariantMenu {
     public static List<CellKind> toolbarCells() {
         List<CellKind> cells = new java.util.ArrayList<>(List.of(
             CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK));
+        // Right after Lock because it is the group's own setting: only a grouped cell has a
+        // rotation to share or free — an ungrouped one already rolls on its own.
+        if (lockId > 0) cells.add(CellKind.ROT_LOCK);
         // Beside Lock, which is the other per-cell setting on this toolbar, and next to each
         // other because the two answer one question between them: where the cell is, and how it
         // rolls once it is there.
@@ -472,6 +481,7 @@ public final class BlockVariantMenu {
             localPos = null;
             entries = Collections.emptyList();
             lockId = 0;
+            rotationFree = false;
             copyRoll = VariantCopyRoll.DEFAULT;
             copySettingsSupported = false;
             connectSupported = false;
@@ -498,6 +508,7 @@ public final class BlockVariantMenu {
         localPos = packet.localPos();
         entries = List.copyOf(packet.entries());
         lockId = packet.lockId();
+        rotationFree = packet.rotationFree();
         copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
         copySettingsSupported = packet.copySettingsSupported();
         connectSupported = packet.connectSupported();
