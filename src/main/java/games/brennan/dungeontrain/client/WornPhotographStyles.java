@@ -12,28 +12,53 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
-/** Tells Exposure which paper texture each of DT's worn photograph types is drawn on. */
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+/**
+ * Tells Exposure which paper texture each of DT's worn photograph types is drawn on.
+ *
+ * <p>Registers once per JVM. When another mod fails during the first resource load, vanilla rolls
+ * back the resource packs and reloads, and NeoForge runs client setup a second time. Exposure's
+ * style map survives that and throws on a repeat, which would make DT the mod the crash report
+ * blames and hide the real error. The work is enqueued because that map is a plain HashMap and
+ * Exposure writes it on the main thread.</p>
+ */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class WornPhotographStyles {
 
-    // Exposure's own "no overlay" marker. It compares against this, so null here crashes the renderer.
-    private static final ResourceLocation NO_OVERLAY = ExposureClient.Textures.EMPTY;
-    private static final ResourceLocation ALBUM_PAPER = ExposureClient.Textures.Photograph.REGULAR_ALBUM_PAPER;
+    private static final AtomicBoolean REGISTERED = new AtomicBoolean();
 
     private WornPhotographStyles() {}
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        // Each type's paper texture carries the type's own name.
-        register(WornPhotographs.LIGHT);
-        WornPhotographs.MEDIUM.forEach(WornPhotographStyles::register);
-        WornPhotographs.HEAVY.forEach(WornPhotographStyles::register);
+        event.enqueueWork(() -> registerOnce(REGISTERED, WornPhotographStyles::register));
+    }
+
+    /** DT's worn types, in registration order. */
+    static List<PhotographType> types() {
+        return Stream.concat(Stream.concat(Stream.of(WornPhotographs.LIGHT),
+            WornPhotographs.MEDIUM.stream()), WornPhotographs.HEAVY.stream()).toList();
+    }
+
+    /** Hands every worn type to {@code registrar} the first time only; false when already done. */
+    static boolean registerOnce(AtomicBoolean done, Consumer<PhotographType> registrar) {
+        if (!SetupOnce.first(done, "Worn photograph styles")) return false;
+        types().forEach(registrar);
+        return true;
     }
 
     private static void register(PhotographType type) {
+        // Exposure's own "no overlay" marker. It compares against this, so null here crashes the renderer.
+        ResourceLocation noOverlay = ExposureClient.Textures.EMPTY;
+        ResourceLocation albumPaper = ExposureClient.Textures.Photograph.REGULAR_ALBUM_PAPER;
+        // Each type's paper texture carries the type's own name.
         String texture = type.id().getPath();
         ResourceLocation paper = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/photograph/" + texture + ".png");
-        PhotographStyles.register(type, new PhotographStyle(paper, NO_OVERLAY, ALBUM_PAPER, NO_OVERLAY,
+        PhotographStyles.register(type, new PhotographStyle(paper, noOverlay, albumPaper, noOverlay,
             new TornEdgeEffect("dt_torn_" + texture, paper)));
     }
 }

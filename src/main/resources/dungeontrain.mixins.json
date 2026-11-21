@@ -223,6 +223,8 @@
     "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.ExposureClientInitOnceMixin",
+    "client.ExposurePolaroidClientInitOnceMixin",
     "client.EnchantmentScreenCrafterCostMixin",
     "client.AnvilScreenCrafterCapMixin",
     "client.MerchantScreenExtraCostsMixin",
