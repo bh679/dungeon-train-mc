@@ -1,0 +1,17 @@
+{
+  "id": "cracked-stone-bricks-break-faster",
+  "version": "0.1926.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "balance"
+  ],
+  "title": "Cracked stone bricks break faster",
+  "summary": "Cracked stone bricks now break a little faster than whole stone bricks.",
+  "highlights": [],
+  "pr": 2782,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
