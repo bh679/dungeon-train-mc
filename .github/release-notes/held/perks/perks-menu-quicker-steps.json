@@ -1,0 +1,16 @@
+{
+  "id": "perks-menu-quicker-steps",
+  "version": "0.1662.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Quicker perks menu on death",
+  "summary": "After a death, Next Screen takes you straight to your tribute room on the first press, and while the perks menu tells its story a click or Space jumps straight to the next line.",
+  "highlights": [],
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

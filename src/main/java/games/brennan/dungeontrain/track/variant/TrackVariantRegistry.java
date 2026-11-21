@@ -212,6 +212,25 @@ public final class TrackVariantRegistry {
      * (e.g. tunnel section vs portal at the same X) doesn't pick correlated
      * names.</p>
      */
+    /**
+     * The pool the train rolls from: tribute rooms sit out while perks are off
+     * ({@link games.brennan.dungeontrain.perks.PerksGate}), so every other world rolls exactly the
+     * rooms it did before tribute rooms existed.
+     */
+    static List<String> withoutHeldRooms(TrackKind kind, List<String> pool) {
+        if (kind != TrackKind.PORTAL_ROOM || games.brennan.dungeontrain.perks.PerksGate.isOn()) return pool;
+        return heldOut(pool);
+    }
+
+    /** {@code pool} without the tribute room templates. */
+    static List<String> heldOut(List<String> pool) {
+        List<String> out = new ArrayList<>(pool.size());
+        for (String name : pool) {
+            if (!name.startsWith(games.brennan.dungeontrain.portal.tribute.TributeRooms.TEMPLATE)) out.add(name);
+        }
+        return out;
+    }
+
     public static String pickName(TrackKind kind, long worldSeed, long tileIndex) {
         return pickName(kind, worldSeed, tileIndex, null);
     }
@@ -241,7 +260,7 @@ public final class TrackVariantRegistry {
                                   games.brennan.dungeontrain.template.TemplateGroup group) {
         // Sub-variants are reached through their parent, never beside it — a member in the top-level
         // pool would be drawn twice over, once on its own and once through the group.
-        List<String> pool = games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind);
+        List<String> pool = withoutHeldRooms(kind, games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind));
         int n = pool.size();
         if (n == 0) return TrackKind.DEFAULT_NAME;
 
@@ -311,7 +330,7 @@ public final class TrackVariantRegistry {
      */
     public static java.util.Map<String, Double> leafOdds(TrackKind kind, GateContext gateCtx) {
         java.util.Map<String, Double> odds = new java.util.LinkedHashMap<>();
-        List<String> pool = games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind);
+        List<String> pool = withoutHeldRooms(kind, games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind));
         if (pool.isEmpty()) return odds;
 
         List<String> effective = pool;

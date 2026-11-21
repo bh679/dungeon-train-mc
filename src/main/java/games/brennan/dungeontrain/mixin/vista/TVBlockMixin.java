@@ -73,6 +73,12 @@ public abstract class TVBlockMixin {
     private void dungeontrain$clickToggles(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                            InteractionHand hand, BlockHitResult hit,
                                            CallbackInfoReturnable<ItemInteractionResult> cir) {
+        if (dungeontrain$homeTunedTv(level, pos, state) != null) {
+            // A tribute room's TV is its owner's death screens; a click on it is the client's (TributeTvVisit),
+            // never a channel cycle, and never a power toggle that would blank the picture.
+            cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+            return;
+        }
         if (!player.isSecondaryUseActive()) {
             // Any right-click cycles off → Stream 1 → Stream 2 (while a second stream is live) → off, held
             // item or not; returning success keeps the item from being used.
@@ -128,6 +134,13 @@ public abstract class TVBlockMixin {
         tv.setItem(0, cassette);
         tv.setChanged();
         level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
+    }
+
+    /** The screen's master block entity when it holds the Tribute Cassette, else null. */
+    @Nullable
+    private TVBlockEntity dungeontrain$homeTunedTv(Level level, BlockPos pos, BlockState state) {
+        return ((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, state) instanceof TVBlockEntity tv
+            && TvBlocks.isTributeCassette(tv.getItem(0)) ? tv : null;
     }
 
     /** The screen's master block entity when it holds either Live Feed Cassette, else null. */

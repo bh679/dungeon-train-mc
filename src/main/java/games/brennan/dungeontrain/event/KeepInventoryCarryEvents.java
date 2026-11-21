@@ -2,8 +2,6 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.player.LoadoutStore;
 import games.brennan.dungeontrain.player.PendingInventory;
 import net.minecraft.server.level.ServerPlayer;
@@ -51,8 +49,10 @@ public final class KeepInventoryCarryEvents {
         String captured = PendingInventory.capturedPartition();
         if (!PendingInventory.matchesPartition(player)) {
             PendingInventory.restore(player);
-            if (DungeonTrainConfig.getDifficultyIsolatedStash()) {
-                String current = DifficultyPartition.keyFor(player.level());
+            // A test world is a profile of its own (ProfileKey), so a carry never crosses between a
+            // test world and a live one in either direction.
+            if (games.brennan.dungeontrain.player.ProfileKey.isolated()) {
+                String current = games.brennan.dungeontrain.player.ProfileKey.current(player);
                 LoadoutStore.swap(player, captured, current);
                 LOGGER.info("[DungeonTrain] keepInventory carry banked on {}, loaded {}'s loadout", captured, current);
             }

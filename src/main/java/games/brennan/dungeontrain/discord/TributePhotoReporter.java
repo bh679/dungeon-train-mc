@@ -43,6 +43,7 @@ public final class TributePhotoReporter {
      */
     public static void post(ServerPlayer tributer, String photographer, int photoId, int tributeNumber, int cost,
                             int hands, int viewsLeft, byte[] png) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         if (png == null || png.length == 0) return;
         try {
             String name = tributer.getGameProfile().getName();
@@ -64,6 +65,7 @@ public final class TributePhotoReporter {
      * @param png the photo on its paper, encoded
      */
     public static void postOwn(ServerPlayer tributer, int tributeNumber, int cost, byte[] png) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         if (png == null || png.length == 0) return;
         // Their own photo: Public posts off keeps it off Discord. Someone else's photo (post above) is
         // dropped by the relay, which knows whose it is even when they are offline.
@@ -99,6 +101,7 @@ public final class TributePhotoReporter {
      * Server thread; the upload runs off-thread and never disturbs the Tribute.
      */
     public static void postPersonal(ServerPlayer tributer, String title, String description, byte[] png) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         if (png == null || png.length == 0 || !hasPersonalWebhook(tributer)) return;
         try {
             String name = tributer.getGameProfile().getName();

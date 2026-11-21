@@ -1,0 +1,21 @@
+{
+  "id": "tribute-tv-button",
+  "version": "0.1922.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "A button for your tribute room's TV",
+  "summary": "The stand under your tribute room's TV now has a button. Press it to move the TV on to the next screen, and from the last screen it takes you back to your perks. The last screen also has a star at the top that opens your perks again.",
+  "highlights": [
+    "Press the button under the TV for the next screen",
+    "From the last screen it goes back to your perks",
+    "A star on the last screen opens your perks"
+  ],
+  "pr": 2778,
+  "date": "2026-11-20",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

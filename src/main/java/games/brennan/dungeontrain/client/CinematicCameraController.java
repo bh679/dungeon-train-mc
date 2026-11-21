@@ -432,7 +432,7 @@ public final class CinematicCameraController {
     }
 
     /** Yaw/pitch (MC convention) to look from {@code pos} toward {@code target}. */
-    private static float[] lookAt(Vec3 pos, Vec3 target) {
+    static float[] lookAt(Vec3 pos, Vec3 target) {
         double dx = target.x - pos.x;
         double dy = target.y - pos.y;
         double dz = target.z - pos.z;

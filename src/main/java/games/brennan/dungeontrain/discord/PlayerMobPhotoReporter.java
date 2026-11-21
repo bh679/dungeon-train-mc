@@ -37,6 +37,7 @@ public final class PlayerMobPhotoReporter {
      * @param png the photo, encoded for Discord
      */
     public static void post(ServerPlayer subject, String photographer, byte[] png) {
+        if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         if (png == null || png.length == 0) return;
         try {
             String name = subject.getGameProfile().getName();

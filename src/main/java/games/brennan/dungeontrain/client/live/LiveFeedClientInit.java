@@ -21,6 +21,7 @@ public final class LiveFeedClientInit {
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN, () -> LiveFeedSource.SECOND);
+        games.brennan.dungeontrain.compat.vista.TributeTvBroadcast.setClientSource(() -> games.brennan.dungeontrain.client.tributeroom.TributeTvSource.INSTANCE);
         LiveMuteChat.registerClicks();
         // ItemProperties is not thread-safe; registration belongs on the main thread like the rest
         event.enqueueWork(LiveHeadpieceAntenna::register);

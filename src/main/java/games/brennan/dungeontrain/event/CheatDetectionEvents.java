@@ -371,6 +371,13 @@ public final class CheatDetectionEvents {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
         }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            // Test mode, not Free Play: live play with perks on, saved to its own profile and kept off
+            // the live record (RunIntegrity.isOffRecord). Its own badge and one line saying so.
+            RunIntegrity.applyTestModeEffect(player);
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.test_mode.notice")
+                .withStyle(ChatFormatting.DARK_RED));
+        }
         // Load the player's sealed progress files now, ahead of the login replay that reads them,
         // so an edit caught in one of them is explained here with the other causes.
         ProfileIntegrity.refreshOnJoin(player);
@@ -407,6 +414,7 @@ public final class CheatDetectionEvents {
         // for the life of the save and read, correctly enough, as "still stuck in Free Play".
         // Reconciling here means those saves heal themselves on the next login.
         RunIntegrity.reconcileFreePlayEffect(player);
+        RunIntegrity.reconcileTestModeEffect(player);
     }
 
     /**
@@ -425,6 +433,9 @@ public final class CheatDetectionEvents {
         if (RunIntegrity.isCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // death cleared the effect; re-apply
         }
+        if (games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+            RunIntegrity.applyTestModeEffect(player);
+        }
     }
 
     /**
@@ -434,6 +445,13 @@ public final class CheatDetectionEvents {
      */
     @SubscribeEvent
     public static void onEffectRemove(MobEffectEvent.Remove event) {
+        if (event.getEffect().is(ModMobEffects.TEST_MODE.getId())) {
+            // Test mode lasts as long as the world is a perks test world.
+            if (event.getEntity() instanceof ServerPlayer && games.brennan.dungeontrain.perks.PerksGate.isTestWorld()) {
+                event.setCanceled(true);
+            }
+            return;
+        }
         if (!event.getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
         if (event.getEntity() instanceof ServerPlayer player && RunIntegrity.isCheated(player)) {
             event.setCanceled(true);

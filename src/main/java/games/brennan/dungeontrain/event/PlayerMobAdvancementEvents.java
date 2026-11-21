@@ -403,7 +403,7 @@ public final class PlayerMobAdvancementEvents {
             int step = games.brennan.dungeontrain.nap.NapGateData.step(player);
             player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementEchoesKilled(step);
             // Behind a nap point the echo is a re-rolled copy: the lifetime total doesn't grow.
-            if (step > 0 && !RunIntegrity.isCheated(player)) {
+            if (step > 0 && !RunIntegrity.isOffRecord(player)) {
                 GlobalPlayerStats.addEchoesKilled(player.getUUID(), 1L);
             }
         }

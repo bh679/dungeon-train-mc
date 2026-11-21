@@ -93,8 +93,9 @@ async function clipPosts(e, save, log) {
     return file ? fs.readFileSync(file) : null;
   };
   const tune = song(e);
-  const got = await music.trackFile(tune.t, { log });
-  if (!got) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
+  const fetched = await music.trackFile(tune.t, { log });
+  if (!fetched) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
+  const got = Number.isFinite(e.start) ? { ...fetched, start: e.start } : fetched;
   const track = { id: tune.t.id, title: tune.t.title, composer: tune.t.composer };
   log(`clip, song ${track.title} by ${track.composer} (${tune.vibe}) under it, from ${got.start}s`);
   for (const [format, name] of [['feed', 'feed-video'], ['story', 'story-video'], ['tiktok', 'tiktok-video']]) {
@@ -126,8 +127,9 @@ async function clipPosts(e, save, log) {
       ({ tune, track } = await clipPosts(e, save, log));
     } else if (card.isAnimated(bytes)) {
       tune = song(e);
-      const got = await music.trackFile(tune.t, { log });
-      if (!got) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
+      const fetched = await music.trackFile(tune.t, { log });
+      if (!fetched) throw new Error(`${e.id}: could not fetch ${tune.t.id} from Mojang's asset server`);
+      const got = Number.isFinite(e.start) ? { ...fetched, start: e.start } : fetched;
       track = { id: tune.t.id, title: tune.t.title, composer: tune.t.composer };
       log(`song ${track.title} by ${track.composer} (${tune.vibe}), from ${got.start}s`);
       const v = await card.buildUpdateVideo(e, bytes, { log, music: { ...got, track } });
@@ -174,6 +176,18 @@ def parse_picks(values: list[str], flag: str) -> dict[str, str]:
             raise ValueError(f"{flag} wants <entry-id>=<value>, got '{v}'")
         out[entry] = value
     return out
+
+
+def split_start(pick: str) -> tuple[str, float | None]:
+    """`track@49.7` as (track, 49.7): where the song starts, as set-social-music.py --start pins it. Plain `track`
+    starts where the relay would."""
+    track, sep, start = pick.partition("@")
+    if not sep:
+        return track, None
+    try:
+        return track, float(start)
+    except ValueError:
+        raise ValueError(f"--music wants <entry-id>=<track>[@<seconds>], got start '{start}'")
 
 
 def local_file(url: str) -> str:
@@ -368,8 +382,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--relay", default=os.path.expanduser("~/Projects/dp-relay"))
     parser.add_argument("--relay-ref", default="origin/main",
                         help="dp-relay commit to render with (default origin/main; a branch to preview its changes)")
-    parser.add_argument("--music", action="append", default=[], metavar="ENTRY=TRACK",
-                        help="preview this track on that entry's video (repeatable)")
+    parser.add_argument("--music", action="append", default=[], metavar="ENTRY=TRACK[@SECONDS]",
+                        help="preview this track on that entry's video, from SECONDS if given (repeatable)")
     parser.add_argument("--id", action="append", default=[], dest="ids", metavar="ENTRY",
                         help="preview this entry, released or not, in place of the unreleased set (repeatable)")
     parser.add_argument("--vibe", action="append", default=[], metavar="ENTRY=VIBE",
@@ -384,7 +398,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     for e in entries:
         if e["id"] in tracks:
-            e["track"] = tracks[e["id"]]
+            e["track"], e["start"] = split_start(tracks[e["id"]])
         if e["id"] in vibes:
             e["vibe"] = vibes[e["id"]]
     if not entries:

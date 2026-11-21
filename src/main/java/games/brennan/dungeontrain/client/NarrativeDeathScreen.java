@@ -9,7 +9,9 @@ import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
 import games.brennan.dungeontrain.client.nap.NapQuit;
 import games.brennan.dungeontrain.client.nap.NapSky;
+import games.brennan.dungeontrain.client.nap.NapSkyLives;
 import games.brennan.dungeontrain.client.nap.NapSkyPainter;
+import games.brennan.dungeontrain.client.nap.NapSkyStars;
 import games.brennan.dungeontrain.narrative.LocaleOrdinalWords;
 import games.brennan.dungeontrain.client.survey.KnownFeature;
 import games.brennan.dungeontrain.client.survey.KnownFeatureDetector;
@@ -71,6 +73,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
@@ -324,6 +327,12 @@ public final class NarrativeDeathScreen extends Screen {
     private String liveLifeId = LiveLifeEvents.lifeForScreen();
     // Dev preview (LiveDeathPagesPreview): open on "the broadcast" instead of the fall.
     private boolean openOnLivePages = false;
+    // Another player's last death, replayed on their tribute room's TV: the stats come from the saved
+    // report, nothing is sent, answered or ended from here, and the run-end controls stay hidden.
+    @Nullable
+    private DeathStatsPacket reportOverride;
+    private boolean foreign;
+    private String foreignTitle = "";
     private final long diedAtMs = System.currentTimeMillis();
     private BroadcastPage broadcastPage;
     private CrowdPage crowdPage;
@@ -368,7 +377,7 @@ public final class NarrativeDeathScreen extends Screen {
     private boolean lastHasEcho;
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
-    private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
+    private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect, fullscreenRect;
     // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
     // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
@@ -380,6 +389,9 @@ public final class NarrativeDeathScreen extends Screen {
     // The way back in for someone who muted a form: the muted page still draws its (ticked)
     // "Don't ask me this again" row, so reaching it is also how it gets un-muted.
     private Rect envelopeRect;
+    // Top-bar "✦" chip — final (platform) page of the tribute visit's own recap only: the perks
+    // menu back on the TV (TributeTvVisit.showPerks), whose Next Screen starts the recap over.
+    private Rect perksRect;
     // Ticks since the screen opened, for the respawn hold-off (see runEndReady).
     private int ticksOpen;
     /** Vanilla's death-screen button delay — one second before an exit control may fire. */
@@ -486,6 +498,25 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
+     * Another player's last death, as their tribute room's TV replays it: their saved stats, their
+     * death message as the fall title, the story pages only — no survey, no donation, no Board anew,
+     * nothing sent anywhere.
+     */
+    public static NarrativeDeathScreen foreignReport(DeathStatsPacket stats, String ownerName, String deathMessage) {
+        NarrativeDeathScreen screen = new NarrativeDeathScreen();
+        screen.reportOverride = stats;
+        screen.foreign = true;
+        screen.foreignTitle = deathMessage == null || deathMessage.isBlank() ? ownerName : deathMessage;
+        return screen;
+    }
+
+    /** The stats this screen tells: a replayed report's, else this client's own last death. */
+    @Nullable
+    private DeathStatsPacket stats() {
+        return reportOverride != null ? reportOverride : DeathStatsCache.get();
+    }
+
+    /**
      * The nap farewell: "a life ongoing", the feedback questions and the Contribute page, shown once the nap is saved
      * and before the player leaves {@code levelId} for the title screen.
      */
@@ -577,9 +608,16 @@ public final class NarrativeDeathScreen extends Screen {
         // The photo page shows off this run's photos and photo stats, right before the final page,
         // only when there are photos or any of the stats is above zero.
         lastPhotoCount = photoSet().size();
-        lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
+        lastPhotoStats = hasPhotoStats(stats());
         if (lastPhotoCount > 0 || lastPhotoStats) list.add(Page.of(Kind.PHOTOS));
         list.add(Page.of(Kind.PLATFORM));
+        if (foreign) {
+            // Another player's replayed report: the story pages only, nothing that asks or sends.
+            list.removeIf(p -> switch (p.kind()) {
+                case ECHO, SURVEY, BUG_RESPONSE, NOTE, DONATE, BROADCAST, CROWD -> true;
+                default -> false;
+            });
+        }
         return list;
     }
 
@@ -676,7 +714,7 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private boolean shouldShowDonate() {
         if (ClientDisplayConfig.getLastNpsScore() > DONATE_NPS_THRESHOLD) return true;
-        DeathStatsPacket s = DeathStatsCache.get();
+        DeathStatsPacket s = stats();
         if (s == null) return false;
         if (s.trainTimeTicks() > DONATE_PLAYTIME_TICKS) return true;
         long runs = s.lifeDeaths();
@@ -687,7 +725,7 @@ public final class NarrativeDeathScreen extends Screen {
     protected void init() {
         // Freeze the gallery for as long as the death screen is up: no flush / eviction / texture
         // release may run while we're blitting these photos (a released texture would blank a page).
-        RideSnapshotGallery.freeze();
+        if (!foreign) RideSnapshotGallery.freeze();
         if (broadcastPage == null) {
             broadcastPage = new BroadcastPage(liveChrome);
             crowdPage = new CrowdPage(liveChrome);
@@ -705,19 +743,19 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
-        if (!nap()) {
-            // Death-report photos: a nap is not a death.
+        if (!foreign && !nap()) {
+            // Death-report photos: a nap is not a death, and a replayed tribute report is not ours.
             maybeSendRidePhoto();
             maybeSendRideGallery();
         }
-        kickDonationFetch();
+        if (!foreign) kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
         donateScroll = 0f;
         donateScrollTarget = 0f;
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
-                currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
+                currentPage, pages.size(), lastSurveyCount, stats() != null);
 
         Page p = pages.get(currentPage);
         if (p.kind() == Kind.SURVEY && p.survey() != null && p.survey().allowComment()) {
@@ -825,11 +863,12 @@ public final class NarrativeDeathScreen extends Screen {
     @Override
     public void tick() {
         ticksOpen++;
+        if (foreign) return; // a replayed report never changes under the screen
         // The death packet + survey questions arrive a tick or two after the
         // screen opens. If the survey set changed, rebuild so the pages match.
         if (SurveyClientState.questions().size() != lastSurveyCount
                 || photoSet().size() != lastPhotoCount
-                || hasPhotoStats(DeathStatsCache.get()) != lastPhotoStats
+                || hasPhotoStats(stats()) != lastPhotoStats
                 || (!nap() && hasEcho() != lastHasEcho)) {
             this.rebuildWidgets();
         }
@@ -870,6 +909,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        hoverX = mouseX;
+        hoverY = mouseY;
         // Advance the transition first: it may apply the deferred page switch
         // (and rebuild widgets) when the fade-out ends, so everything below sees
         // the right page.
@@ -889,7 +930,7 @@ public final class NarrativeDeathScreen extends Screen {
             mouseY = Integer.MIN_VALUE / 2;
         }
 
-        DeathStatsPacket stats = DeathStatsCache.get();
+        DeathStatsPacket stats = stats();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
         Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
 
@@ -904,7 +945,7 @@ public final class NarrativeDeathScreen extends Screen {
                 : (fromShot != null ? fromShot : bgFor(currentPage));
         int backdropPage = photoNew && toShot != null ? toPage : (fromShot != null ? fromPage : currentPage);
         // A live streamer's death clip loops behind the opening page, under the same dip-to-black.
-        boolean clip = !nap() && backdropPage == openingPage && openingPage >= 0
+        boolean clip = !foreign && !nap() && backdropPage == openingPage && openingPage >= 0
             && DeathClipBackground.draw(g, this.width, this.height, ticksOpen, partialTick);
         if (clip || photo != null) {
             if (!clip) DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
@@ -948,6 +989,7 @@ public final class NarrativeDeathScreen extends Screen {
         donateRect = null;
         dollarRect = null;
         envelopeRect = null;
+        perksRect = null;
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
@@ -1048,6 +1090,10 @@ public final class NarrativeDeathScreen extends Screen {
                 g.renderTooltip(this.font,
                         Component.translatable("gui.dungeontrain.death.narr.donate_chip_tip"), mouseX, mouseY);
             }
+            // Perks chip hover — what it does.
+            if (settled() && perksRect != null && perksRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font, Component.translatable("key.dungeontrain.perks"), mouseX, mouseY);
+            }
             // Envelope chip hover — what it does.
             if (settled() && envelopeRect != null && envelopeRect.has(mouseX, mouseY)) {
                 g.renderTooltip(this.font,
@@ -1073,7 +1119,7 @@ public final class NarrativeDeathScreen extends Screen {
      * is used instead.
      */
     private void assignBackgrounds() {
-        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty() || pages.isEmpty()) {
+        if (foreign || !ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty() || pages.isEmpty()) {
             pageBackgrounds = NO_BACKGROUNDS;
             return;
         }
@@ -1131,13 +1177,13 @@ public final class NarrativeDeathScreen extends Screen {
         openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
         pageOpenedAtMs = Util.getMillis();
         ongoingSkipMs = 0L;
-        if (openedPage == null) return; // untracked page — leavePageAnalytics skips it too
+        if (openedPage == null || foreign) return; // untracked page — leavePageAnalytics skips it too
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId);
     }
 
     /** Close the currently-timed page: fire its {@code page_time} with the dwell so far. Idempotent. */
     private void leavePageAnalytics() {
-        if (openedPage == null) return;
+        if (openedPage == null || foreign) return;
         UiAnalytics.pageTime(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId,
                 Util.getMillis() - pageOpenedAtMs);
         openedPage = null;
@@ -1313,7 +1359,9 @@ public final class NarrativeDeathScreen extends Screen {
         // The fall-page title is the second-person death cause ("You fell from a high
         // place") when the server sent one, wrapped in the kicker style so a long cause
         // can't clip; otherwise the static "the fall" kicker.
-        if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
+        if (foreign && !foreignTitle.isEmpty()) {
+            y = drawCentered(g, Component.literal(foreignTitle), cx, w, y - contentShift, KICKER) + 3 + contentShift;
+        } else if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
             y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y - contentShift, KICKER) + 3 + contentShift;
         } else {
             drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
@@ -1773,12 +1821,28 @@ public final class NarrativeDeathScreen extends Screen {
             if (s == null || sky == null) return;
             UUID player = this.minecraft != null && this.minecraft.getUser() != null
                 ? this.minecraft.getUser().getProfileId() : null;
-            napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime());
+            napSky = new NapSkyPainter(sky, player, s.lifeDeaths(), now ^ System.nanoTime(), napSkyLives(sky));
         }
         double top = NAP_SKY_TOP, bottom = this.height - NAP_SKY_BOTTOM_GAP;
         double size = Math.min(this.width - 24, (bottom - top) * 1.3);
         double cy = (top + bottom) / 2.0 + size * 0.04;
         napSky.render(g, this.width, this.height, this.width / 2.0, cy, size, ongoingStart(), now, uiAlpha);
+    }
+
+    /**
+     * The perk history the nap sky draws: past lives' activated perks and this life's so far. The plain
+     * sky ({@link NapSkyLives#NONE}) while perks are off.
+     */
+    private NapSkyLives napSkyLives(NapSky sky) {
+        boolean on = games.brennan.dungeontrain.perks.PerksGate.isOnClient();
+        if (!on || this.minecraft == null || this.minecraft.player == null) {
+            return NapSkyLives.NONE;
+        }
+        NapSkyStars stars = NapSkyStars.match(sky,
+            games.brennan.dungeontrain.perks.PerkTreeLoader.get());
+        return NapSkyLives.of(sky, stars,
+            PerkClientLives.get().lives(),
+            games.brennan.dungeontrain.perks.Perks.state(this.minecraft.player).active().keySet(), true);
     }
 
     /** The six lifetime text tiles and the 3×3 icon grid, shared by "all your lives" and "a life ongoing". */
@@ -2246,7 +2310,7 @@ public final class NarrativeDeathScreen extends Screen {
         // Contribute click, so a difference can be traced to where in the page it happened. The
         // pair rides alongside it for the rotating arm, whose arm id alone cannot say what was
         // on screen.
-        UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
+        if (!foreign) UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
                 assigned.rotating() ? donatePair.id() : null);
     }
 
@@ -2394,11 +2458,11 @@ public final class NarrativeDeathScreen extends Screen {
         int upW = updateLabel != null ? this.font.width(updateLabel) + 20 : 0;
         int gap = updateLabel != null ? 6 : 0;
         int bx = cx - (baW + gap + upW) / 2;
-        boardAnewRect = drawBevel(g, bx, y, baW, baH, runEndLabel(false),
+        boardAnewRect = foreign ? null : drawBevel(g, bx, y, baW, baH, runEndLabel(false),
                 shiftReboard ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
                 shiftReboard ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
                 BTN_DARK, 0xFFFFFFFF);
-        if (updateLabel != null) {
+        if (updateLabel != null && !foreign) {
             updateRect = drawBevel(g, bx + baW + gap, y, upW, baH, updateLabel,
                     BTN_UPD_BG, BTN_UPD_LIGHT, BTN_DARK, 0xFFFFFFFF);
         }
@@ -2562,12 +2626,18 @@ public final class NarrativeDeathScreen extends Screen {
         Component reboard = runEndLabel(true);
         int leaveW = this.font.width(leave) + 16;
         int reboardW = this.font.width(reboard) + 16;
-        int leaveX = this.width - 10 - leaveW;
+        // On a tribute TV a fullscreen toggle sits in the very corner, right of leave: it lifts the
+        // page onto the window, and while it is up there it is the way back down, as Esc is.
+        boolean onTv = onTv();
+        int fsW = onTv ? FULLSCREEN_CHIP_W : 0;
+        fullscreenRect = onTv ? drawFullscreenChip(g, this.width - 10 - fsW, 8, zoomedOnWindow(), mouseX, mouseY) : null;
+        // A wide gap from Leave: aimed through a TV from across a room, a chip is a coarse target.
+        int leaveX = this.width - 10 - leaveW - (onTv ? fsW + 14 : 0);
         int reboardX = leaveX - 6 - reboardW;
-        leaveRect = shiftHeld
+        leaveRect = foreign ? null : shiftHeld
                 ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
                 : drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
-        reboardRect = shiftReboard
+        reboardRect = foreign ? null : shiftReboard
                 ? drawChip(g, reboardX, 8, reboard, CHIP_RB_SHIFT_BORDER, CHIP_RB_SHIFT_TEXT)
                 : drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
 
@@ -2585,7 +2655,7 @@ public final class NarrativeDeathScreen extends Screen {
         int chipLeftX = reboardX;
         deleteWorldRect = null;
         boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
-        if (!remote() && (shiftHeld || !deleteOn)) {
+        if (!foreign && !remote() && (shiftHeld || !deleteOn)) {
             int trashW = 14;
             chipLeftX = reboardX - 6 - trashW;
             deleteWorldRect = drawTrashChip(g, chipLeftX, 8, deleteOn);
@@ -2615,6 +2685,14 @@ public final class NarrativeDeathScreen extends Screen {
             // no questions (disabled / no webhook / no consent), so it is never a dead control.
             if (firstSurveyPageIndex() >= 0) {
                 envelopeRect = drawEnvelopeChip(g, dollarRect.x() - 6 - 14, 8);
+            }
+            // "✦" → the perks menu, leftmost: only on the tribute visit's own recap, the one with a
+            // perks menu to go back to.
+            if (!foreign && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.canShowPerks(this)) {
+                int starAnchorX = envelopeRect != null ? envelopeRect.x() : dollarRect.x();
+                Component star = Component.literal("\u2726");
+                int starW = this.font.width(star) + 16;
+                perksRect = drawChip(g, starAnchorX - 6 - starW, 8, star, CHIP_PH_BORDER, CHIP_PH_TEXT);
             }
         }
     }
@@ -2803,6 +2881,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        // The click that re-activates the window is not a click on a control (Board anew sits
+        // at the top right, where a window is grabbed to bring it back).
+        if (RefocusClickGuard.swallow()) return true;
         // While the chrome is mid-fade, any click fast-tracks it rather than acting
         // on the fading / hidden controls beneath. Once settled (incl. the slow image
         // rise) clicks fall through, so only the Continue button advances — not empty space.
@@ -2820,10 +2901,14 @@ public final class NarrativeDeathScreen extends Screen {
             if (dollarRect != null && dollarRect.has(mx, my)) {
                 // Jump to the donation page from anywhere; Next/back there return to this page.
                 if (!pages.isEmpty() && pages.get(currentPage).kind() != Kind.DONATE) {
-                    UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
+                    if (!foreign) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
                     chipReturnPage = currentPage;
                     startTransition(donatePageIndex());
                 }
+                return true;
+            }
+            if (perksRect != null && perksRect.has(mx, my)) {
+                games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showPerks();
                 return true;
             }
             if (envelopeRect != null && envelopeRect.has(mx, my)) {
@@ -2831,7 +2916,7 @@ public final class NarrativeDeathScreen extends Screen {
                 // reachable this way — and their ticked checkbox is how they get un-muted.
                 int dest = firstSurveyPageIndex();
                 if (dest >= 0 && dest != currentPage) {
-                    UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
+                    if (!foreign) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
                     chipReturnPage = currentPage;
                     surveyTour = true;
                     startTransition(dest);
@@ -2857,6 +2942,7 @@ public final class NarrativeDeathScreen extends Screen {
             }
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
+            if (fullscreenRect != null && fullscreenRect.has(mx, my)) { toggleFullscreen(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
             // The echo page's tabs and inventory slots.
             if (page.kind() == Kind.ECHO && echoPage != null && echoPage.mouseClicked(mx, my)) return true;
@@ -3110,14 +3196,16 @@ public final class NarrativeDeathScreen extends Screen {
      * funnel stays comparable across both.
      */
     private void boardAnew() {
-        if (!runEndReady()) return;
-        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
+        if (!runEndReady() || foreign) return;
+        if (!foreign) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
+        boolean keepMode = Screen.hasShiftDown();
+        // From the tribute room the server has to save the room first; it answers, and the run ends then.
+        if (games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.endRun(this, keepMode)) return;
         if (remote()) {
             respawn();
             return;
         }
-        boolean keepMode = Screen.hasShiftDown();
         DeathScreenLayoutHandler.launchWorld(this, false, !keepMode);
     }
 
@@ -3144,6 +3232,7 @@ public final class NarrativeDeathScreen extends Screen {
      * {@link Screen#hasShiftDown()}, so the action matches the drawn label.
      */
     private void leaveOrQuit() {
+        if (foreign) return;
         if (nap()) {
             leaveNap();
             return;
@@ -3186,7 +3275,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
     private void openDonateLink() {
-        if (!nap()) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
+        if (!foreign && !nap()) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
         Minecraft.getInstance().setScreen(new DonationOptionsScreen(this));
     }
 
@@ -3204,7 +3293,7 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.photos.title").getString(), cx, w, y);
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.subtitle"), cx, y + 2, KICKER);
         y += this.font.lineHeight + 4;
-        DeathStatsPacket s = DeathStatsCache.get();
+        DeathStatsPacket s = stats();
         if (s != null) {
             y = drawPhotoStats(g, s, left, w, y + 4);
         }
@@ -3235,10 +3324,10 @@ public final class NarrativeDeathScreen extends Screen {
      * those inputs are unchanged, so developed camera textures survive every frame and page swap.
      */
     private DeathPhotoSet photoSet() {
-        DeathStatsPacket s = DeathStatsCache.get();
+        DeathStatsPacket s = stats();
         return DeathPhotoSet.of(
                 s != null ? s.cameraFrames() : List.of(),
-                ClientDisplayConfig.isRideSnapshotsEnabled() ? RideSnapshotGallery.all() : List.of());
+                !foreign && ClientDisplayConfig.isRideSnapshotsEnabled() ? RideSnapshotGallery.all() : List.of());
     }
 
     private List<DeathPhoto> photos() {
@@ -3248,7 +3337,120 @@ public final class NarrativeDeathScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (photoViewer.isOpen()) return photoViewer.keyPressed(photos(), keyCode);
+        // Zoomed in on the tribute TV: Esc steps back to the room, the page staying on the screen.
+        // Esc steps back; so does Enter while typing in a field, as chat gives the keys back on Enter.
+        boolean enterInField = textFieldFocused()
+            && (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER);
+        if ((keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE || enterInField)
+            && (games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.leaveZoom(this)
+                || games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.leaveZoom(this))) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    // ---- the tribute TV's fullscreen toggle --------------------------------------------------
+
+    /** Whether this page is showing on a tribute TV (the visit's, or one on the train). */
+    private boolean onTv() {
+        return games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showsPage(this)
+            || games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.showsPage(this);
+    }
+
+    /** Whether the page is up on the window right now rather than drawn only on the TV. */
+    private boolean zoomedOnWindow() {
+        return this.minecraft != null && this.minecraft.screen == this;
+    }
+
+    /** The corner chip: lift the page onto the window, or, once it is there, put it back on the TV. */
+    private void toggleFullscreen() {
+        if (zoomedOnWindow()) {
+            if (!games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.leaveZoom(this)) {
+                games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.leaveZoom(this);
+            }
+            return;
+        }
+        if (!games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.lift(this)) {
+            games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.lift(this);
+        }
+    }
+
+    static final int FULLSCREEN_CHIP_W = 24;
+
+    /**
+     * A chip with a fullscreen glyph: four corner brackets opening outward to go up, and a square
+     * inside them to come back down. Lit while the pointer (the crosshair, on a TV) is over it.
+     */
+    private Rect drawFullscreenChip(GuiGraphics g, int x, int y, boolean zoomed, int mouseX, int mouseY) {
+        int s = 14, w = FULLSCREEN_CHIP_W;
+        boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + s;
+        g.fill(x, y, x + w, y + s, fade(hover ? 0x99FFFFFF : 0x66000000));
+        drawBorder(g, x, y, w, s, hover ? 0xFFFFFFFF : CHIP_LV_BORDER);
+        int c = fade(hover ? 0xFF101010 : CHIP_LV_TEXT);
+        int l = x + (w - 8) / 2, t = y + 3, r = l + 8, b = y + s - 3; // 8x8 glyph box, centred
+        // Corner brackets, each two 3px arms.
+        g.fill(l, t, l + 3, t + 1, c); g.fill(l, t, l + 1, t + 3, c);
+        g.fill(r - 3, t, r, t + 1, c); g.fill(r - 1, t, r, t + 3, c);
+        g.fill(l, b - 1, l + 3, b, c); g.fill(l, b - 3, l + 1, b, c);
+        g.fill(r - 3, b - 1, r, b, c); g.fill(r - 1, b - 3, r, b, c);
+        if (zoomed) g.fill(l + 2, t + 2, r - 2, b - 2, c);
+        return new Rect(x, y, w, s);
+    }
+
+    /** Whether a text field on this page has the keyboard. */
+    public boolean textFieldFocused() {
+        return getFocused() instanceof EditBox box && box.isFocused();
+    }
+
+    /**
+     * Give the page's text field the keyboard, for a page just lifted onto the window because a
+     * click on the TV landed on that field. {@link #init} rebuilt the field, so the focus is set anew.
+     */
+    public void focusTextField() {
+        if (commentBox == null) return;
+        setFocused(commentBox);
+        commentBox.setFocused(true);
+    }
+
+    /** Take the keyboard back from any text field, as the page goes back down onto the TV. */
+    public void blurTextField() {
+        if (commentBox != null) commentBox.setFocused(false);
+        if (getFocused() instanceof EditBox) setFocused(null);
+    }
+
+    // ---- the tribute TV's channel controls -----------------------------------------------------
+
+    /** Next page, as the Next Screen button does. For the tribute TV, where a click is the only control. */
+    public void tvAdvance() {
+        advance();
+    }
+
+    /** Whether the page showing is the last one, the platform (board anew) page: the TV button loops from here. */
+    public boolean tvOnLastPage() {
+        return !pages.isEmpty() && pages.get(currentPage).kind() == Kind.PLATFORM;
+    }
+
+    /** Back to the first page, leaving any chip-opened detour: the TV starting the recap over. */
+    public void tvRestart() {
+        chipReturnPage = -1;
+        surveyTour = false;
+        returnToStartAfterBug = false;
+        if (!pages.isEmpty() && currentPage != 0) startTransition(0);
+    }
+
+    /** Previous page, as the back button does. */
+    public void tvBack() {
+        back();
+    }
+
+    /**
+     * Whether the page showing needs the player's hands — a form to fill, a strip to scroll, a button
+     * to press — and so has to come up on the window rather than be driven from the TV.
+     */
+    public boolean tvPageTakesInput() {
+        if (pages.isEmpty()) return false;
+        return switch (pages.get(currentPage).kind()) {
+            case SURVEY, BUG_RESPONSE, DONATE, PHOTOS, PLATFORM -> true;
+            default -> false;
+        };
     }
 
     private void drawKicker(GuiGraphics g, int cx, int y, String key) {
@@ -3375,7 +3577,7 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopTrain(GuiGraphics g) {
         int left = 12 + this.font.width(Component.translatable("gui.dungeontrain.death.narr.brand")) + TOP_TRAIN_MARGIN;
         int right = this.width - 10;
-        for (Rect r : new Rect[] {leaveRect, reboardRect, deleteWorldRect, photosRect, dollarRect, envelopeRect}) {
+        for (Rect r : new Rect[] {leaveRect, reboardRect, deleteWorldRect, photosRect, dollarRect, envelopeRect, perksRect}) {
             if (r != null) right = Math.min(right, r.x());
         }
         right -= TOP_TRAIN_MARGIN;
@@ -3474,22 +3676,44 @@ public final class NarrativeDeathScreen extends Screen {
         return drawChip(g, x, y, text, 0x66000000, border, textColor);
     }
 
+    /** Where the pointer is this frame (the crosshair, on a TV), for every chip and button's hover. */
+    private int hoverX = -1, hoverY = -1;
+
+    private boolean hovering(int x, int y, int w, int h) {
+        return hoverX >= x && hoverX < x + w && hoverY >= y && hoverY < y + h;
+    }
+
+    /** A colour lifted towards white, for a control under the pointer. */
+    private static int lift(int argb, float amount) {
+        int a = argb >>> 24, r = (argb >> 16) & 0xFF, gg = (argb >> 8) & 0xFF, b = argb & 0xFF;
+        r += Math.round((255 - r) * amount);
+        gg += Math.round((255 - gg) * amount);
+        b += Math.round((255 - b) * amount);
+        return (Math.max(a, 0xAA) << 24) | (r << 16) | (gg << 8) | b;
+    }
+
+    /** A chip; under the pointer it fills brighter, with a white border and a wider halo. */
     private Rect drawChip(GuiGraphics g, int x, int y, Component text, int bg, int border, int textColor) {
         int w = this.font.width(text) + 16, h = 14;
-        g.fill(x, y, x + w, y + h, fade(bg));
-        drawBorder(g, x, y, w, h, border);
-        g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, fade(textColor), false);
+        boolean hover = hovering(x, y, w, h);
+        if (hover) g.fill(x - 2, y - 2, x + w + 2, y + h + 2, fade(0x66FFFFFF));
+        g.fill(x, y, x + w, y + h, fade(hover ? lift(bg, 0.35f) : bg));
+        drawBorder(g, x, y, w, h, hover ? 0xFFFFFFFF : border);
+        g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, fade(hover ? 0xFFFFFFFF : textColor), false);
         return new Rect(x, y, w, h);
     }
 
+    /** A bevelled button; under the pointer it brightens, its bevel turns white and a halo rings it. */
     private Rect drawBevel(GuiGraphics g, int x, int y, int w, int h, Component text,
                            int bg, int light, int dark, int textColor) {
-        g.fill(x, y, x + w, y + h, fade(bg));
-        g.fill(x, y, x + w, y + 2, fade(light));
-        g.fill(x, y, x + 2, y + h, fade(light));
-        g.fill(x, y + h - 2, x + w, y + h, fade(dark));
-        g.fill(x + w - 2, y, x + w, y + h, fade(dark));
-        drawCenteredStr(g, text, x + w / 2, y + (h - this.font.lineHeight) / 2 + 1, textColor);
+        boolean hover = hovering(x, y, w, h);
+        if (hover) g.fill(x - 2, y - 2, x + w + 2, y + h + 2, fade(0x66FFFFFF));
+        g.fill(x, y, x + w, y + h, fade(hover ? lift(bg, 0.3f) : bg));
+        g.fill(x, y, x + w, y + 2, fade(hover ? 0xFFFFFFFF : light));
+        g.fill(x, y, x + 2, y + h, fade(hover ? 0xFFFFFFFF : light));
+        g.fill(x, y + h - 2, x + w, y + h, fade(hover ? lift(dark, 0.5f) : dark));
+        g.fill(x + w - 2, y, x + w, y + h, fade(hover ? lift(dark, 0.5f) : dark));
+        drawCenteredStr(g, text, x + w / 2, y + (h - this.font.lineHeight) / 2 + 1, hover ? 0xFFFFFFFF : textColor);
         return new Rect(x, y, w, h);
     }
 
@@ -3559,6 +3783,6 @@ public final class NarrativeDeathScreen extends Screen {
         if (crowdPage != null) crowdPage.clear();
         // Lift the gallery freeze. The world-leave paths clear the gallery anyway, but if the
         // screen is ever dismissed without disconnecting, capture/offload must resume normally.
-        RideSnapshotGallery.unfreeze();
+        if (!foreign) RideSnapshotGallery.unfreeze();
     }
 }

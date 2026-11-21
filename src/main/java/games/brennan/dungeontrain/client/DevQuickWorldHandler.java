@@ -88,6 +88,10 @@ public final class DevQuickWorldHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Component SINGLEPLAYER_KEY = Component.translatable("menu.singleplayer");
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.new_world");
+    private static final Component PERKS_TEST_LABEL = Component.literal("\u2726");
+    private static final Component PERKS_TEST_TOOLTIP = Component.translatable("gui.dungeontrain.perks_test_world");
+    /** Dark red tint for the perks test world button (multiplied over the vanilla button sprite). */
+    private static final float[] PERKS_TEST_TINT = {0.55F, 0.08F, 0.08F};
     private static final Component REBOARD_LABEL = Component.translatable("gui.dungeontrain.new_world.reboard");
     /** Sprite tint for a Reboard button (blue; blue channel stays 1). */
     private static final float REBOARD_TINT_R = 0.35F;
@@ -148,6 +152,9 @@ public final class DevQuickWorldHandler {
     private static WeakReference<Button> survivalNewWorldRef = new WeakReference<>(null);
     private static WeakReference<Button> settingsIconRef = new WeakReference<>(null);
     private static WeakReference<Button> contentToggleRef = new WeakReference<>(null);
+    private static WeakReference<Button> perksTestRef = new WeakReference<>(null);
+    /** Where the survival New World starts when the perks test square is not in front of it. */
+    private static int survivalBaseX;
     private static WeakReference<Screen> screenRef = new WeakReference<>(null);
 
     private DevQuickWorldHandler() {}
@@ -196,10 +203,21 @@ public final class DevQuickWorldHandler {
         Button settingsIcon = buildSettingsIcon(
                 spX + wideW + GAP, spY, iconW, spH, titleScreen);
 
+        // Approved perks testers only, and only while Shift is held: a perks test world.
+        games.brennan.dungeontrain.client.perks.PerkTesterStatus.refresh();
+        // Dark red, so a tester can tell it apart from the ordinary New World buttons at a glance.
+        Button perksTest = new games.brennan.dungeontrain.client.menu.ColorTintedButton(
+                survivalX, spY, iconW, spH, PERKS_TEST_LABEL,
+                PERKS_TEST_TINT[0], PERKS_TEST_TINT[1], PERKS_TEST_TINT[2],
+                b -> launchPerksTestWorld(titleScreen));
+        perksTest.setTooltip(net.minecraft.client.gui.components.Tooltip.create(PERKS_TEST_TOOLTIP));
+        perksTest.visible = false;
+
         event.addListener(creativeNewWorld);
         event.addListener(perfNewWorld);
         event.addListener(survivalNewWorld);
         event.addListener(settingsIcon);
+        event.addListener(perksTest);
         if (contentToggle != null) {
             event.addListener(contentToggle);
         }
@@ -210,6 +228,8 @@ public final class DevQuickWorldHandler {
         survivalNewWorldRef = new WeakReference<>(survivalNewWorld);
         settingsIconRef = new WeakReference<>(settingsIcon);
         contentToggleRef = new WeakReference<>(contentToggle);
+        perksTestRef = new WeakReference<>(perksTest);
+        survivalBaseX = survivalX;
         screenRef = new WeakReference<>(titleScreen);
 
         applyVisibility();
@@ -258,6 +278,13 @@ public final class DevQuickWorldHandler {
         int survivalRight = showSettings
                 ? settings.getX() - GAP
                 : settings.getX() + settings.getWidth();
+        // The perks test square sits in front of New World for an approved tester holding Shift,
+        // and New World gives up one square for it.
+        Button perksTest = perksTestRef.get();
+        boolean showPerksTest = perksTest != null && showRow && shift
+                && games.brennan.dungeontrain.client.perks.PerkTesterStatus.isTester();
+        if (perksTest != null) perksTest.visible = showPerksTest;
+        survival.setX(showPerksTest ? survivalBaseX + perksTest.getWidth() + GAP : survivalBaseX);
         survival.setWidth(survivalRight - survival.getX());
         // Outside the null guard above: a clean install has no toggle at all, and that is not a
         // reason to stop laying out the rest of the row.
@@ -505,6 +532,30 @@ public final class DevQuickWorldHandler {
         openLevel(name, settings, lastScreen, true);
     }
 
+    /**
+     * A perks test world: a survival New World in Test mode (perks on, off the record)
+     * ({@link games.brennan.dungeontrain.perks.PerksGate}). Asks the custom-content question first,
+     * like every New World, and publishes the perks flag only once the world is really being made.
+     */
+    private static void launchPerksTestWorld(Screen lastScreen) {
+        if (!games.brennan.dungeontrain.client.perks.PerkTesterStatus.isTester()) return;
+        // Timestamped like the other run worlds, so a nap may save it (and delete it): RunWorldNames.
+        String name = "Perks Test " + System.currentTimeMillis();
+        LevelSettings settings = new LevelSettings(
+                name,
+                GameType.SURVIVAL,
+                false,
+                ClientDisplayConfig.getNewRunDifficulty(),
+                false,
+                new GameRules(),
+                WorldDataConfiguration.DEFAULT);
+        ResourceKey<WorldPreset> preset = DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET;
+        Runnable open = () -> openLevelNow(name, settings, lastScreen, preset, false, true);
+        if (CustomContentGate.askFirst(settings.gameType(), lastScreen, open)) return;
+        open.run();
+    }
+
     private static void launchSurvivalWorld(Screen lastScreen) {
         String name = "World " + System.currentTimeMillis();
         LevelSettings settings = new LevelSettings(
@@ -558,6 +609,13 @@ public final class DevQuickWorldHandler {
 
     private static void openLevelNow(String name, LevelSettings settings, Screen lastScreen,
                                      ResourceKey<WorldPreset> preset, boolean pinnedSeed) {
+        openLevelNow(name, settings, lastScreen, preset, pinnedSeed, false);
+    }
+
+    private static void openLevelNow(String name, LevelSettings settings, Screen lastScreen,
+                                     ResourceKey<WorldPreset> preset, boolean pinnedSeed, boolean perksTest) {
+        // Every New World says whether it is a perks test world, so a stale answer never carries.
+        games.brennan.dungeontrain.perks.PendingPerksTest.set(perksTest);
         Minecraft mc = Minecraft.getInstance();
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.options.save();
@@ -593,6 +651,7 @@ public final class DevQuickWorldHandler {
         perfNewWorldRef = new WeakReference<>(null);
         survivalNewWorldRef = new WeakReference<>(null);
         settingsIconRef = new WeakReference<>(null);
+        perksTestRef = new WeakReference<>(null);
         screenRef = new WeakReference<>(null);
     }
 

@@ -57,10 +57,25 @@ public class DarkTintedButton extends Button {
         this.tintB = tintB;
     }
 
+    /** Whether a hover draws a white halo and a lifted tint on top of the sprite's own highlight. */
+    private boolean strongHover;
+
+    /** Make a hover unmistakable: for buttons read from a distance, such as on the tribute TV. */
+    public DarkTintedButton withStrongHover() {
+        this.strongHover = true;
+        return this;
+    }
+
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
-        g.setColor(tintR, tintG, tintB, this.alpha);
+        boolean lit = strongHover && this.active && this.isHoveredOrFocused();
+        if (lit) {
+            int halo = Mth.ceil(this.alpha * 0x66) << 24 | 0xFFFFFF;
+            g.fill(this.getX() - 2, this.getY() - 2, this.getX() + this.getWidth() + 2, this.getY() + this.getHeight() + 2, halo);
+        }
+        float lift = lit ? 0.35f : 0f;
+        g.setColor(tintR + (1f - tintR) * lift, tintG + (1f - tintG) * lift, tintB + (1f - tintB) * lift, this.alpha);
         RenderSystem.enableBlend();
         RenderSystem.enableDepthTest();
         g.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()),

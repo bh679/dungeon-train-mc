@@ -195,7 +195,7 @@ public final class BoardingProgressEvents {
                 // while the player is dead (death-screen time shouldn't count as
                 // "alive on the train"). The "boarded" advancement trigger, distance
                 // and biome sampling below still run regardless of alive state.
-                if (p.isAlive() && !RunIntegrity.isCheated(p) && PlayerActivityTracker.isCountingTrain(p)) {
+                if (p.isAlive() && !RunIntegrity.isOffRecord(p) && PlayerActivityTracker.isCountingTrain(p)) {
                     long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
                 }
@@ -375,6 +375,11 @@ public final class BoardingProgressEvents {
         player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
     }
 
+    /** Re-stamp the life's distance origin where the player stands now — the train, after a tribute room visit. */
+    public static void stampLifeOrigin(ServerPlayer player) {
+        player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
+    }
+
     /**
      * World-X this player's current life started from, or {@code null} if it was never captured
      * (a life already in progress when this feature shipped, or one that never boarded).
@@ -497,7 +502,7 @@ public final class BoardingProgressEvents {
 
             // Lifetime train-time — same gating as the boarded path: frozen for a cheated run and
             // while dead, so a death screen in a portal room racks up no more than one on the train.
-            if (player.isAlive() && !RunIntegrity.isCheated(player) && PlayerActivityTracker.isCountingTrain(player)) {
+            if (player.isAlive() && !RunIntegrity.isOffRecord(player) && PlayerActivityTracker.isCountingTrain(player)) {
                 long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyTrainTime(player, newTotal);
             }
@@ -587,7 +592,7 @@ public final class BoardingProgressEvents {
         double runMeters = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
             .addDistance(metres);
         AchievementEvents.notifyRunDistance(player, runMeters);
-        if (!RunIntegrity.isCheated(player)) {
+        if (!RunIntegrity.isOffRecord(player)) {
             double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), metres);
             AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
         }
@@ -626,7 +631,7 @@ public final class BoardingProgressEvents {
         AchievementEvents.notifyRunDistance(player, runMeters);
         // Lifetime distance — the same delta, accrued across all worlds/sessions.
         // Global stat: frozen for cheated runs (per-run distance above still ticks).
-        if (!RunIntegrity.isCheated(player)) {
+        if (!RunIntegrity.isOffRecord(player)) {
             double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
             AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
         }

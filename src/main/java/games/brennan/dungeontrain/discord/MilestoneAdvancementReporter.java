@@ -62,7 +62,7 @@ public final class MilestoneAdvancementReporter {
      */
     public static void maybePost(ServerPlayer player, AdvancementHolder advancement) {
         if (!isMilestone(advancement.id())) return;
-        if (RunIntegrity.isCheated(player)) {
+        if (RunIntegrity.isOffRecord(player)) {
             LOGGER.info("[DungeonTrain] {} earned {} in Free Play — not announced.",
                     player.getGameProfile().getName(), advancement.id());
             return;

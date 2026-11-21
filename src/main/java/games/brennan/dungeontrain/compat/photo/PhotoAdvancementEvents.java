@@ -148,7 +148,7 @@ public final class PhotoAdvancementEvents {
 
     /** Push this world's tallies to the cross-world copy. A Free Play run keeps its own. */
     static void mirrorTally(ServerPlayer player) {
-        if (RunIntegrity.isCheated(player)) return;
+        if (RunIntegrity.isOffRecord(player)) return;
         GlobalPhotoProgress.merge(player.getUUID(), worldTally(player));
     }
 

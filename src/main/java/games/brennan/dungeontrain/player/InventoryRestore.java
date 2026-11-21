@@ -56,7 +56,7 @@ public final class InventoryRestore {
     /** Apply {@code restore} to {@code player} if allowed, and ack the relay. */
     public static void apply(ServerPlayer player, Restore restore) {
         String name = player.getName().getString();
-        if (RunIntegrity.isCheated(player)) {
+        if (RunIntegrity.isOffRecord(player)) {
             LOGGER.warn("[DungeonTrain] Inventory restore {} for {} held: this run is Free Play", restore.id(), name);
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.restore.waiting")
                 .withStyle(ChatFormatting.GRAY));

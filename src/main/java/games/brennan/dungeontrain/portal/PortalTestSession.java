@@ -32,7 +32,25 @@ public final class PortalTestSession {
      */
     public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch,
                           GameType previousGameType, PortalStructure structure, String roomName,
-                          BlockPos arrival) {}
+                          BlockPos arrival, boolean tributeTubes) {
+
+        /** The shape every test but the tribute room's takes. */
+        public Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType,
+                       PortalStructure structure, String roomName, BlockPos arrival) {
+            this(dimension, pos, yaw, pitch, previousGameType, structure, roomName, arrival, false);
+        }
+    }
+
+    /**
+     * Which way the tribute room's test stands its passages on this press: the first press of
+     * {@code tribute} and every second one after it stand the black death tubes, the presses between
+     * them a normal pair corridor. {@code current} is the session the press is replacing, or null.
+     */
+    public static boolean tributeTubesFor(String roomName, @org.jetbrains.annotations.Nullable Session current) {
+        if (!games.brennan.dungeontrain.portal.tribute.TributeRooms.TEMPLATE.equals(roomName)) return false;
+        boolean repeat = current != null && roomName.equals(current.roomName());
+        return !repeat || !current.tributeTubes();
+    }
 
     /**
      * Pair key every test stamp is filed under.
@@ -68,7 +86,7 @@ public final class PortalTestSession {
     public static void updateStructure(UUID player, PortalStructure structure) {
         SESSIONS.computeIfPresent(player, (id, session) -> new Session(
             session.dimension(), session.pos(), session.yaw(), session.pitch(),
-            session.previousGameType(), structure, session.roomName(), session.arrival()));
+            session.previousGameType(), structure, session.roomName(), session.arrival(), session.tributeTubes()));
     }
 
     /** Every live trip, for the ticker. */

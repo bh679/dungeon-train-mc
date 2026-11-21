@@ -44,8 +44,8 @@ class LiveFeedClientMicTest {
     @Test
     void theClaimSaysWhetherThisClientCanStreamAMic() {
         UUID id = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        assertTrue(LiveFeedClient.claimBody(id, "Moth", "eye", null, null, false, null, null, true).get("mic").getAsBoolean());
-        assertFalse(LiveFeedClient.claimBody(id, "Moth", "eye", null, null, false, null, null, false).get("mic").getAsBoolean());
+        assertTrue(LiveFeedClient.claimBody(id, "Moth", "eye", null, null, false, null, null, 0L, 0L, true).get("mic").getAsBoolean());
+        assertFalse(LiveFeedClient.claimBody(id, "Moth", "eye", null, null, false, null, null, 0L, 0L, false).get("mic").getAsBoolean());
     }
 
     @Test

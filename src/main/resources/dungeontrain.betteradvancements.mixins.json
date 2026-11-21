@@ -16,6 +16,7 @@
     "betteradvancements.BetterAdvancementTabTitleMixin",
     "betteradvancements.BetterAdvancementTabHaloMixin",
     "betteradvancements.BetterAdvancementTabTypeDecorMixin",
+    "betteradvancements.BetterAdvancementsScreenBoundsMixin",
     "betteradvancements.BetterAdvancementsScreenGoldWindowMixin"
   ],
   "server": [],

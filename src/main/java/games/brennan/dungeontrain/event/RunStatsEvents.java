@@ -23,6 +23,9 @@ import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.net.DeathScenePacket;
+import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
+import games.brennan.dungeontrain.ship.sable.DeathBodyRagdoll;
 import games.brennan.dungeontrain.echo.EchoSummary;
 import games.brennan.dungeontrain.echo.EchoSummaryReader;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
@@ -42,6 +45,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -65,6 +69,8 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -215,7 +221,7 @@ public final class RunStatsEvents {
         // Cheated runs don't accrue the cross-world lifetime counters. The death
         // screen still renders below — it reads the per-run state plus the current
         // (un-incremented) totals — so a cheating player still sees their summary.
-        boolean cheated = RunIntegrity.isCheated(player);
+        boolean cheated = RunIntegrity.isOffRecord(player);
         // Where this life started and where it ended, resolved ONCE — respawn re-stamps the origin
         // it is measured from, so there is exactly one moment this can be read. Shared by the
         // lifetime displacement counter below and by every reporter that describes this death.
@@ -279,6 +285,10 @@ public final class RunStatsEvents {
                 // PlayerMob wrote this death's echo record before LivingDeathEvent fired.
                 EchoSummaryReader.read(player));
         DungeonTrainNet.sendTo(player, packet);
+        DungeonTrainNet.sendTo(player, deathScene(player, event.getSource()));
+        // Kept for the tribute room: the visit that follows saves it beside the room, and a tribute TV on
+        // the train replays it. The third-person message too, since the packet's cause says "You".
+        games.brennan.dungeontrain.portal.tribute.LastDeathReports.remember(player, packet, deathMessage(player));
 
         // Relay all ~5 per-death telemetry signals to dp-relay inside ONE RelayOutbox batch window, so
         // the coalescing outbox folds them into a single POST /telemetry/batch instead of one request
@@ -383,6 +393,24 @@ public final class RunStatsEvents {
      * the same stats the death screen shows, and the most-used weapon + worn armor as the
      * composed item image. Discord Presence handles the embed, image, and posting off-thread.
      */
+    /** What the death moment's camera needs: void death, the killer, and the other mob (see DeathScenePacket). */
+    private static DeathScenePacket deathScene(ServerPlayer player, DamageSource source) {
+        // No place to look at: fell out of the world.
+        boolean voidDeath = source.is(DamageTypes.FELL_OUT_OF_WORLD)
+            || player.getY() < player.serverLevel().getMinBuildHeight();
+        int killer = source.getEntity() instanceof LivingEntity living && living != player
+            ? living.getId() : DeathScenePacket.NONE;
+        int contact = RecentMobContacts.nearestAlive(player, killer);
+        LOGGER.info("[DungeonTrain] Death scene for {}: void={} killer={} ({}) contact={}", player.getGameProfile().getName(),
+            voidDeath, killer, source.getEntity() == null ? "none" : source.getEntity().getType().toShortString(), contact);
+        List<DeathScenePacket.Target> targets = voidDeath ? List.of()
+            : DeathSceneTargets.near(player.serverLevel(), DeadRiderAnchors.anchorPos(player));
+        Vec3 hazard = voidDeath ? null : DeathHazard.find(player, source);
+        // The body left where they died (a Sable: Ragdolls ragdoll); the spot and carriage shots track it.
+        UUID body = DeathBodyRagdoll.spawn(player, source, voidDeath);
+        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard, body);
+    }
+
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
                                        boolean cheated) {
         String cause = DiscordMarkdown.escape(deathMessage(player));
@@ -417,7 +445,7 @@ public final class RunStatsEvents {
             LOGGER.debug("[DungeonTrain] {} has Public posts off — skipping public death feed",
                     player.getGameProfile().getName());
         }
-        if ((!cheated || DungeonTrain.isDevBuild()) && !shortRun && publicPosts) {
+        if ((!cheated || (DungeonTrain.isDevBuild() && !RunIntegrity.isOffRecordWorld())) && !shortRun && publicPosts) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -539,7 +567,7 @@ public final class RunStatsEvents {
         UUID id = player.getUUID();
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         // Time aboard accrues live (and not on a cheated run), so this life's share comes back out.
-        long ownTicks = RunIntegrity.isCheated(player) ? 0L : run.trainTimeTicks();
+        long ownTicks = RunIntegrity.isOffRecord(player) ? 0L : run.trainTimeTicks();
         return buildPacket(player,
                 GlobalPlayerStats.totalDeaths(id),
                 GlobalPlayerStats.totalCarriages(id),
@@ -584,12 +612,14 @@ public final class RunStatsEvents {
         long lifePlayersEncountered = GlobalPlayerStats.playersEncountered(id);
         long lifeEchos = GlobalPlayerStats.totalEchos(id);
         long lifeAdvancements = countDungeonTrainAdvancements(player);
+        // This life's advancements that earn unlock points, and what they earned (the perks menu's opening line).
+        int[] lifeUnlock = games.brennan.dungeontrain.perks.PerkPointEvents.pointsFor(player, run.earnedAdvancements());
         double lifeDamageDealt = GlobalPlayerStats.totalDamageDealt(id);
         double lifeDamageTaken = GlobalPlayerStats.totalDamageTaken(id);
         if (previousLivesOnly) {
             // Encounters only reach the lifetime total off a cheated run (onLevelTick), so a cheated
             // life added none.
-            long ownMet = RunIntegrity.isCheated(player) ? 0L : run.encounteredCount();
+            long ownMet = RunIntegrity.isOffRecord(player) ? 0L : run.encounteredCount();
             lifePlayersEncountered = Math.max(0L, lifePlayersEncountered - ownMet);
             lifeEchos = Math.max(0L, lifeEchos - run.echoesMet());
             lifeAdvancements = Math.max(0L, lifeAdvancements - ownAdvancements(player, run));
@@ -643,6 +673,8 @@ public final class RunStatsEvents {
                 run.photosViewed(),
                 run.tributesMade(),
                 run.tributeEmeralds(),
+                lifeUnlock[0],
+                lifeUnlock[1],
                 echo
         );
     }
@@ -757,7 +789,7 @@ public final class RunStatsEvents {
         if (players.isEmpty()) return;
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-            boolean cheated = RunIntegrity.isCheated(player);
+            boolean cheated = RunIntegrity.isOffRecord(player);
             // Behind a nap point, mobs met are re-rolled copies: neither met nor befriended.
             boolean behindNap = games.brennan.dungeontrain.nap.NapGateData.step(player) < 0;
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);

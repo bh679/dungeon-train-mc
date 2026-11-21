@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.compat;
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEvents;
+import games.brennan.dungeontrain.perks.effects.lover.GoodGifterPlayerMobs;
 import games.brennan.playermob.compat.PlayerMobSocialHooks;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,6 +39,7 @@ public final class PlayerMobSocialBridge {
         PlayerMobSocialHooks.install(new PlayerMobSocialHooks.GiftObserver() {
             @Override
             public void onMobGift(ServerPlayer recipient, UUID mobId) {
+                games.brennan.dungeontrain.event.RecentMobContacts.remember(recipient, mobId);
                 // A PlayerMob gifted the player an item (tossGift). mob -> player.
                 PlayerMobSocialTracker.recordMobGift(recipient, mobId);
                 RemoteEchoEncounters.onReceivedGift(recipient, mobId);
@@ -45,6 +47,7 @@ public final class PlayerMobSocialBridge {
 
             @Override
             public void onPlayerGift(ServerPlayer giver, UUID mobId) {
+                games.brennan.dungeontrain.event.RecentMobContacts.remember(giver, mobId);
                 // The player gave a PlayerMob an item it picked up (creditGift). player -> mob.
                 PlayerMobSocialTracker.recordPlayerGift(giver, mobId);
                 RemoteEchoEncounters.onGaveGift(giver, mobId);
@@ -57,6 +60,8 @@ public final class PlayerMobSocialBridge {
             public void onPlayerGift(ServerPlayer giver, PlayerMobEntity mob, ItemStack gift) {
                 // Same gift, with the stack: a camera asks the mob for a photo of the giver.
                 PlayerMobCameraBridge.onPlayerGift(giver, mob, gift);
+                // Good Gifter perk: the mob likes the gift more.
+                GoodGifterPlayerMobs.onPlayerGift(giver, mob, gift);
             }
         });
     }

@@ -4,6 +4,8 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
+import games.brennan.dungeontrain.perks.effects.archivist.LiveEyeSafeDuration;
 import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
@@ -545,16 +547,24 @@ public final class LiveStreamController {
         LiveClaimInfo info = LiveClaimInfo.of(VersionInfo.VERSION, LatestReleaseCache.latestVersion(),
             VersionInfo.LAST_UPDATE_DATE, LocalDate.now(ZoneOffset.UTC),
             LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode());
-        boolean freePlay = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
+        // Off the record: Free Play or Test mode.
+        boolean freePlay = mc.player != null
+            && (mc.player.hasEffect(ModMobEffects.FREE_PLAY) || mc.player.hasEffect(ModMobEffects.TEST_MODE));
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
         CompletableFuture<Boolean> aac = LiveFeedClientConfig.streamAudio()
             ? FfmpegSupport.aacEncoder() : CompletableFuture.completedFuture(false);
         // Won a dead streamer's takeover: that ticket carries the claim past the relay's tenure check
         // (an approved takeover vote's ticket does the same).
         String deathTicket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
+        // Live Eye Safe Duration perk: both relay deadlines count from the start of the hold, so the takeover
+        // deadline moves by the whole extra and the holder's vote deadline by half (each window gains half).
+        int safeRank = games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.LIVE_EYE_SAFE_DURATION);
+        long takeoverExtraMs = LiveEyeSafeDuration.takeoverExtraMs(safeRank);
+        long holderVoteExtraMs = LiveEyeSafeDuration.holderVoteExtraMs(safeRank);
         // Only asks to stream a mic when there is one to stream (and it needs the stream's sound).
         boolean micWanted = LiveFeedClientConfig.streamAudio() && LiveMic.available();
-        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket, micWanted).thenAcceptBothAsync(aac, (result, hasAac) -> {
+        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket, takeoverExtraMs, holderVoteExtraMs, micWanted)
+            .thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
             LiveTakeoverClient.Holder holder = LiveTakeoverClient.parseBlocked(result);
             if (holder != null) {

@@ -1,0 +1,17 @@
+{
+  "id": "crafter-enchanting-perks",
+  "version": "0.1508.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Crafter perks: enchanting and cooking",
+  "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and the enchantments on your gear can work stronger than they are.",
+  "highlights": [],
+  "date": "2026-10-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

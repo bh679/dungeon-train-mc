@@ -1,0 +1,19 @@
+{
+  "id": "perks-per-difficulty",
+  "version": "0.1662.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "Perks for each difficulty",
+  "summary": "Each difficulty now keeps its own perks. Unlock something on Normal and it waits for you on Normal, while Hard has its own set to earn. Your unlocks come with you to every new world on that difficulty.",
+  "highlights": [
+    "Switching difficulty no longer loses your perks.",
+    "Perks unlocked in Free Play stay in that world."
+  ],
+  "pr": 2509,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

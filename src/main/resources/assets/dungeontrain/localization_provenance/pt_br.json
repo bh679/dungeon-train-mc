@@ -13,7 +13,9 @@
       "gui.dungeontrain.ai_policy.explainers.names.title",
       "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "gui.dungeontrain.options.tribute_webhook.tip",
-      "gui.dungeontrain.tribute_webhook.line2"
+      "gui.dungeontrain.tribute_webhook.line2",
+      "chat.dungeontrain.perks.active_gained",
+      "gui.dungeontrain.perks.refused.no_active"
     ],
     "adventureitemnames": [],
     "playermob": [],

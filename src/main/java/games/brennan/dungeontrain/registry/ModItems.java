@@ -74,6 +74,26 @@ public final class ModItems {
      * {@link games.brennan.dungeontrain.narrative.RandomBookRegistry} so the
      * slot is never wasted.
      */
+    /**
+     * Edible loot finds, three tiers of active perk points for this life
+     * ({@link games.brennan.dungeontrain.item.CosmicAppleItem}); deeper carriages hold the rarer ones
+     * ({@link games.brennan.dungeontrain.perks.CosmicAppleDrops}).
+     */
+    public static final DeferredItem<Item> COSMIC_APPLE = ITEMS.register(
+        "cosmic_apple",
+        () -> new games.brennan.dungeontrain.item.CosmicAppleItem(new Item.Properties().stacksTo(8), 1)
+    );
+    public static final DeferredItem<Item> CELESTIAL_BITE = ITEMS.register(
+        "celestial_bite",
+        () -> new games.brennan.dungeontrain.item.CosmicAppleItem(
+            new Item.Properties().stacksTo(8).rarity(Rarity.RARE), 5)
+    );
+    public static final DeferredItem<Item> VIOLET_CORE = ITEMS.register(
+        "violet_core",
+        () -> new games.brennan.dungeontrain.item.CosmicAppleItem(
+            new Item.Properties().stacksTo(8).rarity(Rarity.EPIC), 10)
+    );
+
     public static final DeferredItem<Item> RANDOM_PLAYERBOOK = ITEMS.register(
         "random_playerbook",
         () -> new Item(new Item.Properties().stacksTo(1))
@@ -110,6 +130,13 @@ public final class ModItems {
      * shows the second player who is live, or the first stream while there is no second. A right-click on
      * a TV cycles off / Stream 1 / Stream 2 ({@code mixin.vista.TVBlockMixin}). Never a player's item either.
      */
+    /** The cassette a tribute room's TV is tuned with; never a player's item. */
+    public static final DeferredItem<Item> TRIBUTE_CASSETTE = ITEMS.register(
+        "tribute_cassette",
+        () -> new games.brennan.dungeontrain.item.TributeTvCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+            .component(VistaMod.LINKED_FEED_COMPONENT.get(), games.brennan.dungeontrain.compat.vista.TributeTvBroadcast.FEED_UUID))
+    );
+
     public static final DeferredItem<Item> LIVE_CASSETTE_2 = ITEMS.register(
         "live_cassette_2",
         () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)

@@ -83,6 +83,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_PLAYER_FREE_PLAY = "playerFreePlay";
+    private static final String TAG_PERKS_TEST = "perksTest";
     private static final String TAG_PLAYER_FREE_PLAY_NAME = "playerFreePlayName";
     private static final String TAG_PLAYER_FREE_PLAY_CAUSE = "playerFreePlayCause";
     private static final String TAG_FREE_PLAY_BACKFILL_DONE = "freePlayBackfillDone";
@@ -319,6 +320,13 @@ public final class DungeonTrainWorldData extends SavedData {
      * hot-path reason. <b>One-way.</b>
      */
     private boolean playerFreePlay = false;
+
+    /**
+     * True for a perks test world: one started from the title screen's tester-only button, the
+     * only kind of world perks are switched on in before they launch. Set once at creation, never
+     * cleared. Read through {@code PerksGate}, which mirrors it into a static.
+     */
+    private boolean perksTest = false;
 
     /** Who first put this world into Free Play ({@link #playerFreePlay}); empty when unknown. */
     private String playerFreePlayName = "";
@@ -605,6 +613,7 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent on every world saved before Free Play went world-wide → false, and the backfill
         // flag false too, so PlayerFreePlayIntegrity scans that world's players once on load.
         data.playerFreePlay = tag.getBoolean(TAG_PLAYER_FREE_PLAY);
+        data.perksTest = tag.getBoolean(TAG_PERKS_TEST);
         data.playerFreePlayName = tag.getString(TAG_PLAYER_FREE_PLAY_NAME);
         data.playerFreePlayCauseJson = tag.getString(TAG_PLAYER_FREE_PLAY_CAUSE);
         data.freePlayBackfillDone = tag.getBoolean(TAG_FREE_PLAY_BACKFILL_DONE);
@@ -757,6 +766,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
         tag.putBoolean(TAG_KEEP_INVENTORY_USED, keepInventoryUsed);
         tag.putBoolean(TAG_PLAYER_FREE_PLAY, playerFreePlay);
+        tag.putBoolean(TAG_PERKS_TEST, perksTest);
         tag.putString(TAG_PLAYER_FREE_PLAY_NAME, playerFreePlayName);
         tag.putString(TAG_PLAYER_FREE_PLAY_CAUSE, playerFreePlayCauseJson);
         tag.putBoolean(TAG_FREE_PLAY_BACKFILL_DONE, freePlayBackfillDone);
@@ -1240,6 +1250,18 @@ public final class DungeonTrainWorldData extends SavedData {
     public void markKeepInventoryUsed() {
         if (keepInventoryUsed) return;
         keepInventoryUsed = true;
+        setDirty();
+    }
+
+    /** True for a perks test world — see {@link #perksTest}. */
+    public boolean isPerksTest() {
+        return perksTest;
+    }
+
+    /** Make this world a perks test world. One-way. */
+    public void markPerksTest() {
+        if (perksTest) return;
+        perksTest = true;
         setDirty();
     }
 

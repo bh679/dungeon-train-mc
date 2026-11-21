@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
+import games.brennan.dungeontrain.ship.sable.DeadRiderServerCarry;
 import games.brennan.dungeontrain.util.AsyncPerfLog;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -308,6 +310,10 @@ public final class TrainTickEvents {
             logGenTiming(level);
         }
 
+        // A dead rider's server body rides on with its carriage, so the appender's keep-alive, the
+        // entity trackers and the chunk view below all measure from where the client shows them.
+        DeadRiderServerCarry.tick(level);
+
         long t0 = System.nanoTime();
 
         // Append-only carriage spawner — adds carriages ahead of (or behind)
@@ -350,7 +356,7 @@ public final class TrainTickEvents {
         // purpose: a carriage coming back into range is unfrozen by that pass first, and a frozen
         // carriage's pose is stale, which would make the ship→world restore land in the wrong place.
         // See ContentsDespawnController.
-        ContentsDespawnController.reconcile(level, trainsById, level.players());
+        ContentsDespawnController.reconcile(level, trainsById, DeadRiderAnchors.withDead(level));
 
         // Re-anchor static carriage-contents entities (End Crystals, paintings, item frames) that
         // Sable's move-driven carry never binds, so they ride the train instead of being left at

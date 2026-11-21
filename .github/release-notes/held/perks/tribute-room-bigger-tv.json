@@ -1,0 +1,16 @@
+{
+  "id": "tribute-room-bigger-tv",
+  "version": "0.1739.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Bigger tribute room TV",
+  "summary": "The TV in your tribute room is bigger, and the perks menu now melts onto it without a jump in size.",
+  "highlights": [],
+  "date": "2026-11-16",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

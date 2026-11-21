@@ -37,6 +37,16 @@ class Picks(unittest.TestCase):
                 preview.parse_picks([bad], "--music")
 
 
+class SongStart(unittest.TestCase):
+    def test_track_with_and_without_a_start(self):
+        self.assertEqual(preview.split_start("lava_chicken@49.7"), ("lava_chicken", 49.7))
+        self.assertEqual(preview.split_start("pigstep"), ("pigstep", None))
+
+    def test_a_bad_start_is_refused(self):
+        with self.assertRaises(ValueError):
+            preview.split_start("pigstep@soon")
+
+
 class SongCard(unittest.TestCase):
     def test_shows_the_song_its_start_and_how_to_pin_it(self):
         html = preview.music_block(POST)

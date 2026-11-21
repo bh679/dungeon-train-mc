@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:feather_falling",
+    "minecraft:depth_strider",
+    "minecraft:respiration",
+    "minecraft:soul_speed",
+    "minecraft:swift_sneak",
+    "minecraft:frost_walker"
+  ]
+}

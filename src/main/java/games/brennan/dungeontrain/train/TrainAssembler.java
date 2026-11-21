@@ -493,6 +493,14 @@ public final class TrainAssembler {
      * The group's {@link CarriageLayout}: the session's forced Group cadence when one is set (a
      * testing aid — {@link FullCarriageSettings#force}), else the seeded draw on the layout weights.
      */
+    /** One cosmic apple into a container of the {@code carriages}-long box at {@code origin}. */
+    private static void placeApple(ServerLevel level, BlockPos origin, CarriageDims dims, int carriages,
+                                    CarriageGenerationConfig genCfg, int pIdx) {
+        net.minecraft.world.level.levelgen.structure.BoundingBox box = net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(
+            origin, origin.offset(dims.length() * carriages - 1, dims.height(), dims.width()));
+        games.brennan.dungeontrain.perks.CosmicAppleDrops.place(level, box, genCfg.seed(), pIdx);
+    }
+
     private static CarriageLayout layoutFor(ServerLevel level, int anchorPIdx, int groupSize, long seed) {
         if (FullCarriageSettings.forced() > 0) {
             return FullCarriageSelection.isFullGroup(level, anchorPIdx, groupSize, seed)
@@ -627,7 +635,8 @@ public final class TrainAssembler {
             ? ContentsSize.FULL.shellDims(dims, groupSize).orElse(null) : null;
         // A rebuild never leases: the relay pool has moved on, so it stands the carriage generated here.
         final boolean groupDrifts = groupBox != null && transitionGroup == null && rebuild == null
-            && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage);
+            && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage,
+                games.brennan.dungeontrain.perks.tier1.DriftChance.bestRank(level));
         SharedGroupDrift.Pick groupLease = null;
         net.minecraft.nbt.ListTag groupLeaseEnts = null;
         int groupLeaseFuelValue = -1;
@@ -857,6 +866,10 @@ public final class TrainAssembler {
         PendingContentsEntitySpawn[] pendingEntities = new PendingContentsEntitySpawn[groupSize];
         PendingRelayEntitySpawn[] pendingRelayEntities = new PendingRelayEntitySpawn[groupSize];
         PendingWholeDecorSpawn[] pendingWholeDecor = new PendingWholeDecorSpawn[groupSize];
+        // Cosmic apples: about one group in five, in the drawn slot's containers (-1 = none here).
+        // None until someone has unlocked a perk (CosmicAppleDrops.open).
+        int appleSlot = games.brennan.dungeontrain.perks.CosmicAppleDrops.open(level.getServer())
+            ? games.brennan.dungeontrain.perks.CosmicAppleDrops.slotFor(genCfg.seed(), anchorPIdx, groupSize) : -1;
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
@@ -904,6 +917,7 @@ public final class TrainAssembler {
                 if (slot == 0) {
                     CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, fullPick.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
+                    if (appleSlot >= 0) placeApple(level, carriageShipyardOrigin, dims, groupSize, genCfg, anchorPIdx);
                     pendingEntities[slot] = new PendingContentsEntitySpawn(
                         carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
@@ -934,6 +948,12 @@ public final class TrainAssembler {
                     HalfCarriageSelection.Half half = slot == 0 ? halfPick.first() : halfPick.second();
                     CarriagePlacer.applyContentsBlocksAt(level, halfShipyardOrigin, half.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
+                    boolean firstHalf = appleSlot >= 0 && appleSlot < (groupSize + 1) / 2;
+                    if (appleSlot >= 0 && (slot == 0) == firstHalf) {
+                        int halfLength = slot == 0 ? halfPick.secondOffset() : groupSize * length - halfPick.secondOffset();
+                        placeApple(level, halfShipyardOrigin, new CarriageDims(halfLength, dims.width(), dims.height()),
+                            1, genCfg, anchorPIdx);
+                    }
                     pendingEntities[slot] = new PendingContentsEntitySpawn(
                         halfShipyardOrigin, half.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
@@ -963,6 +983,7 @@ public final class TrainAssembler {
                 continue;
             }
             CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
+            if (slot == appleSlot) placeApple(level, carriageShipyardOrigin, dims, 1, genCfg, carriagePIdx);
             // Stash for the appender's tick handler to fire once the
             // placement-collision tracker confirms this group has settled.
             // FLATBEDs (variant.type == FLATBED) have null entries — the

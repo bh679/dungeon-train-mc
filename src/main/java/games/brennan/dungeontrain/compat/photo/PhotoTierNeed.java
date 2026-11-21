@@ -49,7 +49,7 @@ public final class PhotoTierNeed {
     /** {@link #param} for everyone online. Free Play earns no advancements, so it needs nothing. Server thread. */
     static String needsOf(MinecraftServer server) {
         return param(server.getPlayerList().getPlayers().stream()
-                .filter(player -> !RunIntegrity.isCheated(player))
+                .filter(player -> !RunIntegrity.isOffRecord(player))
                 .map(player -> nextCost(path -> earned(server, player, path)))
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)

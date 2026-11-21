@@ -1,0 +1,23 @@
+{
+  "id": "tribute-rooms",
+  "version": "0.1660.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "train",
+    "ui"
+  ],
+  "title": "Tribute rooms",
+  "summary": "Every death now ends in a room of your own. The perks menu follows you onto its TV, the rest of your story plays there, and the room is yours to build in before you board anew. Your room can turn up on other players' trains, where they can look but not touch, with your last story playing on the TV. You keep one room per difficulty, and another for Free Play.",
+  "highlights": [
+    "Build while you visit. The room is saved for your next death.",
+    "Player heads in your room wear your face.",
+    "A fullscreen button on the TV brings the pages up close."
+  ],
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "major": true,
+  "notable": true
+}

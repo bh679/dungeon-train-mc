@@ -125,7 +125,7 @@ public final class NarrativeBookEvents {
         if (stack.isEmpty()) return;
         if (RandomBookTag.read(stack).isEmpty()) return;
         BookReadMarkerTag.markOpened(stack);
-        if (RunIntegrity.isCheated(player)) return; // global book-read stat frozen for cheated runs
+        if (RunIntegrity.isOffRecord(player)) return; // global book-read stat frozen for cheated runs
         long newTotal = GlobalPlayerStats.addRandomBooksRead(player.getUUID(), 1L);
         AchievementEvents.notifyRandomBooksRead(player, newTotal);
     }
@@ -148,7 +148,7 @@ public final class NarrativeBookEvents {
         if (stack.isEmpty()) return;
         if (!StartingBookTag.isStartingBook(stack)) return;
         BookReadMarkerTag.markOpened(stack);
-        if (RunIntegrity.isCheated(player)) return; // global book-read stat frozen for cheated runs
+        if (RunIntegrity.isOffRecord(player)) return; // global book-read stat frozen for cheated runs
         long newTotal = GlobalPlayerStats.addStartingBooksRead(player.getUUID(), 1L);
         AchievementEvents.notifyStartingBooksRead(player, newTotal);
     }
@@ -215,7 +215,7 @@ public final class NarrativeBookEvents {
         // read, so "read every story" accumulates across worlds instead of
         // resetting each new world. Frozen for cheated runs — per-world `data`
         // above still records, so lectern selection is unaffected.
-        if (!RunIntegrity.isCheated(player)) {
+        if (!RunIntegrity.isOffRecord(player)) {
             GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
             if (id.variantIndex() >= 0) {
                 GlobalNarrativeProgress.markVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
@@ -449,7 +449,7 @@ public final class NarrativeBookEvents {
                                            String basename, int variantIndex) {
         data.markRandomBookSeen(basename, variantIndex);
         data.markRandomBookVariantEverRead(basename, variantIndex); // monotonic — feeds shared-book loot chance
-        if (!RunIntegrity.isCheated(player)) {
+        if (!RunIntegrity.isOffRecord(player)) {
             GlobalRandomBookProgress.add(player.getUUID(), basename, variantIndex);
         }
     }

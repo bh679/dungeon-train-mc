@@ -244,7 +244,7 @@ public final class BurritoClock {
      * earn the capstone for real, and its time aboard was not counted anyway.
      */
     public static synchronized Completion recordEarn(ServerPlayer player) {
-        if (RunIntegrity.isCheated(player)) return null;
+        if (RunIntegrity.isOffRecord(player)) return null;
         UUID uuid = player.getUUID();
         String key = AdvancementProfiles.currentKey(player);
         Data data = current(uuid);

@@ -108,6 +108,9 @@ resolve() {
     rcfg)     cached "maven.modrinth/resourceful-config" "$(prop resourcefulconfig_version)" ;;
     ppro)     cached "maven.modrinth/piglin-proliferation" "$(prop piglinproliferation_version)" ;;
     pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
+    # Sable: Ragdolls + its Patch — required; the body a player leaves where they died.
+    rag)      cached "maven.modrinth/sable-ragdolls"     "$(prop sableragdolls_version)" ;;
+    ragp)     cached "maven.modrinth/sableragdoll-patch" "$(prop sableragdollpatch_version)" ;;
     # Exposure + its Polaroid add-on — required; the cameras, film and photographs.
     exp)      cached "maven.modrinth/exposure"        "$(prop exposure_version)" ;;
     expp)     cached "maven.modrinth/exposure-polaroid" "$(prop exposurepolaroid_version)" ;;

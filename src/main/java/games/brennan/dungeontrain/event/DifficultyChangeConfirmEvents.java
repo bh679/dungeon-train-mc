@@ -79,7 +79,9 @@ public final class DifficultyChangeConfirmEvents {
         if (server == null) {
             return false;
         }
-        boolean isolated = DungeonTrainConfig.getDifficultyIsolatedStash();
+        // A test world keeps one profile whatever the difficulty, so there is no swap to warn about.
+        boolean isolated = DungeonTrainConfig.getDifficultyIsolatedStash()
+            && !games.brennan.dungeontrain.perks.PerksGate.isTestWorld();
         // Singleplayer always asks: a run is a world there, so the player picks between saving the
         // difficulty for the next run and abandoning this one to restart on it now. A dedicated server
         // with one shared stash has nothing to warn about, so its changes stay instant.

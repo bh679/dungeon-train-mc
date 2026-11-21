@@ -40,7 +40,7 @@ final class PhotoBiomeRideCredit {
         boolean creditWorld = !player.getPersistentData().getBoolean(WORLD_CREDITED_KEY);
         if (creditWorld) photographed.addAll(worldBiomes);
         // A Free Play run credits nothing, so the cross-world credit waits for an honest world.
-        boolean creditGlobal = !RunIntegrity.isCheated(player)
+        boolean creditGlobal = !RunIntegrity.isOffRecord(player)
                 && !GlobalPhotoProgress.read(player.getUUID()).rideCredited();
         if (creditGlobal) photographed.addAll(GlobalPhotoProgress.read(player.getUUID()).biomes());
         if (!creditWorld && !creditGlobal) return;
