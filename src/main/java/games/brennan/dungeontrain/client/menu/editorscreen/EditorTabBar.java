@@ -11,7 +11,7 @@ import java.util.function.ToIntFunction;
 
 /**
  * The strip above the panel: {@code Templates} and {@code Layout} from the left, then
- * {@code Settings} and the Exit icon locked to the right.
+ * {@code Settings}, its ▼ quick-toggles arrow and the Exit icon locked to the right.
  *
  * <p>Layout is a pure function of the label widths so it can be tested; painting is the
  * extruded bevel the mod's other tab buttons use. Labels come from a function of the page rather
@@ -20,9 +20,9 @@ import java.util.function.ToIntFunction;
 public final class EditorTabBar {
 
     /** What a tab does when clicked. */
-    public enum Kind { PAGE, EXIT }
+    public enum Kind { PAGE, QUICK, EXIT }
 
-    /** A laid-out tab. {@code page} is null for Exit. */
+    /** A laid-out tab. {@code page} is null for the quick-toggles arrow and Exit. */
     public record Tab(Kind kind, EditorScreenPage page, String label, int x, int w) {
         public boolean contains(double px) {
             return px >= x && px < x + w;
@@ -32,6 +32,8 @@ public final class EditorTabBar {
     static final int PAD_X = 6;
     static final int GAP = 2;
     static final int EXIT_W = 18;
+    /** The ▼ beside Settings that drops the quick toggles down. */
+    static final int QUICK_W = 11;
     static final int HERE = 0xFF55FF55;
     static final int DIRTY = 0xFFFFAA33;
 
@@ -70,18 +72,28 @@ public final class EditorTabBar {
             out.add(t);
             x = t.x() + t.w() + GAP;
         }
-        // Right-locked: Exit at the very end, Settings just before it.
+        // Right-locked: Exit at the very end, the quick-toggles arrow before it, Settings before that.
         int exitX = strip.right() - EXIT_W;
         String settingsLabel = labelOf.apply(EditorScreenPage.SETTINGS);
         int settingsW = widthOf.applyAsInt(settingsLabel) + PAD_X * 2;
-        int settingsX = Math.max(x, exitX - GAP - settingsW);
+        int quickX0 = exitX - GAP - QUICK_W;
+        int settingsX = Math.max(x, quickX0 - GAP - settingsW);
         out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, settingsLabel, settingsX, settingsW));
-        out.add(new Tab(Kind.EXIT, null, "", Math.max(settingsX + settingsW + GAP, exitX), EXIT_W));
+        int quickX = Math.max(settingsX + settingsW + GAP, quickX0);
+        out.add(new Tab(Kind.QUICK, null, "", quickX, QUICK_W));
+        out.add(new Tab(Kind.EXIT, null, "", Math.max(quickX + QUICK_W + GAP, exitX), EXIT_W));
         return out;
     }
 
     private static Tab tab(Kind kind, EditorScreenPage page, String label, int x, ToIntFunction<String> widthOf) {
         return new Tab(kind, page, label, x, widthOf.applyAsInt(label) + PAD_X * 2);
+    }
+
+    /** A 5-wide, 3-tall ▼ centred on ({@code cx}, {@code cy}). */
+    private static void drawChevron(GuiGraphics g, int cx, int cy, int colour) {
+        for (int row = 0; row < 3; row++) {
+            g.fill(cx - 2 + row, cy - 1 + row, cx + 3 - row, cy + row, colour);
+        }
     }
 
     /** The tab under the point, or null. */
@@ -96,8 +108,16 @@ public final class EditorTabBar {
     public static void draw(GuiGraphics g, Font font, InventoryEditorLayout.Rect strip, List<Tab> tabs,
                             EditorScreenPage active, EditorScreenPage herePage, boolean dirty,
                             Tab hovered, EditorScreenTheme theme) {
+        draw(g, font, strip, tabs, active, herePage, dirty, hovered, theme, false);
+    }
+
+    /** As above, with {@code quickOpen} drawing the ▼ arrow pressed while its dropdown is down. */
+    public static void draw(GuiGraphics g, Font font, InventoryEditorLayout.Rect strip, List<Tab> tabs,
+                            EditorScreenPage active, EditorScreenPage herePage, boolean dirty,
+                            Tab hovered, EditorScreenTheme theme, boolean quickOpen) {
         for (Tab t : tabs) {
-            boolean isActive = t.kind() == Kind.PAGE && t.page() == active;
+            boolean isActive = (t.kind() == Kind.PAGE && t.page() == active)
+                || (t.kind() == Kind.QUICK && quickOpen);
             int fill = isActive ? theme.tabActive() : (t == hovered ? theme.tabHover() : theme.tabIdle());
             int x0 = t.x();
             int y0 = isActive ? strip.y() - 2 : strip.y();
@@ -110,6 +130,10 @@ public final class EditorTabBar {
             if (!isActive) g.fill(x0, y1 - 1, x1, y1, theme.bevelDark());
 
             int textColour = isActive ? theme.tabTextActive() : theme.tabText();
+            if (t.kind() == Kind.QUICK) {
+                drawChevron(g, x0 + t.w() / 2, strip.y() + strip.h() / 2, textColour);
+                continue;
+            }
             if (t.kind() == Kind.EXIT) {
                 g.blitSprite(EditorIcons.EXIT, x0 + (t.w() - 16) / 2, strip.y() + (strip.h() - 16) / 2 + 1, 16, 16);
                 continue;

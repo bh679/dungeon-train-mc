@@ -265,6 +265,8 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorObserversPacket(
             games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
                 .isEditorObserversOn()));
+        // And the X menu quick toggles (Mirror, Frame) — world-persisted, client default On for both.
+        games.brennan.dungeontrain.editor.EditorQuickToggles.sendTo(player);
         // And the editor Redstone and TNT settings — world-persisted, client default On for both.
         games.brennan.dungeontrain.world.DungeonTrainWorldData editorData =
             games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());

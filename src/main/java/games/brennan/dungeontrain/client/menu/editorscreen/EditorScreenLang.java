@@ -17,6 +17,15 @@ public final class EditorScreenLang {
     public static final String TAB_GROUPS = PREFIX + "tab.groups";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
+    public static final String TAB_QUICK = PREFIX + "tab.quick";
+    public static final String QUICK_MIRROR = PREFIX + "quick.mirror";
+    public static final String QUICK_MENUS = PREFIX + "quick.menus";
+    public static final String QUICK_FRAME = PREFIX + "quick.frame";
+    public static final String QUICK_ON = PREFIX + "quick.on";
+    public static final String QUICK_OFF = PREFIX + "quick.off";
+    public static final String QUICK_MIRROR_TIP = PREFIX + "quick.mirror.tip";
+    public static final String QUICK_MENUS_TIP = PREFIX + "quick.menus.tip";
+    public static final String QUICK_FRAME_TIP = PREFIX + "quick.frame.tip";
 
     /** The category strip under the Templates tab's filter row — these were the tabs once. */
     public static final String TAB_ALL = PREFIX + "tab.all";

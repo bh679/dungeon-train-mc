@@ -91,6 +91,8 @@ public final class EditorMirrorLiveHandler {
         boolean my = plot.mirrorY();
         boolean mz = plot.mirrorZ();
         if (!mx && !my && !mz) return;
+        // X menu → Mirror Off pauses every template's live mirroring; the axes stay as saved.
+        if (!EditorQuickToggles.mirrorOn()) return;
 
         BlockPos local = worldPos.subtract(plot.origin());
         if (!plot.inBounds(local)) return;
