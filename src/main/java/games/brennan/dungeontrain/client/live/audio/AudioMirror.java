@@ -104,8 +104,31 @@ public final class AudioMirror {
 
     // ---- lifecycle (render thread / teardown thread) -----------------------------------------
 
+    /** How many pumps ({@link LiveAudioPump}) hold the mirror open; guarded by the class. */
+    private static int users;
+
+    /**
+     * A pump wants the mirror: the first opens it ({@link #start}), later ones share it through
+     * {@link MirrorMixBus}. False (logged) when this OpenAL cannot; the count is unchanged then.
+     * Render thread (the first open reads the sound engine).
+     */
+    public static synchronized boolean acquire() {
+        if (users == 0 || live == null) {
+            if (!start()) return false;
+            MirrorMixBus.shared().reset();
+        }
+        users++;
+        return true;
+    }
+
+    /** A pump is done with the mirror: the last one closes it. Any thread. */
+    public static synchronized void release() {
+        if (users == 0) return;
+        if (--users == 0) stop();
+    }
+
     /** Opens the mirror for a new stream. False (logged) when this OpenAL cannot; nothing changes then. */
-    public static boolean start() {
+    private static boolean start() {
         stop();
         MirrorDevice device = MirrorDevice.open();
         if (device == null) return false;

@@ -1136,6 +1136,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CINEMATIC_HOTKEY -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isCinematicHotkeyEnabled(),
                     ClientDisplayConfig::setCinematicHotkeyEnabled), key + ".tip");
 
+            // Opt-in: while on, DeathRecorder keeps the last seconds in memory and saves each death cinematic.
+            case DEATH_RECORDING -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDeathRecordingEnabled(),
+                    ClientDisplayConfig::setDeathRecordingEnabled), key + ".tip");
+
             // The top-left developer read-out. Listed on dev builds only; takes effect next frame.
             case DEV_HUD -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDevHudEnabled(),
                     ClientDisplayConfig::setDevHud), key + ".tip");
