@@ -50,38 +50,56 @@ final class CosmicAppleDropsTest {
     }
 
     @Test
-    @DisplayName("only Cosmic Apples before Diff-Level 5")
+    @DisplayName("only Cosmic Apples up to Diff-Level 5")
     void shallowIsTierOne() {
-        for (int level = 0; level < CosmicAppleDrops.BITE_FROM; level++) {
+        for (int level = 0; level <= 5; level++) {
             assertEquals(GROUPS, tally(level)[1], "level " + level);
         }
     }
 
     @Test
-    @DisplayName("Celestial Bites from Diff-Level 5, no Violet Core before 10")
-    void middleHasBites() {
-        for (int level = CosmicAppleDrops.BITE_FROM; level < CosmicAppleDrops.CORE_FROM; level++) {
+    @DisplayName("no Violet Core up to Diff-Level 25, while Celestial Bites rise to about 6.6 per cent")
+    void noCoresBeforeTwentyFive() {
+        for (int level = 0; level <= 25; level++) {
+            assertEquals(0, tally(level)[3], "level " + level);
+        }
+        double bites = tally(25)[2] / (double) GROUPS;
+        assertTrue(Math.abs(bites - 0.066) < 0.01, "bites at 25 " + bites);
+    }
+
+    @Test
+    @DisplayName("at Diff-Level 100 about 25 per cent Bites and 5 per cent Cores")
+    void hundredMix() {
+        int[] n = tally(100);
+        assertTrue(Math.abs(n[2] / (double) GROUPS - 0.25) < 0.02, "bites " + n[2]);
+        assertTrue(Math.abs(n[3] / (double) GROUPS - 0.052) < 0.01, "cores " + n[3]);
+    }
+
+    @Test
+    @DisplayName("from Diff-Level 150 about 65 / 25 / 10 per cent")
+    void deepHasAllThree() {
+        for (int level : new int[] {150, 400}) {
             int[] n = tally(level);
-            assertEquals(0, n[3], "level " + level);
-            double bites = n[2] / (double) GROUPS;
-            assertTrue(Math.abs(bites - 0.20) < 0.02, "level " + level + " bites " + bites);
+            assertTrue(Math.abs(n[1] / (double) GROUPS - 0.65) < 0.02, "apples " + n[1]);
+            assertTrue(Math.abs(n[2] / (double) GROUPS - 0.25) < 0.02, "bites " + n[2]);
+            assertTrue(Math.abs(n[3] / (double) GROUPS - 0.10) < 0.02, "cores " + n[3]);
         }
     }
 
     @Test
-    @DisplayName("from Diff-Level 10 about 65 / 25 / 10 per cent")
-    void deepHasAllThree() {
-        int[] n = tally(CosmicAppleDrops.CORE_FROM + 7);
-        assertTrue(Math.abs(n[1] / (double) GROUPS - 0.65) < 0.02, "apples " + n[1]);
-        assertTrue(Math.abs(n[2] / (double) GROUPS - 0.25) < 0.02, "bites " + n[2]);
-        assertTrue(Math.abs(n[3] / (double) GROUPS - 0.10) < 0.02, "cores " + n[3]);
+    @DisplayName("going deeper never makes the rarer apples less likely")
+    void chancesNeverFall() {
+        for (int level = 1; level <= 300; level++) {
+            assertTrue(CosmicAppleDrops.biteChance(level) >= CosmicAppleDrops.biteChance(level - 1), "bite " + level);
+            assertTrue(CosmicAppleDrops.coreChance(level) >= CosmicAppleDrops.coreChance(level - 1), "core " + level);
+        }
     }
 
     @Test
     @DisplayName("the tier is fixed per seed and drop")
     void tierDeterministic() {
         for (int i = 0; i < 200; i++) {
-            assertEquals(CosmicAppleDrops.tierFor(5L, i, 12), CosmicAppleDrops.tierFor(5L, i, 12));
+            assertEquals(CosmicAppleDrops.tierFor(5L, i, 120), CosmicAppleDrops.tierFor(5L, i, 120));
         }
     }
 }
