@@ -73,6 +73,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **U** | minus Deeper Darker (the only case without it) | Fails — names `deeperdarker` with its `[x,)` floor |
 | **V** | minus Luminous Monsters (the only case without it) | Fails — names `luminous_monsters` with its `[x,)` floor |
 | **W** | minus Creeper Overhaul (the only case without it; its libraries stay) | Fails — names `creeperoverhaul` with its `[x,)` floor |
+| **X** | minus Sable: Ragdolls and its Patch (the only case without them) | Fails — names `sable_player_ragdoll` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.
