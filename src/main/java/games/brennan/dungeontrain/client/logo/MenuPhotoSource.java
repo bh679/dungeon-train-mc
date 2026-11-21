@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.photo.PhotoCdn;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -50,7 +51,7 @@ final class MenuPhotoSource {
     /** A decoded photo, and the photographer to credit (null for the bundled ones). */
     record Loaded(NativeImage image, @Nullable String author) {}
 
-    private record Tribute(String id, String author) {}
+    private record Tribute(String id, String author, String image) {}
 
     private CompletableFuture<List<Tribute>> list;
     private final AtomicInteger next = new AtomicInteger();
@@ -89,7 +90,7 @@ final class MenuPhotoSource {
                     String id = p.has("id") ? p.get("id").getAsString() : "";
                     if (!PHOTO_ID.matcher(id).matches()) continue;
                     String author = p.has("author") && !p.get("author").isJsonNull() ? p.get("author").getAsString() : "";
-                    out.add(new Tribute(id, author));
+                    out.add(new Tribute(id, author, PhotoCdn.urlOf(p, "image")));
                 }
                 Collections.shuffle(out);
             } catch (RuntimeException e) {
@@ -102,9 +103,8 @@ final class MenuPhotoSource {
     }
 
     private static CompletableFuture<Loaded> download(Tribute t) {
-        HttpRequest req = HttpRequest.newBuilder(URI.create(tributesBase() + "/photos/" + t.id() + "/image"))
-                .timeout(TIMEOUT).GET().build();
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofByteArray()).thenApply(resp -> {
+        // The relay's CDN copy when the list names one, else the relay's own route.
+        return PhotoCdn.sendAsync(HTTP, t.image(), tributesBase() + "/photos/" + t.id() + "/image", TIMEOUT).thenApply(resp -> {
             if (resp.statusCode() != 200) throw new IllegalStateException("HTTP " + resp.statusCode());
             byte[] bytes = resp.body();
             if (bytes.length > MAX_IMAGE_BYTES) throw new IllegalStateException("too large: " + bytes.length);
