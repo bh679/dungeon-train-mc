@@ -29,6 +29,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Nomeação de mob passivo",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Nomeação de aldeão",
   "screen.adventureitemnames.spawn_chances.mob_player": "Nomeação de mob jogador",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Nomeação de mob hostil",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Descrição de item fabricado",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Descrição de item comprado",
   "screen.adventureitemnames.spawn_chances.trade_item": "Nomeação de troca de aldeão",

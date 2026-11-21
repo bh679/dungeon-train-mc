@@ -26,6 +26,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
   "screen.adventureitemnames.spawn_chances.mob_villager": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
   "screen.adventureitemnames.spawn_chances.mob_player": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
+  "screen.adventureitemnames.spawn_chances.mob_hostile": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "screen.adventureitemnames.spawn_chances.crafted_description": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
   "screen.adventureitemnames.spawn_chances.purchased_description": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
   "screen.adventureitemnames.spawn_chances.trade_item": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},

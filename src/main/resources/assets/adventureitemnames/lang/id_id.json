@@ -26,6 +26,7 @@
   "screen.adventureitemnames.spawn_chances.mob_passive": "Penamaan mob pasif",
   "screen.adventureitemnames.spawn_chances.mob_villager": "Penamaan penduduk desa",
   "screen.adventureitemnames.spawn_chances.mob_player": "Penamaan mob pemain",
+  "screen.adventureitemnames.spawn_chances.mob_hostile": "Penamaan mob agresif",
   "screen.adventureitemnames.spawn_chances.crafted_description": "Deskripsi barang buatan",
   "screen.adventureitemnames.spawn_chances.purchased_description": "Deskripsi barang beli",
   "screen.adventureitemnames.spawn_chances.trade_item": "Penamaan dagangan penduduk desa",

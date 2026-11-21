@@ -49,6 +49,7 @@ public final class PublicPostNotifier {
     @SubscribeEvent
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
         PublicPostsRelay.syncNow();
+        WebsiteNameRelay.syncNow(); // Show my name, re-sent at every login
         ticksToCheck = FIRST_CHECK_TICKS;
     }
 
