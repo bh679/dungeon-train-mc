@@ -99,6 +99,8 @@
       "why": "How the game looks and animates. Cosmetic: no reach, no resources, no information a vanilla player lacks.",
       "ids": [
         "sable_player_ragdoll",
+        "armortrimitemfix",
+        "glowing_trims",
         "entity_texture_features",
         "entity_model_features",
         "skinlayers3d",

@@ -1,0 +1,16 @@
+{
+  "id": "approve-trim-mods-cinematic",
+  "version": "0.1926.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility"
+  ],
+  "title": "More approved mods",
+  "summary": "Armor Trim Item Fix and Glowing Trims are now on the approved list, and Cinematic Interactions is now recognised offline too, so runs with them installed count normally.",
+  "highlights": [],
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
