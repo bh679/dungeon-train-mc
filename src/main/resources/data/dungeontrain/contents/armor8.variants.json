@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 10,
   "variants": {
     "2,0,3": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] },
     "2,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] },
@@ -98,6 +98,7 @@
     "1,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] },
     "0,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] },
     "6,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] },
-    "5,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] }
+    "5,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:purple_carpet", "minecraft:white_carpet"] },
+    "1,2,2": [{"state": "minecraft:wall_torch[facing=east]", "rotation": {"mode": "lock", "dirs": ["east"]}, "if": "!group2=minecraft:sea_lantern"}, {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["east"]}, "if": "group2=minecraft:sea_lantern"}]
   }
 }
