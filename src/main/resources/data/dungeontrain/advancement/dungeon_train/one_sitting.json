@@ -20,7 +20,7 @@
       "trigger": "dungeontrain:gameplay_action",
       "conditions": {
         "actionId": "one_sitting_carts",
-        "threshold": 3000
+        "threshold": 1000
       }
     }
   },

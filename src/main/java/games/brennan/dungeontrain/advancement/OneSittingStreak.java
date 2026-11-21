@@ -42,7 +42,7 @@ public final class OneSittingStreak {
     static final ResourceLocation ID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/one_sitting");
     /** The shipped requirement; the advancement JSON's {@code threshold} overrides it. */
-    static final int DEFAULT_CARRIAGES = 3000;
+    static final int DEFAULT_CARRIAGES = 1000;
     /** The {@code gameplay_action} id the advancement listens for. */
     static final String ACTION_ID = "one_sitting_carts";
     /** How often the AFK scan runs (1 s). */

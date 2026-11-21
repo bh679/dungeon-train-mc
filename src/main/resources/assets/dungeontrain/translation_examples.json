@@ -6836,8 +6836,8 @@
     "1": {
       "label": "carriages to travel without saving or going AFK, from the requirement",
       "examples": [
-        "3,000",
-        "1,500"
+        "1,000",
+        "500"
       ]
     }
   },
