@@ -1,0 +1,18 @@
+{
+  "id": "builder-no-preview-2793",
+  "version": "0.1935.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "editor",
+    "ui"
+  ],
+  "title": "Builder menu fix",
+  "summary": "Loading a very large shared build no longer stops to ask first, and its preview now says \"No preview\" instead of \"Oversized\".",
+  "highlights": [],
+  "pr": 2793,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
