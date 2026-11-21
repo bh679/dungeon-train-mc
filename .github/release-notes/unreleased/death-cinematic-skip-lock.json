@@ -1,0 +1,21 @@
+{
+  "id": "death-cinematic-skip-lock",
+  "version": "0.1935.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Death cinematic plays out",
+  "summary": "Your first death now plays its cinematic all the way through, and every later one gives it a few seconds before you can skip.",
+  "highlights": [
+    "The first death's cinematic can't be skipped",
+    "Skipping waits a few seconds after every death",
+    "Change the view with the arrow keys; movement keys no longer cut the scene"
+  ],
+  "pr": 2791,
+  "date": "2026-11-21",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
