@@ -136,4 +136,55 @@ final class BuilderRelayReconcileTest {
     private static BuilderRelayReconcile.Locator nowhere() {
         return locator(false, false);
     }
+
+    @Test
+    @DisplayName("a restore sends a room without its air, and a building with it")
+    void restoreDropsAirExceptForBuildings() {
+        net.minecraft.nbt.CompoundTag template = templateWithAir();
+        assertEquals(1, cellCount(BuilderRelayReconcile.snapshotForRestore(
+                BuilderPhotoPaths.Kind.PORTAL_ROOM, template)),
+                "a room's upload matches a world capture, which stores no air");
+        assertEquals(2, cellCount(BuilderRelayReconcile.snapshotForRestore(
+                BuilderPhotoPaths.Kind.BUILDING, template)),
+                "a building's upload is its file, interior air included, so its hash still matches");
+    }
+
+    private static int cellCount(net.minecraft.nbt.CompoundTag snapshot) {
+        return snapshot.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND).size();
+    }
+
+    private static net.minecraft.nbt.CompoundTag templateWithAir() {
+        net.minecraft.nbt.ListTag palette = new net.minecraft.nbt.ListTag();
+        palette.add(state("minecraft:stone"));
+        palette.add(state("minecraft:air"));
+        net.minecraft.nbt.ListTag blocks = new net.minecraft.nbt.ListTag();
+        blocks.add(block(0, 0));
+        blocks.add(block(1, 1));
+        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+        t.put("size", ints(2, 1, 1));
+        t.put("palette", palette);
+        t.put("blocks", blocks);
+        return t;
+    }
+
+    private static net.minecraft.nbt.CompoundTag state(String name) {
+        net.minecraft.nbt.CompoundTag s = new net.minecraft.nbt.CompoundTag();
+        s.putString("Name", name);
+        return s;
+    }
+
+    private static net.minecraft.nbt.CompoundTag block(int x, int stateIndex) {
+        net.minecraft.nbt.CompoundTag b = new net.minecraft.nbt.CompoundTag();
+        b.put("pos", ints(x, 0, 0));
+        b.putInt("state", stateIndex);
+        return b;
+    }
+
+    private static net.minecraft.nbt.ListTag ints(int a, int b, int c) {
+        net.minecraft.nbt.ListTag l = new net.minecraft.nbt.ListTag();
+        l.add(net.minecraft.nbt.IntTag.valueOf(a));
+        l.add(net.minecraft.nbt.IntTag.valueOf(b));
+        l.add(net.minecraft.nbt.IntTag.valueOf(c));
+        return l;
+    }
 }

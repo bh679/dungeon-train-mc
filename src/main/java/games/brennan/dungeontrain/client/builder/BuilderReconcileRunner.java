@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderTemplateSource;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayReconcile;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.HolderLookup;
@@ -179,7 +180,7 @@ public final class BuilderReconcileRunner {
                     build.kind(), build.subKind(), build.id(), true);
             if (found.isEmpty()) return false;
 
-            CompoundTag snapshot = CarriageSnapshotTemplate.fromTemplateTag(found.get().tag());
+            CompoundTag snapshot = BuilderRelayReconcile.snapshotForRestore(build.kind(), found.get().tag());
             int l = snapshot.getInt("l");
             int h = snapshot.getInt("h");
             int w = snapshot.getInt("w");
@@ -229,9 +230,7 @@ public final class BuilderReconcileRunner {
     }
 
     private static String keyOf(SharedCarriageClient.ProfileBuild build) {
-        return (build.kind() == null ? "" : build.kind()) + '\0'
-                + (build.subKind() == null ? "" : build.subKind()) + '\0'
-                + (build.buildName() == null ? "" : build.buildName());
+        return BuilderReconcileScan.keyFor(build.kind(), build.subKind(), build.buildName());
     }
 
     private static UUID uuid() {
