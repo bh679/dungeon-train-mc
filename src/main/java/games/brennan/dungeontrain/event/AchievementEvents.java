@@ -30,6 +30,7 @@ import games.brennan.dungeontrain.advancement.AdvancementProfiles;
 import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
 import games.brennan.dungeontrain.advancement.LifeChallengeAdvancements;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
+import games.brennan.dungeontrain.advancement.OneSittingStreak;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -404,6 +405,8 @@ public final class AchievementEvents {
         LifeChallengeAdvancements.checkAndGrant(player, effectiveTravelled);
         // "All at Once" / "The Challenge": the same counter with every one of those rules held at once.
         AllAtOnceAdvancement.checkAndGrant(player, effectiveTravelled);
+        // "One Sitting": the same counter since the player last joined or went AFK.
+        OneSittingStreak.onAdvance(player, effectiveTravelled);
         // "Not My Chest" / "Still Not My Chest" — carriages travelled since the
         // last chest/barrel open this life. The admin difficulty offset is in
         // both terms, so it cancels in the subtraction.

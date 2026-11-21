@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "minecraft:clock"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.one_sitting.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.one_sitting.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "one_sitting_carts",
+        "threshold": 3000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "action"
+    ]
+  ]
+}

@@ -43,6 +43,8 @@ import java.util.Optional;
  *       travelled since the last chest/barrel open (decorated pots don't count)</li>
  *   <li>{@code no_break_100_carts} / {@code no_break_1000_carts} — carriages
  *       travelled since the last block broken (decorated pots DO count)</li>
+ *   <li>{@code one_sitting_carts} — carriages travelled since joining the world or last going AFK
+ *       ({@link OneSittingStreak})</li>
  *   <li>{@code contained_loop} — died 1000+ carriages into a life that never opened an
  *       ender chest (fired from the death hook, not a live scan)</li>
  *   <li>{@code changed_engine_volume} — changed the train engine volume setting; the only

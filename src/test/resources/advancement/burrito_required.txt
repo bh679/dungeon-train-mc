@@ -60,6 +60,7 @@ dungeontrain:dungeon_train/no_good_deed
 dungeontrain:dungeon_train/not_quite_undying
 dungeontrain:dungeon_train/nothing_but_books
 dungeontrain:dungeon_train/one_for_the_road
+dungeontrain:dungeon_train/one_sitting
 dungeontrain:dungeon_train/pacifist_100
 dungeontrain:dungeon_train/pacifist_1000
 dungeontrain:dungeon_train/pacifist_250

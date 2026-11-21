@@ -6832,6 +6832,15 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.one_sitting.description": {
+    "1": {
+      "label": "carriages to travel without saving or going AFK, from the requirement",
+      "examples": [
+        "3,000",
+        "1,500"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.no_break_1000.description": {
     "1": {
       "label": "carriages to travel, from the requirement",
