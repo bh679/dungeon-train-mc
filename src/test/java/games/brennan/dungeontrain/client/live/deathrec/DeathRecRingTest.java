@@ -52,6 +52,18 @@ class DeathRecRingTest {
     }
 
     @Test
+    void snapshotCopiesWithoutEndingTheHold() {
+        DeathRecRing ring = new DeathRecRing(9_000, 180_000);
+        ring.append(packets(1, 3), 3 * P, 0);
+        ring.hold(0);
+        byte[] early = ring.snapshot();
+        ring.append(packets(4, 1), P, 1_000);
+        assertEquals(3 * P, early.length);
+        assertTrue(ring.holding(), "the full recording keeps going");
+        assertEquals(4 * P, ring.takeAndReset().length);
+    }
+
+    @Test
     void capStopsGrowthButKeepsLaterPacketsAligned() {
         DeathRecRing ring = new DeathRecRing(9_000, 5_000);
         ring.append(packets(1, 1), P, 0);

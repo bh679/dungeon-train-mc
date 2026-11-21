@@ -96,8 +96,22 @@ final class DeathRecRing {
         return first == null ? 0 : nowMs - first.atMs();
     }
 
+    /** Everything held, as one stream; the ring keeps it (and its hold). */
+    synchronized byte[] snapshot() {
+        return concat();
+    }
+
     /** Everything held, as one stream; the ring is then empty and recording into memory again. */
     synchronized byte[] takeAndReset() {
+        byte[] out = concat();
+        chunks.clear();
+        size = 0;
+        holdStartMs = -1;
+        // The packet in flight belongs to the stream after this cut; keep it so the next one stays aligned.
+        return out;
+    }
+
+    private byte[] concat() {
         byte[] out = new byte[(int) Math.min(size, Integer.MAX_VALUE - 8)];
         int pos = 0;
         for (Chunk c : chunks) {
@@ -105,10 +119,6 @@ final class DeathRecRing {
             System.arraycopy(c.bytes(), 0, out, pos, n);
             pos += n;
         }
-        chunks.clear();
-        size = 0;
-        holdStartMs = -1;
-        // The packet in flight belongs to the stream after this cut; keep it so the next one stays aligned.
         return out;
     }
 }

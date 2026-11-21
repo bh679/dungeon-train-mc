@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.live.FfmpegSupport;
 import games.brennan.dungeontrain.client.live.LiveAspect;
+import games.brennan.dungeontrain.client.live.LiveDeathClip;
 import games.brennan.dungeontrain.client.live.LiveFrameGrabber;
 import games.brennan.dungeontrain.client.live.audio.LiveAudioPump;
 import games.brennan.dungeontrain.compat.ReplayModRecordingProbe;
@@ -53,6 +54,8 @@ public final class DeathRecorder {
     static final int BOX_H = 720;
     /** Seconds kept from before the death. */
     static final long PRE_ROLL_MS = 8_000;
+    /** After the death, wait this long before cutting the death page's replay: the encoder runs a little behind. */
+    static final long SCREEN_CLIP_DELAY_MS = 1_000;
     /** On top of the pre-roll: the ring's front can sit up to one keyframe interval before a decodable frame. */
     static final long KEYFRAME_MARGIN_MS = 1_000;
     /** A held recording stops growing after this long (a death screen left open). */
@@ -81,6 +84,10 @@ public final class DeathRecorder {
      * alone would start a new encoder while the old world is being torn down.
      */
     private static boolean connected;
+    /** When the held death began, for the death page's replay; -1 once it is cut (or there is none). */
+    private static long screenClipDueMs = -1;
+    /** The death screen clip's death ({@link LiveDeathClip#generation()} at the death). */
+    private static int screenClipGeneration;
     private static long lastGrabNs;
     private static long retryAtMs;
 
@@ -107,6 +114,7 @@ public final class DeathRecorder {
             retryAtMs = System.currentTimeMillis() + RETRY_MS;
             return;
         }
+        cutScreenClipWhenDue(mc);
         if (want && encoder == null && System.currentTimeMillis() >= retryAtMs) tryStart(mc);
         // Never mid-death: the cinematic's own close saves first.
         if (!want && encoder != null && !holding()) stop(false);
@@ -221,7 +229,29 @@ public final class DeathRecorder {
         if (encoder == null || memory == null) return;
         long now = System.currentTimeMillis();
         memory.hold(now);
+        screenClipDueMs = now + SCREEN_CLIP_DELAY_MS;
+        screenClipGeneration = LiveDeathClip.generation();
         LOGGER.info("[DungeonTrain] death recording: holding {} s before the death", memory.spanMs(now) / 1000);
+    }
+
+    /**
+     * A second after the death, the last seconds before it go to the death page as its looping
+     * backdrop, the way a streamer's own death replays there ({@link LiveDeathClip#offerLocal}).
+     * The full recording keeps going until the cinematic ends.
+     */
+    private static void cutScreenClipWhenDue(Minecraft mc) {
+        if (screenClipDueMs < 0 || System.currentTimeMillis() < screenClipDueMs) return;
+        screenClipDueMs = -1;
+        DeathRecRing memory = ring;
+        FFmpeg ffmpeg = FfmpegSupport.get();
+        if (memory == null || !memory.holding() || ffmpeg == null || SAVER.isShutdown()) return;
+        byte[] ts = memory.snapshot();
+        int gen = screenClipGeneration;
+        Path out = LiveDeathClip.localClipPath();
+        SAVER.execute(() -> {
+            Path clip = DeathScreenClip.cut(ffmpeg, ts, out);
+            if (clip != null) mc.execute(() -> LiveDeathClip.offerLocal(clip, gen));
+        });
     }
 
     private static boolean holding() {
