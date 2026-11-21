@@ -222,6 +222,18 @@ class DeathCameraCycleTest {
     }
 
     @Test
+    void changingTheViewNeverReplaysOrEndsTheScene() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true, false, false);
+        int sky = seq.size() - 1;
+        assertFalse(DeathCameraCycle.isViewChange(seq, 0, DeathCameraCycle.previousIndex(seq, 0)),
+            "Left on the first shot would only replay it");
+        assertFalse(DeathCameraCycle.isViewChange(seq, sky - 1, DeathCameraCycle.nextIndex(seq, sky - 1)),
+            "Right into the sky would end the scene");
+        assertTrue(DeathCameraCycle.isViewChange(seq, 0, DeathCameraCycle.nextIndex(seq, 0)));
+        assertTrue(DeathCameraCycle.isViewChange(seq, 1, DeathCameraCycle.previousIndex(seq, 1)));
+    }
+
+    @Test
     void phaseOneBodyShotsRunStraightIntoTheSky() {
         List<DeathShot> held = DeathCameraCycle.buildSequence(false, false, false, true, false, false, false);
         List<DeathShot> looping = DeathCameraCycle.buildSequence(false, false, false, true, false, false, true);

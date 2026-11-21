@@ -157,6 +157,7 @@ public final class DiscordLinkScreen extends Screen {
                 pollInFlight = false;
                 if (mc.screen != this || s == null || !s.ok() || !s.linked()) return;
                 linked = true;
+                DiscordAccountState.onLinked();
                 status = Component.translatable("gui.dungeontrain.credits.link.linked").withStyle(ChatFormatting.GREEN);
                 updateButtons();
             });

@@ -37983,6 +37983,80 @@
       "released": true,
       "released_in": "v0.1932.0",
       "released_at": "2026-11-21T07:24:27Z"
+    },
+    {
+      "id": "advancement-fix-2789",
+      "version": "0.1933.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Fixed an advancement that could be awarded without doing it.",
+      "highlights": [],
+      "pr": 2789,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1938.0",
+      "released_at": "2026-11-21T13:54:14Z"
+    },
+    {
+      "id": "builder-no-preview-2793",
+      "version": "0.1935.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Builder menu fix",
+      "summary": "Loading a very large shared build no longer stops to ask first, and its preview now says \"No preview\" instead of \"Oversized\".",
+      "highlights": [],
+      "pr": 2793,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1938.0",
+      "released_at": "2026-11-21T13:54:14Z"
+    },
+    {
+      "id": "death-cinematic-skip-lock",
+      "version": "0.1935.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Death cinematic plays out",
+      "summary": "Your first death now plays its cinematic all the way through, and every later one gives it a few seconds before you can skip.",
+      "highlights": [
+        "The first death's cinematic can't be skipped",
+        "Skipping waits a few seconds after every death",
+        "Change the view with the arrow keys; movement keys no longer cut the scene"
+      ],
+      "pr": 2791,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1938.0",
+      "released_at": "2026-11-21T13:54:14Z"
+    },
+    {
+      "id": "trash-tooltip-draw-order",
+      "version": "0.1937.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Trash slot tooltip fix",
+      "summary": "The trash slot's tooltip no longer has item durability bars drawn over its text.",
+      "highlights": [],
+      "pr": 2792,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1938.0",
+      "released_at": "2026-11-21T13:54:14Z"
     }
   ]
 }

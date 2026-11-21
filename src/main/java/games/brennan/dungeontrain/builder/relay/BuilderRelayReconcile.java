@@ -287,6 +287,22 @@ public final class BuilderRelayReconcile {
         return new Outcome(restored, failed, remaining);
     }
 
+    /**
+     * The blob a restore uploads for one stored template: the file's cells, without air unless the
+     * kind is a building.
+     *
+     * <p>A restore exists to put back the row a save made, so it has to send what a save sends. Every
+     * kind but a building is uploaded from a world capture, which stores no air, while rooms and
+     * tunnels keep air in their files. Buildings are uploaded from the file itself, interior air
+     * included, and the relay recognises an unmodified one by that exact hash
+     * ({@code BundledFingerprints}), so theirs is left whole. Shared with the title-screen restore
+     * ({@code BuilderReconcileRunner}).</p>
+     */
+    public static CompoundTag snapshotForRestore(BuilderPhotoPaths.Kind kind, CompoundTag template) {
+        CompoundTag snapshot = CarriageSnapshotTemplate.fromTemplateTag(template);
+        return kind == BuilderPhotoPaths.Kind.BUILDING ? snapshot : CarriageSnapshotTemplate.withoutAir(snapshot);
+    }
+
     /** A build turned into the two things a submit carries: its blocks blob and its authored text. */
     private record Upload(String blocks, String text, int l, int h, int w) {}
 
@@ -305,7 +321,7 @@ public final class BuilderRelayReconcile {
                     missing.kind(), missing.subKind(), missing.id(), !missing.onDisk());
             if (found.isEmpty()) return Optional.empty();
 
-            CompoundTag snapshot = CarriageSnapshotTemplate.fromTemplateTag(found.get().tag());
+            CompoundTag snapshot = snapshotForRestore(missing.kind(), found.get().tag());
             int l = snapshot.getInt("l");
             int h = snapshot.getInt("h");
             int w = snapshot.getInt("w");
