@@ -72,7 +72,7 @@ class RoofRunStreaksTest {
         assertFalse(streaks.has(RUNNER));
     }
 
-    /** The reported exploit: a run left in the dying world paid out on the next world's spawn pad. */
+    /** A run left in the dying world does not carry into the next one. */
     @Test
     void aRunFromTheLastWorldDoesNotPayOnTheNextWorldsPad() {
         roof(WORLD_A, 100, 2000);
