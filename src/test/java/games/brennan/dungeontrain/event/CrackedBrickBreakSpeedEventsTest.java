@@ -2,16 +2,27 @@ package games.brennan.dungeontrain.event;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Cracked stone bricks break slightly faster; everything else keeps its speed. */
+/** Every cracked block breaks slightly faster; everything else keeps its speed. */
 final class CrackedBrickBreakSpeedEventsTest {
+
+    /** Each vanilla cracked block paired with its whole sibling. */
+    private static final List<Block[]> CRACKED_AND_WHOLE = List.of(
+        new Block[] {Blocks.CRACKED_STONE_BRICKS, Blocks.STONE_BRICKS},
+        new Block[] {Blocks.CRACKED_DEEPSLATE_BRICKS, Blocks.DEEPSLATE_BRICKS},
+        new Block[] {Blocks.CRACKED_DEEPSLATE_TILES, Blocks.DEEPSLATE_TILES},
+        new Block[] {Blocks.CRACKED_NETHER_BRICKS, Blocks.NETHER_BRICKS},
+        new Block[] {Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS, Blocks.POLISHED_BLACKSTONE_BRICKS});
 
     @BeforeAll
     static void bootstrapMinecraft() {
@@ -20,23 +31,29 @@ final class CrackedBrickBreakSpeedEventsTest {
     }
 
     @Test
-    @DisplayName("cracked stone bricks break faster, but only slightly")
+    @DisplayName("every cracked block breaks faster than its whole sibling, but only slightly")
     void crackedFaster() {
-        float speed = CrackedBrickBreakSpeedEvents.adjustedSpeed(Blocks.CRACKED_STONE_BRICKS.defaultBlockState(), 4.0f);
-        assertTrue(speed > 4.0f && speed <= 5.0f, "got " + speed);
+        for (Block[] pair : CRACKED_AND_WHOLE) {
+            float cracked = CrackedBrickBreakSpeedEvents.adjustedSpeed(pair[0].defaultBlockState(), 4.0f);
+            float whole = CrackedBrickBreakSpeedEvents.adjustedSpeed(pair[1].defaultBlockState(), 4.0f);
+            assertEquals(4.0f, whole, pair[1] + " should be unchanged");
+            assertTrue(cracked > whole && cracked <= 5.0f, pair[0] + " got " + cracked);
+        }
     }
 
     @Test
-    @DisplayName("stone bricks and other blocks are unchanged")
-    void othersUnchanged() {
-        assertEquals(4.0f, CrackedBrickBreakSpeedEvents.adjustedSpeed(Blocks.STONE_BRICKS.defaultBlockState(), 4.0f));
-        assertEquals(4.0f, CrackedBrickBreakSpeedEvents.adjustedSpeed(Blocks.MOSSY_STONE_BRICKS.defaultBlockState(), 4.0f));
-        assertEquals(4.0f, CrackedBrickBreakSpeedEvents.adjustedSpeed(Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState(), 4.0f));
-    }
-
-    @Test
-    @DisplayName("cracked hardness matches stone bricks in vanilla, so the multiplier is the only difference")
+    @DisplayName("vanilla cracked blocks have their whole sibling's hardness, so the multiplier is the only difference")
     void vanillaHardnessEqual() {
-        assertEquals(Blocks.STONE_BRICKS.defaultDestroyTime(), Blocks.CRACKED_STONE_BRICKS.defaultDestroyTime());
+        for (Block[] pair : CRACKED_AND_WHOLE) {
+            assertEquals(pair[1].defaultDestroyTime(), pair[0].defaultDestroyTime(), pair[0].toString());
+        }
+    }
+
+    @Test
+    @DisplayName("non-cracked blocks are unchanged, including infested cracked bricks")
+    void othersUnchanged() {
+        for (Block b : List.of(Blocks.MOSSY_STONE_BRICKS, Blocks.STONE, Blocks.INFESTED_CRACKED_STONE_BRICKS)) {
+            assertEquals(4.0f, CrackedBrickBreakSpeedEvents.adjustedSpeed(b.defaultBlockState(), 4.0f), b.toString());
+        }
     }
 }

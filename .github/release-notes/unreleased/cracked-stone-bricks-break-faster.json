@@ -6,8 +6,8 @@
     "feature",
     "balance"
   ],
-  "title": "Cracked stone bricks break faster",
-  "summary": "Cracked stone bricks now break a little faster than whole stone bricks.",
+  "title": "Cracked blocks break faster",
+  "summary": "Cracked blocks, like cracked stone bricks and cracked nether bricks, now break a little faster than their whole versions.",
   "highlights": [],
   "pr": 2782,
   "date": "2026-11-21",
