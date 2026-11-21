@@ -16,7 +16,11 @@ spec = importlib.util.spec_from_file_location(
 preview = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(preview)
 
-PAGE = f"const SOURCES = {{\n    {preview.CHANGELOG_SOURCE}\n}};\n{preview.NEWEST_SOURCE}\n"
+PAGE = (
+    f"const SOURCES = {{\n    {preview.CHANGELOG_SOURCE}\n}};\n{preview.NEWEST_SOURCE}\n"
+    f"function safeHttpsUrl(text) {{\n  try {{\n      {preview.HTTPS_ONLY_SOURCE}\n  }} catch (_) {{}}\n}}\n"
+)
+IMAGES = preview.IMAGES_URL
 
 
 class PatchPage(unittest.TestCase):
@@ -25,9 +29,10 @@ class PatchPage(unittest.TestCase):
         self.assertIn(preview.LOCAL_CHANGELOG, patched)
         self.assertNotIn("raw.githubusercontent.com", patched)
         self.assertIn("const newest = newestReleased(changelog);", patched)
+        self.assertIn(preview.HTTPS_OR_PREVIEW, patched)
 
     def test_a_changed_page_stops_the_preview(self):
-        for needle in (preview.CHANGELOG_SOURCE, preview.NEWEST_SOURCE):
+        for needle in (preview.CHANGELOG_SOURCE, preview.NEWEST_SOURCE, preview.HTTPS_ONLY_SOURCE):
             with self.assertRaises(ValueError):
                 preview.patch_update_js(PAGE.replace(needle, ""))
 
@@ -42,6 +47,20 @@ class LocalChangelog(unittest.TestCase):
         self.assertEqual(result["entries"][0]["released_in"], "v1.0.0")
         self.assertEqual(result["entries"][1]["released_in"], "v2.0.0")
         self.assertFalse(new["released"], "the loaded data must not change")
+
+
+class LocalMedia(unittest.TestCase):
+    def test_points_pictures_at_this_checkouts_copies(self):
+        entry = {"id": "a", "image": IMAGES + "a.gif", "loop": IMAGES + "a.loop.mp4", "video": IMAGES + "gone.mp4"}
+        [out] = preview.local_media([entry], {"a.gif", "a.loop.mp4"})
+        self.assertEqual(out["image"], preview.LOCAL_IMAGES + "a.gif")
+        self.assertEqual(out["loop"], preview.LOCAL_IMAGES + "a.loop.mp4")
+        self.assertEqual(out["video"], IMAGES + "gone.mp4", "a file this checkout lacks keeps its URL")
+        self.assertEqual(entry["image"], IMAGES + "a.gif", "the loaded entry must not change")
+
+    def test_other_hosts_and_missing_fields_untouched(self):
+        entry = {"id": "b", "image": "https://example.com/b.png"}
+        self.assertEqual(preview.local_media([entry], {"b.png"}), [entry])
 
 
 class NotesPage(unittest.TestCase):
