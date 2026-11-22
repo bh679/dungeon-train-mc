@@ -172,8 +172,7 @@ public final class TributeRoomVisitService {
             PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
             return null;
         }
-        TributeRoomCamera.Pose pose = TributeRoomCamera.facing(screen, facing, roomOrigin.getY() + 1);
-        pose = standable(overworld, pose, room);
+        TributeRoomCamera.Pose pose = arrivalPose(overworld, room, screen, facing);
         powerOn(overworld, screen);
         TributeRoomVisitTickets.hold(overworld, window, dead.serverLevel(), dead.position(), dead.getUUID());
         return new Prepared(slot, dead.level().dimension(), dead.position(), structure, window, room, List.copyOf(screen),
@@ -396,6 +395,22 @@ public final class TributeRoomVisitService {
             if (state.hasProperty(HorizontalDirectionalBlock.FACING)) facing = state.getValue(HorizontalDirectionalBlock.FACING);
         }
         return facing;
+    }
+
+    /**
+     * Where a visitor to the tribute room in {@code room} arrives: on the red carpet before its TV,
+     * looking at the screen — or null when the room has no TV. The death visit and the editor's test of
+     * the room both stand people here.
+     */
+    @Nullable
+    public static TributeRoomCamera.Pose arrivalPose(ServerLevel level, BoundingBox room) {
+        List<BlockPos> screen = new ArrayList<>();
+        Direction facing = screenBlocks(level, room, screen);
+        return screen.isEmpty() ? null : arrivalPose(level, room, screen, facing);
+    }
+
+    private static TributeRoomCamera.Pose arrivalPose(ServerLevel level, BoundingBox room, List<BlockPos> screen, Direction facing) {
+        return standable(level, TributeRoomCamera.facing(screen, facing, room.minY() + 1), room);
     }
 
     public static BoundingBox boxOf(List<BlockPos> blocks) {
