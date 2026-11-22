@@ -1,0 +1,18 @@
+{
+  "id": "camera-backpack-rarer",
+  "version": "0.1949.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Cameras and backpacks are a little rarer",
+  "summary": "Instant cameras and edible backpacks now turn up about a fifth less often in chests, pots, vases and vaults.",
+  "highlights": [],
+  "pr": 2805,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

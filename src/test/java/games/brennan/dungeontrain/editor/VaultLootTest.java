@@ -236,7 +236,7 @@ final class VaultLootTest {
         ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
         assertEquals(2, ominous.fillMin());
         assertEquals(4, ominous.fillMax());
-        assertEquals(2344, ominous.totalWeight()); // 2345 less the Mirror (weight 1), removed 2026-11-12
+        assertEquals(2281, ominous.totalWeight()); // 2345 less the Mirror (weight 1, 2026-11-12), less 63 from the camera/backpack cut (2026-11-22)
         assertEquals(0.004, expectedPerUnlock(ominous, "heavy_core"), 0.0005);
 
         Set<ResourceLocation> removed = Set.of(
@@ -275,7 +275,7 @@ final class VaultLootTest {
     @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
     void greenVaultRaritiesKeepTheirOdds() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
-        assertEquals(13687, green.totalWeight());
+        assertEquals(13492, green.totalWeight()); // 13687 less 195 from the 2026-11-22 camera/backpack cut
         assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
         assertEquals(20, entry(green, "minecraft", "mace").weight());
         assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))
@@ -294,7 +294,7 @@ final class VaultLootTest {
             ResourceLocation.fromNamespaceAndPath("vista", "mirror"));
         assertTrue(green.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
         assertEquals(entry(green, "minecraft", "crossbow").weight(), entry(green, "minecraft", "bow").weight());
-        assertEquals(195, entry(green, "exposure_polaroid", "instant_camera").weight());
+        assertEquals(154, entry(green, "exposure_polaroid", "instant_camera").weight()); // 195 until the 2026-11-22 cut
         ContainerContentsEntry gapples = entry(green, "minecraft", "enchanted_golden_apple");
         assertEquals(10, gapples.minCount());
         assertEquals(20, gapples.count());
