@@ -1257,10 +1257,9 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
      * <p>Where the cell does not apply it is skipped at stamp time, so the block the room's own
      * template laid stands there instead — see {@link VariantCopyScope}.</p>
      *
-     * <p><b>The lock group is left alone</b>, which is the opposite of what
-     * {@link #toggleRerollPerCopy} does, and deliberately: a group exists so its cells draw the
-     * same index, and that promise is about the roll, not about where the cells are. A group whose
-     * members live in different tiles still agrees with itself in every tile any of them is in.</p>
+     * <p><b>A lock group moves as one</b>, as it does for {@link #cycleCopyRoll}: the setting
+     * belongs to the group, the cell is only where it is stored. Setting any member sets the
+     * group, so a grouped block never stands in the copies at one cell and not at its sibling.</p>
      */
     private static void cycleCopyScope(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (!plot.supportsCopySettings()) {
@@ -1274,6 +1273,12 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantCopyScope next = plot.copyScopeAt(localPos).next();
         plot.setCopyScope(localPos, next);
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId > 0) {
+            for (BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (!sibling.equals(localPos)) plot.setCopyScope(sibling, next);
+            }
+        }
         try {
             plot.save();
         } catch (IOException e) {
