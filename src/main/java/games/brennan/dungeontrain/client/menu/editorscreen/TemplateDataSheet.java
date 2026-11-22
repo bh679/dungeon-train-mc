@@ -190,11 +190,11 @@ public final class TemplateDataSheet {
         out.add(lightsLine(summary, pending));
         out.add(lootLine(summary, pending));
         out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
-        // Dates before Stage: a seasonal build that never shows up out of season is the surprise
-        // worth seeing first, and the sheet drops whatever runs past the pane's height.
+        out.addAll(stageLines(v, key, pending));
+        // After Stage: the sheet drops whatever runs past the pane's height, and the settings page
+        // carries a Dates button too, so on a short pane this is the line to lose.
         Line dates = datesLine(v, key);
         if (dates != null) out.add(dates);
-        out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         // A labelled build is drawn under its label everywhere else on this screen; the id is what
         // every command and file is named by, so the sheet still shows it — but last. The sheet
