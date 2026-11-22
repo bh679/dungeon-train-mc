@@ -5541,6 +5541,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s przeciw nieumarłym",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s przeciw stawonogom",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s przeciw stworzeniom wodnym",
+  "tooltip.dungeontrain.perk_damage": "+%s z perków",
   "tooltip.dungeontrain.provenance.found_by": "Znalezione przez %s",
   "tooltip.dungeontrain.provenance.made_by": "Wytworzone przez %s",
   "tooltip.dungeontrain.provenance.bought_by": "Kupione przez %s",

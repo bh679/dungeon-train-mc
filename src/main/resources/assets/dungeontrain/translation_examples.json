@@ -18288,6 +18288,15 @@
       ]
     }
   },
+  "tooltip.dungeontrain.perk_damage": {
+    "1": {
+      "label": "the extra attack damage the player's perks add to every hit",
+      "examples": [
+        "0.1",
+        "1.5"
+      ]
+    }
+  },
   "tooltip.dungeontrain.enchant_damage.aquatic": {
     "1": {
       "label": "the extra attack damage a weapon's enchantment adds against these mobs",
