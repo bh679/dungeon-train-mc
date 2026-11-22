@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,7 +21,9 @@ import java.util.List;
  * streams on the dev cap, which only the website's livedev page plays.
  *
  * <p>Only platforms the push really reaches today are listed. Facebook, TikTok and Instagram join once
- * they can go live (follower gates, per-stream keys).</p>
+ * they can go live (follower gates, per-stream keys). A platform the relay says is paused right now
+ * ({@link LiveFeedClient.Outputs}, the claim reply's {@code outputs}) is left out, so nobody is sent to a
+ * dead channel; an older relay that says nothing leaves them all in.</p>
  */
 final class LiveWatchLinks {
 
@@ -46,31 +49,42 @@ final class LiveWatchLinks {
 
     /** The logos for this build, in the order they are shown. */
     static List<Destination> destinations(String branch) {
+        return destinations(branch, LiveFeedClient.Outputs.NONE_PAUSED);
+    }
+
+    /** The logos for this build, without the platforms {@code outputs} says are paused. The website always stays. */
+    static List<Destination> destinations(String branch, LiveFeedClient.Outputs outputs) {
         Destination tv = new Destination(LiveChatRules.Icon.DUNGEON_TRAIN, "chat.dungeontrain.live.link.tv", tvUrlForBranch(branch));
         if (!isLiveCap(branch)) return List.of(tv);
-        return List.of(
-            tv,
-            new Destination(LiveChatRules.Icon.TWITCH, "chat.dungeontrain.live.link.twitch", TWITCH_URL),
-            new Destination(LiveChatRules.Icon.YOUTUBE, "chat.dungeontrain.live.link.youtube", YOUTUBE_URL),
-            new Destination(LiveChatRules.Icon.KICK, "chat.dungeontrain.live.link.kick", KICK_URL));
+        List<Destination> out = new ArrayList<>();
+        out.add(tv);
+        if (!outputs.twitchPaused()) out.add(new Destination(LiveChatRules.Icon.TWITCH, "chat.dungeontrain.live.link.twitch", TWITCH_URL));
+        if (!outputs.youtubePaused()) out.add(new Destination(LiveChatRules.Icon.YOUTUBE, "chat.dungeontrain.live.link.youtube", YOUTUBE_URL));
+        if (!outputs.kickPaused()) out.add(new Destination(LiveChatRules.Icon.KICK, "chat.dungeontrain.live.link.kick", KICK_URL));
+        return List.copyOf(out);
     }
 
     /** The line for this build. */
     static Component line() {
-        return line(null);
+        return line(VersionInfo.BRANCH, null, LiveFeedClient.Outputs.NONE_PAUSED);
     }
 
     /**
-     * The line for this build; with the streamer's own channel ({@code own}, their linked Twitch, when
-     * they opted in to the restream) it ends "…and on your channel [twitch.tv/x]".
+     * The line for this stream's claim: its paused platforms left out, and, with the streamer's own channel
+     * (their linked Twitch, when they opted in to the restream and the restream is running) it ends
+     * "…and on your channel [twitch.tv/x]".
      */
-    static Component line(@Nullable LiveFeedClient.Twitch own) {
-        return line(VersionInfo.BRANCH, own);
+    static Component line(@Nullable LiveFeedClient.Claim claim) {
+        return claim == null ? line() : line(VersionInfo.BRANCH, claim.twitch(), claim.outputs());
     }
 
     static Component line(String branch, @Nullable LiveFeedClient.Twitch own) {
-        MutableComponent row = iconRow(destinations(branch));
-        MutableComponent line = own != null && own.restream()
+        return line(branch, own, LiveFeedClient.Outputs.NONE_PAUSED);
+    }
+
+    static Component line(String branch, @Nullable LiveFeedClient.Twitch own, LiveFeedClient.Outputs outputs) {
+        MutableComponent row = iconRow(destinations(branch, outputs));
+        MutableComponent line = own != null && own.restream() && !outputs.restreamPaused()
             ? Component.translatable("chat.dungeontrain.live.watch_link_own", row, ownLink(own))
             : Component.translatable("chat.dungeontrain.live.watch_link", row);
         return line.withStyle(ChatFormatting.GREEN);

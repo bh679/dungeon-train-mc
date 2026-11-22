@@ -53,6 +53,25 @@ class LiveWatchLinksTest {
     }
 
     @Test
+    void pausedPlatformsAreLeftOutAndTheWebsiteStays() {
+        LiveFeedClient.Outputs allPaused = new LiveFeedClient.Outputs(true, true, true, true);
+        assertEquals(List.of(LiveChatRules.Icon.DUNGEON_TRAIN),
+            LiveWatchLinks.destinations("main", allPaused).stream().map(LiveWatchLinks.Destination::icon).toList());
+        LiveFeedClient.Outputs youtubeOff = new LiveFeedClient.Outputs(false, true, false, false);
+        assertEquals(List.of(LiveChatRules.Icon.DUNGEON_TRAIN, LiveChatRules.Icon.TWITCH, LiveChatRules.Icon.KICK),
+            LiveWatchLinks.destinations("main", youtubeOff).stream().map(LiveWatchLinks.Destination::icon).toList());
+        assertEquals(LiveWatchLinks.destinations("main"), LiveWatchLinks.destinations("main", LiveFeedClient.Outputs.NONE_PAUSED));
+    }
+
+    @Test
+    void aPausedRestreamNeverPromisesTheStreamersOwnChannel() {
+        LiveFeedClient.Twitch on = new LiveFeedClient.Twitch("pat_1", "https://twitch.tv/pat_1", true, false);
+        LiveFeedClient.Outputs restreamOff = new LiveFeedClient.Outputs(false, false, false, true);
+        assertEquals("chat.dungeontrain.live.watch_link", key(LiveWatchLinks.line("main", on, restreamOff)));
+        assertEquals("chat.dungeontrain.live.watch_link_own", key(LiveWatchLinks.line("main", on, LiveFeedClient.Outputs.NONE_PAUSED)));
+    }
+
+    @Test
     void devBuildShowsOnlyTheDevPage() {
         assertEquals(List.of(new LiveWatchLinks.Destination(LiveChatRules.Icon.DUNGEON_TRAIN, "chat.dungeontrain.live.link.tv", LiveWatchLinks.DEV_TV_URL)),
             LiveWatchLinks.destinations("dev/x"));

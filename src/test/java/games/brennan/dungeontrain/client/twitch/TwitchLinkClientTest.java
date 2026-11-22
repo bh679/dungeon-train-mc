@@ -59,4 +59,13 @@ class TwitchLinkClientTest {
         assertEquals("{\"uuid\":\"abc\"}", TwitchLinkClient.payload("abc").toString());
         assertEquals("{\"uuid\":\"\"}", TwitchLinkClient.payload(null).toString());
     }
+
+    @Test
+    void restreamPausedIsReadAndDefaultsOff() {
+        Status paused = TwitchLinkClient.parseStatus(200,
+            "{\"ok\":true,\"linked\":true,\"verified\":true,\"login\":\"pat_1\",\"display\":\"Pat\",\"restream\":true,\"restreamPaused\":true}");
+        assertEquals(new Status(true, true, true, "pat_1", "Pat", true, false, true, Error.NONE), paused, "the opt-in is kept while paused");
+        Status old = TwitchLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"verified\":true,\"login\":\"pat_1\",\"display\":\"Pat\",\"restream\":true}");
+        assertEquals(false, old.restreamPaused(), "an older relay says nothing");
+    }
 }

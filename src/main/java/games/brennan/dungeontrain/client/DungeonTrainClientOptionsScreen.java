@@ -627,8 +627,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         String restreamKey = "gui.dungeontrain.options.account.twitch.restream";
         CycleButton<Boolean> restream = onOff(Component.translatable(restreamKey), status.restream(), on -> TwitchAccountState.setRestream(on, this::rebuildIfShown));
         restream.active = verified;
+        // Paused for everyone on the relay (transfer costs): the opt-in still saves, the hint says why nothing is sent.
         list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable(restreamKey),
-                Component.translatable(restreamKey + ".hint"), restream,
+                Component.translatable(restreamKey + (status.restreamPaused() ? ".paused" : ".hint")), restream,
                 verified ? Component.translatable(restreamKey + ".tip") : verifyTip);
         String titleKey = "gui.dungeontrain.options.account.twitch.set_title";
         CycleButton<Boolean> title = onOff(Component.translatable(titleKey), status.setTitle(),

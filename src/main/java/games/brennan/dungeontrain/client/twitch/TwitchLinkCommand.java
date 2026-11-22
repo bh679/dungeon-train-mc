@@ -230,6 +230,9 @@ public final class TwitchLinkCommand {
         MutableComponent out = Component.translatable("chat.dungeontrain.twitch.linked", channelLink(s.login())).withStyle(ChatFormatting.GREEN);
         out.append("\n").append(Component.translatable(s.restream() ? "chat.dungeontrain.twitch.restream_on" : "chat.dungeontrain.twitch.restream_off",
                 command(COMMAND + (s.restream() ? " restream off" : " restream on"))).withStyle(ChatFormatting.GRAY));
+        if (s.restreamPaused()) {
+            out.append("\n").append(Component.translatable("chat.dungeontrain.twitch.restream_paused").withStyle(ChatFormatting.GRAY));
+        }
         out.append("\n").append(Component.translatable(s.setTitle() ? "chat.dungeontrain.twitch.title_on" : "chat.dungeontrain.twitch.title_off",
                 command(COMMAND + (s.setTitle() ? " title off" : " title on"))).withStyle(ChatFormatting.GRAY));
         out.append("\n").append(Component.translatable("chat.dungeontrain.twitch.options_hint", command(COMMAND + " unlink")).withStyle(ChatFormatting.GRAY));

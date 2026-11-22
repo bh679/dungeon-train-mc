@@ -503,7 +503,7 @@ public final class LiveStreamController {
             int shown = Math.max(0, viewers);
             announcedLive = true;
             bands.start(shown);
-            say(LiveWatchLinks.line(claim == null ? null : claim.twitch()));
+            say(LiveWatchLinks.line(claim));
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
                 .withStyle(ChatFormatting.GREEN));
             Component mic = LiveMicHint.line(audio != null);

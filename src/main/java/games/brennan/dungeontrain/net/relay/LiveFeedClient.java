@@ -78,6 +78,28 @@ public final class LiveFeedClient {
     public record Twitch(String login, String url, boolean restream, boolean setTitle) {}
 
     /**
+     * Which of the relay's re-sends of the stream are paused right now ({@code outputs} on a claim reply,
+     * relay stream-outputs.js): DT's Twitch, YouTube and Kick, and the restream onto a streamer's own
+     * channel. Only an explicit {@code "paused"} pauses one; a relay that says nothing (older) pauses
+     * nothing, so links show as they always have.
+     */
+    public record Outputs(boolean twitchPaused, boolean youtubePaused, boolean kickPaused, boolean restreamPaused) {
+        public static final Outputs NONE_PAUSED = new Outputs(false, false, false, false);
+    }
+
+    /** The {@code outputs} object of a claim reply, or {@link Outputs#NONE_PAUSED} when absent or malformed. */
+    static Outputs parseOutputs(@Nullable JsonObject body) {
+        if (body == null || !body.has("outputs") || !body.get("outputs").isJsonObject()) return Outputs.NONE_PAUSED;
+        JsonObject o = body.getAsJsonObject("outputs");
+        return new Outputs(paused(o, "twitch"), paused(o, "youtube"), paused(o, "kick"), paused(o, "restream"));
+    }
+
+    private static boolean paused(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() && o.getAsJsonPrimitive(key).isString()
+            && "paused".equals(o.get(key).getAsString());
+    }
+
+    /**
      * What a claim gives the streamer. {@code twitch} is null when they have not linked a channel.
      * {@code segmentSeconds}/{@code listSize}/{@code keyframeSeconds}: the stream's HLS cadence when the
      * relay sets one (3 s segments, a 20-entry window and 3 s keyframes while the server's Quicker Streams
@@ -85,9 +107,14 @@ public final class LiveFeedClient {
      * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
      */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
-                        int segmentSeconds, int listSize, int keyframeSeconds, String channel) {
+                        int segmentSeconds, int listSize, int keyframeSeconds, String channel, Outputs outputs) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
             this(session, token, playlistUrl, prevName, null, 0, 0, 0, CHANNEL_MAIN);
+        }
+
+        public Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                     int segmentSeconds, int listSize, int keyframeSeconds, String channel) {
+            this(session, token, playlistUrl, prevName, twitch, segmentSeconds, listSize, keyframeSeconds, channel, Outputs.NONE_PAUSED);
         }
 
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
@@ -97,6 +124,7 @@ public final class LiveFeedClient {
 
         public Claim {
             channel = CHANNEL_SECOND.equals(channel) ? CHANNEL_SECOND : CHANNEL_MAIN;
+            outputs = outputs == null ? Outputs.NONE_PAUSED : outputs;
         }
 
         /** This stream went out on the second channel (the Two Streams reward), alongside another streamer. */
@@ -738,7 +766,8 @@ public final class LiveFeedClient {
         int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
         int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
         int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe, r.str("channel"));
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe, r.str("channel"),
+            parseOutputs(r.body()));
     }
 
     /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
