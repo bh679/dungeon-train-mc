@@ -60,8 +60,29 @@ final class DatePeriodDebugCommand {
                 src.sendSuccess(() -> Component.literal((on ? "* " : "  ") + p.id() + ": " + when)
                     .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
             }
+            reportSeasonalRooms(src);
             return DatePeriods.all().size();
         });
+    }
+
+    /**
+     * Every dated portal room with its share of the live room draw at level 0 in the overworld, as
+     * {@code PortalCarriageBuilder} would draw it. 0% outside its periods is the gate working.
+     */
+    private static void reportSeasonalRooms(CommandSourceStack src) {
+        var kind = games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM;
+        var ctx = new games.brennan.dungeontrain.template.GateContext(0,
+            games.brennan.dungeontrain.worldgen.TrainPhase.OVERWORLD);
+        java.util.Map<String, Double> odds = games.brennan.dungeontrain.track.variant.TrackVariantRegistry.leafOdds(kind, ctx);
+        for (String name : games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(kind)) {
+            var gate = games.brennan.dungeontrain.track.variant.TrackVariantWeights.gateFor(kind, name);
+            if (!gate.isSeasonal()) continue;
+            double share = odds.getOrDefault(name, 0.0) * 100.0;
+            String line = String.format(java.util.Locale.ROOT, "room %s %s: %.2f%% of the room draw",
+                name, gate.periods(), share);
+            src.sendSuccess(() -> Component.literal(line)
+                .withStyle(share > 0 ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
+        }
     }
 
     private static int report(CommandSourceStack src) {
