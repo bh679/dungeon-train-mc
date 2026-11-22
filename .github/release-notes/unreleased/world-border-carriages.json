@@ -1,0 +1,20 @@
+{
+  "id": "world-border-carriages",
+  "version": "0.1960.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "World Border carriages",
+  "summary": "Some dimensional carriages are now edged by a shimmering world border. Step through it and it turns red, and the space beyond is yours to build in.",
+  "highlights": [
+    "New World Border walls option for dimensional carriages in the editor"
+  ],
+  "pr": 2818,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

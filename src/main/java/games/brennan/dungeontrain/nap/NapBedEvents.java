@@ -110,7 +110,7 @@ public final class NapBedEvents {
     /**
      * A Respawn Obelisk clicked in survival, decided here on the server before DT's disabled-block veto
      * (which lets obelisks through so the click reaches the server). A natural one explodes outside an
-     * End core. In one, and only on the train, it offers a nap (or says monsters are nearby) once it holds
+     * End core or the End band (its crumbling strip included). In one, and only on the train, it offers a nap (or says monsters are nearby) once it holds
      * {@value RespawnObeliskGems#MAX} Amber Gems ({@link RespawnObeliskGems}); until then a click with
      * Amber Gems puts them in, and any other click says how many more it needs. It never sets a spawn
      * point, so the click is always consumed: what isn't a nap or an explosion stays as blocked as before.

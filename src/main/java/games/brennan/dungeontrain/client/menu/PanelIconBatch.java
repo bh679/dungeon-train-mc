@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -39,9 +40,15 @@ public final class PanelIconBatch {
     private static final float VANILLA_ICON_PX = 16.0f;
 
     /** One recorded icon, already in screen pixels. */
-    private record Icon(ItemStack stack, float screenX, float screenY, float sizePx) {}
+    private record Icon(ItemStack stack, BlockState block, float screenX, float screenY, float sizePx) {}
 
     private final List<Icon> icons = new ArrayList<>();
+
+    /** Record a {@link BlockStateIcon} (a turned block) centred on {@code (localX, localY)}. */
+    public void addBlock(PoseStack ps, BlockState block, double localX, double localY, double sizeUnits) {
+        if (block == null) return;
+        record(ps, ItemStack.EMPTY, block, localX, localY, sizeUnits);
+    }
 
     /**
      * Record an icon centred on {@code (localX, localY)} in panel-local units.
@@ -54,17 +61,26 @@ public final class PanelIconBatch {
      */
     public void add(PoseStack ps, ItemStack stack, double localX, double localY, double sizeUnits) {
         if (stack == null || stack.isEmpty()) return;
+        record(ps, stack, null, localX, localY, sizeUnits);
+    }
+
+    private void record(PoseStack ps, ItemStack stack, BlockState block,
+                        double localX, double localY, double sizeUnits) {
         Matrix4f pose = ps.last().pose();
         Vector3f at = pose.transformPosition(new Vector3f((float) localX, (float) localY, 0.0f));
         // m00 is the pose's horizontal scale. The panel transform is a translate and a scale with
         // no rotation, so this is the units-to-pixels factor the icon should be sized by.
         float pxPerUnit = Math.abs(pose.m00());
-        icons.add(new Icon(stack, at.x, at.y, (float) sizeUnits * pxPerUnit));
+        icons.add(new Icon(stack, block, at.x, at.y, (float) sizeUnits * pxPerUnit));
     }
 
     /** Draw everything recorded, then empty the batch ready for the next frame. */
     public void render(GuiGraphics gg) {
         for (Icon icon : icons) {
+            if (icon.block() != null) {
+                BlockStateIcon.drawGui(gg, icon.block(), icon.screenX(), icon.screenY(), icon.sizePx());
+                continue;
+            }
             float scale = icon.sizePx() / VANILLA_ICON_PX;
             gg.pose().pushPose();
             gg.pose().translate(icon.screenX(), icon.screenY(), 0.0f);

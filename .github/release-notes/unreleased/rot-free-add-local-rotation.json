@@ -1,0 +1,19 @@
+{
+  "id": "rot-free-add-local-rotation",
+  "version": "0.1957.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor"
+  ],
+  "title": "Editor: new blocks keep each cell's own rotation",
+  "summary": "In a block variant group with free rotation, a block you add now faces the same way as the blocks already in each cell, instead of copying the cell you clicked.",
+  "highlights": [
+    "Stairs follow that cell's stairs, slabs its slabs, and anything else the most recent block's facing"
+  ],
+  "pr": 2814,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

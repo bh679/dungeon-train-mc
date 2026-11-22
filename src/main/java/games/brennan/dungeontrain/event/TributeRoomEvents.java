@@ -22,7 +22,6 @@ public final class TributeRoomEvents {
 
     private TributeRoomEvents() {}
 
-    /** After every other handler has had its say on the drops, so the kit is what really fell. */
     /**
      * Dying inside the visit is not a death: the player is already dead for the run, and a second one
      * would open a second recap over the first. They are healed and stood back in front of the TV.
@@ -45,6 +44,19 @@ public final class TributeRoomEvents {
         }
     }
 
+    /**
+     * Where everything was carried, while the inventory is still whole: the drops that follow have lost
+     * it, and the kit is handed back in the same slots ({@link TributeRoomDeathKit#rememberLayout}).
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingDeathLayout(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.isCanceled()) return;
+        if (player.getServer() != null && player.getServer().isHardcore()) return;
+        if (TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
+        TributeRoomDeathKit.rememberLayout(player.getUUID(), player.getInventory());
+    }
+
+    /** After every other handler has had its say on the drops, so the kit is what really fell. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDrops(LivingDropsEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || event.isCanceled()) return;

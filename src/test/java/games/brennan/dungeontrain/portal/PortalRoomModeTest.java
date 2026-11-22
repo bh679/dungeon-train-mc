@@ -84,11 +84,27 @@ final class PortalRoomModeTest {
     }
 
     @Test
-    @DisplayName("clearing the surroundings is Void alone — no other mode writes or sweeps a boundary")
-    void onlyVoidClears() {
+    @DisplayName("clearing the surroundings is Void and World Border — no other mode sweeps a boundary")
+    void onlyVoidAndWorldBorderClear() {
         for (PortalRoomMode m : PortalRoomMode.values()) {
-            assertEquals(m == PortalRoomMode.VOID, m.clearsSurroundings(), m.id());
+            boolean expected = m == PortalRoomMode.VOID || m == PortalRoomMode.WORLD_BORDER;
+            assertEquals(expected, m.clearsSurroundings(), m.id());
         }
+    }
+
+    @Test
+    @DisplayName("World Border alone draws a border, and otherwise behaves as Void")
+    void worldBorderDrawsBorderAndBehavesAsVoid() {
+        assertSame(PortalRoomMode.WORLD_BORDER, PortalRoomMode.parse("world_border"));
+        for (PortalRoomMode m : PortalRoomMode.values()) {
+            assertEquals(m == PortalRoomMode.WORLD_BORDER, m.drawsBorder(), m.id());
+        }
+        PortalRoomMode b = PortalRoomMode.WORLD_BORDER;
+        assertTrue(b.fogs());
+        assertFalse(b.tiles());
+        assertFalse(b.sealsRoomBox());
+        assertFalse(b.sealsCorridors());
+        assertFalse(b.generatesTerrain());
     }
 
     @Test
@@ -144,7 +160,9 @@ final class PortalRoomModeTest {
         assertTrue(PortalRoomMode.VOID.fogs());
         // A chunk dimension is one sealed box with nothing beyond it — no edge, nothing to hide.
         assertFalse(PortalRoomMode.CHUNK_DIMENSION.fogs());
-        assertEquals(5, PortalRoomMode.values().length,
+        // Void with a drawn edge: the same clearance, the same edge worth hiding.
+        assertTrue(PortalRoomMode.WORLD_BORDER.fogs());
+        assertEquals(6, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it fogs — add it to this test");
     }
 
@@ -163,7 +181,8 @@ final class PortalRoomModeTest {
         assertFalse(PortalRoomMode.VOID.copiesApply());
         // A chunk dimension appends nothing: its terrain is one sample, sliced once.
         assertFalse(PortalRoomMode.CHUNK_DIMENSION.copiesApply());
-        assertEquals(5, PortalRoomMode.values().length,
+        assertFalse(PortalRoomMode.WORLD_BORDER.copiesApply());
+        assertEquals(6, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it takes a Copies setting — add it to this test");
     }
 
@@ -183,7 +202,9 @@ final class PortalRoomModeTest {
         // hillside has no walls, so the skin is the only thing between a player and the basement.
         assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsCorridors());
         assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsRoomBox());
-        assertEquals(5, PortalRoomMode.values().length,
+        // Its edge is a picture a player walks through, so nothing is sealed.
+        assertFalse(PortalRoomMode.WORLD_BORDER.sealsCorridors());
+        assertEquals(6, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it seals its corridors — add it to this test");
     }
 

@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "203";
+    public static final String PROTOCOL_VERSION = "204";
 
     private DungeonTrainNet() {}
 
@@ -111,6 +111,9 @@ public final class DungeonTrainNet {
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
         registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        // A World Border room's walls, as a box: the client draws the border on them and decides
+        // red or blue from the player each frame. See client/PortalRoomBorderRenderer.
+        registrar.playToClient(PortalRoomBorderPacket.TYPE, PortalRoomBorderPacket.STREAM_CODEC, PortalRoomBorderPacket::handle);
         // …and the same region trick again for the lightmap: a room whose template asked to be lit as
         // though it stood outdoors is named to the client as a box, and the client lifts its own
         // lightmap inside it. See client/ClientPortalRoomSky.

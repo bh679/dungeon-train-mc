@@ -457,8 +457,9 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 // cell and join the group); only Add reads the clipboard as a
                 // reference.
                 if (held.getItem() instanceof VariantClipboardItem) {
-                    int refGroup = VariantClipboardItem.decodeLockId(
-                        VariantClipboardItem.readClipboardTag(held));
+                    CompoundTag clipTag = VariantClipboardItem.readClipboardTag(held);
+                    int refGroup = VariantClipboardItem.decodeLockId(clipTag);
+                    VariantRotation refRotation = VariantClipboardItem.decodeRefRotation(clipTag);
                     if (refGroup <= 0) {
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.clipboard_unlocked_source"),
                             ChatFormatting.YELLOW);
@@ -480,10 +481,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.group_would_loop", refGroup, cellLock), ChatFormatting.YELLOW);
                         return;
                     }
+                    VariantState newRef = VariantState.ofGroupRef(refGroup, targetStates, refRotation);
                     for (VariantState existing : mutated) {
-                        if (existing.groupRef() == refGroup) {
-                            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cell_already_references_group", refGroup),
-                                ChatFormatting.YELLOW);
+                        if (GroupRefFacing.sameRef(existing, newRef)) {
+                            actionBar(player, alreadyReferences(newRef), ChatFormatting.YELLOW);
                             return;
                         }
                     }
@@ -504,7 +505,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                     // path always follows the reference instead.
                     // The reference also carries a copy of the group's options, so
                     // the group outlives its last cell in this template.
-                    mutated.add(VariantState.ofGroupRef(refGroup, targetStates));
+                    mutated.add(newRef);
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.added_group_reference", refGroup), ChatFormatting.GREEN);
                     dirty = true;
                     break;
@@ -654,6 +655,12 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantState newVariant = withNewRowDefaults(HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
                     .withPainting(addedPainting), localPos, plot.footprint()));
+                // Rot Free: the cell owns its rows' orientation, so the new row takes it from the
+                // same block, then the most similar block type, then the most recent facing — the
+                // rule every sibling applies to it too (VariantRowOrientation.keepOwnOrientation).
+                if (plot.lockIdAt(localPos) > 0 && plot.rotationFreeAt(localPos)) {
+                    newVariant = orientedToCell(newVariant, mutated);
+                }
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -1251,10 +1258,9 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
      * <p>Where the cell does not apply it is skipped at stamp time, so the block the room's own
      * template laid stands there instead — see {@link VariantCopyScope}.</p>
      *
-     * <p><b>The lock group is left alone</b>, which is the opposite of what
-     * {@link #toggleRerollPerCopy} does, and deliberately: a group exists so its cells draw the
-     * same index, and that promise is about the roll, not about where the cells are. A group whose
-     * members live in different tiles still agrees with itself in every tile any of them is in.</p>
+     * <p><b>A lock group moves as one</b>, as it does for {@link #cycleCopyRoll}: the setting
+     * belongs to the group, the cell is only where it is stored. Setting any member sets the
+     * group, so a grouped block never stands in the copies at one cell and not at its sibling.</p>
      */
     private static void cycleCopyScope(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (!plot.supportsCopySettings()) {
@@ -1268,6 +1274,12 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantCopyScope next = plot.copyScopeAt(localPos).next();
         plot.setCopyScope(localPos, next);
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId > 0) {
+            for (BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (!sibling.equals(localPos)) plot.setCopyScope(sibling, next);
+            }
+        }
         try {
             plot.save();
         } catch (IOException e) {
@@ -1463,8 +1475,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         // The group's Rot Lock / Rot Free travels with it, so a group rebuilt from this copy faces
         // the way the original did.
         boolean rotationFree = plot.positionsWithLockId(group).stream().anyMatch(plot::rotationFreeAt);
-        VariantClipboardItem.writeClipboardTag(stack, VariantClipboardItem.withRotationFree(
-            VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group), rotationFree));
+        VariantClipboardItem.writeClipboardTag(stack, VariantClipboardItem.withRefRotation(
+            VariantClipboardItem.withRotationFree(
+                VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group), rotationFree),
+            row.rotation()));
         giveToHotbar(player, new Clipboard(stack, Component.translatable("chat.dungeontrain.editor_bar.clipboard.summary",
             options.size(), Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", group),
             Component.empty(), Component.empty(), Component.empty())));
@@ -1557,6 +1571,13 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
                 poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos)),
             lockId > 0 && plot.rotationFreeAt(localPos));
+        // A Rot Free group's cells each face their own way, so the copy remembers which way this
+        // one faces: Add then makes a reference pinned to it (GroupRefFacing), and the same group
+        // can be added again from a cell facing another way.
+        if (lockId > 0 && plot.rotationFreeAt(localPos)) {
+            BlockState standing = player.serverLevel().getBlockState(plot.origin().offset(localPos));
+            tag = VariantClipboardItem.withRefRotation(tag, RotationApplier.lockToCurrent(standing));
+        }
         VariantClipboardItem.writeClipboardTag(stack, tag);
         Component lockSuffix = lockId > 0
             ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", lockId)
@@ -1695,6 +1716,18 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
         return VariantBlockInteractions.withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * {@link VariantRowOrientation#orientToCell} for the clicked cell's own new row, with its state
+     * turned to a locked facing so state and rotation stay aligned, as on any other Add.
+     */
+    static VariantState orientedToCell(VariantState row, List<VariantState> cellRows) {
+        VariantState out = VariantRowOrientation.orientToCell(row, cellRows);
+        VariantRotation rot = out.rotation();
+        if (rot.mode() != VariantRotation.Mode.LOCK || Integer.bitCount(rot.dirMask()) != 1) return out;
+        BlockState turned = RotationApplier.applySlot(out.state(), Integer.numberOfTrailingZeros(rot.dirMask()));
+        return turned == out.state() ? out : out.withState(turned, out.blockEntityNbt());
     }
 
     /**
@@ -1863,7 +1896,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.cannot_replace_mob_row"), ChatFormatting.YELLOW);
             return null;
         }
-        int refGroup = VariantClipboardItem.decodeLockId(VariantClipboardItem.readClipboardTag(held));
+        CompoundTag clipTag = VariantClipboardItem.readClipboardTag(held);
+        int refGroup = VariantClipboardItem.decodeLockId(clipTag);
         if (refGroup <= 0) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.clipboard_unlocked_source"),
                 ChatFormatting.YELLOW);
@@ -1883,18 +1917,18 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.group_would_loop", refGroup, cellLock), ChatFormatting.YELLOW);
             return null;
         }
-        if (old.isGroupRef() && old.groupRef() == refGroup) {
+        VariantState replacement = VariantState.ofGroupRef(refGroup, targetStates,
+            VariantClipboardItem.decodeRefRotation(clipTag)).withWeight(old.weight());
+        if (GroupRefFacing.sameRef(old, replacement)) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.row_already_references_group", refGroup), ChatFormatting.YELLOW);
             return null;
         }
         for (int i = 0; i < rows.size(); i++) {
-            if (i != idx && rows.get(i).groupRef() == refGroup) {
-                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cell_already_references_group", refGroup), ChatFormatting.YELLOW);
+            if (i != idx && GroupRefFacing.sameRef(rows.get(i), replacement)) {
+                actionBar(player, alreadyReferences(replacement), ChatFormatting.YELLOW);
                 return null;
             }
         }
-        VariantState replacement = VariantState.ofGroupRef(refGroup, targetStates)
-            .withWeight(old.weight());
         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.replaced_with_group_reference", rowName(old), refGroup),
             ChatFormatting.GREEN);
         return replacement;
@@ -1928,6 +1962,16 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             if (VariantGroupRefs.reaches(plot.groupRefs(), s.groupRef(), cellLock)) return true;
         }
         return false;
+    }
+
+    /** "This cell already references group N" — with the facing when the reference pins one. */
+    private static Component alreadyReferences(VariantState ref) {
+        int slot = GroupRefFacing.slotOf(ref);
+        if (slot < 0) {
+            return Component.translatable("chat.dungeontrain.editor_bar.common.cell_already_references_group", ref.groupRef());
+        }
+        return Component.translatable("chat.dungeontrain.editor_bar.common.cell_already_references_group_facing",
+            ref.groupRef(), GroupRefFacing.facingLabel(ref));
     }
 
     private static Component rowName(VariantState row) {

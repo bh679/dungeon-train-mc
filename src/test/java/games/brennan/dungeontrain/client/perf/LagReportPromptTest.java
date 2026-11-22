@@ -90,6 +90,23 @@ final class LagReportPromptTest {
     }
 
     @Test
+    @DisplayName("[Yes with info] carries the same id and token as [Yes] and [No]")
+    void infoButtonCarriesTheToken() {
+        Component line = LagReportPrompt.promptLine(5);
+        List<String> info = args(line, LagReportPrompt.STEP_INFO);
+        assertEquals(5, LagReportPrompt.idOf(info));
+        assertEquals(args(line, "send").get(2), info.get(2));
+    }
+
+    @Test
+    void stepsAreKnown() {
+        assertTrue(LagReportPrompt.isStep("send"));
+        assertTrue(LagReportPrompt.isStep("info"));
+        assertTrue(LagReportPrompt.isStep("decline"));
+        assertFalse(LagReportPrompt.isStep("other"));
+    }
+
+    @Test
     void onlyThePrintedTokenSendsOnce() {
         String token = args(LagReportPrompt.promptLine(3), "send").get(2);
         now.addAndGet(ChatClickTokens.MIN_AGE_MS);

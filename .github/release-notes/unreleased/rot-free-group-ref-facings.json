@@ -1,0 +1,20 @@
+{
+  "id": "rot-free-group-ref-facings",
+  "version": "0.1961.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor"
+  ],
+  "title": "Reference a group once per facing",
+  "summary": "In the block variant editor, a Rot Free group can now be added to another cell several times, each copy facing a different way. Each row shows the block turned to its facing.",
+  "highlights": [
+    "Copy a Rot Free group's block, turn it, copy again: each Add keeps that facing",
+    "Rows and the preview show the block facing the way it will be placed"
+  ],
+  "pr": 2819,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
