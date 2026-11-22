@@ -38155,6 +38155,41 @@
       "released": true,
       "released_in": "v0.1944.0",
       "released_at": "2026-11-21T17:19:03Z"
+    },
+    {
+      "id": "obelisks-end-crumbling-strip",
+      "version": "0.1946.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Respawn fix",
+      "summary": "A respawn spot no longer explodes in places where it should work.",
+      "highlights": [],
+      "pr": 2801,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1945.0",
+      "released_at": "2026-11-22T02:56:23Z"
+    },
+    {
+      "id": "x-menu-quick-toggles-row",
+      "version": "0.1945.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor quick toggles tidy-up and auto fly",
+      "summary": "The editor's quick toggles are now a compact row of icons beside Settings. Turning the frame off no longer drops you out of your build, and a new Auto fly setting (on by default) catches you if you fall below the editor plots.",
+      "highlights": [],
+      "pr": 2800,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1945.0",
+      "released_at": "2026-11-22T02:56:23Z"
     }
   ]
 }
