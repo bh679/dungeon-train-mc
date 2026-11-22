@@ -1,10 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "selfWeight": 5,
   "variants": [
     {
       "id": "armor2",
-      "weight": 5
+      "weight": 5,
+      "maxLevel": 35
     },
     {
       "id": "armor3",
@@ -28,11 +29,13 @@
     },
     {
       "id": "armor8",
-      "weight": 3
+      "weight": 3,
+      "maxLevel": 40
     },
     {
       "id": "armor9",
-      "weight": 1
+      "weight": 1,
+      "maxLevel": 35
     },
     {
       "id": "armor10",
@@ -44,11 +47,33 @@
     },
     {
       "id": "armor12",
-      "weight": 1
+      "weight": 1,
+      "maxLevel": 43
     },
     {
       "id": "armor13",
-      "weight": 1
+      "weight": 1,
+      "maxLevel": 42
+    },
+    {
+      "id": "ironarmor",
+      "weight": 6,
+      "minLevel": 35
+    },
+    {
+      "id": "ironarmorfull",
+      "weight": 3,
+      "minLevel": 40
+    },
+    {
+      "id": "ironhelm",
+      "weight": 1,
+      "minLevel": 42
+    },
+    {
+      "id": "ironhelm2",
+      "weight": 1,
+      "minLevel": 43
     }
   ]
 }

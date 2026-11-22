@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 10,
   "variants": {
     "1,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:white_carpet"] },
     "2,0,2": { "lockId": 1, "states": ["minecraft:black_carpet", "minecraft:red_carpet", "minecraft:white_carpet"] },

@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "floor": ["minecraft:grass_block[snowy=false]"],
+  "roof": ["minecraft:shroomlight", "minecraft:polished_blackstone_bricks", "dungeontrain:variant_placeholder"]
+}

@@ -472,8 +472,19 @@ public final class PortalTestCommand {
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
-        player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
-            FACE_EAST, 0.0f);
+        // The tribute room is arrived at as a death visit arrives: on the red carpet, facing its TV.
+        // Any other room — or a tribute room with no TV left — stands the author in the entry doorway.
+        games.brennan.dungeontrain.portal.tribute.TributeRoomCamera.Pose carpet = tributeRoom
+            ? games.brennan.dungeontrain.portal.tribute.TributeRoomVisitService.arrivalPose(overworld,
+                net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(roomOrigin,
+                    roomOrigin.offset(roomSize.getX() - 1, roomSize.getY() - 1, roomSize.getZ() - 1)))
+            : null;
+        if (carpet != null) {
+            player.teleportTo(overworld, carpet.x(), carpet.y(), carpet.z(), carpet.yaw(), carpet.pitch());
+        } else {
+            player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
+                FACE_EAST, 0.0f);
+        }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.active(player,
             WorkbenchTestScratch.shownName(roomName)));
         // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
