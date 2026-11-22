@@ -32,6 +32,8 @@ import java.util.UUID;
  * <p>Linking changes the answer, so it asks again at once when a link lands ({@link #invalidate},
  * from {@code DiscordAccountState#onLinked}), and while a link code is out it re-asks a "no" every
  * {@link #PENDING_TTL_MS}, for a player who closed the link screen before running the code.</p>
+ *
+ * <p>A dev build never asks: it is always a tester ({@link #devAnswer}).</p>
  */
 public final class PerkTesterStatus {
 
@@ -43,7 +45,10 @@ public final class PerkTesterStatus {
     /** How long a link code lives on the relay ({@code COMMUNITY_LINK_TTL_MS}); past it, nothing is pending. */
     static final long LINK_CODE_TTL_MS = 15 * 60_000L;
 
-    /** Dev builds only: {@code -Ddungeontrain.perktester=true|false} answers without asking. */
+    /**
+     * Dev builds only: every dev client is a tester without asking, so perks can always be tried
+     * there; {@code -Ddungeontrain.perktester=false} shows what a non-tester sees.
+     */
     private static final String DEV_OVERRIDE_PROPERTY = "dungeontrain.perktester";
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -139,10 +144,17 @@ public final class PerkTesterStatus {
     }
 
     private static Boolean devOverride() {
-        if (!DungeonTrain.isDevBuild()) return null;
-        String v = System.getProperty(DEV_OVERRIDE_PROPERTY);
-        if (v == null || v.isBlank()) return null;
-        return Boolean.parseBoolean(v.trim());
+        return devAnswer(DungeonTrain.isDevBuild(), System.getProperty(DEV_OVERRIDE_PROPERTY));
+    }
+
+    /**
+     * A dev build's answer without the relay: a tester, unless {@code property} says {@code false}.
+     * Null on a release build, where only the relay decides.
+     */
+    static Boolean devAnswer(boolean devBuild, String property) {
+        if (!devBuild) return null;
+        if (property == null || property.isBlank()) return true;
+        return Boolean.parseBoolean(property.trim());
     }
 
     private static boolean consented() {
