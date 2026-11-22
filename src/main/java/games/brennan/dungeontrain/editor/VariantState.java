@@ -568,4 +568,15 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (groupStates == null || groupStates.isEmpty()) throw new IllegalArgumentException("groupStates");
         return ofGroupRef(groupRef, groupStates.get(0).state()).withGroupStates(groupStates);
     }
+
+    /**
+     * {@link #ofGroupRef(int, List)} pinned to {@code rotation} ({@link GroupRefFacing}): the
+     * placeholder is the group's block turned that way. A default rotation is a plain reference.
+     */
+    public static VariantState ofGroupRef(int groupRef, List<VariantState> groupStates, VariantRotation rotation) {
+        if (rotation == null || rotation.isDefault()) return ofGroupRef(groupRef, groupStates);
+        if (groupStates == null || groupStates.isEmpty()) throw new IllegalArgumentException("groupStates");
+        return ofGroupRef(groupRef, GroupRefFacing.placeholder(groupStates, rotation))
+            .withGroupStates(groupStates).withRotation(rotation);
+    }
 }

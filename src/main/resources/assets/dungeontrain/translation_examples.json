@@ -7565,6 +7565,23 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.block_variant.group_ref_facing": {
+    "1": {
+      "label": "the referenced group's id",
+      "examples": [
+        "3",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the facing this reference pins (an English direction word or compass point)",
+      "examples": [
+        "north",
+        "east",
+        "NE"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.block_variant.bed_colours_count": {
     "1": {
       "label": "how many bed colours are switched on",
@@ -14938,6 +14955,23 @@
       "examples": [
         "3",
         "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.common.cell_already_references_group_facing": {
+    "1": {
+      "label": "the lock-id group number",
+      "examples": [
+        "3",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the facing the reference pins (an English direction word or compass point)",
+      "examples": [
+        "north",
+        "up",
+        "SW"
       ]
     }
   },

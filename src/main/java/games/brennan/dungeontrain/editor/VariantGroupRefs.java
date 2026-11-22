@@ -456,11 +456,15 @@ public final class VariantGroupRefs {
         int maxHops = graph.order().size() + 1;
         int hops = 0;
         VariantState current = picked;
+        // The outermost reference that pins a facing wins (GroupRefFacing); null = none pinned,
+        // which keeps every plain reference's result exactly as before.
+        VariantState pin = null;
         while (current.isGroupRef()) {
             if (++hops > maxHops) return null;
+            if (pin == null && GroupRefFacing.isPinned(current)) pin = current;
             int target = current.groupRef();
             VariantState placed = view.placedByGroup(target, worldSeed, index);
-            if (placed != null) return placed;
+            if (placed != null) return pin == null ? placed : GroupRefFacing.apply(pin, placed);
             List<VariantState> pool;
             int[] weights;
             Pool cached = graph.poolFor(target);
@@ -477,6 +481,6 @@ public final class VariantGroupRefs {
             int idx = CarriageVariantBlocks.pickIndexFromLockGroup(target, worldSeed, index, weights);
             current = pool.get(idx);
         }
-        return current;
+        return pin == null ? current : GroupRefFacing.apply(pin, current);
     }
 }
