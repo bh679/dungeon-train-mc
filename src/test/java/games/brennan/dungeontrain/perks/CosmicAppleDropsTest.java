@@ -102,4 +102,90 @@ final class CosmicAppleDropsTest {
             assertEquals(CosmicAppleDrops.tierFor(5L, i, 120), CosmicAppleDrops.tierFor(5L, i, 120));
         }
     }
+
+    /** Diff-Level of a carriage at {@code pIdx}, the formula of {@code DifficultyProgression.positionTier}. */
+    private static int level(int pIdx, int cpt, int delay, int offset) {
+        int shifted = Math.max(0, Math.abs(pIdx) + offset);
+        return Math.max(0, shifted / Math.max(1, cpt) - Math.max(0, delay));
+    }
+
+    @Test
+    @DisplayName("every Diff-Level from 1 gets at least one apple, on both sides, for many settings")
+    void everyLevelHasAnApple() {
+        int[] cpts = {1, 3, 7, 20, 40, 1000};
+        for (long seed = 1; seed <= 6; seed++) {
+            for (int gs = 1; gs <= 16; gs++) {
+                for (int cpt : cpts) {
+                    for (int delay : new int[] {0, 1}) {
+                        for (int offset : new int[] {0, 50}) {
+                            checkLevels(seed, gs, cpt, delay, offset);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void checkLevels(long seed, int gs, int cpt, int delay, int offset) {
+        int span = Math.min(30_000, cpt * 12 + gs * 4);
+        java.util.Map<Integer, Integer> appleGroups = new java.util.HashMap<>();
+        java.util.Set<Integer> levelsSeen = new java.util.HashSet<>();
+        String ctx = "seed " + seed + " gs " + gs + " cpt " + cpt + " delay " + delay + " offset " + offset;
+        long firstGroup = Math.floorDiv(-span, gs);
+        long lastGroup = Math.floorDiv(span, gs);
+        int lastFullPositive = Integer.MIN_VALUE;
+        for (long g = firstGroup; g <= lastGroup; g++) {
+            int anchor = (int) (g * gs);
+            int lvl = level(anchor, cpt, delay, offset);
+            int key = anchor < 0 ? -lvl - 1 : lvl;
+            int slot = CosmicAppleDrops.slotFor(seed, anchor, gs, lvl, true, cpt, delay, offset);
+            assertEquals(slot, CosmicAppleDrops.slotFor(seed, anchor, gs, lvl, true, cpt, delay, offset), ctx);
+            if (lvl == 0) {
+                assertEquals(-1, slot, "level 0 " + ctx);
+                continue;
+            }
+            assertTrue(slot < gs, ctx);
+            long[] range = CosmicAppleDrops.levelGroups(lvl, anchor < 0, cpt, delay, offset, gs);
+            assertTrue(range != null && g >= range[0] && g <= range[1], "group " + g + " outside its level " + ctx);
+            levelsSeen.add(key);
+            if (slot >= 0) appleGroups.merge(key, 1, Integer::sum);
+        }
+        for (int key : levelsSeen) {
+            int lvl = key < 0 ? -key - 1 : key;
+            long[] range = CosmicAppleDrops.levelGroups(lvl, key < 0, cpt, delay, offset, gs);
+            // Only levels whose groups all fall inside the swept span can be judged.
+            if (range[0] < firstGroup || range[1] > lastGroup) continue;
+            assertTrue(appleGroups.getOrDefault(key, 0) >= 1, "level " + key + " has no apple " + ctx);
+        }
+    }
+
+    @Test
+    @DisplayName("the floor adds only to levels that drew none, and only one group")
+    void floorOnlyFillsEmptyLevels() {
+        int gs = 3;
+        int cpt = 20;
+        for (long seed = 1; seed <= 200; seed++) {
+            for (int lvl = 1; lvl <= 30; lvl++) {
+                long[] r = CosmicAppleDrops.levelGroups(lvl, false, cpt, 1, 0, gs);
+                int natural = 0;
+                int floored = 0;
+                for (long g = r[0]; g <= r[1]; g++) {
+                    if (CosmicAppleDrops.groupGetsApple(seed, g)) natural++;
+                    if (CosmicAppleDrops.isFloorGroup(seed, g, false, lvl, cpt, 1, 0, gs)) floored++;
+                }
+                assertEquals(natural == 0 ? 1 : 0, floored, "seed " + seed + " level " + lvl);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("no floor while a test stamp pins the Diff-Level")
+    void noFloorWhenPinned() {
+        for (long g = 0; g < 500; g++) {
+            int anchor = (int) g * 3;
+            boolean natural = CosmicAppleDrops.groupGetsApple(9L, g);
+            int slot = CosmicAppleDrops.slotFor(9L, anchor, 3, 5, false, 20, 1, 0);
+            assertEquals(natural, slot >= 0, "group " + g);
+        }
+    }
 }
