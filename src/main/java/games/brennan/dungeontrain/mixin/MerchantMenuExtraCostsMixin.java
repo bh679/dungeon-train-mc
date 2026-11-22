@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.trader.ExtraCostContainer;
 import games.brennan.dungeontrain.trader.ExtraCostMenu;
 import games.brennan.dungeontrain.trader.ExtraCostSlot;
 import games.brennan.dungeontrain.trader.ExtraTradeCosts;
+import games.brennan.ediblebackpacks.menu.BackpackLayout;
 import games.brennan.ediblebackpacks.menu.BackpackSlot;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
@@ -170,9 +171,26 @@ public abstract class MerchantMenuExtraCostsMixin extends AbstractContainerMenu 
         for (int i = 0; i < dungeontrain$backing.getContainerSize(); i++) {
             ItemStack held = dungeontrain$backing.removeItemNoUpdate(i);
             if (held.isEmpty()) continue;
-            if (gone) player.drop(held, false);
-            else player.getInventory().placeItemBackInInventory(held);
+            if (gone) {
+                player.drop(held, false);
+                continue;
+            }
+            // Inventory first, then the backpack: grid items can come out of the backpack, so a
+            // full inventory would otherwise drop them at the player's feet.
+            moveItemStackTo(held, INVENTORY_START, INVENTORY_END, false);
+            int backpack = dungeontrain$backpackStart();
+            if (!held.isEmpty() && backpack >= 0) moveItemStackTo(held, backpack, backpack + BackpackLayout.MAX_SLOTS, false);
+            if (!held.isEmpty()) player.getInventory().placeItemBackInInventory(held);
         }
+    }
+
+    /** Index of the first Edible Backpacks panel slot in this menu, or -1. */
+    @Unique
+    private int dungeontrain$backpackStart() {
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots.get(i) instanceof BackpackSlot) return i;
+        }
+        return -1;
     }
 
     /** Moves {@code stack} into the first extra cost it pays and isn't full yet; true when anything moved. */
