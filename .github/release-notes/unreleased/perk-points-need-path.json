@@ -1,0 +1,22 @@
+{
+  "id": "perk-points-need-path",
+  "version": "0.1952.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui",
+    "balance"
+  ],
+  "title": "Perk points follow the lines",
+  "summary": "Perk points now have to follow the lines of the star map, starting from the Engine.",
+  "highlights": [
+    "Unlocking a perk needs a solid line back to the Engine through perks you have unlocked.",
+    "Active points can travel along solid or dashed lines, through perks that already have active points this life.",
+    "Perks marked Coming soon never block the way."
+  ],
+  "pr": 2809,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
