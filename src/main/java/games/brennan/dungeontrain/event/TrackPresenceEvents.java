@@ -10,6 +10,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.primitives.AABBdc;
 
@@ -48,8 +50,15 @@ import java.util.UUID;
  * <p>All three are one-shot markers — vanilla advancement dedupe means firing
  * the same id every qualifying scan is harmless, so the only persistent state
  * needed is the per-player latch/grace driving the leave/return transitions.
- * That state is transient (rebuilt each session); since players always spawn
- * aboard ({@link PlayerJoinEvents}) it re-establishes before they can wander.</p>
+ * That state is transient and starts over with every life: it is dropped on
+ * login, on respawn and when the server stops. It has to be, because in
+ * singleplayer every run is a new world on a new integrated server in the
+ * <em>same JVM</em>, and this map is static. Carried over, the last run's
+ * "has been on the train" latch met the next world's player standing at world
+ * spawn while {@link PlayerJoinEvents} waited to place them aboard, which reads
+ * as stepping off the side: <em>Off the Rails</em> on every reboard (and
+ * <em>Back on Track</em> once they landed). Starting from {@link State#INITIAL},
+ * nothing can fire until the player has been seen on a carriage or the rails.</p>
  *
  * <h2>Inside twin space, none of this counts</h2>
  * The hallway-portal system stamps its twin corridors and rooms into the sealed world
@@ -149,9 +158,9 @@ public final class TrackPresenceEvents {
             // upside-down band — in it, rooms stand in the attic over the inverted lid instead.
             boolean belowBedrock = PortalTwinSpace.isInside(level, Mth.floor(px), py);
 
-            State before = STATES.getOrDefault(player.getUUID(), State.INITIAL);
+            State before = stateOf(player.getUUID());
             PresenceStep out = step(before, onCarriage, onTracks, offCorridor, belowBedrock);
-            STATES.put(player.getUUID(), out.next());
+            remember(player.getUUID(), out.next());
 
             if (out.landedOnTracks()) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "landed_on_tracks");
@@ -166,6 +175,43 @@ public final class TrackPresenceEvents {
 
         // Drop state for fully-disconnected players so the map doesn't leak.
         STATES.keySet().removeIf(uuid -> level.getServer().getPlayerList().getPlayer(uuid) == null);
+    }
+
+    /** A new world or a reconnect: whatever an earlier session saw no longer describes this player. */
+    @SubscribeEvent
+    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        forget(event.getEntity().getUUID());
+    }
+
+    /** A new life: the respawn point is off the train, and the last life's latches must not meet it. */
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        forget(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        forget(event.getEntity().getUUID());
+    }
+
+    /** Nothing outlives the server; the next singleplayer world runs in this same JVM. */
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        STATES.clear();
+    }
+
+    /** The player's current state, {@link State#INITIAL} if nothing has been seen this life. */
+    static State stateOf(UUID player) {
+        return STATES.getOrDefault(player, State.INITIAL);
+    }
+
+    static void remember(UUID player, State state) {
+        STATES.put(player, state);
+    }
+
+    /** Back to {@link State#INITIAL}: nothing latched, not yet seen aboard. */
+    static void forget(UUID player) {
+        STATES.remove(player);
     }
 
     /** First non-null track geometry across the train's carriages (all share one). */

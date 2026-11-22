@@ -195,6 +195,11 @@ public final class PerksScreen extends Screen {
         bar.invalidate();
     }
 
+    /** Whether this menu opened on a death (unlocking only), not in play. */
+    public boolean isDeathMenu() {
+        return death != null;
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
