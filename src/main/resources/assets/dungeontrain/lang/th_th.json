@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "มอบ %s",
   "gui.dungeontrain.rewards.raised": "สูงขึ้นขณะที่ %s เปิดอยู่",
   "gui.dungeontrain.rewards.raised_many": "สูงขึ้นขณะที่ %s เปิดอยู่",
+  "gui.dungeontrain.rewards.to_dev": "%s ถึงผู้พัฒนา",
   "gui.dungeontrain.rewards.thanks.header": "คำขอบคุณประจำเดือน",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "เดือนนี้ยังไม่มีใคร ของขวัญแรกจะอยู่ตรงนี้",

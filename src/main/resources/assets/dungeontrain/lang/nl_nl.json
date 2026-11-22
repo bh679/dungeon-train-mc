@@ -1741,6 +1741,7 @@
   "gui.dungeontrain.rewards.give.amount": "Geef %s",
   "gui.dungeontrain.rewards.raised": "Hoger zolang %s aan staat",
   "gui.dungeontrain.rewards.raised_many": "Hoger zolang %s aan staan",
+  "gui.dungeontrain.rewards.to_dev": "%s gaat naar de ontwikkelaar",
   "gui.dungeontrain.rewards.thanks.header": "Bedankt deze maand",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "Nog niemand deze maand. De eerste gift komt hier.",

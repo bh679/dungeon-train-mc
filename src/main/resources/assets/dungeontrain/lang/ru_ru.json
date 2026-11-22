@@ -1796,6 +1796,7 @@
   "gui.dungeontrain.rewards.give.amount": "Подарить %s",
   "gui.dungeontrain.rewards.raised": "Выше, пока действует %s",
   "gui.dungeontrain.rewards.raised_many": "Выше, пока действуют %s",
+  "gui.dungeontrain.rewards.to_dev": "%s получает разработчик",
   "gui.dungeontrain.rewards.thanks.header": "Благодарности месяца",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "В этом месяце пока никого. Первый подарок появится здесь.",

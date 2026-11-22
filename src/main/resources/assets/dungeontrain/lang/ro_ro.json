@@ -1987,6 +1987,7 @@
   "gui.dungeontrain.rewards.give.amount": "Donează %s",
   "gui.dungeontrain.rewards.raised": "Mai mare cât timp %s este activ",
   "gui.dungeontrain.rewards.raised_many": "Mai mare cât timp %s sunt active",
+  "gui.dungeontrain.rewards.to_dev": "%s ajung la dezvoltator",
   "gui.dungeontrain.rewards.thanks.header": "Mulțumirile lunii",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "Nimeni încă luna aceasta. Primul dar apare aici.",

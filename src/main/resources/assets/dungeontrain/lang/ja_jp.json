@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "%sを寄付",
   "gui.dungeontrain.rewards.raised": "%sが有効な間は高くなります",
   "gui.dungeontrain.rewards.raised_many": "%sが有効な間は高くなります",
+  "gui.dungeontrain.rewards.to_dev": "開発者に届くのは%s",
   "gui.dungeontrain.rewards.thanks.header": "今月の感謝",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "今月はまだ誰もいません。最初の寄付がここに載ります。",

@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "Ibigay %s",
   "gui.dungeontrain.rewards.raised": "Mas mataas habang naka-on ang %s",
   "gui.dungeontrain.rewards.raised_many": "Mas mataas habang naka-on ang %s",
+  "gui.dungeontrain.rewards.to_dev": "%s ang napupunta sa dev",
   "gui.dungeontrain.rewards.thanks.header": "Pasasalamat ngayong buwan",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "Wala pa ngayong buwan. Dito lalabas ang unang regalo.",

@@ -1741,6 +1741,7 @@
   "gui.dungeontrain.rewards.give.amount": "Dona %s",
   "gui.dungeontrain.rewards.raised": "Más alto mientras %s está activo",
   "gui.dungeontrain.rewards.raised_many": "Más alto mientras %s están activos",
+  "gui.dungeontrain.rewards.to_dev": "%s van para el desarrollador",
   "gui.dungeontrain.rewards.thanks.header": "Gracias de este mes",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "Nadie aún este mes. El primer regalo aparecerá aquí.",

@@ -226,6 +226,25 @@ public final class CommunityRewards {
         return net.minecraft.network.chat.Component.translatable(by.size() == 1 ? RAISED_ONE : RAISED_MANY, names);
     }
 
+    /** "$9 goes to the dev": the relay's {@code devAud}, or empty when it sent none. */
+    static java.util.OptionalInt devShareAud(@Nullable LiveRewards.Quote quote) {
+        return quote != null && quote.hasDevShare() ? java.util.OptionalInt.of(quote.devAud()) : java.util.OptionalInt.empty();
+    }
+
+    /**
+     * "$9 goes to the dev" under a reward's description: what of one gift is left for the dev once its
+     * worst-case running cost and the card fee are paid, in the player's currency; null when the relay
+     * did not say.
+     */
+    @Nullable
+    public static net.minecraft.network.chat.Component devShareLine(Reward reward) {
+        java.util.OptionalInt dev = devShareAud(LiveRewards.quote(reward.id()));
+        if (dev.isEmpty()) return null;
+        return net.minecraft.network.chat.Component.translatable(TO_DEV,
+                games.brennan.dungeontrain.client.support.currency.CurrencyFormat.amount(dev.getAsInt()));
+    }
+
+    static final String TO_DEV = KEY + "to_dev";
     static final String RAISED_ONE = KEY + "raised";
     static final String RAISED_MANY = KEY + "raised_many";
 

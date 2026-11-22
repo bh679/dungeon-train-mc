@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "%s 후원",
   "gui.dungeontrain.rewards.raised": "%s 활성 중에는 더 높아요",
   "gui.dungeontrain.rewards.raised_many": "%s 활성 중에는 더 높아요",
+  "gui.dungeontrain.rewards.to_dev": "개발자에게 %s",
   "gui.dungeontrain.rewards.thanks.header": "이번 달의 감사",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "이번 달은 아직 아무도 없어요. 첫 선물이 여기에 표시됩니다.",

@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "Tặng %s",
   "gui.dungeontrain.rewards.raised": "Cao hơn khi %s đang bật",
   "gui.dungeontrain.rewards.raised_many": "Cao hơn khi %s đang bật",
+  "gui.dungeontrain.rewards.to_dev": "%s đến tay nhà phát triển",
   "gui.dungeontrain.rewards.thanks.header": "Lời cảm ơn tháng này",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "Tháng này chưa có ai. Món quà đầu tiên sẽ hiện ở đây.",

@@ -1688,6 +1688,7 @@
       "gui.dungeontrain.rewards.give.amount",
       "gui.dungeontrain.rewards.raised",
       "gui.dungeontrain.rewards.raised_many",
+      "gui.dungeontrain.rewards.to_dev",
       "gui.dungeontrain.rewards.thanks.header",
       "gui.dungeontrain.rewards.thanks.later",
       "gui.dungeontrain.rewards.thanks.none",

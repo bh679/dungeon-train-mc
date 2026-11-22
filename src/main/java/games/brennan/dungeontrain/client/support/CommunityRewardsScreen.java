@@ -358,6 +358,9 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         if (CommunityRewards.onFreeCredits(state, r, now)) {
             ty = wrap(ContributePanel.freeThanks(state.find(r.id())), tx, ty + 2, tw, ContributePanel.COLOUR_ON);
         }
+        // What of a gift is left for the dev once the reward has paid for itself.
+        Component toDev = CommunityRewards.devShareLine(r);
+        if (toDev != null) ty = wrap(toDev, tx, ty + 2, tw, ContributePanel.COLOUR_ON);
         // Other rewards being on cost this one more to run, so the relay asked more: say which.
         Component raised = CommunityRewards.raisedLine(r);
         if (raised != null) ty = wrap(raised, tx, ty + 2, tw, COLOUR_SUB);

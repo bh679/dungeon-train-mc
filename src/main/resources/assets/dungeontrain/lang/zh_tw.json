@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "贊助 %s",
   "gui.dungeontrain.rewards.raised": "%s開啟期間更高",
   "gui.dungeontrain.rewards.raised_many": "%s開啟期間更高",
+  "gui.dungeontrain.rewards.to_dev": "%s歸開發者",
   "gui.dungeontrain.rewards.thanks.header": "本月致謝",
   "gui.dungeontrain.rewards.thanks.later": "%s（%s）",
   "gui.dungeontrain.rewards.thanks.none": "本月還沒有人贊助。第一份心意會顯示在這裡。",

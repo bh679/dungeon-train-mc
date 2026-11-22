@@ -144,4 +144,12 @@ class CommunityRewardsTest {
         assertTrue(CommunityRewards.giftRunning(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
         assertFalse(CommunityRewards.giftRunning(state, CommunityRewards.Reward.HD_STREAMS, NOW));
     }
+
+    @Test
+    void devShareOnlyWhenTheRelaySaysIt() {
+        assertTrue(CommunityRewards.devShareAud(null).isEmpty(), "no quote: no line");
+        assertTrue(CommunityRewards.devShareAud(new LiveRewards.Quote(94, 94, List.of())).isEmpty(), "older relay: no line");
+        assertEquals(0, CommunityRewards.devShareAud(new LiveRewards.Quote(94, 94, List.of(), 0)).getAsInt());
+        assertEquals(69, CommunityRewards.devShareAud(new LiveRewards.Quote(90, 90, List.of(), 69)).getAsInt());
+    }
 }

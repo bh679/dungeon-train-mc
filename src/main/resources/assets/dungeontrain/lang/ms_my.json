@@ -1691,6 +1691,7 @@
   "gui.dungeontrain.rewards.give.amount": "Sumbang %s",
   "gui.dungeontrain.rewards.raised": "Lebih tinggi semasa %s aktif",
   "gui.dungeontrain.rewards.raised_many": "Lebih tinggi semasa %s aktif",
+  "gui.dungeontrain.rewards.to_dev": "%s untuk pembangun",
   "gui.dungeontrain.rewards.thanks.header": "Terima kasih bulan ini",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "Belum ada sesiapa bulan ini. Hadiah pertama akan dipaparkan di sini.",

@@ -1791,6 +1791,7 @@
   "gui.dungeontrain.rewards.give.amount": "Podaruj %s",
   "gui.dungeontrain.rewards.raised": "Wyżej, dopóki działa %s",
   "gui.dungeontrain.rewards.raised_many": "Wyżej, dopóki działają %s",
+  "gui.dungeontrain.rewards.to_dev": "%s trafia do twórcy",
   "gui.dungeontrain.rewards.thanks.header": "Podziękowania w tym miesiącu",
   "gui.dungeontrain.rewards.thanks.later": "%s (%s)",
   "gui.dungeontrain.rewards.thanks.none": "W tym miesiącu jeszcze nikt. Tu trafi pierwszy dar.",
