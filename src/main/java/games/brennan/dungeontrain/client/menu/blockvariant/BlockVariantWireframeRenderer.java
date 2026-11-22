@@ -105,6 +105,7 @@ public final class BlockVariantWireframeRenderer {
                 1.0f, 1.0f, 1.0f, 1.0f);
         }
         drawGrowthColumns(ps, vc, origin);
+        drawConditionTargets(ps, vc, origin);
         ps.popPose();
 
         buffer.endBatch(RenderType.lines());
@@ -144,5 +145,33 @@ public final class BlockVariantWireframeRenderer {
             new AABB(low.getX() + 0.05, low.getY() + EXPAND, low.getZ() + 0.05,
                 high.getX() + 0.95, high.getY() + 1.0 - EXPAND, high.getZ() + 0.95),
             0.35f, 1.0f, 0.45f, 1.0f);
+    }
+
+    /** Inset so a purple box sits inside a neighbour's white outline rather than on top of it. */
+    private static final double TARGET_INSET = 0.04;
+
+    /**
+     * Purple boxes on what the open If popup's row looks at: the neighbour on each chosen side, or
+     * every cell of the target lock group. Shown from the first side picked, before any value.
+     */
+    private static void drawConditionTargets(PoseStack ps, VertexConsumer vc, BlockPos origin) {
+        BlockPos local = BlockVariantMenu.localPos();
+        int row = BlockVariantMenu.condPopupRow();
+        if (!BlockVariantMenu.isActive() || local == null || row < 0) return;
+        games.brennan.dungeontrain.editor.VariantCondition c =
+            games.brennan.dungeontrain.editor.VariantCondition.parse(BlockVariantMenu.entries().get(row).condition());
+        if (c.isGroupTarget()) {
+            for (BlockPos world : BlockVariantLockIdRenderer.worldCellsWithLockId(c.groupId())) targetBox(ps, vc, world);
+            return;
+        }
+        BlockPos cell = origin.offset(local);
+        for (net.minecraft.core.Direction side : c.sides()) targetBox(ps, vc, cell.relative(side));
+    }
+
+    private static void targetBox(PoseStack ps, VertexConsumer vc, BlockPos world) {
+        LevelRenderer.renderLineBox(ps, vc,
+            new AABB(world.getX() + TARGET_INSET, world.getY() + TARGET_INSET, world.getZ() + TARGET_INSET,
+                world.getX() + 1.0 - TARGET_INSET, world.getY() + 1.0 - TARGET_INSET, world.getZ() + 1.0 - TARGET_INSET),
+            0.66f, 0.33f, 1.0f, 1.0f);
     }
 }

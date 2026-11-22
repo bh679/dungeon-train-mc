@@ -94,6 +94,19 @@ public final class BlockVariantLockIdRenderer {
     }
 
     /**
+     * World positions of every cached cell in lock group {@code lockId}; empty when there is none.
+     * The If popup outlines these when its row targets that group.
+     */
+    public static synchronized java.util.List<BlockPos> worldCellsWithLockId(int lockId) {
+        java.util.List<BlockPos> out = new java.util.ArrayList<>();
+        if (lockId <= 0) return out;
+        for (Map.Entry<BlockPos, Integer> e : CACHE.entrySet()) {
+            if (e.getValue() == lockId) out.add(cacheOrigin.offset(e.getKey()));
+        }
+        return out;
+    }
+
+    /**
      * Wipe the lock-id cache on world quit so phantom digits don't persist
      * across worlds. Symmetric with
      * {@link games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer#onLoggingOut}.
