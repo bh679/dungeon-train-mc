@@ -208,12 +208,19 @@
         "essentialtweaks",
         "e4mc",
         "e4all",
+        "e4steam",
         "lanserverproperties"
       ],
       "note": [
         "essentialtweaks (Essential Tweaks, EpicSkydex) is client-only and only changes Essential's defaults:",
         "unbound keybinds, no Discord RPC, no update popups, banners or badges. Decompiled and audited",
-        "2026-11-03: no packets, commands, game-mode or player access. It rides on the essential approval."
+        "2026-11-03: no packets, commands, game-mode or player access. It rides on the essential approval.",
+        "e4steam (Kamilchik, Apache-2.0, CurseForge 1633302) is an e4mc fork that hosts over Steam. Audited",
+        "2026-11-22: the v0.3.6 NeoForge jar (sha1 31a79f63a6f6508adb270cb31eb8a93b2b2c286a) matches its tagged",
+        "source class for class, mixin config and native hashes included. The cheats/game mode its LAN screen",
+        "can set are caught by OperatorIntegrity and the creative-join check, and /e4steam only controls the",
+        "Steam connection (CommandAllowlist). Steam guests skip Mojang sign-in and keep a self-chosen name, as",
+        "vanilla 1.21.1 LAN already allows. Its paid Premium build is a separate download and is NOT covered."
       ]
     },
     "libraries": {

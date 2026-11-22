@@ -81,6 +81,12 @@ public final class CommandAllowlist {
      * builds the relay lost) are player-facing and can give a player nothing, so they are exempt like
      * {@code /bug}; {@code /dungeonbackup} is the root the {@code /dtbackup}/{@code /dtrestore} aliases
      * point at. All of those are kept out of survival tab completion by {@link HiddenCommands}.
+     * {@code /e4steam} and {@code /e4mc} belong to the approved world-hosting mods of those names
+     * (see {@code approved_mods.curated.json}, group {@code multiplayer}). Every subcommand only
+     * starts, stops, restarts, invites to or diagnoses the hosting connection, and only the world's
+     * owner may run them: nothing in either tree changes the game. The ban/pardon/banlist/whitelist
+     * commands both mods restore in single player stay off this list. They are not DT commands, so
+     * {@link HiddenCommands} leaves them alone.
      * {@code advancement} is handled in {@link #isAllowed} rather than here:
      * only the exact form {@code /advancement revoke @s everything} is clean
      * (see {@link #isSelfRevokeEverything}) — every other spelling, target
@@ -90,7 +96,7 @@ public final class CommandAllowlist {
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
         "feedback", "bug", "log", "fixaisconfig", "fixconfig", "customcontent", "new-world",
         "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal", "livereport",
-        "reportcarriage", "dtrebuild");
+        "reportcarriage", "dtrebuild", "e4steam", "e4mc");
 
     /**
      * Roots DT registers <b>client-side only</b> ({@code RegisterClientCommandsEvent}) that players type
