@@ -2444,7 +2444,7 @@
   "chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id": "此範本中沒有格位使用鎖定 ID %s",
   "chat.dungeontrain.editor_bar.common.group_would_loop": "群組 %s 已經會導回群組 %s，這會形成迴圈",
   "chat.dungeontrain.editor_bar.common.cell_already_references_group": "此格位已參照群組 %s",
-  "chat.dungeontrain.editor_bar.common.cell_already_references_group_facing": "此格位已參照朝向 %2$s 的群組 %1$s",
+  "chat.dungeontrain.editor_bar.common.cell_already_references_group_facing": "此格位已參照群組 %s（朝向 %s）",
   "chat.dungeontrain.editor_bar.common.outside_footprint": "目標在地塊範圍之外",
   "chat.dungeontrain.editor_bar.variant_menu.requires_op": "方塊變體選單需要 OP 權限",
   "chat.dungeontrain.editor_bar.variant_menu.look_at_block_to_open": "請看向一個方塊以開啟選單",
