@@ -1755,6 +1755,7 @@
   "gui.dungeontrain.death.continue": "Ecranul următor",
   "gui.dungeontrain.death.board_anew": "Urcă din nou",
   "gui.dungeontrain.abandon_run": "Abandonează cursa",
+  "gui.dungeontrain.tribute_room.main_menu": "Meniu principal",
   "gui.dungeontrain.abandon_confirm.title": "Cobori din tren?",
   "gui.dungeontrain.abandon_confirm.line1": "Coborârea e fatală — mori aici, iar trenul merge mai departe.",
   "gui.dungeontrain.abandon_confirm.line2": "Cursa se încheie și se înregistrează ca o moarte. Nu există cale de întoarcere.",

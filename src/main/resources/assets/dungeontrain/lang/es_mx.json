@@ -1515,6 +1515,7 @@
   "gui.dungeontrain.death.continue": "Siguiente pantalla",
   "gui.dungeontrain.death.board_anew": "Subir de nuevo",
   "gui.dungeontrain.abandon_run": "Abandonar esta partida",
+  "gui.dungeontrain.tribute_room.main_menu": "Menú principal",
   "gui.dungeontrain.abandon_confirm.title": "¿Bajarte del tren?",
   "gui.dungeontrain.abandon_confirm.line1": "Bajarte es mortal: mueres aquí y el tren sigue su camino.",
   "gui.dungeontrain.abandon_confirm.line2": "La partida termina y queda registrada como una muerte. No se puede deshacer.",

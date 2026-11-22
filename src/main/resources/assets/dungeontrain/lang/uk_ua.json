@@ -1755,6 +1755,7 @@
   "gui.dungeontrain.death.continue": "Наступний екран",
   "gui.dungeontrain.death.board_anew": "Сісти знову",
   "gui.dungeontrain.abandon_run": "Покинути цю гру",
+  "gui.dungeontrain.tribute_room.main_menu": "Головне меню",
   "gui.dungeontrain.abandon_confirm.title": "Зійти з потяга?",
   "gui.dungeontrain.abandon_confirm.line1": "Зійти — смертельно: ти загинеш тут, а потяг рушить далі.",
   "gui.dungeontrain.abandon_confirm.line2": "Гра закінчиться й запишеться як смерть. Назад дороги немає.",

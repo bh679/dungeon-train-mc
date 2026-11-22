@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "หน้าจอถัดไป",
   "gui.dungeontrain.death.board_anew": "ขึ้นรถใหม่",
   "gui.dungeontrain.abandon_run": "ละทิ้งการเดินทางนี้",
+  "gui.dungeontrain.tribute_room.main_menu": "เมนูหลัก",
   "gui.dungeontrain.abandon_confirm.title": "ลงจากรถไฟ?",
   "gui.dungeontrain.abandon_confirm.line1": "การลงจากรถไฟถึงตาย — คุณจะตายตรงนี้ และรถไฟจะแล่นต่อไป",
   "gui.dungeontrain.abandon_confirm.line2": "การเดินทางจบลงและถูกบันทึกเป็นการตายหนึ่งครั้ง ย้อนกลับไม่ได้",

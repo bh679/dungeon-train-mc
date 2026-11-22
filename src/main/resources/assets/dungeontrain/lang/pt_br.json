@@ -1515,6 +1515,7 @@
   "gui.dungeontrain.death.continue": "Próxima Tela",
   "gui.dungeontrain.death.board_anew": "Embarcar de novo",
   "gui.dungeontrain.abandon_run": "Abandonar Esta Jornada",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu principal",
   "gui.dungeontrain.abandon_confirm.title": "Descer do trem?",
   "gui.dungeontrain.abandon_confirm.line1": "Descer é fatal — você morre aqui, e o trem segue em frente.",
   "gui.dungeontrain.abandon_confirm.line2": "A jornada termina e fica registrada como uma morte. Não dá para desfazer.",

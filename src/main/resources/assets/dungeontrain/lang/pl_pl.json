@@ -1559,6 +1559,7 @@
   "gui.dungeontrain.death.continue": "Następny ekran",
   "gui.dungeontrain.death.board_anew": "Wsiądź na nowo",
   "gui.dungeontrain.abandon_run": "Porzuć tę rozgrywkę",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu główne",
   "gui.dungeontrain.abandon_confirm.title": "Wysiąść z pociągu?",
   "gui.dungeontrain.abandon_confirm.line1": "Wysiadka jest śmiertelna — giniesz tutaj, a pociąg jedzie dalej.",
   "gui.dungeontrain.abandon_confirm.line2": "Rozgrywka kończy się i zostaje zapisana jako śmierć. Nie da się tego cofnąć.",

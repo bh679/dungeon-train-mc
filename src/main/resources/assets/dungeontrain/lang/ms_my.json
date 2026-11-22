@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "Skrin Seterusnya",
   "gui.dungeontrain.death.board_anew": "Naik semula",
   "gui.dungeontrain.abandon_run": "Tinggalkan Larian Ini",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu Utama",
   "gui.dungeontrain.abandon_confirm.title": "Turun dari kereta api?",
   "gui.dungeontrain.abandon_confirm.line1": "Turun bermakna mati — anda mati di sini, dan kereta api terus meluncur.",
   "gui.dungeontrain.abandon_confirm.line2": "Larian ini tamat dan direkodkan sebagai kematian. Tidak boleh diundurkan.",

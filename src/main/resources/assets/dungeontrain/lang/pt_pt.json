@@ -1515,6 +1515,7 @@
   "gui.dungeontrain.death.continue": "Ecrã seguinte",
   "gui.dungeontrain.death.board_anew": "Embarcar de novo",
   "gui.dungeontrain.abandon_run": "Abandonar Esta Partida",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu principal",
   "gui.dungeontrain.abandon_confirm.title": "Sair do comboio?",
   "gui.dungeontrain.abandon_confirm.line1": "Sair é fatal — morres aqui, e o comboio segue viagem.",
   "gui.dungeontrain.abandon_confirm.line2": "A partida termina e fica registada como uma morte. Não há como anular.",

@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "Layar Berikutnya",
   "gui.dungeontrain.death.board_anew": "Naik dari awal",
   "gui.dungeontrain.abandon_run": "Tinggalkan Perjalanan Ini",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu Utama",
   "gui.dungeontrain.abandon_confirm.title": "Turun dari kereta?",
   "gui.dungeontrain.abandon_confirm.line1": "Turun berarti mati — kamu mati di sini, dan kereta terus melaju.",
   "gui.dungeontrain.abandon_confirm.line2": "Perjalanan berakhir dan tercatat sebagai kematian. Tidak bisa dibatalkan.",

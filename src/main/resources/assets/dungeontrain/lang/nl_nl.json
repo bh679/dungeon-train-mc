@@ -1515,6 +1515,7 @@
   "gui.dungeontrain.death.continue": "Volgend scherm",
   "gui.dungeontrain.death.board_anew": "Opnieuw instappen",
   "gui.dungeontrain.abandon_run": "Deze run opgeven",
+  "gui.dungeontrain.tribute_room.main_menu": "Hoofdmenu",
   "gui.dungeontrain.abandon_confirm.title": "Van de trein stappen?",
   "gui.dungeontrain.abandon_confirm.line1": "Afstappen is dodelijk — je sterft hier, en de trein rijdt door.",
   "gui.dungeontrain.abandon_confirm.line2": "De run eindigt en telt als een dood. Er is geen weg terug.",
