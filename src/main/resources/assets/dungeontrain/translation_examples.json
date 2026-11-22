@@ -1,4 +1,10 @@
 {
+  "gui.dungeontrain.tribute_webhook.renaming": {
+    "1": { "label": "the webhook's name as the player typed it, or 'Webhook 3' if it has none", "examples": ["Family server", "Webhook 3"] }
+  },
+  "gui.dungeontrain.tribute_webhook.unnamed": {
+    "1": { "label": "a number: which link this is, in the order the player added them", "examples": ["3"] }
+  },
   "chat.dungeontrain.death_video.saved": {
     "1": { "label": "the saved video's file name, a clickable link; never translated", "examples": ["death-2026-11-21_23-58-04.mp4"] }
   },

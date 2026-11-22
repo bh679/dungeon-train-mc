@@ -4,6 +4,7 @@ import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.DiscordPings;
+import games.brennan.dungeontrain.discord.PassengerLogWebhooks;
 import games.brennan.dungeontrain.discord.PingType;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,10 +32,13 @@ public final class DeathReportBuffer {
     /** How long to wait for the client's ride photo before posting with the gear-composite fallback. */
     private static final long TIMEOUT_MS = 5_000L;
     private static final String PHOTO_FILENAME = "ride.jpg";
+    /** The death manifest's red, for the player's own copy. */
+    static final int PERSONAL_COLOR = 0xC0392B;
 
     private record Pending(ServerPlayer player, String title, String description,
                            List<DeathField> fields, List<ItemStack> fallbackIcons,
-                           String webhookOverride, long deadlineMs) {}
+                           String webhookOverride, boolean postPublic, List<String> personalLinks,
+                           long deadlineMs) {}
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
@@ -44,13 +48,19 @@ public final class DeathReportBuffer {
      * Buffer a top-level report; it posts when the photo arrives ({@link #onPhoto}) or the timeout fires.
      * {@code webhookOverride} routes it to a specific channel cap (the public channel on release builds);
      * {@code null} = the build's default cap (the dev channel on dev builds).
+     *
+     * @param postPublic whether the public feed gets it; false when only the player's own webhooks do
+     * @param personalLinks the player's own passenger log webhooks, taken now ({@link PassengerLogWebhooks#links})
+     *        so a run ended by quitting still reaches them after the mirror forgets the player
      */
     public static void await(ServerPlayer player, String title, String description,
-                             List<DeathField> fields, List<ItemStack> fallbackIcons, String webhookOverride) {
+                             List<DeathField> fields, List<ItemStack> fallbackIcons, String webhookOverride,
+                             boolean postPublic, List<String> personalLinks) {
         if (games.brennan.dungeontrain.cheat.RunIntegrity.isOffRecordWorld()) return; // Test mode: nothing goes to Discord
         PENDING.put(player.getUUID(),
                 new Pending(player, title, description, fields, fallbackIcons,
                         DiscordPings.forPlayer(webhookOverride, player.getUUID(), PingType.DEATH), // @-ping them if linked
+                        postPublic, personalLinks == null ? List.of() : List.copyOf(personalLinks),
                         Util.getMillis() + TIMEOUT_MS));
     }
 
@@ -58,13 +68,7 @@ public final class DeathReportBuffer {
     public static void onPhoto(ServerPlayer player, byte[] png) {
         Pending p = PENDING.remove(player.getUUID());
         if (p == null) return;
-        if (png != null && png.length > 0) {
-            DiscordService.get().postDeathReportTopLevel(
-                    p.player(), p.title(), p.description(), p.fields(), png, PHOTO_FILENAME, p.webhookOverride());
-        } else {
-            DiscordService.get().postDeathReportTopLevel(
-                    p.player(), p.title(), p.description(), p.fields(), p.fallbackIcons(), p.webhookOverride());
-        }
+        post(p, png);
     }
 
     /** Flush any reports whose photo never arrived within {@link #TIMEOUT_MS} — gear-composite fallback. */
@@ -76,9 +80,24 @@ public final class DeathReportBuffer {
             Pending p = it.next().getValue();
             if (now >= p.deadlineMs()) {
                 it.remove();
+                post(p, null);
+            }
+        }
+    }
+
+    /** The public report (photo, else gear composite) and the player's own copies (photo, else text only). */
+    private static void post(Pending p, byte[] png) {
+        boolean photo = png != null && png.length > 0;
+        if (p.postPublic()) {
+            if (photo) {
+                DiscordService.get().postDeathReportTopLevel(
+                        p.player(), p.title(), p.description(), p.fields(), png, PHOTO_FILENAME, p.webhookOverride());
+            } else {
                 DiscordService.get().postDeathReportTopLevel(
                         p.player(), p.title(), p.description(), p.fields(), p.fallbackIcons(), p.webhookOverride());
             }
         }
+        PassengerLogWebhooks.post(p.personalLinks(), p.player().getGameProfile().getName(), p.player().getUUID(),
+                p.title(), p.description(), p.fields(), photo ? png : null, PHOTO_FILENAME, PERSONAL_COLOR);
     }
 }
