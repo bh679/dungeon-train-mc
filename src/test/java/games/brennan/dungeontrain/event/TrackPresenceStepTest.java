@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.event.TrackPresenceEvents.State;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -181,5 +183,41 @@ final class TrackPresenceStepTest {
             s = offSide(s).next();
         }
         assertTrue(onCarriage(s).returnedToTrain(), "a real jump-off still earns the marker");
+    }
+
+    // ---- a new life starts with nothing latched (reboard) ----
+
+    @Test
+    @DisplayName("forget drops the last run's latches: off the side at spawn grants nothing")
+    void forget_clearsLastRun() {
+        UUID player = UUID.randomUUID();
+        State lastRun = offSide(offSide(aboard()).next()).next();
+        assertTrue(lastRun.leftCarriageSinceAboard());
+        TrackPresenceEvents.remember(player, lastRun);
+
+        TrackPresenceEvents.forget(player);
+        State fresh = TrackPresenceEvents.stateOf(player);
+        assertEquals(State.INITIAL, fresh);
+
+        PresenceStep atSpawn = offSide(fresh);
+        assertFalse(atSpawn.leftTrain());
+        assertFalse(atSpawn.returnedToTrain());
+    }
+
+    @Test
+    @DisplayName("reboard: waiting at spawn, then placed aboard, grants nothing; stepping off later does")
+    void reboardSequence() {
+        State s = State.INITIAL;
+        for (int i = 0; i < 5; i++) {
+            PresenceStep out = offSide(s);
+            assertFalse(out.leftTrain());
+            s = out.next();
+        }
+        PresenceStep placed = onCarriage(s);
+        assertFalse(placed.returnedToTrain());
+        assertFalse(placed.leftTrain());
+
+        PresenceStep off = offSide(placed.next());
+        assertTrue(off.leftTrain());
     }
 }

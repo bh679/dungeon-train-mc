@@ -31,6 +31,7 @@ REMOVED = {"gift-live-eye"}
 # Names the game shows differently from the editor (the editor keeps its own spelling).
 NAMES = {
     "stackable-book-quill": "Stackable Book and Quill",
+    "shared-aura": "Shared Aura",
 }
 ROOT = "root"
 CENTRE = 400.0

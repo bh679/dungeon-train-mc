@@ -21,7 +21,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Client → server: unlock a perk with unlock points. The server is the judge: the id must be in the
- * tree and the registry, reachable under {@link PerkTree#reachable} (first unlock only), under the
+ * tree and the registry, reachable along a solid path from the Engine ({@link PerkTree#reachableNow}, every unlock), under the
  * spent-gated level limit ({@link PerkUnlocks}), and affordable. An unlocked perk unlocks again to hold
  * one more point. Unlocking happens after death only: while dead, or standing in the tribute room the
  * death menu carries on in ({@link #afterDeath}); in play the menu only activates.
@@ -74,7 +74,7 @@ public record PerkUnlockPacket(String perkId) implements CustomPacketPayload {
         PerkRegistry.bootstrap();
         if (!PerkRegistry.isBuilt(id)) return "gui.dungeontrain.perks.refused.not_built";
         PerkState state = Perks.state(player);
-        if (!state.isUnlocked(id) && !tree.reachableNow(id, state::isUnlocked)) return "gui.dungeontrain.perks.refused.reach";
+        if (!tree.reachableNow(id, state::isUnlocked)) return "gui.dungeontrain.perks.refused.reach";
         if (!PerkUnlocks.allowed(state.unlockLevel(id) + 1, PerkSpend.unlockSpent(player))) {
             return "gui.dungeontrain.perks.refused.gate";
         }

@@ -1,0 +1,20 @@
+{
+  "id": "cosmic-apple-every-level",
+  "version": "0.1952.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "A cosmic apple in every difficulty level",
+  "summary": "Every difficulty level now has at least one cosmic apple to find.",
+  "highlights": [
+    "Levels that used to have none now always have one"
+  ],
+  "pr": 2810,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
