@@ -1,0 +1,18 @@
+{
+  "id": "live-eye-paused-stream-links",
+  "version": "0.1975.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "community",
+    "ui"
+  ],
+  "title": "Live Eye only links where the stream is",
+  "summary": "Your going-live message now leaves out any of Twitch, YouTube or Kick that the stream isn't going to right now, so nobody gets sent to an empty channel. If you turned on restreaming to your own Twitch channel, Options and /twitch now say when that restream is paused.",
+  "highlights": [],
+  "pr": 2833,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

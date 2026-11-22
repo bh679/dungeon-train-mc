@@ -66,11 +66,18 @@ public final class TwitchLinkClient {
      * {@code display} the name Twitch shows), whether that link is {@code verified} (a Twitch grant, as
      * opposed to a handle typed in chat — shout-out only), and the two opt-ins: {@code restream} (also
      * push the stream to that channel) and {@code setTitle} (set its title/category while live).
+     * {@code restreamPaused}: the relay's restream is paused right now for everyone (relay stream-outputs.js),
+     * so the opt-in is kept but nothing is sent; false from a relay too old to say.
      */
-    public record Status(boolean ok, boolean linked, boolean verified, String login, String display, boolean restream, boolean setTitle, Error error) {
+    public record Status(boolean ok, boolean linked, boolean verified, String login, String display, boolean restream, boolean setTitle,
+                         boolean restreamPaused, Error error) {
         public Status {
             login = login == null ? "" : login;
             display = display == null ? "" : display;
+        }
+
+        public Status(boolean ok, boolean linked, boolean verified, String login, String display, boolean restream, boolean setTitle, Error error) {
+            this(ok, linked, verified, login, display, restream, setTitle, false, error);
         }
 
         static Status of(Error error) {
@@ -204,7 +211,7 @@ public final class TwitchLinkClient {
             String login = on ? str(o.get("login")).trim().toLowerCase() : "";
             if (on && !login.matches("[a-z0-9_]{3,25}")) return Status.of(Error.FAILED);
             return new Status(true, on, on && bool(o.get("verified")), login, on ? str(o.get("display")).trim() : "",
-                on && bool(o.get("restream")), on && bool(o.get("setTitle")), Error.NONE);
+                on && bool(o.get("restream")), on && bool(o.get("setTitle")), bool(o.get("restreamPaused")), Error.NONE);
         }
         return Status.of(errorFor(status, body));
     }
