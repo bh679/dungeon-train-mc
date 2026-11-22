@@ -54,4 +54,15 @@ final class PerkTesterStatusTest {
         assertNull(PerkTesterStatus.parse("{\"error\":\"not_found\"}"));
         assertNull(PerkTesterStatus.parse(""));
     }
+
+    @Test
+    @DisplayName("a dev build is a tester unless told otherwise; a release build asks the relay")
+    void devBuildsAreTesters() {
+        assertEquals(Boolean.TRUE, PerkTesterStatus.devAnswer(true, null));
+        assertEquals(Boolean.TRUE, PerkTesterStatus.devAnswer(true, " "));
+        assertEquals(Boolean.TRUE, PerkTesterStatus.devAnswer(true, "true"));
+        assertEquals(Boolean.FALSE, PerkTesterStatus.devAnswer(true, "false"));
+        assertNull(PerkTesterStatus.devAnswer(false, null));
+        assertNull(PerkTesterStatus.devAnswer(false, "true"));
+    }
 }

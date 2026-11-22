@@ -138,6 +138,10 @@ launching a client for Brennan to see those cards. Jars launched outside Gradle:
 `-Ddungeontrain.bot=deny|grant` or env `DUNGEONTRAIN_BOT`. Dev builds only (any branch but main):
 release jars ignore it. No player-facing trace.
 
+**Perks in a dev client:** perks are on only in a perks test world. Every dev build counts as an
+approved tester (`client/perks/PerkTesterStatus#devAnswer`), so holding Shift on the title screen
+shows the dark-red perks test world button; `-Ddungeontrain.perktester=false` hides it again.
+
 ### Community item trade values
 
 What each item trades for (Trade Everything, sixteenths of an emerald) is tuned by the community
