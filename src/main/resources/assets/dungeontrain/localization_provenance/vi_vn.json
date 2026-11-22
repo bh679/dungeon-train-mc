@@ -2766,6 +2766,8 @@
       "chat.dungeontrain.lag_report.prompt",
       "chat.dungeontrain.lag_report.send",
       "chat.dungeontrain.lag_report.send.tip",
+      "chat.dungeontrain.lag_report.send_info",
+      "chat.dungeontrain.lag_report.send_info.tip",
       "chat.dungeontrain.lag_report.decline",
       "chat.dungeontrain.lag_report.decline.tip",
       "chat.dungeontrain.lag_report.sent",
@@ -6402,8 +6404,12 @@
       "gui.dungeontrain.editor_screen.sheet.oversized_blocks",
       "gui.dungeontrain.options.tribute_webhook.tip",
       "gui.dungeontrain.tribute_webhook.line2",
+      "item.dungeontrain.cosmic_apple.tooltip",
+      "item.dungeontrain.celestial_bite.tooltip",
+      "item.dungeontrain.violet_core.tooltip",
       "chat.dungeontrain.perks.active_gained",
-      "gui.dungeontrain.perks.refused.no_active"
+      "gui.dungeontrain.perks.refused.no_active",
+      "perk.dungeontrain.shared-aura.name"
     ],
     "adventureitemnames": [],
     "playermob": [],

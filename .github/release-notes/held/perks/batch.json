@@ -27,7 +27,8 @@
     2778,
     2779,
     2788,
-    2790
+    2790,
+    2804
   ],
   "entries": [
     "cosmic-apples",
@@ -36,6 +37,7 @@
     "knight-combat-perks",
     "nap-sky-past-life-perks",
     "perk-apples-depth-curve",
+    "perk-aura-apple-tooltips",
     "perk-points",
     "perk-tester-after-link",
     "perks-archivist",

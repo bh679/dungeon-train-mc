@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import java.util.List;
 
 /**
- * "Lag detected - send log to developer? [Yes] [No]": the chat line {@link ClientStallWatchdog}
+ * "Lag detected - send log to developer? [Yes] [Yes with info] [No]": the chat line {@link ClientStallWatchdog}
  * prints once the render thread comes back from a freeze it dumped.
  *
  * <p>The dump is in {@code latest.log} by then, but a log on the player's disk helps nobody. Until
@@ -40,19 +40,27 @@ import java.util.List;
  * {@link #PROMPT_COOLDOWN_MS}, and never again this session after a [No]. The buttons are
  * {@link ChatClick} actions, so there is no command to type. Old builds are never asked
  * ({@link LagReportVersionGate}).</p>
+ *
+ * <p>[Yes with info] is for a player who knows something about the freeze: it opens the {@code /bug}
+ * form with Lag already picked ({@link LagReportFormHandoff}), so their note travels with the same logs
+ * and spec. Submitting it sends the upload ({@code BugLogReporter}); closing the form sends nothing.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LagReportPrompt {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     /**
-     * The buttons' action ({@link ChatClick}): {@code lag-log/send|decline/<prompt id>/<token>}. Any sender can print
+     * The buttons' action ({@link ChatClick}): {@code lag-log/send|info|decline/<prompt id>/<token>}. Any sender can print
      * a {@code dungeontrain:} click and the prompt id is a small count, so the buttons carry a {@link ChatClickTokens}
      * token minted when this client printed the line: a copy from anyone else sends nothing.
      */
     static final String CLICK_ACTION = "lag-log";
     /** The buttons' {@link ChatClickTokens} scope. */
     static final String TOKEN_SCOPE = CLICK_ACTION;
+    static final String STEP_SEND = "send";
+    /** [Yes with info]: open the bug form with Lag picked. */
+    static final String STEP_INFO = "info";
+    static final String STEP_DECLINE = "decline";
     /** How long the buttons work. */
     static final long TOKEN_TTL_MS = 10L * 60L * 1000L;
     /** No prompt until the player has been in the world this long: a short visit is not asked about. */
@@ -63,7 +71,7 @@ public final class LagReportPrompt {
     static final long NEVER = -1;
     /** The upload's label; "Lag" so the server folds the spec in, as for a death-screen Lag answer. */
     private static final String UPLOAD_LABEL = "Lag";
-    /** Headless seam ({@code -PlagReportClick=send|decline}, dev builds): answer the prompt at once. */
+    /** Headless seam ({@code -PlagReportClick=send|info|decline}, dev builds): answer the prompt at once. */
     private static final String AUTO_CLICK_PROPERTY = "dungeontrain.lagReportClick";
 
     // Client thread only.
@@ -112,7 +120,7 @@ public final class LagReportPrompt {
         String autoClick = DungeonTrain.isDevBuild() ? System.getProperty(AUTO_CLICK_PROPERTY) : null;
         if (autoClick != null) {
             LOGGER.info("[DungeonTrain] -PlagReportClick seam: answering the lag prompt with {}", autoClick);
-            respond(pendingId, "send".equals(autoClick));
+            respond(pendingId, autoClick);
         }
     }
 
@@ -121,15 +129,20 @@ public final class LagReportPrompt {
         ChatClickActions.register(CLICK_ACTION, args -> {
             int id = idOf(args);
             if (id < 1) return;
-            boolean send = "send".equals(args.get(0));
-            if (!send && !"decline".equals(args.get(0))) return;
+            String step = args.get(0);
+            if (!isStep(step)) return;
             // The token before anything else: a refused click leaves the prompt as it was.
             if (!clickAllowed(id, pendingId, args.get(2))) {
                 expired();
                 return;
             }
-            respond(id, send);
+            respond(id, step);
         });
+    }
+
+    /** The buttons' steps. Pure. */
+    static boolean isStep(String step) {
+        return STEP_SEND.equals(step) || STEP_INFO.equals(step) || STEP_DECLINE.equals(step);
     }
 
     /** {@code [step, id, token]} → the id, or -1 for any other shape (an older click among them). Pure. */
@@ -166,9 +179,10 @@ public final class LagReportPrompt {
         joinedAt = NEVER;
         pendingId = -1;
         ChatClickTokens.clear(TOKEN_SCOPE);
+        LagReportFormHandoff.clear();
     }
 
-    private static void respond(int id, boolean send) {
+    private static void respond(int id, String step) {
         Minecraft mc = Minecraft.getInstance();
         if (id < 1 || id != pendingId) {
             mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.lag_report.expired")
@@ -176,7 +190,11 @@ public final class LagReportPrompt {
             return;
         }
         pendingId = -1;
-        if (!send) {
+        if (STEP_INFO.equals(step)) {
+            openForm(mc);
+            return;
+        }
+        if (!STEP_SEND.equals(step)) {
             declined = true;
             mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.lag_report.declined")
                 .withStyle(ChatFormatting.GRAY));
@@ -185,7 +203,19 @@ public final class LagReportPrompt {
         mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.lag_report.sent")
             .withStyle(ChatFormatting.GRAY));
         // The spec reads GL state: render thread, here.
-        upload("Detected client freeze: ~" + pendingFreezeMs + " ms\n" + SystemSpecCollector.collect());
+        upload(LagReportFormHandoff.freezeLine(pendingFreezeMs) + SystemSpecCollector.collect());
+    }
+
+    /**
+     * [Yes with info]: close chat (so the form opens over the world and pauses it) and run {@code /bug};
+     * the form starts on Lag and its submit carries this freeze. Nothing is sent until it is submitted.
+     */
+    private static void openForm(Minecraft mc) {
+        LagReportFormHandoff.arm(pendingFreezeMs, System.currentTimeMillis());
+        mc.setScreen(null);
+        if (mc.player != null) {
+            mc.player.connection.sendCommand("bug");
+        }
     }
 
     private static void upload(String spec) {
@@ -207,9 +237,12 @@ public final class LagReportPrompt {
         MutableComponent line = Component.translatable("chat.dungeontrain.lag_report.prompt")
             .withStyle(ChatFormatting.YELLOW)
             .append(Component.literal(" "));
-        line.append(button("chat.dungeontrain.lag_report.send", ChatClick.event(CLICK_ACTION, "send", Integer.toString(id), token), ChatFormatting.GREEN));
+        String idArg = Integer.toString(id);
+        line.append(button("chat.dungeontrain.lag_report.send", ChatClick.event(CLICK_ACTION, STEP_SEND, idArg, token), ChatFormatting.GREEN));
         line.append(Component.literal(" "));
-        line.append(button("chat.dungeontrain.lag_report.decline", ChatClick.event(CLICK_ACTION, "decline", Integer.toString(id), token), ChatFormatting.GRAY));
+        line.append(button("chat.dungeontrain.lag_report.send_info", ChatClick.event(CLICK_ACTION, STEP_INFO, idArg, token), ChatFormatting.AQUA));
+        line.append(Component.literal(" "));
+        line.append(button("chat.dungeontrain.lag_report.decline", ChatClick.event(CLICK_ACTION, STEP_DECLINE, idArg, token), ChatFormatting.GRAY));
         return line;
     }
 
