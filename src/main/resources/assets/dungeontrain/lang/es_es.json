@@ -5479,6 +5479,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s contra no muertos",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s contra artrópodos",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s contra acuáticos",
+  "tooltip.dungeontrain.perk_damage": "+%s por ventajas",
   "tooltip.dungeontrain.provenance.found_by": "Encontrado por %s",
   "tooltip.dungeontrain.provenance.made_by": "Fabricado por %s",
   "tooltip.dungeontrain.provenance.bought_by": "Comprado por %s",

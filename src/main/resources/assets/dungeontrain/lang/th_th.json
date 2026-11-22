@@ -5416,6 +5416,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s ต่ออันเดด",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s ต่อสัตว์ขาปล้อง",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s ต่อสัตว์น้ำ",
+  "tooltip.dungeontrain.perk_damage": "+%s จากพลังพิเศษ",
   "tooltip.dungeontrain.provenance.found_by": "พบโดย %s",
   "tooltip.dungeontrain.provenance.made_by": "สร้างโดย %s",
   "tooltip.dungeontrain.provenance.bought_by": "ซื้อโดย %s",

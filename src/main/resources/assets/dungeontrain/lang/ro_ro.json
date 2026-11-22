@@ -6263,6 +6263,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s împotriva strigoilor",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s împotriva artropodelor",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s împotriva creaturilor acvatice",
+  "tooltip.dungeontrain.perk_damage": "+%s din avantaje",
   "tooltip.dungeontrain.provenance.found_by": "Găsit de %s",
   "tooltip.dungeontrain.provenance.made_by": "Creat de %s",
   "tooltip.dungeontrain.provenance.bought_by": "Cumpărat de %s",

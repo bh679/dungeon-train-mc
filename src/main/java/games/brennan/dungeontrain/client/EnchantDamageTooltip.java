@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.TierOnePerks;
+import games.brennan.dungeontrain.perks.tier1.AttributePerks;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
@@ -47,6 +50,10 @@ import java.util.Optional;
  * <p>Bows and crossbows get the same treatment on their AIS Ranged Damage line: Power goes into the
  * number, scaled to what it adds on a full-draw shot.</p>
  *
+ * <p>The Damage perk is a modifier on the player, which the Attack Damage line leaves out (it counts
+ * only the player's base value). It gets its own line under the number, so the item's own damage
+ * still reads the same to every player.</p>
+ *
  * <p>Display only: this edits the tooltip's lines and leaves the stack's attributes alone. Writing the
  * bonus to an attribute would count it twice in combat.</p>
  */
@@ -62,6 +69,9 @@ public final class EnchantDamageTooltip {
             Enchantments.BANE_OF_ARTHROPODS, "tooltip.dungeontrain.enchant_damage.arthropods",
             Enchantments.IMPALING, "tooltip.dungeontrain.enchant_damage.aquatic");
 
+    /** The line under Attack Damage naming what the local player's perks add to it. */
+    private static final String PERK_KEY = "tooltip.dungeontrain.perk_damage";
+
     /** Arrow damage is speed times base damage, and Power adds to the base; this is a full draw's speed. */
     private static final float FULL_DRAW_SPEED = 3F;
 
@@ -73,9 +83,8 @@ public final class EnchantDamageTooltip {
     @SubscribeEvent
     public static void onTooltip(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
-        if (!stack.isEnchanted()) return;
         if (stack.getItem() instanceof ProjectileWeaponItem) {
-            addPowerToRangedLine(event, stack);
+            if (stack.isEnchanted()) addPowerToRangedLine(event, stack);
             return;
         }
 
@@ -84,8 +93,23 @@ public final class EnchantDamageTooltip {
         int index = baseDamageLine(lines, attackDamage.getDescriptionId());
         if (index < 0) return;
 
+        List<Component> extraLines = new ArrayList<>();
+        perkLine(Perks.rank(event.getEntity(), TierOnePerks.DAMAGE)).ifPresent(extraLines::add);
+        if (stack.isEnchanted()) addEnchantLines(event, stack, index, extraLines);
+        lines.addAll(index + 1, extraLines);
+    }
+
+    /** The perk line for a Damage perk at {@code rank}, or none below rank 1. Package-visible for unit testing. */
+    static Optional<Component> perkLine(int rank) {
+        float bonus = (float) AttributePerks.damageBonus(rank);
+        return bonus > 0F ? Optional.of(conditionalLine(PERK_KEY, bonus)) : Optional.empty();
+    }
+
+    /** Folds Sharpness into the base line at {@code index} and queues the targeted enchant lines. */
+    private static void addEnchantLines(ItemTooltipEvent event, ItemStack stack, int index,
+                                        List<Component> conditionalLines) {
+        List<Component> lines = event.getToolTip();
         float flatBonus = 0F;
-        List<Component> conditionalLines = new ArrayList<>();
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : stack.getEnchantments().entrySet()) {
             Holder<Enchantment> enchantment = entry.getKey();
             int level = entry.getIntValue();
@@ -102,7 +126,6 @@ public final class EnchantDamageTooltip {
                     event.getEntity(), event.getFlags(), flatBonus);
             if (rebuilt.isPresent()) lines.set(index, rebuilt.get());
         }
-        lines.addAll(index + 1, conditionalLines);
     }
 
     /** Power's damage is conditional only in that it applies to arrows, which is all a bow fires. */

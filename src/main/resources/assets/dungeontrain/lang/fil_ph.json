@@ -5416,6 +5416,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s laban sa Undead",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s laban sa Arthropod",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s laban sa mga nilalang sa tubig",
+  "tooltip.dungeontrain.perk_damage": "+%s mula sa Perks",
   "tooltip.dungeontrain.provenance.found_by": "Natagpuan ni %s",
   "tooltip.dungeontrain.provenance.made_by": "Ginawa ni %s",
   "tooltip.dungeontrain.provenance.bought_by": "Binili ni %s",

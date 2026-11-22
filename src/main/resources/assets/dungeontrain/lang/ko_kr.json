@@ -5416,6 +5416,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "언데드에게 +%s",
   "tooltip.dungeontrain.enchant_damage.arthropods": "절지동물에게 +%s",
   "tooltip.dungeontrain.enchant_damage.aquatic": "수중 생물에게 +%s",
+  "tooltip.dungeontrain.perk_damage": "특성으로 +%s",
   "tooltip.dungeontrain.provenance.found_by": "발견한 사람: %s",
   "tooltip.dungeontrain.provenance.made_by": "제작한 사람: %s",
   "tooltip.dungeontrain.provenance.bought_by": "구매한 사람: %s",

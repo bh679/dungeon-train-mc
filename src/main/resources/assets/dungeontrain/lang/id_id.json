@@ -5416,6 +5416,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s melawan Undead",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s melawan Artropoda",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s melawan makhluk air",
+  "tooltip.dungeontrain.perk_damage": "+%s dari Perk",
   "tooltip.dungeontrain.provenance.found_by": "Ditemukan oleh %s",
   "tooltip.dungeontrain.provenance.made_by": "Dibuat oleh %s",
   "tooltip.dungeontrain.provenance.bought_by": "Dibeli oleh %s",
