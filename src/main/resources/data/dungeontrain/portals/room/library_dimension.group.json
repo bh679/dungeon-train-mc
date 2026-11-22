@@ -5,6 +5,10 @@
     {
       "id": "pretty",
       "weight": 1
+    },
+    {
+      "id": "librarydimension2",
+      "weight": 1
     }
   ]
 }

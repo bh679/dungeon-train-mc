@@ -263,14 +263,6 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/random:64:10/off/none/repeated/-1/1"
   },
-  "tribute": {
-    "weight": 1,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
-  },
-  "tribute_entrance": {
-    "weight": 0,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
-  },
   "house": {
     "weight": 1,
     "mode": "bedrock",
@@ -302,6 +294,11 @@
     "mode": "bedrock/exact/off/off/mix:3:1:0:1:1:0/day/sealed/-1/5/-1/5/dungeontrain:skybox_block"
   },
   "library_dimension": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "endless_repetition/dynamic/off/random:25:4/off/none/repeated/0/0/0/0/minecraft:bedrock/off"
+  },
+  "librarydimension2": {
     "weight": 1,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic/off/random:25:4/off/none/repeated/0/0/0/0/minecraft:bedrock/off"
@@ -659,6 +656,14 @@
   "trapped_default2": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/1"
+  },
+  "tribute": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
+  },
+  "tribute_entrance": {
+    "weight": 0,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
   },
   "upsidedown": {
     "weight": 1,
