@@ -16,7 +16,8 @@
     },
     {
       "id": "creepers",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 15
     }
   ]
 }
