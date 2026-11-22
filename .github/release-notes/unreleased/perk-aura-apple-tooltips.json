@@ -1,0 +1,20 @@
+{
+  "id": "perk-aura-apple-tooltips",
+  "version": "0.1948.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Perk and apple text fixes",
+  "summary": "Fixed a spelling mistake in a perk name, and the cosmic apple tooltips are shorter.",
+  "highlights": [
+    "Shared Aura is now spelt correctly",
+    "Cosmic Apple, Celestial Bite and Violet Core tooltips now just say how many perk points they give"
+  ],
+  "pr": 2804,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
