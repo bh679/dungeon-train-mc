@@ -203,6 +203,13 @@
       "name": "AntonioMacarely"
     }
   },
+  "fallspookycarriage1": {
+    "weight": 1,
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "flooded": {
     "weight": 2,
     "phases": [
@@ -595,6 +602,13 @@
       "name": "AntonioMacarely"
     }
   },
+  "taschristmascarriage": {
+    "weight": 1,
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "taslibrary1": {
     "weight": 1,
     "minLevel": 5,
@@ -656,6 +670,14 @@
     "builder": {
       "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
       "name": "Nikeeta"
+    }
+  },
+  "thearchivistsocietycourtyard": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/-2",
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
     }
   },
   "thearchivistsocietypagoda": {
