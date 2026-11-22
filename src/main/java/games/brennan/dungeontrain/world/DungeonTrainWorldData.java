@@ -92,6 +92,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
     private static final String TAG_EDITOR_MIRROR_ON = "editorMirrorOn";
     private static final String TAG_EDITOR_FRAME_ON = "editorFrameOn";
+    private static final String TAG_EDITOR_AUTO_FLY_ON = "editorAutoFlyOn";
     private static final String TAG_EDITOR_REDSTONE_ON = "editorRedstoneOn";
     private static final String TAG_EDITOR_TNT_ON = "editorTntOn";
     private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
@@ -366,6 +367,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private boolean editorMirrorOn = true;
     /** X menu quick toggle / Settings → Frame. Off clears the carriage shell round Contents plots. */
     private boolean editorFrameOn = true;
+    /** Settings → Auto fly. On: falling below the editor plots' bedrock frame turns flying on; see {@code EditorAutoFly}. */
+    private boolean editorAutoFlyOn = true;
     /** Editor Settings → Redstone. Off cuts every redstone signal inside an editor plot; see {@code EditorRedstone}. */
     private boolean editorRedstoneOn = true;
     /** Editor Settings → TNT. Off stops TNT exploding inside an editor plot; see {@code EditorTnt}. */
@@ -717,6 +720,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_FRAME_ON)) {
             data.editorFrameOn = tag.getBoolean(TAG_EDITOR_FRAME_ON);
         }
+        if (tag.contains(TAG_EDITOR_AUTO_FLY_ON)) {
+            data.editorAutoFlyOn = tag.getBoolean(TAG_EDITOR_AUTO_FLY_ON);
+        }
         if (tag.contains(TAG_EDITOR_REDSTONE_ON)) {
             data.editorRedstoneOn = tag.getBoolean(TAG_EDITOR_REDSTONE_ON);
         }
@@ -856,6 +862,7 @@ public final class DungeonTrainWorldData extends SavedData {
         if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
         if (!editorMirrorOn) tag.putBoolean(TAG_EDITOR_MIRROR_ON, false);
         if (!editorFrameOn) tag.putBoolean(TAG_EDITOR_FRAME_ON, false);
+        if (!editorAutoFlyOn) tag.putBoolean(TAG_EDITOR_AUTO_FLY_ON, false);
         if (!editorRedstoneOn) tag.putBoolean(TAG_EDITOR_REDSTONE_ON, false);
         if (!editorTntOn) tag.putBoolean(TAG_EDITOR_TNT_ON, false);
         if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
@@ -906,6 +913,18 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorFrameOn(boolean on) {
         if (editorFrameOn == on) return;
         editorFrameOn = on;
+        setDirty();
+    }
+
+    /** True unless Settings → Auto fly is Off: falling below the plots' frame turns flying on. */
+    public boolean isEditorAutoFlyOn() {
+        return editorAutoFlyOn;
+    }
+
+    /** Settings → Auto fly On / Off. Go through {@code EditorQuickToggles.setAutoFly}, which tells every client. */
+    public void setEditorAutoFlyOn(boolean on) {
+        if (editorAutoFlyOn == on) return;
+        editorAutoFlyOn = on;
         setDirty();
     }
 
