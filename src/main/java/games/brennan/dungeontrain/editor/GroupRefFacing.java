@@ -38,7 +38,10 @@ public final class GroupRefFacing {
         if (base == null || !RotationApplier.canRotate(base)) return terminal;
         if (RotationApplier.isCompass(base) != RotationApplier.isCompass(ref.state())) return terminal;
         if ((RotationApplier.validDirMask(base) & ref.rotation().dirMask()) == 0) return terminal;
-        return terminal.withRotation(ref.rotation());
+        // Turn the state too, not just the rotation field: the editor preview and anything else that
+        // sets state() straight into the world would otherwise show the group's own facing.
+        BlockState turned = RotationApplier.applySlot(base, slotOf(ref));
+        return terminal.withState(turned, terminal.blockEntityNbt()).withRotation(ref.rotation());
     }
 
     /**

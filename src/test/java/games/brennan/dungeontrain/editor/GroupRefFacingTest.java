@@ -102,6 +102,15 @@ final class GroupRefFacingTest {
     }
 
     @Test
+    @DisplayName("the resolved state itself is turned, so the editor preview shows the facing")
+    void resolvedStateIsTurned() {
+        VariantState ref = VariantState.ofGroupRef(1, stairsPool(), EAST);
+        VariantState stairs = of(Blocks.OAK_STAIRS);
+        assertEquals(Direction.EAST, GroupRefFacing.apply(ref, stairs).state().getValue(StairBlock.FACING));
+        assertEquals(Direction.NORTH, stairs.state().getValue(StairBlock.FACING), "the input is untouched");
+    }
+
+    @Test
     @DisplayName("a plain reference still returns the group's value whole")
     void plainReferenceUnchanged() {
         VariantState plain = VariantState.ofGroupRef(1, stairsPool());

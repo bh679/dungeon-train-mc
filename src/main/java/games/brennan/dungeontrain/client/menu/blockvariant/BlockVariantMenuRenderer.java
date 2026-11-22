@@ -447,6 +447,10 @@ public final class BlockVariantMenuRenderer {
             // sentinel and from regular block entries.
             if (entry.isMob()) {
                 drawMobIcon(ps, buffer, entry.entityId(), nameCellL, rowCY, icons);
+            } else if (isPinnedRef(entry) && games.brennan.dungeontrain.client.menu.BlockStateIcon.canDraw(parsed)) {
+                // An item icon is always the default facing; a reference pinned to a facing
+                // draws its (already turned) placeholder from the block model instead.
+                drawTurnedBlockIcon(ps, buffer, parsed, nameCellL, rowCY, icons);
             } else {
                 drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY, icons);
             }
@@ -1512,6 +1516,23 @@ public final class BlockVariantMenuRenderer {
         vc.addVertex(mat, (float) x2, (float) y1, (float) 0).setColor(r, g, b, a);
         vc.addVertex(mat, (float) x2, (float) y2, (float) 0).setColor(r, g, b, a);
         vc.addVertex(mat, (float) x1, (float) y2, (float) 0).setColor(r, g, b, a);
+    }
+
+    /** True for a group-reference row that pins a facing. */
+    private static boolean isPinnedRef(BlockVariantSyncPacket.Entry entry) {
+        return entry.isGroupRef()
+            && !new VariantRotation(decodeMode(entry.rotMode()), entry.rotDirMask() & 0xFF).isDefault();
+    }
+
+    /** {@link #drawBlockIcon}'s layout, drawn from the block model so its facing shows. */
+    private static void drawTurnedBlockIcon(PoseStack ps, MultiBufferSource buffer, BlockState state,
+                                            double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
+        double centerX = cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0;
+        if (icons != null) {
+            icons.addBlock(ps, state, centerX, rowCY, ICON_SIZE);
+            return;
+        }
+        games.brennan.dungeontrain.client.menu.BlockStateIcon.drawWorld(ps, buffer, state, centerX, rowCY, ICON_SIZE);
     }
 
     /** The facing a group-reference row pins, or "" when it pins none. */
