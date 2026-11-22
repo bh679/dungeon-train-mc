@@ -1,0 +1,16 @@
+{
+  "id": "album-sync-skip-saved-pictures",
+  "version": "0.1975.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "community"
+  ],
+  "title": "Albums load faster",
+  "summary": "When a newer copy of your album arrives, pictures you already have are no longer downloaded again.",
+  "highlights": [],
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

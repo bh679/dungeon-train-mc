@@ -452,27 +452,22 @@ public final class PlayerAlbums {
                 .filter(java.util.Objects::nonNull).findFirst().orElse(null);
     }
 
-    /** Off-thread: fetch each picture an album names, as the PNG the relay holds. A picture that cannot be fetched is left out. */
+    /**
+     * Off-thread: the PNG of each picture an album names. One this computer already keeps (and still
+     * reads back whole) is taken from disk; the rest come from the relay. A picture that cannot be had
+     * is left out.
+     */
     static Map<String, byte[]> downloadPngs(String base, List<AlbumSavePayload.Page> pages) {
-        Map<String, byte[]> pngs = new HashMap<>();
-        for (AlbumSavePayload.Page page : pages) {
-            if (page.hash() == null || pngs.containsKey(page.hash())) continue;
-            try {
-                // The relay's CDN copy when the album names one, else the relay's own route.
-                HttpResponse<byte[]> bytes = games.brennan.dungeontrain.compat.photo.PhotoCdn.send(HTTP, page.url(),
-                        base + IMAGE_PATH + "/" + page.hash(), REQUEST_TIMEOUT);
-                if (bytes.statusCode() == 200) pngs.put(page.hash(), bytes.body());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                LOGGER.debug("[DungeonTrain] Album picture {} not fetched: {}", page.hash(), e.toString());
-            }
-        }
-        return pngs;
+        AlbumStore store = AlbumStore.get();
+        return AlbumPngFetch.collect(pages, store::verifiedImage, page -> {
+            // The relay's CDN copy when the album names one, else the relay's own route.
+            HttpResponse<byte[]> bytes = games.brennan.dungeontrain.compat.photo.PhotoCdn.send(HTTP, page.url(),
+                    base + IMAGE_PATH + "/" + page.hash(), REQUEST_TIMEOUT);
+            return bytes.statusCode() == 200 ? Optional.of(bytes.body()) : Optional.empty();
+        });
     }
 
-    /** Off-thread: {@link #downloadPngs}, decoded — for found albums, which never touch the store. */
+    /** Off-thread: {@link #downloadPngs}, decoded — for found albums, which only read the store (a picture already kept here is not fetched). */
     static Map<String, PhotoPngCodec.Decoded> download(String base, List<AlbumSavePayload.Page> pages) {
         Map<String, PhotoPngCodec.Decoded> images = new HashMap<>();
         downloadPngs(base, pages).forEach((hash, png) -> {
