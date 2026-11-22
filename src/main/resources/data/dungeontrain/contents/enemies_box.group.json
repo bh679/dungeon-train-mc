@@ -4,14 +4,18 @@
   "variants": [
     {
       "id": "enemies_path",
-      "weight": 1
+      "weight": 10
     },
     {
       "id": "enemies_walled",
-      "weight": 1
+      "weight": 10
     },
     {
       "id": "minerzombs",
+      "weight": 10
+    },
+    {
+      "id": "creepers",
       "weight": 1
     }
   ]
