@@ -91,12 +91,12 @@ public final class TributePhotoReporter {
      * has Dungeon Train's internet connection turned off ({@link NetworkConsentMirror}, fail-closed).
      */
     public static boolean hasPersonalWebhook(ServerPlayer tributer) {
-        return tributer != null && TributeWebhookMirror.has(tributer.getUUID()) && !ContentModeMirror.isKid(tributer)
+        return tributer != null && TributeWebhookMirror.has(tributer.getUUID(), WebhookFeed.TRIBUTES) && !ContentModeMirror.isKid(tributer)
                 && NetworkConsentMirror.isGranted(tributer);
     }
 
     /**
-     * Post a tributed photo to each of the tributer's own Discord webhooks, if they set any. Every Tribute goes,
+     * Post a tributed photo to each of the tributer's own Discord webhooks that gets Tributes, if any. Every Tribute goes,
      * whatever the public feed's rules (clean run, personal best, Public posts): it is their own channel.
      * Server thread; the upload runs off-thread and never disturbs the Tribute.
      */
@@ -105,7 +105,7 @@ public final class TributePhotoReporter {
         if (png == null || png.length == 0 || !hasPersonalWebhook(tributer)) return;
         try {
             String name = tributer.getGameProfile().getName();
-            for (String url : TributeWebhookMirror.get(tributer.getUUID())) {
+            for (String url : TributeWebhookMirror.get(tributer.getUUID(), WebhookFeed.TRIBUTES)) {
                 TributeWebhook.post(url, name, tributer.getUUID(), TributeWebhook.embed(title, description, EMBED_COLOR, true), png);
             }
         } catch (Throwable t) {

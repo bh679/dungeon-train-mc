@@ -33,7 +33,8 @@ public final class MilestonePostBuffer {
     private static final String PHOTO_FILENAME = "advancement.jpg";
 
     private record Pending(ServerPlayer player, ResourceLocation advancementId, String title,
-                           String description, String webhookOverride, long deadlineMs) {}
+                           String description, String webhookOverride, List<String> personalLinks,
+                           long deadlineMs) {}
 
     /** Keyed by player + advancement, so two milestones in quick succession each keep their own post. */
     private static final Map<String, Pending> PENDING = new ConcurrentHashMap<>();
@@ -48,7 +49,7 @@ public final class MilestonePostBuffer {
     public static void await(ServerPlayer player, ResourceLocation advancementId, String title,
                              String description, String webhookOverride) {
         PENDING.put(key(player.getUUID(), advancementId), new Pending(player, advancementId, title,
-                description, webhookOverride, Util.getMillis() + TIMEOUT_MS));
+                description, webhookOverride, PassengerLogWebhooks.links(player), Util.getMillis() + TIMEOUT_MS));
     }
 
     /** Swap the title of a still-pending announcement; false when nothing is pending for this earn. */
@@ -57,7 +58,7 @@ public final class MilestonePostBuffer {
         Pending p = PENDING.get(k);
         if (p == null) return false;
         return PENDING.replace(k, p, new Pending(p.player(), p.advancementId(), title, p.description(),
-                p.webhookOverride(), p.deadlineMs()));
+                p.webhookOverride(), p.personalLinks(), p.deadlineMs()));
     }
 
     /** The client delivered its screenshot (possibly empty) — post now. */
@@ -92,5 +93,8 @@ public final class MilestonePostBuffer {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] milestone advancement announcement failed: {}", t.toString());
         }
+        byte[] png = image == null || image.length == 0 ? null : image;
+        PassengerLogWebhooks.post(p.personalLinks(), p.player().getGameProfile().getName(), p.player().getUUID(),
+                p.title(), p.description(), List.of(), png, PHOTO_FILENAME, MilestoneAdvancementReporter.EMBED_COLOR);
     }
 }

@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -20,8 +21,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * A player's own Discord webhook — the Tribute webhook on the Options Account tab. Every photo the
- * player pays Tribute to is also posted there ({@link TributePhotoReporter#postPersonal}).
+ * A player's own Discord webhook, set on the Options Account tab. Each link gets the feeds the player
+ * picked for it ({@link WebhookFeed}): the photos they pay Tribute to ({@link TributePhotoReporter#postPersonal})
+ * and their own passenger log posts ({@link PassengerLogWebhooks}).
  *
  * <p>The link is a secret (anyone holding it can post to that channel), and on a multiplayer server it
  * is a URL the <i>server</i> fetches on a player's say-so. So: {@link #isValid} accepts a Discord webhook
@@ -46,6 +48,18 @@ public final class TributeWebhook {
             Set.of("discord.com", "discordapp.com", "ptb.discord.com", "canary.discord.com");
     /** {@code /api/webhooks/<id>/<token>} with an optional trailing slash, nothing else. */
     private static final Pattern PATH = Pattern.compile("/api/webhooks/(\\d{1,25})/([A-Za-z0-9_-]{1,100})/?");
+
+    /** Discord's embed limits: a post over any of them is refused whole. */
+    static final int MAX_TITLE = 256;
+    static final int MAX_DESCRIPTION = 4096;
+    static final int MAX_FIELD_NAME = 256;
+    static final int MAX_FIELD_VALUE = 1024;
+    static final int MAX_FIELDS = 25;
+    /** The whole embed's text, title + description + fields, is capped at 6000; this leaves room. */
+    static final int MAX_EMBED_TEXT = 5800;
+
+    /** The default attachment name, kept for the Tribute posts. */
+    public static final String PHOTO_FILENAME = "photo.png";
 
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -113,24 +127,72 @@ public final class TributeWebhook {
         return path < 0 ? u : u.substring(0, path).toLowerCase(Locale.ROOT) + u.substring(path);
     }
 
+    /** The webhook's numeric id (not secret), or {@code ""} for an invalid link. */
+    public static String webhookId(String raw) {
+        if (!isValid(raw)) return "";
+        java.util.regex.Matcher m = PATH.matcher(URI.create(normalize(raw)).getRawPath());
+        return m.matches() ? m.group(1) : "";
+    }
+
     /** Whether {@code url} is already in {@code links} (as {@link #sameLinkKey} sees it). */
     public static boolean contains(java.util.List<String> links, String url) {
         String key = sameLinkKey(normalize(url));
         return links.stream().anyMatch(l -> sameLinkKey(l).equals(key));
     }
 
-    /** One embed: title, description, colour, and the attached image when there is one. */
+    /** One labelled embed field. */
+    public record Field(String name, String value) {}
+
+    /** One embed: title, description, colour, and the attached {@code photo.png} when there is one. */
     public static JsonObject embed(String title, String description, int color, boolean withImage) {
+        return embed(title, description, color, List.of(), withImage ? PHOTO_FILENAME : null);
+    }
+
+    /**
+     * One embed with fields, cut to Discord's limits so a long story never gets the whole post refused.
+     *
+     * @param imageFilename the attachment shown as the embed image, or null for none
+     */
+    public static JsonObject embed(String title, String description, int color, List<Field> fields, String imageFilename) {
         JsonObject embed = new JsonObject();
-        embed.addProperty("title", title);
-        if (description != null && !description.isBlank()) embed.addProperty("description", description);
+        String t = cut(title == null || title.isBlank() ? "Dungeon Train" : title, MAX_TITLE);
+        int budget = MAX_EMBED_TEXT - t.length();
+        embed.addProperty("title", t);
+        if (description != null && !description.isBlank()) {
+            String d = cut(description, Math.min(MAX_DESCRIPTION, budget));
+            budget -= d.length();
+            embed.addProperty("description", d);
+        }
         embed.addProperty("color", color);
-        if (withImage) {
+        JsonArray out = new JsonArray();
+        for (Field f : fields == null ? List.<Field>of() : fields) {
+            if (out.size() >= MAX_FIELDS || f == null || isBlank(f.name()) || isBlank(f.value())) continue;
+            String name = cut(f.name(), MAX_FIELD_NAME);
+            String value = cut(f.value(), MAX_FIELD_VALUE);
+            if (name.length() + value.length() > budget) break;
+            budget -= name.length() + value.length();
+            JsonObject field = new JsonObject();
+            field.addProperty("name", name);
+            field.addProperty("value", value);
+            out.add(field);
+        }
+        if (!out.isEmpty()) embed.add("fields", out);
+        if (imageFilename != null) {
             JsonObject image = new JsonObject();
-            image.addProperty("url", "attachment://photo.png");
+            image.addProperty("url", "attachment://" + imageFilename);
             embed.add("image", image);
         }
         return embed;
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    /** {@code s} at most {@code max} characters, ending in an ellipsis when cut. */
+    static String cut(String s, int max) {
+        if (s.length() <= max) return s;
+        return max <= 1 ? s.substring(0, Math.max(0, max)) : s.substring(0, max - 1) + "…";
     }
 
     /**
@@ -168,28 +230,38 @@ public final class TributeWebhook {
      * @param png the photo, or null for a text-only post (Send test)
      */
     public static CompletableFuture<Boolean> post(String url, String username, UUID uuid, JsonObject embed, byte[] png) {
+        return post(url, username, uuid, embed, png, PHOTO_FILENAME);
+    }
+
+    /**
+     * {@link #post(String, String, UUID, JsonObject, byte[])} with the attachment named {@code filename}
+     * ({@code .jpg} is sent as a JPEG, anything else as a PNG). The embed must name the same file.
+     */
+    public static CompletableFuture<Boolean> post(String url, String username, UUID uuid, JsonObject embed,
+                                                  byte[] image, String filename) {
         if (!isValid(url) || embed == null) return CompletableFuture.completedFuture(false);
         try {
-            HttpRequest request = request(normalize(url), payload(username, uuid, embed).toString(), png);
+            HttpRequest request = request(normalize(url), payload(username, uuid, embed).toString(), image,
+                    filename == null ? PHOTO_FILENAME : filename);
             return HTTP.sendAsync(request, HttpResponse.BodyHandlers.discarding())
                     .thenApply(response -> {
                         boolean ok = response.statusCode() / 100 == 2;
                         if (!ok) {
-                            LOGGER.info("[DungeonTrain] Tribute webhook post was refused: HTTP {}", response.statusCode());
+                            LOGGER.info("[DungeonTrain] Personal webhook post was refused: HTTP {}", response.statusCode());
                         }
                         return ok;
                     })
                     .exceptionally(t -> {
-                        LOGGER.info("[DungeonTrain] Tribute webhook post failed: {}", t.getClass().getSimpleName());
+                        LOGGER.info("[DungeonTrain] Personal webhook post failed: {}", t.getClass().getSimpleName());
                         return false;
                     });
         } catch (RuntimeException e) {
-            LOGGER.info("[DungeonTrain] Tribute webhook post failed: {}", e.getClass().getSimpleName());
+            LOGGER.info("[DungeonTrain] Personal webhook post failed: {}", e.getClass().getSimpleName());
             return CompletableFuture.completedFuture(false);
         }
     }
 
-    private static HttpRequest request(String url, String json, byte[] png) {
+    private static HttpRequest request(String url, String json, byte[] png, String filename) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
                 .timeout(TIMEOUT)
                 .header("User-Agent", "DungeonTrain-Mod");
@@ -200,20 +272,26 @@ public final class TributeWebhook {
         }
         String boundary = "DTBoundary" + UUID.randomUUID().toString().replace("-", "");
         return builder.header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(multipart(boundary, json, png)))
+                .POST(HttpRequest.BodyPublishers.ofByteArray(multipart(boundary, json, png, filename)))
                 .build();
     }
 
     /** {@code payload_json} then {@code files[0]} = photo.png. */
     static byte[] multipart(String boundary, String json, byte[] png) {
+        return multipart(boundary, json, png, PHOTO_FILENAME);
+    }
+
+    /** {@code payload_json} then {@code files[0]} = {@code filename}. */
+    static byte[] multipart(String boundary, String json, byte[] png, String filename) {
+        String type = filename.toLowerCase(Locale.ROOT).endsWith(".jpg") ? "image/jpeg" : "image/png";
         ByteArrayOutputStream out = new ByteArrayOutputStream(png.length + json.length() + 512);
         String head = "--" + boundary + "\r\n"
                 + "Content-Disposition: form-data; name=\"payload_json\"\r\n"
                 + "Content-Type: application/json\r\n\r\n"
                 + json + "\r\n"
                 + "--" + boundary + "\r\n"
-                + "Content-Disposition: form-data; name=\"files[0]\"; filename=\"photo.png\"\r\n"
-                + "Content-Type: image/png\r\n\r\n";
+                + "Content-Disposition: form-data; name=\"files[0]\"; filename=\"" + filename + "\"\r\n"
+                + "Content-Type: " + type + "\r\n\r\n";
         out.writeBytes(head.getBytes(StandardCharsets.UTF_8));
         out.writeBytes(png);
         out.writeBytes(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
