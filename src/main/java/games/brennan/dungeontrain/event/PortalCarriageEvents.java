@@ -54,6 +54,7 @@ import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalRoomOccupancy;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
+import games.brennan.dungeontrain.net.PortalRoomBorderPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
@@ -374,6 +375,12 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, PortalRoomFogPacket> LAST_FOG = new HashMap<>();
 
     /**
+     * The World Border region each player was last sent, deduped on the same "only when it changes"
+     * rule as {@link #LAST_FOG}.
+     */
+    private static final Map<UUID, PortalRoomBorderPacket> LAST_BORDER = new HashMap<>();
+
+    /**
      * Player → the daylit-room box they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
@@ -680,6 +687,7 @@ public final class PortalCarriageEvents {
         PortalTrainFreeze.clear();
         PortalArrivalHold.clear();
         LAST_FOG.clear();
+        LAST_BORDER.clear();
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
         CROSSING_THIS_TICK.clear();
@@ -1204,6 +1212,7 @@ public final class PortalCarriageEvents {
         players = withoutPortalTesters(players);
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
+            clearBorderFor(players, Set.of());
             clearSkyFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
             clearDepthFor(players, Set.of());
@@ -1224,6 +1233,7 @@ public final class PortalCarriageEvents {
         // config value that has since changed. Read once: it is the same answer for every pair.
         int groundY = DungeonTrainWorldData.get(level).getTrainY();
         Set<UUID> fogged = new HashSet<>();
+        Set<UUID> bordered = new HashSet<>();
         Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
         Set<UUID> depthed = new HashSet<>();
@@ -1283,12 +1293,14 @@ public final class PortalCarriageEvents {
             if (occupiedPairs.contains(pair.getKey())) occupiedStructures.add(next);
 
             sendFogFor(players, dims, layout, next, fogged);
+            sendBorderFor(players, dims, layout, next, bordered);
             sendSkyFor(players, dims, layout, next, skied);
             sendTrainAudioFor(players, dims, next, inStructure);
             sendDepthFor(players, dims, next, groundY, depthed);
         }
 
         clearFogFor(players, fogged);
+        clearBorderFor(players, bordered);
         clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);
         clearDepthFor(players, depthed);
@@ -1424,16 +1436,19 @@ public final class PortalCarriageEvents {
                                         PortalStructure structure, int groundY,
                                         List<ServerPlayer> players) {
         Set<UUID> fogged = new HashSet<>();
+        Set<UUID> bordered = new HashSet<>();
         Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
         Set<UUID> depthed = new HashSet<>();
 
         sendFogFor(players, dims, layout, structure, fogged);
+        sendBorderFor(players, dims, layout, structure, bordered);
         sendSkyFor(players, dims, layout, structure, skied);
         sendTrainAudioFor(players, dims, structure, inStructure);
         sendDepthFor(players, dims, structure, groundY, depthed);
 
         clearFogFor(players, fogged);
+        clearBorderFor(players, bordered);
         clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);
         clearDepthFor(players, depthed);
@@ -1772,6 +1787,53 @@ public final class PortalCarriageEvents {
     }
 
     /** Take the fog back off anyone who was in a room this tick and is not any more. */
+    /**
+     * Tell whoever is in or around a World Border room where its walls are, so their client can draw
+     * the border on them.
+     *
+     * <p>Delivered on the padded box, like the fog, so a player who walks out through the border
+     * into the clearance keeps it — standing outside it is exactly when it turns red. What it carries
+     * is the room's own box: that is where the walls are.</p>
+     */
+    private static void sendBorderFor(List<ServerPlayer> players, CarriageDims dims,
+                                      PortalCarriageLayout layout, PortalStructure structure,
+                                      Set<UUID> bordered) {
+        if (!structure.mode().drawsBorder()) return;
+        int pad = structure.fogPad();
+        AABB box = structureBox(dims, structure);
+        if (pad > 0) box = box.inflate(pad, 0.0, pad);
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        PortalRoomBorderPacket region = new PortalRoomBorderPacket(
+            roomOrigin.getX(), roomOrigin.getY(), roomOrigin.getZ(),
+            roomOrigin.getX() + structure.roomSize().getX(),
+            roomOrigin.getY() + structure.roomSize().getY(),
+            roomOrigin.getZ() + structure.roomSize().getZ());
+
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            bordered.add(player.getUUID());
+            if (region.equals(LAST_BORDER.get(player.getUUID()))) continue;
+            LAST_BORDER.put(player.getUUID(), region);
+            PacketDistributor.sendToPlayer(player, region);
+        }
+    }
+
+    /** Take the border away from anyone who has left every World Border room. */
+    private static void clearBorderFor(List<ServerPlayer> players, Set<UUID> stillBordered) {
+        if (LAST_BORDER.isEmpty()) return;
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            if (stillBordered.contains(id) || !LAST_BORDER.containsKey(id)) continue;
+            LAST_BORDER.remove(id);
+            PacketDistributor.sendToPlayer(player, PortalRoomBorderPacket.none());
+        }
+        // Pruned on the fog's rule, and for its reason: a `portal test` occupant is not gone.
+        List<UUID> present = new ArrayList<>(players.size() + 1);
+        for (ServerPlayer p : players) present.add(p.getUUID());
+        LAST_BORDER.keySet().removeIf(id -> !present.contains(id)
+            && !games.brennan.dungeontrain.portal.PortalTestSession.has(id));
+    }
+
     private static void clearFogFor(List<ServerPlayer> players, Set<UUID> stillFogged) {
         if (LAST_FOG.isEmpty()) return;
         for (ServerPlayer player : players) {

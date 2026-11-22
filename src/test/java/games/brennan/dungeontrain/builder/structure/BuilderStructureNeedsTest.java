@@ -421,6 +421,12 @@ final class BuilderStructureNeedsTest {
         assertTrue(BuilderStructureNeeds.around(room(PortalRoomMode.VOID)).isEmpty());
     }
 
+    @Test
+    @DisplayName("A World Border room declares nothing either — it is Void with a drawn edge")
+    void worldBorderDeclaresNothing() {
+        assertTrue(BuilderStructureNeeds.around(room(PortalRoomMode.WORLD_BORDER)).isEmpty());
+    }
+
     // ---- invariants ----
 
     @Test
