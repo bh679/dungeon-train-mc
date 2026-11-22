@@ -1,0 +1,17 @@
+{
+  "id": "world-border-doorways",
+  "version": "0.1964.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "World Border fix",
+  "summary": "The world border no longer stands across the doorways of its carriages.",
+  "highlights": [],
+  "pr": 2823,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
