@@ -270,7 +270,9 @@ public final class WholeWeights {
         Path file = sourceFile(kind);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(TemplateWeightCodec.toJson(weights), w);
+            new GsonBuilder().setPrettyPrinting().create().toJson(TemplateWeightCodec.toJson(
+                games.brennan.dungeontrain.editor.TemplateBuilderLookup.withDownloadedCredits(weights,
+                    kind == WholeKind.GROUP ? games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE_GROUP : games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE, "")), w);
         }
         LOGGER.info("[DungeonTrain] Wrote bundled whole {} weights to {} (devmode promote).", kind.id(), file);
     }
