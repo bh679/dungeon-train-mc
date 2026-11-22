@@ -38446,6 +38446,123 @@
       "released": true,
       "released_in": "v0.1966.0",
       "released_at": "2026-11-22T11:39:22Z"
+    },
+    {
+      "id": "community-rewards-dev-share",
+      "version": "0.1968.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Community Rewards show what goes to the dev",
+      "summary": "Every Community Reward now shows how much of your gift reaches the developer once it has paid its own running costs and card fees.",
+      "highlights": [
+        "Each reward reads \"$X goes to the dev\" under \"For everyone\", in your chosen currency",
+        "The Contribute card's Give button always shows the amount",
+        "Community Reward prices updated",
+        "Clearer reward descriptions"
+      ],
+      "pr": 2826,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1971.0",
+      "released_at": "2026-11-22T14:05:15Z"
+    },
+    {
+      "id": "cubes-without-borders-modpack",
+      "version": "0.1968.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Borderless fullscreen",
+      "summary": "The Modrinth modpack now comes with a borderless fullscreen option. Pick it from Fullscreen Mode in Video Settings to fill the screen without a title bar, and switch to other apps without the game minimising.",
+      "highlights": [
+        "Fullscreen Mode in Video Settings: Off, Exclusive, Borderless or Windowed"
+      ],
+      "pr": 2827,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1971.0",
+      "released_at": "2026-11-22T14:05:15Z"
+    },
+    {
+      "id": "editor-if-prefill-and-targets",
+      "version": "0.1967.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Faster block variant conditions",
+      "summary": "Setting conditions on block variants in the editor takes fewer clicks, and you can see what each one is checking.",
+      "highlights": [
+        "Opening If on a row with no condition fills in the condition you last changed in that block",
+        "While If is open, the blocks it checks are outlined in purple"
+      ],
+      "pr": 2825,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1971.0",
+      "released_at": "2026-11-22T14:05:15Z"
+    },
+    {
+      "id": "editor-room-connect-styles",
+      "version": "0.1969.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Wall and fence styles in dimensional carriages",
+      "summary": "Walls, fences, panes and bars in dimensional carriage builds can now join up or keep a fixed shape, just like in carriages.",
+      "highlights": [],
+      "pr": 2829,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1971.0",
+      "released_at": "2026-11-22T14:05:15Z"
+    },
+    {
+      "id": "editor-stacked-group-menu",
+      "version": "0.1969.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Edit groups without leaving the cell",
+      "summary": "In the block variant menu, right-click a group entry to open that group's options right above, and change them without losing your place.",
+      "highlights": [
+        "Both menus stay open and usable",
+        "Right-click the entry again to close it"
+      ],
+      "pr": 2829,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1971.0",
+      "released_at": "2026-11-22T14:05:15Z"
+    },
+    {
+      "id": "new-train-builds-nov-22",
+      "version": "0.1969.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "More to find on the train",
+      "summary": "New places to explore in dimensional carriages, and a new kind of enemy carriage.",
+      "highlights": [],
+      "pr": 2829,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1971.0",
+      "released_at": "2026-11-22T14:05:15Z"
     }
   ]
 }
