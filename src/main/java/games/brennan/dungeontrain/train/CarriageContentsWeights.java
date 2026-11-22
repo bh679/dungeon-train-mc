@@ -491,7 +491,8 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             new GsonBuilder().setPrettyPrinting().create()
-                    .toJson(TemplateWeightCodec.toJson(weights.byId()), w);
+                    .toJson(TemplateWeightCodec.toJson(games.brennan.dungeontrain.editor.TemplateBuilderLookup.withDownloadedCredits(
+                        weights.byId(), games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, "")), w);
         }
         LOGGER.info("[DungeonTrain] Wrote bundled contents weights to {} (devmode promote).", file);
     }

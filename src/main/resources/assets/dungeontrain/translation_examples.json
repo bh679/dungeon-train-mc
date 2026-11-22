@@ -1,4 +1,22 @@
 {
+  "gui.dungeontrain.editor_menu.dates.title": {
+    "1": { "label": "the build's name", "examples": ["taschristmascarriage", "Spooky fall carriage"] }
+  },
+  "gui.dungeontrain.editor_menu.dates.row": {
+    "1": { "label": "a festival name", "examples": ["Christmas", "Diwali"] },
+    "2": { "label": "when it next falls", "examples": ["18 Dec to 26 Dec", "6 Nov to 10 Nov"] }
+  },
+  "gui.dungeontrain.editor_menu.dates.window": {
+    "1": { "label": "a day and short month", "examples": ["18 Dec", "6 Nov"] },
+    "2": { "label": "a day and short month", "examples": ["26 Dec", "10 Nov"] }
+  },
+  "chat.dungeontrain.editor.gate_periods_saved": {
+    "1": { "label": "a template id", "examples": ["taschristmascarriage", "maze"] },
+    "2": { "label": "festival ids, comma separated", "examples": ["christmas", "halloween, day_of_the_dead"] }
+  },
+  "chat.dungeontrain.editor.unknown_period": {
+    "1": { "label": "what the player typed", "examples": ["xmas", "easter2"] }
+  },
   "gui.dungeontrain.tribute_webhook.renaming": {
     "1": { "label": "the webhook's name as the player typed it, or 'Webhook 3' if it has none", "examples": ["Family server", "Webhook 3"] }
   },

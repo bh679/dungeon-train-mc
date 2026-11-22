@@ -417,7 +417,8 @@ public final class EditorTypeMenus {
                 cat, v.id(), v.id(), p.isUser(), p.isImported(),
                 stageId == null ? "" : stageId).withDisplayName(weights.nameFor(v.id()))
                 .withBuilder(builderUuid(TemplateBuilderLookup.carriage(weights, v.id())),
-                    builderName(TemplateBuilderLookup.carriage(weights, v.id()))));
+                    builderName(TemplateBuilderLookup.carriage(weights, v.id())))
+                .withPeriods(g.periods()));
         }
         return rows;
     }
@@ -464,7 +465,8 @@ public final class EditorTypeMenus {
                 subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
                 .withDisplayName(weights.nameFor(c.id()))
                 .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, c.id())),
-                    builderName(TemplateBuilderLookup.contents(weights, c.id()))));
+                    builderName(TemplateBuilderLookup.contents(weights, c.id())))
+                .withPeriods(g.periods()));
         }
         return rows;
     }
@@ -516,7 +518,8 @@ public final class EditorTypeMenus {
                 .withDisplayName(TrackVariantWeights.nameFor(kind, name))
                 .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, name)),
                     builderName(TemplateBuilderLookup.track(kind, name)))
-                .withGroups(TrackVariantWeights.groupsFor(kind, name)));
+                .withGroups(TrackVariantWeights.groupsFor(kind, name))
+                .withPeriods(g.periods()));
         }
         return rows;
     }
@@ -682,7 +685,10 @@ public final class EditorTypeMenus {
                 prov.isUser(), prov.isImported(),
                 java.util.List.of(), m.stageIds()).withDisplayName(TrackVariantWeights.nameFor(kind, m.id()))
                 .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, m.id())),
-                    builderName(TemplateBuilderLookup.track(kind, m.id()))));
+                    builderName(TemplateBuilderLookup.track(kind, m.id())))
+                // Dates belong to the member template itself (its weights.json entry), the same
+                // place the pick reads them from and the Dates picker writes them to.
+                .withPeriods(TrackVariantWeights.gateFor(kind, m.id()).periods()));
         }
         return out;
     }

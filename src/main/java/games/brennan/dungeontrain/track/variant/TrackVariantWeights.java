@@ -536,8 +536,9 @@ public final class TrackVariantWeights {
         Path file = sourceFile(kind);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            // Downloaded builds keep their builder in the shipped file (see withDownloadedCredits).
             new GsonBuilder().setPrettyPrinting().create()
-                .toJson(TemplateWeightCodec.toJson(weights), w);
+                .toJson(TemplateWeightCodec.toJson(games.brennan.dungeontrain.editor.TemplateBuilderLookup.withDownloadedCredits(kind, weights)), w);
         }
         LOGGER.info("[DungeonTrain] Wrote bundled track weights for {} to {} (devmode promote).", kind.id(), file);
     }

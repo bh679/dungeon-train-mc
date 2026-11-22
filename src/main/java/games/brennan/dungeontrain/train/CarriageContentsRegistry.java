@@ -324,6 +324,8 @@ public final class CarriageContentsRegistry {
                     effective = levelOnly;
                     warnGateEmptyOnce();
                 } else {
+                    // Still never an out-of-season piece (the date gate is hard).
+                    effective = GateContext.withoutOutOfSeason(pool, c -> weights.gateFor(c.id()));
                     warnGateEmptyAllStagesOnce();
                 }
             }

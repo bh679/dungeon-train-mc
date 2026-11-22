@@ -203,6 +203,27 @@
       "name": "AntonioMacarely"
     }
   },
+  "fallactivitiescart1": {
+    "weight": 1,
+    "periods": [
+      "halloween"
+    ],
+    "mode": "bedrock/exact/off/off/off/none/sealed/3/2/3/4/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
+  "fallspookycarriage1": {
+    "weight": 1,
+    "periods": [
+      "halloween"
+    ],
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "flooded": {
     "weight": 2,
     "phases": [
@@ -403,10 +424,15 @@
     }
   },
   "onionman": 1,
+  "openlibflat": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "endless_repetition/dynamic/off/random:64:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
+  },
   "openlibrary": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic/off/random:25:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
+    "mode": "endless_repetition/dynamic/off/random:64:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
   },
   "outsidethebox": {
     "weight": 3,
@@ -595,6 +621,16 @@
       "name": "AntonioMacarely"
     }
   },
+  "taschristmascarriage": {
+    "weight": 1,
+    "periods": [
+      "christmas"
+    ],
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "taslibrary1": {
     "weight": 1,
     "minLevel": 5,
@@ -627,6 +663,32 @@
       "name": "Nikeeta"
     }
   },
+  "tasuschristmascarriage": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "periods": [
+      "christmas"
+    ],
+    "mode": "chunk_dimension/exact/fit/off/mix/cycle/sealed/-2/4/-2/4/dungeontrain:skybox_block",
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "terrarium": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/day/sealed/0/73/0/19",
@@ -656,6 +718,14 @@
     "builder": {
       "uuid": "d54abc84c5ff436f96e63bde8f1185c4",
       "name": "Nikeeta"
+    }
+  },
+  "thearchivistsocietycourtyard": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/-2/0/-2/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
     }
   },
   "thearchivistsocietypagoda": {
@@ -708,6 +778,11 @@
       "uuid": "7b7774bd61fc44b59b8b3f38ce70a443",
       "name": "AshSeven"
     }
+  },
+  "voidparkour": {
+    "weight": 2,
+    "minLevel": 2,
+    "mode": "void/exact/off/off/off/day/sealed/0/3/0/11"
   },
   "waterparkour": {
     "weight": 2,

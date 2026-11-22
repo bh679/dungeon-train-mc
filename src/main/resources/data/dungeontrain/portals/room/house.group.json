@@ -234,6 +234,27 @@
       "id": "thearchivistsocietypagoda",
       "weight": 4,
       "minLevel": 20
+    },
+    {
+      "id": "thearchivistsocietycourtyard",
+      "weight": 5
+    },
+    {
+      "id": "fallspookycarriage1",
+      "weight": 10
+    },
+    {
+      "id": "taschristmascarriage",
+      "weight": 10
+    },
+    {
+      "id": "tasuschristmascarriage",
+      "weight": 10,
+      "minLevel": 5
+    },
+    {
+      "id": "fallactivitiescart1",
+      "weight": 10
     }
   ]
 }

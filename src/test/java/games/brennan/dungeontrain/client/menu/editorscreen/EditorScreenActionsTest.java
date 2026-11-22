@@ -388,8 +388,29 @@ final class EditorScreenActionsTest {
 
     // ---- settings rows ----
 
+    /** The settings rows without the Dates button, which {@link #datesRowFirst} covers on its own. */
     private static final Function<EditorScreenActions.Ctx, List<CommandMenuEntry>> ROWS =
-        c -> EditorScreenActions.settingRows(c, () -> List.of(new CommandMenuEntry.Label("ROOM")), () -> "");
+        c -> EditorScreenActions.settingRows(c, () -> List.of(new CommandMenuEntry.Label("ROOM")), () -> "")
+            .stream().filter(r -> !isDatesRow(r)).toList();
+
+    private static boolean isDatesRow(CommandMenuEntry r) {
+        return r instanceof CommandMenuEntry.DrillIn d
+            && d.target() instanceof games.brennan.dungeontrain.client.menu.DatePeriodPickerScreen;
+    }
+
+    @Test
+    @DisplayName("a gated template's settings open with a Dates button, the one row the sheet also has")
+    void datesRowFirst() {
+        VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
+        List<CommandMenuEntry> rows = EditorScreenActions.settingRows(
+            ctx(k, gated("CARRIAGES", "pen", "pen", 15, List.of()), null, PlotCategory.CARRIAGES), List::of, () -> "");
+        assertTrue(isDatesRow(rows.get(0)), rows.toString());
+        // A row with no spawn gate has no dates to set.
+        EditorTypeMenusPacket.Variant ungated = new EditorTypeMenusPacket.Variant("armor5", 6, "CONTENTS", "armor5", "armor5", false, false);
+        VariantKey member = new VariantKey(PlotCategory.CONTENTS, "armor5", "armor5", "armor");
+        assertTrue(EditorScreenActions.settingRows(ctx(member, ungated, null, PlotCategory.CONTENTS), List::of, () -> "")
+            .stream().noneMatch(EditorScreenActionsTest::isDatesRow));
+    }
 
     @Test
     @DisplayName("the rows below the icons carry only what the sheet has no line for")

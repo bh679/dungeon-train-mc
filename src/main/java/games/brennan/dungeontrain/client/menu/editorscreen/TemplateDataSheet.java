@@ -191,6 +191,10 @@ public final class TemplateDataSheet {
         out.add(lootLine(summary, pending));
         out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
         out.addAll(stageLines(v, key, pending));
+        // After Stage: the sheet drops whatever runs past the pane's height, and the settings page
+        // carries a Dates button too, so on a short pane this is the line to lose.
+        Line dates = datesLine(v, key);
+        if (dates != null) out.add(dates);
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         // A labelled build is drawn under its label everywhere else on this screen; the id is what
         // every command and file is named by, so the sheet still shows it — but last. The sheet
@@ -517,6 +521,24 @@ public final class TemplateDataSheet {
             key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
         return stageLines(v.minLevel(), v.maxLevel(), v.phaseMask(), linked ? v.primaryStageId() : "", picker,
             min, max, phases);
+    }
+
+    /**
+     * Dates: the festivals this template is locked to ({@code Any time} when none), opening the
+     * {@link games.brennan.dungeontrain.client.menu.DatePeriodPickerScreen Dates picker}. Null for a
+     * row with no spawn gate, or a category that has no date gate.
+     */
+    static Line datesLine(EditorTypeMenusPacket.Variant v, VariantKey key) {
+        if (v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE || key == null) return null;
+        var picker = games.brennan.dungeontrain.client.menu.DatePeriodPickerScreen.forTemplate(
+            key.category(), key.modelId(), key.modelName(), v.displayName(), v.periods());
+        if (picker.isEmpty()) return null;
+        String text = v.periods().isEmpty()
+            ? EditorScreenLang.text(EditorScreenLang.SHEET_DATES_ANY)
+            : games.brennan.dungeontrain.client.menu.DatePeriodPickerScreen.periodNames(v.periods());
+        Cell cell = new Cell(text, new Action.Open(picker.get()), !v.periods().isEmpty())
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_DATES_TOOLTIP));
+        return new Line(EditorScreenLang.text(EditorScreenLang.SHEET_DATES), List.of(cell));
     }
 
     /**

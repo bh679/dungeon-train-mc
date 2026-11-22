@@ -201,7 +201,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         String builderName,
         List<String> groupIds,
         String pool,
-        boolean poolHeader
+        boolean poolHeader,
+        List<String> periods
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -217,6 +218,26 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             builderName = builderName == null ? "" : builderName;
             groupIds = groupIds == null ? List.of() : List.copyOf(groupIds);
             pool = pool == null ? "" : pool;
+            periods = periods == null ? List.of() : List.copyOf(periods);
+        }
+
+        /** The 18-field shape from before date periods — any time. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, List<String> stageIds, String displayName,
+                       String builderUuid, String builderName, List<String> groupIds, String pool, boolean poolHeader) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName, isUser, isImported,
+                subVariants, stageIds, displayName, builderUuid, builderName, groupIds, pool, poolHeader, List.of());
+        }
+
+        /**
+         * Copy with the template's date periods replaced (sorted ids; empty = any time). Drawn as the
+         * data sheet's Dates line; never sent back, the picker sends one toggle at a time.
+         */
+        public Variant withPeriods(java.util.Collection<String> ids) {
+            return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, pool, poolHeader,
+                ids == null ? List.of() : List.copyOf(ids));
         }
 
         /** The 16-field shape from before contents pools — in no pool. */
@@ -234,7 +255,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
          */
         public Variant inPool(String poolId) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, poolId, false);
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, poolId, false, periods);
         }
 
         /**
@@ -263,7 +284,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the template-group memberships replaced (tunnel templates only today). */
         public Variant withGroups(List<String> groups) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups, pool, poolHeader);
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups, pool, poolHeader, periods);
         }
 
         /** The 13-field shape the label-aware builders used — no builder credit. */
@@ -285,13 +306,13 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the drawn label replaced; {@code null} / blank falls back to the name. */
         public Variant withDisplayName(String label) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds, pool, poolHeader);
+                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds, pool, poolHeader, periods);
         }
 
         /** Copy with the builder credit replaced; {@code null} for either half means "none". */
         public Variant withBuilder(String uuid, String builderName) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds, pool, poolHeader);
+                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds, pool, poolHeader, periods);
         }
 
         /** True when somebody is credited as this template's original builder. */
@@ -461,6 +482,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         for (String g : v.groupIds()) buf.writeUtf(g, 64);
         buf.writeUtf(v.pool(), 64);
         buf.writeBoolean(v.poolHeader());
+        buf.writeVarInt(v.periods().size());
+        for (String p : v.periods()) buf.writeUtf(p, 64);
     }
 
     static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -492,9 +515,12 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         for (int k = 0; k < groupCount; k++) groupIds.add(buf.readUtf(64));
         String pool = buf.readUtf(64);
         boolean poolHeader = buf.readBoolean();
+        int periodCount = buf.readVarInt();
+        List<String> periods = new ArrayList<>(periodCount);
+        for (int k = 0; k < periodCount; k++) periods.add(buf.readUtf(64));
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
             category, modelId, modelName, isUser, isImported, subs, stageIds, displayName,
-            builderUuid, builderName, groupIds, pool, poolHeader);
+            builderUuid, builderName, groupIds, pool, poolHeader, periods);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
