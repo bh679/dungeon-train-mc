@@ -5415,6 +5415,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s với xác sống",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s với động vật chân đốt",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s với sinh vật dưới nước",
+  "tooltip.dungeontrain.perk_damage": "+%s từ đặc quyền",
   "tooltip.dungeontrain.provenance.found_by": "Tìm thấy bởi %s",
   "tooltip.dungeontrain.provenance.made_by": "Chế tạo bởi %s",
   "tooltip.dungeontrain.provenance.bought_by": "Mua bởi %s",

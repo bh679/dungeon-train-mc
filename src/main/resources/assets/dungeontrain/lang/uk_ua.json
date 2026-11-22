@@ -6258,6 +6258,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s проти нежиті",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s проти членистоногих",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s проти водних істот",
+  "tooltip.dungeontrain.perk_damage": "+%s від перків",
   "tooltip.dungeontrain.provenance.found_by": "Знайдено гравцем %s",
   "tooltip.dungeontrain.provenance.made_by": "Створено гравцем %s",
   "tooltip.dungeontrain.provenance.bought_by": "Куплено гравцем %s",

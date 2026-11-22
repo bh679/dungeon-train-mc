@@ -5429,6 +5429,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "對不死生物 +%s",
   "tooltip.dungeontrain.enchant_damage.arthropods": "對節肢生物 +%s",
   "tooltip.dungeontrain.enchant_damage.aquatic": "對水生生物 +%s",
+  "tooltip.dungeontrain.perk_damage": "來自特權 +%s",
   "tooltip.dungeontrain.provenance.found_by": "發現者：%s",
   "tooltip.dungeontrain.provenance.made_by": "製作者：%s",
   "tooltip.dungeontrain.provenance.bought_by": "購買者：%s",

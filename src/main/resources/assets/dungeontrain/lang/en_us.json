@@ -6193,6 +6193,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s vs Undead",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s vs Arthropods",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s vs Aquatic",
+  "tooltip.dungeontrain.perk_damage": "+%s from Perks",
   "gui.dungeontrain.death_moment.continue": "Press Space to continue",
   "gui.dungeontrain.death_moment.change_view": "Left or Right to change the view",
   "item.dungeontrain.cosmic_apple": "Cosmic Apple",
