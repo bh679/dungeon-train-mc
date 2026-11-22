@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.photo.PhotoPngCodec;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -176,7 +178,7 @@ public final class AlbumStore {
 
     // ---- pictures -----------------------------------------------------------------
 
-    /** Keep these PNGs, by hash. A picture already held is left as it is. */
+    /** Keep these PNGs, by hash. A picture already held is left as it is, unless its file differs (a damaged copy). */
     public void putImages(Map<String, byte[]> pngs) {
         if (pngs.isEmpty()) return;
         pngs.forEach((hash, png) -> {
@@ -185,7 +187,7 @@ public final class AlbumStore {
         io.execute(() -> pngs.forEach((hash, png) -> {
             try {
                 Path file = imageFile(hash);
-                if (!Files.exists(file)) write(file, png);
+                if (!Files.exists(file) || !Arrays.equals(Files.readAllBytes(file), png)) write(file, png);
             } catch (IOException | UncheckedIOException e) {
                 LOGGER.warn("[DungeonTrain] Album picture {} not saved: {}", hash, e.toString());
             } finally {
@@ -206,6 +208,22 @@ public final class AlbumStore {
             LOGGER.warn("[DungeonTrain] Album picture {} unreadable: {}", hash, e.toString());
             return Optional.empty();
         }
+    }
+
+    /**
+     * The PNG for {@code hash} only when it reads back whole and its pixels still hash to
+     * {@code hash}: a truncated or damaged file comes back empty, so the picture is fetched again.
+     */
+    public Optional<byte[]> verifiedImage(String hash) {
+        return image(hash).filter(png -> {
+            try {
+                PhotoPngCodec.Decoded decoded = PhotoPngCodec.decode(png);
+                return hash.equals(AlbumImageHash.of(decoded.width(), decoded.height(), decoded.pixels()));
+            } catch (IOException | RuntimeException e) {
+                LOGGER.debug("[DungeonTrain] Album picture {} on disk is damaged, fetching it again: {}", hash, e.toString());
+                return false;
+            }
+        });
     }
 
     public boolean hasImage(String hash) {
