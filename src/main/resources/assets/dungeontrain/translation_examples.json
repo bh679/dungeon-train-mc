@@ -18199,15 +18199,6 @@
       ]
     }
   },
-  "gui.dungeontrain.rewards.give.month": {
-    "1": {
-      "label": "a month name, short or full",
-      "examples": [
-        "Nov",
-        "December"
-      ]
-    }
-  },
   "gui.dungeontrain.rewards.give.amount": {
     "1": {
       "label": "the gift amount, figure only",
@@ -18232,6 +18223,15 @@
       "examples": [
         "Two Streams, Quicker Streams",
         "Two Streams, HD Streams"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.to_dev": {
+    "1": {
+      "label": "the amount of one gift left for the developer, figure only",
+      "examples": [
+        "$9",
+        "$0"
       ]
     }
   },

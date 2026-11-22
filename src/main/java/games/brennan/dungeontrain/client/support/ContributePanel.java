@@ -81,6 +81,8 @@ public final class ContributePanel {
     static final int COLOUR_ON = 0xFF8FE08A;
     private static final int COLOUR_REWARDS_TITLE = 0xB99BF0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
+    /** "$9 goes to the dev" under "For everyone". */
+    private static final int COLOUR_DEV_SHARE = 0xFF9A9A9A;
     private static final int COLOUR_RAISED = 0xFFA0A0A0;
     private static final int COLOUR_CARD = 0x306D4B9C;
     private static final int COLOUR_CARD_EDGE = 0xFF4A3F66;
@@ -249,7 +251,7 @@ public final class ContributePanel {
 
     /**
      * The featured community reward: group label, name, its one line, an "ON until" line when it is
-     * on, and a purple Give button with "For everyone" under it on the right.
+     * on, and a purple Give button with "For everyone" and "$9 goes to the dev" under it on the right.
      */
     private int rewardCard(Font font, int x, int y, int w, boolean commit, Consumer<AbstractWidget> add) {
         // "COMMUNITY REWARDS" in bold purple, then " · A GIFT TO EVERYONE" in the label grey.
@@ -265,12 +267,15 @@ public final class ContributePanel {
         int lh = font.lineHeight;
 
         Component noteText = Component.translatable("gui.dungeontrain.contribute.keeps_on");
-        int sideW = Math.min(w / 3, Math.max(GIVE_W, font.width(noteText) + 2));
+        // "$9 goes to the dev", grey, under "For everyone" when the relay says it; the column widens to fit it.
+        Component toDev = CommunityRewards.devShareLine(reward);
+        int noteW = Math.max(font.width(noteText), toDev != null ? font.width(toDev) : 0);
+        int sideW = Math.min(w / 3, Math.max(GIVE_W, noteW + 2));
         // The reward's icon sits left of its name and line; the text starts after it.
         int iconLeft = x + CARD_PAD;
         int textX = iconLeft + ICON + ICON_GAP;
         int textW = w - sideW - CARD_PAD * 3 - ICON - ICON_GAP;
-        int sideH = GIVE_H + 2 + lh;
+        int sideH = GIVE_H + 2 + lh + (toDev != null ? lh + 1 : 0);
         CardLines lines = cardLines(font, reward, state, now, textX, y + CARD_PAD, textW);
         int h = Math.max(lines.bottom() + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
 
@@ -292,6 +297,12 @@ public final class ContributePanel {
             for (FormattedCharSequence note : font.split(noteText, sideW)) {
                 cardTexts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
                 break; // one line; a language whose note does not fit is cut, never spills out of the card
+            }
+            if (toDev != null) {
+                for (FormattedCharSequence l : font.split(toDev, sideW)) {
+                    cardTexts.add(new Text(l, gx + sideW / 2, gy + GIVE_H + 2 + lh + 1, COLOUR_DEV_SHARE, true));
+                    break; // one line, like the note above
+                }
             }
             arrowCurrent = order.indexOf(reward);
             // Plain arrows just outside the card's left and right edges, centred on it.
@@ -339,8 +350,8 @@ public final class ContributePanel {
 
 
     /**
-     * A reward's purple Give button. Off: "Give $94" on the Contribute card ({@code shortForm}) or
-     * "Give this month" on the shelf. On: "Give <month>", the month a gift would land in. Greyed
+     * A reward's purple Give button: "Give $94", and when a gift would queue "Give $94 · Dec", the
+     * month it would land in (on the Contribute card, {@code shortForm}, only when that fits). Greyed
      * "Soon" while the relay takes no reward gifts yet.
      */
     static Button giveButton(CommunityRewards.Reward reward, boolean on, LiveRewards state, long now,
@@ -350,14 +361,16 @@ public final class ContributePanel {
         if (!open) {
             label = Component.translatable("gui.dungeontrain.rewards.give.soon");
         } else if (shortForm) {
-            // The Contribute card: "Give $94", or "Give Nov" when a gift would queue.
+            // The Contribute card: "Give $94", or "Give $100 · Dec" when a gift would queue, so the
+            // amount always shows; just the amount when the month does not fit the button.
+            Component amount = CommunityRewards.amountShort(reward);
+            label = Component.translatable("gui.dungeontrain.rewards.give.amount", amount);
             if (on) {
                 String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
                         .getMonth().getDisplayName(TextStyle.SHORT, javaLocale());
-                label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
-            } else {
-                label = Component.translatable("gui.dungeontrain.rewards.give.amount",
-                        CommunityRewards.amountShort(reward));
+                Component withMonth = Component.translatable("gui.dungeontrain.rewards.give.amount",
+                        amount.copy().append(" · " + month));
+                if (net.minecraft.client.Minecraft.getInstance().font.width(withMonth) <= w - 8) label = withMonth;
             }
         } else {
             // The rewards page carries the amount only here: "Give $94", or "Give $94 · Dec" when it would queue.

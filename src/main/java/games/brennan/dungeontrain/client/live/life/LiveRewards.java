@@ -72,11 +72,22 @@ public record LiveRewards(List<Reward> rewards) {
     /**
      * What one more gift of a reward costs right now, as the relay quotes it (summary
      * {@code rewardPrices}): {@code base} is the reward on its own, {@code aud} that raised by the
-     * rewards already on that cost it more to run ({@code raisedBy}, their ids). Whole AUD.
+     * rewards already on that cost it more to run ({@code raisedBy}, their ids), and {@code devAud}
+     * what of that gift is left for the dev after its worst-case running cost and the card fee
+     * ({@link #NO_DEV_SHARE} from a relay that does not say). Whole AUD.
      */
-    public record Quote(int aud, int base, List<String> raisedBy) {
+    public record Quote(int aud, int base, List<String> raisedBy, int devAud) {
         public Quote {
             raisedBy = List.copyOf(raisedBy == null ? List.of() : raisedBy);
+        }
+
+        public Quote(int aud, int base, List<String> raisedBy) {
+            this(aud, base, raisedBy, NO_DEV_SHARE);
+        }
+
+        /** Whether the relay said how much of this gift goes to the dev. */
+        public boolean hasDevShare() {
+            return devAud >= 0;
         }
 
         /** Whether other rewards being on push this one above its own base. */
@@ -84,6 +95,9 @@ public record LiveRewards(List<Reward> rewards) {
             return aud > base && !raisedBy.isEmpty();
         }
     }
+
+    /** {@link Quote#devAud()} when the relay sent no dev share. */
+    public static final int NO_DEV_SHARE = -1;
 
     private static volatile java.util.Map<String, Quote> quotes = java.util.Map.of();
 
@@ -129,7 +143,12 @@ public record LiveRewards(List<Reward> rewards) {
                 }
             }
         }
-        return new Quote(aud, base, by);
+        int dev = NO_DEV_SHARE;
+        if (q.has("devAud") && q.get("devAud").isJsonPrimitive() && q.get("devAud").getAsJsonPrimitive().isNumber()) {
+            int d = q.get("devAud").getAsInt();
+            if (d >= 0 && d <= aud) dev = d;
+        }
+        return new Quote(aud, base, by, dev);
     }
 
     private static volatile java.util.Set<String> openIds = java.util.Set.of();
