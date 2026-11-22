@@ -28,8 +28,20 @@ final class PortalRoomBorderPacketTest {
     }
 
     @Test
+    void doorsRoundTrip() {
+        PortalRoomBorderPacket.Door west = new PortalRoomBorderPacket.Door(-1984, -9, -1977, 0);
+        PortalRoomBorderPacket box = new PortalRoomBorderPacket(198330, -1984, -12, 198346, -1970, 3,
+            west, PortalRoomBorderPacket.Door.NONE);
+        PortalRoomBorderPacket back = roundTrip(box);
+        assertEquals(box, back);
+        assertTrue(back.westDoor().present());
+        assertFalse(back.eastDoor().present());
+    }
+
+    @Test
     void noneIsNotABorder() {
         assertEquals(PortalRoomBorderPacket.none(), roundTrip(PortalRoomBorderPacket.none()));
         assertFalse(PortalRoomBorderPacket.none().present());
+        assertFalse(PortalRoomBorderPacket.none().westDoor().present());
     }
 }

@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.net.PortalRoomBorderPacket;
+import games.brennan.dungeontrain.portal.PortalRoomBorderFace;
 import games.brennan.dungeontrain.portal.PortalRoomBorderSpan;
 import games.brennan.dungeontrain.portal.PortalSealPlane;
 import net.minecraft.Util;
@@ -111,9 +112,12 @@ public final class PortalRoomBorderRenderer {
         Matrix4f m = event.getPoseStack().last().pose();
         Wall wall = new Wall(vc, m, cam, span[0], span[1], scroll, rgb);
 
-        // West and east faces run along Z; north and south along X.
-        wall.drawX(region.minX(), region.minZ(), region.maxZ(), alpha(cam.x - region.minX(), reach));
-        wall.drawX(region.maxX(), region.minZ(), region.maxZ(), alpha(region.maxX() - cam.x, reach));
+        // West and east faces run along Z, with each corridor's mouth left open; north and south
+        // run along X.
+        wall.drawX(region.minX(), region.minZ(), region.maxZ(), region.westDoor(),
+            alpha(cam.x - region.minX(), reach));
+        wall.drawX(region.maxX(), region.minZ(), region.maxZ(), region.eastDoor(),
+            alpha(region.maxX() - cam.x, reach));
         wall.drawZ(region.minZ(), region.minX(), region.maxX(), alpha(cam.z - region.minZ(), reach));
         wall.drawZ(region.maxZ(), region.minX(), region.maxX(), alpha(region.maxZ() - cam.z, reach));
         buffer.endBatch(BORDER);
@@ -148,34 +152,42 @@ public final class PortalRoomBorderRenderer {
     private record Wall(VertexConsumer vc, Matrix4f m, Vec3 cam, int bottom, int top,
                         float scroll, int rgb) {
 
-        /** A face at constant X, running from {@code z0} to {@code z1}. */
-        void drawX(double x, double z0, double z1, float alpha) {
+        /**
+         * A face at constant X, running from {@code z0} to {@code z1}, with {@code door} — a
+         * corridor's mouth — cut out of it so the border never stands in the doorway.
+         */
+        void drawX(int x, int z0, int z1, PortalRoomBorderPacket.Door door, float alpha) {
             if (alpha <= 0.0f) return;
             float rx = (float) (x - cam.x);
-            quad(rx, (float) (z0 - cam.z), rx, (float) (z1 - cam.z), z0, z1, alpha);
+            for (PortalRoomBorderFace.Piece p : PortalRoomBorderFace.split(z0, z1, bottom, top,
+                    door.minZ(), door.maxZ(), door.minY(), door.maxY())) {
+                quad(rx, (float) (p.along0() - cam.z), rx, (float) (p.along1() - cam.z),
+                    p.along0(), p.along1(), p.bottom(), p.top(), alpha);
+            }
         }
 
         /** A face at constant Z, running from {@code x0} to {@code x1}. */
         void drawZ(double z, double x0, double x1, float alpha) {
             if (alpha <= 0.0f) return;
             float rz = (float) (z - cam.z);
-            quad((float) (x0 - cam.x), rz, (float) (x1 - cam.x), rz, x0, x1, alpha);
+            quad((float) (x0 - cam.x), rz, (float) (x1 - cam.x), rz, x0, x1, bottom, top, alpha);
         }
 
         /**
-         * One quad from {@code (ax, az)} to {@code (bx, bz)}, bottom to top. UVs repeat every two
-         * blocks along the wall and up it, scrolled by time — vanilla's stripe.
+         * One quad from {@code (ax, az)} to {@code (bx, bz)}, {@code y0w} to {@code y1w}. UVs repeat
+         * every two blocks along the wall and up it, scrolled by time — vanilla's stripe — and come
+         * from world position, so the pieces round a doorway keep one phase.
          */
         private void quad(float ax, float az, float bx, float bz, double along0, double along1,
-                          float alpha) {
-            float y0 = (float) (bottom - cam.y);
-            float y1 = (float) (top - cam.y);
+                          int y0w, int y1w, float alpha) {
+            float y0 = (float) (y0w - cam.y);
+            float y1 = (float) (y1w - cam.y);
             // Wrapped before it becomes a float: a train runs hundreds of thousands of blocks out,
             // and a UV that large cannot resolve the scroll's per-frame step — the stripes freeze.
             float u0 = scroll + (float) Mth.frac(along0 * 0.5);
             float u1 = u0 + (float) ((along1 - along0) * 0.5);
-            float v0 = scroll + (float) (Mth.frac(bottom * 0.5));
-            float v1 = v0 + (top - bottom) * 0.5f;
+            float v0 = scroll + (float) (Mth.frac(y0w * 0.5));
+            float v1 = v0 + (y1w - y0w) * 0.5f;
             int r = (rgb >> 16) & 0xFF;
             int g = (rgb >> 8) & 0xFF;
             int b = rgb & 0xFF;

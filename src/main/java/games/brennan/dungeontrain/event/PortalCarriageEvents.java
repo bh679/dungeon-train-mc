@@ -1803,11 +1803,17 @@ public final class PortalCarriageEvents {
         AABB box = structureBox(dims, structure);
         if (pad > 0) box = box.inflate(pad, 0.0, pad);
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        int maxX = roomOrigin.getX() + structure.roomSize().getX();
+        BlockPos exit = structure.exitOrigin(dims);
         PortalRoomBorderPacket region = new PortalRoomBorderPacket(
             roomOrigin.getX(), roomOrigin.getY(), roomOrigin.getZ(),
-            roomOrigin.getX() + structure.roomSize().getX(),
+            maxX,
             roomOrigin.getY() + structure.roomSize().getY(),
-            roomOrigin.getZ() + structure.roomSize().getZ());
+            roomOrigin.getZ() + structure.roomSize().getZ(),
+            // The entry corridor always ends on the west face. The exit only starts on the east one
+            // while it stands on the base tile; moved elsewhere, it never meets this box.
+            corridorMouth(structure.origin(), layout),
+            exit.getX() == maxX ? corridorMouth(exit, layout) : PortalRoomBorderPacket.Door.NONE);
 
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
@@ -1816,6 +1822,13 @@ public final class PortalCarriageEvents {
             LAST_BORDER.put(player.getUUID(), region);
             PacketDistributor.sendToPlayer(player, region);
         }
+    }
+
+    /** A corridor's whole cross-section, shell included, from its twin origin. */
+    private static PortalRoomBorderPacket.Door corridorMouth(BlockPos corridor,
+                                                             PortalCarriageLayout layout) {
+        return new PortalRoomBorderPacket.Door(corridor.getY(), corridor.getZ(),
+            corridor.getY() + layout.height(), corridor.getZ() + layout.width());
     }
 
     /** Take the border away from anyone who has left every World Border room. */
