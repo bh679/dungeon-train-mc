@@ -48,6 +48,8 @@ public final class PlayerMobPhotoReporter {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] PlayerMob photo post failed: {}", t.toString());
         }
+        PassengerLogWebhooks.post(subject, title(photographer, subject.getGameProfile().getName()),
+                description(photographer, subject.getGameProfile().getName()), List.of(), png, PHOTO_FILENAME, EMBED_COLOR);
     }
 
     /** {@code "📸 Shutterbug took a photo of Steve"}; a nameless mob is "a fellow passenger". */

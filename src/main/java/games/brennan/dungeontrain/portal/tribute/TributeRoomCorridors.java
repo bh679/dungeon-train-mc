@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -28,6 +30,11 @@ import java.util.Optional;
  * the train lottery never stands it as a room. It is centred on the room's door line and shares its
  * floor row, so a door cut at the room's centre opens straight into it. The geometry is pure and
  * unit-tested; only {@link #stamp} touches a level.</p>
+ *
+ * <p><b>It follows the doors.</b> A room's doors can be raised above its floor or slid off centre
+ * ({@link PortalRoomSettings}' door offsets, each end its own); each tube reads its own end's offsets,
+ * clamped as {@link PortalRoomLayout} clamps them for the room's box, so it stands flush with the door
+ * cut there. Both at zero is the original floor-row, centred placement.</p>
  */
 public final class TributeRoomCorridors {
 
@@ -38,14 +45,48 @@ public final class TributeRoomCorridors {
 
     private TributeRoomCorridors() {}
 
-    /** Where a tube of {@code size} stands against the room's low-x door: its end column one before the room. */
-    public static BlockPos entranceOrigin(BlockPos roomOrigin, Vec3i roomSize, Vec3i size) {
-        return new BlockPos(roomOrigin.getX() - size.getX(), roomOrigin.getY(), centredZ(roomOrigin, roomSize, size));
+    /**
+     * Where each of the room's two doors sits, as the clamped offsets the room's own box was placed by:
+     * Z off the width's centre, Y above the room's bottom edge — per end, since the two may differ.
+     */
+    public record DoorOffsets(int entryZ, int entryY, int exitZ, int exitY) {
+        /** Both doors centred at the room's floor — how every tribute room stood before doors could move. */
+        public static final DoorOffsets NONE = new DoorOffsets(0, 0, 0, 0);
+
+        /** The offsets {@code settings} asks for, clamped exactly as the room's box and door cells clamp them. */
+        public static DoorOffsets of(PortalRoomSettings settings, CarriageDims dims, Vec3i roomSize) {
+            return new DoorOffsets(
+                PortalRoomLayout.clampDoorOffset(dims, roomSize.getZ(), settings.doorOffset().value()),
+                PortalRoomLayout.clampDoorHeightOffset(dims, roomSize.getY(), settings.doorHeightOffset().value()),
+                PortalRoomLayout.clampDoorOffset(dims, roomSize.getZ(), settings.exitDoorOffset().value()),
+                PortalRoomLayout.clampDoorHeightOffset(dims, roomSize.getY(), settings.exitDoorHeightOffset().value()));
+        }
     }
 
-    /** Where a tube of {@code size} stands against the room's high-x door: starting one past the room. */
+    /** As {@link #entranceOrigin(BlockPos, Vec3i, Vec3i, DoorOffsets)} for a room whose doors are centred at its floor. */
+    public static BlockPos entranceOrigin(BlockPos roomOrigin, Vec3i roomSize, Vec3i size) {
+        return entranceOrigin(roomOrigin, roomSize, size, DoorOffsets.NONE);
+    }
+
+    /**
+     * Where a tube of {@code size} stands against the room's low-x door: its end column one before the
+     * room, its floor on the door's own floor row and its centre line on the door's — so a door raised or
+     * slid off centre takes the tube with it.
+     */
+    public static BlockPos entranceOrigin(BlockPos roomOrigin, Vec3i roomSize, Vec3i size, DoorOffsets doors) {
+        return new BlockPos(roomOrigin.getX() - size.getX(), roomOrigin.getY() + doors.entryY(),
+            centredZ(roomOrigin, roomSize, size) + doors.entryZ());
+    }
+
+    /** As {@link #exitOrigin(BlockPos, Vec3i, Vec3i, DoorOffsets)} for a room whose doors are centred at its floor. */
     public static BlockPos exitOrigin(BlockPos roomOrigin, Vec3i roomSize, Vec3i size) {
-        return new BlockPos(roomOrigin.getX() + roomSize.getX(), roomOrigin.getY(), centredZ(roomOrigin, roomSize, size));
+        return exitOrigin(roomOrigin, roomSize, size, DoorOffsets.NONE);
+    }
+
+    /** Where a tube of {@code size} stands against the room's high-x door: starting one past the room, on that door's line. */
+    public static BlockPos exitOrigin(BlockPos roomOrigin, Vec3i roomSize, Vec3i size, DoorOffsets doors) {
+        return new BlockPos(roomOrigin.getX() + roomSize.getX(), roomOrigin.getY() + doors.exitY(),
+            centredZ(roomOrigin, roomSize, size) + doors.exitZ());
     }
 
     /** The room's door line is its width's centre; a tube of another width is centred on the same line. */
@@ -75,12 +116,14 @@ public final class TributeRoomCorridors {
             return List.of();
         }
         Vec3i size = template.get().getSize();
+        DoorOffsets doors = doorsOf(roomSize, dims);
         List<BoundingBox> laid = new ArrayList<>(2);
-        BoundingBox in = boxOf(entranceOrigin(roomOrigin, roomSize, size), size);
+        BlockPos entrance = entranceOrigin(roomOrigin, roomSize, size, doors);
+        BoundingBox in = boxOf(entrance, size);
         PortalClear.clearBox(level, in, PortalCorridorMask.NONE);
-        CarriagePlacer.stampTemplateAt(level, entranceOrigin(roomOrigin, roomSize, size), template.get(), null, /*relight*/ true, TemplateDecor.Rule.ROOM);
+        CarriagePlacer.stampTemplateAt(level, entrance, template.get(), null, /*relight*/ true, TemplateDecor.Rule.ROOM);
         laid.add(in);
-        BlockPos exit = exitOrigin(roomOrigin, roomSize, size);
+        BlockPos exit = exitOrigin(roomOrigin, roomSize, size, doors);
         BoundingBox out = boxOf(exit, size);
         PortalClear.clearBox(level, out, PortalCorridorMask.NONE);
         // Mirrored along X: the open end that faced the room on the entry side faces it here too.
@@ -101,6 +144,13 @@ public final class TributeRoomCorridors {
         Optional<StructureTemplate> template = PortalRoomTemplateStore.get(level, ENTRANCE, dims);
         if (template.isEmpty()) return List.of();
         Vec3i size = template.get().getSize();
-        return List.of(boxOf(entranceOrigin(roomOrigin, roomSize, size), size), boxOf(exitOrigin(roomOrigin, roomSize, size), size));
+        DoorOffsets doors = doorsOf(roomSize, dims);
+        return List.of(boxOf(entranceOrigin(roomOrigin, roomSize, size, doors), size),
+            boxOf(exitOrigin(roomOrigin, roomSize, size, doors), size));
+    }
+
+    /** The tribute room's doors as its own settings place them — the one source the stamp and the sweep share. */
+    private static DoorOffsets doorsOf(Vec3i roomSize, CarriageDims dims) {
+        return DoorOffsets.of(PortalRoomSettings.of(TributeRooms.TEMPLATE), dims, roomSize);
     }
 }

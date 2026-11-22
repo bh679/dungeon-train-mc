@@ -25,9 +25,35 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * @param maxX the room's east face — one past its last column, so {@code maxX - minX} is its length
  * @param minY the room's floor row, used only for the twin-space fallback when seal culling is off
  * @param maxY one past the room's top row
+ * @param westDoor the entry corridor's mouth in the west face, left open; {@link Door#NONE} for none
+ * @param eastDoor the exit corridor's mouth in the east face; {@link Door#NONE} when the exit stands
+ *                 on another tile and never meets this face
  */
-public record PortalRoomBorderPacket(int minX, int minY, int minZ, int maxX, int maxY, int maxZ)
+public record PortalRoomBorderPacket(int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
+                                     Door westDoor, Door eastDoor)
     implements CustomPacketPayload {
+
+    public PortalRoomBorderPacket {
+        if (westDoor == null) westDoor = Door.NONE;
+        if (eastDoor == null) eastDoor = Door.NONE;
+    }
+
+    /** A room box with both corridor mouths walled over — what tests and old callers mean. */
+    public PortalRoomBorderPacket(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        this(minX, minY, minZ, maxX, maxY, maxZ, Door.NONE, Door.NONE);
+    }
+
+    /**
+     * A corridor's whole cross-section where it meets an X face, shell included, so the border wraps
+     * round the corridor's end instead of running across the doorway. Max edges exclusive.
+     */
+    public record Door(int minY, int minZ, int maxY, int maxZ) {
+        public static final Door NONE = new Door(0, 0, 0, 0);
+
+        public boolean present() {
+            return maxY > minY && maxZ > minZ;
+        }
+    }
 
     /** What the server sends to take the border away. */
     public static PortalRoomBorderPacket none() {
@@ -51,9 +77,22 @@ public record PortalRoomBorderPacket(int minX, int minY, int minZ, int maxX, int
                 buf.writeVarInt(packet.maxX);
                 buf.writeVarInt(packet.maxY);
                 buf.writeVarInt(packet.maxZ);
+                writeDoor(buf, packet.westDoor);
+                writeDoor(buf, packet.eastDoor);
             },
             buf -> new PortalRoomBorderPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), readDoor(buf), readDoor(buf)));
+
+    private static void writeDoor(FriendlyByteBuf buf, Door door) {
+        buf.writeVarInt(door.minY());
+        buf.writeVarInt(door.minZ());
+        buf.writeVarInt(door.maxY());
+        buf.writeVarInt(door.maxZ());
+    }
+
+    private static Door readDoor(FriendlyByteBuf buf) {
+        return new Door(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
+    }
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

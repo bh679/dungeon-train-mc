@@ -419,7 +419,7 @@
   "parkourup": {
     "weight": 2,
     "minLevel": 2,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/3/0/11/dungeontrain:skybox_surface"
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/3/0/11/dungeontrain:skybox_surface"
   },
   "paths": {
     "weight": 1,
@@ -473,7 +473,7 @@
   "safe": {
     "weight": 2,
     "minLevel": 4,
-    "mode": "void/exact/off/off/off/none/sealed/0/8"
+    "mode": "void/exact/off/off/off/day/sealed/0/8"
   },
   "safehaven": 1,
   "sanemaze": {
@@ -505,7 +505,7 @@
   },
   "skymaze": {
     "weight": 1,
-    "mode": "void/exact/off/off/off/none/sealed/0/5"
+    "mode": "void/exact/off/off/off/day/sealed/0/5"
   },
   "slime": {
     "weight": 1,
@@ -681,7 +681,7 @@
   },
   "tribute": {
     "weight": 1,
-    "mode": "world_border/exact/off/off/off/none/sealed/0/2"
+    "mode": "world_border/exact/off/off/off/day/sealed/0/2"
   },
   "tribute_entrance": {
     "weight": 0,
@@ -706,7 +706,7 @@
   "waterparkour": {
     "weight": 2,
     "minLevel": 2,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/3/0/3/dungeontrain:skybox_surface"
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/3/0/3/dungeontrain:skybox_surface"
   },
   "window": {
     "weight": 1,
