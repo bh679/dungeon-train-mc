@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "ตรวจพบอาการแลค - ส่งล็อกให้ผู้พัฒนาไหม?",
   "chat.dungeontrain.lag_report.send": "ใช่",
   "chat.dungeontrain.lag_report.send.tip": "ส่งล็อกเกมล่าสุดของคุณให้ผู้พัฒนา เพื่อให้หาสาเหตุที่ทำให้เกมค้าง",
+  "chat.dungeontrain.lag_report.send_info": "ใช่ พร้อมรายละเอียด",
+  "chat.dungeontrain.lag_report.send_info.tip": "ส่งล็อกของคุณและบอกผู้พัฒนาว่าคุณกำลังทำอะไรอยู่ตอนที่เกมค้าง",
   "chat.dungeontrain.lag_report.decline": "ไม่",
   "chat.dungeontrain.lag_report.decline.tip": "ไม่ส่งอะไรเลย และไม่ถามอีกในเซสชันนี้",
   "chat.dungeontrain.lag_report.sent": "กำลังส่งล็อกของคุณให้ผู้พัฒนา ขอบคุณ!",

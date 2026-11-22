@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag dikesan - hantar log kepada pembangun?",
   "chat.dungeontrain.lag_report.send": "Ya",
   "chat.dungeontrain.lag_report.send.tip": "Hantar log permainan terkini anda kepada pembangun supaya dia dapat mengetahui punca permainan membeku",
+  "chat.dungeontrain.lag_report.send_info": "Ya, dengan maklumat",
+  "chat.dungeontrain.lag_report.send_info.tip": "Hantar log anda dan beritahu pembangun apa yang anda lakukan semasa permainan membeku",
   "chat.dungeontrain.lag_report.decline": "Tidak",
   "chat.dungeontrain.lag_report.decline.tip": "Jangan hantar apa-apa, dan jangan tanya lagi dalam sesi ini",
   "chat.dungeontrain.lag_report.sent": "Menghantar log anda kepada pembangun. Terima kasih!",

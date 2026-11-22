@@ -3400,6 +3400,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag detected - send log to developer?",
   "chat.dungeontrain.lag_report.send": "Yes",
   "chat.dungeontrain.lag_report.send.tip": "Send your recent game logs to the developer so they can find what froze the game",
+  "chat.dungeontrain.lag_report.send_info": "Yes with info",
+  "chat.dungeontrain.lag_report.send_info.tip": "Send your logs and tell the developer what you were doing when it froze",
   "chat.dungeontrain.lag_report.decline": "No",
   "chat.dungeontrain.lag_report.decline.tip": "Don't send anything, and don't ask again this session",
   "chat.dungeontrain.lag_report.sent": "Sending your log to the developer. Thanks!",

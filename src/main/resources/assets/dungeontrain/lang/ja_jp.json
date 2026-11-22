@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "ラグを検出しました - 開発者にログを送信しますか？",
   "chat.dungeontrain.lag_report.send": "はい",
   "chat.dungeontrain.lag_report.send.tip": "最近のゲームログを開発者に送信し、ゲームがフリーズした原因を調べてもらいます",
+  "chat.dungeontrain.lag_report.send_info": "はい（詳細付き）",
+  "chat.dungeontrain.lag_report.send_info.tip": "ログを送信し、フリーズしたときに何をしていたかを開発者に伝えます",
   "chat.dungeontrain.lag_report.decline": "いいえ",
   "chat.dungeontrain.lag_report.decline.tip": "何も送信せず、このセッション中は再度確認しません",
   "chat.dungeontrain.lag_report.sent": "開発者にログを送信しています。ありがとうございます！",

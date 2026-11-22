@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "Phát hiện lag - gửi nhật ký cho nhà phát triển?",
   "chat.dungeontrain.lag_report.send": "Có",
   "chat.dungeontrain.lag_report.send.tip": "Gửi nhật ký game gần đây cho nhà phát triển để tìm ra nguyên nhân khiến game bị đứng",
+  "chat.dungeontrain.lag_report.send_info": "Có, kèm thông tin",
+  "chat.dungeontrain.lag_report.send_info.tip": "Gửi nhật ký và cho nhà phát triển biết bạn đang làm gì khi game bị đứng",
   "chat.dungeontrain.lag_report.decline": "Không",
   "chat.dungeontrain.lag_report.decline.tip": "Không gửi gì cả và không hỏi lại trong phiên này",
   "chat.dungeontrain.lag_report.sent": "Đang gửi nhật ký của bạn cho nhà phát triển. Cảm ơn!",

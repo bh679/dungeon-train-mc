@@ -2842,6 +2842,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag detectado - enviar o log para o desenvolvedor?",
   "chat.dungeontrain.lag_report.send": "Sim",
   "chat.dungeontrain.lag_report.send.tip": "Envie seus logs recentes do jogo para o desenvolvedor descobrir o que travou o jogo",
+  "chat.dungeontrain.lag_report.send_info": "Sim, com detalhes",
+  "chat.dungeontrain.lag_report.send_info.tip": "Envie seus logs e conte ao desenvolvedor o que você estava fazendo quando o jogo travou",
   "chat.dungeontrain.lag_report.decline": "Não",
   "chat.dungeontrain.lag_report.decline.tip": "Não enviar nada e não perguntar de novo nesta sessão",
   "chat.dungeontrain.lag_report.sent": "Enviando seu log para o desenvolvedor. Valeu!",

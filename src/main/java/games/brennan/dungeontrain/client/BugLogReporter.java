@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
+import games.brennan.dungeontrain.client.perf.LagReportFormHandoff;
 import games.brennan.dungeontrain.net.BugReportLogsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -31,7 +32,18 @@ public final class BugLogReporter {
     /** The data-driven bug-report survey question id (see {@code dp_surveys/bug_report.json}). */
     public static final String BUG_REPORT_ID = "dungeontrain:bug_report";
 
+    /** The bug-report question's lag option label. */
+    public static final String LAG_OPTION = "Lag";
+
     private BugLogReporter() {}
+
+    /** Index of the "Lag" option in the bug-report question's options, or -1. Pure. */
+    public static int lagOptionIndex(List<String> options) {
+        for (int i = 0; i < options.size(); i++) {
+            if (LAG_OPTION.equalsIgnoreCase(options.get(i))) return i;
+        }
+        return -1;
+    }
 
     /**
      * If {@code e} is the bug-report question and {@code score} selects a real-bug option (not
@@ -42,9 +54,16 @@ public final class BugLogReporter {
         if (e == null || !e.id().equals(BUG_REPORT_ID)) return;
         if (score < 0 || score >= e.options().size()) return;
         String label = e.options().get(score);
+        // A lag prompt's [Yes with info] opened this form: its freeze leads a Lag answer's spec, as
+        // a plain [Yes] upload does. Taken on any answer, so it never outlives this submit.
+        String freezeLine = LagReportFormHandoff.takeFreezeLine(System.currentTimeMillis());
         if (label.equalsIgnoreCase("No")) return; // not a bug → collect nothing
         // Build the system spec on the render thread (it reads GL/FPS state) — Lag answers only.
-        final String spec = label.equalsIgnoreCase("Lag") ? SystemSpecCollector.collect() : "";
+        boolean lag = label.equalsIgnoreCase(LAG_OPTION);
+        final String spec = lag ? (freezeLine == null ? "" : freezeLine) + SystemSpecCollector.collect() : "";
+        if (lag && freezeLine != null) {
+            LOGGER.info("[DungeonTrain] Lag report from the bug form carries the prompted freeze: {}", freezeLine.trim());
+        }
         LogCollector.collectAsync().thenAccept(files -> {
             List<BugReportLogsPacket.LogBlob> blobs = files == null ? List.of() : files;
             // Nothing useful to report (no logs and, for non-lag answers, no spec) → send nothing.

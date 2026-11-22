@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "偵測到卡頓 - 要把日誌傳送給開發者嗎？",
   "chat.dungeontrain.lag_report.send": "是",
   "chat.dungeontrain.lag_report.send.tip": "把你最近的遊戲日誌傳送給開發者，協助找出遊戲卡住的原因",
+  "chat.dungeontrain.lag_report.send_info": "是，並附說明",
+  "chat.dungeontrain.lag_report.send_info.tip": "傳送你的日誌，並告訴開發者遊戲卡住時你在做什麼",
   "chat.dungeontrain.lag_report.decline": "否",
   "chat.dungeontrain.lag_report.decline.tip": "不傳送任何內容，本次工作階段中不再詢問",
   "chat.dungeontrain.lag_report.sent": "正在把你的日誌傳送給開發者。謝謝！",

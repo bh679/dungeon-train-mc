@@ -2842,6 +2842,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag rilevato - inviare il log allo sviluppatore?",
   "chat.dungeontrain.lag_report.send": "Sì",
   "chat.dungeontrain.lag_report.send.tip": "Invia i tuoi log di gioco recenti allo sviluppatore, così potrà scoprire cosa ha bloccato il gioco",
+  "chat.dungeontrain.lag_report.send_info": "Sì, con dettagli",
+  "chat.dungeontrain.lag_report.send_info.tip": "Invia i tuoi log e racconta allo sviluppatore cosa stavi facendo quando il gioco si è bloccato",
   "chat.dungeontrain.lag_report.decline": "No",
   "chat.dungeontrain.lag_report.decline.tip": "Non inviare nulla e non chiedere più in questa sessione",
   "chat.dungeontrain.lag_report.sent": "Invio del tuo log allo sviluppatore. Grazie!",

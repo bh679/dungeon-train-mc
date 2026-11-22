@@ -2842,6 +2842,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag détecté - envoyer le journal au développeur ?",
   "chat.dungeontrain.lag_report.send": "Oui",
   "chat.dungeontrain.lag_report.send.tip": "Envoie tes journaux de jeu récents au développeur pour qu'il trouve ce qui a figé le jeu",
+  "chat.dungeontrain.lag_report.send_info": "Oui, avec détails",
+  "chat.dungeontrain.lag_report.send_info.tip": "Envoie tes journaux et dis au développeur ce que tu faisais quand le jeu s'est figé",
   "chat.dungeontrain.lag_report.decline": "Non",
   "chat.dungeontrain.lag_report.decline.tip": "Ne rien envoyer et ne plus demander pendant cette session",
   "chat.dungeontrain.lag_report.sent": "Envoi de ton journal au développeur. Merci !",

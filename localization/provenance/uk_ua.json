@@ -3453,6 +3453,8 @@
   "chat.dungeontrain.lag_report.prompt": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0654cc07f614f666"},
   "chat.dungeontrain.lag_report.send": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "85a39ab345d672ff"},
   "chat.dungeontrain.lag_report.send.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "00cacab619f58911"},
+  "chat.dungeontrain.lag_report.send_info": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9e10d3d60f8d46c1"},
+  "chat.dungeontrain.lag_report.send_info.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "46337c2c70ed9f59"},
   "chat.dungeontrain.lag_report.decline": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1ea442a134b2a184"},
   "chat.dungeontrain.lag_report.decline.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e02cf4a3344ce3ef"},
   "chat.dungeontrain.lag_report.sent": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7032cd88002ea0ef"},

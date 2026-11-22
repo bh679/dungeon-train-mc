@@ -2842,6 +2842,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag gedetecteerd - log naar de ontwikkelaar sturen?",
   "chat.dungeontrain.lag_report.send": "Ja",
   "chat.dungeontrain.lag_report.send.tip": "Stuur je recente spellogs naar de ontwikkelaar, zodat die kan uitzoeken waardoor het spel vastliep",
+  "chat.dungeontrain.lag_report.send_info": "Ja, met info",
+  "chat.dungeontrain.lag_report.send_info.tip": "Stuur je logs en vertel de ontwikkelaar wat je aan het doen was toen het spel vastliep",
   "chat.dungeontrain.lag_report.decline": "Nee",
   "chat.dungeontrain.lag_report.decline.tip": "Niets versturen en deze sessie niet meer vragen",
   "chat.dungeontrain.lag_report.sent": "Je log wordt naar de ontwikkelaar gestuurd. Bedankt!",

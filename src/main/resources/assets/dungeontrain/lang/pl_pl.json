@@ -2893,6 +2893,8 @@
   "chat.dungeontrain.lag_report.prompt": "Wykryto lag - wysłać log do twórcy?",
   "chat.dungeontrain.lag_report.send": "Tak",
   "chat.dungeontrain.lag_report.send.tip": "Wyślij twórcy najnowsze logi gry, aby mógł sprawdzić, co zamroziło grę",
+  "chat.dungeontrain.lag_report.send_info": "Tak, z opisem",
+  "chat.dungeontrain.lag_report.send_info.tip": "Wyślij logi i napisz twórcy, co robiłeś, gdy gra się zawiesiła",
   "chat.dungeontrain.lag_report.decline": "Nie",
   "chat.dungeontrain.lag_report.decline.tip": "Nie wysyłaj niczego i nie pytaj ponownie w tej sesji",
   "chat.dungeontrain.lag_report.sent": "Wysyłanie logu do twórcy. Dziękujemy!",

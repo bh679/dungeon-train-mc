@@ -3456,6 +3456,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag detectat - trimiți jurnalul dezvoltatorului?",
   "chat.dungeontrain.lag_report.send": "Da",
   "chat.dungeontrain.lag_report.send.tip": "Trimite dezvoltatorului jurnalele recente ale jocului, ca să afle ce a blocat jocul",
+  "chat.dungeontrain.lag_report.send_info": "Da, cu detalii",
+  "chat.dungeontrain.lag_report.send_info.tip": "Trimite jurnalele și spune-i dezvoltatorului ce făceai când s-a blocat jocul",
   "chat.dungeontrain.lag_report.decline": "Nu",
   "chat.dungeontrain.lag_report.decline.tip": "Nu trimite nimic și nu mai întreba în această sesiune",
   "chat.dungeontrain.lag_report.sent": "Se trimite jurnalul tău dezvoltatorului. Mulțumim!",
