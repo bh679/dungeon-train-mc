@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 3,
+  "pools": {},
+  "links": {
+    "32,2,21": "gamble",
+    "33,2,22": "gamble",
+    "38,2,28": "loot_irongold",
+    "39,2,28": "loot_irongold",
+    "28,12,21": "music",
+    "20,11,10": "fruit_veg",
+    "20,11,33": "fruit_veg",
+    "46,11,7": "fruit_veg",
+    "49,11,33": "fruit_veg",
+    "23,11,7": "meats",
+    "23,11,36": "meats",
+    "46,11,36": "meats",
+    "49,11,10": "meats"
+  }
+}
