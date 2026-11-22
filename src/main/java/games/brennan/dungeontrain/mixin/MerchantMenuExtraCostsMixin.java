@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.trader.ExtraCostContainer;
 import games.brennan.dungeontrain.trader.ExtraCostMenu;
 import games.brennan.dungeontrain.trader.ExtraCostSlot;
 import games.brennan.dungeontrain.trader.ExtraTradeCosts;
+import games.brennan.ediblebackpacks.menu.BackpackLayout;
+import games.brennan.ediblebackpacks.menu.BackpackSlot;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -32,14 +34,12 @@ import java.util.List;
 /**
  * Extra trade input slots: a backing container holding one payment per extra cost
  * ({@link ExtraTradeCosts}) and twelve on-screen {@link ExtraCostSlot}s showing it as a scrolling
- * grid. The slots go after the player inventory (index {@value #EXTRA_START}+), so vanilla's slot
- * ranges are untouched. The scroll row syncs through vanilla's {@code clickMenuButton}.
+ * grid. The slots go after the player inventory (index 39+, next to Edible Backpacks' panel slots,
+ * in whichever order the two mixins run), so vanilla's slot ranges are untouched. The scroll row syncs through vanilla's {@code clickMenuButton}.
  */
 @Mixin(MerchantMenu.class)
 public abstract class MerchantMenuExtraCostsMixin extends AbstractContainerMenu implements ExtraCostMenu {
 
-    /** First extra-cost slot: after the 3 trade slots and 36 inventory slots. */
-    @Unique private static final int EXTRA_START = 39;
     @Unique private static final int INVENTORY_START = 3;
     @Unique private static final int INVENTORY_END = 39;
 
@@ -101,7 +101,9 @@ public abstract class MerchantMenuExtraCostsMixin extends AbstractContainerMenu 
     /** Shift-click: out of the grid back to the inventory; from the inventory into the next unpaid extra cost. */
     @Inject(method = "quickMoveStack", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$quickMoveExtraCosts(Player player, int index, CallbackInfoReturnable<ItemStack> cir) {
-        if (index >= EXTRA_START) {
+        // Found by type, not by index: Edible Backpacks appends its 108 panel slots to this
+        // menu too, and which mixin's TAIL runs first decides whose slots come first.
+        if (index >= 0 && index < slots.size() && slots.get(index) instanceof ExtraCostSlot) {
             Slot slot = slots.get(index);
             if (slot.hasItem()) {
                 ItemStack stack = slot.getItem();
@@ -140,6 +142,24 @@ public abstract class MerchantMenuExtraCostsMixin extends AbstractContainerMenu 
                 if (stack.isEmpty() || !cost.test(stack)) continue;
                 if (dungeontrain$moveInto(i, stack) && dungeontrain$backing.getItem(i).getCount() >= stack.getMaxStackSize()) break;
             }
+            dungeontrain$fillFromBackpack(i, cost);
+        }
+    }
+
+    /**
+     * After the inventory, the backpack pays: the slots the player could take from by hand
+     * ({@code BackpackSlot#mayPickup} is false for locked slots, a closed backpack and DT's own
+     * access lock). Edible Backpacks tops up vanilla's two payment slots the same way.
+     */
+    @Unique
+    private void dungeontrain$fillFromBackpack(int i, ItemCost cost) {
+        for (Slot slot : slots) {
+            if (!(slot instanceof BackpackSlot backpack) || !backpack.mayPickup(backpack.owner())) continue;
+            ItemStack stack = slot.getItem();
+            if (stack.isEmpty() || !cost.test(stack)) continue;
+            if (!dungeontrain$moveInto(i, stack)) continue;
+            slot.setChanged();
+            if (dungeontrain$backing.getItem(i).getCount() >= stack.getMaxStackSize()) break;
         }
     }
 
@@ -151,9 +171,26 @@ public abstract class MerchantMenuExtraCostsMixin extends AbstractContainerMenu 
         for (int i = 0; i < dungeontrain$backing.getContainerSize(); i++) {
             ItemStack held = dungeontrain$backing.removeItemNoUpdate(i);
             if (held.isEmpty()) continue;
-            if (gone) player.drop(held, false);
-            else player.getInventory().placeItemBackInInventory(held);
+            if (gone) {
+                player.drop(held, false);
+                continue;
+            }
+            // Inventory first, then the backpack: grid items can come out of the backpack, so a
+            // full inventory would otherwise drop them at the player's feet.
+            moveItemStackTo(held, INVENTORY_START, INVENTORY_END, false);
+            int backpack = dungeontrain$backpackStart();
+            if (!held.isEmpty() && backpack >= 0) moveItemStackTo(held, backpack, backpack + BackpackLayout.MAX_SLOTS, false);
+            if (!held.isEmpty()) player.getInventory().placeItemBackInInventory(held);
         }
+    }
+
+    /** Index of the first Edible Backpacks panel slot in this menu, or -1. */
+    @Unique
+    private int dungeontrain$backpackStart() {
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots.get(i) instanceof BackpackSlot) return i;
+        }
+        return -1;
     }
 
     /** Moves {@code stack} into the first extra cost it pays and isn't full yet; true when anything moved. */

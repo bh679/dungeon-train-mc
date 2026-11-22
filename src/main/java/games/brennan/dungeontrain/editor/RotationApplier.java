@@ -447,7 +447,7 @@ public final class RotationApplier {
      * rotation property. Compass blocks snap their 16-step rotation to the
      * nearest of the 8 slots.
      */
-    private static int slotOf(BlockState state) {
+    static int slotOf(BlockState state) {
         Rotatable r = findRotatable(state);
         if (r == null) return -1;
         if (r.compass) {

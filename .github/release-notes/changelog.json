@@ -38190,6 +38190,91 @@
       "released": true,
       "released_in": "v0.1945.0",
       "released_at": "2026-11-22T02:56:23Z"
+    },
+    {
+      "id": "camera-backpack-rarer",
+      "version": "0.1949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Cameras and backpacks are a little rarer",
+      "summary": "Instant cameras and edible backpacks now turn up about a fifth less often in chests, pots, vases and vaults.",
+      "highlights": [],
+      "pr": 2805,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1950.0",
+      "released_at": "2026-11-22T04:41:33Z"
+    },
+    {
+      "id": "lag-report-yes-with-info",
+      "version": "0.1946.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Tell us what happened when the game freezes",
+      "summary": "When the game asks to send a log after a freeze, there's now a Yes with info button. It opens the bug report with Lag already picked, so you can add what you were doing when it froze, and it's sent along with your logs.",
+      "highlights": [],
+      "pr": 2802,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1950.0",
+      "released_at": "2026-11-22T04:41:33Z"
+    },
+    {
+      "id": "zombie-hands-shulker-box",
+      "version": "0.1948.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Shulker box fix",
+      "summary": "Zombie hands can no longer open a shulker box from your hotbar.",
+      "highlights": [],
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1950.0",
+      "released_at": "2026-11-22T04:41:33Z"
+    },
+    {
+      "id": "advancement-new-run-fix",
+      "version": "0.1949.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Two advancements could unlock on their own right after boarding a new run. They now wait until you earn them.",
+      "highlights": [],
+      "pr": 2807,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1956.0",
+      "released_at": "2026-11-22T06:38:20Z"
+    },
+    {
+      "id": "death-menu-world-hush",
+      "version": "0.1951.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Quiet after death",
+      "summary": "After you die, the world behind the menu goes quiet: no more mobs, rain or wind playing on while you choose what comes next. The sound fades back in when you arrive.",
+      "highlights": [],
+      "pr": 2806,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1956.0",
+      "released_at": "2026-11-22T06:38:20Z"
     }
   ]
 }

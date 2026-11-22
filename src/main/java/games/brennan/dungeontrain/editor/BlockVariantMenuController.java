@@ -655,6 +655,12 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantState newVariant = withNewRowDefaults(HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
                     .withPainting(addedPainting), localPos, plot.footprint()));
+                // Rot Free: the cell owns its rows' orientation, so the new row takes it from the
+                // same block, then the most similar block type, then the most recent facing — the
+                // rule every sibling applies to it too (VariantRowOrientation.keepOwnOrientation).
+                if (plot.lockIdAt(localPos) > 0 && plot.rotationFreeAt(localPos)) {
+                    newVariant = orientedToCell(newVariant, mutated);
+                }
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -1252,10 +1258,9 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
      * <p>Where the cell does not apply it is skipped at stamp time, so the block the room's own
      * template laid stands there instead — see {@link VariantCopyScope}.</p>
      *
-     * <p><b>The lock group is left alone</b>, which is the opposite of what
-     * {@link #toggleRerollPerCopy} does, and deliberately: a group exists so its cells draw the
-     * same index, and that promise is about the roll, not about where the cells are. A group whose
-     * members live in different tiles still agrees with itself in every tile any of them is in.</p>
+     * <p><b>A lock group moves as one</b>, as it does for {@link #cycleCopyRoll}: the setting
+     * belongs to the group, the cell is only where it is stored. Setting any member sets the
+     * group, so a grouped block never stands in the copies at one cell and not at its sibling.</p>
      */
     private static void cycleCopyScope(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (!plot.supportsCopySettings()) {
@@ -1269,6 +1274,12 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantCopyScope next = plot.copyScopeAt(localPos).next();
         plot.setCopyScope(localPos, next);
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId > 0) {
+            for (BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (!sibling.equals(localPos)) plot.setCopyScope(sibling, next);
+            }
+        }
         try {
             plot.save();
         } catch (IOException e) {
@@ -1705,6 +1716,18 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
         return VariantBlockInteractions.withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * {@link VariantRowOrientation#orientToCell} for the clicked cell's own new row, with its state
+     * turned to a locked facing so state and rotation stay aligned, as on any other Add.
+     */
+    static VariantState orientedToCell(VariantState row, List<VariantState> cellRows) {
+        VariantState out = VariantRowOrientation.orientToCell(row, cellRows);
+        VariantRotation rot = out.rotation();
+        if (rot.mode() != VariantRotation.Mode.LOCK || Integer.bitCount(rot.dirMask()) != 1) return out;
+        BlockState turned = RotationApplier.applySlot(out.state(), Integer.numberOfTrailingZeros(rot.dirMask()));
+        return turned == out.state() ? out : out.withState(turned, out.blockEntityNbt());
     }
 
     /**

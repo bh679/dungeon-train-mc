@@ -337,9 +337,12 @@ public final class VariantClipboardItem extends Item {
             // Every cell in a lock group draws one index, so they must agree about how they roll:
             // a member that repeated while the rest varied would show a different block from its
             // siblings in every copy but the first. The pasted value wins and the group follows
-            // it — the same thing the menu's own button does.
+            // it — the same thing the menu's own button does. Scope (room / copies / both) is a
+            // group setting too, so it follows the same way.
             for (net.minecraft.core.BlockPos sibling : plot.positionsWithLockId(lockId)) {
-                if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, copyRoll);
+                if (sibling.equals(localPos)) continue;
+                plot.setCopyRoll(sibling, copyRoll);
+                plot.setCopyScope(sibling, copyScope);
             }
             // Every member agrees, as the menu's Rot button sets the whole group at once.
             for (net.minecraft.core.BlockPos member : plot.positionsWithLockId(lockId)) {

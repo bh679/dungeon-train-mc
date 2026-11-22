@@ -245,6 +245,7 @@
     "client.audio.SoundBufferLibraryAccessor",
     "client.audio.SoundBufferLibraryMirrorMixin",
     "client.audio.SoundEngineStreamVolumeMixin",
+    "client.audio.SoundEngineDeathHushMixin",
     "client.KeyboardHandlerDebugChordMixin",
     "client.ViewfinderOverlaySelfieHintMixin",
     "client.BiomeColorsTwinMixin",
