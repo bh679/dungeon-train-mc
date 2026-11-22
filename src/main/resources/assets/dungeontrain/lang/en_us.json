@@ -3065,6 +3065,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Hold a plant that fits in a flower pot",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Add at least one variant before locking",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "No other lock group to check yet",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Group %s has no blocks left to edit",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Hold a block, bucket, or empty hand to add it to the condition",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "That block is already in the condition",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "A condition holds at most 8 blocks",

@@ -65,9 +65,16 @@ public final class BlockVariantMenuInputHandler {
     /** One click on a chest row's Trap pill, in percent. */
     private static final int TRAP_STEP = 5;
 
+    /**
+     * Hover and clicks span both panels: the hit is whichever panel the crosshair is on (the stacked
+     * group panel or the main one), and the click runs with the menu pointed at that panel, so every
+     * packet it sends carries that panel's cell.
+     */
     private static final WorldPanelInput<BlockVariantMenu.Hit> INPUT = new WorldPanelInput<>(
-        BlockVariantMenu::hovered, hit -> hit.kind() == BlockVariantMenu.CellKind.NONE,
-        BlockVariantMenuInputHandler::shouldHandle, true, BlockVariantMenuInputHandler::dispatch);
+        BlockVariantMenu::hoveredAny, hit -> hit.kind() == BlockVariantMenu.CellKind.NONE,
+        BlockVariantMenuInputHandler::shouldHandle, true,
+        (hit, shift, button) -> BlockVariantMenu.withPanel(BlockVariantMenu.hoverPanel(),
+            () -> dispatch(hit, shift, button)));
 
     private BlockVariantMenuInputHandler() {}
 
@@ -99,7 +106,9 @@ public final class BlockVariantMenuInputHandler {
     public static void onMiddleClick(InputEvent.MouseButton.Pre event) {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_MIDDLE || event.getAction() != GLFW.GLFW_PRESS) return;
         if (!shouldHandle() || Minecraft.getInstance().screen != null) return;
-        if (copyGroupRow(BlockVariantMenu.hovered())) event.setCanceled(true);
+        boolean copied = BlockVariantMenu.fromPanel(BlockVariantMenu.hoverPanel(),
+            () -> copyGroupRow(BlockVariantMenu.hovered()));
+        if (copied) event.setCanceled(true);
     }
 
     /**
@@ -152,8 +161,10 @@ public final class BlockVariantMenuInputHandler {
      * through this same body — the screen-space path differs only in where the Hit came from.
      */
     static void dispatch(BlockVariantMenu.Hit hit, boolean shift, int button) {
-        // Right-click is a number cell's step-down and nothing else — on any other cell it is
-        // swallowed (the press was already cancelled so nothing is placed).
+        // Right-click (no shift) on a "+ Group N" row opens group N's menu stacked above this one.
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !shift && openGroupPanel(hit)) return;
+        // Otherwise right-click is a number cell's step-down and nothing else — on any other cell
+        // it is swallowed (the press was already cancelled so nothing is placed).
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
@@ -166,6 +177,29 @@ public final class BlockVariantMenuInputHandler {
         } else {
             dispatchSearch(hit);
         }
+    }
+
+    /**
+     * Right-click on a group-reference row: open that group's menu stacked above, or close it when
+     * it is the group already shown there. A group row inside the stacked panel swaps it. World-space
+     * only — the screen-space host draws a single panel. True when it acted.
+     */
+    private static boolean openGroupPanel(BlockVariantMenu.Hit hit) {
+        if (!BlockVariantMenu.space().isWorldspace()) return false;
+        if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT || !isRowCell(hit.kind())) return false;
+        // The weight / difficulty cells keep right-click as their step-down.
+        if (isNumberCell(hit)) return false;
+        int row = hit.index();
+        if (row < 0 || row >= BlockVariantMenu.entries().size()) return false;
+        BlockVariantSyncPacket.Entry entry = BlockVariantMenu.entries().get(row);
+        if (!entry.isGroupRef()) return false;
+        net.minecraft.core.BlockPos local = BlockVariantMenu.localPos();
+        if (local == null) return false;
+        boolean alreadyShown = BlockVariantMenu.childLockId() == entry.groupRef();
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+            alreadyShown ? BlockVariantEditPacket.Op.CLOSE_GROUP_MENU : BlockVariantEditPacket.Op.OPEN_GROUP_MENU,
+            BlockVariantMenu.variantId(), local, row, "", 0));
+        return true;
     }
 
     /** Whether {@code hit} is one of this panel's numbers. */

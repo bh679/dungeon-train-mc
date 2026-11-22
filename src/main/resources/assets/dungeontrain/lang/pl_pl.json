@@ -2556,6 +2556,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Trzymaj roślinę, która zmieści się w doniczce",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Przed zablokowaniem dodaj co najmniej jeden wariant",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Nie ma jeszcze innej grupy blokady do sprawdzenia",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Grupa %s nie ma już bloków do edycji",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Trzymaj blok, wiadro lub pustą rękę, aby dodać go do warunku",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Ten blok jest już w warunku",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Warunek mieści najwyżej 8 bloków",

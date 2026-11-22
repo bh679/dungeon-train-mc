@@ -403,6 +403,11 @@
     }
   },
   "onionman": 1,
+  "openlibrary": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "endless_repetition/dynamic/off/random:25:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
+  },
   "outsidethebox": {
     "weight": 3,
     "mode": "void/exact/off/off/off/day/sealed/0/13/0/14",
@@ -448,7 +453,8 @@
   },
   "pretty": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic",
+    "name": "old"
   },
   "randomized": {
     "weight": 1,

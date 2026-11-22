@@ -104,8 +104,13 @@ public final class BlockVariantWireframeRenderer {
                 new AABB(x0, y0, z0, x1, y1, z1),
                 1.0f, 1.0f, 1.0f, 1.0f);
         }
-        drawGrowthColumns(ps, vc, origin);
-        drawConditionTargets(ps, vc, origin);
+        // Both open panels: the cell's own menu and the group panel stacked above it.
+        for (BlockVariantMenu.Panel panel : BlockVariantMenu.openPanels()) {
+            BlockVariantMenu.withPanel(panel, () -> {
+                drawGrowthColumns(ps, vc, origin);
+                drawConditionTargets(ps, vc, origin);
+            });
+        }
         ps.popPose();
 
         buffer.endBatch(RenderType.lines());

@@ -2065,7 +2065,10 @@ public final class PortalCarriageBuilder {
         boolean baseTile = PortalRoomTiling.Tile.BASE.equals(tile);
         java.util.function.Predicate<BlockPos> within = games.brennan.dungeontrain.editor.GrowthPass
             .inside(roomOrigin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
-        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open();
+        // Connect styles (fence / wall / pane Auto or Lock) resolve when this scope closes, once the
+        // whole room is in, so Auto joins to the room's real neighbours.
+        try (games.brennan.dungeontrain.editor.ConnectPass.Scope connected = games.brennan.dungeontrain.editor.ConnectPass.open();
+             games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open();
              games.brennan.dungeontrain.editor.VariantConditions.Scope conds = games.brennan.dungeontrain.editor.VariantConditions.open(
                  games.brennan.dungeontrain.editor.VariantConditions.stamped(level, roomOrigin::offset, size))) {
             for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
@@ -2129,6 +2132,7 @@ public final class PortalCarriageBuilder {
                             w.entry().linkedLootPrefabId());
                         games.brennan.dungeontrain.editor.GrowthPass.note(level, wWorld, w.entry(), placedState,
                             w.localPos(), worldSeed, cellIndex, within);
+                        games.brennan.dungeontrain.editor.ConnectPass.note(level, wWorld, w.entry().connect(), placedState);
                     }
                     continue;
                 }
@@ -2161,6 +2165,7 @@ public final class PortalCarriageBuilder {
                     picked.linkedLootPrefabId());
                 games.brennan.dungeontrain.editor.GrowthPass.note(level, world, picked, placedState,
                     local, worldSeed, cellIndex, within);
+                games.brennan.dungeontrain.editor.ConnectPass.note(level, world, picked.connect(), placedState);
             }
         }
     }

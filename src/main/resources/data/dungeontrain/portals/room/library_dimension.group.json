@@ -8,7 +8,12 @@
     },
     {
       "id": "librarydimension2",
-      "weight": 0
+      "weight": 3
+    },
+    {
+      "id": "openlibrary",
+      "weight": 2,
+      "minLevel": 5
     }
   ]
 }

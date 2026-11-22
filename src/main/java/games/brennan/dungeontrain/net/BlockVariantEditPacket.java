@@ -153,7 +153,12 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      TOGGLE_ROTATION_FREE,
                      // If cell opened on a row with no condition: copy in the condition last changed
                      // in this cell (or its lock group), else the nearest row's. No-op on a set row.
-                     PREFILL_COND }
+                     PREFILL_COND,
+                     // Right-click a "+ Group N" row (entryIndex): open group N's menu stacked above
+                     // this one, or swap the stacked panel to it.
+                     OPEN_GROUP_MENU,
+                     // Close the stacked group panel, leaving the main one open.
+                     CLOSE_GROUP_MENU }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

@@ -2561,6 +2561,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1ceaff0a1dab7547"},
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "440bec3ae85fe4c1"},
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6dc0f06a3f77b39e"},
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "796cfa881b254a7b"},
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "3c4afe88f91ea04b"},
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "10d7c05455e4cf13"},
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "04f180eeb50cfa2f"},

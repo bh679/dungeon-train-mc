@@ -2456,6 +2456,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Cầm một cây vừa với chậu hoa",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Hãy thêm ít nhất một biến thể trước khi khóa",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Chưa có nhóm khóa nào khác để kiểm tra",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Nhóm %s không còn khối nào để chỉnh sửa",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Cầm một khối, xô hoặc tay không để thêm vào điều kiện",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Khối đó đã có trong điều kiện",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Một điều kiện chứa tối đa 8 khối",

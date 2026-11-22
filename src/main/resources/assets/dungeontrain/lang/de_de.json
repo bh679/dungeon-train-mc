@@ -2506,6 +2506,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Halte eine Pflanze, die in einen Blumentopf passt",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Füge vor dem Sperren mindestens eine Variante hinzu",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Noch keine andere Sperrgruppe zum Prüfen",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Sperrgruppe %s hat keine Blöcke mehr zum Bearbeiten",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Halte einen Block, Eimer oder eine leere Hand, um ihn zur Bedingung hinzuzufügen",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Dieser Block ist schon in der Bedingung",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Eine Bedingung fasst höchstens 8 Blöcke",

@@ -141,12 +141,16 @@ public final class WorkbenchVariantPlot implements BlockVariantPlot {
         return plot.isRoom();
     }
 
-    /** The carriage-side kinds spawn through placers that honour the connect mode; rooms and track don't. */
+    /**
+     * The carriage-side kinds and dimensional carriage rooms spawn through placers that honour the
+     * connect mode (a staged room publishes as a portal room); track doesn't.
+     */
     @Override
     public boolean supportsConnectMode() {
         BuilderPhotoPaths.Kind kind = plot.kind();
         return kind == BuilderPhotoPaths.Kind.CARRIAGE || kind == BuilderPhotoPaths.Kind.CARRIAGE_GROUP
-                || kind == BuilderPhotoPaths.Kind.CONTENTS || kind == BuilderPhotoPaths.Kind.PART;
+                || kind == BuilderPhotoPaths.Kind.CONTENTS || kind == BuilderPhotoPaths.Kind.PART
+                || plot.isRoom();
     }
 
     // ---- mirror ----

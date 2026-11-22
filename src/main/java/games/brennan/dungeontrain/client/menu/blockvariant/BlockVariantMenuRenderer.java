@@ -155,11 +155,20 @@ public final class BlockVariantMenuRenderer {
         if (!BlockVariantMenu.isActiveWorldspace()) return;
         if (BlockVariantMenu.localPos() == null) return;
 
+        BlockVariantMenu.layoutChild(ClientDisplayConfig.getWorldspaceScale());
         // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
         if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
             BlockVariantMenuRaycast.updateHovered();
         }
 
+        // The main panel, then the group panel stacked above it when one is open.
+        for (BlockVariantMenu.Panel panel : BlockVariantMenu.openPanels()) {
+            BlockVariantMenu.withPanel(panel, () -> renderCurrentPanel(event));
+        }
+    }
+
+    /** Draw the panel {@link BlockVariantMenu} currently points at, hung at its own anchor. */
+    private static void renderCurrentPanel(RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
         PoseStack ps = event.getPoseStack();
@@ -438,6 +447,13 @@ public final class BlockVariantMenuRenderer {
 
             // Name highlight + icon + label
             boolean nameHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_NAME && hovered.index() == i;
+            // The group row whose menu is stacked above this panel stays tinted while it is open.
+            boolean shownAbove = !BlockVariantMenu.isChildPanel() && entry.isGroupRef()
+                && entry.groupRef() == BlockVariantMenu.childLockId();
+            if (shownAbove && !nameHover) {
+                drawQuad(ps, buffer, nameCellL + 0.01, rowBottom + 0.005,
+                    nameCellR - 0.005, rowTop - 0.005, 0x40FFB000);
+            }
             if (nameHover) {
                 drawQuad(ps, buffer, nameCellL + 0.01, rowBottom + 0.005,
                     nameCellR - 0.005, rowTop - 0.005, 0x60FFCC33);
