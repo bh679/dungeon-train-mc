@@ -100,6 +100,11 @@ public final class TributeTvVisit {
         DungeonTrainNet.sendToServer(new TributeRoomVisitPacket(true));
     }
 
+    /** The death perks menu is still on the window while the room is stood up behind it. */
+    public static boolean menuOnWindow() {
+        return phase == Phase.AWAITING_ROOM;
+    }
+
     public static boolean isActive() {
         return phase != Phase.IDLE;
     }
