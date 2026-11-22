@@ -1515,6 +1515,7 @@
   "gui.dungeontrain.death.continue": "Schermata successiva",
   "gui.dungeontrain.death.board_anew": "Sali di nuovo",
   "gui.dungeontrain.abandon_run": "Abbandona questa partita",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu principale",
   "gui.dungeontrain.abandon_confirm.title": "Scendere dal treno?",
   "gui.dungeontrain.abandon_confirm.line1": "Scendere è fatale: muori qui, e il treno prosegue.",
   "gui.dungeontrain.abandon_confirm.line2": "La partita finisce e viene registrata come una morte. Non si può annullare.",

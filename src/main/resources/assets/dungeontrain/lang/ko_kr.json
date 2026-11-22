@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "다음 화면",
   "gui.dungeontrain.death.board_anew": "새로 탑승",
   "gui.dungeontrain.abandon_run": "이번 플레이 포기",
+  "gui.dungeontrain.tribute_room.main_menu": "메인 메뉴",
   "gui.dungeontrain.abandon_confirm.title": "열차에서 내릴까요?",
   "gui.dungeontrain.abandon_confirm.line1": "내리면 죽습니다 — 당신은 여기서 죽고, 열차는 계속 달립니다.",
   "gui.dungeontrain.abandon_confirm.line2": "이번 플레이는 끝나고 죽음으로 기록됩니다. 되돌릴 수 없습니다.",

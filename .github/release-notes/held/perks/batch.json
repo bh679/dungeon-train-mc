@@ -29,6 +29,7 @@
     2788,
     2790,
     2804,
+    2808,
     2811
   ],
   "entries": [
@@ -57,6 +58,7 @@
     "perks-unlock-after-death",
     "trader-perks-reduced-reduction-restock",
     "tribute-room-bigger-tv",
+    "tribute-room-pause-reboard",
     "tribute-rooms",
     "tribute-tv-button",
     "unlock-tab-before-perk-full"

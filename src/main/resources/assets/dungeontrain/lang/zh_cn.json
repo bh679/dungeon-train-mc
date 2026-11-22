@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "下一页",
   "gui.dungeontrain.death.board_anew": "重新登车",
   "gui.dungeontrain.abandon_run": "放弃当前旅程",
+  "gui.dungeontrain.tribute_room.main_menu": "主菜单",
   "gui.dungeontrain.abandon_confirm.title": "要下车吗？",
   "gui.dungeontrain.abandon_confirm.line1": "下车即是死亡：你会死在这里，而列车继续前行。",
   "gui.dungeontrain.abandon_confirm.line2": "本轮旅程到此结束，记为一次死亡。无法撤销。",

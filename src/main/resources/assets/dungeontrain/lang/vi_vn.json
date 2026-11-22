@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "Màn Hình Tiếp Theo",
   "gui.dungeontrain.death.board_anew": "Lên tàu lại từ đầu",
   "gui.dungeontrain.abandon_run": "Từ Bỏ Hành Trình Này",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu chính",
   "gui.dungeontrain.abandon_confirm.title": "Xuống tàu?",
   "gui.dungeontrain.abandon_confirm.line1": "Xuống tàu là chết — bạn chết ngay tại đây, còn đoàn tàu vẫn lăn bánh.",
   "gui.dungeontrain.abandon_confirm.line2": "Hành trình kết thúc và được ghi nhận là một lần chết. Không thể hoàn tác.",

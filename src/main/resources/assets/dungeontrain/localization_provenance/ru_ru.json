@@ -1186,6 +1186,7 @@
       "gui.dungeontrain.death.leave",
       "gui.dungeontrain.death.continue",
       "gui.dungeontrain.death.board_anew",
+      "gui.dungeontrain.tribute_room.main_menu",
       "gui.dungeontrain.abandon_confirm.save_title",
       "gui.dungeontrain.abandon_confirm.save_body",
       "gui.dungeontrain.abandon_confirm.ender_chest",

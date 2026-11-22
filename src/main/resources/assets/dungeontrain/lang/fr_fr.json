@@ -1515,6 +1515,7 @@
   "gui.dungeontrain.death.continue": "Écran suivant",
   "gui.dungeontrain.death.board_anew": "Remonter à bord",
   "gui.dungeontrain.abandon_run": "Abandonner cette partie",
+  "gui.dungeontrain.tribute_room.main_menu": "Menu principal",
   "gui.dungeontrain.abandon_confirm.title": "Descendre du train ?",
   "gui.dungeontrain.abandon_confirm.line1": "Descendre est fatal : tu meurs ici, et le train poursuit sa route.",
   "gui.dungeontrain.abandon_confirm.line2": "La partie s'arrête et est comptée comme une mort. Aucun retour en arrière.",
