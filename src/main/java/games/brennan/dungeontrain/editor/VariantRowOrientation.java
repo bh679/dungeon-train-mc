@@ -4,6 +4,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 /**
@@ -120,7 +121,8 @@ public final class VariantRowOrientation {
 
     private static boolean sameType(BlockState a, BlockState b) {
         return a.getBlock().getClass() == b.getBlock().getClass()
-            || a.getProperties().equals(b.getProperties());
+            // getProperties() is an unmodifiable view whose equals is identity: compare as sets.
+            || Set.copyOf(a.getProperties()).equals(Set.copyOf(b.getProperties()));
     }
 
     /** A row whose block can lend a facing: not a mob, a group reference, or an empty cell. */

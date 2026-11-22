@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
@@ -84,6 +85,19 @@ final class VariantRowOrientationTest {
         List<VariantState> rows = List.of(
             stair(Direction.WEST).withHalf(VariantHalf.top()),
             VariantState.of(Blocks.OAK_SLAB.defaultBlockState()).withHalf(VariantHalf.bottom()),
+            log(Direction.EAST));
+        VariantState out = VariantRowOrientation.orientToCell(spruceStair(Direction.NORTH), rows);
+        assertEquals(VariantRotation.lock(Direction.WEST), out.rotation());
+        assertEquals(VariantHalf.top(), out.half());
+    }
+
+    @Test
+    @DisplayName("a stair of another class (copper) still counts as the same type: same block-state properties")
+    void sameTypeByProperties() {
+        assertNotSame(Blocks.CUT_COPPER_STAIRS.getClass(), Blocks.SPRUCE_STAIRS.getClass(), "test needs a subclass");
+        List<VariantState> rows = List.of(
+            VariantState.of(Blocks.CUT_COPPER_STAIRS.defaultBlockState())
+                .withRotation(VariantRotation.lock(Direction.WEST)).withHalf(VariantHalf.top()),
             log(Direction.EAST));
         VariantState out = VariantRowOrientation.orientToCell(spruceStair(Direction.NORTH), rows);
         assertEquals(VariantRotation.lock(Direction.WEST), out.rotation());
