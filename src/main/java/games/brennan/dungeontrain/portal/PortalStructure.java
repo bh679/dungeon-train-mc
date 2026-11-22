@@ -315,7 +315,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         // Void repeats nothing, so "five rooms out" has nothing to count. What it has instead
         // is the clearance it swept, and fogging at exactly that distance is what puts the fog where
         // the emptiness ends rather than somewhere inside it.
-        if (mode() == PortalRoomMode.VOID) return PortalRoomLayout.VOID_CLEARANCE;
+        if (mode().clearsSurroundings()) return PortalRoomLayout.VOID_CLEARANCE;
         return (float) PortalRoomTiling.MAX_RADIUS * Math.min(roomLength(), roomWidth());
     }
 
@@ -330,7 +330,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * Void is the mode with an outside, and the walk into it is the thing worth dramatising.</p>
      */
     public float fogMinRadius() {
-        return mode() == PortalRoomMode.VOID ? PortalRoomLayout.VOID_FOG_MIN : fogRadius();
+        return mode().clearsSurroundings() ? PortalRoomLayout.VOID_FOG_MIN : fogRadius();
     }
 
     /**
@@ -342,7 +342,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * while still standing in the void it was hiding.</p>
      */
     public int fogPad() {
-        return mode() == PortalRoomMode.VOID ? PortalRoomLayout.VOID_CLEARANCE : 0;
+        return mode().clearsSurroundings() ? PortalRoomLayout.VOID_CLEARANCE : 0;
     }
 
     /** How many blocks one copy of this room occupies — what the tiling budget is measured in. */

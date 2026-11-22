@@ -203,10 +203,23 @@ class PortalStructureTest {
     }
 
     @Test
+    @DisplayName("World Border fogs exactly as Void does — the same clearance, the same ramp")
+    void worldBorder_fogsLikeVoid() {
+        PortalStructure v = PortalStructure.withMode(ORIGIN, "default",
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.VOID, null);
+        PortalStructure b = PortalStructure.withMode(ORIGIN, "default",
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.WORLD_BORDER, null);
+
+        assertEquals(v.fogRadius(), b.fogRadius());
+        assertEquals(v.fogMinRadius(), b.fogMinRadius());
+        assertEquals(v.fogPad(), b.fogPad());
+    }
+
+    @Test
     @DisplayName("Every other mode fogs flat — a repeating room has no outside to ramp into")
     void otherModes_doNotRamp() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
-            if (mode == PortalRoomMode.VOID) continue;
+            if (mode.clearsSurroundings()) continue;
             PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
                 PortalRoomLayout.builtInSize(DIMS), mode, null);
             assertEquals(s.fogRadius(), s.fogMinRadius(), mode.id());
@@ -217,7 +230,7 @@ class PortalStructureTest {
     @DisplayName("The tiling modes are unpadded — their fog stops at the copies actually stamped")
     void tilingModes_padNothing() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
-            if (mode == PortalRoomMode.VOID) continue;
+            if (mode.clearsSurroundings()) continue;
             assertEquals(0,
                 PortalStructure.withMode(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
                     mode, null).fogPad(),
