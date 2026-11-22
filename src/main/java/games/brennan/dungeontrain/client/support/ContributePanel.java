@@ -326,6 +326,14 @@ public final class ContributePanel {
                 ty += lh + 1;
             }
         }
+        // What of a gift is left for the dev once the reward has paid for itself.
+        Component toDev = CommunityRewards.devShareLine(reward);
+        if (toDev != null) {
+            for (FormattedCharSequence l : font.split(toDev, textW)) {
+                out.add(new Text(l, textX, ty, COLOUR_GIVE_NOTE, false));
+                ty += lh + 1;
+            }
+        }
         // Other rewards being on cost this one more to run, so the relay asked more: say which.
         Component raised = CommunityRewards.raisedLine(reward);
         if (raised != null) {
@@ -339,8 +347,8 @@ public final class ContributePanel {
 
 
     /**
-     * A reward's purple Give button. Off: "Give $94" on the Contribute card ({@code shortForm}) or
-     * "Give this month" on the shelf. On: "Give <month>", the month a gift would land in. Greyed
+     * A reward's purple Give button: "Give $94", and when a gift would queue "Give $94 · Dec", the
+     * month it would land in (on the Contribute card, {@code shortForm}, only when that fits). Greyed
      * "Soon" while the relay takes no reward gifts yet.
      */
     static Button giveButton(CommunityRewards.Reward reward, boolean on, LiveRewards state, long now,
@@ -350,14 +358,16 @@ public final class ContributePanel {
         if (!open) {
             label = Component.translatable("gui.dungeontrain.rewards.give.soon");
         } else if (shortForm) {
-            // The Contribute card: "Give $94", or "Give Nov" when a gift would queue.
+            // The Contribute card: "Give $94", or "Give $100 · Dec" when a gift would queue, so the
+            // amount always shows; just the amount when the month does not fit the button.
+            Component amount = CommunityRewards.amountShort(reward);
+            label = Component.translatable("gui.dungeontrain.rewards.give.amount", amount);
             if (on) {
                 String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
                         .getMonth().getDisplayName(TextStyle.SHORT, javaLocale());
-                label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
-            } else {
-                label = Component.translatable("gui.dungeontrain.rewards.give.amount",
-                        CommunityRewards.amountShort(reward));
+                Component withMonth = Component.translatable("gui.dungeontrain.rewards.give.amount",
+                        amount.copy().append(" · " + month));
+                if (net.minecraft.client.Minecraft.getInstance().font.width(withMonth) <= w - 8) label = withMonth;
             }
         } else {
             // The rewards page carries the amount only here: "Give $94", or "Give $94 · Dec" when it would queue.

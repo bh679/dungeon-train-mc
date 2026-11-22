@@ -18199,15 +18199,6 @@
       ]
     }
   },
-  "gui.dungeontrain.rewards.give.month": {
-    "1": {
-      "label": "a month name, short or full",
-      "examples": [
-        "Nov",
-        "December"
-      ]
-    }
-  },
   "gui.dungeontrain.rewards.give.amount": {
     "1": {
       "label": "the gift amount, figure only",
