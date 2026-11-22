@@ -6323,6 +6323,7 @@
   "gui.dungeontrain.perks.card.always_active": "Selalu aktif.",
   "gui.dungeontrain.perks.card.locked": "Terkunci. Tingkat %s. Membuka butuh %s.",
   "gui.dungeontrain.perks.card.needs_path": "Butuh jalur utuh dari perk yang sudah terbuka.",
+  "gui.dungeontrain.perks.card.needs_active_path": "Butuh garis dari perk yang punya poin aktif.",
   "gui.dungeontrain.perks.card.you_hold": "Kamu punya %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Klik untuk membuka.",
   "gui.dungeontrain.perks.card.points": "Poin %s / %s.",

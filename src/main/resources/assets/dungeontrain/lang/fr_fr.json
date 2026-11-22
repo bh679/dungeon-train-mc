@@ -6393,6 +6393,7 @@
   "gui.dungeontrain.perks.card.always_active": "Toujours actif.",
   "gui.dungeontrain.perks.card.locked": "Verrouillé. Palier %s. Le déblocage coûte %s.",
   "gui.dungeontrain.perks.card.needs_path": "Nécessite un chemin continu depuis un atout débloqué.",
+  "gui.dungeontrain.perks.card.needs_active_path": "Nécessite une ligne depuis un atout avec des points actifs.",
   "gui.dungeontrain.perks.card.you_hold": "Vous avez %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Cliquez pour débloquer.",
   "gui.dungeontrain.perks.card.points": "Points %s / %s.",

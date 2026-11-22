@@ -6337,6 +6337,7 @@
   "gui.dungeontrain.perks.card.always_active": "始终激活。",
   "gui.dungeontrain.perks.card.locked": "未解锁。第%s阶。解锁花费%s。",
   "gui.dungeontrain.perks.card.needs_path": "需要从已解锁的特权出发的实线路径。",
+  "gui.dungeontrain.perks.card.needs_active_path": "需要一条来自拥有激活点数的天赋的连线。",
   "gui.dungeontrain.perks.card.you_hold": "你拥有 %s。",
   "gui.dungeontrain.perks.card.click_unlock": "点击解锁。",
   "gui.dungeontrain.perks.card.points": "点数 %s / %s。",

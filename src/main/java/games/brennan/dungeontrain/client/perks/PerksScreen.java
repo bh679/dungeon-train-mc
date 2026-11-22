@@ -347,7 +347,7 @@ public final class PerksScreen extends Screen {
             return;
         }
         int level = s.unlockLevel(p.id());
-        if (level <= 0 && !tree.reachableNow(p.id(), s::isUnlocked)) {
+        if (!tree.reachableNow(p.id(), s::isUnlocked)) {
             refused(p.id(), "gui.dungeontrain.perks.card.needs_path");
             return;
         }
@@ -368,6 +368,10 @@ public final class PerksScreen extends Screen {
         PerkMenuSnapshot s = last;
         int level = s.unlockLevel(p.id());
         if (level <= 0 || s.points(p.id()) >= level) return;
+        if (!tree.activeReachable(p.id(), other -> s.points(other) > 0)) {
+            refused(p.id(), "gui.dungeontrain.perks.card.needs_active_path");
+            return;
+        }
         if (!s.canAffordRank()) {
             refused(p.id(), "gui.dungeontrain.perks.refused.no_active");
             return;

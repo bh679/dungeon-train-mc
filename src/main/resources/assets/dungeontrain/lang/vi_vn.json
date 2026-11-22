@@ -6323,6 +6323,7 @@
   "gui.dungeontrain.perks.card.always_active": "Luôn kích hoạt.",
   "gui.dungeontrain.perks.card.locked": "Đã khóa. Bậc %s. Mở khóa tốn %s.",
   "gui.dungeontrain.perks.card.needs_path": "Cần một đường liền từ một đặc quyền đã mở khóa.",
+  "gui.dungeontrain.perks.card.needs_active_path": "Cần một đường nối từ đặc quyền có điểm hoạt động.",
   "gui.dungeontrain.perks.card.you_hold": "Bạn có %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Nhấp để mở khóa.",
   "gui.dungeontrain.perks.card.points": "Điểm %s / %s.",

@@ -6393,6 +6393,7 @@
   "gui.dungeontrain.perks.card.always_active": "Altijd actief.",
   "gui.dungeontrain.perks.card.locked": "Vergrendeld. Niveau %s. Ontgrendelen kost %s.",
   "gui.dungeontrain.perks.card.needs_path": "Vereist een ononderbroken pad vanaf een ontgrendelde perk.",
+  "gui.dungeontrain.perks.card.needs_active_path": "Heeft een lijn nodig vanaf een perk met actieve punten.",
   "gui.dungeontrain.perks.card.you_hold": "Je hebt %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Klik om te ontgrendelen.",
   "gui.dungeontrain.perks.card.points": "Punten %s / %s.",

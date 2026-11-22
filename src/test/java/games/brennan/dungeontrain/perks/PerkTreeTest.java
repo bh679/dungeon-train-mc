@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,6 +74,36 @@ class PerkTreeTest {
         assertFalse(t.reachable("armour", Set.of()::contains, Set.of("haste")::contains), "a chord is never crossed");
         assertFalse(t.reachable("totem", Set.of()::contains, Set.of("health", "armour")::contains),
             "only solid lines carry the path");
+    }
+
+    private static final Predicate<String> NONE = Set.<String>of()::contains;
+
+    @Test
+    @DisplayName("unlock path: solid lines from the Engine, through perks holding points, all the way")
+    void unlockPathMustReachEngine() {
+        PerkTree t = tree();
+        assertTrue(t.pathOpen("health", NONE, NONE, false), "beside the Engine");
+        assertTrue(t.pathOpen("armour", Set.of("health")::contains, NONE, false));
+        assertFalse(t.pathOpen("armour", NONE, NONE, false));
+        assertTrue(t.pathOpen("armour", Set.of("armour", "health")::contains, NONE, false), "repeat unlock");
+        assertFalse(t.pathOpen("armour", Set.of("armour", "haste")::contains, NONE, false),
+            "a held neighbour cut off from the Engine opens nothing");
+        assertFalse(t.pathOpen("armour", Set.of("speed", "haste")::contains, NONE, false), "dashes never carry an unlock");
+        assertTrue(t.pathOpen("armour", NONE, Set.of("health")::contains, false), "Coming soon counts as holding points");
+        assertFalse(t.pathOpen("root", NONE, NONE, false));
+        assertFalse(t.pathOpen("nope", NONE, NONE, false));
+    }
+
+    @Test
+    @DisplayName("active path: solid or dashed lines from the Engine through perks with active points")
+    void activePathTakesDashes() {
+        PerkTree t = tree();
+        assertTrue(t.pathOpen("armour", Set.of("speed", "haste")::contains, NONE, true), "speed, haste, then a dash");
+        assertTrue(t.pathOpen("totem", Set.of("speed", "haste")::contains, NONE, true), "a one-way dash counts too");
+        assertFalse(t.pathOpen("totem", Set.of("haste")::contains, NONE, true), "haste is cut off without speed");
+        assertTrue(t.pathOpen("totem", Set.of("haste")::contains, Set.of("speed")::contains, true), "through Coming soon");
+        assertFalse(t.pathOpen("armour", NONE, NONE, true));
+        assertTrue(t.pathOpen("speed", NONE, NONE, true));
     }
 
     @Test
