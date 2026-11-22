@@ -2506,6 +2506,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Segura uma planta que caiba num vaso de flores",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Adiciona pelo menos uma variante antes de bloquear",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Ainda não há outro grupo trancado para verificar",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "O grupo %s já não tem blocos para editar",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Segura um bloco, um balde ou a mão vazia para o adicionar à condição",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Esse bloco já está na condição",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Uma condição comporta no máximo 8 blocos",

@@ -3120,6 +3120,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Ține o plantă care încape într-un ghiveci",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Adaugă cel puțin o variantă înainte de blocare",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Încă nu există alt grup blocat de verificat",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Grupul %s nu mai are blocuri de editat",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Ține un bloc, o găleată sau mâna goală ca să-l adaugi la condiție",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Blocul acela este deja în condiție",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "O condiție cuprinde cel mult 8 blocuri",

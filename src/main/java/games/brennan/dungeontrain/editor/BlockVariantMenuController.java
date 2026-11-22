@@ -133,6 +133,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         if (plot == null) return;
         sendSync(player, plot, open.localPos(), plot.origin().offset(open.localPos()),
             open.face(), open.up());
+        BlockPos child = childCell(player, plot);
+        if (child != null) sendChild(player, plot, child);
     }
 
     /**
@@ -148,6 +150,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
             INSTANCE.remove(player);
+            CHILD_CELL.remove(player.getUUID());
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
         }
@@ -188,6 +191,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         Direction face = bhit.getDirection();
         Vec3 up = MenuPanelGeometry.computeUp(face, player);
         INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up, anchorWorld));
+        CHILD_CELL.remove(player.getUUID());
         sendSync(player, plot, clampedLocal, anchorWorld, face, up);
     }
 
@@ -239,6 +243,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         // The stored face is only used to re-anchor a later re-sync; UP keeps that stable rather
         // than tying it to a block face this panel never had.
         INSTANCE.put(player, new OpenMenu(plot.key(), cell, Direction.UP, up, anchor, right));
+        CHILD_CELL.remove(player.getUUID());
         List<VariantState> states = plot.statesAt(cell);
         DungeonTrainNet.sendTo(player, buildSyncPacket(plot, cell, states == null ? List.of() : states,
             plot.lockIdAt(cell), anchor, right, up));
@@ -394,6 +399,16 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         if (!plot.inBounds(localPos)) {
             LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: localPos {} out of bounds for plot {}",
                 localPos, plot.key());
+            return;
+        }
+
+        // Opening / closing the stacked group panel is not an edit: nothing to undo.
+        if (packet.op() == BlockVariantEditPacket.Op.OPEN_GROUP_MENU) {
+            openGroupMenu(player, plot, localPos, packet.entryIndex());
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.CLOSE_GROUP_MENU) {
+            closeGroupMenu(player);
             return;
         }
 
@@ -1106,12 +1121,78 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
 
         if (dropCell) {
+            BlockPos child = childCell(player, plot);
+            if (child != null && child.equals(localPos)) {
+                // The stacked group panel's cell went empty: close that panel, keep the main one.
+                CHILD_CELL.remove(player.getUUID());
+                DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.emptyChild());
+                OpenMenu open = INSTANCE.open(player);
+                if (open != null && open.variantId().equals(plot.key())) resyncMain(player, plot, open.localPos());
+                return;
+            }
             INSTANCE.remove(player);
+            CHILD_CELL.remove(player.getUUID());
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
         }
 
         resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Per player: the cell whose menu is stacked above the main one — any cell of the lock group a
+     * "+ Group N" row was right-clicked for. Edits there already reach the whole group. Cleared
+     * whenever the main menu opens, closes or moves to another cell.
+     */
+    private static final java.util.Map<java.util.UUID, BlockPos> CHILD_CELL =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** The stacked panel's cell, when the player has one open on {@code plot}. */
+    @Nullable
+    private static BlockPos childCell(ServerPlayer player, BlockVariantPlot plot) {
+        OpenMenu open = INSTANCE.open(player);
+        if (open == null || !open.variantId().equals(plot.key())) return null;
+        return CHILD_CELL.get(player.getUUID());
+    }
+
+    /** Sync the stacked panel; the client lays it out above the main panel, so no anchor is sent. */
+    private static void sendChild(ServerPlayer player, BlockVariantPlot plot, BlockPos cell) {
+        List<VariantState> states = plot.statesAt(cell);
+        if (states == null) {
+            CHILD_CELL.remove(player.getUUID());
+            DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.emptyChild());
+            return;
+        }
+        DungeonTrainNet.sendTo(player, buildSyncPacket(plot, cell, states, plot.lockIdAt(cell),
+            Vec3.ZERO, new Vec3(1, 0, 0), new Vec3(0, 1, 0)).withSlot(BlockVariantSyncPacket.SLOT_CHILD));
+    }
+
+    /**
+     * Right-click on a "+ Group N" row ({@code row} of the cell at {@code localPos}): stack group
+     * N's menu above. It shows the lowest cell of the group, so the same group always opens the
+     * same cell. Swaps an already-open stacked panel.
+     */
+    private static void openGroupMenu(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int row) {
+        List<VariantState> states = plot.statesAt(localPos);
+        if (states == null || row < 0 || row >= states.size()) return;
+        VariantState entry = states.get(row);
+        if (!entry.isGroupRef()) return;
+        java.util.Set<BlockPos> cells = plot.positionsWithLockId(entry.groupRef());
+        if (cells.isEmpty()) {
+            actionBar(player, Component.translatable(
+                "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells", entry.groupRef()),
+                ChatFormatting.YELLOW);
+            return;
+        }
+        BlockPos cell = java.util.Collections.min(cells);
+        CHILD_CELL.put(player.getUUID(), cell);
+        sendChild(player, plot, cell);
+    }
+
+    /** Close the stacked group panel, leaving the main menu open. */
+    private static void closeGroupMenu(ServerPlayer player) {
+        CHILD_CELL.remove(player.getUUID());
+        DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.emptyChild());
     }
 
     /**
@@ -1123,6 +1204,21 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
      */
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot,
                                        BlockPos localPos) {
+        BlockPos child = childCell(player, plot);
+        if (child != null && child.equals(localPos)) {
+            // An edit in the stacked group panel: refresh it, and the main panel under it, whose
+            // group row may have changed (it reads the group's liveness).
+            sendChild(player, plot, child);
+            OpenMenu open = INSTANCE.open(player);
+            if (open != null && open.variantId().equals(plot.key())) resyncMain(player, plot, open.localPos());
+            return;
+        }
+        resyncMain(player, plot, localPos);
+        if (child != null) sendChild(player, plot, child);
+    }
+
+    /** {@link #resyncSameFace} for the main panel alone. */
+    private static void resyncMain(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         OpenMenu open = INSTANCE.open(player);
         boolean sameMenu = open != null
             && open.variantId().equals(plot.key())
@@ -1456,6 +1552,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         Vec3 up = open != null ? open.up() : MenuPanelGeometry.computeUp(face, player);
         // Close the block-variant menu — the container menu takes over.
         INSTANCE.remove(player);
+        CHILD_CELL.remove(player.getUUID());
         DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
         ContainerContentsMenuController.openAt(player, plot, localPos, face, up);
     }

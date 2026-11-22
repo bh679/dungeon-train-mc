@@ -2561,6 +2561,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Возьмите растение, которое можно посадить в цветочный горшок",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Перед блокировкой добавьте хотя бы один вариант",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Пока нет другой группы блокировки для проверки",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "В группе %s не осталось блоков для изменения",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Возьмите блок, ведро или пустую руку, чтобы добавить его в условие",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Этот блок уже есть в условии",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Условие вмещает не больше 8 блоков",

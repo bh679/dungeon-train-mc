@@ -14990,6 +14990,15 @@
       ]
     }
   },
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": {
+    "1": {
+      "label": "lock-id (group number)",
+      "examples": [
+        "30",
+        "4"
+      ]
+    }
+  },
   "chat.dungeontrain.editor_bar.variant_menu.span": {
     "1": {
       "label": "span description built from the span_count/position/fill pieces",
