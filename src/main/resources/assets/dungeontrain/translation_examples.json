@@ -18235,6 +18235,15 @@
       ]
     }
   },
+  "gui.dungeontrain.rewards.to_dev": {
+    "1": {
+      "label": "the amount of one gift left for the developer, figure only",
+      "examples": [
+        "$9",
+        "$0"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.thanks.later": {
     "1": {
       "label": "a community reward's name",
