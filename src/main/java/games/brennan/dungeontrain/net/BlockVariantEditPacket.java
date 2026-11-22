@@ -150,7 +150,10 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Slime / magma cube / End slime row: delta = VariantSlime mask (sizes, End slime types).
                      SET_SLIME,
                      // Toolbar Rot pill: free / lock the rotation of the cell's whole lock group.
-                     TOGGLE_ROTATION_FREE }
+                     TOGGLE_ROTATION_FREE,
+                     // If cell opened on a row with no condition: copy in the condition last changed
+                     // in this cell (or its lock group), else the nearest row's. No-op on a set row.
+                     PREFILL_COND }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
