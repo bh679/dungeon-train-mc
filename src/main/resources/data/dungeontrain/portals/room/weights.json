@@ -779,6 +779,11 @@
       "name": "AshSeven"
     }
   },
+  "voidparkour": {
+    "weight": 2,
+    "minLevel": 2,
+    "mode": "void/exact/off/off/off/day/sealed/0/3/0/11"
+  },
   "waterparkour": {
     "weight": 2,
     "minLevel": 2,
