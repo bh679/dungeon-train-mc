@@ -149,6 +149,9 @@ final class CosmicAppleDropsTest {
             assertTrue(range != null && g >= range[0] && g <= range[1], "group " + g + " outside its level " + ctx);
             levelsSeen.add(key);
             if (slot >= 0) appleGroups.merge(key, 1, Integer::sum);
+            if (CosmicAppleDrops.isFloorGroup(seed, g, anchor < 0, lvl, cpt, delay, offset, gs)) {
+                assertEquals(0, slot, "floor apple starts at the first carriage " + ctx);
+            }
         }
         for (int key : levelsSeen) {
             int lvl = key < 0 ? -key - 1 : key;

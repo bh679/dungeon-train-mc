@@ -83,10 +83,11 @@ public final class CosmicAppleDrops {
                        int carriagesPerTier, int delay, int offset) {
         if (groupSize <= 0 || level <= 0) return -1;
         long groupIndex = Math.floorDiv(anchorPIdx, groupSize);
-        boolean drawn = groupGetsApple(seed, groupIndex)
-                || (floor && isFloorGroup(seed, groupIndex, anchorPIdx < 0, level, carriagesPerTier, delay, offset, groupSize));
-        if (!drawn) return -1;
-        return (int) Math.floorMod(hash(seed + 1, groupIndex), groupSize);
+        if (groupGetsApple(seed, groupIndex)) return (int) Math.floorMod(hash(seed + 1, groupIndex), groupSize);
+        // The level's guaranteed apple starts at the first carriage, so the hand-on past a carriage with no
+        // free container (TrainAssembler) can try every carriage of the group.
+        if (floor && isFloorGroup(seed, groupIndex, anchorPIdx < 0, level, carriagesPerTier, delay, offset, groupSize)) return 0;
+        return -1;
     }
 
     /**
