@@ -1541,6 +1541,7 @@
       "project_id": 975120,
       "file_id": 9309036,
       "required": true,
+      "modrinth_only": true,
       "modrinth_project": "cubes-without-borders",
       "modrinth_version": "fmf8ZA2N"
     },
