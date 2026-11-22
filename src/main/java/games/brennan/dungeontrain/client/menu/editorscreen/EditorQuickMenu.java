@@ -29,7 +29,7 @@ final class EditorQuickMenu {
 
     /** One row of the dropdown. */
     enum Item {
-        MIRROR(EditorScreenLang.QUICK_MIRROR, EditorScreenLang.QUICK_MIRROR_TIP, EditorIcons.FLIP),
+        MIRROR(EditorScreenLang.QUICK_MIRROR, EditorScreenLang.QUICK_MIRROR_TIP, mod("icon/quick_mirror")),
         MENUS(EditorScreenLang.QUICK_MENUS, EditorScreenLang.QUICK_MENUS_TIP, mod("icon/quick_menus")),
         FRAME(EditorScreenLang.QUICK_FRAME, EditorScreenLang.QUICK_FRAME_TIP, mod("icon/quick_frame"));
 
