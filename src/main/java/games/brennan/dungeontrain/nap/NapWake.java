@@ -344,13 +344,14 @@ public final class NapWake {
     }
 
     /**
-     * The previous life's advancements, stats and narrative progress, written into this fresh world
+     * The previous life's advancements, stats, photos and narrative progress, written into this fresh world
      * before anyone logs in, so vanilla loads them at login as already earned (no toasts) and the
      * stories carry on where they were.
      */
     private static void carryPreviousLife(MinecraftServer server, UUID owner, NapSnapshot nap) {
         writePlayerFile(server, LevelResource.PLAYER_ADVANCEMENTS_DIR, owner, nap.advancementsJson());
         writePlayerFile(server, LevelResource.PLAYER_STATS_DIR, owner, nap.statsJson());
+        NapExposures.restore(server, nap.runExtras().getCompound(NapExposures.EXTRAS_KEY));
         if (nap.narrative().isEmpty()) return;
         try {
             NarrativeProgressData.get(server.overworld()).importFor(owner, nap.narrative());
