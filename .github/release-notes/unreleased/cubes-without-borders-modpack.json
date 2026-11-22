@@ -1,0 +1,19 @@
+{
+  "id": "cubes-without-borders-modpack",
+  "version": "0.1968.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility"
+  ],
+  "title": "Borderless fullscreen",
+  "summary": "The modpack now comes with a borderless fullscreen option. Pick it from Fullscreen Mode in Video Settings to fill the screen without a title bar, and switch to other apps without the game minimising.",
+  "highlights": [
+    "Fullscreen Mode in Video Settings: Off, Exclusive, Borderless or Windowed"
+  ],
+  "pr": 2827,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
