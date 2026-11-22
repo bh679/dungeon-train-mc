@@ -1471,6 +1471,7 @@
   "gui.dungeontrain.death.continue": "次の画面",
   "gui.dungeontrain.death.board_anew": "新たに乗車",
   "gui.dungeontrain.abandon_run": "この旅を放棄",
+  "gui.dungeontrain.tribute_room.main_menu": "メインメニュー",
   "gui.dungeontrain.abandon_confirm.title": "列車から降りますか？",
   "gui.dungeontrain.abandon_confirm.line1": "降りれば命はありません。あなたはここで死に、列車は走り続けます。",
   "gui.dungeontrain.abandon_confirm.line2": "旅はここで終わり、死亡として記録されます。取り消しはできません。",
