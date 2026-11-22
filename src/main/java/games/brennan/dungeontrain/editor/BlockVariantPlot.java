@@ -144,9 +144,9 @@ public interface BlockVariantPlot {
     /**
      * True when this plot's spawn path honours the per-row fence / wall
      * {@link VariantState#connect()} mode ({@link ConnectPass}) — carriage,
-     * whole-carriage, contents and part plots. False elsewhere (tracks, portal
-     * rooms, chunk frames), where the menu hides the toggle rather than let the
-     * editor preview promise arms the spawned world would not give.
+     * whole-carriage, contents, part and portal room plots. False elsewhere (track
+     * tiles, tunnels, chunk frames), where the menu hides the toggle rather than let
+     * the editor preview promise arms the spawned world would not give.
      */
     default boolean supportsConnectMode() {
         return false;
@@ -691,6 +691,9 @@ public interface BlockVariantPlot {
         @Override public String dirtySnapshotKey() { return EditorDirtyCheck.snapshotKeyFor(kind, name); }
         // A portal room is the one track template that repeats — see PortalRoomCopies.
         @Override public boolean supportsCopySettings() { return kind == TrackKind.PORTAL_ROOM; }
+        // And the one whose placer applies the connect mode (PortalCarriageBuilder#applyRoomVariants);
+        // track tiles, tunnels and pillars still place the captured state as-is.
+        @Override public boolean supportsConnectMode() { return kind == TrackKind.PORTAL_ROOM; }
         @Override public VariantCopyRoll copyRollAt(BlockPos l) { return sidecar.copyRollAt(l); }
         @Override public void setCopyRoll(BlockPos l, VariantCopyRoll r) { sidecar.setCopyRoll(l, r); }
         @Override public VariantCopyScope copyScopeAt(BlockPos l) { return sidecar.copyScopeAt(l); }
