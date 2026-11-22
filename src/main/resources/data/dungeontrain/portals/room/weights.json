@@ -203,6 +203,17 @@
       "name": "AntonioMacarely"
     }
   },
+  "fallactivitiescart1": {
+    "weight": 1,
+    "periods": [
+      "halloween"
+    ],
+    "mode": "bedrock/exact/off/off/off/none/sealed/3/2/3/4/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "fallspookycarriage1": {
     "weight": 1,
     "periods": [
@@ -647,6 +658,32 @@
       "name": "Nikeeta"
     }
   },
+  "tasuschristmascarriage": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "periods": [
+      "christmas"
+    ],
+    "mode": "chunk_dimension/exact/fit/off/mix/cycle/sealed/-2/4/-2/4/dungeontrain:skybox_block",
+    "builder": {
+      "uuid": "bf78a277957245c2989316320cd5dace",
+      "name": "Nikeeta707"
+    }
+  },
   "terrarium": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/day/sealed/0/73/0/19",
@@ -680,7 +717,7 @@
   },
   "thearchivistsocietycourtyard": {
     "weight": 1,
-    "mode": "chunk_dimension/exact/off/off/off/none/sealed/-2/0/-2/0/dungeontrain:skybox_surface",
+    "mode": "bedrock/exact/off/off/off/none/sealed/-2/0/-2/0/dungeontrain:skybox_surface",
     "builder": {
       "uuid": "bf78a277957245c2989316320cd5dace",
       "name": "Nikeeta707"
