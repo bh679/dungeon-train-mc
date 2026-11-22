@@ -1,0 +1,16 @@
+{
+  "id": "zombie-hands-shulker-box",
+  "version": "0.1948.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Shulker box fix",
+  "summary": "Zombie hands can no longer open a shulker box from your hotbar.",
+  "highlights": [],
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
