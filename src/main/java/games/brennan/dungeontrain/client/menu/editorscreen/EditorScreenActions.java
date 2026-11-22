@@ -577,6 +577,7 @@ public final class EditorScreenActions {
                                                      Supplier<String> roomMode) {
         List<CommandMenuEntry> out = new ArrayList<>();
         if (!ctx.hasSelection()) return out;
+        addIfPresent(out, datesEntry(ctx));
         if (ctx.category() == PlotCategory.PORTALS) {
             for (CommandMenuEntry row : portalRows.get()) {
                 if (!isRoomSizeRow(row)) out.add(row);
@@ -589,6 +590,27 @@ public final class EditorScreenActions {
         out.addAll(flipRows(ctx));
         addIfPresent(out, contentsAllowEntry(ctx, roomMode));
         return out;
+    }
+
+    /**
+     * "Dates: Christmas" (or "Dates: Any time"), opening the Dates picker: the same picker as the
+     * sheet's Dates line, on the settings page where the other per-template switches live. Null for
+     * a template with no spawn gate.
+     */
+    static CommandMenuEntry datesEntry(Ctx ctx) {
+        EditorTypeMenusPacket.Variant v = ctx.variant();
+        if (v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE) return null;
+        VariantKey key = ctx.selection();
+        return games.brennan.dungeontrain.client.menu.DatePeriodPickerScreen.forTemplate(
+                key.category(), key.modelId(), key.modelName(), v.displayName(), v.periods())
+            .map(picker -> {
+                String value = v.periods().isEmpty()
+                    ? EditorScreenLang.text(EditorScreenLang.SHEET_DATES_ANY)
+                    : games.brennan.dungeontrain.client.menu.DatePeriodPickerScreen.periodNames(v.periods());
+                return (CommandMenuEntry) new CommandMenuEntry.DrillIn(
+                    EditorScreenLang.text(EditorScreenLang.SHEET_DATES) + ": " + value, picker, !v.periods().isEmpty());
+            })
+            .orElse(null);
     }
 
     /**
