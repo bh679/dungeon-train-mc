@@ -207,7 +207,7 @@
     },
     {
       "id": "tassortinghouse",
-      "weight": 0,
+      "weight": 2,
       "minLevel": 100
     },
     {
@@ -224,6 +224,16 @@
       "id": "nnout",
       "weight": 2,
       "minLevel": 10
+    },
+    {
+      "id": "nikeeta707dimensional1",
+      "weight": 2,
+      "minLevel": 35
+    },
+    {
+      "id": "thearchivistsocietypagoda",
+      "weight": 4,
+      "minLevel": 20
     }
   ]
 }

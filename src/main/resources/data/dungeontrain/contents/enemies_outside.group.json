@@ -17,6 +17,11 @@
     {
       "id": "open",
       "weight": 1
+    },
+    {
+      "id": "treeenemies",
+      "weight": 1,
+      "minLevel": 6
     }
   ]
 }

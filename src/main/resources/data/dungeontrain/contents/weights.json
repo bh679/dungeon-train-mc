@@ -102,7 +102,7 @@
     "name": "Odd ones"
   },
   "enemies_outside": {
-    "weight": 1,
+    "weight": 3,
     "minLevel": 5,
     "phases": [
       "OVERWORLD",
