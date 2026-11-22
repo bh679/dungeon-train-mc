@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.nap;
 
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
@@ -41,9 +42,23 @@ public final class HostileBandBeds {
         return !level.dimensionType().bedWorks() || coreAt(level, pos) != Core.NONE;
     }
 
-    /** A Respawn Obelisk here works (it offers a nap) only in an End core; anywhere else it explodes. */
+    /**
+     * A Respawn Obelisk here works (it offers a nap) in an End core or anywhere in DT's End band, the
+     * crumbling strip on either side included, where the overworld wears away but the biome is still the
+     * overworld's; anywhere else it explodes. A carriage obelisk is read at the carriage's world position.
+     */
     public static boolean obeliskWorks(ServerLevel level, BlockPos pos) {
-        return coreAt(level, pos) == Core.END;
+        if (coreAt(level, pos) == Core.END) return true;
+        if (level.dimension() != Level.OVERWORLD) return false;
+        return inEndBand(WorldGenCycle.fromConfig(), biomeSamplePos(level, pos).getX());
+    }
+
+    /**
+     * Any column of the End band, crumbling strip included: the End erosion ramp is above 0 there and 0
+     * in plain overworld and the Nether band. Pure, for tests.
+     */
+    static boolean inEndBand(WorldGenCycle cycle, int worldX) {
+        return cycle.endSegmentInfluence(worldX) && cycle.endMiddleRamp(worldX) > 0.0;
     }
 
     /** A respawn anchor here works as in the Nether; anywhere else a charged one explodes. */
