@@ -179,14 +179,17 @@ final class PerkCard {
         out.add(state(Component.translatable(KEY + "points", pts, level)));
         if (pts < level) {
             int next = snap.nextRankCost();
-            out.add(snap.activePoints() < next
+            if (!tree.activeReachable(p.id(), other -> snap.points(other) > 0)) out.add(Component.translatable(KEY + "needs_active_path"));
+            else out.add(snap.activePoints() < next
                 ? Component.translatable(KEY + "next_cost", next, snap.activePoints())
                 : Component.translatable(KEY + "click_add", next));
             return out;
         }
         if (activeOnly) return out;
         int spent = snap.unlockSpent(tree);
-        if (!PerkUnlocks.allowed(level + 1, spent)) {
+        if (!tree.reachableNow(p.id(), snap::isUnlocked)) {
+            out.add(Component.translatable(KEY + "needs_path"));
+        } else if (!PerkUnlocks.allowed(level + 1, spent)) {
             out.add(Component.translatable(KEY + "gate", ap(PerkUnlocks.spentNeeded(level + 1) - spent), PerkUnlocks.levelLimit(spent)));
         } else if (snap.unlockPoints() < cost) {
             out.add(Component.translatable(KEY + "again_cost", ap(cost), snap.unlockPoints()));

@@ -19,7 +19,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Client → server: put one active point into an unlocked perk. Checked like
- * {@link PerkUnlockPacket}: known, unlocked, below its max rank, and an active point in the balance.
+ * {@link PerkUnlockPacket}: known, unlocked, on a path of solid or dashed lines from the Engine through perks with active
+ * points ({@link games.brennan.dungeontrain.perks.PerkTree#activeReachable}), below its max rank, and an active point in the balance.
  */
 public record PerkSpendPacket(String perkId) implements CustomPacketPayload {
 
@@ -62,6 +63,9 @@ public record PerkSpendPacket(String perkId) implements CustomPacketPayload {
         if (def == null || !PerkRegistry.isBuilt(id)) return "gui.dungeontrain.perks.refused.not_built";
         PerkState state = Perks.state(player);
         if (!state.isUnlocked(id)) return "gui.dungeontrain.perks.refused.locked";
+        if (!PerkTreeLoader.get().activeReachable(id, other -> state.activePoints(other) > 0)) {
+            return "gui.dungeontrain.perks.card.needs_active_path";
+        }
         if (state.activePoints(id) >= state.unlockLevel(id)) return "gui.dungeontrain.perks.refused.full";
         if (PerkPoints.active(player) < PerkRankCost.nextCost(state)) return "gui.dungeontrain.perks.refused.no_active";
         return null;

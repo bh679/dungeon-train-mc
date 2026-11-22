@@ -17,10 +17,11 @@ import java.util.function.Predicate;
  * {@link PerkTreeLoader} from {@code data/dungeontrain/perks/tree.json} and read by the menu (positions,
  * names) and the server (costs, reachability). Nothing in the mod re-lays it out.
  *
- * <p>Reachability is the one rule both sides must agree on: a locked perk may be unlocked when a
- * <b>solid</b> (requirement) line joins it to the Engine or to an unlocked perk, either way round.
- * Dashed lines (chords) open nothing; they only show which perks belong together. This is the web
- * page's test mode ({@code perks.js reachableNow}).</p>
+ * <p>Reachability is the one rule both sides must agree on. An unlock point goes into a perk only along
+ * a <b>solid</b> (requirement) path from the Engine through unlocked perks ({@link #reachableNow}); an
+ * active point goes in along a path of solid or dashed lines through perks holding active points this
+ * life ({@link #activeReachable}). Perks not built yet ("Coming soon") count as holding points on
+ * both. Lines count either way round.</p>
  */
 public final class PerkTree {
 
@@ -169,9 +170,53 @@ public final class PerkTree {
         return reachable(id, state::isUnlocked);
     }
 
-    /** As {@link #reachable(String, PerkState)}, crossing perks that are not built yet. */
+    /**
+     * Whether an unlock point may go into {@code id} now: a <b>solid</b> path runs from the Engine to it
+     * through unlocked perks, perks not built yet ("Coming soon") counting as unlocked.
+     */
     public boolean reachableNow(String id, Predicate<String> unlocked) {
-        return reachable(id, unlocked, other -> !PerkRegistry.isBuilt(other));
+        return pathOpen(id, unlocked, other -> !PerkRegistry.isBuilt(other), false);
+    }
+
+    /**
+     * Whether an active point may go into {@code id} now: a path of solid <b>or dashed</b> lines runs from
+     * the Engine to it through perks holding active points, perks not built yet counting as holding some.
+     */
+    public boolean activeReachable(String id, Predicate<String> hasActive) {
+        return pathOpen(id, hasActive, other -> !PerkRegistry.isBuilt(other), true);
+    }
+
+    /**
+     * The path rule behind {@link #reachableNow} and {@link #activeReachable}: flood out from the Engine
+     * over solid lines (and dashed ones when {@code dashesCount}), entering only perks that {@code hold}
+     * points or are {@code passThrough}; {@code id} is open when one of those lines joins it to the
+     * flooded set. Links count either way round. The Engine and unknown ids are never open.
+     */
+    public boolean pathOpen(String id, Predicate<String> hold, Predicate<String> passThrough, boolean dashesCount) {
+        Perk p = byId.get(id);
+        if (p == null || p.isRoot()) return false;
+        Set<String> carried = new HashSet<>();
+        Deque<String> queue = new ArrayDeque<>();
+        carried.add(ROOT);
+        queue.add(ROOT);
+        while (!queue.isEmpty()) {
+            String cur = queue.poll();
+            for (Link l : linksOf(cur)) {
+                if (!carries(l, dashesCount)) continue;
+                String other = l.other(cur);
+                if (other.equals(id)) return true;
+                if (!byId.containsKey(other) || carried.contains(other)) continue;
+                if (hold.test(other) || passThrough.test(other)) {
+                    carried.add(other);
+                    queue.add(other);
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean carries(Link l, boolean dashesCount) {
+        return l.kind() == LinkKind.REQ || (dashesCount && l.kind() == LinkKind.CROSS);
     }
 
     /** Ids joined to the Engine by some chain of links, the Engine included. */

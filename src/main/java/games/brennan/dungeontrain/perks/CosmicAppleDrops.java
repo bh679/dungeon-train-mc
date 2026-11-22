@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.perks;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.template.TestGate;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -23,7 +25,9 @@ import java.util.List;
 
 /**
  * A cosmic apple turns up in about one carriage group in {@link #EVERY}: one stack of one, in one chest,
- * barrel or shulker box of that group, never at Diff-Level 0 (the first 40 carriages). Which apple depends on depth
+ * barrel or shulker box of that group, never at Diff-Level 0 (the first 40 carriages). Every Diff-Level from 1 on
+ * gets at least one: a level whose groups all miss the draw hands one apple to a group picked by seed
+ * ({@link #isFloorGroup}); each side of the origin counts on its own, as Diff-Level uses distance. Which apple depends on depth
  * ({@link #tierFor}): the chance of a Celestial Bite and of a Violet Core each follow a curve over Diff-Level
  * ({@link AppleTierCurve#BITE}, {@link AppleTierCurve#CORE}), rising gently to 25% and 10%; the rest are
  * Cosmic Apples. Deterministic per world seed and group, so a regenerated group
@@ -66,10 +70,69 @@ public final class CosmicAppleDrops {
 
     /** Which slot of the group holds the apple, or -1 when this group gets none. */
     public static int slotFor(long seed, int anchorPIdx, int groupSize) {
-        if (groupSize <= 0 || DifficultyProgression.positionTier(anchorPIdx) == 0) return -1;
+        if (groupSize <= 0) return -1;
+        // A test stamp's Diff-Level override pins every group to one level: no real levels to floor.
+        boolean floor = TestGate.levelOr(-1) < 0;
+        return slotFor(seed, anchorPIdx, groupSize, DifficultyProgression.positionTier(anchorPIdx), floor,
+                DungeonTrainConfig.getCarriagesPerTier(), DungeonTrainConfig.getProgressionLevelDelay(),
+                DungeonTrainConfig.getDifficultyTravelledOffset());
+    }
+
+    /** Pure {@link #slotFor(long, int, int)}: {@code level} is the anchor's Diff-Level, the rest the live config. */
+    static int slotFor(long seed, int anchorPIdx, int groupSize, int level, boolean floor,
+                       int carriagesPerTier, int delay, int offset) {
+        if (groupSize <= 0 || level <= 0) return -1;
         long groupIndex = Math.floorDiv(anchorPIdx, groupSize);
-        if (!groupGetsApple(seed, groupIndex)) return -1;
-        return (int) Math.floorMod(hash(seed + 1, groupIndex), groupSize);
+        if (groupGetsApple(seed, groupIndex)) return (int) Math.floorMod(hash(seed + 1, groupIndex), groupSize);
+        // The level's guaranteed apple starts at the first carriage, so the hand-on past a carriage with no
+        // free container (TrainAssembler) can try every carriage of the group.
+        if (floor && isFloorGroup(seed, groupIndex, anchorPIdx < 0, level, carriagesPerTier, delay, offset, groupSize)) return 0;
+        return -1;
+    }
+
+    /**
+     * True when {@code groupIndex} is the group that carries its level's one guaranteed apple: no group of
+     * {@code level} on that side of the origin won {@link #groupGetsApple}, and the seed picked this one.
+     */
+    static boolean isFloorGroup(long seed, long groupIndex, boolean negativeSide, int level,
+                                int carriagesPerTier, int delay, int offset, int groupSize) {
+        long[] range = levelGroups(level, negativeSide, carriagesPerTier, delay, offset, groupSize);
+        if (range == null || groupIndex < range[0] || groupIndex > range[1]) return false;
+        for (long g = range[0]; g <= range[1]; g++) {
+            if (groupGetsApple(seed, g)) return false;
+        }
+        long count = range[1] - range[0] + 1;
+        long pick = range[0] + Math.floorMod(hash(seed + 4, level * 2L + (negativeSide ? 1 : 0)), count);
+        return groupIndex == pick;
+    }
+
+    /**
+     * The first and last group index whose anchor ({@code index * groupSize}) sits at Diff-Level
+     * {@code level} (1 or more) on one side of the origin, or null when no anchor does. Solved from
+     * {@code DifficultyProgression.effectiveTier(max(0, abs(anchor) + offset), carriagesPerTier, delay)}:
+     * the level holds shifted distances {@code [(level + delay) * cpt, (level + delay + 1) * cpt - 1]}.
+     * The negative side starts at anchor -1 (anchor 0 belongs to the positive side).
+     */
+    static long[] levelGroups(int level, boolean negativeSide, int carriagesPerTier, int delay, int offset,
+                              int groupSize) {
+        if (level <= 0 || groupSize <= 0) return null;
+        long cpt = Math.max(1, carriagesPerTier);
+        long band = (long) level + Math.max(0, delay);
+        long lo = band * cpt - offset;
+        long hi = (band + 1) * cpt - 1 - offset;
+        long minAbs = negativeSide ? 1 : 0;
+        lo = Math.max(lo, minAbs);
+        if (hi < lo) return null;
+        long first;
+        long last;
+        if (negativeSide) {
+            first = Math.floorDiv(-hi + groupSize - 1, (long) groupSize);
+            last = Math.floorDiv(-lo, (long) groupSize);
+        } else {
+            first = Math.floorDiv(lo + groupSize - 1, (long) groupSize);
+            last = Math.floorDiv(hi, (long) groupSize);
+        }
+        return first > last ? null : new long[] {first, last};
     }
 
     /** The pure draw: true for about one group in {@link #EVERY}. */
@@ -109,12 +172,14 @@ public final class CosmicAppleDrops {
      * Put one apple in one container inside {@code box} (a carriage's shipyard box, already filled),
      * its tier drawn from the depth of {@code anchorPIdx}.
      * Nothing happens when the box holds no chest, barrel or shulker box with a free slot.
+     *
+     * @return true when an apple went in
      */
-    public static void place(ServerLevel level, BoundingBox box, long seed, int anchorPIdx) {
+    public static boolean place(ServerLevel level, BoundingBox box, long seed, int anchorPIdx) {
         List<Container> containers = containersIn(level, box);
         if (containers.isEmpty()) {
             LOGGER.debug("[DT-CosmicApple] group at {} drew an apple but has no container", anchorPIdx);
-            return;
+            return false;
         }
         Item apple = appleFor(tierFor(seed, anchorPIdx, DifficultyProgression.positionTier(anchorPIdx)));
         int start = (int) Math.floorMod(hash(seed + 2, anchorPIdx), containers.size());
@@ -125,9 +190,10 @@ public final class CosmicAppleDrops {
                 c.setItem(s, new ItemStack(apple));
                 c.setChanged();
                 LOGGER.info("[DT-CosmicApple] carriage {} -> {} at {}", anchorPIdx, apple, ((BlockEntity) c).getBlockPos());
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     private static List<Container> containersIn(ServerLevel level, BoundingBox box) {
