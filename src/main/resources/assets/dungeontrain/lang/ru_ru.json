@@ -2898,6 +2898,8 @@
   "chat.dungeontrain.lag_report.prompt": "Обнаружен лаг - отправить лог разработчику?",
   "chat.dungeontrain.lag_report.send": "Да",
   "chat.dungeontrain.lag_report.send.tip": "Отправить разработчику последние логи игры, чтобы он выяснил, из-за чего игра зависла",
+  "chat.dungeontrain.lag_report.send_info": "Да, с описанием",
+  "chat.dungeontrain.lag_report.send_info.tip": "Отправить логи и рассказать разработчику, что вы делали, когда игра зависла",
   "chat.dungeontrain.lag_report.decline": "Нет",
   "chat.dungeontrain.lag_report.decline.tip": "Ничего не отправлять и больше не спрашивать в этой сессии",
   "chat.dungeontrain.lag_report.sent": "Отправляем ваш лог разработчику. Спасибо!",

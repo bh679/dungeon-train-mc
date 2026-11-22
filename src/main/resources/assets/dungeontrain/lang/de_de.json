@@ -2842,6 +2842,8 @@
   "chat.dungeontrain.lag_report.prompt": "Lag erkannt - Log an den Entwickler senden?",
   "chat.dungeontrain.lag_report.send": "Ja",
   "chat.dungeontrain.lag_report.send.tip": "Sende deine letzten Spiel-Logs an den Entwickler, damit er herausfinden kann, was das Spiel eingefroren hat",
+  "chat.dungeontrain.lag_report.send_info": "Ja, mit Infos",
+  "chat.dungeontrain.lag_report.send_info.tip": "Sende deine Logs und erzähl dem Entwickler, was du gemacht hast, als das Spiel einfror",
   "chat.dungeontrain.lag_report.decline": "Nein",
   "chat.dungeontrain.lag_report.decline.tip": "Nichts senden und in dieser Sitzung nicht mehr fragen",
   "chat.dungeontrain.lag_report.sent": "Dein Log wird an den Entwickler gesendet. Danke!",

@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "检测到卡顿 - 要把日志发送给开发者吗？",
   "chat.dungeontrain.lag_report.send": "是",
   "chat.dungeontrain.lag_report.send.tip": "把你最近的游戏日志发送给开发者，帮助找出游戏卡住的原因",
+  "chat.dungeontrain.lag_report.send_info": "是，并附说明",
+  "chat.dungeontrain.lag_report.send_info.tip": "发送你的日志，并告诉开发者游戏卡住时你在做什么",
   "chat.dungeontrain.lag_report.decline": "否",
   "chat.dungeontrain.lag_report.decline.tip": "不发送任何内容，本次会话中不再询问",
   "chat.dungeontrain.lag_report.sent": "正在把你的日志发送给开发者。谢谢！",

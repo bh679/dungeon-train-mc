@@ -2765,6 +2765,8 @@
       "chat.dungeontrain.lag_report.prompt",
       "chat.dungeontrain.lag_report.send",
       "chat.dungeontrain.lag_report.send.tip",
+      "chat.dungeontrain.lag_report.send_info",
+      "chat.dungeontrain.lag_report.send_info.tip",
       "chat.dungeontrain.lag_report.decline",
       "chat.dungeontrain.lag_report.decline.tip",
       "chat.dungeontrain.lag_report.sent",

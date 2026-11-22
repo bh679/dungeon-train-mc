@@ -2791,6 +2791,8 @@
   "chat.dungeontrain.lag_report.prompt": "May lag na nakita - ipadala ang log sa developer?",
   "chat.dungeontrain.lag_report.send": "Oo",
   "chat.dungeontrain.lag_report.send.tip": "Ipadala ang mga kamakailang game log mo sa developer para malaman niya kung ano ang nagpa-freeze sa laro",
+  "chat.dungeontrain.lag_report.send_info": "Oo, may detalye",
+  "chat.dungeontrain.lag_report.send_info.tip": "Ipadala ang mga log mo at sabihin sa developer kung ano ang ginagawa mo nang mag-freeze ito",
   "chat.dungeontrain.lag_report.decline": "Hindi",
   "chat.dungeontrain.lag_report.decline.tip": "Huwag magpadala ng kahit ano, at huwag nang magtanong ulit ngayong session",
   "chat.dungeontrain.lag_report.sent": "Ipinapadala ang log mo sa developer. Salamat!",

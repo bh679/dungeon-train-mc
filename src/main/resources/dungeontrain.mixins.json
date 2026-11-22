@@ -236,6 +236,7 @@
     "client.IntegratedServerPauseSaveThrottleMixin",
     "client.IntegratedServerTickPausedMixin",
     "client.SurveyScreenPauseMixin",
+    "client.SurveyScreenLagPreselectMixin",
     "client.audio.ChannelMirrorMixin",
     "client.audio.SoundBufferMirrorMixin",
     "client.audio.ListenerMirrorMixin",
