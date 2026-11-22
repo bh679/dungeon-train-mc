@@ -654,6 +654,12 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantState newVariant = withNewRowDefaults(HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
                     .withPainting(addedPainting), localPos, plot.footprint()));
+                // Rot Free: the cell owns its rows' orientation, so the new row takes it from the
+                // same block, then the most similar block type, then the most recent facing — the
+                // rule every sibling applies to it too (VariantRowOrientation.keepOwnOrientation).
+                if (plot.lockIdAt(localPos) > 0 && plot.rotationFreeAt(localPos)) {
+                    newVariant = orientedToCell(newVariant, mutated);
+                }
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -1695,6 +1701,18 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
         return VariantBlockInteractions.withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * {@link VariantRowOrientation#orientToCell} for the clicked cell's own new row, with its state
+     * turned to a locked facing so state and rotation stay aligned, as on any other Add.
+     */
+    static VariantState orientedToCell(VariantState row, List<VariantState> cellRows) {
+        VariantState out = VariantRowOrientation.orientToCell(row, cellRows);
+        VariantRotation rot = out.rotation();
+        if (rot.mode() != VariantRotation.Mode.LOCK || Integer.bitCount(rot.dirMask()) != 1) return out;
+        BlockState turned = RotationApplier.applySlot(out.state(), Integer.numberOfTrailingZeros(rot.dirMask()));
+        return turned == out.state() ? out : out.withState(turned, out.blockEntityNbt());
     }
 
     /**
