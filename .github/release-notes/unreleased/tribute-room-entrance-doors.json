@@ -1,0 +1,19 @@
+{
+  "id": "tribute-room-entrance-doors",
+  "version": "0.1964.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "Tribute room fix",
+  "summary": "The way in and out of your tribute room lines up with its doors again.",
+  "highlights": [
+    "Some dimensional carriages are now lit by daylight."
+  ],
+  "pr": 2822,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
