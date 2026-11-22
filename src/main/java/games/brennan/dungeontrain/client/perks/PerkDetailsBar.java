@@ -219,7 +219,7 @@ final class PerkDetailsBar {
         PerkRegistry.bootstrap();
         if (!PerkRegistry.isBuilt(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
         int level = s.unlockLevel(p.id());
-        if (level <= 0 && !tree.reachableNow(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
+        if (!tree.reachableNow(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
         int spent = s.unlockSpent(tree);
         if (level > 0 && !PerkUnlocks.allowed(level + 1, spent)) {
             return Component.translatable("gui.dungeontrain.perks.card.gate", PerkCard.ap(PerkUnlocks.spentNeeded(level + 1) - spent),
@@ -236,6 +236,9 @@ final class PerkDetailsBar {
         int level = s.unlockLevel(p.id());
         if (level <= 0) return Component.translatable("gui.dungeontrain.perks.refused.locked");
         if (s.points(p.id()) >= level) return Component.translatable(KEY + "full");
+        if (!tree.activeReachable(p.id(), other -> s.points(other) > 0)) {
+            return Component.translatable("gui.dungeontrain.perks.card.needs_active_path");
+        }
         if (!s.canAffordRank()) return Component.translatable("gui.dungeontrain.perks.card.next_cost", s.nextRankCost(), s.activePoints());
         return null;
     }

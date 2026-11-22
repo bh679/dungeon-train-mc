@@ -26,8 +26,11 @@ the older sections below disagree, this section wins.
   for the keyboard selection. The card has no buttons; its last lines say what a click does.
 - **Unlock tab before a perk is full.** The details bar's Unlock tab raises a level whether or not the
   perk's points are filled. Until they are, it draws at 60% and grey, with a gold edge under the mouse.
-- **Solid lines only.** A perk unlocks only along a solid (requirement) line from the Engine or an
-  unlocked perk, either way round. Dashed lines open nothing (`PerkTree#reachable`, server and menu).
+- **Points need a path.** An unlock point (first or repeat) goes into a perk only along a solid
+  (requirement) path from the Engine through unlocked perks (`PerkTree#reachableNow`). An active point
+  goes in only along a path of solid or dashed lines from the Engine through perks holding active points
+  this life (`PerkTree#activeReachable`). Coming soon perks count as holding points on both. Lines
+  count either way round; server and menu share the rule.
 - **Classes by progress, plus a list.** Every class starts hidden. Unlocking a tier 1 perk shows its
   class. A hidden class still draws its unlocked perks and, while Advancement Points are held, the
   perks any line joins to the Engine or an unlocked perk. A class title shows once a perk in it is

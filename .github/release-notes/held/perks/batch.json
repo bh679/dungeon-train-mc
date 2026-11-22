@@ -28,11 +28,14 @@
     2779,
     2788,
     2790,
-    2804
+    2804,
+    2808,
+    2811
   ],
   "entries": [
     "cosmic-apples",
     "crafter-enchanting-perks",
+    "death-kit-arrives-equipped",
     "death-perks-next-after-last-point",
     "knight-combat-perks",
     "nap-sky-past-life-perks",
@@ -55,6 +58,7 @@
     "perks-unlock-after-death",
     "trader-perks-reduced-reduction-restock",
     "tribute-room-bigger-tv",
+    "tribute-room-pause-reboard",
     "tribute-rooms",
     "tribute-tv-button",
     "unlock-tab-before-perk-full"

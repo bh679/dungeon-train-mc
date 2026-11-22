@@ -53,6 +53,9 @@ public final class TributeTvVisit {
 
     enum Phase { IDLE, AWAITING_ROOM, FADING_IN, WATCHING, ENDING }
 
+    /** The pause menu's ways out of a visit: to the title screen, or out of the game. */
+    enum Leaving { NONE, TITLE, QUIT }
+
     private static Phase phase = Phase.IDLE;
     private static long phaseAtMs;
     @Nullable private static Supplier<Screen> recap;
@@ -67,6 +70,8 @@ public final class TributeTvVisit {
     private static net.minecraft.core.Direction screenFacing = net.minecraft.core.Direction.NORTH;
     @Nullable private static Screen pendingHost;
     private static boolean pendingKeepMode;
+    /** Where the pause menu's way out goes once the room is saved; NONE while Board anew owns the ending. */
+    private static Leaving pendingLeave = Leaving.NONE;
     private static long readyAtMs = -1L;
 
     private TributeTvVisit() {}
@@ -98,6 +103,11 @@ public final class TributeTvVisit {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.getConnection() == null || !mc.player.isDeadOrDying()) return;
         DungeonTrainNet.sendToServer(new TributeRoomVisitPacket(true));
+    }
+
+    /** The death perks menu is still on the window while the room is stood up behind it. */
+    public static boolean menuOnWindow() {
+        return phase == Phase.AWAITING_ROOM;
     }
 
     public static boolean isActive() {
@@ -171,9 +181,12 @@ public final class TributeTvVisit {
     public static void onSaved(boolean newWorld) {
         Screen host = pendingHost;
         boolean keepMode = pendingKeepMode;
+        Leaving leaving = pendingLeave;
         Minecraft mc = Minecraft.getInstance();
         reset();
-        if (newWorld) {
+        if (leaving != Leaving.NONE) {
+            DeathScreenLayoutHandler.leaveFinishedRun(leaving == Leaving.QUIT);
+        } else if (newWorld) {
             DeathScreenLayoutHandler.launchWorld(host != null ? host : mc.screen, false, !keepMode);
         } else {
             mc.setScreen(null);
@@ -215,6 +228,12 @@ public final class TributeTvVisit {
                 }
             }
             case WATCHING -> walkTubes(mc);
+            case ENDING -> {
+                if (pendingLeave != Leaving.NONE && now - phaseAtMs >= ROOM_TIMEOUT_MS) {
+                    LOGGER.warn("[DungeonTrain] tribute room: no save answer after {} ms — leaving anyway", ROOM_TIMEOUT_MS);
+                    onSaved(false);
+                }
+            }
             default -> {}
         }
     }
@@ -460,6 +479,48 @@ public final class TributeTvVisit {
         return true;
     }
 
+    /**
+     * The pause menu's way out of a visit (singleplayer): the run is already over, so there is nothing
+     * to abandon. The server saves the room and sweeps it, leaving them off the train, and its answer
+     * ({@link #onSaved}) closes the world the way the death screen would. Before the room stands
+     * there is nothing to save, and they leave straight away.
+     *
+     * @param quitGame out of the game rather than to the title screen
+     */
+    public static void leave(boolean quitGame) {
+        Leaving leaving = quitGame ? Leaving.QUIT : Leaving.TITLE;
+        Minecraft mc = Minecraft.getInstance();
+        if (phase != Phase.WATCHING) {
+            if (phase == Phase.ENDING && pendingLeave != Leaving.NONE) return;
+            reset();
+            DeathScreenLayoutHandler.leaveFinishedRun(quitGame);
+            return;
+        }
+        LOGGER.info("[DungeonTrain] tribute room: leaving from the pause menu ({}) — saving the room", leaving);
+        TributeArrivalScreen black = new TributeArrivalScreen();
+        mc.setScreen(black);
+        if (endRun(black, false)) pendingLeave = leaving;
+    }
+
+    /**
+     * The pause menu's Reboard: the same as walking out through a tube. The window goes black (which
+     * also lets the integrated server run again), the server saves the room, and the next world loads
+     * under the black ({@link #onSaved}). Before the room stands there is nothing to save, and the next
+     * world loads straight away.
+     */
+    public static void reboard() {
+        Minecraft mc = Minecraft.getInstance();
+        TributeArrivalScreen black = new TributeArrivalScreen();
+        mc.setScreen(black);
+        if (endRun(black, false)) {
+            LOGGER.info("[DungeonTrain] tribute room: reboarding from the pause menu — saving the room");
+            return;
+        }
+        if (phase == Phase.ENDING) return;
+        reset();
+        DeathScreenLayoutHandler.launchWorld(black, false, true);
+    }
+
     /** Something went wrong before the room stood: the old full-screen recap, so nobody is left on black. */
     private static void fallBack(String why) {
         LOGGER.warn("[DungeonTrain] tribute room: falling back to the recap — {}", why);
@@ -486,6 +547,7 @@ public final class TributeTvVisit {
         tubeBlack = 0f;
         pendingHost = null;
         pendingKeepMode = false;
+        pendingLeave = Leaving.NONE;
         readyAtMs = -1L;
         TributeArrivalFov.reset();
     }

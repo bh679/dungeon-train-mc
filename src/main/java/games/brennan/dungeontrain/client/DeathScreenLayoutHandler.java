@@ -481,13 +481,33 @@ public final class DeathScreenLayoutHandler {
      * map's stopServer wait loop spins forever (see {@link #preDrainTrainSubLevels}).
      */
     public static void goToTitleScreen() {
-        // The title path is not a "next world" transition — drop any snapshot a
-        // prior (failed/abandoned) launchWorld may have left so it can't leak
-        // into the next world the player loads from the title screen.
+        leave(false, false);
+    }
+
+    /**
+     * Leave a run that is over although the player is alive: a tribute room visit, where they stand
+     * after the death that ended it. The world goes the way a dead run's does from the death screen
+     * (deleted when {@link #deletableLevelId} allows), so it can never be reopened and played on.
+     *
+     * @param quitGame end in {@link Minecraft#stop()} instead of the title screen
+     */
+    public static void leaveFinishedRun(boolean quitGame) {
+        leave(true, quitGame);
+    }
+
+    /**
+     * The one exit: drop any pending carry-over, discard the world when the run is over, drain Sable's
+     * sub-levels, tear the integrated server down, then the title screen or {@link Minecraft#stop()}.
+     *
+     * @param runOver treat the run as finished whether or not the local player is dead
+     */
+    private static void leave(boolean runOver, boolean quitGame) {
+        // Not a "next world" transition: drop any snapshot a prior (failed/abandoned) launchWorld
+        // may have left so it can't leak into the next world the player loads from the title screen.
         PendingInventory.clear();
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
-        String deadLevelId = deadRunLevelId(mc, server);
+        String deadLevelId = runOver ? finishedRunLevelId(server) : deadRunLevelId(mc, server);
         if (deadLevelId != null) {
             suppressLevelSaving(server);
         }
@@ -503,7 +523,11 @@ public final class DeathScreenLayoutHandler {
         } else {
             disconnectWithSaveNotice(mc, server != null);
         }
-        mc.setScreen(new TitleScreen());
+        if (quitGame) {
+            mc.stop();
+        } else {
+            mc.setScreen(new TitleScreen());
+        }
     }
 
     /**
@@ -567,26 +591,7 @@ public final class DeathScreenLayoutHandler {
      * orderly shutdown as the title-screen Quit button.
      */
     public static void quitToDesktop() {
-        PendingInventory.clear();
-        Minecraft mc = Minecraft.getInstance();
-        MinecraftServer server = mc.getSingleplayerServer();
-        String deadLevelId = deadRunLevelId(mc, server);
-        if (deadLevelId != null) {
-            suppressLevelSaving(server);
-        }
-        if (server != null) {
-            preDrainTrainSubLevels(server);
-        }
-        if (mc.level != null) {
-            mc.level.disconnect();
-        }
-        if (deadLevelId != null) {
-            mc.disconnect(new GenericMessageScreen(randomDiscardMessage()));
-            RunWorldCleanup.deleteWorld(mc, deadLevelId);
-        } else {
-            disconnectWithSaveNotice(mc, server != null);
-        }
-        mc.stop();
+        leave(false, true);
     }
 
     /**
@@ -596,8 +601,13 @@ public final class DeathScreenLayoutHandler {
      * through {@link #goToTitleScreen} / {@link #quitToDesktop}, and a live run is kept.
      */
     private static String deadRunLevelId(Minecraft mc, MinecraftServer server) {
-        if (server == null || mc.player == null || !mc.player.isDeadOrDying()) return null;
-        if (BuilderWorldCheck.isBuilderWorld()) return null;
+        if (mc.player == null || !mc.player.isDeadOrDying()) return null;
+        return finishedRunLevelId(server);
+    }
+
+    /** {@link #deadRunLevelId} without the death check, for a run that ended while the player lives on. */
+    private static String finishedRunLevelId(MinecraftServer server) {
+        if (server == null || BuilderWorldCheck.isBuilderWorld()) return null;
         return deletableLevelId(server);
     }
 
