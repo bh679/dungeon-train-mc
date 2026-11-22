@@ -104,7 +104,14 @@ Assistant and Punchy, and **no** CWB, also refuses to start: Sodium's pre-launch
 `NoClassDefFoundError: org/lwjgl/Version`. A server made by copying a client's `mods/` is already broken by Sodium.
 CWB only adds a failure where server mods are picked by CurseForge's side tags.
 
-## Recommendation
+## Decision
+
+**Modrinth pack only, enabled** (2026-11-22). First merged for both packs (#2827), then pulled from CurseForge
+because of the server crash. Reported upstream as
+[Kira-NT/cubes-without-borders#155](https://github.com/Kira-NT/cubes-without-borders/issues/155). Once a fixed
+build is out, re-pin it, drop `modrinth_only` and restore `cubes-without-borders(optional)` in `release.yml`.
+
+## Recommendation (at review time)
 
 On the client (static read, not booted) it touches no gameplay, leaves the default window mode unchanged (fullscreen
 stays off), and only changes what turning fullscreen on does. Options:
