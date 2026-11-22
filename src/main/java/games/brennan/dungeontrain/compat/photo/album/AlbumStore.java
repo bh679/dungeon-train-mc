@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -178,7 +177,7 @@ public final class AlbumStore {
 
     // ---- pictures -----------------------------------------------------------------
 
-    /** Keep these PNGs, by hash. A picture already held is left as it is, unless its file differs (a damaged copy). */
+    /** Keep these PNGs, by hash. A picture already held is left as it is, unless its file is damaged. */
     public void putImages(Map<String, byte[]> pngs) {
         if (pngs.isEmpty()) return;
         pngs.forEach((hash, png) -> {
@@ -187,7 +186,7 @@ public final class AlbumStore {
         io.execute(() -> pngs.forEach((hash, png) -> {
             try {
                 Path file = imageFile(hash);
-                if (!Files.exists(file) || !Arrays.equals(Files.readAllBytes(file), png)) write(file, png);
+                if (!Files.exists(file) || !isSound(hash, Files.readAllBytes(file))) write(file, png);
             } catch (IOException | UncheckedIOException e) {
                 LOGGER.warn("[DungeonTrain] Album picture {} not saved: {}", hash, e.toString());
             } finally {
@@ -215,15 +214,18 @@ public final class AlbumStore {
      * {@code hash}: a truncated or damaged file comes back empty, so the picture is fetched again.
      */
     public Optional<byte[]> verifiedImage(String hash) {
-        return image(hash).filter(png -> {
-            try {
-                PhotoPngCodec.Decoded decoded = PhotoPngCodec.decode(png);
-                return hash.equals(AlbumImageHash.of(decoded.width(), decoded.height(), decoded.pixels()));
-            } catch (IOException | RuntimeException e) {
-                LOGGER.debug("[DungeonTrain] Album picture {} on disk is damaged, fetching it again: {}", hash, e.toString());
-                return false;
-            }
-        });
+        return image(hash).filter(png -> isSound(hash, png));
+    }
+
+    /** True when {@code png} decodes and its pixels hash to {@code hash}. */
+    private static boolean isSound(String hash, byte[] png) {
+        try {
+            PhotoPngCodec.Decoded decoded = PhotoPngCodec.decode(png);
+            return hash.equals(AlbumImageHash.of(decoded.width(), decoded.height(), decoded.pixels()));
+        } catch (IOException | RuntimeException e) {
+            LOGGER.debug("[DungeonTrain] Album picture {} is damaged: {}", hash, e.toString());
+            return false;
+        }
     }
 
     public boolean hasImage(String hash) {

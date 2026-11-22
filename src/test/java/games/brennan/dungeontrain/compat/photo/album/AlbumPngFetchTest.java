@@ -121,4 +121,38 @@ class AlbumPngFetchTest {
         assertArrayEquals(fresh, Files.readAllBytes(imageFile(HASH_A)));
         assertArrayEquals(fresh, store.verifiedImage(HASH_A).orElseThrow());
     }
+
+    @Test
+    @DisplayName("a sound file is kept even when a copy with different bytes arrives")
+    void soundFileKept() throws IOException {
+        byte[] kept = png(PIXELS_A);
+        onDisk(HASH_A, kept);
+        int[] palette = new int[256];
+        palette[1] = 0xFF00FF00;
+        byte[] other = PhotoPngCodec.encode(2, 2, PIXELS_A, palette);   // the same picture, other bytes
+        assertFalse(Arrays.equals(kept, other));
+        store = new AlbumStore(dir);
+        store.putImages(Map.of(HASH_A, other));
+        store.flush();
+        assertArrayEquals(kept, Files.readAllBytes(imageFile(HASH_A)));
+    }
+
+    @Test
+    @DisplayName("a reused picture pruned before the album lands is written back")
+    void prunedBeforeAdoptIsRestored() throws IOException {
+        java.util.UUID owner = java.util.UUID.fromString("0000000a-0000-0000-0000-000000000001");
+        onDisk(HASH_A, png(PIXELS_A));   // an orphan: no album names it yet
+        Map<String, byte[]> pngs = collect(HASH_A);
+        assertTrue(fetched.isEmpty());
+        // Another album write prunes the orphan while the newer album is on its way.
+        store.put(owner, AlbumKind.FREE_PLAY, new AlbumStore.Entry(1, List.of(new AlbumStore.Page(null, "other", null))));
+        store.flush();
+        assertFalse(Files.exists(imageFile(HASH_A)));
+        // What adopt does: keep the album, then the pictures it carried.
+        store.put(owner, AlbumKind.LIVE, new AlbumStore.Entry(2, List.of(new AlbumStore.Page(HASH_A, "", null))));
+        store.putImages(pngs);
+        store.flush();
+        assertTrue(Files.exists(imageFile(HASH_A)));
+        assertTrue(store.verifiedImage(HASH_A).isPresent());
+    }
 }
