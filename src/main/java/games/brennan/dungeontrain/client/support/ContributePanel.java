@@ -267,13 +267,14 @@ public final class ContributePanel {
         int lh = font.lineHeight;
 
         Component noteText = Component.translatable("gui.dungeontrain.contribute.keeps_on");
-        int sideW = Math.min(w / 3, Math.max(GIVE_W, font.width(noteText) + 2));
+        // "$9 goes to the dev", grey, under "For everyone" when the relay says it; the column widens to fit it.
+        Component toDev = CommunityRewards.devShareLine(reward);
+        int noteW = Math.max(font.width(noteText), toDev != null ? font.width(toDev) : 0);
+        int sideW = Math.min(w / 3, Math.max(GIVE_W, noteW + 2));
         // The reward's icon sits left of its name and line; the text starts after it.
         int iconLeft = x + CARD_PAD;
         int textX = iconLeft + ICON + ICON_GAP;
         int textW = w - sideW - CARD_PAD * 3 - ICON - ICON_GAP;
-        // "$9 goes to the dev", grey, under "For everyone" when the relay says it.
-        Component toDev = CommunityRewards.devShareLine(reward);
         int sideH = GIVE_H + 2 + lh + (toDev != null ? lh + 1 : 0);
         CardLines lines = cardLines(font, reward, state, now, textX, y + CARD_PAD, textW);
         int h = Math.max(lines.bottom() + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
