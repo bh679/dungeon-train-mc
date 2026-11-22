@@ -170,8 +170,10 @@ public final class PortalRoomBorderRenderer {
                           float alpha) {
             float y0 = (float) (bottom - cam.y);
             float y1 = (float) (top - cam.y);
-            float u0 = scroll + (float) (along0 * 0.5);
-            float u1 = scroll + (float) (along1 * 0.5);
+            // Wrapped before it becomes a float: a train runs hundreds of thousands of blocks out,
+            // and a UV that large cannot resolve the scroll's per-frame step — the stripes freeze.
+            float u0 = scroll + (float) Mth.frac(along0 * 0.5);
+            float u1 = u0 + (float) ((along1 - along0) * 0.5);
             float v0 = scroll + (float) (Mth.frac(bottom * 0.5));
             float v1 = v0 + (top - bottom) * 0.5f;
             int r = (rgb >> 16) & 0xFF;
