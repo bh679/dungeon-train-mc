@@ -186,7 +186,9 @@ public final class PortalRoomBorderRenderer {
             // and a UV that large cannot resolve the scroll's per-frame step — the stripes freeze.
             float u0 = scroll + (float) Mth.frac(along0 * 0.5);
             float u1 = u0 + (float) ((along1 - along0) * 0.5);
-            float v0 = scroll + (float) (Mth.frac(y0w * 0.5));
+            // Anchored on the TOP edge, negated, so V at any world Y is -y/2 for every piece: the
+            // strips above, below and beside a doorway meet with no jump in the stripes.
+            float v0 = scroll + (float) Mth.frac(-y1w * 0.5);
             float v1 = v0 + (y1w - y0w) * 0.5f;
             int r = (rgb >> 16) & 0xFF;
             int g = (rgb >> 8) & 0xFF;
