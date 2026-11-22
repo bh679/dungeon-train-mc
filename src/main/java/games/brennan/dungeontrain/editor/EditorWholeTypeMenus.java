@@ -129,6 +129,7 @@ public final class EditorWholeTypeMenus {
             category, id, id, p.isUser(), p.isImported(), List.of(),
             stageId == null || stageId.isEmpty() ? List.of() : List.of(stageId))
             .withDisplayName(WholeWeights.nameFor(kind, id))
-            .withBuilder(credit == null ? "" : credit.uuid(), credit == null ? "" : credit.name());
+            .withBuilder(credit == null ? "" : credit.uuid(), credit == null ? "" : credit.name())
+            .withPeriods(g.periods());
     }
 }

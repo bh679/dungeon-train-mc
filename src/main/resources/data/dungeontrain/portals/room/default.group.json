@@ -24,7 +24,7 @@
     },
     {
       "id": "mirror",
-      "weight": 1
+      "weight": 0
     },
     {
       "id": "trapped_default2",

@@ -48,6 +48,39 @@ public final class TemplateBuilderLookup {
             : firstOf(authored, BuilderPhotoPaths.Kind.TRACK, kind.id(), name);
     }
 
+    /**
+     * {@code byId} with every uncredited entry given the downloaded build's credit, for the dev-mode
+     * write into the <b>source tree</b> only. That file ships in the jar, and a build downloaded from
+     * another player and saved there would otherwise ship anonymous: the editor holds no builder for
+     * it, so each save wrote the entry back without one and a hand-added credit was lost on the next
+     * save. The player's own overlay is not touched, so outside the source tree the fallback above
+     * stays display only. An authored credit always wins. Returns {@code byId} itself when nothing changes.
+     *
+     * @param kind    the relay kind the download filed the credit under
+     * @param subKind its sub-kind ({@code ""}, or a track kind's id)
+     */
+    public static java.util.Map<String, games.brennan.dungeontrain.template.TemplateMeta> withDownloadedCredits(
+            java.util.Map<String, games.brennan.dungeontrain.template.TemplateMeta> byId,
+            BuilderPhotoPaths.Kind kind, String subKind) {
+        java.util.Map<String, games.brennan.dungeontrain.template.TemplateMeta> out = null;
+        for (java.util.Map.Entry<String, games.brennan.dungeontrain.template.TemplateMeta> e : byId.entrySet()) {
+            if (e.getValue().builder() != null) continue;
+            BuilderCredit downloaded = firstOf(null, kind, subKind, e.getKey());
+            if (downloaded == null) continue;
+            if (out == null) out = new java.util.LinkedHashMap<>(byId);
+            out.put(e.getKey(), e.getValue().withBuilder(downloaded));
+        }
+        return out == null ? byId : out;
+    }
+
+    /** {@link #withDownloadedCredits} for a track-side kind's weights (portal rooms included). */
+    public static java.util.Map<String, games.brennan.dungeontrain.template.TemplateMeta> withDownloadedCredits(
+            TrackKind kind, java.util.Map<String, games.brennan.dungeontrain.template.TemplateMeta> byId) {
+        return kind == TrackKind.PORTAL_ROOM
+            ? withDownloadedCredits(byId, BuilderPhotoPaths.Kind.PORTAL_ROOM, "")
+            : withDownloadedCredits(byId, BuilderPhotoPaths.Kind.TRACK, kind.id());
+    }
+
     private static BuilderCredit firstOf(BuilderCredit authored, BuilderPhotoPaths.Kind kind, String subKind,
                                          String id) {
         if (authored != null) return authored;

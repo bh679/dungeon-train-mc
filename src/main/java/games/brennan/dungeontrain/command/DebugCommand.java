@@ -69,6 +69,10 @@ public final class DebugCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
+            // /dungeontrain debug date <yyyy-mm-dd|clear>, date-periods — try seasonal templates
+            // without changing the machine's clock.
+            .then(DatePeriodDebugCommand.date())
+            .then(DatePeriodDebugCommand.list())
             // /dungeontrain debug stage-placeholders — walks every live carriage's footprint and
             // counts stage placeholder blocks that survived generation (expected: none) plus the
             // top real blocks, so a build's placeholders can be proven resolved without a client.

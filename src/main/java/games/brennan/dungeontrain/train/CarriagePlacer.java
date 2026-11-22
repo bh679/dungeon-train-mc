@@ -1762,7 +1762,8 @@ public final class CarriagePlacer {
             return levelOnly;
         }
         warnGateEmptyAllStagesOnce();
-        return pool;
+        // Last resort keeps the date gate: never an out-of-season carriage.
+        return GateContext.withoutOutOfSeason(pool, v -> weights.gateFor(v.id()));
     }
 
     /** Throttle for the all-zero-weights fallback warning — one log line per server session. */

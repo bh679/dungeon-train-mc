@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "58,4,1": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "50,4,2": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "44,4,1": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "35,4,4": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "27,4,2": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "29,4,11": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "35,4,11": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"]
+  }
+}

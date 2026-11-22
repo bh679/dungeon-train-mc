@@ -123,7 +123,9 @@ public final class StageStore {
         TemplateGate inline = fallback == null ? TemplateGate.DEFAULT : fallback;
         if (stageId == null) return inline;
         Stage s = current.get(stageId.toLowerCase(Locale.ROOT));
-        if (s != null) return s.gate();
+        // A Stage owns levels and dimensions, never dates: the template's own date periods (kept on
+        // its inline gate) ride along, so linking a Christmas room to a Stage keeps it seasonal.
+        if (s != null) return inline.isSeasonal() ? s.gate().withPeriods(inline.periods()) : s.gate();
         if (WARNED_MISSING.add(stageId.toLowerCase(Locale.ROOT))) {
             LOGGER.warn("[DungeonTrain] Template links to missing Stage '{}' — using its inline gate.",
                 stageId);

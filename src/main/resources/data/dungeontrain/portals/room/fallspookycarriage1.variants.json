@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 10,
+  "mirror": { "x": true, "y": false, "z": true, "v": true },
+  "variants": {
+    "4,1,7": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "villager"}, {"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}],
+    "6,1,7": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "villager"}, {"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}],
+    "6,1,5": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "villager"}, {"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}],
+    "4,1,5": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "villager"}, {"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}]
+  }
+}

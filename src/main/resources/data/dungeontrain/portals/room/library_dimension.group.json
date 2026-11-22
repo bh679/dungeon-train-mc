@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 3,
+  "selfWeight": 8,
   "variants": [
     {
       "id": "pretty",
@@ -8,12 +8,17 @@
     },
     {
       "id": "librarydimension2",
-      "weight": 3
+      "weight": 8
     },
     {
       "id": "openlibrary",
-      "weight": 2,
+      "weight": 3,
       "minLevel": 5
+    },
+    {
+      "id": "openlibflat",
+      "weight": 2,
+      "minLevel": 4
     }
   ]
 }

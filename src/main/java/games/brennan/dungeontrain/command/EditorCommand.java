@@ -569,7 +569,8 @@ public final class EditorCommand {
                                 IntegerArgumentType.getInteger(ctx, "value")))))))
             .then(minLevelTrack())
             .then(maxLevelTrack())
-            .then(phaseTrack());
+            .then(phaseTrack())
+            .then(periodTrack());
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
@@ -924,6 +925,7 @@ public final class EditorCommand {
                 .then(minLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(maxLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(phaseSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
+                .then(periodSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(Commands.literal("group")
                     .then(Commands.literal("new")
                         .then(Commands.argument("parent", StringArgumentType.word())
@@ -1084,6 +1086,7 @@ public final class EditorCommand {
             .then(minLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
+            .then(periodSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(buildStageSubtree())
             // One creaking heart's settings — its Creative right-click menu runs these.
             .then(CreakingHeartCommand.build())
@@ -1606,6 +1609,10 @@ public final class EditorCommand {
         }
         String phaseStr = phases.toString();
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.gate_level_phases_saved", id, g.minLevel(), maxStr, phaseStr, path).withStyle(ChatFormatting.GREEN), true);
+        if (g.isSeasonal()) {
+            String periods = String.join(", ", g.periods());
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.gate_periods_saved", id, periods).withStyle(ChatFormatting.GREEN), false);
+        }
         if (linkedStage != null) {
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.note_linked_stage_inline", id, linkedStage).withStyle(ChatFormatting.YELLOW), false);
         }
@@ -1683,6 +1690,65 @@ public final class EditorCommand {
                     .then(Commands.literal("others").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
                         g -> toggleOtherPhases(g, StringArgumentType.getString(c, "phase")))))));
     }
+
+    /**
+     * {@code … period <id> <period> on|off} and {@code … period <id> clear}: lock a template to date
+     * periods (it spawns only while one is on), or back to any time. The data sheet's Dates picker
+     * sends these.
+     */
+    static LiteralArgumentBuilder<CommandSourceStack> periodSingle(
+            SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
+        return Commands.literal("period")
+            .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
+                .then(Commands.literal("clear").executes(c -> run.run(c.getSource(),
+                    StringArgumentType.getString(c, "id"), g -> g.withPeriods(java.util.Set.of()))))
+                .then(Commands.argument("period", StringArgumentType.word()).suggests(PERIOD_SUGGESTIONS)
+                    .then(Commands.literal("on").executes(c -> periodToggle(c, run, true)))
+                    .then(Commands.literal("off").executes(c -> periodToggle(c, run, false)))));
+    }
+
+    private static int periodToggle(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c,
+                                    SingleGateOp run, boolean on) {
+        String period = knownPeriod(c.getSource(), StringArgumentType.getString(c, "period"));
+        if (period == null) return 0;
+        return run.run(c.getSource(), StringArgumentType.getString(c, "id"), g -> g.withPeriod(period, on));
+    }
+
+    /** {@code … period <kind> <name> <period> on|off} / {@code … clear} for the track-side kinds and portal rooms. */
+    private static LiteralArgumentBuilder<CommandSourceStack> periodTrack() {
+        return Commands.literal("period")
+            .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                    .then(Commands.literal("clear").executes(c -> applyTrackGate(c.getSource(),
+                        StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                        g -> g.withPeriods(java.util.Set.of()))))
+                    .then(Commands.argument("period", StringArgumentType.word()).suggests(PERIOD_SUGGESTIONS)
+                        .then(Commands.literal("on").executes(c -> periodTrackToggle(c, true)))
+                        .then(Commands.literal("off").executes(c -> periodTrackToggle(c, false))))));
+    }
+
+    private static int periodTrackToggle(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c, boolean on) {
+        String period = knownPeriod(c.getSource(), StringArgumentType.getString(c, "period"));
+        if (period == null) return 0;
+        return applyTrackGate(c.getSource(), StringArgumentType.getString(c, "kind"),
+            StringArgumentType.getString(c, "name"), g -> g.withPeriod(period, on));
+    }
+
+    /** The lower-cased id when it names a bundled date period, else reports the failure and returns null. */
+    private static String knownPeriod(CommandSourceStack source, String raw) {
+        String id = raw.toLowerCase(Locale.ROOT);
+        if (games.brennan.dungeontrain.template.dateperiod.DatePeriods.exists(id)) return id;
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_period", raw));
+        return null;
+    }
+
+    private static final SuggestionProvider<CommandSourceStack> PERIOD_SUGGESTIONS = (ctx, builder) -> {
+        for (games.brennan.dungeontrain.template.dateperiod.DatePeriod p
+                : games.brennan.dungeontrain.template.dateperiod.DatePeriods.all()) {
+            builder.suggest(p.id());
+        }
+        return builder.buildFuture();
+    };
 
     // ============================================================
     // Stages — named, reusable gate presets. CRUD + gate-edit + link/detach.

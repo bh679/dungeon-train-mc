@@ -551,7 +551,8 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         for (WeightedName e : list) {
             if (gateCtx.levelAllows(e.effectiveGate())) levelOnly.add(e);
         }
-        return levelOnly.isEmpty() ? list : levelOnly;
+        // Last resort keeps the date gate: never an out-of-season part.
+        return levelOnly.isEmpty() ? GateContext.withoutOutOfSeason(list, WeightedName::effectiveGate) : levelOnly;
     }
 
     /**

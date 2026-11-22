@@ -2,9 +2,11 @@ package games.brennan.dungeontrain.template;
 
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Per-template spawn gate: the inclusive difficulty-<em>level</em> band <b>and</b> the set of
@@ -27,7 +29,7 @@ import java.util.Set;
  * empty set means "all phases" (you cannot express "eligible in zero phases" — a template that
  * should never spawn is removed or given weight 0, not gated to no phase).</p>
  */
-public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
+public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases, Set<String> periods) {
 
     /** Sentinel for {@link #maxLevel}: "no upper bound — eligible at every level ≥ minLevel". */
     public static final int ALL = -1;
@@ -43,8 +45,18 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     public static final Set<TrainPhase> ALL_PHASES =
         Collections.unmodifiableSet(EnumSet.allOf(TrainPhase.class));
 
-    /** Default gate: level {@code 0..ALL}, all phases — eligible everywhere. */
-    public static final TemplateGate DEFAULT = new TemplateGate(0, ALL, ALL_PHASES);
+    /** Default gate: level {@code 0..ALL}, all phases, any date — eligible everywhere. */
+    public static final TemplateGate DEFAULT = new TemplateGate(0, ALL, ALL_PHASES, Set.of());
+
+    /**
+     * {@code periods} are the {@link games.brennan.dungeontrain.template.dateperiod.DatePeriod date
+     * period} ids this template is locked to: it spawns only while one of them is on. Empty (the
+     * default) means any time. Unlike the phase set, empty never means "none", so a template can't be
+     * dated out of existence by unticking its last period.
+     */
+    public TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
+        this(minLevel, maxLevel, phases, Set.of());
+    }
 
     public TemplateGate {
         if (minLevel < 0) minLevel = 0;
@@ -61,6 +73,19 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         } else {
             phases = Collections.unmodifiableSet(EnumSet.copyOf(phases));
         }
+        periods = normalisePeriods(periods);
+    }
+
+    /** Sorted, trimmed, lower-cased, unmodifiable; {@code null} ⇒ empty. Sorted so JSON output is stable. */
+    private static Set<String> normalisePeriods(Collection<String> in) {
+        if (in == null || in.isEmpty()) return Set.of();
+        TreeSet<String> out = new TreeSet<>();
+        for (String id : in) {
+            if (id == null) continue;
+            String t = id.trim().toLowerCase(java.util.Locale.ROOT);
+            if (!t.isEmpty()) out.add(t);
+        }
+        return out.isEmpty() ? Set.of() : Collections.unmodifiableSet(out);
     }
 
     /** Convenience: a level-only gate with all phases. */
@@ -68,9 +93,40 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         return new TemplateGate(min, max, ALL_PHASES);
     }
 
-    /** True when this is the no-op default (level 0..ALL, all phases) — drives JSON-emission skipping. */
+    /** True when this is the no-op default (level 0..ALL, all phases, any date) — drives JSON-emission skipping. */
     public boolean isDefault() {
-        return minLevel == 0 && maxLevel == ALL && phases.size() == TrainPhase.values().length;
+        return minLevel == 0 && maxLevel == ALL && phases.size() == TrainPhase.values().length && periods.isEmpty();
+    }
+
+    /** True when this template is locked to at least one date period. */
+    public boolean isSeasonal() {
+        return !periods.isEmpty();
+    }
+
+    /**
+     * True when this template may spawn while {@code activePeriods} are on: always for a template with
+     * no periods, otherwise only when one of its periods is active. This is a hard gate, which no
+     * empty-pool fallback relaxes.
+     */
+    public boolean inSeason(Set<String> activePeriods) {
+        if (periods.isEmpty()) return true;
+        if (activePeriods == null || activePeriods.isEmpty()) return false;
+        for (String p : periods) {
+            if (activePeriods.contains(p)) return true;
+        }
+        return false;
+    }
+
+    /** Copy with {@code period} ticked on or off. */
+    public TemplateGate withPeriod(String period, boolean on) {
+        TreeSet<String> next = new TreeSet<>(periods);
+        if (on) next.add(period); else next.remove(period);
+        return new TemplateGate(minLevel, maxLevel, phases, next);
+    }
+
+    /** Copy with the period set replaced ({@code null} / empty ⇒ any time). */
+    public TemplateGate withPeriods(Collection<String> newPeriods) {
+        return new TemplateGate(minLevel, maxLevel, phases, newPeriods == null ? Set.of() : Set.copyOf(newPeriods));
     }
 
     /** True when {@code level} falls inside the band; an {@link #ALL} max is unbounded above. */
@@ -110,7 +166,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     public TemplateGate withMinLevel(int newMin) {
         int min = Math.max(0, Math.min(MAX_LEVEL, newMin));
         int max = (maxLevel != ALL && min > maxLevel) ? min : maxLevel;
-        return new TemplateGate(min, max, phases);
+        return new TemplateGate(min, max, phases, periods);
     }
 
     /**
@@ -119,7 +175,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
      */
     public TemplateGate withMaxLevel(int newMax) {
         int max = newMax == ALL ? ALL : Math.max(minLevel, Math.min(MAX_LEVEL, newMax));
-        return new TemplateGate(minLevel, max, phases);
+        return new TemplateGate(minLevel, max, phases, periods);
     }
 
     /**
@@ -150,7 +206,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     public TemplateGate withPhase(TrainPhase phase, boolean on) {
         EnumSet<TrainPhase> next = EnumSet.copyOf(phases);
         if (on) next.add(phase); else next.remove(phase);
-        return new TemplateGate(minLevel, maxLevel, next);
+        return new TemplateGate(minLevel, maxLevel, next, periods);
     }
 
     /**
@@ -166,6 +222,6 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
             // keep: unchanged; others: flipped.
             if (p == keep ? on : !on) next.add(p);
         }
-        return new TemplateGate(minLevel, maxLevel, next);
+        return new TemplateGate(minLevel, maxLevel, next, periods);
     }
 }

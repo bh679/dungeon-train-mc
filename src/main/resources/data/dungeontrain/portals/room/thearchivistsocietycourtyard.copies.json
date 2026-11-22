@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "floor": ["minecraft:grass_block[snowy=false]"],
+  "roof": ["minecraft:light_blue_stained_glass"]
+}
