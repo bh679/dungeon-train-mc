@@ -1,0 +1,18 @@
+{
+  "id": "backpacks-while-trading",
+  "version": "0.1956.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "ui"
+  ],
+  "title": "Backpacks work while trading",
+  "summary": "Your backpack now opens beside the trade screen, and trades can be paid straight from it.",
+  "highlights": [],
+  "pr": 2813,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
