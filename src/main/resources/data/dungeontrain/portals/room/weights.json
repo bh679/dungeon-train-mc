@@ -205,6 +205,9 @@
   },
   "fallspookycarriage1": {
     "weight": 1,
+    "periods": [
+      "halloween"
+    ],
     "builder": {
       "uuid": "bf78a277957245c2989316320cd5dace",
       "name": "Nikeeta707"
@@ -604,6 +607,9 @@
   },
   "taschristmascarriage": {
     "weight": 1,
+    "periods": [
+      "christmas"
+    ],
     "builder": {
       "uuid": "bf78a277957245c2989316320cd5dace",
       "name": "Nikeeta707"
@@ -674,7 +680,7 @@
   },
   "thearchivistsocietycourtyard": {
     "weight": 1,
-    "mode": "bedrock/exact/off/off/off/none/sealed/-2",
+    "mode": "chunk_dimension/exact/off/off/off/none/sealed/-2/0/-2/0/dungeontrain:skybox_surface",
     "builder": {
       "uuid": "bf78a277957245c2989316320cd5dace",
       "name": "Nikeeta707"
