@@ -49,6 +49,8 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
     /** The value-only control at the right end of a setting row. */
     public static final int CONTROL_W = 100;
     public static final int CONTROL_H = 20;
+    /** Air between the controls of a several-control row. */
+    public static final int CONTROLS_GAP = 2;
 
     private static final int ICON = 16;
     private static final int ICON_GAP = 6;
@@ -80,7 +82,18 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
     /** A setting: its icon, name, hint and value-only control, with the long explanation as the row's tooltip. */
     public Entry addSetting(Icon icon, Component name, Component hint, AbstractWidget control,
                             @Nullable Component tooltip) {
-        Entry entry = new SettingEntry(icon, name, hint, control, tooltip);
+        Entry entry = new SettingEntry(icon, name, hint, List.of(control), true, tooltip);
+        addEntry(entry);
+        return entry;
+    }
+
+    /**
+     * A setting row with several controls at its right end, each keeping its own width, laid left to right
+     * in {@code controls} order with {@link #CONTROLS_GAP} between them.
+     */
+    public Entry addSetting(Icon icon, Component name, Component hint, List<? extends AbstractWidget> controls,
+                            @Nullable Component tooltip) {
+        Entry entry = new SettingEntry(icon, name, hint, List.copyOf(controls), false, tooltip);
         addEntry(entry);
         return entry;
     }
@@ -221,42 +234,55 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
         private final Icon icon;
         private final Component name;
         private final Component hint;
+        /** The first control: what {@link #applyUnsavedChanges} looks at. */
         private final AbstractWidget control;
+        private final List<AbstractWidget> controls;
+
         @Nullable private final Tooltip tooltip;
 
-        SettingEntry(Icon icon, Component name, Component hint, AbstractWidget control,
+        SettingEntry(Icon icon, Component name, Component hint, List<AbstractWidget> controls, boolean sized,
                      @Nullable Component tooltip) {
             this.icon = icon;
             this.name = name;
             this.hint = hint;
-            this.control = control;
+            this.controls = controls;
+            this.control = controls.get(0);
             // No explanation of its own → the hint is the tooltip, so a hint cut with "…" can still be read whole.
             Component shown = tooltip != null ? tooltip : hint;
             this.tooltip = shown.getString().isBlank() ? null : Tooltip.create(shown);
-            this.control.setWidth(CONTROL_W);
-            this.control.setHeight(CONTROL_H);
+            for (AbstractWidget c : controls) {
+                if (sized) c.setWidth(CONTROL_W);
+                c.setHeight(CONTROL_H);
+            }
         }
 
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height,
                            int mouseX, int mouseY, boolean hovered, float partialTick) {
-            control.setX(left + width - CONTROL_W);
-            control.setY(top + (height - CONTROL_H) / 2);
+            int x = left + width;
+            for (int i = controls.size() - 1; i >= 0; i--) {
+                AbstractWidget c = controls.get(i);
+                x -= c.getWidth();
+                c.setX(x);
+                c.setY(top + (height - CONTROL_H) / 2);
+                x -= CONTROLS_GAP;
+            }
+            int controlsX = controls.get(0).getX();
 
             icon.draw(g, left, top + (height - ICON) / 2);
 
             int textX = left + ICON + ICON_GAP;
-            int textW = control.getX() - TEXT_GAP - textX;
+            int textW = controlsX - TEXT_GAP - textX;
             // Two 9px lines inside the 24px row: name at the top, hint under it.
             int nameY = top + (height - 2 * font.lineHeight - 1) / 2;
             g.drawString(font, oneLine(name, textW), textX, nameY, NAME_COLOR, true);
             g.drawString(font, oneLine(hint, textW), textX, nameY + font.lineHeight + 1, HINT_COLOR, false);
 
-            control.render(g, mouseX, mouseY, partialTick);
+            for (AbstractWidget c : controls) c.render(g, mouseX, mouseY, partialTick);
 
             // The explanation that used to be the button's tooltip: shown for the whole row, so
             // hovering the name or the hint explains the setting too, not just hovering the control.
-            if (tooltip != null && hovered && mouseX < control.getX()) {
+            if (tooltip != null && hovered && mouseX < controlsX) {
                 Screen screen = Minecraft.getInstance().screen;
                 if (screen != null) {
                     screen.setTooltipForNextRenderPass(tooltip.toCharSequence(Minecraft.getInstance()));
@@ -280,12 +306,12 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
 
         @Override
         public List<? extends GuiEventListener> children() {
-            return List.of(control);
+            return controls;
         }
 
         @Override
         public List<? extends NarratableEntry> narratables() {
-            return List.of(control);
+            return controls;
         }
     }
 

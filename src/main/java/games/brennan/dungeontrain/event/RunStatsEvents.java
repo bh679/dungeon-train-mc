@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.portal.PortalConnectionStats;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
+import games.brennan.dungeontrain.discord.PassengerLogWebhooks;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
@@ -445,7 +446,12 @@ public final class RunStatsEvents {
             LOGGER.debug("[DungeonTrain] {} has Public posts off — skipping public death feed",
                     player.getGameProfile().getName());
         }
-        if ((!cheated || (DungeonTrain.isDevBuild() && !RunIntegrity.isOffRecordWorld())) && !shortRun && publicPosts) {
+        boolean publicFeed = (!cheated || (DungeonTrain.isDevBuild() && !RunIntegrity.isOffRecordWorld()))
+                && !shortRun && publicPosts;
+        // The player's own Discord webhooks that get their passenger log get every death, whatever the
+        // public feed's rules: it is their channel (PassengerLogWebhooks gates Test/Kid mode + consent).
+        List<String> personalLinks = PassengerLogWebhooks.links(player);
+        if (publicFeed || !personalLinks.isEmpty()) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -461,7 +467,7 @@ public final class RunStatsEvents {
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
             DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
-                    DungeonTrain.manifestWebhookOverride());
+                    DungeonTrain.manifestWebhookOverride(), publicFeed, personalLinks);
         }
     }
 

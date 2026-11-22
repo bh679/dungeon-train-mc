@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.discord.DiscordPings;
+import games.brennan.dungeontrain.discord.PassengerLogWebhooks;
 import games.brennan.dungeontrain.discord.PingType;
 import games.brennan.dungeontrain.event.DeathNoteGate;
 import games.brennan.dungeontrain.narrative.NoteKind;
@@ -494,11 +495,13 @@ public final class RemoteEchoEncounters {
     }
 
     private static void post(ServerLevel level, EchoEncounter enc, EndReason reason) {
-        if (!DungeonTrainConfig.isEchoEncounterToDiscord()) return;
         ServerPlayer player = level.getServer().getPlayerList().getPlayer(enc.primaryPlayerId);
         if (player == null) return; // audience offline → nothing to address the story to
         String title = EchoEncounterFormat.title(player.getGameProfile().getName(), enc.sourceName);
         String story = EchoEncounterFormat.story(player.getGameProfile().getName(), enc, reason);
+        // The player's own passenger log webhooks get the story whatever the server's public setting.
+        PassengerLogWebhooks.post(player, title, story, List.of(), enc.photo, PHOTO_FILENAME, EMBED_COLOR);
+        if (!DungeonTrainConfig.isEchoEncounterToDiscord()) return;
         LOGGER.info("[DungeonTrain] Remote-echo encounter ended ({}) — posting story for {} vs echo of '{}'.",
                 reason, player.getGameProfile().getName(), enc.sourceName);
         // Route to the public death-report channel (same cap as the death manifest) on main builds,
