@@ -2506,6 +2506,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Tiens une plante qui va dans un pot de fleurs",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Ajoute au moins une variante avant de verrouiller",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Aucun autre groupe verrouillé à vérifier pour l'instant",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Le groupe %s n'a plus de blocs à modifier",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Tiens un bloc, un seau ou rien en main pour l'ajouter à la condition",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Ce bloc est déjà dans la condition",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Une condition contient au plus 8 blocs",

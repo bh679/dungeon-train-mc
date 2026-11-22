@@ -2506,6 +2506,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Sostén una planta que quepa en una maceta",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Agrega al menos una variante antes de bloquear",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Todavía no hay otro grupo bloqueado que revisar",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "El grupo %s ya no tiene bloques para editar",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Sostén un bloque, una cubeta o la mano vacía para agregarlo a la condición",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Ese bloque ya está en la condición",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Una condición admite como máximo 8 bloques",

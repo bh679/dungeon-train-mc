@@ -2456,6 +2456,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Humawak ng halamang kasya sa paso",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Magdagdag ng kahit isang variant bago mag-lock",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Wala pang ibang lock group na susuriin",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "Wala nang block na mae-edit sa group %s",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Humawak ng block, balde, o walang laman na kamay para idagdag ito sa kondisyon",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Nasa kondisyon na ang block na iyan",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Hanggang 8 block lang ang kasya sa isang kondisyon",

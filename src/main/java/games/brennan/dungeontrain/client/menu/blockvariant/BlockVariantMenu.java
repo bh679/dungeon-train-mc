@@ -129,38 +129,79 @@ public final class BlockVariantMenu {
 
     private BlockVariantMenu() {}
 
-    private static boolean active;
-    private static String variantId = "";
-    @Nullable private static BlockPos localPos;
-    private static List<BlockVariantSyncPacket.Entry> entries = Collections.emptyList();
-    private static int lockId = 0;
-    /** The cell's lock group rolls rotation per cell (Rot Free); false = one shared rotation. */
-    private static boolean rotationFree;
-    private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
-    private static boolean copySettingsSupported;
-    /** Whether this plot's spawn path honours the fence / wall connect mode — gates the row pill. */
-    private static boolean connectSupported;
-    /** Whether this plot's spawn path grows columns — gates the row's Grow pill. */
-    private static boolean growthSupported;
-    /** -1 = closed; otherwise the row whose Grow popup is open. */
-    private static int growthPopupRow = -1;
-    /** -1 = closed; otherwise the row whose If (condition) popup is open. */
-    private static int condPopupRow = -1;
-    private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
-    private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
-        games.brennan.dungeontrain.editor.VariantSpan.NONE;
-    /** True while the Span button's option strip is open. */
-    private static boolean spanPopupOpen;
-    private static Vec3 anchorPos = Vec3.ZERO;
-    private static Vec3 anchorRight = new Vec3(1, 0, 0);
-    private static Vec3 anchorUp = new Vec3(0, 1, 0);
-    private static Vec3 anchorNormal = new Vec3(0, 0, 1);
+    /**
+     * One panel's state. There are two: {@link #MAIN}, the cell's own menu, and {@link #CHILD}, the
+     * group panel stacked above it (right-click a "+ Group N" row). Every static getter below reads
+     * {@link #current}, so the renderer, raycast and click dispatch act on whichever panel they were
+     * pointed at with {@link #withPanel}; outside that it is always {@link #MAIN}.
+     */
+    static final class Panel {
+        boolean active;
+        String variantId = "";
+        @Nullable BlockPos localPos;
+        List<BlockVariantSyncPacket.Entry> entries = Collections.emptyList();
+        int lockId = 0;
+        /** The cell's lock group rolls rotation per cell (Rot Free); false = one shared rotation. */
+        boolean rotationFree;
+        VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
+        boolean copySettingsSupported;
+        /** Whether this plot's spawn path honours the fence / wall connect mode — gates the row pill. */
+        boolean connectSupported;
+        /** Whether this plot's spawn path grows columns — gates the row's Grow pill. */
+        boolean growthSupported;
+        /** -1 = closed; otherwise the row whose Grow popup is open. */
+        int growthPopupRow = -1;
+        /** -1 = closed; otherwise the row whose If (condition) popup is open. */
+        int condPopupRow = -1;
+        VariantCopyScope copyScope = VariantCopyScope.BOTH;
+        games.brennan.dungeontrain.editor.VariantSpan spanMode =
+            games.brennan.dungeontrain.editor.VariantSpan.NONE;
+        /** True while the Span button's option strip is open. */
+        boolean spanPopupOpen;
+        Vec3 anchorPos = Vec3.ZERO;
+        Vec3 anchorRight = new Vec3(1, 0, 0);
+        Vec3 anchorUp = new Vec3(0, 1, 0);
+        Vec3 anchorNormal = new Vec3(0, 0, 1);
+        Screen screen = Screen.ROOT;
+        boolean removeMode;
+        String searchBuffer = "";
+        Hit hovered = Hit.NONE;
+        /** -1 = closed; otherwise the row whose OPTIONS popup is open. */
+        int rotPopupRowIndex = -1;
 
-    private static Screen screen = Screen.ROOT;
-    private static boolean removeMode;
-    private static String searchBuffer = "";
+        /** Back to closed, with every sub-screen and popup reset so the next open lands on ROOT. */
+        void reset() {
+            active = false;
+            variantId = "";
+            localPos = null;
+            entries = Collections.emptyList();
+            lockId = 0;
+            rotationFree = false;
+            copyRoll = VariantCopyRoll.DEFAULT;
+            copySettingsSupported = false;
+            connectSupported = false;
+            growthSupported = false;
+            growthPopupRow = -1;
+            condPopupRow = -1;
+            copyScope = VariantCopyScope.BOTH;
+            spanMode = games.brennan.dungeontrain.editor.VariantSpan.NONE;
+            spanPopupOpen = false;
+            screen = Screen.ROOT;
+            removeMode = false;
+            searchBuffer = "";
+            hovered = Hit.NONE;
+            rotPopupRowIndex = -1;
+        }
+    }
 
-    private static Hit hovered = Hit.NONE;
+    /** The cell's own menu. */
+    static final Panel MAIN = new Panel();
+    /** The group panel stacked above {@link #MAIN}; inactive unless a group row was right-clicked. */
+    static final Panel CHILD = new Panel();
+    /** The panel every static getter reads. {@link #MAIN} except inside {@link #withPanel}. */
+    private static Panel current = MAIN;
+    /** The panel under the crosshair, whose {@link Panel#hovered} a click acts on. */
+    private static Panel hoverPanel = MAIN;
 
     /**
      * Where this opening of the menu draws, latched when the server activates it rather than
@@ -168,9 +209,6 @@ public final class BlockVariantMenu {
      * subscriber to stop drawing — so the menu must close in the mode it opened in.
      */
     private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_BLOCK_VARIANT_MENU_SPACE;
-
-    /** -1 = closed; otherwise the row whose OPTIONS popup is open. */
-    private static int rotPopupRowIndex = -1;
 
     /** Cached registry list — built lazily on first ADD_SEARCH entry. */
     @Nullable private static List<String> cachedBlockIds;
@@ -185,7 +223,7 @@ public final class BlockVariantMenu {
      */
     private static final Map<String, BlockState> PARSED_STATE_CACHE = new HashMap<>();
 
-    public static boolean isActive() { return active; }
+    public static boolean isActive() { return current.active; }
 
     /** Where this opening of the menu draws. See {@link #space}. */
     public static EditorMenuSpace space() { return space; }
@@ -195,35 +233,35 @@ public final class BlockVariantMenu {
      * handler use. In screen-space {@link BlockVariantMenuScreen} owns rendering and input, and
      * both paths running would double-draw and double-hit-test.
      */
-    public static boolean isActiveWorldspace() { return active && space.isWorldspace(); }
-    public static String variantId() { return variantId; }
-    @Nullable public static BlockPos localPos() { return localPos; }
-    public static List<BlockVariantSyncPacket.Entry> entries() { return entries; }
-    public static int lockId() { return lockId; }
+    public static boolean isActiveWorldspace() { return current.active && space.isWorldspace(); }
+    public static String variantId() { return current.variantId; }
+    @Nullable public static BlockPos localPos() { return current.localPos; }
+    public static List<BlockVariantSyncPacket.Entry> entries() { return current.entries; }
+    public static int lockId() { return current.lockId; }
     /** True when the cell's lock group rolls rotation per cell (Rot Free). */
-    public static boolean rotationFree() { return rotationFree; }
+    public static boolean rotationFree() { return current.rotationFree; }
 
     /** How this cell rolls across the copies of the repeating room it belongs to. */
-    public static VariantCopyRoll copyRoll() { return copyRoll; }
+    public static VariantCopyRoll copyRoll() { return current.copyRoll; }
 
     /** True when this plot's template repeats at all — only then are the two copy cells drawn. */
-    public static boolean copySettingsSupported() { return copySettingsSupported; }
-    public static boolean connectSupported() { return connectSupported; }
-    public static boolean growthSupported() { return growthSupported; }
+    public static boolean copySettingsSupported() { return current.copySettingsSupported; }
+    public static boolean connectSupported() { return current.connectSupported; }
+    public static boolean growthSupported() { return current.growthSupported; }
 
     /** The row whose Grow popup is open, or -1 — also -1 once that row is gone. */
     public static int growthPopupRow() {
-        return growthPopupRow >= 0 && growthPopupRow < entries.size() ? growthPopupRow : -1;
+        return current.growthPopupRow >= 0 && current.growthPopupRow < current.entries.size() ? current.growthPopupRow : -1;
     }
-    public static void toggleGrowthPopup(int row) { growthPopupRow = growthPopupRow == row ? -1 : row; }
-    public static void closeGrowthPopup() { growthPopupRow = -1; }
+    public static void toggleGrowthPopup(int row) { current.growthPopupRow = current.growthPopupRow == row ? -1 : row; }
+    public static void closeGrowthPopup() { current.growthPopupRow = -1; }
 
     /** The row whose If popup is open, or -1 — also -1 once that row is gone. */
     public static int condPopupRow() {
-        return condPopupRow >= 0 && condPopupRow < entries.size() ? condPopupRow : -1;
+        return current.condPopupRow >= 0 && current.condPopupRow < current.entries.size() ? current.condPopupRow : -1;
     }
-    public static void toggleCondPopup(int row) { condPopupRow = condPopupRow == row ? -1 : row; }
-    public static void closeCondPopup() { condPopupRow = -1; }
+    public static void toggleCondPopup(int row) { current.condPopupRow = current.condPopupRow == row ? -1 : row; }
+    public static void closeCondPopup() { current.condPopupRow = -1; }
 
     /**
      * True when {@code entry} is a painting row — it shows the Painting pill and popup in the Grow
@@ -369,7 +407,7 @@ public final class BlockVariantMenu {
         CellKind.ENTRY_ARM_NORTH, CellKind.ENTRY_ARM_EAST, CellKind.ENTRY_ARM_SOUTH, CellKind.ENTRY_ARM_WEST};
 
     /** Which tiles of a repeating room this cell applies in. */
-    public static VariantCopyScope copyScope() { return copyScope; }
+    public static VariantCopyScope copyScope() { return current.copyScope; }
 
     /**
      * The toolbar's cells, left to right — the one list the renderer draws and the raycaster
@@ -382,11 +420,11 @@ public final class BlockVariantMenu {
             CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK));
         // Right after Lock because it is the group's own setting: only a grouped cell has a
         // rotation to share or free — an ungrouped one already rolls on its own.
-        if (lockId > 0) cells.add(CellKind.ROT_LOCK);
+        if (current.lockId > 0) cells.add(CellKind.ROT_LOCK);
         // Beside Lock, which is the other per-cell setting on this toolbar, and next to each
         // other because the two answer one question between them: where the cell is, and how it
         // rolls once it is there.
-        if (copySettingsSupported) {
+        if (current.copySettingsSupported) {
             cells.add(CellKind.COPY_ROLL);
             cells.add(CellKind.COPY_SCOPE);
         }
@@ -403,7 +441,7 @@ public final class BlockVariantMenu {
     public static boolean spanButtonShown() {
         // The first multi row sets the footprint; a tall plant's has nothing to choose (single
         // blocks always take the bottom space — MultiBlockFootprint#cellIsTallPlant).
-        for (BlockVariantSyncPacket.Entry e : entries) {
+        for (BlockVariantSyncPacket.Entry e : current.entries) {
             if (isMultiRow(e)) {
                 return !games.brennan.dungeontrain.editor.MultiBlockFootprint.isTallPlant(parseState(e.stateString()));
             }
@@ -413,41 +451,41 @@ public final class BlockVariantMenu {
 
     /** The cell's span with {@code AUTO} resolved against its first row, the way spawn resolves it. */
     public static games.brennan.dungeontrain.editor.VariantSpan resolvedSpan() {
-        boolean firstIsMulti = !entries.isEmpty() && isMultiRow(entries.get(0));
-        return spanMode.resolve(firstIsMulti);
+        boolean firstIsMulti = !current.entries.isEmpty() && isMultiRow(current.entries.get(0));
+        return current.spanMode.resolve(firstIsMulti);
     }
 
     /** True when the author has picked a span, rather than it following the first row. */
-    public static boolean spanExplicit() { return !spanMode.isDefault(); }
+    public static boolean spanExplicit() { return !current.spanMode.isDefault(); }
 
-    public static boolean spanPopupOpen() { return spanPopupOpen && spanButtonShown(); }
-    public static void toggleSpanPopup() { spanPopupOpen = !spanPopupOpen; }
-    public static void closeSpanPopup() { spanPopupOpen = false; }
+    public static boolean spanPopupOpen() { return current.spanPopupOpen && spanButtonShown(); }
+    public static void toggleSpanPopup() { current.spanPopupOpen = !current.spanPopupOpen; }
+    public static void closeSpanPopup() { current.spanPopupOpen = false; }
 
     private static boolean isMultiRow(BlockVariantSyncPacket.Entry e) {
         if (e.isMob() || e.isGroupRef()) return false;
         return games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(parseState(e.stateString()));
     }
-    public static Vec3 anchorPos() { return anchorPos; }
-    public static Vec3 anchorRight() { return anchorRight; }
-    public static Vec3 anchorUp() { return anchorUp; }
-    public static Vec3 anchorNormal() { return anchorNormal; }
-    public static Screen screen() { return screen; }
-    public static boolean removeMode() { return removeMode; }
-    public static String searchBuffer() { return searchBuffer; }
-    public static Hit hovered() { return hovered; }
-    public static int rotPopupRowIndex() { return rotPopupRowIndex; }
+    public static Vec3 anchorPos() { return current.anchorPos; }
+    public static Vec3 anchorRight() { return current.anchorRight; }
+    public static Vec3 anchorUp() { return current.anchorUp; }
+    public static Vec3 anchorNormal() { return current.anchorNormal; }
+    public static Screen screen() { return current.screen; }
+    public static boolean removeMode() { return current.removeMode; }
+    public static String searchBuffer() { return current.searchBuffer; }
+    public static Hit hovered() { return current.hovered; }
+    public static int rotPopupRowIndex() { return current.rotPopupRowIndex; }
 
     public static void setHovered(Hit h) {
-        hovered = h == null ? Hit.NONE : h;
+        current.hovered = h == null ? Hit.NONE : h;
     }
 
     public static void openRotPopup(int rowIndex) {
-        rotPopupRowIndex = rowIndex;
+        current.rotPopupRowIndex = rowIndex;
     }
 
     public static void closeRotPopup() {
-        rotPopupRowIndex = -1;
+        current.rotPopupRowIndex = -1;
     }
 
     /**
@@ -475,71 +513,164 @@ public final class BlockVariantMenu {
      * the menu and resets sub-screen state so the next open lands on ROOT.
      */
     public static void applySync(BlockVariantSyncPacket packet) {
-        if (packet.localPos() == null) {
-            dismissScreen();
-            active = false;
-            localPos = null;
-            entries = Collections.emptyList();
-            lockId = 0;
-            rotationFree = false;
-            copyRoll = VariantCopyRoll.DEFAULT;
-            copySettingsSupported = false;
-            connectSupported = false;
-            growthSupported = false;
-            growthPopupRow = -1;
-            condPopupRow = -1;
-            copyScope = VariantCopyScope.BOTH;
-            screen = Screen.ROOT;
-            removeMode = false;
-            searchBuffer = "";
-            hovered = Hit.NONE;
-            rotPopupRowIndex = -1;
-            spanPopupOpen = false;
+        if (packet.isChild()) {
+            applyChildSync(packet);
             return;
         }
-        boolean newCell = !packet.variantId().equals(variantId)
-            || !packet.localPos().equals(localPos);
-        boolean wasActive = active;
-        active = true;
+        if (packet.localPos() == null) {
+            dismissScreen();
+            MAIN.reset();
+            // The stacked group panel belongs to this opening; it goes with it.
+            CHILD.reset();
+            hoverPanel = MAIN;
+            return;
+        }
+        boolean newCell = !packet.variantId().equals(MAIN.variantId)
+            || !packet.localPos().equals(MAIN.localPos);
+        if (newCell) {
+            CHILD.reset();
+            hoverPanel = MAIN;
+        }
+        boolean wasActive = MAIN.active;
+        withPanel(MAIN, () -> fill(packet, newCell));
         if (!wasActive) {
             space = ClientDisplayConfig.getBlockVariantMenuSpace();
         }
-        variantId = packet.variantId();
-        localPos = packet.localPos();
-        entries = List.copyOf(packet.entries());
-        lockId = packet.lockId();
-        rotationFree = packet.rotationFree();
-        copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
-        copySettingsSupported = packet.copySettingsSupported();
-        connectSupported = packet.connectSupported();
-        growthSupported = packet.growthSupported();
-        copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
-        spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromByte(packet.spanMode());
-        anchorPos = packet.anchorPos();
-        anchorRight = packet.anchorRight();
-        anchorUp = packet.anchorUp();
-        anchorNormal = anchorRight.cross(anchorUp).normalize();
-        if (newCell) {
-            screen = Screen.ROOT;
-            removeMode = false;
-            searchBuffer = "";
-            rotPopupRowIndex = -1;
-            spanPopupOpen = false;
-            growthPopupRow = -1;
-            condPopupRow = -1;
-            // Drop the parse cache so old cells' states don't accumulate
-            // (cache is cheap to rebuild — at most ~32 entries per cell).
-            PARSED_STATE_CACHE.clear();
-        } else if (rotPopupRowIndex >= 0 && rotPopupRowIndex >= entries.size()) {
-            // Entry was removed underneath the popup — close it.
-            rotPopupRowIndex = -1;
-        }
-        hovered = Hit.NONE;
         // Re-pushed after every edit so the rows stay live, so only the first sync of an opening
         // puts the screen up; the ones after it just refresh what it is drawing.
         if (!wasActive && space.isScreenspace()) {
             Minecraft.getInstance().setScreen(new BlockVariantMenuScreen());
         }
+    }
+
+    /**
+     * The stacked group panel's sync. Only while the main panel is open: a child left over from a
+     * closed menu would draw with nothing under it. Its anchor is ignored and laid out on the client
+     * above the main panel — see {@link #layoutChild}.
+     */
+    private static void applyChildSync(BlockVariantSyncPacket packet) {
+        if (packet.localPos() == null || !MAIN.active) {
+            CHILD.reset();
+            hoverPanel = MAIN;
+            return;
+        }
+        boolean newCell = !packet.variantId().equals(CHILD.variantId)
+            || !packet.localPos().equals(CHILD.localPos);
+        withPanel(CHILD, () -> fill(packet, newCell));
+    }
+
+    /** Copy {@code packet} into {@link #current}, resetting its sub-screens when it is a different cell. */
+    private static void fill(BlockVariantSyncPacket packet, boolean newCell) {
+        current.active = true;
+        current.variantId = packet.variantId();
+        current.localPos = packet.localPos();
+        current.entries = List.copyOf(packet.entries());
+        current.lockId = packet.lockId();
+        current.rotationFree = packet.rotationFree();
+        current.copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
+        current.copySettingsSupported = packet.copySettingsSupported();
+        current.connectSupported = packet.connectSupported();
+        current.growthSupported = packet.growthSupported();
+        current.copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
+        current.spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromByte(packet.spanMode());
+        current.anchorPos = packet.anchorPos();
+        current.anchorRight = packet.anchorRight();
+        current.anchorUp = packet.anchorUp();
+        current.anchorNormal = current.anchorRight.cross(current.anchorUp).normalize();
+        if (newCell) {
+            current.screen = Screen.ROOT;
+            current.removeMode = false;
+            current.searchBuffer = "";
+            current.rotPopupRowIndex = -1;
+            current.spanPopupOpen = false;
+            current.growthPopupRow = -1;
+            current.condPopupRow = -1;
+            // Drop the parse cache so old cells' states don't accumulate
+            // (cache is cheap to rebuild — at most ~32 entries per cell).
+            PARSED_STATE_CACHE.clear();
+        } else if (current.rotPopupRowIndex >= 0 && current.rotPopupRowIndex >= current.entries.size()) {
+            // Entry was removed underneath the popup — close it.
+            current.rotPopupRowIndex = -1;
+        }
+        current.hovered = Hit.NONE;
+    }
+
+    /** Run {@code body} with every static getter and setter pointed at {@code panel}. */
+    public static void withPanel(Panel panel, Runnable body) {
+        Panel previous = current;
+        current = panel;
+        try {
+            body.run();
+        } finally {
+            current = previous;
+        }
+    }
+
+    /** {@link #withPanel(Panel, Runnable)} returning a value. */
+    public static <T> T fromPanel(Panel panel, java.util.function.Supplier<T> body) {
+        Panel previous = current;
+        current = panel;
+        try {
+            return body.get();
+        } finally {
+            current = previous;
+        }
+    }
+
+    /** The open panels, top first: the stacked group panel (when open), then the main one. */
+    public static List<Panel> openPanels() {
+        if (!MAIN.active) return List.of();
+        return CHILD.active ? List.of(CHILD, MAIN) : List.of(MAIN);
+    }
+
+    /** True when the stacked group panel is open. */
+    public static boolean childOpen() {
+        return MAIN.active && CHILD.active;
+    }
+
+    /** The lock group the stacked panel shows, or 0 when it is closed. */
+    public static int childLockId() {
+        return childOpen() ? CHILD.lockId : 0;
+    }
+
+    /** True while {@link #current} is the stacked group panel. */
+    public static boolean isChildPanel() {
+        return current == CHILD;
+    }
+
+    /** The panel under the crosshair — the one a click is dispatched in. */
+    public static Panel hoverPanel() {
+        return hoverPanel;
+    }
+
+    /** The hit under the crosshair, on whichever panel it is over. */
+    public static Hit hoveredAny() {
+        return hoverPanel.active ? hoverPanel.hovered : Hit.NONE;
+    }
+
+    /** Record that the crosshair is over {@code panel}; the other panel's hover clears. */
+    public static void setHoverPanel(Panel panel) {
+        hoverPanel = panel;
+        for (Panel p : List.of(MAIN, CHILD)) {
+            if (p != panel) p.hovered = Hit.NONE;
+        }
+    }
+
+    /**
+     * Place the stacked group panel directly above the main one, in the same plane and facing: the
+     * main panel is centred on its anchor, so the child's centre sits half of each panel's height
+     * (plus a gap) further up. Called each frame before drawing and hit-testing, since either
+     * panel's height changes as rows are added or removed.
+     */
+    public static void layoutChild(double worldScale) {
+        if (!childOpen()) return;
+        double mainH = fromPanel(MAIN, () -> BlockVariantMenuRenderer.panelSize().panelH());
+        double childH = fromPanel(CHILD, () -> BlockVariantMenuRenderer.panelSize().panelH());
+        CHILD.anchorRight = MAIN.anchorRight;
+        CHILD.anchorUp = MAIN.anchorUp;
+        CHILD.anchorNormal = MAIN.anchorNormal;
+        CHILD.anchorPos = MAIN.anchorPos.add(MAIN.anchorUp.scale(
+            StackedPanelLayout.childOffset(mainH, childH, worldScale)));
     }
 
     /** Pop our screen if it is the active one — guarded so another mod's GUI isn't clobbered. */
@@ -555,30 +686,30 @@ public final class BlockVariantMenu {
     }
 
     public static void enterSearch() {
-        screen = Screen.ADD_SEARCH;
-        searchBuffer = "";
-        hovered = Hit.NONE;
+        current.screen = Screen.ADD_SEARCH;
+        current.searchBuffer = "";
+        current.hovered = Hit.NONE;
     }
 
     public static void backToRoot() {
-        screen = Screen.ROOT;
-        searchBuffer = "";
-        hovered = Hit.NONE;
+        current.screen = Screen.ROOT;
+        current.searchBuffer = "";
+        current.hovered = Hit.NONE;
     }
 
     public static void toggleRemoveMode() {
-        removeMode = !removeMode;
-        hovered = Hit.NONE;
+        current.removeMode = !current.removeMode;
+        current.hovered = Hit.NONE;
     }
 
     public static void appendSearch(char c) {
-        if (searchBuffer.length() >= 32) return;
-        searchBuffer = searchBuffer + c;
+        if (current.searchBuffer.length() >= 32) return;
+        current.searchBuffer = current.searchBuffer + c;
     }
 
     public static void backspaceSearch() {
-        if (searchBuffer.isEmpty()) return;
-        searchBuffer = searchBuffer.substring(0, searchBuffer.length() - 1);
+        if (current.searchBuffer.isEmpty()) return;
+        current.searchBuffer = current.searchBuffer.substring(0, current.searchBuffer.length() - 1);
     }
 
     /**
@@ -600,8 +731,8 @@ public final class BlockVariantMenu {
     /** Lowercase substring filter against {@link #allBlockIds()}. Empty buffer → all ids. */
     public static List<String> filteredBlockIds() {
         List<String> all = allBlockIds();
-        if (searchBuffer.isEmpty()) return all;
-        String needle = searchBuffer.toLowerCase(Locale.ROOT);
+        if (current.searchBuffer.isEmpty()) return all;
+        String needle = current.searchBuffer.toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
         for (String n : all) {
             if (n.toLowerCase(Locale.ROOT).contains(needle)) out.add(n);

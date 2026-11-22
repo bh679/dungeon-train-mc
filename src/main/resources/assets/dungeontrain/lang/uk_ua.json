@@ -3117,6 +3117,7 @@
   "chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant": "Візьміть рослину, яку можна посадити у вазон",
   "chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking": "Додай хоча б один варіант, перш ніж блокувати",
   "chat.dungeontrain.editor_bar.variant_menu.condition_no_groups": "Поки немає іншої групи блокування для перевірки",
+  "chat.dungeontrain.editor_bar.variant_menu.group_menu_no_cells": "У групі %s не лишилося блоків для редагування",
   "chat.dungeontrain.editor_bar.variant_menu.condition_hold_block": "Тримайте блок, відро або порожню руку, щоб додати його до умови",
   "chat.dungeontrain.editor_bar.variant_menu.condition_duplicate": "Цей блок уже є в умові",
   "chat.dungeontrain.editor_bar.variant_menu.condition_full": "Умова вміщує не більше 8 блоків",

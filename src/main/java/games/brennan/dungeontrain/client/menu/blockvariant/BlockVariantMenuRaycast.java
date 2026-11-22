@@ -27,12 +27,32 @@ public final class BlockVariantMenuRaycast {
 
     private BlockVariantMenuRaycast() {}
 
+    /**
+     * Hover for every open panel, top first: the stacked group panel wins where the crosshair is on
+     * it, otherwise the main panel. The one hit becomes {@link BlockVariantMenu#hoverPanel}, which is
+     * the panel a click is dispatched in.
+     */
     public static void updateHovered() {
         if (!BlockVariantMenu.isActiveWorldspace() || BlockVariantMenu.localPos() == null) {
             BlockVariantMenu.setHovered(BlockVariantMenu.Hit.NONE);
             return;
         }
+        BlockVariantMenu.layoutChild(ClientDisplayConfig.getWorldspaceScale());
+        for (BlockVariantMenu.Panel panel : BlockVariantMenu.openPanels()) {
+            BlockVariantMenu.Hit hit = BlockVariantMenu.fromPanel(panel, () -> {
+                updateHoveredCurrent();
+                return BlockVariantMenu.hovered();
+            });
+            if (hit.kind() != BlockVariantMenu.CellKind.NONE) {
+                BlockVariantMenu.setHoverPanel(panel);
+                return;
+            }
+        }
+        BlockVariantMenu.setHoverPanel(BlockVariantMenu.MAIN);
+    }
 
+    /** Hover for the panel {@link BlockVariantMenu} currently points at. */
+    private static void updateHoveredCurrent() {
         Minecraft mc = Minecraft.getInstance();
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 rayOrigin = camera.getPosition();

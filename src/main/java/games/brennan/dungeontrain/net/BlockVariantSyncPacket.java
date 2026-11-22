@@ -49,8 +49,40 @@ public record BlockVariantSyncPacket(
     byte spanMode,
     boolean connectSupported,
     boolean growthSupported,
-    boolean rotationFree
+    boolean rotationFree,
+    byte slot
 ) implements CustomPacketPayload {
+
+    /** {@link #slot} of the cell's own menu. */
+    public static final byte SLOT_MAIN = 0;
+    /**
+     * {@link #slot} of the group panel stacked above it: right-click a "+ Group N" row and that
+     * group's menu opens there, while the main one stays open. The client places it itself.
+     */
+    public static final byte SLOT_CHILD = 1;
+
+    /** A sync for the main panel. */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope,
+                                  byte spanMode, boolean connectSupported, boolean growthSupported,
+                                  boolean rotationFree) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported,
+            rotationFree, SLOT_MAIN);
+    }
+
+    /** This sync, addressed to {@code panel} ({@link #SLOT_MAIN} or {@link #SLOT_CHILD}). */
+    public BlockVariantSyncPacket withSlot(byte panel) {
+        return new BlockVariantSyncPacket(variantId, localPos, entries, lockId, anchorPos, anchorRight,
+            anchorUp, copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported,
+            growthSupported, rotationFree, panel);
+    }
+
+    /** True when this sync is for the stacked group panel. */
+    public boolean isChild() {
+        return slot == SLOT_CHILD;
+    }
 
     /**
      * Pre-Rot-Free shape: the cell's lock group shares one rotation, the default. The menu draws
@@ -359,7 +391,13 @@ public record BlockVariantSyncPacket(
             Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
     }
 
+    /** Closes the stacked group panel only; the main panel stays. */
+    public static BlockVariantSyncPacket emptyChild() {
+        return empty().withSlot(SLOT_CHILD);
+    }
+
     public void encode(FriendlyByteBuf buf) {
+        buf.writeByte(slot);
         buf.writeUtf(variantId);
         if (localPos == null) {
             buf.writeBoolean(false);
@@ -426,6 +464,11 @@ public record BlockVariantSyncPacket(
     }
 
     public static BlockVariantSyncPacket decode(FriendlyByteBuf buf) {
+        byte slot = buf.readByte();
+        return decodeBody(buf).withSlot(slot == SLOT_CHILD ? SLOT_CHILD : SLOT_MAIN);
+    }
+
+    private static BlockVariantSyncPacket decodeBody(FriendlyByteBuf buf) {
         String id = buf.readUtf(64);
         boolean active = buf.readBoolean();
         if (!active) {
