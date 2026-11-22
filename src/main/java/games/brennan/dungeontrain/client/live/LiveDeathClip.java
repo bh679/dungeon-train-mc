@@ -112,6 +112,27 @@ public final class LiveDeathClip {
         return ready;
     }
 
+    /** Where the death recorder's own clip goes ({@code deathrec.DeathScreenClip}); never uploaded. */
+    public static Path localClipPath() {
+        return clipsRoot().resolve("death-local.mp4");
+    }
+
+    /** The current death's generation: a clip offered later for an older one is dropped. */
+    public static int generation() {
+        return generation;
+    }
+
+    /**
+     * Render thread: the death recorder's clip of this death (Record Deaths), for the death page's
+     * backdrop. Taken only when the stream has none of its own for it (pending or ready), so a
+     * streamer's broadcast clip wins; and only for the death it was cut for ({@code forGeneration}).
+     */
+    public static void offerLocal(Path clip, int forGeneration) {
+        if (forGeneration != generation || pending != null || ready != null) return;
+        ready = clip;
+        LOGGER.info("[DungeonTrain] death screen clip ready (Record Deaths)");
+    }
+
     static Path clipsRoot() {
         return Minecraft.getInstance().gameDirectory.toPath().resolve("dungeontrain").resolve("live-clips");
     }

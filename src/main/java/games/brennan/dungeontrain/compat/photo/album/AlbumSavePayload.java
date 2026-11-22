@@ -20,11 +20,19 @@ public final class AlbumSavePayload {
     /** Exposure's {@code AlbumContent.MAX_PAGES}. */
     public static final int MAX_PAGES = 16;
 
-    /** One page as the relay knows it: its picture's hash (null for an empty or private page) and its note. */
-    public record Page(String hash, String note) {
+    /**
+     * One page as the relay knows it: its picture's hash (null for an empty or private page), its note, and
+     * the relay's CDN copy of the picture ("" when it names none; never sent back in a save).
+     */
+    public record Page(String hash, String note, String url) {
+        public Page(String hash, String note) {
+            this(hash, note, "");
+        }
+
         public Page {
             hash = AlbumImageHash.isHash(hash) ? hash : null;
             note = note == null ? "" : note;
+            url = url == null ? "" : url;
         }
     }
 
@@ -122,7 +130,7 @@ public final class AlbumSavePayload {
                 JsonObject p = array.get(i).getAsJsonObject();
                 String hash = p.has("hash") && !p.get("hash").isJsonNull() ? p.get("hash").getAsString() : null;
                 String note = p.has("note") && !p.get("note").isJsonNull() ? p.get("note").getAsString() : "";
-                pages.add(new Page(hash, note));
+                pages.add(new Page(hash, note, games.brennan.dungeontrain.compat.photo.PhotoCdn.urlOf(p, "url")));
             }
             return Optional.of(new Album(owner, index, name, rev, pages));
         } catch (RuntimeException e) {

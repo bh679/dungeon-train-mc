@@ -178,7 +178,7 @@ public final class CarriagePhotos {
                     Component.translatable("item.dungeontrain.shared_photo.by", author)
                             .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false)))));
         }
-        fetchImage(server, base, id);
+        fetchImage(server, base, id, listed.map(LeasePhoto::image).orElse(""));
         return out;
     }
 
@@ -213,18 +213,18 @@ public final class CarriagePhotos {
     }
 
     /** Download photo {@code id}'s picture into this world unless it is here already or on its way. */
-    private static void fetchImage(MinecraftServer server, String base, int id) {
+    private static void fetchImage(MinecraftServer server, String base, int id, String cdnUrl) {
         String exposureId = SharedPhotos.exposureIdFor(base, id);
         if (SharedPhotos.peekExposure(server, exposureId).isPresent()) return;
         synchronized (fetching) {
             if (!fetching.add(id)) return;
         }
-        HttpRequest request = HttpRequest.newBuilder(URI.create(base + "/photos/" + id + "/image"))
-                .timeout(SharedPhotos.REQUEST_TIMEOUT).GET().build();
         CompletableFuture
                 .supplyAsync(() -> {
                     try {
-                        HttpResponse<byte[]> resp = SharedPhotos.HTTP.send(request, HttpResponse.BodyHandlers.ofByteArray());
+                        // The relay's CDN copy when the lease names one, else the relay's own route.
+                        HttpResponse<byte[]> resp = PhotoCdn.send(SharedPhotos.HTTP, cdnUrl,
+                                base + "/photos/" + id + "/image", SharedPhotos.REQUEST_TIMEOUT);
                         if (resp.statusCode() != 200) {
                             LOGGER.info("[DungeonTrain] Carriage photo {} has no picture on the relay ({}); its frame stays blank.",
                                     id, resp.statusCode());
