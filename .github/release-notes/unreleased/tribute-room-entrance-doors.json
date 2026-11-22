@@ -6,11 +6,9 @@
     "fix",
     "train"
   ],
-  "title": "Tribute room fix",
-  "summary": "The way in and out of your tribute room lines up with its doors again.",
-  "highlights": [
-    "Some dimensional carriages are now lit by daylight."
-  ],
+  "title": "Room fixes",
+  "summary": "A few rooms fit together and look a little better.",
+  "highlights": [],
   "pr": 2822,
   "date": "2026-11-22",
   "released": false,
