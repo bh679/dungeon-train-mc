@@ -275,6 +275,8 @@ public final class TrackVariantRegistry {
                 effective = gated;
             } else {
                 warnGateEmptyOnce(kind);
+                // Last resort keeps the date gate: never an out-of-season variant.
+                effective = GateContext.withoutOutOfSeason(pool, name -> TrackVariantWeights.gateFor(kind, name));
             }
         }
         if (group != null) {
@@ -361,7 +363,7 @@ public final class TrackVariantRegistry {
         List<TrackVariantGroup.Member> eligible = new ArrayList<>();
         if (groupOpt.isPresent()) {
             for (TrackVariantGroup.Member m : groupOpt.get().members()) {
-                if (gateCtx == null || gateCtx.allows(effectiveGateOf(m))) eligible.add(m);
+                if (gateCtx == null || gateCtx.allows(effectiveGateOf(kind, m))) eligible.add(m);
             }
         }
         int total = groupOpt.map(TrackVariantGroup::selfWeight).orElse(0);
@@ -405,7 +407,7 @@ public final class TrackVariantRegistry {
         if (gateCtx != null) {
             List<TrackVariantGroup.Member> gated = new ArrayList<>(eligible.size());
             for (TrackVariantGroup.Member m : eligible) {
-                if (gateCtx.allows(effectiveGateOf(m))) gated.add(m);
+                if (gateCtx.allows(effectiveGateOf(kind, m))) gated.add(m);
             }
             if (gated.isEmpty()) {
                 // Every sub-variant is gated out here. The parent itself is still a real variant, so
@@ -441,17 +443,26 @@ public final class TrackVariantRegistry {
         List<TrackVariantGroup.Member> out = new ArrayList<>();
         for (TrackVariantGroup.Member m : groupOpt.get().members()) {
             if (!contains(kind, m.id())) continue;
-            if (gateCtx == null || gateCtx.allows(effectiveGateOf(m))) out.add(m);
+            if (gateCtx == null || gateCtx.allows(effectiveGateOf(kind, m))) out.add(m);
         }
         return out;
     }
 
-    /** A member's effective gate — the union of its linked Stages' gates, else its inline gate. */
-    private static games.brennan.dungeontrain.template.TemplateGate effectiveGateOf(TrackVariantGroup.Member m) {
-        if (!m.isStageLinked()) return m.gate();
-        // Any linked Stage allowing the context is enough, so take the first that does; the caller
-        // only asks a yes/no question of the gate it gets back.
-        return games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageIds().get(0));
+    /**
+     * A member's effective gate — the union of its linked Stages' gates, else its inline gate — plus
+     * the member template's own date periods. Dates belong to the template, not to the slot it is
+     * reached through: a room dated in its {@code weights.json} entry stays seasonal as a group
+     * member, unless the member entry carries dates of its own.
+     */
+    private static games.brennan.dungeontrain.template.TemplateGate effectiveGateOf(TrackKind kind, TrackVariantGroup.Member m) {
+        games.brennan.dungeontrain.template.TemplateGate g = !m.isStageLinked()
+            ? m.gate()
+            // Any linked Stage allowing the context is enough, so take the first that does; the caller
+            // only asks a yes/no question of the gate it gets back.
+            : games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageIds().get(0));
+        if (g.isSeasonal()) return g;
+        games.brennan.dungeontrain.template.TemplateGate own = TrackVariantWeights.gateFor(kind, m.id());
+        return own.isSeasonal() ? g.withPeriods(own.periods()) : g;
     }
 
     private static final Set<String> GROUP_WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet();

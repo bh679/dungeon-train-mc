@@ -38,6 +38,8 @@ public final class TemplateWeightCodec {
     public static final String K_MIN = "minLevel";
     public static final String K_MAX = "maxLevel";
     public static final String K_PHASES = "phases";
+    /** Date period ids the entry is locked to (see {@link TemplateGate#periods()}); absent = any time. */
+    public static final String K_PERIODS = "periods";
     /** Optional link to a named Stage (its gate becomes the entry's effective gate). Absent = Custom. */
     public static final String K_STAGE = "stage";
     /** Optional array of Stage links (sub-variant members only) — the union of gates applies. See
@@ -316,7 +318,7 @@ public final class TemplateWeightCodec {
         int min = numberOr(o.get(K_MIN), 0);
         int max = parseMax(o.get(K_MAX));
         EnumSet<TrainPhase> phases = parsePhases(o.get(K_PHASES));
-        return new TemplateGate(min, max, phases);
+        return new TemplateGate(min, max, phases, parsePeriods(o.get(K_PERIODS)));
     }
 
     private static int numberOr(JsonElement el, int fallback) {
@@ -345,6 +347,19 @@ public final class TemplateWeightCodec {
             if (ph != null) set.add(ph);
         }
         return set.isEmpty() ? null : set;
+    }
+
+    /**
+     * Absent / non-array ⇒ empty (any time). Ids are kept even when this build doesn't know them, so
+     * a template saved by a newer build round-trips; an unknown id is simply never active.
+     */
+    private static java.util.Set<String> parsePeriods(JsonElement el) {
+        if (el == null || !el.isJsonArray()) return java.util.Set.of();
+        java.util.Set<String> out = new java.util.TreeSet<>();
+        for (JsonElement e : el.getAsJsonArray()) {
+            if (e.isJsonPrimitive() && e.getAsJsonPrimitive().isString()) out.add(e.getAsString());
+        }
+        return out;
     }
 
     private static TrainPhase phaseByName(String s) {
@@ -408,6 +423,11 @@ public final class TemplateWeightCodec {
                 if (g.phases().contains(ph)) arr.add(ph.name());
             }
             o.add(K_PHASES, arr);
+        }
+        if (!g.periods().isEmpty()) {
+            JsonArray arr = new JsonArray();
+            for (String p : g.periods()) arr.add(p);   // already sorted by the gate
+            o.add(K_PERIODS, arr);
         }
     }
 }

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.template;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.template.dateperiod.DateToday;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.BandFlavor;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -39,9 +40,32 @@ public record GateContext(int level, TrainPhase phase, Set<BandFlavor> bands) {
         this(level, phase, Collections.emptySet());
     }
 
-    /** True iff {@code gate} admits this context's Diff-Level and phase. */
+    /** True iff {@code gate} admits this context's Diff-Level and phase, and is in season today. */
     public boolean allows(TemplateGate gate) {
-        return gate.eligible(level, phase);
+        return gate.eligible(level, phase) && inSeason(gate);
+    }
+
+    /**
+     * True iff {@code gate} is in season for this server session ({@link DateToday}). The date gate
+     * is hard: every relaxation ({@link #levelAllows}, the empty-pool fallbacks) keeps it, so a
+     * Christmas room never leaks into July because nothing else fitted the slot.
+     */
+    public static boolean inSeason(TemplateGate gate) {
+        return gate == null || gate.inSeason(DateToday.activePeriods());
+    }
+
+    /**
+     * {@code pool} without the entries out of season today, for the last-resort "whole pool" fallback
+     * of a selector. Returns {@code pool} itself when nothing is dropped, and also when dropping would
+     * empty it (a slot must never be left unfillable; that needs every candidate to be seasonal).
+     */
+    public static <T> java.util.List<T> withoutOutOfSeason(java.util.List<T> pool,
+                                                           java.util.function.Function<T, TemplateGate> gateOf) {
+        java.util.List<T> kept = new java.util.ArrayList<>(pool.size());
+        for (T t : pool) {
+            if (inSeason(gateOf.apply(t))) kept.add(t);
+        }
+        return kept.isEmpty() || kept.size() == pool.size() ? pool : kept;
     }
 
     /**
@@ -76,7 +100,7 @@ public record GateContext(int level, TrainPhase phase, Set<BandFlavor> bands) {
      * {@code CarriageContentsRegistry.buildPickContext}, {@code CarriagePartAssignment.applyGate}.
      */
     public boolean levelAllows(TemplateGate gate) {
-        return gate.levelEligible(level);
+        return gate.levelEligible(level) && inSeason(gate);
     }
 
     /**

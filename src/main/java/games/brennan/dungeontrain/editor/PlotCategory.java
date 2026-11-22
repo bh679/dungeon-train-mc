@@ -164,6 +164,8 @@ public enum PlotCategory {
         WEIGHT,
         /** {@code … phase <addr>} — {@code <phase> on|off|others} follows. */
         PHASE,
+        /** {@code … period <addr>} — {@code <period> on|off}, or {@code clear}, follows. */
+        PERIOD,
         /** {@code … minlevel|maxlevel <addr>} — the sub word is spliced in by {@link #levelCommand}. */
         LEVEL,
         /** Teleport to the plot. The track-side kinds are model-shaped and answer empty here. */
@@ -223,30 +225,30 @@ public enum PlotCategory {
     private Commands commands() {
         return switch (this) {
             case CARRIAGES -> Commands.of(ROOT, Address.ID,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
                     .word(Verb.REMOVE, RESET).clearable();
             case CONTENTS -> Commands.of(ROOT + " contents", Address.ID,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
                     .word(Verb.REMOVE, RESET).clearable();
             case WHOLE -> Commands.of(ROOT + " whole", Address.ID,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
                     .word(Verb.REMOVE, RESET).clearable();
             case WHOLE_GROUP -> Commands.of(ROOT + " whole group", Address.ID,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
                     .word(Verb.REMOVE, RESET).clearable();
             case WHOLE_HALF -> Commands.of(ROOT + " whole half", Address.ID,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
                     .word(Verb.REMOVE, RESET).clearable();
             // Track-side verbs address <kind> <name>. ENTER is model-shaped (track / pillar / tunnel
             // each have their own command) and is answered per Template, not here. REMOVE is the
             // standing form — the plot the player is in (see addressFor) — and there is no single
             // plot to Clear: a kind's row holds every named variant.
             case TRACKS -> Commands.of(ROOT + " tracks", Address.ID_NAME,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.NEW)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.NEW)
                     .word(Verb.REMOVE, RESET);
             // A room is addressed as <kind> <name> for every verb, enter by name alone (one kind).
             case PORTALS -> Commands.of(ROOT + " portals", Address.ID_NAME,
-                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER, Verb.NEW)
+                    Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER, Verb.NEW)
                     .word(Verb.REMOVE, RESET).clearable();
             case BUILDINGS -> Commands.of(ROOT + " buildings", Address.NAME, Verb.WEIGHT)
                     .word(Verb.ENTER, GOTO).word(Verb.REMOVE, DELETE).clearable();

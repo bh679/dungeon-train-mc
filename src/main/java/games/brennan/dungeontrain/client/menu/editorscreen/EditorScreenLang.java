@@ -235,6 +235,9 @@ public final class EditorScreenLang {
     public static final String SHEET_LEVELS_ALL = PREFIX + "sheet.levels_all";
     public static final String SHEET_STAGE = PREFIX + "sheet.stage";
     public static final String SHEET_STAGE_TOOLTIP = PREFIX + "sheet.stage_tooltip";
+    public static final String SHEET_DATES = PREFIX + "sheet.dates";
+    public static final String SHEET_DATES_ANY = PREFIX + "sheet.dates_any";
+    public static final String SHEET_DATES_TOOLTIP = PREFIX + "sheet.dates_tooltip";
     public static final String SHEET_TRAIN_SIZE = PREFIX + "sheet.train_size";
     public static final String GO_HERE = PREFIX + "go_here";
     /** The header's note while a save goes up to the relay, and how it ended — see EditorUploadStatus. */

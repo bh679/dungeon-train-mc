@@ -91,6 +91,7 @@ public final class WholeEditorCommand {
         node.then(EditorCommand.minLevelSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
             .then(EditorCommand.maxLevelSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
             .then(EditorCommand.phaseSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
+            .then(EditorCommand.periodSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
             .then(Commands.literal("enter")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(suggestions)
                     .executes(ctx -> runEnter(ctx.getSource(), kind, StringArgumentType.getString(ctx, "id")))))

@@ -1,0 +1,317 @@
+{
+  "_comment": "Date periods a template can be locked to (weights.json \"periods\"). 'table' days are each festival's main day, verified for 2026 to 2036 (timeanddate.com, hebcal.com, the NZ Matariki dates report); a year with no day means that period is off that year. Vesak is only published to 2027. Eid dates follow the most widely observed day (moon sighting can move them by one). See template/dateperiod/DatePeriod.java.",
+  "schemaVersion": 1,
+  "periods": [
+    {
+      "id": "new_year",
+      "months": "jan_apr",
+      "fixed": {
+        "from": "12-30",
+        "to": "01-02"
+      }
+    },
+    {
+      "id": "lunar_new_year",
+      "months": "jan_apr",
+      "table": {
+        "before": 1,
+        "after": 6,
+        "days": [
+          "2026-02-17",
+          "2027-02-06",
+          "2028-01-26",
+          "2029-02-13",
+          "2030-02-03",
+          "2031-01-23",
+          "2032-02-11",
+          "2033-01-31",
+          "2034-02-19",
+          "2035-02-08",
+          "2036-01-28"
+        ]
+      }
+    },
+    {
+      "id": "valentines_day",
+      "months": "jan_apr",
+      "fixed": {
+        "from": "02-12",
+        "to": "02-15"
+      }
+    },
+    {
+      "id": "carnival",
+      "months": "jan_apr",
+      "easter": {
+        "from": -50,
+        "to": -47
+      }
+    },
+    {
+      "id": "holi",
+      "months": "jan_apr",
+      "table": {
+        "before": 1,
+        "after": 0,
+        "days": [
+          "2026-03-04",
+          "2027-03-22",
+          "2028-03-11",
+          "2029-03-01",
+          "2030-03-20",
+          "2031-03-09",
+          "2032-03-27",
+          "2033-03-16",
+          "2034-03-05",
+          "2035-03-24",
+          "2036-03-12"
+        ]
+      }
+    },
+    {
+      "id": "nowruz",
+      "months": "jan_apr",
+      "fixed": {
+        "from": "03-19",
+        "to": "04-02"
+      }
+    },
+    {
+      "id": "eid_al_fitr",
+      "months": "jan_apr",
+      "table": {
+        "before": 1,
+        "after": 2,
+        "days": [
+          "2026-03-20",
+          "2027-03-10",
+          "2028-02-27",
+          "2029-02-15",
+          "2030-02-05",
+          "2031-01-25",
+          "2032-01-14",
+          "2033-01-03",
+          "2033-12-23",
+          "2034-12-12",
+          "2035-12-02",
+          "2036-11-20"
+        ]
+      }
+    },
+    {
+      "id": "passover",
+      "months": "jan_apr",
+      "table": {
+        "before": 1,
+        "after": 7,
+        "days": [
+          "2026-04-02",
+          "2027-04-22",
+          "2028-04-11",
+          "2029-03-31",
+          "2030-04-18",
+          "2031-04-08",
+          "2032-03-27",
+          "2033-04-14",
+          "2034-04-04",
+          "2035-04-24",
+          "2036-04-12"
+        ]
+      }
+    },
+    {
+      "id": "easter",
+      "months": "jan_apr",
+      "easter": {
+        "from": -2,
+        "to": 1
+      }
+    },
+    {
+      "id": "songkran",
+      "months": "jan_apr",
+      "fixed": {
+        "from": "04-13",
+        "to": "04-15"
+      }
+    },
+    {
+      "id": "vesak",
+      "months": "may_aug",
+      "table": {
+        "before": 1,
+        "after": 0,
+        "days": [
+          "2026-05-31",
+          "2027-05-20"
+        ]
+      }
+    },
+    {
+      "id": "eid_al_adha",
+      "months": "may_aug",
+      "table": {
+        "before": 1,
+        "after": 2,
+        "days": [
+          "2026-05-27",
+          "2027-05-17",
+          "2028-05-05",
+          "2029-04-24",
+          "2030-04-14",
+          "2031-04-03",
+          "2032-03-22",
+          "2033-03-12",
+          "2034-03-01",
+          "2035-02-18",
+          "2036-02-08"
+        ]
+      }
+    },
+    {
+      "id": "matariki",
+      "months": "may_aug",
+      "table": {
+        "before": 1,
+        "after": 2,
+        "days": [
+          "2026-07-10",
+          "2027-06-25",
+          "2028-07-14",
+          "2029-07-06",
+          "2030-06-21",
+          "2031-07-11",
+          "2032-07-02",
+          "2033-06-24",
+          "2034-07-07",
+          "2035-06-29",
+          "2036-07-18"
+        ]
+      }
+    },
+    {
+      "id": "obon",
+      "months": "may_aug",
+      "fixed": {
+        "from": "08-13",
+        "to": "08-16"
+      }
+    },
+    {
+      "id": "rosh_hashanah",
+      "months": "sep_dec",
+      "table": {
+        "before": 1,
+        "after": 1,
+        "days": [
+          "2026-09-12",
+          "2027-10-02",
+          "2028-09-21",
+          "2029-09-10",
+          "2030-09-28",
+          "2031-09-18",
+          "2032-09-06",
+          "2033-09-24",
+          "2034-09-14",
+          "2035-10-04",
+          "2036-09-22"
+        ]
+      }
+    },
+    {
+      "id": "mid_autumn",
+      "months": "sep_dec",
+      "table": {
+        "before": 1,
+        "after": 0,
+        "days": [
+          "2026-09-25",
+          "2027-09-15",
+          "2028-10-03",
+          "2029-09-22",
+          "2030-09-12",
+          "2031-10-01",
+          "2032-09-19",
+          "2033-09-08",
+          "2034-09-27",
+          "2035-09-16",
+          "2036-10-04"
+        ]
+      }
+    },
+    {
+      "id": "halloween",
+      "months": "sep_dec",
+      "fixed": {
+        "from": "10-24",
+        "to": "10-31"
+      }
+    },
+    {
+      "id": "day_of_the_dead",
+      "months": "sep_dec",
+      "fixed": {
+        "from": "10-31",
+        "to": "11-02"
+      }
+    },
+    {
+      "id": "diwali",
+      "months": "sep_dec",
+      "table": {
+        "before": 2,
+        "after": 2,
+        "days": [
+          "2026-11-08",
+          "2027-10-29",
+          "2028-10-17",
+          "2029-11-05",
+          "2030-10-26",
+          "2031-11-14",
+          "2032-11-02",
+          "2033-10-22",
+          "2034-11-10",
+          "2035-10-30",
+          "2036-10-18"
+        ]
+      }
+    },
+    {
+      "id": "hanukkah",
+      "months": "sep_dec",
+      "table": {
+        "before": 1,
+        "after": 7,
+        "days": [
+          "2026-12-05",
+          "2027-12-25",
+          "2028-12-13",
+          "2029-12-02",
+          "2030-12-21",
+          "2031-12-10",
+          "2032-11-28",
+          "2033-12-17",
+          "2034-12-07",
+          "2035-12-26",
+          "2036-12-14"
+        ]
+      }
+    },
+    {
+      "id": "christmas",
+      "months": "sep_dec",
+      "fixed": {
+        "from": "12-18",
+        "to": "12-26"
+      }
+    },
+    {
+      "id": "kwanzaa",
+      "months": "sep_dec",
+      "fixed": {
+        "from": "12-26",
+        "to": "01-01"
+      }
+    }
+  ]
+}
