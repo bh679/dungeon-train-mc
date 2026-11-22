@@ -214,17 +214,16 @@ public final class TributeTvVisit {
                     if (now - readyAtMs >= SETTLE_MS) {
                         setPhase(Phase.FADING_IN);
                         TributeArrivalFov.begin(now, arrivalFov(mc));
-                        handBackControl(mc);
                     }
                 } else if (now - phaseAtMs >= ROOM_TIMEOUT_MS) {
                     fallBack("no room after " + ROOM_TIMEOUT_MS + " ms");
                 }
             }
             case FADING_IN -> {
-                // The player has their hands back already ({@link #handBackControl}); the menu's
-                // picture dissolves over the HUD (TributeTvClientEvents#onGuiRendered).
+                if (!(mc.screen instanceof TributeArrivalScreen)) mc.setScreen(new TributeArrivalScreen());
                 if (now - phaseAtMs >= TributeArrivalScreen.FADE_IN_MS) {
                     setPhase(Phase.WATCHING);
+                    handBackControl(mc);
                     PerksHud.onMenuClosed();
                 }
             }
@@ -240,9 +239,9 @@ public final class TributeTvVisit {
     }
 
     /**
-     * The dissolve has started: the room is showing, so the player can move and look from now, not
-     * once the menu's picture is gone. Keys already held count straight away, on macOS too, where
-     * vanilla's mouse grab skips that re-read.
+     * The dissolve is over: the player has their hands back. Keys pressed during it count straight
+     * away, on macOS too, where vanilla's mouse grab skips that re-read; otherwise a key held since
+     * the room appeared does nothing until it is pressed again.
      */
     private static void handBackControl(Minecraft mc) {
         if (mc.screen instanceof TributeArrivalScreen) mc.setScreen(null);

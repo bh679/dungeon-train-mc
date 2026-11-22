@@ -31,14 +31,13 @@ public final class TributeTvClientEvents {
         TributeTvShowcase.onFrameStart(partial);
     }
 
-    /** The arrival's dissolving menu and the tube walk's darkness over the HUD, while no arrival screen is up to draw them. */
+    /** The tube walk's darkness over the HUD, while no screen is up to draw it. */
     @SubscribeEvent
     public static void onGuiRendered(net.neoforged.neoforge.client.event.RenderGuiEvent.Post event) {
         if (Minecraft.getInstance().screen instanceof TributeArrivalScreen) return;
-        net.minecraft.client.gui.GuiGraphics g = event.getGuiGraphics();
-        TributeArrivalScreen.drawOverlay(g, g.guiWidth(), g.guiHeight());
         float black = TributeTvVisit.tubeBlack();
         if (black <= 0f) return;
+        net.minecraft.client.gui.GuiGraphics g = event.getGuiGraphics();
         int alpha = net.minecraft.util.Mth.clamp(Math.round(black * 255f), 0, 255);
         g.fill(0, 0, g.guiWidth(), g.guiHeight(), alpha << 24);
     }

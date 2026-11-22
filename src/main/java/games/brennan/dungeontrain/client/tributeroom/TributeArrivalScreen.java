@@ -13,14 +13,17 @@ import net.minecraft.util.Mth;
  * <p>While the room is stood up the menu is drawn whole over the window, from the very texture the TV
  * will show, so nothing on screen changes until the room is in; then it dissolves, the TV behind it
  * showing the same picture at a field of view it fills ({@link TributeArrivalFov}). Being the open
- * screen holds input while only the menu shows, so the server's pose is the pose they wake with; the
- * screen closes as the dissolve starts, which goes on over the HUD with the player free to move, so
- * they are never held still in a room they can see. At the end, after a tube's far end, it is
+ * screen is what holds input: nothing moves the player while a screen is up, and the mouse stays
+ * free, so the server's pose is the pose they wake with. At the end, after a tube's far end, it is
  * the black the next world loads under. {@link TributeTvVisit} drives the phases; this only draws them.</p>
  */
 public final class TributeArrivalScreen extends Screen {
 
-    static final long FADE_IN_MS = 600L;
+    /**
+     * The dissolve, with input held so the picture lines up with the TV. Short, because the room is
+     * already showing and every millisecond of it is a player standing still (it was 600).
+     */
+    static final long FADE_IN_MS = 300L;
 
     TributeArrivalScreen() {
         super(Component.empty());
@@ -31,19 +34,6 @@ public final class TributeArrivalScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        drawOverlay(g, width, height);
-        float black = TributeTvVisit.tubeBlack();
-        if (black > 0f) {
-            int alpha = Mth.clamp(Math.round(black * 255f), 0, 255);
-            g.fill(0, 0, width, height, alpha << 24);
-        }
-    }
-
-    /**
-     * The menu's picture over the window at the visit's overlay alpha: whole while the room loads,
-     * then dissolving. Drawn by this screen until the dissolve starts, then over the HUD.
-     */
-    static void drawOverlay(GuiGraphics g, int width, int height) {
         float overlay = TributeTvVisit.overlayAlpha(System.currentTimeMillis());
         ResourceLocation picture = TributeTvVisit.textureLocation();
         if (overlay > 0f && picture != null) {
@@ -57,6 +47,11 @@ public final class TributeArrivalScreen extends Screen {
             g.blit(picture, 0, 0, width, height, 0f, 0f, 1, 1, 1, 1);
             g.setColor(1f, 1f, 1f, 1f);
             RenderSystem.disableBlend();
+        }
+        float black = TributeTvVisit.tubeBlack();
+        if (black > 0f) {
+            int alpha = Mth.clamp(Math.round(black * 255f), 0, 255);
+            g.fill(0, 0, width, height, alpha << 24);
         }
     }
 
