@@ -38563,6 +38563,62 @@
       "released": true,
       "released_in": "v0.1971.0",
       "released_at": "2026-11-22T14:05:15Z"
+    },
+    {
+      "id": "approve-e4steam-hosting",
+      "version": "0.1972.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "compatibility"
+      ],
+      "title": "Steam hosting stays fair play",
+      "summary": "Hosting your world with friends through the e4steam mod no longer turns your run into Free Play, and the hosting commands of e4steam and e4mc no longer count as cheats.",
+      "highlights": [],
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1974.0",
+      "released_at": "2026-11-22T16:51:45Z"
+    },
+    {
+      "id": "large-room-doorway-fix",
+      "version": "0.1972.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Large room doorway fix",
+      "summary": "Doorways in large custom rooms now stay where their builder placed them instead of floating above the floor.",
+      "highlights": [],
+      "pr": 2830,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1974.0",
+      "released_at": "2026-11-22T16:51:45Z"
+    },
+    {
+      "id": "seasonal-carriages",
+      "version": "0.1973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Seasonal carriages",
+      "summary": "Some carriages now only turn up around festivals from around the world. Keep an eye out at Christmas, Halloween, Diwali, Lunar New Year and more.",
+      "highlights": [
+        "New festive and spooky carriages to find in season",
+        "Builders can choose which of 22 festivals a build appears during"
+      ],
+      "pr": 2831,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1974.0",
+      "released_at": "2026-11-22T16:51:45Z"
     }
   ]
 }
