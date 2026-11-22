@@ -244,14 +244,6 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/random:64:10/off/none/repeated/-1/1"
   },
-  "tribute": {
-    "weight": 1,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
-  },
-  "tribute_entrance": {
-    "weight": 0,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
-  },
   "house": {
     "weight": 1,
     "mode": "bedrock",
@@ -640,6 +632,14 @@
   "trapped_default2": {
     "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/1"
+  },
+  "tribute": {
+    "weight": 1,
+    "mode": "world_border/exact/off/off/off/none/sealed/0/2"
+  },
+  "tribute_entrance": {
+    "weight": 0,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
   },
   "upsidedown": {
     "weight": 1,
