@@ -38637,6 +38637,40 @@
       "released": true,
       "released_in": "v0.1975.0",
       "released_at": "2026-11-22T17:49:23Z"
+    },
+    {
+      "id": "album-sync-skip-saved-pictures",
+      "version": "0.1975.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "Albums load faster",
+      "summary": "When a newer copy of your album arrives, pictures you already have are no longer downloaded again.",
+      "highlights": [],
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1978.0",
+      "released_at": "2026-11-22T23:58:50Z"
+    },
+    {
+      "id": "trade-earnings-backpack-stack",
+      "version": "0.1977.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "ui"
+      ],
+      "title": "Trade earnings stack in your backpack",
+      "summary": "What a trade pays you now joins a matching stack in your backpack, and still goes there when your inventory is full.",
+      "highlights": [],
+      "pr": 2835,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1978.0",
+      "released_at": "2026-11-22T23:58:50Z"
     }
   ]
 }
