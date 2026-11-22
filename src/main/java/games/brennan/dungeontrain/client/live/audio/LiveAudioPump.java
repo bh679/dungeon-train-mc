@@ -65,6 +65,8 @@ public final class LiveAudioPump implements AutoCloseable {
     @Nullable private volatile SocketChannel client;
     @Nullable private Thread thread;
     private volatile boolean running = true;
+    /** {@link #close} hands the mirror back once, however often it is called. */
+    private final java.util.concurrent.atomic.AtomicBoolean released = new java.util.concurrent.atomic.AtomicBoolean();
 
     private LiveAudioPump(ServerSocketChannel server, int port, boolean withMic) {
         this.server = server;
@@ -90,7 +92,7 @@ public final class LiveAudioPump implements AutoCloseable {
             LOGGER.warn("[DungeonTrain] stream audio off: this ffmpeg has no aac encoder");
             return null;
         }
-        if (!AudioMirror.start()) return null;
+        if (!AudioMirror.acquire()) return null;
         try {
             ServerSocketChannel server = ServerSocketChannel.open();
             server.bind(new InetSocketAddress(InetAddress.getByAddress(IPV4_LOOPBACK), 0), 1);
@@ -98,7 +100,7 @@ public final class LiveAudioPump implements AutoCloseable {
             return new LiveAudioPump(server, port, withMic);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] stream audio off: no local port ({})", e.toString());
-            AudioMirror.stop();
+            AudioMirror.release();
             return null;
         }
     }
@@ -151,6 +153,7 @@ public final class LiveAudioPump implements AutoCloseable {
             ByteBuffer out = withMic ? ByteBuffer.allocateDirect(CHUNK_FRAMES * frameBytes).order(ByteOrder.nativeOrder()) : mix;
             ByteBuffer silence = ByteBuffer.allocateDirect(CHUNK_FRAMES * frameBytes);
             short[] voice = new short[CHUNK_FRAMES];
+            MirrorMixBus.Cursor cursor = MirrorMixBus.shared().open();
             long written = 0;
             long backlog = samplesDue(videoFrames.getAsLong(), fps);
             while (written < backlog && running) {
@@ -164,19 +167,18 @@ public final class LiveAudioPump implements AutoCloseable {
                     int n = (int) Math.min(due, CHUNK_FRAMES);
                     long t0 = System.nanoTime();
                     mix.clear();
-                    boolean mixed = AudioMirror.render(mix, n);
+                    // The bus holds a slice the mirror could not render as silence, so the mix is always usable.
+                    MirrorMixBus.shared().read(cursor, mix, n);
                     if (withMic) {
                         // clear() only rewinds (the samples stay); the views read from index 0 in native order.
                         mix.clear();
                         ShortBuffer game = mix.asShortBuffer();
-                        if (!mixed) for (int i = 0; i < 2 * n; i++) game.put(i, (short) 0);
                         LiveMic.fill(voice, n);
                         out.clear();
                         MicDsp.mixInterleave4(game, voice, n, out.asShortBuffer(), LiveMic.mixGameGain());
-                        mixed = true;
                     }
                     LivePerfStats.audioRendered(System.nanoTime() - t0);
-                    send(c, mixed ? out : silence, n, frameBytes);
+                    send(c, out, n, frameBytes);
                     written += n;
                     due -= n;
                 }
@@ -214,7 +216,7 @@ public final class LiveAudioPump implements AutoCloseable {
                 Thread.currentThread().interrupt();
             }
         }
-        AudioMirror.stop();
+        if (released.compareAndSet(false, true)) AudioMirror.release();
     }
 
     private static void closeQuietly(@Nullable java.nio.channels.Channel c) {

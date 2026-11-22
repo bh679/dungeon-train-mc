@@ -760,6 +760,9 @@ public final class EditorCommand {
             .then(Commands.literal("helppanel")
                 .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
+            .then(Commands.literal("autofly")
+                .then(Commands.literal("on").executes(ctx -> runAutoFly(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runAutoFly(ctx.getSource(), false))))
             .then(Commands.literal("frame")
                 .then(Commands.literal("on").executes(ctx -> runFrame(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runFrame(ctx.getSource(), false))))
@@ -4108,6 +4111,18 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.EditorQuickToggles.setMirror(source.getServer(), on);
         source.sendSuccess(() -> Component.translatable(on
                 ? "chat.dungeontrain.editor.mirror_live_on" : "chat.dungeontrain.editor.mirror_live_off")
+            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * Settings → Auto fly On / Off for this world: whether falling below the editor plots' bedrock
+     * frame turns flying on ({@link games.brennan.dungeontrain.editor.EditorAutoFly}).
+     */
+    private static int runAutoFly(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.editor.EditorQuickToggles.setAutoFly(source.getServer(), on);
+        source.sendSuccess(() -> Component.translatable(on
+                ? "chat.dungeontrain.editor.auto_fly_on" : "chat.dungeontrain.editor.auto_fly_off")
             .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }

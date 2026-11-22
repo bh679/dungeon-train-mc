@@ -469,6 +469,9 @@ public final class EditorMenuScreen implements MenuScreen {
         // Frame — whether Contents plots stand inside their carriage shell. World state like
         // Observers; also one of the X menu's quick toggles (the ▼ beside Settings).
         out.add(frameRow());
+        // Auto fly — falling below the plots' bedrock frame turns flying on. World state, on by
+        // default; deliberately not one of the X menu's quick toggles.
+        out.add(autoFlyRow());
 
         // Redstone / TNT — Off cuts every redstone signal in an editor plot / makes TNT fizzle
         // there, so a contraption can be wired and TNT placed without either going off. World state
@@ -653,6 +656,16 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Label(MenuLang.t("editor.frame")),
             new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor frame on", on),
             new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor frame off", !on),
+            0.46, 0.73);
+    }
+
+    /** Auto fly | On | Off — same shape as Observers. */
+    public static CommandMenuEntry autoFlyRow() {
+        boolean on = games.brennan.dungeontrain.client.EditorQuickTogglesState.autoFlyOn();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.auto_fly")),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor autofly on", on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor autofly off", !on),
             0.46, 0.73);
     }
 

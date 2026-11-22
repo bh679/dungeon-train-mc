@@ -38057,6 +38057,104 @@
       "released": true,
       "released_in": "v0.1938.0",
       "released_at": "2026-11-21T13:54:14Z"
+    },
+    {
+      "id": "build-restore-finds-saved-builds",
+      "version": "0.1942.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Shared build fix",
+      "summary": "Builds still saved on your computer that went missing from your profile now come back too, not only the ones kept in backups.",
+      "highlights": [],
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1943.0",
+      "released_at": "2026-11-21T15:37:34Z"
+    },
+    {
+      "id": "build-restore-no-duplicates",
+      "version": "0.1939.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Shared build fix",
+      "summary": "Your shared builds no longer show up twice in your profile.",
+      "highlights": [
+        "Builds put back after a lost upload now land on their existing entry instead of making a copy.",
+        "Put-back builds upload at their real size, not several times larger.",
+        "Saving a new build twice in quick succession makes one entry, not two."
+      ],
+      "pr": 2794,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1943.0",
+      "released_at": "2026-11-21T15:37:34Z"
+    },
+    {
+      "id": "photo-pool-less-data",
+      "version": "0.1940.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "Community photos use much less data",
+      "summary": "Community photos found on the train now download far less in the background. A game only fetches the photos it has room for, and fetches none while nobody is playing.",
+      "highlights": [],
+      "pr": 2796,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1943.0",
+      "released_at": "2026-11-21T15:37:34Z"
+    },
+    {
+      "id": "x-menu-quick-toggles",
+      "version": "0.1939.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Quick toggles in the editor menu",
+      "summary": "A small arrow beside Settings in the editor's X menu opens three one-click toggles, so you can switch common editor options without leaving the page you're on.",
+      "highlights": [
+        "Mirror: pause mirroring for every template at once. Each template keeps its own mirror axes for when you turn it back on.",
+        "Menus: hide or show the floating editor menus; turning them back on returns to the mode you had.",
+        "Frame: show or hide the carriage around Contents builds, so you can see and reach your build from every side. Also in Settings."
+      ],
+      "pr": 2795,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1943.0",
+      "released_at": "2026-11-21T15:37:34Z"
+    },
+    {
+      "id": "record-deaths-video",
+      "version": "0.1944.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Record your deaths as videos",
+      "summary": "A new option saves each death as a video: the 8 seconds before you died and the whole death scene, with game sound. Turn on Record Deaths in Options, General. It is off by default, since it keeps recording in the background while you play.",
+      "highlights": [
+        "Your death also replays behind the death screen",
+        "Videos are saved to the dungeontrain/death-videos folder; click the file name in chat to watch"
+      ],
+      "pr": 2799,
+      "date": "2026-11-21",
+      "released": true,
+      "released_in": "v0.1944.0",
+      "released_at": "2026-11-21T17:19:03Z"
     }
   ]
 }

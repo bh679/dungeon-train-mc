@@ -70,6 +70,8 @@ public final class DeathMomentScreen extends Screen {
         // init() re-runs on a window resize; the prewarm is started once per death.
         if (started) return;
         started = true;
+        // Record Deaths (opt-in): keep the seconds before this death and the cinematic that follows.
+        games.brennan.dungeontrain.client.live.deathrec.DeathRecorder.markDeath();
         skipLocked = DeathCutsceneSeen.get().isFirstEver();
         // Freeze now, not when the recap opens: no capture, flush or eviction may touch the
         // photos being decoded for it.
@@ -97,6 +99,8 @@ public final class DeathMomentScreen extends Screen {
     @Override
     public void removed() {
         DeathCameraCycle.stop();
+        // Every way out (hand-over, skip, disconnect, quit) ends the recording here.
+        games.brennan.dungeontrain.client.live.deathrec.DeathRecorder.finish();
         super.removed();
     }
 

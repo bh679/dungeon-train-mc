@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * What this install has, what a backup remembers it having, and which of those the relay has lost.
@@ -106,13 +107,28 @@ public final class BuilderReconcileScan {
 
     /** Every build authored on this install, across every store directory. */
     public static List<Build> localBuilds() {
+        return localBuilds(UserContentPaths::activeSubDir);
+    }
+
+    /**
+     * Every build in each store's user-tier directory, as {@code dirForSubSlug} resolves it.
+     *
+     * <p>Read straight from the active package's folder, not through
+     * {@link UserContentPaths#listBasenamesAcrossSearchDirs} or {@link UserContentPaths#provenanceOf}.
+     * Those answer what a world <em>loads</em>, so they go empty while custom content is suppressed,
+     * and it is suppressed until a world has answered the prompt: at the title screen, where this
+     * scan runs, they always said there was nothing on disk. The question here is which files are
+     * the player's, and that folder is exactly what {@code provenanceOf} calls
+     * {@link UserContentPaths.Provenance#USER} and what the restore reads back
+     * ({@link BuilderTemplateSource#fileFor}). Imported packs are in other folders, so they stay
+     * out without a provenance check.</p>
+     */
+    static List<Build> localBuilds(Function<String, Path> dirForSubSlug) {
         List<Build> out = new ArrayList<>();
         for (BuilderTemplateSource.Slug slug : BuilderTemplateSource.slugs()) {
-            for (String basename : UserContentPaths.listBasenamesAcrossSearchDirs(slug.subSlug(), EXT)) {
-                if (UserContentPaths.provenanceOf(slug.subSlug(), basename + EXT)
-                        != UserContentPaths.Provenance.USER) {
-                    continue;   // bundled, or somebody else's imported pack — not this player's to upload
-                }
+            Path dir = dirForSubSlug.apply(slug.subSlug());
+            if (dir == null) continue;
+            for (String basename : UserContentPaths.listBasenames(dir, EXT)) {
                 out.add(new Build(slug.kind(), slug.subKind(), basename));
             }
         }

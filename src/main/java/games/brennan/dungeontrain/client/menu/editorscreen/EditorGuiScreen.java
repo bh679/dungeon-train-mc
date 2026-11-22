@@ -642,7 +642,7 @@ public final class EditorGuiScreen extends Screen {
             EditorTabBar.Tab arrow = quickArrow();
             if (arrow == null) return Tooltip.NONE;
             EditorQuickMenu.Item item = EditorQuickMenu.hit(EditorQuickMenu.layout(arrow, layout.tabs()), mx, my);
-            return item == null ? Tooltip.NONE : Tooltip.of(EditorScreenLang.text(item.tipKey));
+            return item == null ? Tooltip.NONE : Tooltip.of(EditorQuickMenu.tooltip(item));
         }
     }
 

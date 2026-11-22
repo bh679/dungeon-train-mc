@@ -139,8 +139,14 @@ public final class SharedCarriageClient {
      * view counts. A count the relay did not send is -1.
      */
     public record LeasePhoto(int id, String key, String author, int viewsLeft, int views, int maxViews,
-                             int tributes) {
+                             int tributes, String image) {
+        /** A lease photo with no CDN URL (an older relay, or a picture not mirrored yet). */
+        public LeasePhoto(int id, String key, String author, int viewsLeft, int views, int maxViews, int tributes) {
+            this(id, key, author, viewsLeft, views, maxViews, tributes, "");
+        }
+
         public LeasePhoto {
+            if (image == null) image = "";
             if (key == null) key = "";
             if (author == null) author = "";
         }
@@ -1391,7 +1397,8 @@ public final class SharedCarriageClient {
             int id = intOrMinus(p, "id");
             if (id <= 0) continue;
             out.add(new LeasePhoto(id, str(p, "key"), sanitizeName(str(p, "author")), intOrMinus(p, "viewsLeft"),
-                    intOrMinus(p, "views"), intOrMinus(p, "maxViews"), intOrMinus(p, "tributes")));
+                    intOrMinus(p, "views"), intOrMinus(p, "maxViews"), intOrMinus(p, "tributes"),
+                    games.brennan.dungeontrain.compat.photo.PhotoCdn.urlOf(p, "image")));
         }
         return List.copyOf(out);
     }

@@ -64,6 +64,7 @@ final class ClientOptionsIcons {
             case OTHER_ADVANCEMENT_CARDS -> Icon.item(Items.PAPER);
             case MENU_BACKDROP -> Icon.item(Items.ITEM_FRAME);
             case CINEMATIC_HOTKEY -> Icon.item(Items.SPYGLASS);
+            case DEATH_RECORDING -> Icon.item(Items.SKELETON_SKULL);
             case DEV_HUD -> Icon.item(Items.CLOCK);
             case BACKPACK_BUTTON -> Icon.item(games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());
             case BACKPACK_AUTO_COLLECT -> Icon.item(Items.HOPPER);

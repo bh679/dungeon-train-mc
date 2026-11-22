@@ -59,6 +59,11 @@ public final class PlayerDataPaths {
     public static final String TRANSLATIONS = "translations";
     public static final String OUTBOX = "outbox";
     public static final String BACKUPS = "backups";
+    /**
+     * Saved death cinematics ({@code client.live.deathrec.DeathRecorder}, opt-in). The player's own
+     * videos, several MB each: Dungeon Backup leaves them out of its archives ({@link DungeonTrainBackup}).
+     */
+    public static final String DEATH_VIDEOS = "death-videos";
     /** Per-player Ender Chest flags (Free Play expansion). New store — never lived in {@code config/}. */
     public static final String ENDER_CHEST = "enderchest";
 
