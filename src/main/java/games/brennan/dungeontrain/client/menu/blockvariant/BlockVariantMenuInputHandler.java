@@ -232,7 +232,13 @@ public final class BlockVariantMenuInputHandler {
                 BlockVariantMenu.closeRotPopup();
                 BlockVariantMenu.closeSpanPopup();
                 BlockVariantMenu.closeGrowthPopup();
+                boolean opening = BlockVariantMenu.condPopupRow() != hit.index();
                 BlockVariantMenu.toggleCondPopup(hit.index());
+                // An empty row opens holding the condition last changed in this cell (server decides).
+                String token = BlockVariantMenu.entries().get(hit.index()).condition();
+                if (opening && games.brennan.dungeontrain.editor.VariantCondition.parse(token).isDefault()) {
+                    send(BlockVariantEditPacket.Op.PREFILL_COND, variantId, local, hit.index(), 0);
+                }
             }
             case COND_OPTION -> dispatchCondition(hit, variantId, local, shift);
             case GROWTH_OPTION -> {
