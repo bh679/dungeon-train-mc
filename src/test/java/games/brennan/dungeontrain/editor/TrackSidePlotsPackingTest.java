@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +24,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TrackSidePlotsPackingTest {
 
     private static final CarriageDims DIMS = CarriageDims.DEFAULT;
+
+    /**
+     * The bundled {@code default} group's members widen its slot (a member deeper than its parent
+     * reserves its own depth), so these tests pin {@code default} to no members: they measure the
+     * packing rules, not whichever rooms happen to ship in that group.
+     */
+    @BeforeEach
+    void isolateFromBundledGroups() {
+        TrackVariantGroupStore.injectForTesting(TrackKind.PORTAL_ROOM, "default", TrackVariantGroup.EMPTY);
+    }
 
     @AfterEach
     void tearDown() {
