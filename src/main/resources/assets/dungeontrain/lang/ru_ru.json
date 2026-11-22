@@ -1790,7 +1790,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.few": "ВКЛ. ещё %s часа · благодаря %s",
   "gui.dungeontrain.rewards.status.on_for_hours.many": "ВКЛ. ещё %s часов · благодаря %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "ВКЛ. до завтра · благодаря %s",
-  "gui.dungeontrain.rewards.status.free_thanks": "Бесплатные переводы работают благодаря: %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Сейчас работает благодаря %s",
   "gui.dungeontrain.rewards.give.soon": "Скоро",
   "gui.dungeontrain.rewards.give.amount": "Подарить %s",
   "gui.dungeontrain.rewards.raised": "Выше, пока действует %s",

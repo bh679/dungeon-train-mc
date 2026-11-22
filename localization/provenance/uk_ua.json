@@ -1981,7 +1981,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.few": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "gui.dungeontrain.rewards.status.on_for_hours.many": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "gui.dungeontrain.rewards.status.on_until_tomorrow": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "5a6e59a0be625f75"},
-  "gui.dungeontrain.rewards.status.free_thanks": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "9470048eaf544c35"},
+  "gui.dungeontrain.rewards.status.free_thanks": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2b8b314e7dd31bc0"},
   "gui.dungeontrain.rewards.give.soon": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "cf0ee3547a4e51a5"},
   "gui.dungeontrain.rewards.give.amount": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "10f73c1b15f8240b"},
   "gui.dungeontrain.rewards.raised": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f2589489b63c568b"},

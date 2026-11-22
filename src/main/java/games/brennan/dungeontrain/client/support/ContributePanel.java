@@ -81,6 +81,8 @@ public final class ContributePanel {
     static final int COLOUR_ON = 0xFF8FE08A;
     private static final int COLOUR_REWARDS_TITLE = 0xB99BF0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
+    /** "$9 goes to the dev" under "For everyone". */
+    private static final int COLOUR_DEV_SHARE = 0xFF9A9A9A;
     private static final int COLOUR_RAISED = 0xFFA0A0A0;
     private static final int COLOUR_CARD = 0x306D4B9C;
     private static final int COLOUR_CARD_EDGE = 0xFF4A3F66;
@@ -249,7 +251,7 @@ public final class ContributePanel {
 
     /**
      * The featured community reward: group label, name, its one line, an "ON until" line when it is
-     * on, and a purple Give button with "For everyone" under it on the right.
+     * on, and a purple Give button with "For everyone" and "$9 goes to the dev" under it on the right.
      */
     private int rewardCard(Font font, int x, int y, int w, boolean commit, Consumer<AbstractWidget> add) {
         // "COMMUNITY REWARDS" in bold purple, then " · A GIFT TO EVERYONE" in the label grey.
@@ -270,7 +272,9 @@ public final class ContributePanel {
         int iconLeft = x + CARD_PAD;
         int textX = iconLeft + ICON + ICON_GAP;
         int textW = w - sideW - CARD_PAD * 3 - ICON - ICON_GAP;
-        int sideH = GIVE_H + 2 + lh;
+        // "$9 goes to the dev", grey, under "For everyone" when the relay says it.
+        Component toDev = CommunityRewards.devShareLine(reward);
+        int sideH = GIVE_H + 2 + lh + (toDev != null ? lh + 1 : 0);
         CardLines lines = cardLines(font, reward, state, now, textX, y + CARD_PAD, textW);
         int h = Math.max(lines.bottom() + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
 
@@ -292,6 +296,12 @@ public final class ContributePanel {
             for (FormattedCharSequence note : font.split(noteText, sideW)) {
                 cardTexts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
                 break; // one line; a language whose note does not fit is cut, never spills out of the card
+            }
+            if (toDev != null) {
+                for (FormattedCharSequence l : font.split(toDev, sideW)) {
+                    cardTexts.add(new Text(l, gx + sideW / 2, gy + GIVE_H + 2 + lh + 1, COLOUR_DEV_SHARE, true));
+                    break; // one line, like the note above
+                }
             }
             arrowCurrent = order.indexOf(reward);
             // Plain arrows just outside the card's left and right edges, centred on it.
@@ -323,14 +333,6 @@ public final class ContributePanel {
                     : onStatus(live.activeUntilMs(), now, CommunityRewards.keptOnBy(state, reward, now));
             for (FormattedCharSequence l : font.split(status, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_ON, false));
-                ty += lh + 1;
-            }
-        }
-        // What of a gift is left for the dev once the reward has paid for itself.
-        Component toDev = CommunityRewards.devShareLine(reward);
-        if (toDev != null) {
-            for (FormattedCharSequence l : font.split(toDev, textW)) {
-                out.add(new Text(l, textX, ty, COLOUR_GIVE_NOTE, false));
                 ty += lh + 1;
             }
         }

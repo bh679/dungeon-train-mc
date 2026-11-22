@@ -352,15 +352,15 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty = Math.max(ty, iconTop + ICON + 1);
         // The amount is on the Give button; the yellow line only says who it is for.
         ty = wrap(Component.translatable("gui.dungeontrain.contribute.keeps_on"), tx, ty, tw, COLOUR_AMOUNT);
+        // "$9 goes to the dev", grey, under "For everyone" when the relay says it.
+        Component toDev = CommunityRewards.devShareLine(r);
+        if (toDev != null) ty = wrap(toDev, tx, ty, tw, COLOUR_SUB);
         ty += 2;
         ty += 2;
         ty = wrap(ContributePanel.lineOf(r), tx, ty, tw, COLOUR_LINE);
         if (CommunityRewards.onFreeCredits(state, r, now)) {
             ty = wrap(ContributePanel.freeThanks(state.find(r.id())), tx, ty + 2, tw, ContributePanel.COLOUR_ON);
         }
-        // What of a gift is left for the dev once the reward has paid for itself.
-        Component toDev = CommunityRewards.devShareLine(r);
-        if (toDev != null) ty = wrap(toDev, tx, ty + 2, tw, ContributePanel.COLOUR_ON);
         // Other rewards being on cost this one more to run, so the relay asked more: say which.
         Component raised = CommunityRewards.raisedLine(r);
         if (raised != null) ty = wrap(raised, tx, ty + 2, tw, COLOUR_SUB);
