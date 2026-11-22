@@ -88,6 +88,8 @@ public final class PauseMenuLayoutHandler {
     private static final Component MY_BUILDS_LABEL = Component.translatable("gui.dungeontrain.builder.profile");
     /** Salvage sessions only — see {@link #addFreshRunRow}. */
     /** A tribute room visit's face of the exit slot, in place of Abandon — see {@link #layoutTributeVisit}. */
+    /** The run-start button's own word, shared with the title screen's New World row. */
+    private static final Component REBOARD_LABEL = Component.translatable("gui.dungeontrain.new_world.reboard");
     private static final Component MAIN_MENU_LABEL = Component.translatable("gui.dungeontrain.tribute_room.main_menu");
     private static final Component FRESH_RUN_LABEL = Component.translatable("gui.dungeontrain.crash_recovery.fresh_run");
 
@@ -197,20 +199,27 @@ public final class PauseMenuLayoutHandler {
     }
 
     /**
-     * Tribute room layout: the player is already dead for the run, so the slot's face is a plain
-     * <b>Main Menu</b> rather than the red Abandon, and the Shift pair leaves the same way. Each one
-     * saves the room and closes the world as a finished run ({@link TributeTvVisit#leave}), so
-     * the run cannot be reopened and played on, which a plain save and quit would allow.
+     * Tribute room layout: the player is already dead for the run, so in place of the red Abandon
+     * the slot splits into a green <b>Reboard</b> ({@link TributeTvVisit#reboard}, what walking out
+     * through a tube does) and a grey <b>Main Menu</b>. Main Menu and the Shift pair save the room
+     * and close the world as a finished run ({@link TributeTvVisit#leave}), so the run cannot be
+     * reopened and played on, which a plain save and quit would allow.
      */
     private static void layoutTributeVisit(ScreenEvent.Init.Post event, int slotX, int slotY, int slotW, int slotH) {
+        int halfW = (slotW - GAP) / 2;
+        PauseMenuActionButton reboard = new PauseMenuActionButton(
+                slotX, slotY, halfW, slotH, REBOARD_LABEL,
+                0.30F, 1.0F, 0.30F, false,
+                b -> TributeTvVisit.reboard());
+        event.addListener(reboard);
         PauseMenuActionButton mainMenu = new PauseMenuActionButton(
-                slotX, slotY, slotW, slotH, MAIN_MENU_LABEL,
+                slotX + halfW + GAP, slotY, slotW - halfW - GAP, slotH, MAIN_MENU_LABEL,
                 1.0F, 1.0F, 1.0F, false,
                 b -> TributeTvVisit.leave(false));
         event.addListener(mainMenu);
         addShiftExitPair(event, slotX, slotY, slotW, slotH,
                 () -> TributeTvVisit.leave(false), () -> TributeTvVisit.leave(true));
-        applyShiftVisibility(mainMenu);
+        applyShiftVisibility(reboard, mainMenu);
     }
 
     /**

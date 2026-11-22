@@ -497,6 +497,25 @@ public final class TributeTvVisit {
         if (endRun(black, false)) pendingLeave = leaving;
     }
 
+    /**
+     * The pause menu's Reboard: the same as walking out through a tube. The window goes black (which
+     * also lets the integrated server run again), the server saves the room, and the next world loads
+     * under the black ({@link #onSaved}). Before the room stands there is nothing to save, and the next
+     * world loads straight away.
+     */
+    public static void reboard() {
+        Minecraft mc = Minecraft.getInstance();
+        TributeArrivalScreen black = new TributeArrivalScreen();
+        mc.setScreen(black);
+        if (endRun(black, false)) {
+            LOGGER.info("[DungeonTrain] tribute room: reboarding from the pause menu — saving the room");
+            return;
+        }
+        if (phase == Phase.ENDING) return;
+        reset();
+        DeathScreenLayoutHandler.launchWorld(black, false, true);
+    }
+
     /** Something went wrong before the room stood: the old full-screen recap, so nobody is left on black. */
     private static void fallBack(String why) {
         LOGGER.warn("[DungeonTrain] tribute room: falling back to the recap — {}", why);
