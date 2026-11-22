@@ -1,0 +1,17 @@
+{
+  "id": "tribute-room-pause-reboard",
+  "version": "0.1952.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Reboard from your tribute room's menu",
+  "summary": "Pressing Esc in your tribute room no longer offers to abandon a run that is already over. You get a green Reboard to start your next run, and Main Menu to head back to the title screen. Both keep what you built in the room.",
+  "highlights": [],
+  "pr": 2808,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
