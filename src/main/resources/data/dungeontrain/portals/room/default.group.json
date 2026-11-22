@@ -30,6 +30,10 @@
       "id": "trapped_default2",
       "weight": 4,
       "minLevel": 55
+    },
+    {
+      "id": "flooded",
+      "weight": 1
     }
   ]
 }

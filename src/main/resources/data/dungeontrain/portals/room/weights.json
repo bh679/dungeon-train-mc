@@ -203,6 +203,25 @@
       "name": "AntonioMacarely"
     }
   },
+  "flooded": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/6/5/7"
+  },
   "foundation": {
     "weight": 1,
     "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30",
