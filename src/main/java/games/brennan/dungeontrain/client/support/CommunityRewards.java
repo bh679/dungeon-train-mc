@@ -39,12 +39,12 @@ public final class CommunityRewards {
 
     /** The shelf, in its display order. */
     public enum Reward {
-        QUICKER_STREAMS(LiveRewards.QUICKER_STREAMS, Group.STREAMS, 94),
-        TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 100),
-        VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
+        QUICKER_STREAMS(LiveRewards.QUICKER_STREAMS, Group.STREAMS, 146),
+        TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 139),
+        VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 193),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
         REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
-        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90);
+        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 99);
 
         private final String id;
         private final Group group;
@@ -72,9 +72,9 @@ public final class CommunityRewards {
         public String nameKey() { return KEY + id + ".name"; }
         /** One line: "Reduce delay, from 30s to 5s. For EVERYONE, 1 month." */
         public String lineKey() { return KEY + id + ".line"; }
-        /** The gift with its currency, "$94 AUD": the shelf's cost line and the payment confirm. */
+        /** The gift with its currency, "$146 AUD": the shelf's cost line and the payment confirm. */
         public String amountKey() { return KEY + id + ".amount"; }
-        /** The bare figure, "$94", for the featured card's "Give $94". */
+        /** The bare figure, "$146", for the featured card's "Give $94". */
         public String amountShortKey() { return KEY + id + ".amount_short"; }
 
         /** The {@link UiAnalytics} target for this reward's Give button; relay ui-events.js must know it. */
@@ -196,7 +196,7 @@ public final class CommunityRewards {
         return List.copyOf(out);
     }
 
-    /** "$94", or the relay's raised amount: the Give buttons. */
+    /** "$146", or the relay's raised amount: the Give buttons. */
     public static net.minecraft.network.chat.Component amountShort(Reward reward) {
         java.util.OptionalInt raised = raisedAud(LiveRewards.quote(reward.id()));
         return raised.isPresent()
@@ -204,7 +204,7 @@ public final class CommunityRewards {
                 : games.brennan.dungeontrain.client.support.currency.CurrencyFormat.amount(reward.costAud(), reward.amountShortKey());
     }
 
-    /** "$94 AUD", or the relay's raised amount in AUD: the payment confirm, which always names AUD. */
+    /** "$146 AUD", or the relay's raised amount in AUD: the payment confirm, which always names AUD. */
     public static net.minecraft.network.chat.Component amountFull(Reward reward) {
         java.util.OptionalInt raised = raisedAud(LiveRewards.quote(reward.id()));
         return raised.isPresent()

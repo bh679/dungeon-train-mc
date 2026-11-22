@@ -86,7 +86,7 @@ class CommunityRewardsTest {
         // Shelf order, unknown ids left out.
         assertEquals(List.of(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.Reward.HD_STREAMS),
                 CommunityRewards.raisedBy(two));
-        assertEquals(100, CommunityRewards.Reward.TWO_STREAMS.costAud(), "Two Streams' solo base");
+        assertEquals(139, CommunityRewards.Reward.TWO_STREAMS.costAud(), "Two Streams' solo base");
     }
 
     @Test
@@ -94,7 +94,7 @@ class CommunityRewardsTest {
         assertEquals("reward_quicker_streams", CommunityRewards.Reward.QUICKER_STREAMS.analyticsTarget());
         assertEquals("reward_replays_kept", CommunityRewards.Reward.REPLAYS_KEPT.analyticsTarget());
         assertEquals(CommunityRewards.Reward.LIVE_TRANSLATION, CommunityRewards.Reward.byTarget("reward_live_translation"));
-        assertEquals(90, CommunityRewards.Reward.LIVE_TRANSLATION.costAud());
+        assertEquals(99, CommunityRewards.Reward.LIVE_TRANSLATION.costAud());
         assertEquals(1, CommunityRewards.Reward.LIVE_TRANSLATION.months());
         assertEquals(1, CommunityRewards.Reward.QUICKER_STREAMS.months());
         assertEquals(CommunityRewards.Reward.HD_STREAMS, CommunityRewards.Reward.byTarget("reward_hd_streams"));

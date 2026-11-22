@@ -11,6 +11,7 @@
   "highlights": [
     "Each reward reads \"$X goes to the dev\" under \"For everyone\", in your chosen currency",
     "The Contribute card's Give button always shows the amount",
+    "Community Reward prices updated",
     "Clearer reward descriptions"
   ],
   "pr": 2826,
