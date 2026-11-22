@@ -453,7 +453,8 @@
   },
   "pretty": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic",
+    "name": "old"
   },
   "randomized": {
     "weight": 1,
