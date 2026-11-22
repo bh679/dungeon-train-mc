@@ -200,7 +200,7 @@ public final class TributeRoomVisitService {
         TributeRoomCamera.Pose pose = p.pose();
 
         boolean keepInventory = overworld.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
-        List<ItemStack> kit = TributeRoomDeathKit.take(dead.getUUID(), keepInventory);
+        List<TributeRoomDeathKit.Entry> kit = TributeRoomDeathKit.take(dead.getUUID(), keepInventory);
         GameType previous = dead.gameMode.getGameModeForPlayer();
         UUID trainId = nearestTrain(dead.serverLevel(), dead.position());
         TributeRoomVisitSessions.put(dead.getUUID(), new TributeRoomVisitSessions.Session(p.slot(), p.deathDim(),
@@ -224,7 +224,7 @@ public final class TributeRoomVisitService {
         LOGGER.info("[DungeonTrain] tribute room: chunk tracking for {} — chunkPos={} lastSection={} view={}",
             fresh.getName().getString(), fresh.chunkPosition(), fresh.getLastSectionPos(), fresh.getChunkTrackingView());
         if (previous == GameType.ADVENTURE || previous == GameType.SPECTATOR) fresh.setGameMode(GameType.SURVIVAL);
-        for (ItemStack stack : kit) fresh.getInventory().placeItemBackInInventory(stack);
+        giveKit(fresh, kit);
 
         resendWindow(server, overworld, fresh, p.window());
         DungeonTrainNet.sendTo(fresh, TributeRoomVisitStatePacket.active(boxOf(p.screen()), p.facing(), p.tubes()));
@@ -235,6 +235,22 @@ public final class TributeRoomVisitService {
             String.format("%.1f", pose.x()), String.format("%.1f", pose.y()), String.format("%.1f", pose.z()),
             kit.size(), trainId);
         return true;
+    }
+
+    /**
+     * Each kit stack back in the slot it was carried in (armour worn, offhand held, hotbar as it was);
+     * all slotted ones first so a loose stack cannot take an armour or offhand slot, then the rest
+     * wherever they fit.
+     */
+    private static void giveKit(ServerPlayer player, List<TributeRoomDeathKit.Entry> kit) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+        List<ItemStack> loose = new java.util.ArrayList<>();
+        for (TributeRoomDeathKit.Entry e : kit) {
+            int slot = e.slot();
+            if (slot >= 0 && slot < inv.getContainerSize() && inv.getItem(slot).isEmpty()) inv.setItem(slot, e.stack());
+            else loose.add(e.stack());
+        }
+        for (ItemStack stack : loose) inv.placeItemBackInInventory(stack);
     }
 
     /** The client pressed Board anew. Saves, sweeps, and either places them on the train or hands the run's end back. */
