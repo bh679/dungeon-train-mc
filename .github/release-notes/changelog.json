@@ -38275,6 +38275,122 @@
       "released": true,
       "released_in": "v0.1956.0",
       "released_at": "2026-11-22T06:38:20Z"
+    },
+    {
+      "id": "backpacks-while-trading",
+      "version": "0.1956.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Backpacks work while trading",
+      "summary": "Your backpack now opens beside the trade screen, and trades can be paid straight from it.",
+      "highlights": [],
+      "pr": 2813,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1963.0",
+      "released_at": "2026-11-22T09:50:40Z"
+    },
+    {
+      "id": "block-variant-group-copy-scope",
+      "version": "0.1958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Block variant groups share their Copies setting",
+      "summary": "In the editor, changing where a grouped block variant applies (the room, its copies, or both) now changes it for every block in the group, not just the one you clicked.",
+      "highlights": [],
+      "pr": 2815,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1963.0",
+      "released_at": "2026-11-22T09:50:40Z"
+    },
+    {
+      "id": "passenger-log-webhooks",
+      "version": "0.1963.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Your passenger log in your own Discord",
+      "summary": "Your own Discord webhooks can now get your passenger log too: your deaths, milestones and stories. Give each link a name, and pick what each one gets: Tributes, your passenger log, or both.",
+      "highlights": [
+        "Name each Discord webhook so you can tell them apart",
+        "Choose Tributes, passenger log, or both for every link",
+        "Links you already had keep getting Tributes only"
+      ],
+      "pr": 2821,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1963.0",
+      "released_at": "2026-11-22T09:50:40Z"
+    },
+    {
+      "id": "rot-free-add-local-rotation",
+      "version": "0.1957.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor: new blocks keep each cell's own rotation",
+      "summary": "In a block variant group with free rotation, a block you add now faces the same way as the blocks already in each cell, instead of copying the cell you clicked.",
+      "highlights": [
+        "Stairs follow that cell's stairs, slabs its slabs, and anything else the most recent block's facing"
+      ],
+      "pr": 2814,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1963.0",
+      "released_at": "2026-11-22T09:50:40Z"
+    },
+    {
+      "id": "rot-free-group-ref-facings",
+      "version": "0.1961.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reference a group once per facing",
+      "summary": "In the block variant editor, a Rot Free group can now be added to another cell several times, each copy facing a different way. Each row shows the block turned to its facing.",
+      "highlights": [
+        "Copy a Rot Free group's block, turn it, copy again: each Add keeps that facing",
+        "Rows and the preview show the block facing the way it will be placed"
+      ],
+      "pr": 2819,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1963.0",
+      "released_at": "2026-11-22T09:50:40Z"
+    },
+    {
+      "id": "world-border-carriages",
+      "version": "0.1960.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "World Border carriages",
+      "summary": "Some dimensional carriages are now edged by a shimmering world border. Step through it and it turns red, and the space beyond is yours to build in.",
+      "highlights": [
+        "New World Border walls option for dimensional carriages in the editor"
+      ],
+      "pr": 2818,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1963.0",
+      "released_at": "2026-11-22T09:50:40Z"
     }
   ]
 }
