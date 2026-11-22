@@ -83,7 +83,7 @@ public final class EditorQuickToggles {
             // Off takes the floor out from under anyone standing in a plot: lift them first.
             if (!on) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    if (EditorWorldLayout.isEditorWorld(player.serverLevel())) EditorAutoFly.startFlying(player);
+                    if (EditorWorldLayout.isEditorWorld(player.serverLevel())) EditorAutoFly.lift(player);
                 }
             }
         }

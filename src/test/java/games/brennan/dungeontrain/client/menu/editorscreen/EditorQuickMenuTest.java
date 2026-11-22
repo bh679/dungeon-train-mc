@@ -18,10 +18,10 @@ final class EditorQuickMenuTest {
         new EditorTabBar.Tab(EditorTabBar.Kind.QUICK, null, "", 595, EditorTabBar.QUICK_W);
 
     @Test
-    @DisplayName("the dropdown hangs under the arrow, right edge flush: one row of icons, Mirror / Menus / Frame left to right")
+    @DisplayName("the dropdown hangs under the arrow, left edge flush: one row of icons, Mirror / Menus / Frame left to right")
     void layout() {
         Rect b = EditorQuickMenu.bounds(ARROW, STRIP);
-        assertEquals(ARROW.x() + ARROW.w(), b.right());
+        assertEquals(ARROW.x(), b.x());
         assertTrue(b.y() >= STRIP.bottom(), "below the tab strip");
         List<EditorQuickMenu.Row> rows = EditorQuickMenu.layout(ARROW, STRIP);
         assertEquals(List.of(EditorQuickMenu.Item.MIRROR, EditorQuickMenu.Item.MENUS, EditorQuickMenu.Item.FRAME),

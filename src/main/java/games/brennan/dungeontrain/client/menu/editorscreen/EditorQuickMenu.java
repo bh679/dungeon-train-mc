@@ -77,9 +77,9 @@ final class EditorQuickMenu {
         open = false;
     }
 
-    /** The icon cells hung under {@code arrow}, left to right, the panel's right edge flush with the arrow's. */
+    /** The icon cells hung under {@code arrow}, left to right, the panel's left edge flush with the arrow's. */
     static List<Row> layout(EditorTabBar.Tab arrow, InventoryEditorLayout.Rect strip) {
-        int x = arrow.x() + arrow.w() - W + PAD;
+        int x = arrow.x() + PAD;
         int y = strip.bottom() + 1 + PAD;
         List<Row> out = new ArrayList<>();
         for (Item item : Item.values()) {
@@ -91,9 +91,8 @@ final class EditorQuickMenu {
 
     /** The whole dropdown panel's rectangle, cells and padding included. */
     static InventoryEditorLayout.Rect bounds(EditorTabBar.Tab arrow, InventoryEditorLayout.Rect strip) {
-        int x = arrow.x() + arrow.w() - W;
         int y = strip.bottom() + 1;
-        return new InventoryEditorLayout.Rect(x, y, W, ROW_H + PAD * 2);
+        return new InventoryEditorLayout.Rect(arrow.x(), y, W, ROW_H + PAD * 2);
     }
 
     /** The hover text for {@code item}: "Name: On/Off", then what it does. */

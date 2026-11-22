@@ -22,12 +22,24 @@ public final class EditorAutoFly {
     /** Blocks of free fall before flying cuts in — enough to ignore stepping down a ledge. */
     static final float MIN_FALL = 2.0f;
 
+    /**
+     * How long a Frame Off keeps lifting a player, in ticks. The client drops flying for a player
+     * standing on the ground, and the roof under a player standing on a plot only goes a tick
+     * later, so a single "start flying" is undone before the fall begins; flying is re-asserted
+     * until the floor has gone.
+     */
+    static final int LIFT_TICKS = 20;
+
+    /** Players a Frame Off is keeping up, and the ticks left. Server thread only. */
+    private static final java.util.Map<java.util.UUID, Integer> LIFTING = new java.util.HashMap<>();
+
     private EditorAutoFly() {}
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!EditorQuickToggles.autoFlyOn()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!LIFTING.isEmpty()) liftTick(player);
+        if (!EditorQuickToggles.autoFlyOn()) return;
         if (!EditorWorldLayout.isEditorWorld(player.serverLevel())) return;
         if (!shouldCatch(player.getY(), player.fallDistance, frameFloorY(),
                 player.getAbilities().mayfly, player.getAbilities().flying)) return;
@@ -50,6 +62,24 @@ public final class EditorAutoFly {
         int plotY = EditorStampedCategoryState.isActive(EditorCategory.BUILDINGS)
             ? EditorLayout.BUILDINGS_PLOT_Y : EditorLayout.PLOT_Y;
         return plotY - 1;
+    }
+
+    /** Frame Off: start {@code player} flying and keep them up until the floor under them is gone. */
+    public static void lift(ServerPlayer player) {
+        if (!player.getAbilities().mayfly) return;
+        startFlying(player);
+        LIFTING.put(player.getUUID(), LIFT_TICKS);
+    }
+
+    private static void liftTick(ServerPlayer player) {
+        Integer left = LIFTING.get(player.getUUID());
+        if (left == null) return;
+        if (left <= 0) {
+            LIFTING.remove(player.getUUID());
+            return;
+        }
+        LIFTING.put(player.getUUID(), left - 1);
+        if (!player.onGround()) startFlying(player);
     }
 
     /** Turn flying on for {@code player} if they may fly and aren't already; tells their client. */
