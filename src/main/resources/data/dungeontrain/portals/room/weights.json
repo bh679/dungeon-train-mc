@@ -424,10 +424,15 @@
     }
   },
   "onionman": 1,
+  "openlibflat": {
+    "weight": 1,
+    "minLevel": 5,
+    "mode": "endless_repetition/dynamic/off/random:64:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
+  },
   "openlibrary": {
     "weight": 1,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic/off/random:25:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
+    "mode": "endless_repetition/dynamic/off/random:64:4/off/day/repeated/0/0/0/0/minecraft:bedrock/off"
   },
   "outsidethebox": {
     "weight": 3,
