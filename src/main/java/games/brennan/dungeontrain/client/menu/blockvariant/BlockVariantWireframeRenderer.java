@@ -147,8 +147,11 @@ public final class BlockVariantWireframeRenderer {
             0.35f, 1.0f, 0.45f, 1.0f);
     }
 
-    /** Inset so a purple box sits inside a neighbour's white outline rather than on top of it. */
-    private static final double TARGET_INSET = 0.04;
+    /**
+     * Outset past the white outline's {@link #EXPAND}: the targets are usually solid blocks, and a box
+     * inset into one is hidden by its faces (depth test), so it has to sit just outside them.
+     */
+    private static final double TARGET_OUTSET = 0.02;
 
     /**
      * Purple boxes on what the open If popup's row looks at: the neighbour on each chosen side, or
@@ -170,8 +173,8 @@ public final class BlockVariantWireframeRenderer {
 
     private static void targetBox(PoseStack ps, VertexConsumer vc, BlockPos world) {
         LevelRenderer.renderLineBox(ps, vc,
-            new AABB(world.getX() + TARGET_INSET, world.getY() + TARGET_INSET, world.getZ() + TARGET_INSET,
-                world.getX() + 1.0 - TARGET_INSET, world.getY() + 1.0 - TARGET_INSET, world.getZ() + 1.0 - TARGET_INSET),
+            new AABB(world.getX() - TARGET_OUTSET, world.getY() - TARGET_OUTSET, world.getZ() - TARGET_OUTSET,
+                world.getX() + 1.0 + TARGET_OUTSET, world.getY() + 1.0 + TARGET_OUTSET, world.getZ() + 1.0 + TARGET_OUTSET),
             0.66f, 0.33f, 1.0f, 1.0f);
     }
 }
