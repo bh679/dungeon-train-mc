@@ -54,6 +54,9 @@ public final class PortalChunkDoors {
     /** {@link #surfaceOf}'s answer for a column that is rock with no floor in it anywhere. */
     static final int BURIED = -1;
 
+    /** {@link #groundRow}'s answer for a mouth with no column inside the sample at all. */
+    static final int OUTSIDE_SAMPLE = -2;
+
     private PortalChunkDoors() {}
 
     /**
@@ -69,14 +72,30 @@ public final class PortalChunkDoors {
         int[] zSpan = doorwayColumns(dims, layout, size, settings.doorOffset().value());
         int max = PortalRoomLayout.maxDoorHeightOffset(dims, size.getY());
 
-        int entry = groundRow(slice, 0, MOUTH_DEPTH - 1, zSpan[0], zSpan[1], max);
-        int exit = groundRow(slice, size.getX() - MOUTH_DEPTH, size.getX() - 1, zSpan[0], zSpan[1], max);
+        int entryGround = groundRow(slice, 0, MOUTH_DEPTH - 1, zSpan[0], zSpan[1], max);
+        int exitGround = groundRow(slice, size.getX() - MOUTH_DEPTH, size.getX() - 1, zSpan[0], zSpan[1], max);
+        int entry = orAuthored(entryGround, settings.doorHeightOffset().value());
+        int exit = orAuthored(exitGround, settings.exitDoorHeightOffset().value());
 
-        LOGGER.info("[DungeonTrain] Chunk dimension doors: entry row {}, exit row {} (of {} allowed)",
-            entry, exit, max);
+        LOGGER.info("[DungeonTrain] Chunk dimension doors: entry row {}{}, exit row {}{} (of {} allowed)",
+            entry, entryGround == OUTSIDE_SAMPLE ? " (authored, outside the sample)" : "",
+            exit, exitGround == OUTSIDE_SAMPLE ? " (authored, outside the sample)" : "", max);
         return settings
             .withDoorHeightOffset(new PortalRoomDoorHeightOffset(entry))
             .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(exit));
+    }
+
+    /**
+     * {@code ground}, or the author's own row when the sample never reached that mouth.
+     *
+     * <p>A sample is one chunk, and the pour writes it into the room's first 16×16 corner only
+     * ({@code PortalChunkDimension#writeRows}). A room built bigger than a chunk has doorways the
+     * terrain never touches: the ground there is the template's, and so is the doorway the author
+     * built on it. Standing that door on a row of terrain that is not under it hung it in the air
+     * (the 64-wide courtyard's two doors, eight rows over its own floor).</p>
+     */
+    private static int orAuthored(int ground, int authored) {
+        return ground == OUTSIDE_SAMPLE ? authored : ground;
     }
 
     /**
@@ -103,17 +122,23 @@ public final class PortalChunkDoors {
      * should not lift the doorway three blocks, and one crevice should not drop it into the floor.
      * What a player reads as "the ground here" is what most of the columns are doing.</p>
      */
-    private static int groundRow(PortalChunkSlice slice, int xFrom, int xTo, int zFrom, int zTo,
-                                 int max) {
+    static int groundRow(PortalChunkSlice slice, int xFrom, int xTo, int zFrom, int zTo,
+                         int max) {
         int count = 0;
+        boolean covered = false;
         int[] rows = new int[Math.max(1, (xTo - xFrom + 1) * (zTo - zFrom + 1))];
         for (int x = Math.max(0, xFrom); x <= xTo && x < slice.width(); x++) {
-            for (int z = zFrom; z <= zTo && z < slice.width(); z++) {
+            for (int z = Math.max(0, zFrom); z <= zTo && z < slice.width(); z++) {
+                covered = true;
                 int row = surfaceOf(slice, x, z, max);
                 // A buried column says nothing about where the ground is; the others decide.
                 if (row != BURIED) rows[count++] = row;
             }
         }
+        // Not one column of this mouth is in the sample: nothing here to measure, so the caller
+        // keeps the author's doorway (see #orAuthored). Told apart from "all buried" on purpose:
+        // that one is rock to dig through, this one is the template's own ground.
+        if (!covered) return OUTSIDE_SAMPLE;
         // Every column buried — a mouth cut straight into rock. The door goes on the row the room is
         // anchored on, and the doorway is dug through to the open cave from there
         // (PortalChunkDimension#openDoorway).
