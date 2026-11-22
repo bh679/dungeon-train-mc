@@ -11,7 +11,7 @@ import java.util.function.ToIntFunction;
 
 /**
  * The strip above the panel: {@code Templates} and {@code Layout} from the left, then
- * {@code Settings}, its ▼ quick-toggles arrow and the Exit icon locked to the right.
+ * the ▼ quick-toggles arrow, {@code Settings} and the Exit icon locked to the right.
  *
  * <p>Layout is a pure function of the label widths so it can be tested; painting is the
  * extruded bevel the mod's other tab buttons use. Labels come from a function of the page rather
@@ -72,16 +72,16 @@ public final class EditorTabBar {
             out.add(t);
             x = t.x() + t.w() + GAP;
         }
-        // Right-locked: Exit at the very end, the quick-toggles arrow before it, Settings before that.
+        // Right-locked: Exit at the very end, Settings before it, the quick-toggles arrow before that.
         int exitX = strip.right() - EXIT_W;
         String settingsLabel = labelOf.apply(EditorScreenPage.SETTINGS);
         int settingsW = widthOf.applyAsInt(settingsLabel) + PAD_X * 2;
-        int quickX0 = exitX - GAP - QUICK_W;
-        int settingsX = Math.max(x, quickX0 - GAP - settingsW);
-        out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, settingsLabel, settingsX, settingsW));
-        int quickX = Math.max(settingsX + settingsW + GAP, quickX0);
+        int settingsX0 = exitX - GAP - settingsW;
+        int quickX = Math.max(x, settingsX0 - GAP - QUICK_W);
         out.add(new Tab(Kind.QUICK, null, "", quickX, QUICK_W));
-        out.add(new Tab(Kind.EXIT, null, "", Math.max(quickX + QUICK_W + GAP, exitX), EXIT_W));
+        int settingsX = Math.max(quickX + QUICK_W + GAP, settingsX0);
+        out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, settingsLabel, settingsX, settingsW));
+        out.add(new Tab(Kind.EXIT, null, "", Math.max(settingsX + settingsW + GAP, exitX), EXIT_W));
         return out;
     }
 

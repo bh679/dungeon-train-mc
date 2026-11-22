@@ -1,0 +1,18 @@
+{
+  "id": "x-menu-quick-toggles-row",
+  "version": "0.1945.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "ui"
+  ],
+  "title": "Editor quick toggles tidy-up and auto fly",
+  "summary": "The editor's quick toggles are now a compact row of icons beside Settings. Turning the frame off no longer drops you out of your build, and a new Auto fly setting (on by default) catches you if you fall below the editor plots.",
+  "highlights": [],
+  "pr": 2800,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
