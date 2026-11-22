@@ -1028,6 +1028,27 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                     return;
                 }
                 mutated.set(idx, entry.withCondition(result.condition()));
+                VariantConditionMemory.record(
+                    VariantConditionMemory.key(plot.key(), localPos, plot.lockIdAt(localPos)), result.condition());
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case PREFILL_COND -> {
+                // If opened on a row with no condition: take the one last changed here, else the
+                // nearest row's. A row that already has one keeps it.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.condition().isDefault()) return;
+                List<VariantCondition> rows = new ArrayList<>(mutated.size());
+                for (VariantState s : mutated) rows.add(s.condition());
+                VariantCondition fill = VariantConditionMemory.prefillFor(
+                    VariantConditionMemory.recall(
+                        VariantConditionMemory.key(plot.key(), localPos, plot.lockIdAt(localPos))),
+                    rows, idx);
+                if (fill == null) return;
+                mutated.set(idx, entry.withCondition(fill));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
