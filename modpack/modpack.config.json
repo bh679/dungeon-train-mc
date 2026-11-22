@@ -144,15 +144,15 @@
       "mod_ids": [
         "ediblebackpacks"
       ],
-      "sha1": "e9a034dd3f9fa00e5662729706822a765dae9fac",
+      "sha1": "a099a15e8cec6fd15187ed436dddf4c41643a925",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1662311,
-      "file_id": 9746754,
+      "file_id": 9763385,
       "required": true,
       "dependency_type": "required",
-      "version": "0.25.0",
+      "version": "0.26.0",
       "gradle_property": "ediblebackpacks_min_version",
       "curseforge_only": true
     },
