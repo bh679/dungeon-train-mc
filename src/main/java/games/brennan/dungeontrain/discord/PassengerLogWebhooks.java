@@ -59,6 +59,7 @@ public final class PassengerLogWebhooks {
     public static void post(List<String> links, String username, UUID uuid, String title, String description,
                             List<DeathField> fields, byte[] image, String filename, int color) {
         if (links == null || links.isEmpty()) return;
+        LOGGER.debug("[DungeonTrain] {}'s passenger log post goes to {} of their own webhook(s).", username, links.size());
         try {
             boolean hasImage = image != null && image.length > 0 && filename != null;
             List<TributeWebhook.Field> embedFields = fields == null ? List.of()
