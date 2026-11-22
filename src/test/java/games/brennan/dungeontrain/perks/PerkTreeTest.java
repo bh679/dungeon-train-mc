@@ -116,6 +116,19 @@ class PerkTreeTest {
     }
 
     @Test
+    @DisplayName("with every built perk holding points, every built perk in the bundled tree can take more")
+    void bundledTreeHasNoUnfillablePerk() {
+        PerkTree t = PerkTreeLoader.get();
+        PerkRegistry.bootstrap();
+        Predicate<String> all = id -> true;
+        for (PerkTree.Perk p : t.perks()) {
+            if (p.isRoot() || !PerkRegistry.isBuilt(p.id())) continue;
+            assertTrue(t.reachableNow(p.id(), all), p.id() + " has no solid path");
+            assertTrue(t.activeReachable(p.id(), all), p.id() + " has no path");
+        }
+    }
+
+    @Test
     @DisplayName("a perk removed from the tree (Gift Live Eye) is gone, and a saved unlock of it costs nothing")
     void removedPerkIsHarmless() {
         PerkTree t = PerkTreeLoader.get();

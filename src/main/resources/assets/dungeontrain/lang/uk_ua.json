@@ -6459,7 +6459,7 @@
   "gui.dungeontrain.perks.card.start": "Початок",
   "gui.dungeontrain.perks.card.always_active": "Завжди активно.",
   "gui.dungeontrain.perks.card.locked": "Заблоковано. Рівень %s. Розблокування коштує %s.",
-  "gui.dungeontrain.perks.card.needs_path": "Потрібен суцільний шлях від розблокованого перку.",
+  "gui.dungeontrain.perks.card.needs_path": "Потрібен суцільний шлях від Engine через відкриті перки.",
   "gui.dungeontrain.perks.card.needs_active_path": "Потрібна лінія від перка з активними очками.",
   "gui.dungeontrain.perks.card.you_hold": "У вас %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Натисніть, щоб розблокувати.",

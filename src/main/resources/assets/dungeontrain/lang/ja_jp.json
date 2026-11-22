@@ -6322,7 +6322,7 @@
   "gui.dungeontrain.perks.card.start": "スタート",
   "gui.dungeontrain.perks.card.always_active": "常時有効。",
   "gui.dungeontrain.perks.card.locked": "ロック中。ティア%s。解放コスト%s。",
-  "gui.dungeontrain.perks.card.needs_path": "解放済みのパークからの実線の道が必要です。",
+  "gui.dungeontrain.perks.card.needs_path": "Engineから解放済みパークを通る実線の道が必要です。",
   "gui.dungeontrain.perks.card.needs_active_path": "アクティブポイントのあるパークからの線が必要です。",
   "gui.dungeontrain.perks.card.you_hold": "所持: %s。",
   "gui.dungeontrain.perks.card.click_unlock": "クリックで解放。",

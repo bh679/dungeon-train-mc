@@ -6462,7 +6462,7 @@
   "gui.dungeontrain.perks.card.start": "Început",
   "gui.dungeontrain.perks.card.always_active": "Mereu activ.",
   "gui.dungeontrain.perks.card.locked": "Blocat. Nivel %s. Deblocarea costă %s.",
-  "gui.dungeontrain.perks.card.needs_path": "Necesită o cale continuă de la un avantaj deblocat.",
+  "gui.dungeontrain.perks.card.needs_path": "Necesită o cale continuă de la Engine prin avantaje deblocate.",
   "gui.dungeontrain.perks.card.needs_active_path": "Necesită o linie de la un avantaj cu puncte active.",
   "gui.dungeontrain.perks.card.you_hold": "Ai %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Click pentru a debloca.",

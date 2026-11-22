@@ -6322,7 +6322,7 @@
   "gui.dungeontrain.perks.card.start": "시작",
   "gui.dungeontrain.perks.card.always_active": "항상 활성.",
   "gui.dungeontrain.perks.card.locked": "잠김. %s단계. 해금 비용 %s.",
-  "gui.dungeontrain.perks.card.needs_path": "해금된 특성에서 이어지는 실선 경로가 필요합니다.",
+  "gui.dungeontrain.perks.card.needs_path": "Engine에서 해금된 특성들을 잇는 실선 경로가 필요합니다.",
   "gui.dungeontrain.perks.card.needs_active_path": "활성 포인트가 있는 특성에서 이어진 선이 필요합니다.",
   "gui.dungeontrain.perks.card.you_hold": "보유: %s.",
   "gui.dungeontrain.perks.card.click_unlock": "클릭하여 해금.",

@@ -6392,7 +6392,7 @@
   "gui.dungeontrain.perks.card.start": "Start",
   "gui.dungeontrain.perks.card.always_active": "Immer aktiv.",
   "gui.dungeontrain.perks.card.locked": "Gesperrt. Stufe %s. Freischalten kostet %s.",
-  "gui.dungeontrain.perks.card.needs_path": "Braucht einen durchgehenden Pfad von einem freigeschalteten Perk.",
+  "gui.dungeontrain.perks.card.needs_path": "Braucht einen durchgehenden Pfad von der Engine über freigeschaltete Perks.",
   "gui.dungeontrain.perks.card.needs_active_path": "Braucht eine Linie von einem Perk mit aktiven Punkten.",
   "gui.dungeontrain.perks.card.you_hold": "Du hast %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Klicken zum Freischalten.",

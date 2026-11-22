@@ -6392,7 +6392,7 @@
   "gui.dungeontrain.perks.card.start": "Início",
   "gui.dungeontrain.perks.card.always_active": "Sempre ativa.",
   "gui.dungeontrain.perks.card.locked": "Bloqueada. Nível %s. Desbloquear custa %s.",
-  "gui.dungeontrain.perks.card.needs_path": "Requer um caminho sólido a partir de uma vantagem desbloqueada.",
+  "gui.dungeontrain.perks.card.needs_path": "Precisa de um caminho contínuo desde o Engine através de vantagens desbloqueadas.",
   "gui.dungeontrain.perks.card.needs_active_path": "Precisa de uma linha a partir de uma vantagem com pontos ativos.",
   "gui.dungeontrain.perks.card.you_hold": "Tens %s.",
   "gui.dungeontrain.perks.card.click_unlock": "Clica para desbloquear.",
