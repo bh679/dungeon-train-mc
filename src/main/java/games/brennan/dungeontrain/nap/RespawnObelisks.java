@@ -15,7 +15,8 @@ import java.util.List;
 
 /**
  * BetterEnd's Respawn Obelisk as the End's nap spot, the End's counterpart of the respawn anchor: it
- * offers a nap in an End core and explodes anywhere else ({@link NapBedEvents}). Known by registry id
+ * offers a nap in an End core or anywhere in the End band, its crumbling strip included, and explodes
+ * anywhere else ({@link NapBedEvents}). Known by registry id
  * and its {@code shape} property read by name, so DT needs no compile dependency on BetterEnd.
  *
  * <p>An obelisk is three blocks tall: {@code shape} bottom, middle, top.</p>
