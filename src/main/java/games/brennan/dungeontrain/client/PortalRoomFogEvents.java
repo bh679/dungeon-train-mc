@@ -103,6 +103,9 @@ public final class PortalRoomFogEvents {
         // would not contain the player wherever they arrived next — but a stale region is exactly
         // the thing that used to strand somebody permanently fogged, so it is cleared outright.
         ClientPortalRoomFog.reset();
+        // A World Border room's border is the same shape of cache: a stale one would draw a wall in
+        // the next world.
+        ClientPortalRoomBorder.reset();
         // The daylit-room box is the same shape of cache with the same failure mode — a stale one
         // would leave the next world's lightmap lifted — so it goes on the same pass.
         ClientPortalRoomSky.reset();

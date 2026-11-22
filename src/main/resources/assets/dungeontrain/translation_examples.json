@@ -7565,6 +7565,23 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.block_variant.group_ref_facing": {
+    "1": {
+      "label": "the referenced group's id",
+      "examples": [
+        "3",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the facing this reference pins (an English direction word or compass point)",
+      "examples": [
+        "north",
+        "east",
+        "NE"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.block_variant.bed_colours_count": {
     "1": {
       "label": "how many bed colours are switched on",
@@ -14941,6 +14958,23 @@
       ]
     }
   },
+  "chat.dungeontrain.editor_bar.common.cell_already_references_group_facing": {
+    "1": {
+      "label": "the lock-id group number",
+      "examples": [
+        "3",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the facing the reference pins (an English direction word or compass point)",
+      "examples": [
+        "north",
+        "up",
+        "SW"
+      ]
+    }
+  },
   "chat.dungeontrain.editor_bar.variant_menu.added_group_reference": {
     "1": {
       "label": "lock-id (group number)",
@@ -18285,6 +18319,15 @@
       "examples": [
         "2.5",
         "12.5"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.perk_damage": {
+    "1": {
+      "label": "the extra attack damage the player's perks add to every hit",
+      "examples": [
+        "0.1",
+        "1.5"
       ]
     }
   },

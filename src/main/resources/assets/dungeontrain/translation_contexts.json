@@ -10327,6 +10327,10 @@
   "screen",
   "world"
  ],
+ "gui.dungeontrain.editor_menu.block_variant.group_ref_facing": [
+  "screen",
+  "world"
+ ],
  "gui.dungeontrain.editor_menu.block_variant.mode_lock": [
   "button",
   "screen",

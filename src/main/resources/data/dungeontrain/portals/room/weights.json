@@ -681,7 +681,7 @@
   },
   "tribute": {
     "weight": 1,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
+    "mode": "world_border/exact/off/off/off/none/sealed/0/2"
   },
   "tribute_entrance": {
     "weight": 0,

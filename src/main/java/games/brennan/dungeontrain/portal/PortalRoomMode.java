@@ -85,7 +85,18 @@ public enum PortalRoomMode {
      * stamped, and is what a player sees until the sample lands and if it never does, but what fills
      * the box is a 16-block cube of Overworld, Nether or End terrain, rolled per pair.</p>
      */
-    CHUNK_DIMENSION("chunk_dimension", "Chunk Dimension");
+    CHUNK_DIMENSION("chunk_dimension", "Chunk Dimension"),
+
+    /**
+     * {@link #VOID}'s swept clearance, edged by a copy of the vanilla world border on the room
+     * box's four sides — see {@code PortalRoomBorderRenderer}.
+     *
+     * <p>The border is drawn, not real. Vanilla's {@code WorldBorder} is one square per level,
+     * infinite in Y, refuses block placement past it and pushes entities back, and every twin shares
+     * one dimension. This one is walk-through, turns red while a player is outside it, and the
+     * clearance it stands in is what lets them build out there.</p>
+     */
+    WORLD_BORDER("world_border", "World Border");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
     public static final PortalRoomMode DEFAULT = BEDROCK;
@@ -145,18 +156,26 @@ public enum PortalRoomMode {
      * would inherit whichever of the two it did not mean. Both questions get asked by name now.</p>
      */
     public boolean fogs() {
-        return tiles() || this == VOID;
+        return tiles() || clearsSurroundings();
     }
 
     /**
      * True when the room is stamped into a swept clearance rather than into whatever it landed in —
-     * {@link #VOID} alone.
+     * {@link #VOID}, and {@link #WORLD_BORDER}, which is Void with a border drawn round it.
      *
      * <p>Deliberately not the complement of {@link #BEDROCK}'s skin: the tiling modes write
      * neither, because their boundary is the next copy of the room.</p>
      */
     public boolean clearsSurroundings() {
-        return this == VOID;
+        return this == VOID || this == WORLD_BORDER;
+    }
+
+    /**
+     * True when the client draws a world border on the room box's four sides —
+     * {@link #WORLD_BORDER} alone. What the server asks before sending a border region.
+     */
+    public boolean drawsBorder() {
+        return this == WORLD_BORDER;
     }
 
     /**

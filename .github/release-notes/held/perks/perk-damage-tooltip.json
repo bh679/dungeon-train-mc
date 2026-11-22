@@ -1,0 +1,17 @@
+{
+  "id": "perk-damage-tooltip",
+  "version": "0.1960.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Damage perk shows on your weapons",
+  "summary": "Weapon tooltips now show the extra damage your Damage perk adds, right under the Attack Damage line.",
+  "highlights": [],
+  "pr": 2817,
+  "date": "2026-11-22",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

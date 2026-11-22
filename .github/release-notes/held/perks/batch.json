@@ -32,7 +32,8 @@
     2808,
     2809,
     2810,
-    2811
+    2811,
+    2817
   ],
   "entries": [
     "cosmic-apple-every-level",
@@ -44,6 +45,7 @@
     "nap-sky-past-life-perks",
     "perk-apples-depth-curve",
     "perk-aura-apple-tooltips",
+    "perk-damage-tooltip",
     "perk-points",
     "perk-points-need-path",
     "perk-tester-after-link",

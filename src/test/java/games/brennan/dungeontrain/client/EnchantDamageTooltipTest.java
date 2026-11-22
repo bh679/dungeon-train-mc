@@ -95,4 +95,14 @@ class EnchantDamageTooltipTest {
                 ? Optional.of(InvertedLootItemCondition.invert(AnyOfCondition.anyOf()).build())
                 : Optional.empty());
     }
+
+    @Test
+    void perkLineShowsTheDamagePerkBonus() {
+        assertEquals(Optional.empty(), EnchantDamageTooltip.perkLine(0));
+        Component line = EnchantDamageTooltip.perkLine(3).orElseThrow();
+        net.minecraft.network.chat.contents.TranslatableContents inner =
+                (net.minecraft.network.chat.contents.TranslatableContents) line.getSiblings().get(0).getContents();
+        assertEquals("tooltip.dungeontrain.perk_damage", inner.getKey());
+        assertEquals("0.3", inner.getArgs()[0]);
+    }
 }
