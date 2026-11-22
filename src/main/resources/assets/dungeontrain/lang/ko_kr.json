@@ -2444,7 +2444,7 @@
   "chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id": "이 템플릿에는 잠금 ID %s을(를) 사용하는 셀이 없습니다",
   "chat.dungeontrain.editor_bar.common.group_would_loop": "그룹 %s은(는) 이미 그룹 %s(으)로 되돌아갑니다 — 순환이 생깁니다",
   "chat.dungeontrain.editor_bar.common.cell_already_references_group": "이 셀은 이미 그룹 %s을(를) 참조합니다",
-  "chat.dungeontrain.editor_bar.common.cell_already_references_group_facing": "이 셀은 이미 %2$s 방향의 그룹 %1$s을(를) 참조합니다",
+  "chat.dungeontrain.editor_bar.common.cell_already_references_group_facing": "이 셀은 이미 그룹 %s(%s 방향)을(를) 참조합니다",
   "chat.dungeontrain.editor_bar.common.outside_footprint": "대상이 플롯 범위 밖에 있습니다",
   "chat.dungeontrain.editor_bar.variant_menu.requires_op": "블록 변형 메뉴를 사용하려면 OP 권한이 필요합니다",
   "chat.dungeontrain.editor_bar.variant_menu.look_at_block_to_open": "메뉴를 열려면 블록을 바라보세요",
