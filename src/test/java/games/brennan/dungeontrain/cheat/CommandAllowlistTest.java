@@ -173,6 +173,30 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/e4steam and /e4mc (approved hosting mods' connection controls) are allowed")
+    void hostingModCommandsAllowed() {
+        for (String sub : new String[]{"start", "stop", "restart", "invite", "doctor"}) {
+            assertFalse(CommandAllowlist.taints("e4steam " + sub), "e4steam " + sub);
+            assertFalse(CommandAllowlist.taints("/e4steam " + sub), "/e4steam " + sub);
+        }
+        assertFalse(CommandAllowlist.taints("e4steam:e4steam doctor"));
+        for (String sub : new String[]{"stop", "restart", "doctor", "conninfo SomePlayer"}) {
+            assertFalse(CommandAllowlist.taints("e4mc " + sub), "e4mc " + sub);
+        }
+        assertFalse(CommandAllowlist.taints("/e4mc:e4mc stop"));
+    }
+
+    @Test
+    @DisplayName("the moderation commands those hosting mods restore still taint")
+    void hostingModModerationCommandsTaint() {
+        assertTrue(CommandAllowlist.taints("ban SomePlayer"));
+        assertTrue(CommandAllowlist.taints("ban-ip 1.2.3.4"));
+        assertTrue(CommandAllowlist.taints("banlist"));
+        assertTrue(CommandAllowlist.taints("pardon SomePlayer"));
+        assertTrue(CommandAllowlist.taints("whitelist add SomePlayer"));
+    }
+
+    @Test
     @DisplayName("/weather still taints (has real gameplay effects, unlike playanimation/stopsound)")
     void weatherTaints() {
         assertTrue(CommandAllowlist.taints("weather clear"));
