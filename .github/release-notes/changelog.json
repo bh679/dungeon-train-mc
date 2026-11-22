@@ -38391,6 +38391,61 @@
       "released": true,
       "released_in": "v0.1963.0",
       "released_at": "2026-11-22T09:50:40Z"
+    },
+    {
+      "id": "new-rooms-and-carriage-finds",
+      "version": "0.1963.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "New rooms and carriage finds",
+      "summary": "Four new rooms can now turn up behind dimensional carriage doors, two of them built by Nikeeta, and an old favourite has been reworked. Carriages have new things in them too, from suits of armour to beds piled with books.",
+      "highlights": [
+        "Four new rooms to discover as you ride",
+        "Two of them built by Nikeeta",
+        "New things to find inside carriages"
+      ],
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1966.0",
+      "released_at": "2026-11-22T11:39:22Z"
+    },
+    {
+      "id": "tribute-room-entrance-doors",
+      "version": "0.1964.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Room fixes",
+      "summary": "A few rooms fit together and look a little better.",
+      "highlights": [],
+      "pr": 2822,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1966.0",
+      "released_at": "2026-11-22T11:39:22Z"
+    },
+    {
+      "id": "world-border-doorways",
+      "version": "0.1964.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "World Border fix",
+      "summary": "The world border no longer stands across the doorways of its carriages.",
+      "highlights": [],
+      "pr": 2823,
+      "date": "2026-11-22",
+      "released": true,
+      "released_in": "v0.1966.0",
+      "released_at": "2026-11-22T11:39:22Z"
     }
   ]
 }
