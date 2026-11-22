@@ -30,9 +30,12 @@
     2790,
     2804,
     2808,
+    2809,
+    2810,
     2811
   ],
   "entries": [
+    "cosmic-apple-every-level",
     "cosmic-apples",
     "crafter-enchanting-perks",
     "death-kit-arrives-equipped",
@@ -42,6 +45,7 @@
     "perk-apples-depth-curve",
     "perk-aura-apple-tooltips",
     "perk-points",
+    "perk-points-need-path",
     "perk-tester-after-link",
     "perks-archivist",
     "perks-button-advancements",
