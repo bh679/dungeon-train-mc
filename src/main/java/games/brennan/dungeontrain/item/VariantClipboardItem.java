@@ -107,6 +107,9 @@ public final class VariantClipboardItem extends Item {
     public static final String NBT_SPAN = "dt_span";
     /** True when the source cell's lock group rolls rotation per cell (Rot Free). Absent when locked. */
     public static final String NBT_ROTATION_FREE = "dt_rotFree";
+    /** Facing a group reference made from this clipboard pins (mode / mask). Absent = none. */
+    private static final String NBT_REF_ROT_MODE = "dt_refRotMode";
+    private static final String NBT_REF_ROT_DIRS = "dt_refRotDirs";
 
     /**
      * Top-level NBT key carrying the source cell's container contents pool
@@ -433,6 +436,28 @@ public final class VariantClipboardItem extends Item {
     public static CompoundTag withRotationFree(CompoundTag root, boolean free) {
         if (free) root.putBoolean(NBT_ROTATION_FREE, true);
         return root;
+    }
+
+    /**
+     * Add the facing a reference made from this clipboard pins ({@code GroupRefFacing}): the copied
+     * block's facing when its group is Rot Free. Omitted for a default rotation, so every clipboard
+     * made before it, and every copy of a locked group, reads as a plain reference.
+     */
+    public static CompoundTag withRefRotation(CompoundTag root, @Nullable VariantRotation rotation) {
+        if (rotation != null && !rotation.isDefault()) {
+            root.putByte(NBT_REF_ROT_MODE, (byte) rotation.mode().ordinal());
+            root.putByte(NBT_REF_ROT_DIRS, (byte) rotation.dirMask());
+        }
+        return root;
+    }
+
+    /** The facing a reference made from this clipboard pins; {@link VariantRotation#NONE} when none. */
+    public static VariantRotation decodeRefRotation(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_REF_ROT_MODE, Tag.TAG_BYTE)) return VariantRotation.NONE;
+        int ord = tag.getByte(NBT_REF_ROT_MODE) & 0xFF;
+        VariantRotation.Mode[] modes = VariantRotation.Mode.values();
+        if (ord >= modes.length) return VariantRotation.NONE;
+        return new VariantRotation(modes[ord], tag.getByte(NBT_REF_ROT_DIRS) & 0xFF);
     }
 
     /** The captured Rot Free setting; false (locked) for a clipboard that carries none. */
