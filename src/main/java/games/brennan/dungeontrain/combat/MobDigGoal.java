@@ -118,6 +118,8 @@ public final class MobDigGoal extends Goal {
     private static final int FAILED_APPROACHES_BEFORE_CARPET = 2;
     /** Slack when judging whether a mob fits under a ceiling (a carriage reads a hair off the grid). */
     private static final double FIT_EPS = 1.0e-3;
+    /** Moved less than this over a stuck window: wedged in place, not circling. */
+    private static final double WEDGED_DISTANCE = 0.25;
     /** Luminous Monsters' Miners. They dig with a tool they hold, from any level, and can't without one. */
     private static final Set<String> MINER_IDS =
         Set.of("luminous_monsters:miner_zombie", "luminous_monsters:miner_skeleton");
@@ -159,6 +161,8 @@ public final class MobDigGoal extends Goal {
     private int approachTicks;
     /** Approaches in a row that timed out without the mob getting closer. */
     private int failedApproaches;
+    /** Where the mob stood when the current stuck window began. */
+    private Vec3 windowStart = Vec3.ZERO;
     private int progressTicks;
     private int lastStage;
 
@@ -211,7 +215,7 @@ public final class MobDigGoal extends Goal {
         if (target != trackedTarget) {
             trackedTarget = target;
             bestDistance = Double.MAX_VALUE;
-            bestDistanceTick = now;
+            restartWindow(now);
             failedApproaches = 0;
         }
         boolean seen = mob.getSensing().hasLineOfSight(target);
@@ -224,18 +228,34 @@ public final class MobDigGoal extends Goal {
         if (seen && distance <= MELEE_RANGE) return false;
         if (distance < bestDistance - PROGRESS_EPS) {
             bestDistance = distance;
-            bestDistanceTick = now;
+            restartWindow(now);
             failedApproaches = 0;
         }
         if (now >= chainUntilTick && now - bestDistanceTick < STUCK_TICKS) return false;
         if (!EventHooks.canEntityGrief(level, mob)) return false;
         // Knocked back or mid-jump, the navigator can't plan at all: decide once it lands.
         if (!mob.onGround() && !mob.isInLiquid() && !mob.isPassenger()) return false;
+        // A carpet that stops it fitting through is in the way whatever the navigator thinks: it plans
+        // paths over carpet as if it were not there.
+        cell = carpetBlocking(level, target);
+        if (cell != null) {
+            approaching = false;
+            return true;
+        }
         if (hasWalkablePath(target)) {
+            // A mob that has not moved at all all window is wedged, not fighting.
+            if (mob.position().distanceTo(windowStart) < WEDGED_DISTANCE) failedApproaches++;
+            if (failedApproaches >= FAILED_APPROACHES_BEFORE_CARPET) {
+                cell = carpetInFront(level, target);
+                if (cell != null) {
+                    approaching = false;
+                    return true;
+                }
+            }
             // Not stuck, just fighting (circling, holding range): there is a way round, so dig nothing.
             LOGGER.debug("[DungeonTrain] MobDigGoal walkable path, no dig: mob={} at={}",
                     mob.getUUID(), mob.blockPosition());
-            bestDistanceTick = now;
+            restartWindow(now);
             chainUntilTick = Integer.MIN_VALUE;
             return false;
         }
@@ -246,11 +266,17 @@ public final class MobDigGoal extends Goal {
         approaching = cell == null && canApproach(level, target);
         if (cell == null && !approaching) {
             // Nothing breakable in the way: wait out another stuck window before looking again.
-            bestDistanceTick = now;
+            restartWindow(now);
             chainUntilTick = Integer.MIN_VALUE;
             return false;
         }
         return true;
+    }
+
+    /** Start a new stuck window: the clock, and where the mob stood. */
+    private void restartWindow(int now) {
+        bestDistanceTick = now;
+        windowStart = mob.position();
     }
 
     @Override
@@ -449,6 +475,14 @@ public final class MobDigGoal extends Goal {
      * low doorway, or on a step under a low lintel. Null when there is no such carpet, or it may not be
      * broken.
      */
+    private DigCell carpetBlocking(ServerLevel level, LivingEntity target) {
+        Direction dir = directionTo(target);
+        BlockPos front = mob.blockPosition().relative(dir);
+        List<ManagedShip> ships = shipsNear(level);
+        return carpetBlocking(level, ships, front, dir,
+                resolve(level, ships, front, dir), resolve(level, ships, front.above(), dir));
+    }
+
     private DigCell carpetBlocking(ServerLevel level, List<ManagedShip> ships, BlockPos front, Direction dir,
                                    DigCell foot, DigCell head) {
         DigCell carpet;
