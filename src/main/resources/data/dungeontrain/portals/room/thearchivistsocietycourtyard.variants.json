@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "25,3,36": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "meat"}, {"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}]
+  }
+}

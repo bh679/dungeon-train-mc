@@ -7,6 +7,8 @@
     "35,4,4": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
     "27,4,2": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
     "29,4,11": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
-    "35,4,11": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"]
+    "35,4,11": [{"state": "minecraft:grass_block[snowy=false]", "weight": 20}, "minecraft:coarse_dirt", {"state": "minecraft:dirt", "weight": 2}, "minecraft:rooted_dirt"],
+    "45,11,40": [{"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "meat"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}],
+    "47,11,8": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "meat"}, {"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}]
   }
 }

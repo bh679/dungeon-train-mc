@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 3,
+  "pools": {},
+  "links": {
+    "2,1,12": "villager",
+    "6,1,2": "writing",
+    "7,1,2": "writing",
+    "7,2,2": "villager",
+    "9,1,11": "meals",
+    "9,1,12": "villager"
+  }
+}

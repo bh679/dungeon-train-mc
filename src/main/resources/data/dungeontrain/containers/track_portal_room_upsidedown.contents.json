@@ -1,7 +1,6 @@
 {
   "schemaVersion": 3,
-  "pools": {
-  },
+  "pools": {},
   "links": {
     "9,8,14": "upsidedown"
   }

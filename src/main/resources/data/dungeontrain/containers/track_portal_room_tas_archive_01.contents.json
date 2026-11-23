@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 3,
+  "pools": {},
+  "links": {
+    "6,4,8": "mining2",
+    "6,4,20": "fruit_veg",
+    "13,2,6": "writing",
+    "13,2,22": "writing",
+    "13,4,22": "fruit_veg",
+    "14,2,6": "writing",
+    "14,2,22": "writing",
+    "15,2,6": "writing",
+    "15,2,22": "writing",
+    "16,4,22": "meals",
+    "17,4,4": "writing",
+    "17,4,22": "meals",
+    "18,4,4": "writing",
+    "18,4,22": "meals",
+    "19,2,6": "writing",
+    "19,2,22": "writing",
+    "20,2,6": "writing",
+    "20,2,22": "writing",
+    "21,2,6": "writing",
+    "21,2,22": "writing",
+    "28,4,5": "music"
+  }
+}

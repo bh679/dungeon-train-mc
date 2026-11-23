@@ -1,16 +1,6 @@
 {
   "schemaVersion": 3,
-  "pools": {
-  },
+  "pools": {},
   "links": {
-    "12,2,12": "bookshelf",
-    "11,1,10": "meals",
-    "17,1,10": "meals",
-    "17,1,18": "end",
-    "11,1,18": "end",
-    "13,1,14": "cookies",
-    "14,1,15": "writingchest",
-    "14,1,13": "writingchest",
-    "15,1,14": "cookies"
   }
 }
