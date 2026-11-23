@@ -1,46 +1,46 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 0,
   "variants": [
     {
       "id": "cmra_lobby",
-      "weight": 4
+      "weight": 1
     },
     {
       "id": "cmra_hallway_basic_warped",
-      "weight": 4
+      "weight": 1
     },
     {
       "id": "cmra_hallway_basic",
-      "weight": 4
+      "weight": 5
     },
     {
       "id": "cmra_hallway_alcove_breakroom",
-      "weight": 4
+      "weight": 3
     },
     {
       "id": "cmra_hallway_alcove_01",
-      "weight": 4
+      "weight": 3
     },
     {
       "id": "bof_lobby",
-      "weight": 4
+      "weight": 0
     },
     {
       "id": "bof_hallway_basic_corrupted",
-      "weight": 4
+      "weight": 0
     },
     {
       "id": "bof_hallway_basic",
-      "weight": 4
+      "weight": 0
     },
     {
       "id": "bof_hallway_alcove_television",
-      "weight": 4
+      "weight": 0
     },
     {
       "id": "bof_hallway_alcove_breakroom",
-      "weight": 4
+      "weight": 0
     }
   ]
 }

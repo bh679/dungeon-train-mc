@@ -137,6 +137,7 @@
   },
   "cmra_hallway_alcove_01": {
     "weight": 1,
+    "name": "hallway_alcove",
     "builder": {
       "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
       "name": "PouncingHen"
@@ -144,6 +145,7 @@
   },
   "cmra_hallway_alcove_breakroom": {
     "weight": 1,
+    "name": "hallway_alcove_breakroom",
     "builder": {
       "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
       "name": "PouncingHen"
@@ -151,6 +153,7 @@
   },
   "cmra_hallway_basic": {
     "weight": 1,
+    "name": "hallway_basic",
     "builder": {
       "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
       "name": "PouncingHen"
@@ -158,6 +161,7 @@
   },
   "cmra_hallway_basic_warped": {
     "weight": 1,
+    "name": "hallway_basic_warped",
     "builder": {
       "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
       "name": "PouncingHen"
@@ -165,6 +169,7 @@
   },
   "cmra_lobby": {
     "weight": 1,
+    "name": "lobby",
     "builder": {
       "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
       "name": "PouncingHen"
