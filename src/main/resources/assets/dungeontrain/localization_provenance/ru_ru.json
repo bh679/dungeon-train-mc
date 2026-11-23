@@ -2280,6 +2280,8 @@
       "gui.dungeontrain.engine_block.spent",
       "gui.dungeontrain.engine_block.carriage_id",
       "gui.dungeontrain.engine_block.carriage_not_found",
+      "gui.dungeontrain.engine_block.placed_by",
+      "gui.dungeontrain.engine_block.placed_by_you",
       "gui.dungeontrain.engine_block.no_carriage",
       "block.dungeontrain.stage_block_1",
       "block.dungeontrain.stage_block_2",

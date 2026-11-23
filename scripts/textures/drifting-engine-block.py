@@ -197,11 +197,12 @@ def slot(d, x, y, w=18, h=18):
     d.line([x + w - 1, y + 1, x + w - 1, y + h - 1], fill=LIGHT)
 
 
-# Height of the carriage line under the title ("Carriage: <id>"); everything below it sits this much lower.
-# Matches EngineMenu.CARRIAGE_LINE_H.
-CARRIAGE_LINE_H = 10
-# Gauge fill sprites live under the panel: banked coal, then this world's input.
-GAUGE_FILL_V, GAUGE_INPUT_V = 180, 186
+# Height of the two lines under the title ("Carriage: <id>", then "Placed by <name>"); everything below them
+# sits this much lower. Matches EngineMenu.CARRIAGE_LINE_H.
+CARRIAGE_LINE_H = 20
+# Gauge fill sprites live under the panel (166 + CARRIAGE_LINE_H tall): banked coal, then this world's input.
+# Matches EngineScreen.GAUGE_FILL_V / GAUGE_INPUT_V.
+GAUGE_FILL_V, GAUGE_INPUT_V = 200, 206
 
 
 def write_screen(path):

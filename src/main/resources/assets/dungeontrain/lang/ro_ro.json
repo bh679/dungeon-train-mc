@@ -3333,6 +3333,8 @@
   "gui.dungeontrain.engine_block.spent": "Acest motor s-a stins",
   "gui.dungeontrain.engine_block.carriage_id": "Vagon: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Vagon: negăsit",
+  "gui.dungeontrain.engine_block.placed_by": "Pus de %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Pus de tine",
   "gui.dungeontrain.engine_block.no_carriage": "Nu recunoaște niciun vagon aici",
   "block.dungeontrain.skybox_block": "Bloc de cer",
   "block.dungeontrain.skybox_surface": "Bloc de cer de suprafață",

@@ -2667,6 +2667,8 @@
   "gui.dungeontrain.engine_block.spent": "Ubos na ang engine na ito",
   "gui.dungeontrain.engine_block.carriage_id": "Bagon: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Bagon: hindi nahanap",
+  "gui.dungeontrain.engine_block.placed_by": "Inilagay ni %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Inilagay mo",
   "gui.dungeontrain.engine_block.no_carriage": "Wala itong nakikilalang bagon dito",
   "block.dungeontrain.skybox_block": "Bloke ng Skybox",
   "block.dungeontrain.skybox_surface": "Bloke ng Skybox sa Ibabaw",

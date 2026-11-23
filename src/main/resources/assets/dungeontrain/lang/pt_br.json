@@ -2718,6 +2718,8 @@
   "gui.dungeontrain.engine_block.spent": "Este motor se esgotou",
   "gui.dungeontrain.engine_block.carriage_id": "Vagão: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Vagão: não encontrado",
+  "gui.dungeontrain.engine_block.placed_by": "Colocado por %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Colocado por você",
   "gui.dungeontrain.engine_block.no_carriage": "Não reconhece nenhum vagão aqui",
   "block.dungeontrain.skybox_block": "Bloco de Céu",
   "block.dungeontrain.skybox_surface": "Bloco de Céu da Superfície",
