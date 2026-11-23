@@ -6312,7 +6312,7 @@
   "perk.dungeontrain.looting.name": "약탈",
   "perk.dungeontrain.looting.desc": "처치 시 가끔 무기의 약탈 레벨이 하나 더 높은 것처럼 계산됩니다.",
   "perk.dungeontrain.craft-level-stats.name": "제작 레벨 능력치",
-  "perk.dungeontrain.craft-level-stats.desc": "제작한 장비가 현재 레벨의 능력치를 얻습니다. 상자에서 나오는 것보다 약간 낮습니다.",
+  "perk.dungeontrain.craft-level-stats.desc": "제작한 장비가 열차 안으로 얼마나 깊이 들어왔는지에 따라 능력치를 얻습니다.",
   "perk.dungeontrain.enchant-cost.name": "마법 부여 비용",
   "perk.dungeontrain.enchant-cost.desc": "마법 부여와 모루 작업에 드는 레벨이 줄어듭니다.",
   "perk.dungeontrain.re-enchant.name": "재마법 부여",

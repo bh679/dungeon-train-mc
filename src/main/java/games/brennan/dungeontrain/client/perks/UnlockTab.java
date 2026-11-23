@@ -19,6 +19,8 @@ import net.neoforged.api.distmarker.OnlyIn;
  *
  * <p>In play, where unlock points are not spent, the same tab is Activate ({@link #activate}): the badge
  * is the point it puts in, the cost is in Cosmic Apples.</p>
+ *
+ * <p>A perk that isn't built yet gets {@link #comingSoon}: the word alone, grey, with no badge or cost.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class UnlockTab extends Button {
@@ -36,17 +38,20 @@ final class UnlockTab extends Button {
     private final String cost;
     /** Paid in Cosmic Apples (Activate), not Advancement Points. */
     private final boolean apple;
+    /** Just the word: no level badge, no cost (a perk that is coming soon). */
+    private final boolean wordOnly;
     /** The width it draws at before {@link #scale}. */
     private final int fullW;
     private final float scale;
     private Look look = Look.READY;
 
     private UnlockTab(int x, int y, int w, int h, int fullW, float scale, Component label, int level, int cost, boolean apple,
-                      OnPress onPress) {
+                      boolean wordOnly, OnPress onPress) {
         super(x, y, w, h, label, onPress, DEFAULT_NARRATION);
         this.level = level;
         this.cost = Integer.toString(cost);
         this.apple = apple;
+        this.wordOnly = wordOnly;
         this.fullW = fullW;
         this.scale = scale;
     }
@@ -69,7 +74,15 @@ final class UnlockTab extends Button {
         int fullW = leftWidth(font, label, level) + costWidth(font, Integer.toString(cost));
         float scale = small ? SMALL_SCALE : 1F;
         int w = (int) Math.ceil(fullW * scale), h = (int) Math.ceil(H * scale);
-        return new UnlockTab(centreX - w / 2, barTop - h, w, h, fullW, scale, label, level, cost, apple, onPress);
+        return new UnlockTab(centreX - w / 2, barTop - h, w, h, fullW, scale, label, level, cost, apple, false, onPress);
+    }
+
+    /** The tab for a perk that isn't built yet: {@code label} alone, grey, and it can't be pressed. */
+    static UnlockTab comingSoon(Font font, int centreX, int barTop, Component label) {
+        int w = PAD + font.width(label) + PAD;
+        UnlockTab tab = new UnlockTab(centreX - w / 2, barTop - H, w, H, w, 1F, label, 0, 0, false, true, b -> { });
+        tab.look(Look.BLOCKED);
+        return tab;
     }
 
     /** Sets how it looks; {@link Look#READY} and {@link Look#UNFILLED} can be pressed. */
@@ -95,8 +108,19 @@ final class UnlockTab extends Button {
         g.pose().pushPose();
         g.pose().translate(getX(), getY() + getHeight() - H * scale, 0);
         g.pose().scale(scale, scale, 1F);
-        draw(g, font, a);
+        if (wordOnly) drawWord(g, font, a);
+        else draw(g, font, a);
         g.pose().popPose();
+    }
+
+    /** Grey tab with just the word: rounded top corners, open at the bottom. */
+    private void drawWord(GuiGraphics g, Font font, int a) {
+        int w = fullW;
+        g.fill(1, 0, w - 1, 1, argb(a, OFF_EDGE));
+        g.fill(0, 1, 1, H, argb(a, OFF_EDGE));
+        g.fill(w - 1, 1, w, H, argb(a, OFF_EDGE));
+        g.fill(1, 1, w - 1, H, argb(a, OFF));
+        g.drawString(font, getMessage(), PAD, (H - 8) / 2 + 1, argb(a, OFF_TEXT), false);
     }
 
     private void draw(GuiGraphics g, Font font, int a) {

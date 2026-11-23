@@ -6381,7 +6381,7 @@
   "perk.dungeontrain.looting.name": "Plünderung",
   "perk.dungeontrain.looting.desc": "Deine Kills zählen manchmal, als hätte deine Waffe eine Stufe Plünderung mehr.",
   "perk.dungeontrain.craft-level-stats.name": "Herstellungswerte nach Level",
-  "perk.dungeontrain.craft-level-stats.desc": "Hergestellte Ausrüstung erhält Werte aus deinem Level, etwas unter denen aus Truhen.",
+  "perk.dungeontrain.craft-level-stats.desc": "Hergestellte Ausrüstung erhält Werte danach, wie tief du im Zug bist.",
   "perk.dungeontrain.enchant-cost.name": "Verzauberungskosten",
   "perk.dungeontrain.enchant-cost.desc": "Verzaubern und Amboss kosten weniger Level.",
   "perk.dungeontrain.re-enchant.name": "Neu verzaubern",

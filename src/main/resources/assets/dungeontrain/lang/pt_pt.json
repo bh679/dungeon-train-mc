@@ -6381,7 +6381,7 @@
   "perk.dungeontrain.looting.name": "Pilhagem",
   "perk.dungeontrain.looting.desc": "As tuas mortes às vezes contam como se a tua arma tivesse mais um nível de Saque.",
   "perk.dungeontrain.craft-level-stats.name": "Atributos do Nível de Criação",
-  "perk.dungeontrain.craft-level-stats.desc": "O equipamento que crias recebe atributos do nível em que estás, um pouco abaixo dos baús.",
+  "perk.dungeontrain.craft-level-stats.desc": "O equipamento que crias recebe atributos conforme o quão fundo estás no comboio.",
   "perk.dungeontrain.enchant-cost.name": "Custo de Encantamento",
   "perk.dungeontrain.enchant-cost.desc": "Encantar e usar a bigorna custam menos níveis.",
   "perk.dungeontrain.re-enchant.name": "Reencantar",

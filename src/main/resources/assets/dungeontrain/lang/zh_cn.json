@@ -6326,7 +6326,7 @@
   "perk.dungeontrain.looting.name": "抢夺",
   "perk.dungeontrain.looting.desc": "你的击杀有时按武器抢夺多一级计算。",
   "perk.dungeontrain.craft-level-stats.name": "制作等级属性",
-  "perk.dungeontrain.craft-level-stats.desc": "你合成的装备获得当前层级的属性，略低于箱子里的。",
+  "perk.dungeontrain.craft-level-stats.desc": "你合成的装备会按你深入列车的程度获得属性。",
   "perk.dungeontrain.enchant-cost.name": "附魔花费",
   "perk.dungeontrain.enchant-cost.desc": "附魔和铁砧操作消耗的等级更少。",
   "perk.dungeontrain.re-enchant.name": "重新附魔",

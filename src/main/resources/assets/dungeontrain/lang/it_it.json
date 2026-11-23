@@ -6381,7 +6381,7 @@
   "perk.dungeontrain.looting.name": "Saccheggio",
   "perk.dungeontrain.looting.desc": "Le tue uccisioni a volte contano come se l'arma avesse un livello di Saccheggio in più.",
   "perk.dungeontrain.craft-level-stats.name": "Statistiche del Livello di Creazione",
-  "perk.dungeontrain.craft-level-stats.desc": "L'equipaggiamento che crei prende statistiche dal livello in cui sei, poco sotto quelle dei bauli.",
+  "perk.dungeontrain.craft-level-stats.desc": "L'equipaggiamento che crei prende statistiche da quanto sei addentro al treno.",
   "perk.dungeontrain.enchant-cost.name": "Costo Incantamento",
   "perk.dungeontrain.enchant-cost.desc": "Incantare e usare l'incudine costano meno livelli.",
   "perk.dungeontrain.re-enchant.name": "Reincanta",

@@ -6450,7 +6450,7 @@
   "perk.dungeontrain.looting.name": "Grabież",
   "perk.dungeontrain.looting.desc": "Twoje zabójstwa czasem liczą się, jakby broń miała poziom Grabieży więcej.",
   "perk.dungeontrain.craft-level-stats.name": "Statystyki wytworzenia z poziomu",
-  "perk.dungeontrain.craft-level-stats.desc": "Wytworzony sprzęt dostaje statystyki z poziomu, na którym jesteś, nieco niższe niż ze skrzyń.",
+  "perk.dungeontrain.craft-level-stats.desc": "Wytworzony sprzęt dostaje statystyki zależnie od tego, jak głęboko jesteś w pociągu.",
   "perk.dungeontrain.enchant-cost.name": "Koszt zaklinania",
   "perk.dungeontrain.enchant-cost.desc": "Zaklinanie i praca przy kowadle kosztują mniej poziomów.",
   "perk.dungeontrain.re-enchant.name": "Ponowne zaklinanie",

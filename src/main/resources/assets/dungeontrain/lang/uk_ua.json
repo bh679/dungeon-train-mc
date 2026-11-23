@@ -6447,7 +6447,7 @@
   "perk.dungeontrain.looting.name": "Здобич",
   "perk.dungeontrain.looting.desc": "Ваші вбивства іноді зараховуються так, ніби зброя має на рівень більше Здобичі.",
   "perk.dungeontrain.craft-level-stats.name": "Характеристики крафту за рівнем",
-  "perk.dungeontrain.craft-level-stats.desc": "Створене вами спорядження отримує характеристики поточного рівня, трохи нижчі, ніж зі скринь.",
+  "perk.dungeontrain.craft-level-stats.desc": "Створене вами спорядження отримує характеристики залежно від того, як глибоко ви в потязі.",
   "perk.dungeontrain.enchant-cost.name": "Ціна зачарування",
   "perk.dungeontrain.enchant-cost.desc": "Зачарування та робота на ковадлі коштують менше рівнів.",
   "perk.dungeontrain.re-enchant.name": "Перезачарування",
