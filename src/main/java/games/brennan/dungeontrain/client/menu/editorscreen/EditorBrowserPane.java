@@ -263,6 +263,8 @@ public final class EditorBrowserPane {
         float yaw = spin.advance(art == null ? key.toString() : art.spinKey(), hov, seconds);
         int weight = asSelf ? tile.selfWeight() : v.weight();
         String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()) : v.displayName();
+        // An ordered dimensional sub-variant leads with its step, so the group reads in play order.
+        if (!asSelf && v.visits().isOrdered()) name = v.visits().order() + " · " + name;
         TemplateTilePainter.Marks marks = new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost);
         if (cat == PlotCategory.WORKBENCH) {
             // A staged build's picture is its own snapshot; the relay's copy stands in off this machine.
