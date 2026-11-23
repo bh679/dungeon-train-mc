@@ -199,12 +199,13 @@ final class CandlePotVariantsTest {
     }
 
     @Test
-    @DisplayName("Every shipped flower pot variant is Random, except the dog bowls in worf")
+    @DisplayName("Every shipped flower pot variant is Random, except the dog bowls in worf and condition-matched pots")
     void shippedPotsAreRandom() throws java.io.IOException {
         java.nio.file.Path root = games.brennan.dungeontrain.RepoPaths.root().resolve("src/main/resources/data/dungeontrain");
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         int random = 0;
         int bowls = 0;
+        int matched = 0;
         List<java.nio.file.Path> files;
         try (var walk = java.nio.file.Files.walk(root)) {
             files = walk.filter(p -> p.toString().endsWith(".variants.json")).toList();
@@ -224,9 +225,14 @@ final class CandlePotVariantsTest {
                     if (dogBowls) {
                         assertTrue(s.pot().isDefault(), "dog bowl must stay an empty pot: " + where);
                         bowls++;
-                    } else {
+                    } else if (s.condition().isDefault()) {
                         assertTrue(s.pot().isRandom(), "pot should be Random: " + where);
                         random++;
+                    } else {
+                        // A pot option shown only under a group condition is matched to its
+                        // surroundings by the author (e.g. a blue orchid on the blue floor), so its
+                        // plant may be fixed.
+                        matched++;
                     }
                 }
             }
@@ -234,6 +240,7 @@ final class CandlePotVariantsTest {
         // Every shipped pot is checked above; the total only grows as rooms are added, so pin a floor.
         assertTrue(random >= 64, "shipped Random pots: " + random);
         assertEquals(2, bowls, "worf dog bowls");
+        assertTrue(matched >= 2, "condition-matched pots (cmra_lobby orchid/poppy): " + matched);
     }
 
     @Test
