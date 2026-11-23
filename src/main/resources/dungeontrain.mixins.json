@@ -68,6 +68,7 @@
     "ChunkAccessAccessor",
     "PlayerAdvancementsVisibleAccessor",
     "ChunkMapChunksInvoker",
+    "ChunkMapSpawnRangeInvoker",
     "ServerGamePacketListenerFloatAccessor",
     "ProjectileOwnerAccessor",
     "ChunkMapMixin",
