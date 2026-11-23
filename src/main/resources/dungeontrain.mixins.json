@@ -55,6 +55,7 @@
     "PlayerAdvancementsRehomeMixin",
     "PlayerAdvancementsAfkGateMixin",
     "PlayerAdvancementsNapGraceMixin",
+    "PlayerAdvancementsDeadGateMixin",
     "AdvancementRewardsReplayMixin",
     "PlayerAdvancementsMultiplayerGateMixin",
     "ServerAdvancementManagerRequirementsMixin",
