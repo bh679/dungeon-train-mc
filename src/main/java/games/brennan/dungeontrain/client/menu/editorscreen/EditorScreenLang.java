@@ -239,6 +239,17 @@ public final class EditorScreenLang {
     public static final String SHEET_DATES_ANY = PREFIX + "sheet.dates_any";
     public static final String SHEET_DATES_TOOLTIP = PREFIX + "sheet.dates_tooltip";
     public static final String SHEET_TRAIN_SIZE = PREFIX + "sheet.train_size";
+    /** A dimensional sub-variant's visit rules: its step, seen again, and the weight after the Xth visit. */
+    public static final String SHEET_ORDER = PREFIX + "sheet.order";
+    public static final String SHEET_ORDER_ANY = PREFIX + "sheet.order_any";
+    public static final String SHEET_ORDER_STEP = PREFIX + "sheet.order_step";
+    public static final String SHEET_ORDER_TIP = PREFIX + "sheet.order_tip";
+    public static final String SHEET_SEEN_AGAIN = PREFIX + "sheet.seen_again";
+    public static final String SHEET_SEEN_AGAIN_TIP = PREFIX + "sheet.seen_again_tip";
+    public static final String SHEET_AFTER_VISITS = PREFIX + "sheet.after_visits";
+    public static final String SHEET_AFTER_VISITS_OFF = PREFIX + "sheet.after_visits_off";
+    public static final String SHEET_AFTER_VISITS_TIP = PREFIX + "sheet.after_visits_tip";
+    public static final String SHEET_LATER_WEIGHT = PREFIX + "sheet.later_weight";
     public static final String GO_HERE = PREFIX + "go_here";
     /** The header's note while a save goes up to the relay, and how it ended — see EditorUploadStatus. */
     public static final String UPLOADING = PREFIX + "upload.uploading";
