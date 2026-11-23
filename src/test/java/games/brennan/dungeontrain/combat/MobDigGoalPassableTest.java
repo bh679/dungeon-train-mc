@@ -75,4 +75,14 @@ final class MobDigGoalPassableTest {
         assertFalse(MobDigGoal.isStepUp(65.0, 64.0, true, false));
         assertFalse(MobDigGoal.isStepUp(65.5, 64.0, true, true));
     }
+
+    @Test
+    @DisplayName("a path ending in the target's column, within a block of height, reaches it")
+    void pathEnd() {
+        assertTrue(MobDigGoal.endsAtTarget(3, 64, 7, 3, 64, 7));
+        assertTrue(MobDigGoal.endsAtTarget(3, 65, 7, 3, 64, 7));
+        assertTrue(MobDigGoal.endsAtTarget(3, 63, 7, 3, 64, 7));
+        assertFalse(MobDigGoal.endsAtTarget(4, 64, 7, 3, 64, 7));
+        assertFalse(MobDigGoal.endsAtTarget(3, 66, 7, 3, 64, 7));
+    }
 }

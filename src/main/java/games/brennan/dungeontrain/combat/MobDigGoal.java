@@ -221,6 +221,8 @@ public final class MobDigGoal extends Goal {
         }
         if (now >= chainUntilTick && now - bestDistanceTick < STUCK_TICKS) return false;
         if (!EventHooks.canEntityGrief(level, mob)) return false;
+        // Knocked back or mid-jump, the navigator can't plan at all: decide once it lands.
+        if (!mob.onGround() && !mob.isInLiquid() && !mob.isPassenger()) return false;
         if (hasWalkablePath(target)) {
             // Not stuck, just fighting (circling, holding range): there is a way round, so dig nothing.
             bestDistanceTick = now;
@@ -322,6 +324,8 @@ public final class MobDigGoal extends Goal {
         }
         mob.getMoveControl().setWantedPosition(target.getX(), mob.getY(), target.getZ(), 1.0);
         mob.getLookControl().setLookAt(target);
+        // The wanted height is the mob's own, so MoveControl never jumps by itself: up a step it would stall.
+        if (mob.onGround() && mob.horizontalCollision) mob.getJumpControl().jump();
     }
 
     /** Whether the cells in front are open and stand on solid ground, so walking on is safe. */
@@ -350,10 +354,23 @@ public final class MobDigGoal extends Goal {
         return headOpen && aboveOpen && footTopY <= mobY + JUMP_HEIGHT;
     }
 
-    /** Whether the navigator can find a walkable path all the way to {@code target}. */
+    /**
+     * Whether the navigator can find a walkable path all the way to {@code target}: one that reaches it,
+     * or ends in its column within a block of its feet (a carriage deck reads a hair off the block grid).
+     */
     private boolean hasWalkablePath(LivingEntity target) {
         Path path = mob.getNavigation().createPath(target, 0);
-        return path != null && path.canReach();
+        if (path == null) return false;
+        if (path.canReach()) return true;
+        var node = path.getEndNode();
+        if (node == null) return false;
+        BlockPos at = target.blockPosition();
+        return endsAtTarget(node.x, node.y, node.z, at.getX(), at.getY(), at.getZ());
+    }
+
+    /** A path's end node in the target's own column, within one block up or down of its feet. */
+    static boolean endsAtTarget(int nodeX, int nodeY, int nodeZ, int targetX, int targetY, int targetZ) {
+        return nodeX == targetX && nodeZ == targetZ && Math.abs(nodeY - targetY) <= 1;
     }
 
     /** Nothing in the way: no collision, or ground the mob can stand on or step over. */
@@ -369,7 +386,11 @@ public final class MobDigGoal extends Goal {
     /** Open a closed door in the way, as a player clicking it would; the next plan walks through. */
     private void openDoor(ServerLevel level, DigCell target) {
         if (target.state.getBlock() instanceof DoorBlock door) {
-            door.setOpen(mob, level, target.state, target.levelPos(), true);
+            // As a mob's change, like a dig: a shared carriage does not upload it as a player's edit.
+            MobBreakContext.run(() -> {
+                door.setOpen(mob, level, target.state, target.levelPos(), true);
+                return true;
+            });
             LOGGER.debug("[DungeonTrain] MobDigGoal open door: mob={} at={} carriage={}",
                     mob.getUUID(), target.worldPos, target.onCarriage());
             chainUntilTick = mob.tickCount + CHAIN_TICKS;
