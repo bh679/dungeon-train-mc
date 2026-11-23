@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "14,1,13": [{"state": "deeperdarker:gloomslate_pot[cracked=false,facing=south,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "ancient_vase"}, {"state": "minecraft:decorated_pot[cracked=false,facing=south,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "pot"}]
+  }
+}

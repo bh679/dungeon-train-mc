@@ -255,6 +255,54 @@
     {
       "id": "fallactivitiescart1",
       "weight": 10
+    },
+    {
+      "id": "tas_readingnook",
+      "weight": 4
+    },
+    {
+      "id": "tas_archive_01",
+      "weight": 4
+    },
+    {
+      "id": "cmra_lobby",
+      "weight": 4
+    },
+    {
+      "id": "cmra_hallway_basic_warped",
+      "weight": 4
+    },
+    {
+      "id": "cmra_hallway_basic",
+      "weight": 4
+    },
+    {
+      "id": "cmra_hallway_alcove_breakroom",
+      "weight": 4
+    },
+    {
+      "id": "cmra_hallway_alcove_01",
+      "weight": 4
+    },
+    {
+      "id": "bof_lobby",
+      "weight": 4
+    },
+    {
+      "id": "bof_hallway_basic_corrupted",
+      "weight": 4
+    },
+    {
+      "id": "bof_hallway_basic",
+      "weight": 4
+    },
+    {
+      "id": "bof_hallway_alcove_television",
+      "weight": 4
+    },
+    {
+      "id": "bof_hallway_alcove_breakroom",
+      "weight": 4
     }
   ]
 }
