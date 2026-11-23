@@ -11,7 +11,6 @@ public final class EditorQuickTogglesState {
     /** Set on the main client thread from the packet handler; read from the render thread. */
     private static volatile boolean mirrorOn = true;
     private static volatile boolean frameOn = true;
-    private static volatile boolean autoFlyOn = true;
 
     private EditorQuickTogglesState() {}
 
@@ -23,13 +22,8 @@ public final class EditorQuickTogglesState {
         return frameOn;
     }
 
-    public static boolean autoFlyOn() {
-        return autoFlyOn;
-    }
-
-    public static void set(boolean mirror, boolean frame, boolean autoFly) {
+    public static void set(boolean mirror, boolean frame) {
         mirrorOn = mirror;
         frameOn = frame;
-        autoFlyOn = autoFly;
     }
 }

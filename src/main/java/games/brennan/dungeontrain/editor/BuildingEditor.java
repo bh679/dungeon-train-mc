@@ -141,7 +141,10 @@ public final class BuildingEditor {
         Vec3i size = BuildingSizes.sizeOf(name);
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, plotOrigin(name), size, false, Blocks.STRUCTURE_VOID);
-        CompoundTag tag = BuildingCapture.trimOuterAir(template.save(new CompoundTag()));
+        CompoundTag captured = template.save(new CompoundTag());
+        // No flowing fluid in a saved building; this capture writes air cells, so flow becomes air.
+        games.brennan.dungeontrain.template.TemplateFluids.dropFlowing(captured, true);
+        CompoundTag tag = BuildingCapture.trimOuterAir(captured);
         boolean toSource = EditorDevMode.isEnabled();
         BuildingStore.save(name, tag, toSource);
         if (!BuildingStore.isShipped(name)) {

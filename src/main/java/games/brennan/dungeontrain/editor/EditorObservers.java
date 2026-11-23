@@ -12,7 +12,7 @@ import net.minecraft.world.level.LevelAccessor;
  * around it without setting it off, and the write-site guard ({@code CarriageStampGuard}) only
  * covers DT's own rewrites, never a player's edit.
  *
- * <p>A world flag ({@link DungeonTrainWorldData#isEditorObserversOn}), not a per-player one:
+ * <p>A world flag with an editing and a test value ({@link EditorModeSetting#OBSERVERS}), not a per-player one:
  * an observer is world state, and the flag is persisted so the choice survives a relaunch.
  * Scoped by <i>position</i> — a plot located by {@link EditorCategory#locateAt}, or anywhere in
  * the Train Editor void world — so a play world's train, whose observers sit in no plot, is never
@@ -25,9 +25,12 @@ public final class EditorObservers {
     /** True when the observer at {@code pos} must stay quiet under the setting. Client levels: never. */
     public static boolean isMuted(LevelAccessor level, BlockPos pos) {
         if (!(level instanceof ServerLevel serverLevel)) return false;
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(serverLevel);
-        if (data.isEditorObserversOn()) return false;
-        if (EditorWorldLayout.isEditorWorld(serverLevel)) return true;
-        return EditorCategory.locateAt(pos, data.dims()).isPresent();
+        EditorModeSettings settings = EditorModeSettingsService.current();
+        if (settings.onInBoth(EditorModeSetting.OBSERVERS)) return false;
+        if (!EditorWorldLayout.isEditorWorld(serverLevel)
+            && EditorCategory.locateAt(pos, DungeonTrainWorldData.get(serverLevel).dims()).isEmpty()) {
+            return false;
+        }
+        return !settings.get(EditorSettingMode.at(serverLevel, pos), EditorModeSetting.OBSERVERS);
     }
 }

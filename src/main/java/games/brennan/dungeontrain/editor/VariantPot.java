@@ -72,9 +72,26 @@ public record VariantPot(boolean on, List<ResourceLocation> plants) {
         return of(next);
     }
 
-    /** {@code state} planted per this option, using the live pot map. */
+    /**
+     * {@code state} planted per this option, using the live pot map. Inside a train carriage's stamp a
+     * Random pot only rolls plants from bands the train has reached there ({@link PotPlantBandGate});
+     * editor plots and stamps outside a carriage keep every plant.
+     */
     public BlockState apply(BlockState state, long posOrLockKey, long worldSeed, int carriageIndex) {
-        return apply(state, posOrLockKey, worldSeed, carriageIndex, FlowerPots.allPlants(), FlowerPots::pottedFor);
+        if (isDefault() || !FlowerPots.isPot(state)) return state;
+        return apply(state, posOrLockKey, worldSeed, carriageIndex, randomPool(), FlowerPots::pottedFor);
+    }
+
+    /** Every pottable plant, kept to the reached bands when a train carriage is being stamped. */
+    private List<ResourceLocation> randomPool() {
+        List<ResourceLocation> all = FlowerPots.allPlants();
+        if (!isRandom()) return all;
+        java.util.OptionalInt carriage = games.brennan.dungeontrain.provenance.ProvenanceScope.current();
+        if (carriage.isEmpty()) return all;
+        java.util.Set<PotPlantBandGate.Source> reached = PotPlantBandGate.reachedAtCarriage(carriage.getAsInt());
+        if (reached == null) return all;
+        List<ResourceLocation> gated = PotPlantBandGate.filter(all, reached);
+        return gated.isEmpty() ? all : gated;
     }
 
     /**

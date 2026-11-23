@@ -1,15 +1,11 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.command.PortalTestCommand;
-import games.brennan.dungeontrain.portal.PortalTestSession;
-import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTestSession;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * The editor's <b>Test Mobs</b> setting (Settings → Test Mobs | Frozen | Live), default Frozen.
+ * The test-mode value of the editor's <b>Mobs</b> setting (Settings → Mobs | Blocks | Live while
+ * standing in a test), default Blocks — what used to be its own Test Mobs row.
  *
  * <p>Test the Carriage stamps its copies into the Train Editor world's basement, and the whole of
  * that world is editor space to {@link FrozenMobs#isEditorSpace} — so a mob the author placed frozen
@@ -34,29 +30,13 @@ public final class TestCopyMobs {
         return !editorSpace || (testMobsLive && inTestCopy);
     }
 
-    /** True when the Test Mobs setting is Live. */
+    /** True when Mobs is Live in test mode — the old Test Mobs setting. */
     public static boolean isLive(ServerLevel level) {
-        return DungeonTrainWorldData.get(level.getServer().overworld()).isTestMobsLive();
+        return EditorModeSettingsService.current().get(EditorSettingMode.TEST, EditorModeSetting.MOBS_LIVE);
     }
 
-    /**
-     * True when {@code pos} lies inside a running Test-the-Carriage copy. Every test stamps into the
-     * overworld, and each session is registered before its copy is stamped, so the copy's very first
-     * mobs already read as inside it.
-     */
+    /** True when {@code pos} lies inside a running Test-the-Carriage copy; see {@link EditorSettingMode#isInTestCopy}. */
     public static boolean isInTestCopy(ServerLevel level, BlockPos pos) {
-        ServerLevel overworld = level.getServer().overworld();
-        if (level != overworld) return false;
-        for (CarriageTestSession.Session session : CarriageTestSession.all()) {
-            if (session.box().isInside(pos)) return true;
-        }
-        if (!PortalTestSession.anyActive()) return false;
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        for (var entry : PortalTestSession.entries()) {
-            if (PortalTestCommand.windowBox(overworld, entry.getValue().structure(), dims).isInside(pos)) {
-                return true;
-            }
-        }
-        return false;
+        return EditorSettingMode.isInTestCopy(level, pos);
     }
 }

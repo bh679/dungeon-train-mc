@@ -554,6 +554,22 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * How many times this player has walked into each dimensional sub-variant that carries visit
+     * rules (ordered steps, seen again, weight after the Xth visit) — see
+     * {@code portal/PortalRoomVisits}. Keyed by room name.
+     *
+     * <p>{@code copyOnDeath}: visits count per player for good, so a lobby seen in one life is not
+     * offered again in the next.</p>
+     */
+    public static final Supplier<AttachmentType<java.util.Map<String, Integer>>> PORTAL_ROOM_VISITS =
+        TYPES.register("portal_room_visits",
+            () -> AttachmentType.<java.util.Map<String, Integer>>builder(() -> java.util.Map.of())
+                .serialize(Codec.unboundedMap(Codec.STRING, Codec.INT), map -> !map.isEmpty())
+                .copyOnDeath()
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {

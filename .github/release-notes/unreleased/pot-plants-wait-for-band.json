@@ -1,0 +1,17 @@
+{
+  "id": "pot-plants-wait-for-band",
+  "version": "0.1982.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "Flower pot fix",
+  "summary": "Potted plants in carriages now match how far the train has travelled.",
+  "highlights": [],
+  "pr": 2843,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
