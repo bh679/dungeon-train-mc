@@ -265,8 +265,11 @@ public final class MobDigGoal extends Goal {
     private void beginDig() {
         progressTicks = 0;
         lastStage = -1;
-        LOGGER.debug("[DungeonTrain] MobDigGoal start: mob={} tier={} block={} at={} carriage={} ticks={}",
-                mob.getUUID(), tier(), cell.state, cell.worldPos, cell.onCarriage(), cell.ticks);
+        LivingEntity target = mob.getTarget();
+        LOGGER.debug("[DungeonTrain] MobDigGoal start: mob={} tier={} block={} at={} carriage={} ticks={} mobY={} cellTop={} targetY={} onGround={}",
+                mob.getUUID(), tier(), cell.state, cell.worldPos, cell.onCarriage(), cell.ticks,
+                String.format("%.3f", mob.getY()), String.format("%.3f", cell.top),
+                target == null ? "-" : String.format("%.3f", target.getY()), mob.onGround());
     }
 
     @Override
