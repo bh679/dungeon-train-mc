@@ -4,43 +4,30 @@
   "variants": [
     {
       "id": "cmra_lobby",
-      "weight": 1
+      "weight": 10,
+      "order": 1,
+      "afterVisits": 1,
+      "laterWeight": 2
     },
     {
       "id": "cmra_hallway_basic_warped",
-      "weight": 1
+      "weight": 10,
+      "order": 3
     },
     {
       "id": "cmra_hallway_basic",
-      "weight": 5
+      "weight": 50,
+      "order": 2
     },
     {
       "id": "cmra_hallway_alcove_breakroom",
-      "weight": 3
+      "weight": 30,
+      "order": 2
     },
     {
       "id": "cmra_hallway_alcove_01",
-      "weight": 3
-    },
-    {
-      "id": "bof_lobby",
-      "weight": 0
-    },
-    {
-      "id": "bof_hallway_basic_corrupted",
-      "weight": 0
-    },
-    {
-      "id": "bof_hallway_basic",
-      "weight": 0
-    },
-    {
-      "id": "bof_hallway_alcove_television",
-      "weight": 0
-    },
-    {
-      "id": "bof_hallway_alcove_breakroom",
-      "weight": 0
+      "weight": 30,
+      "order": 2
     }
   ]
 }

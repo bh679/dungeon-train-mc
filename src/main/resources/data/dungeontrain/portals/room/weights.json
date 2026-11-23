@@ -59,41 +59,6 @@
     "weight": 1,
     "mode": "endless_repetition"
   },
-  "bof_hallway_alcove_breakroom": {
-    "weight": 1,
-    "builder": {
-      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
-      "name": "PouncingHen"
-    }
-  },
-  "bof_hallway_alcove_television": {
-    "weight": 1,
-    "builder": {
-      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
-      "name": "PouncingHen"
-    }
-  },
-  "bof_hallway_basic": {
-    "weight": 1,
-    "builder": {
-      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
-      "name": "PouncingHen"
-    }
-  },
-  "bof_hallway_basic_corrupted": {
-    "weight": 1,
-    "builder": {
-      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
-      "name": "PouncingHen"
-    }
-  },
-  "bof_lobby": {
-    "weight": 1,
-    "builder": {
-      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
-      "name": "PouncingHen"
-    }
-  },
   "book": {
     "weight": 3,
     "minLevel": 3,

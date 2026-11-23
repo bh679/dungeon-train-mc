@@ -1,6 +1,0 @@
-{
-  "schemaVersion": 10,
-  "variants": {
-    "18,2,4": [{"state": "minecraft:potted_blue_orchid", "pot": "random"}, {"state": "minecraft:flower_pot", "weight": 100, "pot": "random"}]
-  }
-}

@@ -1,7 +1,0 @@
-{
-  "schemaVersion": 10,
-  "variants": {
-    "12,1,16": [{"state": "minecraft:warped_wall_sign[facing=west,waterlogged=false]", "nbt": "{back_text:{color:\"black\",has_glowing_text:0b,messages:['\"\"','\"\"','\"\"','\"\"']},front_text:{color:\"white\",has_glowing_text:1b,messages:['\"\"','\"Please take\"','\"a number.\"','\"\"']},is_waxed:1b}", "rotation": {"mode": "lock", "dirs": ["west"]}, "sign": "shared"}, {"state": "minecraft:crimson_sign[rotation=0,waterlogged=false]", "nbt": "{back_text:{color:\"black\",has_glowing_text:0b,messages:['\"\"','\"\"','\"\"','\"\"']},front_text:{color:\"white\",has_glowing_text:1b,messages:['\"\"','\"Please take\"','\"a number.\"','\"\"']},is_waxed:1b}", "rotation": {"mode": "lock", "compass": ["w"]}, "sign": "shared"}],
-    "12,1,15": [{"state": "minecraft:mangrove_wall_sign[facing=west,waterlogged=false]", "nbt": "{back_text:{color:\"black\",has_glowing_text:0b,messages:['\"\"','\"\"','\"\"','\"\"']},front_text:{color:\"white\",has_glowing_text:1b,messages:['\"A representative\"','\"will be with you\"','\"shortly.\"','\"\"']},is_waxed:0b}", "rotation": {"mode": "lock", "dirs": ["west"]}, "sign": "shared"}, {"state": "minecraft:warped_sign[rotation=0,waterlogged=false]", "nbt": "{back_text:{color:\"black\",has_glowing_text:0b,messages:['\"\"','\"\"','\"\"','\"\"']},front_text:{color:\"white\",has_glowing_text:1b,messages:['\"A representative\"','\"will be with you\"','\"shortly.\"','\"\"']},is_waxed:0b}", "rotation": {"mode": "lock", "compass": ["s"]}, "sign": "shared"}]
-  }
-}
