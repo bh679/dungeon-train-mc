@@ -89,14 +89,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_FREE_PLAY_BACKFILL_DONE = "freePlayBackfillDone";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
-    private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
     private static final String TAG_EDITOR_MIRROR_ON = "editorMirrorOn";
     private static final String TAG_EDITOR_FRAME_ON = "editorFrameOn";
-    private static final String TAG_EDITOR_AUTO_FLY_ON = "editorAutoFlyOn";
-    private static final String TAG_EDITOR_REDSTONE_ON = "editorRedstoneOn";
-    private static final String TAG_EDITOR_TNT_ON = "editorTntOn";
-    private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
-    private static final String TAG_TEST_MOBS_LIVE = "testMobsLive";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
@@ -361,31 +355,18 @@ public final class DungeonTrainWorldData extends SavedData {
      * by default: a test then stamps the same roll every time, which is what it always did.
      */
     private boolean portalTestReseed = false;
-    /** Editor Settings → Observers. Off mutes every observer inside an editor plot; see {@code EditorObservers}. */
-    private boolean editorObserversOn = true;
     /** X menu quick toggle → Mirror. Off pauses every template's live mirroring; see {@code EditorQuickToggles}. */
     private boolean editorMirrorOn = true;
     /** X menu quick toggle / Settings → Frame. Off clears the carriage shell round Contents plots. */
     private boolean editorFrameOn = true;
-    /** Settings → Auto fly. On: falling below the editor plots' bedrock frame turns flying on; see {@code EditorAutoFly}. */
-    private boolean editorAutoFlyOn = true;
-    /** Editor Settings → Redstone. Off cuts every redstone signal inside an editor plot; see {@code EditorRedstone}. */
-    private boolean editorRedstoneOn = true;
-    /** Editor Settings → TNT. Off stops TNT exploding inside an editor plot; see {@code EditorTnt}. */
-    private boolean editorTntOn = true;
     /**
-     * Editor Settings → Mobs. Default Blocks ({@code false}): a spawn egg used in an editor plot places a
-     * frozen, one-hit mob and variant cells with mob entries show a ghost; Live restores vanilla eggs.
-     * See {@code FrozenMobs}.
+     * The editor Settings that keep an editing value and a test value — Observers, Redstone, TNT,
+     * Fluid flow, Auto fly, Mobs. See {@code EditorModeSetting}; go through
+     * {@code EditorModeSettingsService.set}, which keeps the gates' copy and every client in step.
      */
-    private boolean editorMobsLive = false;
+    private games.brennan.dungeontrain.editor.EditorModeSettings editorModeSettings =
+        games.brennan.dungeontrain.editor.EditorModeSettings.DEFAULTS;
 
-    /**
-     * Editor Settings → Test Mobs: Frozen ({@code false}, default) / Live. Live thaws the editor's
-     * frozen mobs inside a Test-the-Carriage copy, so the author sees them move. See
-     * {@code TestCopyMobs}.
-     */
-    private boolean testMobsLive = false;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -711,29 +692,12 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_PORTAL_TEST_RESEED)) {
             data.portalTestReseed = tag.getBoolean(TAG_PORTAL_TEST_RESEED);
         }
-        if (tag.contains(TAG_EDITOR_OBSERVERS_ON)) {
-            data.editorObserversOn = tag.getBoolean(TAG_EDITOR_OBSERVERS_ON);
-        }
+        data.editorModeSettings = games.brennan.dungeontrain.editor.EditorModeSettings.load(tag);
         if (tag.contains(TAG_EDITOR_MIRROR_ON)) {
             data.editorMirrorOn = tag.getBoolean(TAG_EDITOR_MIRROR_ON);
         }
         if (tag.contains(TAG_EDITOR_FRAME_ON)) {
             data.editorFrameOn = tag.getBoolean(TAG_EDITOR_FRAME_ON);
-        }
-        if (tag.contains(TAG_EDITOR_AUTO_FLY_ON)) {
-            data.editorAutoFlyOn = tag.getBoolean(TAG_EDITOR_AUTO_FLY_ON);
-        }
-        if (tag.contains(TAG_EDITOR_REDSTONE_ON)) {
-            data.editorRedstoneOn = tag.getBoolean(TAG_EDITOR_REDSTONE_ON);
-        }
-        if (tag.contains(TAG_EDITOR_TNT_ON)) {
-            data.editorTntOn = tag.getBoolean(TAG_EDITOR_TNT_ON);
-        }
-        if (tag.contains(TAG_EDITOR_MOBS_LIVE)) {
-            data.editorMobsLive = tag.getBoolean(TAG_EDITOR_MOBS_LIVE);
-        }
-        if (tag.contains(TAG_TEST_MOBS_LIVE)) {
-            data.testMobsLive = tag.getBoolean(TAG_TEST_MOBS_LIVE);
         }
         if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
             net.minecraft.nbt.ListTag dismissed =
@@ -859,14 +823,9 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.put(TAG_HELP_PANEL_DISMISSED, dismissed);
         }
         if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
-        if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
+        editorModeSettings.save(tag);
         if (!editorMirrorOn) tag.putBoolean(TAG_EDITOR_MIRROR_ON, false);
         if (!editorFrameOn) tag.putBoolean(TAG_EDITOR_FRAME_ON, false);
-        if (!editorAutoFlyOn) tag.putBoolean(TAG_EDITOR_AUTO_FLY_ON, false);
-        if (!editorRedstoneOn) tag.putBoolean(TAG_EDITOR_REDSTONE_ON, false);
-        if (!editorTntOn) tag.putBoolean(TAG_EDITOR_TNT_ON, false);
-        if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
-        if (testMobsLive) tag.putBoolean(TAG_TEST_MOBS_LIVE, true);
         return tag;
     }
 
@@ -878,18 +837,6 @@ public final class DungeonTrainWorldData extends SavedData {
     /** True when each {@code portal test} should roll fresh room contents. */
     public boolean isPortalTestReseed() {
         return portalTestReseed;
-    }
-
-    /** True unless the editor's Observers setting is Off — the default, and every play world. */
-    public boolean isEditorObserversOn() {
-        return editorObserversOn;
-    }
-
-    /** Editor Settings → Observers On / Off. */
-    public void setEditorObserversOn(boolean on) {
-        if (editorObserversOn == on) return;
-        editorObserversOn = on;
-        setDirty();
     }
 
     /** True unless the X menu's Mirror quick toggle is Off: live mirroring runs as each template's axes say. */
@@ -916,63 +863,15 @@ public final class DungeonTrainWorldData extends SavedData {
         setDirty();
     }
 
-    /** True unless Settings → Auto fly is Off: falling below the plots' frame turns flying on. */
-    public boolean isEditorAutoFlyOn() {
-        return editorAutoFlyOn;
+    /** Every editing and test value of the per-mode editor Settings. */
+    public games.brennan.dungeontrain.editor.EditorModeSettings editorModeSettings() {
+        return editorModeSettings;
     }
 
-    /** Settings → Auto fly On / Off. Go through {@code EditorQuickToggles.setAutoFly}, which tells every client. */
-    public void setEditorAutoFlyOn(boolean on) {
-        if (editorAutoFlyOn == on) return;
-        editorAutoFlyOn = on;
-        setDirty();
-    }
-
-    /** True unless the editor's Redstone setting is Off — the default, and every play world. */
-    public boolean isEditorRedstoneOn() {
-        return editorRedstoneOn;
-    }
-
-    /** Editor Settings → Redstone On / Off. Go through {@code EditorRedstone.set}, which keeps its fast path in step. */
-    public void setEditorRedstoneOn(boolean on) {
-        if (editorRedstoneOn == on) return;
-        editorRedstoneOn = on;
-        setDirty();
-    }
-
-    /** True unless the editor's TNT setting is Off — the default, and every play world. */
-    public boolean isEditorTntOn() {
-        return editorTntOn;
-    }
-
-    /** Editor Settings → TNT On / Off. */
-    public void setEditorTntOn(boolean on) {
-        if (editorTntOn == on) return;
-        editorTntOn = on;
-        setDirty();
-    }
-
-    /** True when the editor's Mobs setting is Live — eggs spawn wandering mobs, no variant ghosts. */
-    public boolean isEditorMobsLive() {
-        return editorMobsLive;
-    }
-
-    /** Editor Settings → Mobs Blocks ({@code false}) / Live ({@code true}). */
-    public void setEditorMobsLive(boolean live) {
-        if (editorMobsLive == live) return;
-        editorMobsLive = live;
-        setDirty();
-    }
-
-    /** True when Test the Carriage copies spawn the editor's frozen mobs alive. */
-    public boolean isTestMobsLive() {
-        return testMobsLive;
-    }
-
-    /** Editor Settings → Test Mobs Frozen ({@code false}) / Live ({@code true}). */
-    public void setTestMobsLive(boolean live) {
-        if (testMobsLive == live) return;
-        testMobsLive = live;
+    /** Replace them. Go through {@code EditorModeSettingsService.set}, which tells the gates and every client. */
+    public void setEditorModeSettings(games.brennan.dungeontrain.editor.EditorModeSettings next) {
+        if (editorModeSettings.equals(next)) return;
+        editorModeSettings = next;
         setDirty();
     }
 

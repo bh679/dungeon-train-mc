@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
  * the plot is broken. The TNT itself is still used up; stopping the priming would mean patching
  * every path that lights it, and the explosion is the only part that does harm.
  *
- * <p>A world flag ({@link DungeonTrainWorldData#isEditorTntOn}), scoped by position exactly as
+ * <p>A world flag with an editing and a test value ({@link EditorModeSetting#TNT}), scoped by position exactly as
  * {@link EditorObservers} is. Consumed by {@link EditorSettingEvents}.</p>
  */
 public final class EditorTnt {
@@ -31,9 +31,12 @@ public final class EditorTnt {
     /** True when TNT going off at {@code pos} must not explode under the setting. Client levels: never. */
     public static boolean isMuted(Level level, BlockPos pos) {
         if (!(level instanceof ServerLevel serverLevel)) return false;
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(serverLevel.getServer().overworld());
-        if (data.isEditorTntOn()) return false;
-        if (EditorWorldLayout.isEditorWorld(serverLevel)) return true;
-        return EditorCategory.locateAt(pos, data.dims()).isPresent();
+        EditorModeSettings settings = EditorModeSettingsService.current();
+        if (settings.onInBoth(EditorModeSetting.TNT)) return false;
+        if (!EditorWorldLayout.isEditorWorld(serverLevel)
+            && EditorCategory.locateAt(pos, DungeonTrainWorldData.get(serverLevel.getServer().overworld()).dims()).isEmpty()) {
+            return false;
+        }
+        return !settings.get(EditorSettingMode.at(serverLevel, pos), EditorModeSetting.TNT);
     }
 }

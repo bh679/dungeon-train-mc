@@ -1,4 +1,8 @@
 {
+  "chat.dungeontrain.editor.test_setting_value": {
+    "1": { "label": "an editor Settings row's name, as the X menu shows it", "examples": ["Redstone", "Fluid flow"] },
+    "2": { "label": "that row's new value, as its cell shows it", "examples": ["On", "Live"] }
+  },
   "gui.dungeontrain.editor_menu.dates.title": {
     "1": { "label": "the build's name", "examples": ["taschristmascarriage", "Spooky fall carriage"] }
   },

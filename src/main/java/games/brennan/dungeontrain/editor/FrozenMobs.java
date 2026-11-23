@@ -68,9 +68,14 @@ public final class FrozenMobs {
 
     // --- Setting --------------------------------------------------------------------------------
 
-    /** True while the world's Mobs setting is Blocks (the default). */
+    /** True while the world's Mobs setting is Blocks (the default) for editing — the plots' own value. */
     public static boolean isBlocksMode(ServerLevel level) {
-        return !DungeonTrainWorldData.get(level).isEditorMobsLive();
+        return !EditorModeSettingsService.current().get(EditorSettingMode.EDITOR, EditorModeSetting.MOBS_LIVE);
+    }
+
+    /** True while Mobs is Blocks in the mode that applies at {@code pos} — test copies keep their own value. */
+    public static boolean isBlocksMode(ServerLevel level, BlockPos pos) {
+        return !EditorModeSettingsService.current().get(EditorSettingMode.at(level, pos), EditorModeSetting.MOBS_LIVE);
     }
 
     /**
@@ -125,7 +130,7 @@ public final class FrozenMobs {
     /**
      * What every template → entity restore site calls: the NBT to create the entity from. Frozen
      * NBT stays frozen inside editor space and is thawed anywhere else — and inside a Test-the-Carriage
-     * copy too, while the Test Mobs setting is Live ({@link TestCopyMobs}).
+     * copy too, while Mobs is Live in test mode ({@link TestCopyMobs}).
      */
     public static CompoundTag prepareForSpawn(CompoundTag nbt, ServerLevel level, BlockPos at) {
         if (!carriesTag(nbt)) return nbt;
@@ -159,13 +164,12 @@ public final class FrozenMobs {
         ItemStack held = event.getItemStack();
         if (!(held.getItem() instanceof SpawnEggItem egg)) return;
         if (VariantHotkeyState.isHeld(player)) return;
-        if (!isBlocksMode(level)) return;
-
         BlockPos clicked = event.getPos();
         if (level.getBlockState(clicked).is(Blocks.SPAWNER)) return; // vanilla: egg retypes the spawner
         BlockPos cell = level.getBlockState(clicked).getCollisionShape(level, clicked).isEmpty()
             ? clicked : clicked.relative(event.getFace() == null ? Direction.UP : event.getFace());
         if (!isEditorSpace(level, cell)) return;
+        if (!isBlocksMode(level, cell)) return;
 
         EntityType<?> type = egg.getType(held);
         if (type == null) return;
