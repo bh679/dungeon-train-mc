@@ -179,7 +179,7 @@ public final class TrackVariantRename {
         List<TrackVariantGroup.Member> next = new ArrayList<>(group.members().size());
         for (TrackVariantGroup.Member m : group.members()) {
             next.add(m.id().equals(from.toLowerCase(Locale.ROOT))
-                ? new TrackVariantGroup.Member(to, m.weight(), m.gate(), m.stageIds())
+                ? new TrackVariantGroup.Member(to, m.weight(), m.gate(), m.stageIds(), m.visits())
                 : m);
         }
         return new TrackVariantGroup(group.selfWeight(), next);

@@ -5829,6 +5829,8 @@ public final class EditorCommand {
             .then(minLevelTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
             .then(maxLevelTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
             .then(phaseTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
+            // Order, seen again and the weight after the Xth visit — the X menu's Order lines.
+            .then(PortalRoomVisitRulesCommand.node(PORTAL_ROOM_NAME_SUGGESTIONS))
             .then(Commands.literal("remove")
                 .then(Commands.argument("parent", StringArgumentType.word())
                     .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
@@ -6045,8 +6047,7 @@ public final class EditorCommand {
             String baseStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
             TemplateGate next = op.apply(
                 games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), baseStage));
-            saveTrackGroupMember(kind, parent, new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
-                m.id(), m.weight(), next, java.util.List.of()));
+            saveTrackGroupMember(kind, parent, m.withGate(next).withStages(java.util.List.of()));
             // The member was just detached to Custom above (by design), so it is unlinked now.
             gateSuccess(source, parent + ":" + member, next,
                 games.brennan.dungeontrain.editor.TrackVariantGroupStore.fileFor(kind, parent).toString(), null);
@@ -6082,8 +6083,7 @@ public final class EditorCommand {
                 if (m.stageIds().size() == 1) {
                     inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageIds().get(0));
                 }
-                updated = new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
-                    m.id(), m.weight(), inline, java.util.List.of());
+                updated = m.withGate(inline).withStages(java.util.List.of());
             } else {
                 updated = m.withStageToggled(link);
             }
