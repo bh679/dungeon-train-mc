@@ -5,7 +5,8 @@ import org.joml.Vector3d;
 
 /**
  * The death moment's camera moves between shots: from the orbit of where you died, the lens flies
- * through the world to the orbit of who killed you and back, instead of cutting through black. Pure
+ * through the world to the orbit of who killed you (and the other mob), then back into the body shot,
+ * instead of cutting through black. Pure
  * maths; {@link DeathCameraCycle} owns the state.
  */
 final class DeathCameraFly {
@@ -19,14 +20,28 @@ final class DeathCameraFly {
 
     private DeathCameraFly() {}
 
-    /** Pure: the shot after {@code prev} is flown into, not cut to: the spot orbit to the killer orbit, and back. */
+    /**
+     * Pure: the shot after {@code prev} is flown into, not cut to. Every move to or from a mob orbit
+     * (who killed you, or the other mob) flies: from the spot out to the mobs, between them, and back
+     * to the body, landing as the opening frame of the body shot that carries on from there.
+     */
     static boolean fliesInto(DeathShot prev, DeathShot next) {
-        return (isSpot(prev) && isKiller(next)) || (isKiller(prev) && isSpot(next));
+        if (isMobOrbit(prev)) return isSpot(next) || isMobOrbit(next) || isBodyShot(next);
+        return isMobOrbit(next) && (isSpot(prev) || isBodyShot(prev));
     }
 
-    /** Pure: the orbit of who killed you. */
-    static boolean isKiller(DeathShot shot) {
-        return shot != null && shot.kind() == DeathShot.Kind.ORBIT && shot.target() == DeathShot.Target.KILLER;
+    /** Pure: an orbit of who killed you or of the other mob you fought. */
+    static boolean isMobOrbit(DeathShot shot) {
+        return shot != null && shot.kind() == DeathShot.Kind.ORBIT
+            && (shot.target() == DeathShot.Target.KILLER || shot.target() == DeathShot.Target.CONTACT);
+    }
+
+    /** Pure: phase one's moving shot of the body (the carriage zoom, the leaving shot, the body-out net). */
+    static boolean isBodyShot(DeathShot shot) {
+        return shot != null && switch (shot.kind()) {
+            case DOLLY, TRANSITION, BODY_OUT -> true;
+            default -> false;
+        };
     }
 
     /** Pure: the orbit of where you died (the body, or the block that killed you). */

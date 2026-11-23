@@ -34,7 +34,7 @@ import java.util.UUID;
  * sky that fades into the perks menu. (The world-locked shots of the train passing, looping until
  * Space, are on hold behind {@link #LOOP_ON}.) Shots whose
  * subject does not exist are skipped ({@link #buildSequence}). Every cut fades through black, except
- * spot to killer and killer back to the body, which the lens flies through the world ({@link DeathCameraFly});
+ * to and from the mobs (spot, killer, mob, then into the body shot), which the lens flies ({@link DeathCameraFly});
  * Left/Right step through the shots.
  *
  * <p>Train-locked lenses are offsets from the body in carriage space, re-projected through the
@@ -58,8 +58,6 @@ public final class DeathCameraCycle {
     static final int DOLLY_BLEND_TICKS = 20;
     /** The killer orbit holds this long after the lens has flown to it (half the other orbits). */
     static final int KILLER_HOLD_TICKS = 30;
-    /** Back on the body after the killer, before the scene goes on. */
-    static final int BACK_HOLD_TICKS = 20;
     /** The orbit hold the sweep cap is set for: a shorter orbit turns less, at the same pace. */
     static final int ORBIT_PACE_HOLD_TICKS = 60;
     /** Candidate angles tested around an orbit subject. */
@@ -206,7 +204,7 @@ public final class DeathCameraCycle {
     private static Vector3d lastAim;
     private static float lastPartial;
     /**
-     * The killer shot is flown into from the spot shot, and the "back" shot from the killer ({@link DeathCameraFly}): the lens and aim it
+     * A shot flown into from the one before ({@link DeathCameraFly}: to and from the mobs): the lens and aim it
      * leaves from, in carriage space when a carriage is pinned (so the flight rides the train), else
      * world space; null for a cut. Set for the whole flown-in shot.
      */
@@ -288,10 +286,6 @@ public final class DeathCameraCycle {
         else if (!voidDeath && (hasKiller || !onTrain)) spot = DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot");
         if (spot != null) shots.add(spot);
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, KILLER_HOLD_TICKS, "killer"));
-        // From the spot the lens flies to the killer and back again (DeathCameraFly), then the scene goes on.
-        if (spot != null && hasKiller) {
-            shots.add(DeathShot.orbit(spot.target(), spot.offset().x, spot.offset().y, BACK_HOLD_TICKS, "back"));
-        }
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
         // reached, in the world, and tracks the body as the carriage rolls away.
@@ -583,11 +577,11 @@ public final class DeathCameraCycle {
         if (shot == null || shot.kind() == DeathShot.Kind.SKY_TILT) return 0.0f;
         double t = shotTicks + partialTick;
         // The opening shot never fades in from black: a thrown body's flight is over in a second.
-        // The spot shot flies into the killer shot (DeathCameraFly): no black on either side of it.
+        // Shots the lens flies between (DeathCameraFly) have no black on either side of the flight.
         boolean fadeIn = shot.kind() != DeathShot.Kind.POV && index > 0 && flyFromLens == null;
-        float alpha = blackAlpha(t, shotHold(shot), false, !fliesOnFromHere(shot));
+        boolean intoSky = leadsIntoSky(shot, sequence);
+        float alpha = blackAlpha(t, intoSky ? Integer.MAX_VALUE / 2 : shotHold(shot), false, !intoSky && !fliesOnFromHere(shot));
         if (fadeIn) alpha = Math.max(alpha, fadeInFrom * (1.0f - (float) Mth.clamp(t / FADE_TICKS, 0.0, 1.0)));
-        if (leadsIntoSky(shot, sequence)) alpha = blackAlpha(t, Integer.MAX_VALUE / 2, true);
         lastBlack = alpha;
         return alpha;
     }
@@ -601,8 +595,13 @@ public final class DeathCameraCycle {
     private static boolean fliesOnFromHere(DeathShot shot) {
         int next = nextIndex(sequence, index);
         if (next == index || !DeathCameraFly.fliesInto(shot, sequence.get(next))) return false;
-        // Flying to the killer needs it still there; the body to fly back to always is.
-        return sequence.get(next).target() != DeathShot.Target.KILLER || (killer != null && killer.isAlive());
+        // Flying to a mob needs it still there; the body to fly back to always is.
+        DeathShot to = sequence.get(next);
+        if (DeathCameraFly.isMobOrbit(to)) {
+            Entity mob = to.target() == DeathShot.Target.KILLER ? killer : contact;
+            return mob != null && mob.isAlive();
+        }
+        return true;
     }
 
     /**
@@ -686,7 +685,7 @@ public final class DeathCameraCycle {
             if (prepare(shot)) {
                 // Leaving the spot shot without its flight (the killer could not be shown): the
                 // spot never faded out, so fade in from whatever black was on screen, not from full.
-                fadeInFrom = (DeathCameraFly.isSpot(from) || DeathCameraFly.isKiller(from)) && !fly ? lastBlack : 1.0f;
+                fadeInFrom = (DeathCameraFly.isSpot(from) || DeathCameraFly.isMobOrbit(from)) && !fly ? lastBlack : 1.0f;
                 if (showsTheBody(shot)) bodyShotPlayed = true;
                 if (tail) tailPlayed = true;
                 if (shot.kind().isOpenAir()) playedInLoop++;
@@ -1259,12 +1258,6 @@ public final class DeathCameraCycle {
                 if (subject == null) return null;
                 lensW = orbitLens(subject, orbitRadius, orbitHeight, orbitAngle(t, orbitSpan(shot)));
                 aim = new Vector3d(subject.x, subject.y + LOOK_Y_OFFSET, subject.z);
-                if (flyFromLens != null && t < DeathCameraFly.FLY_TICKS) {
-                    // Flying in from the last shot: glide onto the orbit as it turns.
-                    double f = DeathCameraFly.progress(t);
-                    lensW = DeathCameraFly.lens(toWorldRender(flyFromLens, partialTick), lensW, f);
-                    aim = DeathCameraFly.aim(toWorldRender(flyFromAim, partialTick), aim, f);
-                }
             }
             case DOLLY, BODY_OUT -> {
                 if (lens == null || lensEnd == null) return null;
@@ -1320,6 +1313,12 @@ public final class DeathCameraCycle {
                 if (lens == null) return null;
                 lensW = lens;
             }
+        }
+        if (flyFromLens != null && t < DeathCameraFly.FLY_TICKS) {
+            // Flown in from the last shot: glide onto this one as it already moves.
+            double f = DeathCameraFly.progress(t);
+            lensW = DeathCameraFly.lens(toWorldRender(flyFromLens, partialTick), lensW, f);
+            aim = DeathCameraFly.aim(toWorldRender(flyFromAim, partialTick), aim, f);
         }
         poseAim = new Vector3d(aim);
         return poseFor(new Vec3(lensW.x, lensW.y, lensW.z), new Vec3(aim.x, aim.y, aim.z));

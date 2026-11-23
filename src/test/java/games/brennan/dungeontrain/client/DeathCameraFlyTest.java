@@ -14,34 +14,42 @@ class DeathCameraFlyTest {
     private static final double EPS = 1.0e-9;
 
     @Test
-    void onlyTheSpotShotFliesIntoTheKiller() {
+    void everyMoveToOrFromAMobFlies() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true);
-        assertEquals("spot", seq.get(0).label());
-        assertEquals("killer", seq.get(1).label());
-        assertTrue(DeathCameraFly.fliesInto(seq.get(0), seq.get(1)), "body spot to killer");
-        assertEquals("back", seq.get(2).label());
-        assertTrue(DeathCameraFly.fliesInto(seq.get(1), seq.get(2)), "killer back to the body");
-        assertEquals("mob", seq.get(3).label());
-        assertFalse(DeathCameraFly.fliesInto(seq.get(2), seq.get(3)), "back to mob stays a cut");
-        assertFalse(DeathCameraFly.fliesInto(seq.get(1), seq.get(3)), "killer to mob is a cut");
+        assertEquals(List.of("spot", "killer", "mob", "carriage"), seq.subList(0, 4).stream().map(DeathShot::label).toList());
+        assertTrue(DeathCameraFly.fliesInto(seq.get(0), seq.get(1)), "spot to killer");
+        assertTrue(DeathCameraFly.fliesInto(seq.get(1), seq.get(2)), "killer to the other mob");
+        assertTrue(DeathCameraFly.fliesInto(seq.get(2), seq.get(3)), "the other mob back into the carriage shot");
+        assertTrue(DeathCameraFly.fliesInto(seq.get(1), seq.get(0)), "Left: killer back to the spot");
         assertFalse(DeathCameraFly.fliesInto(null, seq.get(1)), "nothing drawn yet: no flight");
+
+        List<DeathShot> killerOnly = DeathCameraCycle.buildSequence(false, true, false, true);
+        assertEquals("carriage", killerOnly.get(2).label());
+        assertTrue(DeathCameraFly.fliesInto(killerOnly.get(1), killerOnly.get(2)), "killer back into the carriage shot");
+
+        List<DeathShot> offTrain = DeathCameraCycle.buildSequence(false, true, false, false);
+        assertEquals("leaving", offTrain.get(2).label());
+        assertTrue(DeathCameraFly.fliesInto(offTrain.get(1), offTrain.get(2)), "killer back into the leaving shot");
+        assertTrue(DeathCameraFly.fliesInto(offTrain.get(1), DeathShot.bodyOut(120, "body-out")), "and into body-out");
+
         DeathShot hazardSpot = DeathCameraCycle.buildSequence(false, true, false, true, false, true).get(0);
         assertEquals(DeathShot.Target.HAZARD, hazardSpot.target());
         assertTrue(DeathCameraFly.fliesInto(hazardSpot, seq.get(1)), "the killing block's spot flies too");
     }
 
     @Test
-    void killerShotIsHalfAndBackFollowsOnlyAfterSpotAndKiller() {
+    void withNoMobTheSpotStillCutsToTheCarriage() {
+        List<DeathShot> hazard = DeathCameraCycle.buildSequence(false, false, false, true, false, true);
+        assertEquals(List.of("spot", "carriage"), hazard.subList(0, 2).stream().map(DeathShot::label).toList());
+        assertFalse(DeathCameraFly.fliesInto(hazard.get(0), hazard.get(1)));
+        assertFalse(DeathCameraFly.fliesInto(hazard.get(1), DeathShot.skyTilt(60)), "into the sky is not a flight");
+    }
+
+    @Test
+    void killerShotIsHalfTheSpot() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, false, true);
-        assertEquals(seq.get(0).holdTicks() / 2, seq.get(1).holdTicks(), "the killer orbit is half the spot's");
-        DeathShot back = seq.get(2);
-        assertEquals(seq.get(0).target(), back.target(), "back to the same subject as the spot");
-        assertTrue(DeathCameraFly.isSpot(back));
-        // No spot (void death), or no killer: no back shot.
-        assertFalse(DeathCameraCycle.buildSequence(true, true, false, true).stream().anyMatch(s -> s.label().equals("back")));
-        assertFalse(DeathCameraCycle.buildSequence(false, false, false, false).stream().anyMatch(s -> s.label().equals("back")));
-        DeathShot hazardBack = DeathCameraCycle.buildSequence(false, true, false, true, false, true).get(2);
-        assertEquals(DeathShot.Target.HAZARD, hazardBack.target());
+        assertEquals(seq.get(0).holdTicks() / 2, seq.get(1).holdTicks());
+        assertFalse(seq.stream().anyMatch(s -> s.label().equals("back")), "no separate back shot: the flight lands on the next one");
     }
 
     @Test
