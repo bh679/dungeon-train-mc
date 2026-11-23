@@ -1209,7 +1209,7 @@ public final class PortalCarriageEvents {
         // room's fog, sky and audio every tick, and this pass — seeing no structure of its own —
         // cleared them every tick, so the client saw a room for one tick in two and never engaged.
         // The tester's ambience is the ticker's to send and to clear.
-        players = withoutPortalTesters(players);
+        players = withoutSelfLitPlayers(players);
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
             clearBorderFor(players, Set.of());
@@ -1489,7 +1489,8 @@ public final class PortalCarriageEvents {
         }
         // Same reasoning as the fog: somebody who left the world never gets the message, which is why
         // the client holds a region it can simply stop being inside.
-        LAST_TRAIN_AUDIO.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+        LAST_TRAIN_AUDIO.keySet().removeIf(id -> !ownsItsAmbience(id)
+            && players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /**
@@ -1577,7 +1578,8 @@ public final class PortalCarriageEvents {
         }
         // Same reasoning as the fog: somebody who left the world never gets the message, which is why
         // the client holds a region it can simply stop being inside.
-        LAST_DEPTH.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+        LAST_DEPTH.keySet().removeIf(id -> !ownsItsAmbience(id)
+            && players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /**
@@ -1759,21 +1761,34 @@ public final class PortalCarriageEvents {
         PortalPrewarmHints.retain(players);
     }
 
-    /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
-    /** Everyone but the players inside a {@code portal test} twin, whose ambience is not this pass' to touch. */
-    private static List<ServerPlayer> withoutPortalTesters(List<ServerPlayer> players) {
+    /**
+     * Everyone whose room ambience is not this pass' to touch: players inside a {@code portal test}
+     * twin and players on a tribute room visit. Both stand in a structure with no live pair behind it,
+     * and both have a ticker of their own ({@code PortalTestTicker}, {@code TributeRoomVisitTicker})
+     * that sends their fog, border, sky and depth every tick. Left in, this pass sees them in no
+     * structure and clears all of it every tick, so the client never engages the room: dark, no
+     * World Border, and Distant Horizons drawing the surface overhead.
+     */
+    static boolean ownsItsAmbience(UUID id) {
+        return games.brennan.dungeontrain.portal.PortalTestSession.has(id)
+            || games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.isVisiting(id);
+    }
+
+    /** {@code players} without anyone who {@link #ownsItsAmbience}. */
+    private static List<ServerPlayer> withoutSelfLitPlayers(List<ServerPlayer> players) {
         boolean any = false;
         for (ServerPlayer p : players) {
-            if (games.brennan.dungeontrain.portal.PortalTestSession.has(p.getUUID())) { any = true; break; }
+            if (ownsItsAmbience(p.getUUID())) { any = true; break; }
         }
         if (!any) return players;
         List<ServerPlayer> out = new java.util.ArrayList<>(players.size());
         for (ServerPlayer p : players) {
-            if (!games.brennan.dungeontrain.portal.PortalTestSession.has(p.getUUID())) out.add(p);
+            if (!ownsItsAmbience(p.getUUID())) out.add(p);
         }
         return out;
     }
 
+    /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
     private static void clearSkyFor(List<ServerPlayer> players, Set<UUID> stillSkied) {
         if (games.brennan.dungeontrain.portal.PlayerSkyRegions.isEmpty()) return;
         for (ServerPlayer player : players) {
@@ -1844,7 +1859,7 @@ public final class PortalCarriageEvents {
         List<UUID> present = new ArrayList<>(players.size() + 1);
         for (ServerPlayer p : players) present.add(p.getUUID());
         LAST_BORDER.keySet().removeIf(id -> !present.contains(id)
-            && !games.brennan.dungeontrain.portal.PortalTestSession.has(id));
+            && !ownsItsAmbience(id));
     }
 
     private static void clearFogFor(List<ServerPlayer> players, Set<UUID> stillFogged) {
@@ -1859,12 +1874,12 @@ public final class PortalCarriageEvents {
         // client holds a region rather than a flag — it stops applying the moment they are not in it.
         //
         // A `portal test` occupant is NOT gone: the live pass hands this a list with the testers
-        // taken out (withoutPortalTesters), and pruning them here dropped the tester's dedup entry
+        // taken out (withoutSelfLitPlayers), and pruning them here dropped the tester's dedup entry
         // every tick, so PortalTestTicker re-sent the same fog every tick for the whole test.
         List<UUID> present = new ArrayList<>(players.size() + 1);
         for (ServerPlayer p : players) present.add(p.getUUID());
         LAST_FOG.keySet().removeIf(id -> !present.contains(id)
-            && !games.brennan.dungeontrain.portal.PortalTestSession.has(id));
+            && !ownsItsAmbience(id));
         // Where each player left a room is pruned on the same pass and for the same reason: a
         // crash-disconnected player would otherwise leave a binding behind for the life of the
         // server, and a rejoining one starts from the corridor that is definitely there. The
