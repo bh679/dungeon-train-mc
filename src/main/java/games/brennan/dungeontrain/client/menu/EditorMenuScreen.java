@@ -4,7 +4,9 @@ import games.brennan.dungeontrain.client.menu.number.NumberTitle;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
-import games.brennan.dungeontrain.client.EditorObserversState;
+import games.brennan.dungeontrain.client.EditorModeSettingsState;
+import games.brennan.dungeontrain.editor.EditorModeSetting;
+import games.brennan.dungeontrain.editor.EditorSettingMode;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -464,25 +466,33 @@ public final class EditorMenuScreen implements MenuScreen {
         // Observers — Off keeps every observer inside an editor plot quiet, hand-placed blocks
         // included, so a contraption can be wired without firing. World state (persisted), which is
         // why it is a server round-trip rather than a client preference like Plot Lighting.
-        out.add(observersRow());
+        // The rows from here to Mobs keep one value for editing and one for a Test-the-Carriage copy
+        // (EditorModeSetting); standing in a test, they show and set the test values, and say so.
+        if (EditorModeSettingsState.mode() == EditorSettingMode.TEST) {
+            out.add(new CommandMenuEntry.Label(MenuLang.t("editor.test_mode_settings")));
+        }
+        out.add(modeRow(EditorModeSetting.OBSERVERS, MenuLang.t("editor.observers")));
+        // Fluid flow — Off keeps placed water and lava from spreading in a plot. Off while editing,
+        // On in a test copy, by default.
+        out.add(modeRow(EditorModeSetting.FLUID_FLOW, MenuLang.t("editor.fluid_flow")));
 
         // Frame — whether Contents plots stand inside their carriage shell. World state like
         // Observers; also one of the X menu's quick toggles (the ▼ beside Settings).
         out.add(frameRow());
         // Auto fly — falling below the plots' bedrock frame turns flying on. World state, on by
         // default; deliberately not one of the X menu's quick toggles.
-        out.add(autoFlyRow());
+        out.add(modeRow(EditorModeSetting.AUTO_FLY, MenuLang.t("editor.auto_fly")));
 
         // Redstone / TNT — Off cuts every redstone signal in an editor plot / makes TNT fizzle
         // there, so a contraption can be wired and TNT placed without either going off. World state
         // like Observers, so a server round-trip.
-        out.add(redstoneRow());
-        out.add(tntRow());
+        out.add(modeRow(EditorModeSetting.REDSTONE, MenuLang.t("editor.redstone")));
+        out.add(modeRow(EditorModeSetting.TNT, MenuLang.t("editor.tnt")));
 
         // Mobs — Blocks places a frozen, one-hit mob from a spawn egg and ghosts the mob entries of
-        // variant cells; Live is vanilla eggs. World state like Observers, so a server round-trip.
+        // variant cells; Live is vanilla eggs. In a test copy, Live also wakes the frozen mobs the
+        // template carries (what used to be its own Test Mobs row).
         out.add(mobsRow());
-        out.add(testMobsRow());
 
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
@@ -639,17 +649,23 @@ public final class EditorMenuScreen implements MenuScreen {
             });
     }
 
-    /** Observers | On | Off — the same Label-plus-state-cells shape as Editor Menus. */
-    private static CommandMenuEntry observersRow() {
-        boolean on = EditorObserversState.on();
+    /**
+     * A per-mode {@code Label | On | Off} row — the same Label-plus-state-cells shape as Editor Menus —
+     * showing and setting the value for the mode the player is in. The cells name that mode, so a
+     * click lands on the set the row was drawn from even if a test starts or ends in between.
+     */
+    private static CommandMenuEntry modeRow(EditorModeSetting setting, String label) {
+        boolean on = EditorModeSettingsState.get(setting);
+        String command = "dungeontrain editor " + setting.id() + " ";
+        String scope = " " + EditorModeSettingsState.mode().id();
         return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label(MenuLang.t("editor.observers")),
-            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor observers on", on),
-            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor observers off", !on),
+            new CommandMenuEntry.Label(label),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), command + "on" + scope, on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), command + "off" + scope, !on),
             0.46, 0.73);
     }
 
-    /** Frame | On | Off — same shape as Observers. */
+    /** Frame | On | Off — same shape as {@link #modeRow}, one value for both modes. */
     public static CommandMenuEntry frameRow() {
         boolean on = games.brennan.dungeontrain.client.EditorQuickTogglesState.frameOn();
         return new CommandMenuEntry.Triple(
@@ -659,52 +675,14 @@ public final class EditorMenuScreen implements MenuScreen {
             0.46, 0.73);
     }
 
-    /** Auto fly | On | Off — same shape as Observers. */
-    public static CommandMenuEntry autoFlyRow() {
-        boolean on = games.brennan.dungeontrain.client.EditorQuickTogglesState.autoFlyOn();
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label(MenuLang.t("editor.auto_fly")),
-            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor autofly on", on),
-            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor autofly off", !on),
-            0.46, 0.73);
-    }
-
-    /** Redstone | On | Off — same shape as Observers. */
-    private static CommandMenuEntry redstoneRow() {
-        boolean on = games.brennan.dungeontrain.client.EditorRedstoneTntState.redstoneOn();
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label(MenuLang.t("editor.redstone")),
-            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor redstone on", on),
-            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor redstone off", !on),
-            0.46, 0.73);
-    }
-
-    /** TNT | On | Off — same shape as Observers. */
-    private static CommandMenuEntry tntRow() {
-        boolean on = games.brennan.dungeontrain.client.EditorRedstoneTntState.tntOn();
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label(MenuLang.t("editor.tnt")),
-            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor tnt on", on),
-            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor tnt off", !on),
-            0.46, 0.73);
-    }
-
+    /** Mobs | Blocks | Live — per mode, like {@link #modeRow}. */
     private static CommandMenuEntry mobsRow() {
-        boolean live = games.brennan.dungeontrain.client.EditorMobsModeState.live();
+        boolean live = EditorModeSettingsState.get(EditorModeSetting.MOBS_LIVE);
+        String scope = " " + EditorModeSettingsState.mode().id();
         return new CommandMenuEntry.Triple(
             new CommandMenuEntry.Label(MenuLang.t("editor.mobs")),
-            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_blocks"), "dungeontrain editor mobs blocks", !live),
-            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor mobs live", live),
-            0.46, 0.73);
-    }
-
-    /** Test Mobs | Frozen | Live — whether frozen mobs come alive in a Test-the-Carriage copy. */
-    private static CommandMenuEntry testMobsRow() {
-        boolean live = games.brennan.dungeontrain.client.EditorTestMobsState.live();
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label(MenuLang.t("editor.test_mobs")),
-            new CommandMenuEntry.Stay(MenuLang.t("editor.test_mobs_frozen"), "dungeontrain editor testmobs frozen", !live),
-            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor testmobs live", live),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_blocks"), "dungeontrain editor mobs blocks" + scope, !live),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor mobs live" + scope, live),
             0.46, 0.73);
     }
 

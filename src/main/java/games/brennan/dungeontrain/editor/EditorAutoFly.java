@@ -13,8 +13,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  *
  * <p>Train Editor world only, and only for a player who may already fly (creative), so no rule a
  * player lives by changes. It fires on a fall, not on being low: a player who lands somewhere below
- * the frame (a building's basement) and walks about is left alone. The test is one volatile read
- * and a comparison per player per tick.</p>
+ * the frame (a building's basement) and walks about is left alone. Outside the editor world the
+ * test is one dimension check per player per tick.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorAutoFly {
@@ -39,8 +39,9 @@ public final class EditorAutoFly {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!LIFTING.isEmpty()) liftTick(player);
-        if (!EditorQuickToggles.autoFlyOn()) return;
         if (!EditorWorldLayout.isEditorWorld(player.serverLevel())) return;
+        // Its own value while the player stands in a test copy (EditorSettingMode).
+        if (!EditorModeSettingsService.current().get(EditorSettingMode.of(player), EditorModeSetting.AUTO_FLY)) return;
         if (!shouldCatch(player.getY(), player.fallDistance, frameFloorY(),
                 player.getAbilities().mayfly, player.getAbilities().flying)) return;
         startFlying(player);

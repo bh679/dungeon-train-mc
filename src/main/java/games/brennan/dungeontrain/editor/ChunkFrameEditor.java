@@ -137,7 +137,10 @@ public final class ChunkFrameEditor {
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, plotOrigin(name), ChunkFrame.SIZE, false, null);
         boolean toSource = EditorDevMode.isEnabled();
-        ChunkFrameStore.save(name, template.save(new CompoundTag()), toSource);
+        CompoundTag captured = template.save(new CompoundTag());
+        // No flowing fluid in a saved frame; this capture writes air cells, so flow becomes air.
+        games.brennan.dungeontrain.template.TemplateFluids.dropFlowing(captured, true);
+        ChunkFrameStore.save(name, captured, toSource);
         ChunkFrameRegistry.register(name);
         // The variant sidecar travels with its frame, as every other template's does.
         ChunkFramePlot plot = ChunkFramePlot.of(name);
