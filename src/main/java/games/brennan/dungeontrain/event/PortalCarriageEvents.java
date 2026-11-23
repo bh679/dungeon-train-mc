@@ -665,6 +665,7 @@ public final class PortalCarriageEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         STRUCTURES.clear();
         games.brennan.dungeontrain.portal.PortalRoomSaveHold.clear();
+        games.brennan.dungeontrain.portal.PortalRoomVisits.clear();
         STAMPED_AT.clear();
         EVICTED.clear();
         games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
@@ -2482,6 +2483,8 @@ public final class PortalCarriageEvents {
             // and the copies' exits are ways back, not crossings.
             if (move.toFrame() == PortalFrames.FRAME_TWIN && !copyOnly) {
                 PortalConnectionStats.noteConnected(player.getUUID());
+                // A visit, for a group whose sub-variants are ordered or change after the Xth one.
+                games.brennan.dungeontrain.portal.PortalRoomVisits.onEntered(player, pairKey, structure.roomName());
             }
             // Going in, the client must know it is inside before it learns where it is. See
             // sendDepthAhead.
@@ -2909,6 +2912,11 @@ public final class PortalCarriageEvents {
         EVICTED.remove(pairKey);
         // Only once the room is standing: a plan abandoned above must not leave a pair marked.
         if (ownShelfBoost) DungeonTrainWorldData.get(level).markOwnShelfPair(pairKey);
+        // Same rule for a room rolled through visit rules: remembered, and held for its rider.
+        if (existing == null && evicted == null) {
+            games.brennan.dungeontrain.portal.PortalRoomVisits.onStamped(level, pairKey, planned.roomName(),
+                nearestRider(players, originX, originZ));
+        }
         OVERLAP_WARNED_AT.remove(pairKey);
         STAMPED_AT.put(pairKey, level.getGameTime());
         // A drifting room is registered once its blocks are down (or, on a relocation, told where

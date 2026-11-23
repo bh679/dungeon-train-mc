@@ -50,6 +50,7 @@
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
     "FlowingFluidPortalRoomMixin",
+    "FlowingFluidEditorStillMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",

@@ -44,6 +44,8 @@ public final class ConnectPass {
     private static final class Frame {
         int depth;
         final List<Pending> pending = new ArrayList<>();
+        /** Other per-row passes that also wait for every neighbour (Auto signs). */
+        final List<Runnable> later = new ArrayList<>();
     }
 
     private static final ThreadLocal<Frame> FRAME = ThreadLocal.withInitial(Frame::new);
@@ -67,7 +69,10 @@ public final class ConnectPass {
             if (--frame.depth > 0) return;
             List<Pending> toFlush = List.copyOf(frame.pending);
             frame.pending.clear();
+            List<Runnable> laterFlush = List.copyOf(frame.later);
+            frame.later.clear();
             for (Pending p : toFlush) apply(p.level(), p.pos(), p.mode(), p.arms());
+            for (Runnable r : laterFlush) r.run();
         }
     }
 
@@ -90,6 +95,23 @@ public final class ConnectPass {
             frame.pending.add(new Pending(level, pos.immutable(), mode, arms));
         } else {
             apply(level, pos, mode, arms);
+        }
+    }
+
+    /**
+     * Note every post-overlay pass a placed variant row needs: its connect mode (above) and, for an
+     * Auto sign row ({@link VariantSign#auto}), its mount ({@link SignMountPass}). Same scope rules:
+     * resolved when the outermost scope closes, after every connect, or straight away with none open.
+     */
+    public static void note(ServerLevel level, BlockPos pos, VariantState entry, BlockState placed) {
+        note(level, pos, entry.connect(), placed);
+        if (!entry.sign().auto() || !SignVariants.isSign(placed)) return;
+        BlockPos at = pos.immutable();
+        Frame frame = FRAME.get();
+        if (frame.depth > 0) {
+            frame.later.add(() -> SignMountPass.apply(level, at));
+        } else {
+            SignMountPass.apply(level, at);
         }
     }
 
