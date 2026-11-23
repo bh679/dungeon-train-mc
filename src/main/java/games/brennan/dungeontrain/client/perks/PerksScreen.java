@@ -660,7 +660,7 @@ public final class PerksScreen extends Screen {
         String best = null;
         double bestD = Double.MAX_VALUE;
         for (PerkTree.Perk p : drawn.perks()) {
-            if (p.isRoot() || vis.hidden(p)) continue; // the Engine isn't drawn, so the centre takes no hover
+            if (vis.hidden(p)) continue;
             double dx = view.toScreenX(p.x(), width) - mx, dy = view.toScreenY(p.y(), skyH()) - my;
             double d = Math.hypot(dx, dy);
             if (d <= SkyPalette.hitRadius(p, view.zoom()) && d < bestD) {

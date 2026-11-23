@@ -23,12 +23,13 @@ final class SkyPalette {
     static final double[] HALO = {0, 7.0, 9.5, 11.0};
     /** Floor core radius by tier, GUI px, so the fit view still reads. */
     static final double[] FLOOR_CORE = {0, 2.5, 3.5, 4.5};
-    static final double ROOT_CORE = 14, ROOT_HALO = 26, ROOT_DOT = 5, ROOT_FLOOR_CORE = 9;
+    /** The Engine is a tier-1-sized dot: no bigger than the perks around it. */
+    static final double ROOT_CORE = CORE[1], ROOT_HALO = HALO[1], ROOT_FLOOR_CORE = FLOOR_CORE[1];
     static final double TIER3_DOT = 2;
     static final double RING_OFFSET = 1.5, RING_WIDTH = 2.6, RING_GAP = 0.3;
     static final int RING_SLOTS = 10;
     /** Hit radius, editor units, and its floor in GUI px. */
-    static final double HIT = 20, ROOT_HIT = 30, HIT_FLOOR = 8;
+    static final double HIT = 20, ROOT_HIT = HIT, HIT_FLOOR = 8;
     /** Chord control point: midpoint pushed this much from the centre. */
     static final double CHORD_BULGE = 1.18;
 

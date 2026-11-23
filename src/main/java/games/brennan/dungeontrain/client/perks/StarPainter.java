@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * One star as the web page's test mode draws it: halo, core, tier-3 dot, one ring segment per unlock
- * level (filled per point), and the name. The Engine at the centre is not drawn. Locked stars are
+ * level (filled per point), and the name. The Engine at the centre is a plain gold dot. Locked stars are
  * grey and faint; a locked star a solid line reaches is brighter. Sizes come from {@link SkyPalette}
  * with the floor rule, so the fit view still reads.
  */
@@ -34,7 +34,11 @@ final class StarPainter {
         double z = view.zoom();
         double x = view.toScreenX(p.x(), w), y = view.toScreenY(p.y(), h);
         double core = SkyPalette.coreRadius(p, z), halo = SkyPalette.haloRadius(p, z);
-        if (p.isRoot()) return; // the Engine has no star: its paths still meet at the centre
+        if (p.isRoot()) {
+            // the Engine: a gold dot the size of a tier-1 perk, with no number and no ring around it
+            SkyDraw.disc(g, x, y, core, SkyDraw.withAlpha(SkyPalette.GOLD, fade));
+            return;
+        }
         PerkMenuSnapshot.StarState state = snap.stateOf(tree, p.id());
         int colour = SkyPalette.classColour(tree, p);
         boolean tier3 = p.tier() == 3;
