@@ -718,7 +718,7 @@ public final class CarriageContentsPlacer {
                         level, wWorld, rotated, w.entry().blockEntityNbt(),
                         games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()), w.localPos(), seed, carriageIndex,
                         lootId);
-                    ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
+                    ConnectPass.note(level, wWorld, w.entry(), rotated);
                     games.brennan.dungeontrain.editor.RotationApplier.stampObeliskGems(level, wWorld, rotated,
                         w.entry(), entry.localPos(), seed, carriageIndex, lockId);
                     // A Y flip turns the carriage upside down, so an up-growing column grows down.
@@ -1785,7 +1785,8 @@ public final class CarriageContentsPlacer {
         discardDroppedItemsIn(level, interiorOrigin(carriageOrigin), size);
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, interiorOrigin(carriageOrigin), size, true, Blocks.AIR);
-        return template;
+        // No flowing fluid in a saved template; AIR is ignored here, so no air cells are written.
+        return games.brennan.dungeontrain.template.TemplateDecor.withoutFlowingFluid(level, template, false);
     }
 
     /**

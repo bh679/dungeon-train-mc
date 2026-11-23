@@ -688,7 +688,9 @@ public final class EditorTypeMenus {
                     builderName(TemplateBuilderLookup.track(kind, m.id())))
                 // Dates belong to the member template itself (its weights.json entry), the same
                 // place the pick reads them from and the Dates picker writes them to.
-                .withPeriods(TrackVariantWeights.gateFor(kind, m.id()).periods()));
+                .withPeriods(TrackVariantWeights.gateFor(kind, m.id()).periods())
+                // Order, seen again and the weight after the Xth visit: the sheet's Order lines.
+                .withVisits(m.visits()));
         }
         return out;
     }

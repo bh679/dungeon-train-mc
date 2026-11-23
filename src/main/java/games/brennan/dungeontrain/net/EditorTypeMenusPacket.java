@@ -202,7 +202,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         List<String> groupIds,
         String pool,
         boolean poolHeader,
-        List<String> periods
+        List<String> periods,
+        games.brennan.dungeontrain.track.variant.VisitRules visits
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -219,6 +220,28 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             groupIds = groupIds == null ? List.of() : List.copyOf(groupIds);
             pool = pool == null ? "" : pool;
             periods = periods == null ? List.of() : List.copyOf(periods);
+            if (visits == null) visits = games.brennan.dungeontrain.track.variant.VisitRules.NONE;
+        }
+
+        /** The 19-field shape from before visit rules — none. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, List<String> stageIds, String displayName,
+                       String builderUuid, String builderName, List<String> groupIds, String pool, boolean poolHeader,
+                       List<String> periods) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName, isUser, isImported,
+                subVariants, stageIds, displayName, builderUuid, builderName, groupIds, pool, poolHeader, periods,
+                games.brennan.dungeontrain.track.variant.VisitRules.NONE);
+        }
+
+        /**
+         * Copy with a dimensional sub-variant's visit rules (order, seen again, weight after the Xth
+         * visit). Drawn as the data sheet's Order lines; edits go back one command at a time.
+         */
+        public Variant withVisits(games.brennan.dungeontrain.track.variant.VisitRules rules) {
+            return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, pool, poolHeader,
+                periods, rules);
         }
 
         /** The 18-field shape from before date periods — any time. */
@@ -237,7 +260,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         public Variant withPeriods(java.util.Collection<String> ids) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
                 isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, pool, poolHeader,
-                ids == null ? List.of() : List.copyOf(ids));
+                ids == null ? List.of() : List.copyOf(ids), visits);
         }
 
         /** The 16-field shape from before contents pools — in no pool. */
@@ -255,7 +278,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
          */
         public Variant inPool(String poolId) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, poolId, false, periods);
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, poolId, false, periods, visits);
         }
 
         /**
@@ -284,7 +307,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the template-group memberships replaced (tunnel templates only today). */
         public Variant withGroups(List<String> groups) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups, pool, poolHeader, periods);
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups, pool, poolHeader, periods, visits);
         }
 
         /** The 13-field shape the label-aware builders used — no builder credit. */
@@ -306,13 +329,13 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the drawn label replaced; {@code null} / blank falls back to the name. */
         public Variant withDisplayName(String label) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds, pool, poolHeader, periods);
+                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds, pool, poolHeader, periods, visits);
         }
 
         /** Copy with the builder credit replaced; {@code null} for either half means "none". */
         public Variant withBuilder(String uuid, String builderName) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds, pool, poolHeader, periods);
+                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds, pool, poolHeader, periods, visits);
         }
 
         /** True when somebody is credited as this template's original builder. */
@@ -484,6 +507,10 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         buf.writeBoolean(v.poolHeader());
         buf.writeVarInt(v.periods().size());
         for (String p : v.periods()) buf.writeUtf(p, 64);
+        buf.writeVarInt(v.visits().order());
+        buf.writeBoolean(v.visits().seenAgain());
+        buf.writeVarInt(v.visits().afterVisits());
+        buf.writeVarInt(v.visits().laterWeight());
     }
 
     static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -518,9 +545,10 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         int periodCount = buf.readVarInt();
         List<String> periods = new ArrayList<>(periodCount);
         for (int k = 0; k < periodCount; k++) periods.add(buf.readUtf(64));
+        games.brennan.dungeontrain.track.variant.VisitRules visits = new games.brennan.dungeontrain.track.variant.VisitRules(buf.readVarInt(), buf.readBoolean(), buf.readVarInt(), buf.readVarInt());
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
             category, modelId, modelName, isUser, isImported, subs, stageIds, displayName,
-            builderUuid, builderName, groupIds, pool, poolHeader, periods);
+            builderUuid, builderName, groupIds, pool, poolHeader, periods, visits);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {

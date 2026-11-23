@@ -183,7 +183,30 @@ public final class TemplateDecor {
                                             @Nullable Block voidBlock, Rule rule) {
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, origin, size, /*includeEntities*/ true, voidBlock);
-        return keepOnlyDecor(level, template, rule);
+        // One round-trip for both filters: the entities a template does not carry, and the
+        // flowing fluid it does not either (TemplateFluids). AIR captures never write air cells.
+        CompoundTag tag = template.save(new CompoundTag());
+        boolean entities = filterEntities(tag, rule);
+        boolean fluids = TemplateFluids.dropFlowing(tag, voidBlock != net.minecraft.world.level.block.Blocks.AIR);
+        if (!entities && !fluids) return template;
+        StructureTemplate filtered = new StructureTemplate();
+        filtered.load(level.holderLookup(Registries.BLOCK), tag);
+        return filtered;
+    }
+
+    /**
+     * {@link TemplateFluids#dropFlowing} on an already-captured template — for the save sites that
+     * fill a template themselves rather than through {@link #capture}.
+     *
+     * @param airSaved whether that capture writes air cells (it does unless it ignored AIR)
+     */
+    public static StructureTemplate withoutFlowingFluid(ServerLevel level, StructureTemplate template,
+                                                       boolean airSaved) {
+        CompoundTag tag = template.save(new CompoundTag());
+        if (!TemplateFluids.dropFlowing(tag, airSaved)) return template;
+        StructureTemplate filtered = new StructureTemplate();
+        filtered.load(level.holderLookup(Registries.BLOCK), tag);
+        return filtered;
     }
 
     /**

@@ -353,7 +353,8 @@ public final class PlayerMobAdvancementEvents {
 
         double maxDistSq = ECHO_NEAR_RADIUS * ECHO_NEAR_RADIUS;
         for (ServerPlayer player : players) {
-            if (player.isSpectator()) continue;
+            // Not while dead: the body lies in the level for a second after death.
+            if (player.isSpectator() || !player.isAlive()) continue;
             AABB near = player.getBoundingBox().inflate(ECHO_NEAR_RADIUS);
             boolean firedOwn = false;
             boolean firedRemote = false;
