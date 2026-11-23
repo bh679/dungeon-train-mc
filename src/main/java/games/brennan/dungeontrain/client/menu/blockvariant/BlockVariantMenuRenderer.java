@@ -526,6 +526,22 @@ public final class BlockVariantMenuRenderer {
                     ? MenuLang.t("block_variant.painting_random") : p.image().getPath();
                 label = MenuLang.t("common.name_value", shortenStateLabel(entry.stateString()), picture);
                 labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
+            } else if (BlockVariantMenu.isSignRow(entry, parsed)
+                && !BlockVariantMenu.signText(entry).firstLine().isEmpty()) {
+                // "oak_wall_sign: Mind the gap" — the text is what tells two sign rows apart.
+                label = MenuLang.t("common.name_value", shortenStateLabel(entry.stateString()),
+                    "\"" + BlockVariantMenu.signText(entry).firstLine() + "\"");
+                // Cut to the name cell so the quoted text never runs under the row's pills. When the
+                // name and text don't both fit, the text wins: it is what tells sign rows apart (the
+                // icon already shows the block).
+                int room = (int) ((nameCellR - nameCellL - NAME_TEXT_LEFT_OFFSET) / TEXT_SCALE) - 2;
+                if (font.width(label) > room) {
+                    label = "\"" + BlockVariantMenu.signText(entry).firstLine() + "\"";
+                }
+                if (font.width(label) > room) {
+                    label = font.plainSubstrByWidth(label, Math.max(0, room - font.width("…"))) + "…";
+                }
+                labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
             } else {
                 label = shortenStateLabel(entry.stateString());
                 labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
@@ -809,6 +825,10 @@ public final class BlockVariantMenuRenderer {
             games.brennan.dungeontrain.editor.VariantBedColours colours = BlockVariantMenu.bedColours(entry);
             on = !colours.isDefault();
             label = BedColourPopupLayout.shortLabel(colours);
+        } else if (BlockVariantMenu.isSignRow(entry, parsed)) {
+            games.brennan.dungeontrain.editor.VariantSign sign = entry.signOptions();
+            on = !sign.isDefault();
+            label = SignPopupLayout.shortLabel(sign);
         } else if (BlockVariantMenu.isTrapRow(entry, parsed)) {
             on = entry.trapped() > 0;
             label = on ? MenuLang.t("block_variant.trap_pct", entry.trapped()) : MenuLang.t("block_variant.trap");

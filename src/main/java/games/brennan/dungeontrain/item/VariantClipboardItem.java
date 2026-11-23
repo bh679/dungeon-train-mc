@@ -158,6 +158,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_BED_COLOURS = "bc";
     /** Per-entry slime size / End slime type mask ({@code VariantSlime#mask}). Absent when any. */
     private static final String NBT_SLIME = "sl";
+    /** Per-entry sign options token ({@code VariantSign#id}). Absent when none. */
+    private static final String NBT_SIGN = "sg";
     /** Per-entry trapped-chest chance, 1..100. Absent when 0. */
     private static final String NBT_TRAPPED = "tr";
 
@@ -564,6 +566,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.slime().isDefault()) {
                 entry.putInt(NBT_SLIME, s.slime().mask());
             }
+            if (!s.sign().isDefault()) {
+                entry.putString(NBT_SIGN, s.sign().id());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -771,7 +776,9 @@ public final class VariantClipboardItem extends Item {
                     : games.brennan.dungeontrain.editor.VariantCharges.AS_PLACED,
                 entry.contains(NBT_BED_COLOURS, Tag.TAG_INT)
                     ? new games.brennan.dungeontrain.editor.VariantBedColours(entry.getInt(NBT_BED_COLOURS))
-                    : games.brennan.dungeontrain.editor.VariantBedColours.WHITE_ONLY));
+                    : games.brennan.dungeontrain.editor.VariantBedColours.WHITE_ONLY)
+                .withSign(games.brennan.dungeontrain.editor.VariantSign.parse(
+                    entry.contains(NBT_SIGN, Tag.TAG_STRING) ? entry.getString(NBT_SIGN) : null)));
         }
         return out;
     }

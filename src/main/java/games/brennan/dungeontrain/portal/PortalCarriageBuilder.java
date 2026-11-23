@@ -883,8 +883,18 @@ public final class PortalCarriageBuilder {
                                                 boolean ownShelfBoost,
                                                 net.minecraft.server.level.ServerPlayer rider) {
         long seed = level.getSeed();
-        java.util.function.LongFunction<String> pickAt =
-            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx);
+        // A group with visit rules (ordered steps, seen again, weight after the Xth visit) draws for
+        // the rider; every other group ignores the view and draws by weight as it always has.
+        java.util.function.ToIntFunction<String> visits = PortalRoomVisits.viewFor(rider, pairKey);
+        // A visit-ruled roll does not survive a restart (it read the rider's visits), so a pair that
+        // already stood one reads its room back rather than rolling again.
+        String recalled = games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level).visitRuledPick(pairKey);
+        // A room deleted since stands nowhere; the pair rolls afresh.
+        String remembered = recalled != null && TrackVariantRegistry.contains(TrackKind.PORTAL_ROOM, recalled)
+            ? recalled : null;
+        java.util.function.LongFunction<String> pickAt = index -> remembered != null && index == pairKey
+            ? remembered
+            : TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx, null, visits);
         // The seeded pick, then how often it may answer "a library of the rider's own books" — the
         // one outcome whose weight depends on the run rather than on the room weights alone. See
         // PortalOwnShelves; at a scale of 1 this is the pick and nothing else. An author room's
@@ -2132,7 +2142,7 @@ public final class PortalCarriageBuilder {
                             w.entry().linkedLootPrefabId());
                         games.brennan.dungeontrain.editor.GrowthPass.note(level, wWorld, w.entry(), placedState,
                             w.localPos(), worldSeed, cellIndex, within);
-                        games.brennan.dungeontrain.editor.ConnectPass.note(level, wWorld, w.entry().connect(), placedState);
+                        games.brennan.dungeontrain.editor.ConnectPass.note(level, wWorld, w.entry(), placedState);
                     }
                     continue;
                 }
@@ -2165,7 +2175,7 @@ public final class PortalCarriageBuilder {
                     picked.linkedLootPrefabId());
                 games.brennan.dungeontrain.editor.GrowthPass.note(level, world, picked, placedState,
                     local, worldSeed, cellIndex, within);
-                games.brennan.dungeontrain.editor.ConnectPass.note(level, world, picked.connect(), placedState);
+                games.brennan.dungeontrain.editor.ConnectPass.note(level, world, picked, placedState);
             }
         }
     }
