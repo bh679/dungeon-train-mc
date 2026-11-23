@@ -125,7 +125,11 @@ public abstract class LevelRendererVoidSkyMixin {
     private double dungeontrain$suppressVoidPlaneForSkybox(double original) {
         // Horizon height is only read to compute `eyeY - horizon < 0`. Returning negative
         // infinity makes that difference positive, so the dark dome is skipped.
-        return SkyboxStencil.isDrawingSurfaceSky() ? Double.NEGATIVE_INFINITY : original;
+        // A room under an ordinary overworld sky stands in the basement, far below the horizon, and
+        // the dome put a black band across its horizon; its sky is drawn as from the surface.
+        boolean surfaceSky = SkyboxStencil.isDrawingSurfaceSky()
+            || games.brennan.dungeontrain.client.ClientPortalRoomSky.overworldSkyWeight() > 0.5f;
+        return surfaceSky ? Double.NEGATIVE_INFINITY : original;
     }
 
     @Inject(
