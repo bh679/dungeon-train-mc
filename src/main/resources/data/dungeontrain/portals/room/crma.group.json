@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "cmra_lobby",
+      "weight": 10,
+      "order": 1,
+      "afterVisits": 1,
+      "laterWeight": 2
+    },
+    {
+      "id": "cmra_hallway_basic_warped",
+      "weight": 10,
+      "order": 3
+    },
+    {
+      "id": "cmra_hallway_basic",
+      "weight": 50,
+      "order": 2
+    },
+    {
+      "id": "cmra_hallway_alcove_breakroom",
+      "weight": 30,
+      "order": 2
+    },
+    {
+      "id": "cmra_hallway_alcove_01",
+      "weight": 30,
+      "order": 2
+    }
+  ]
+}
