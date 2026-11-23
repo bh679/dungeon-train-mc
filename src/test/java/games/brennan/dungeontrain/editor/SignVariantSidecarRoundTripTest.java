@@ -53,6 +53,21 @@ final class SignVariantSidecarRoundTripTest {
     }
 
     @Test
+    @DisplayName("A locked sign row's option survives the sidecar")
+    void lockedRoundTrip() {
+        VariantState locked = VariantState.of(Blocks.OAK_WALL_SIGN.defaultBlockState())
+            .withSign(new VariantSign(false, true, true));
+        StringBuilder sb = new StringBuilder();
+        CarriageVariantBlocks.appendCellJson(sb, List.of(locked, VariantState.of(Blocks.STONE.defaultBlockState())), 0);
+        String json = sb.toString();
+        assertTrue(json.contains("\"sign\": \"locked\""), json);
+        CarriageVariantBlocks.ParsedCell parsed = CarriageVariantBlocks.parseCellValue(
+            JsonParser.parseString(json), BuiltInRegistries.BLOCK.asLookup(), "test", BlockPos.ZERO);
+        assertNotNull(parsed);
+        assertEquals(locked.sign(), parsed.states().get(0).sign());
+    }
+
+    @Test
     @DisplayName("Sign text and options survive the sidecar; defaults write nothing new")
     void sidecarRoundTrip() {
         StringBuilder sb = new StringBuilder();

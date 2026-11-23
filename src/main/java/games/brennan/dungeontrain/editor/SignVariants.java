@@ -169,6 +169,34 @@ public final class SignVariants {
         return row.withState(next, row.blockEntityNbt()).withRotation(nextRot);
     }
 
+    /**
+     * {@code row} placed like {@code leader}: the same mount, facing or rotation, waterlogging and
+     * rotation mode, but still {@code row}'s own wood. A wood with no block for the leader's mount
+     * keeps its own block. The NBT is left alone — the text is copied separately.
+     */
+    public static VariantState copyPlacement(VariantState leader, VariantState row) {
+        Mount mount = mountOf(leader.state());
+        if (mount == null || !isSign(row.state())) return row;
+        BlockState target;
+        if (mountOf(row.state()) == mount) {
+            target = row.state();
+        } else {
+            Block sibling = sibling(row.state(), mount);
+            if (sibling == null) return row;
+            target = sibling.defaultBlockState();
+        }
+        // Same mount means the same block class, so the leader's properties all carry across.
+        for (net.minecraft.world.level.block.state.properties.Property<?> prop : leader.state().getProperties()) {
+            if (target.hasProperty(prop)) target = copyProperty(leader.state(), target, prop);
+        }
+        return row.withState(target, row.blockEntityNbt()).withRotation(leader.rotation());
+    }
+
+    private static <T extends Comparable<T>> BlockState copyProperty(
+            BlockState from, BlockState to, net.minecraft.world.level.block.state.properties.Property<T> prop) {
+        return to.setValue(prop, from.getValue(prop));
+    }
+
     /** Compass slot (S0 W2 N4 E6) ↔ facing slot (Direction ordinal) for the four sides. */
     private static final Direction[] SIDES = {Direction.SOUTH, Direction.WEST, Direction.NORTH, Direction.EAST};
 

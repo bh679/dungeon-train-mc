@@ -1,0 +1,20 @@
+{
+  "id": "death-camera-flies-to-killer",
+  "version": "0.1986.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Death camera flies to your killer",
+  "summary": "After you die, the camera now flies through the world from your body to whoever killed you, and back again, instead of cutting through black.",
+  "highlights": [
+    "A shorter look at the mob that killed you",
+    "The flight back carries straight on into the next shot"
+  ],
+  "pr": 2847,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
