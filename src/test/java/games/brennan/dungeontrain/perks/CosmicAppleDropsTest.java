@@ -110,8 +110,8 @@ final class CosmicAppleDropsTest {
     }
 
     @Test
-    @DisplayName("every Diff-Level from 1 gets at least one apple, on both sides, for many settings")
-    void everyLevelHasAnApple() {
+    @DisplayName("every Diff-Level, Level 0 included, gets at least two apples on both sides, for many settings")
+    void everyLevelHasTwoApples() {
         int[] cpts = {1, 3, 7, 20, 40, 1000};
         for (long seed = 1; seed <= 6; seed++) {
             for (int gs = 1; gs <= 16; gs++) {
@@ -140,10 +140,6 @@ final class CosmicAppleDropsTest {
             int key = anchor < 0 ? -lvl - 1 : lvl;
             int slot = CosmicAppleDrops.slotFor(seed, anchor, gs, lvl, true, cpt, delay, offset);
             assertEquals(slot, CosmicAppleDrops.slotFor(seed, anchor, gs, lvl, true, cpt, delay, offset), ctx);
-            if (lvl == 0) {
-                assertEquals(-1, slot, "level 0 " + ctx);
-                continue;
-            }
             assertTrue(slot < gs, ctx);
             long[] range = CosmicAppleDrops.levelGroups(lvl, anchor < 0, cpt, delay, offset, gs);
             assertTrue(range != null && g >= range[0] && g <= range[1], "group " + g + " outside its level " + ctx);
@@ -158,25 +154,30 @@ final class CosmicAppleDropsTest {
             long[] range = CosmicAppleDrops.levelGroups(lvl, key < 0, cpt, delay, offset, gs);
             // Only levels whose groups all fall inside the swept span can be judged.
             if (range[0] < firstGroup || range[1] > lastGroup) continue;
-            assertTrue(appleGroups.getOrDefault(key, 0) >= 1, "level " + key + " has no apple " + ctx);
+            long want = Math.min(CosmicAppleDrops.MIN_PER_LEVEL, range[1] - range[0] + 1);
+            assertTrue(appleGroups.getOrDefault(key, 0) >= want,
+                    "level " + key + " has " + appleGroups.getOrDefault(key, 0) + " apples " + ctx);
         }
     }
 
     @Test
-    @DisplayName("the floor adds only to levels that drew none, and only one group")
-    void floorOnlyFillsEmptyLevels() {
+    @DisplayName("the floor tops a level up to exactly two, and never adds to a level that drew two")
+    void floorTopsUpToTwo() {
         int gs = 3;
         int cpt = 20;
         for (long seed = 1; seed <= 200; seed++) {
-            for (int lvl = 1; lvl <= 30; lvl++) {
+            for (int lvl = 0; lvl <= 30; lvl++) {
                 long[] r = CosmicAppleDrops.levelGroups(lvl, false, cpt, 1, 0, gs);
                 int natural = 0;
                 int floored = 0;
                 for (long g = r[0]; g <= r[1]; g++) {
                     if (CosmicAppleDrops.groupGetsApple(seed, g)) natural++;
-                    if (CosmicAppleDrops.isFloorGroup(seed, g, false, lvl, cpt, 1, 0, gs)) floored++;
+                    if (CosmicAppleDrops.isFloorGroup(seed, g, false, lvl, cpt, 1, 0, gs)) {
+                        assertTrue(!CosmicAppleDrops.groupGetsApple(seed, g), "floor on a winning group");
+                        floored++;
+                    }
                 }
-                assertEquals(natural == 0 ? 1 : 0, floored, "seed " + seed + " level " + lvl);
+                assertEquals(Math.max(0, 2 - natural), floored, "seed " + seed + " level " + lvl);
             }
         }
     }
@@ -190,5 +191,17 @@ final class CosmicAppleDropsTest {
             int slot = CosmicAppleDrops.slotFor(9L, anchor, 3, 5, false, 20, 1, 0);
             assertEquals(natural, slot >= 0, "group " + g);
         }
+    }
+
+    @Test
+    @DisplayName("Level 0 spans the origin out to carriage 39 at the defaults")
+    void levelZeroRange() {
+        long[] pos = CosmicAppleDrops.levelGroups(0, false, 20, 1, 0, 3);
+        long[] neg = CosmicAppleDrops.levelGroups(0, true, 20, 1, 0, 3);
+        assertEquals(0, pos[0]);
+        assertEquals(13, pos[1]);
+        assertEquals(-13, neg[0]);
+        assertEquals(-1, neg[1]);
+        assertEquals(14, CosmicAppleDrops.levelGroups(1, false, 20, 1, 0, 3)[0]);
     }
 }

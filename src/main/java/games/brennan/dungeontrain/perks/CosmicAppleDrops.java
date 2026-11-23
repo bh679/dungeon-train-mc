@@ -25,9 +25,9 @@ import java.util.List;
 
 /**
  * A cosmic apple turns up in about one carriage group in {@link #EVERY}: one stack of one, in one chest,
- * barrel or shulker box of that group, never at Diff-Level 0 (the first 40 carriages). Every Diff-Level from 1 on
- * gets at least one: a level whose groups all miss the draw hands one apple to a group picked by seed
- * ({@link #isFloorGroup}); each side of the origin counts on its own, as Diff-Level uses distance. Which apple depends on depth
+ * barrel or shulker box of that group. Every Diff-Level, Level 0 included, gets at least {@link #MIN_PER_LEVEL}:
+ * a level whose groups win fewer draws tops up with groups picked by seed ({@link #isFloorGroup}); each side
+ * of the origin counts on its own, as Diff-Level uses distance. Which apple depends on depth
  * ({@link #tierFor}): the chance of a Celestial Bite and of a Violet Core each follow a curve over Diff-Level
  * ({@link AppleTierCurve#BITE}, {@link AppleTierCurve#CORE}), rising gently to 25% and 10%; the rest are
  * Cosmic Apples. Deterministic per world seed and group, so a regenerated group
@@ -41,6 +41,8 @@ public final class CosmicAppleDrops {
 
     /** One group in this many gets an apple. */
     static final int EVERY = 5;
+    /** Every Diff-Level (each side of the origin) gets at least this many apple groups, when it has that many groups. */
+    static final int MIN_PER_LEVEL = 2;
     /** The tier roll is out of this many: basis points, so the curves keep two decimals of a per cent. */
     static final int ROLL_RANGE = 10_000;
     /** Salt so this draw is independent of the portal lottery and the loot rolls. */
@@ -81,44 +83,60 @@ public final class CosmicAppleDrops {
     /** Pure {@link #slotFor(long, int, int)}: {@code level} is the anchor's Diff-Level, the rest the live config. */
     static int slotFor(long seed, int anchorPIdx, int groupSize, int level, boolean floor,
                        int carriagesPerTier, int delay, int offset) {
-        if (groupSize <= 0 || level <= 0) return -1;
+        if (groupSize <= 0 || level < 0) return -1;
         long groupIndex = Math.floorDiv(anchorPIdx, groupSize);
         if (groupGetsApple(seed, groupIndex)) return (int) Math.floorMod(hash(seed + 1, groupIndex), groupSize);
-        // The level's guaranteed apple starts at the first carriage, so the hand-on past a carriage with no
+        // A level's guaranteed apples start at the first carriage, so the hand-on past a carriage with no
         // free container (TrainAssembler) can try every carriage of the group.
         if (floor && isFloorGroup(seed, groupIndex, anchorPIdx < 0, level, carriagesPerTier, delay, offset, groupSize)) return 0;
         return -1;
     }
 
     /**
-     * True when {@code groupIndex} is the group that carries its level's one guaranteed apple: no group of
-     * {@code level} on that side of the origin won {@link #groupGetsApple}, and the seed picked this one.
+     * True when {@code groupIndex} carries one of its level's guaranteed apples. A level (one side of the
+     * origin) whose groups win fewer than {@link #MIN_PER_LEVEL} draws ({@link #groupGetsApple}) tops up from
+     * the groups that missed: they are ranked by seed and the lowest ones take the missing apples.
      */
     static boolean isFloorGroup(long seed, long groupIndex, boolean negativeSide, int level,
                                 int carriagesPerTier, int delay, int offset, int groupSize) {
         long[] range = levelGroups(level, negativeSide, carriagesPerTier, delay, offset, groupSize);
         if (range == null || groupIndex < range[0] || groupIndex > range[1]) return false;
-        for (long g = range[0]; g <= range[1]; g++) {
-            if (groupGetsApple(seed, g)) return false;
-        }
+        if (groupGetsApple(seed, groupIndex)) return false;
         long count = range[1] - range[0] + 1;
-        long pick = range[0] + Math.floorMod(hash(seed + 4, level * 2L + (negativeSide ? 1 : 0)), count);
-        return groupIndex == pick;
+        long won = 0;
+        long ahead = 0;
+        long mine = floorRank(seed, groupIndex);
+        for (long g = range[0]; g <= range[1]; g++) {
+            if (groupGetsApple(seed, g)) {
+                won++;
+            } else if (g != groupIndex) {
+                long rank = floorRank(seed, g);
+                if (rank < mine || (rank == mine && g < groupIndex)) ahead++;
+            }
+        }
+        long missing = Math.min(MIN_PER_LEVEL, count) - won;
+        return ahead < missing;
+    }
+
+    /** Seeded order in which a level's missed groups take its guaranteed apples (lowest first). */
+    private static long floorRank(long seed, long groupIndex) {
+        return hash(seed + 4, groupIndex);
     }
 
     /**
      * The first and last group index whose anchor ({@code index * groupSize}) sits at Diff-Level
-     * {@code level} (1 or more) on one side of the origin, or null when no anchor does. Solved from
+     * {@code level} (0 or more) on one side of the origin, or null when no anchor does. Solved from
      * {@code DifficultyProgression.effectiveTier(max(0, abs(anchor) + offset), carriagesPerTier, delay)}:
-     * the level holds shifted distances {@code [(level + delay) * cpt, (level + delay + 1) * cpt - 1]}.
+     * the level holds shifted distances {@code [(level + delay) * cpt, (level + delay + 1) * cpt - 1]},
+     * and Level 0 everything from the origin up to {@code (delay + 1) * cpt - 1}.
      * The negative side starts at anchor -1 (anchor 0 belongs to the positive side).
      */
     static long[] levelGroups(int level, boolean negativeSide, int carriagesPerTier, int delay, int offset,
                               int groupSize) {
-        if (level <= 0 || groupSize <= 0) return null;
+        if (level < 0 || groupSize <= 0) return null;
         long cpt = Math.max(1, carriagesPerTier);
         long band = (long) level + Math.max(0, delay);
-        long lo = band * cpt - offset;
+        long lo = level == 0 ? Long.MIN_VALUE / 4 : band * cpt - offset;
         long hi = (band + 1) * cpt - 1 - offset;
         long minAbs = negativeSide ? 1 : 0;
         lo = Math.max(lo, minAbs);
