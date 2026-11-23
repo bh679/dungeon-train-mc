@@ -468,7 +468,9 @@ final class PerkDetailsBar {
             String why = font.plainSubstrByWidth(Component.translatable(refusalKey).getString(), mw);
             g.drawString(font, why, x, dy + (max - 1) * LINE, (a << 24) | 0xFFC9C9, false);
         }
-        if (!stats.isEmpty()) renderStats(g, stats, snap.points(p.id()), x, chipY, contentRight, a);
+        // unlocking only, points are gone: show what the level the Unlock tab names gives at 100%
+        int statPoints = unlockOnly ? snap.unlockLevel(p.id()) + 1 : snap.points(p.id());
+        if (!stats.isEmpty()) renderStats(g, stats, statPoints, x, chipY, contentRight, a);
     }
 
     /** The stat chips; with a graph block hovered, each previews that block's value in gold ({@link StatChips}). */
