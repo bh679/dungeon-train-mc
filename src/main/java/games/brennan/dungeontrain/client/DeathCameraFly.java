@@ -4,8 +4,8 @@ import net.minecraft.util.Mth;
 import org.joml.Vector3d;
 
 /**
- * The death moment's one camera move between shots: from the orbit of where you died, the lens
- * flies through the world to the orbit of who killed you instead of cutting through black. Pure
+ * The death moment's camera moves between shots: from the orbit of where you died, the lens flies
+ * through the world to the orbit of who killed you and back, instead of cutting through black. Pure
  * maths; {@link DeathCameraCycle} owns the state.
  */
 final class DeathCameraFly {
@@ -19,9 +19,14 @@ final class DeathCameraFly {
 
     private DeathCameraFly() {}
 
-    /** Pure: the shot after {@code prev} is flown into, not cut to: the spot orbit to the killer orbit. */
+    /** Pure: the shot after {@code prev} is flown into, not cut to: the spot orbit to the killer orbit, and back. */
     static boolean fliesInto(DeathShot prev, DeathShot next) {
-        return isSpot(prev) && next != null && next.kind() == DeathShot.Kind.ORBIT && next.target() == DeathShot.Target.KILLER;
+        return (isSpot(prev) && isKiller(next)) || (isKiller(prev) && isSpot(next));
+    }
+
+    /** Pure: the orbit of who killed you. */
+    static boolean isKiller(DeathShot shot) {
+        return shot != null && shot.kind() == DeathShot.Kind.ORBIT && shot.target() == DeathShot.Target.KILLER;
     }
 
     /** Pure: the orbit of where you died (the body, or the block that killed you). */

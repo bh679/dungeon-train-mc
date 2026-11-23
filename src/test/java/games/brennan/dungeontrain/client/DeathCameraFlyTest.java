@@ -19,12 +19,36 @@ class DeathCameraFlyTest {
         assertEquals("spot", seq.get(0).label());
         assertEquals("killer", seq.get(1).label());
         assertTrue(DeathCameraFly.fliesInto(seq.get(0), seq.get(1)), "body spot to killer");
-        assertFalse(DeathCameraFly.fliesInto(seq.get(1), seq.get(2)), "killer to mob stays a cut");
-        assertFalse(DeathCameraFly.fliesInto(seq.get(1), seq.get(0)), "stepping back is a cut");
+        assertEquals("back", seq.get(2).label());
+        assertTrue(DeathCameraFly.fliesInto(seq.get(1), seq.get(2)), "killer back to the body");
+        assertEquals("mob", seq.get(3).label());
+        assertFalse(DeathCameraFly.fliesInto(seq.get(2), seq.get(3)), "back to mob stays a cut");
+        assertFalse(DeathCameraFly.fliesInto(seq.get(1), seq.get(3)), "killer to mob is a cut");
         assertFalse(DeathCameraFly.fliesInto(null, seq.get(1)), "nothing drawn yet: no flight");
         DeathShot hazardSpot = DeathCameraCycle.buildSequence(false, true, false, true, false, true).get(0);
         assertEquals(DeathShot.Target.HAZARD, hazardSpot.target());
         assertTrue(DeathCameraFly.fliesInto(hazardSpot, seq.get(1)), "the killing block's spot flies too");
+    }
+
+    @Test
+    void killerShotIsHalfAndBackFollowsOnlyAfterSpotAndKiller() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, false, true);
+        assertEquals(seq.get(0).holdTicks() / 2, seq.get(1).holdTicks(), "the killer orbit is half the spot's");
+        DeathShot back = seq.get(2);
+        assertEquals(seq.get(0).target(), back.target(), "back to the same subject as the spot");
+        assertTrue(DeathCameraFly.isSpot(back));
+        // No spot (void death), or no killer: no back shot.
+        assertFalse(DeathCameraCycle.buildSequence(true, true, false, true).stream().anyMatch(s -> s.label().equals("back")));
+        assertFalse(DeathCameraCycle.buildSequence(false, false, false, false).stream().anyMatch(s -> s.label().equals("back")));
+        DeathShot hazardBack = DeathCameraCycle.buildSequence(false, true, false, true, false, true).get(2);
+        assertEquals(DeathShot.Target.HAZARD, hazardBack.target());
+    }
+
+    @Test
+    void shortOrbitsKeepThePace() {
+        assertEquals(DeathCameraCycle.MAX_SWEEP_DEGREES, DeathCameraCycle.maxSweepDegrees(60), EPS);
+        assertEquals(DeathCameraCycle.MAX_SWEEP_DEGREES / 2, DeathCameraCycle.maxSweepDegrees(30), EPS);
+        assertEquals(DeathCameraCycle.MAX_SWEEP_DEGREES, DeathCameraCycle.maxSweepDegrees(120), EPS, "never more than half a turn");
     }
 
     @Test

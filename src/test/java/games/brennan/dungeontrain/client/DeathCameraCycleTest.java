@@ -20,9 +20,9 @@ class DeathCameraCycleTest {
     @Test
     void fullSceneHasEveryShotInOrder() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true);
-        assertEquals(List.of("spot", "killer", "mob", "carriage", "body-out"), labels(seq).subList(0, 5));
-        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 3, seq.size() - 5);
-        assertEquals(5, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("spot", "killer", "back", "mob", "carriage", "body-out"), labels(seq).subList(0, 6));
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 3, seq.size() - 6);
+        assertEquals(6, DeathCameraCycle.loopStart(seq));
         assertEquals(List.of("feature", "mob-arc", "eyes-forward"), labels(seq).subList(seq.size() - 3, seq.size()), "subject shots then the last resort close the loop");
     }
 
@@ -52,7 +52,7 @@ class DeathCameraCycleTest {
     @Test
     void deathSpotOrbitLeadsIntoAKillerOrStandsInForTheCarriageShot() {
         assertEquals(List.of("carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 1), "on the train, no killer: no spot");
-        assertEquals(List.of("spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 2));
+        assertEquals(List.of("spot", "killer", "back"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
         assertEquals(List.of("spot", "leaving"), labels(DeathCameraCycle.buildSequence(false, false, false, false)).subList(0, 2), "off the train: spot instead of the carriage shot");
         assertEquals(List.of("leaving"), labels(DeathCameraCycle.buildSequence(true, false, false, false)).subList(0, 1), "void death: never");
         List<DeathShot> hazard = DeathCameraCycle.buildSequence(false, false, false, true, false, true);
@@ -138,7 +138,14 @@ class DeathCameraCycleTest {
     @Test
     void orbitsHoldThreeSecondsAndTheCarriageShotZoomsThenHolds() {
         for (DeathShot shot : DeathCameraCycle.buildSequence(false, true, true, true)) {
-            if (shot.kind() == DeathShot.Kind.ORBIT) assertEquals(60, shot.holdTicks(), shot.label());
+            if (shot.kind() == DeathShot.Kind.ORBIT) {
+                int want = switch (shot.label()) {
+                    case "killer" -> DeathCameraCycle.KILLER_HOLD_TICKS;
+                    case "back" -> DeathCameraCycle.BACK_HOLD_TICKS;
+                    default -> 60;
+                };
+                assertEquals(want, shot.holdTicks(), shot.label());
+            }
             if (shot.kind() == DeathShot.Kind.DOLLY) assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, shot.holdTicks());
         }
     }
@@ -214,7 +221,7 @@ class DeathCameraCycleTest {
     void loopOnHoldEndsOnTheSky() {
         assertFalse(DeathCameraCycle.LOOP_ON, "the looping train shots are on hold");
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true, false, false);
-        assertEquals(List.of("spot", "killer", "mob", "carriage", "body-out", "sky"), labels(seq));
+        assertEquals(List.of("spot", "killer", "back", "mob", "carriage", "body-out", "sky"), labels(seq));
         assertEquals(-1, DeathCameraCycle.loopStart(seq), "no loop to wrap back into");
         assertEquals(seq.size() - 1, DeathCameraCycle.nextIndex(seq, seq.size() - 1), "Right on the sky stays there");
         assertEquals(List.of("spot", "leaving", "body-out", "sky"),
