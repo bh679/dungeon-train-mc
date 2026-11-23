@@ -158,7 +158,18 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // this one, or swap the stacked panel to it.
                      OPEN_GROUP_MENU,
                      // Close the stacked group panel, leaving the main one open.
-                     CLOSE_GROUP_MENU }
+                     CLOSE_GROUP_MENU,
+                     // Sign row: delta = SignVariants.Mount ordinal (0-3), or AUTO_WIRE (4) for Auto.
+                     SET_SIGN_MOUNT,
+                     // Sign row: delta 1 = the cell's sign rows share one text, 0 = each its own.
+                     SET_SIGN_SHARED,
+                     // Sign row: delta 1 = waxed (passengers can't edit it), 0 = not.
+                     SET_SIGN_WAXED,
+                     // Sign row: stateString = SignVariants.toWire token (both sides + wax).
+                     SET_SIGN_TEXT }
+
+    /** Cap on {@link #stateString} over the wire — a {@code SET_SIGN_TEXT} token is the longest. */
+    public static final int STRING_MAX = games.brennan.dungeontrain.editor.SignVariants.WIRE_MAX;
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
@@ -176,7 +187,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
         buf.writeVarInt(entryIndex);
-        buf.writeUtf(stateString == null ? "" : stateString, 256);
+        buf.writeUtf(stateString == null ? "" : stateString, STRING_MAX);
         buf.writeVarInt(delta);
     }
 
@@ -186,7 +197,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
         String id = buf.readUtf(64);
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         int idx = buf.readVarInt();
-        String stateStr = buf.readUtf(256);
+        String stateStr = buf.readUtf(STRING_MAX);
         int delta = buf.readVarInt();
         return new BlockVariantEditPacket(op, id, local, idx, stateStr, delta);
     }

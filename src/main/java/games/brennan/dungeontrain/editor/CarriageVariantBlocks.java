@@ -495,7 +495,9 @@ public final class CarriageVariantBlocks {
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
                 VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
                 groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
-                condition, candles, pot, trapped, charges, bedColours);
+                condition, candles, pot, trapped, charges, bedColours)
+                // Additive sign options (Auto mount / shared text). Absent → as placed, own text.
+                .withSign(parseSign(obj.get("sign"), contextId, contextPos));
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -998,6 +1000,9 @@ public final class CarriageVariantBlocks {
             }
             sb.append("]");
         }
+        if (!s.sign().isDefault()) {
+            sb.append(", \"sign\": \"").append(s.sign().id()).append("\"");
+        }
         sb.append("}");
     }
 
@@ -1257,6 +1262,19 @@ public final class CarriageVariantBlocks {
             return VariantBedColours.WHITE_ONLY;
         }
         return colours;
+    }
+
+    /** Parse an optional {@code "sign"} token ({@code "auto"}, {@code "shared"}). Absent or malformed → none. */
+    private static VariantSign parseSign(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantSign.NONE;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantSign sign = token == null ? null : VariantSign.parse(token);
+        if (sign == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown sign '{}', using none.",
+                contextId, contextPos, el);
+            return VariantSign.NONE;
+        }
+        return sign;
     }
 
     /** Parse an optional {@code "pot"} token ({@code "random"}, {@code "minecraft:poppy,…"}). Absent or malformed → off. */

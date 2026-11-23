@@ -1,0 +1,17 @@
+{
+  "id": "no-advancements-while-dead",
+  "version": "0.1979.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "advancements"
+  ],
+  "title": "Advancement fix",
+  "summary": "Advancements are no longer earned while you lie dead waiting to respawn.",
+  "highlights": [],
+  "pr": 2838,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
