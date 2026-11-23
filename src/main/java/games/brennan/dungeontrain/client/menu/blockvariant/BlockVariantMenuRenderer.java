@@ -634,6 +634,13 @@ public final class BlockVariantMenuRenderer {
                 games.brennan.dungeontrain.editor.VariantSlime slime = BlockVariantMenu.slime(entries.get(growthRow));
                 drawPopupRows(ps, buffer, font, slot.rows(), slot.kind(), hovered,
                     (row, i) -> SlimePopupLayout.isSelected(slime, row, i));
+            } else if (slot != null && slot.kind() == BlockVariantMenu.CellKind.SIGN_OPTION) {
+                BlockVariantSyncPacket.Entry signEntry = entries.get(growthRow);
+                games.brennan.dungeontrain.editor.VariantSign sign = signEntry.signOptions();
+                boolean waxed = BlockVariantMenu.signText(signEntry).waxed();
+                drawPopupRows(ps, buffer, font, slot.rows(), slot.kind(), hovered,
+                    (row, i) -> SignPopupLayout.isSelected(sign, waxed, row, i));
+                drawSignToggleIcons(ps, buffer, slot.rows(), icons);
             } else if (slot != null && slot.kind() == BlockVariantMenu.CellKind.BED_COLOUR_OPTION) {
                 drawBedColourPopup(ps, buffer, font, slot.rows(),
                     BlockVariantMenu.bedColours(entries.get(growthRow)), hovered);
@@ -756,6 +763,34 @@ public final class BlockVariantMenuRenderer {
                 ps.popPose();
             }
         }
+    }
+
+    /** The Sign popup's icon row: the honeycomb (wax) and book-and-quill (edit text) over their buttons. */
+    private static void drawSignToggleIcons(PoseStack ps, MultiBufferSource buffer,
+                                            List<GrowthPopupLayout.Row> rows, @Nullable PanelIconBatch icons) {
+        for (GrowthPopupLayout.Row row : rows) {
+            if (row.section() != SignPopupLayout.SECTION_TOGGLES) continue;
+            double cy = (row.bottom() + row.top()) / 2.0;
+            drawPopupIcon(ps, buffer, row, SignPopupLayout.TOGGLE_WAX, new ItemStack(Items.HONEYCOMB), cy, icons);
+            drawPopupIcon(ps, buffer, row, SignPopupLayout.TOGGLE_EDIT, new ItemStack(Items.WRITABLE_BOOK), cy, icons);
+        }
+    }
+
+    private static void drawPopupIcon(PoseStack ps, MultiBufferSource buffer, GrowthPopupLayout.Row row, int i,
+                                      ItemStack stack, double cy, @Nullable PanelIconBatch icons) {
+        double size = Math.min(ICON_SIZE, row.buttonWidth() * 0.8);
+        double centerX = row.buttonLeft(i) + row.buttonWidth() / 2.0;
+        if (icons != null) {
+            icons.add(ps, stack, centerX, cy, size);
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        ps.pushPose();
+        ps.translate(centerX, cy, 0.002);
+        ps.scale((float) size, (float) size, (float) size);
+        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, LightTexture.FULL_BRIGHT,
+            OverlayTexture.NO_OVERLAY, ps, buffer, mc.level, 0);
+        ps.popPose();
     }
 
     /** The item a condition value shows as; {@code null} for air. Liquids show their bucket. */

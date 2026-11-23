@@ -320,4 +320,87 @@ final class SignVariantsTest {
             }
         };
     }
+
+    // ---- lock ----
+
+    /** The cell with row 0 turned to face east, hanging, with sample text and no wax. */
+    private static List<VariantState> leaderReady() {
+        List<VariantState> rows = SignRowEdits.setMount(cell(), 0, SignVariants.Mount.WALL_HANGING.ordinal());
+        VariantState r0 = rows.get(0);
+        rows = new java.util.ArrayList<>(rows);
+        rows.set(0, r0.withState(r0.state().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST),
+            r0.blockEntityNbt()));
+        rows = SignRowEdits.setText(rows, 0, sample());
+        return SignRowEdits.setWaxed(rows, 0, false);
+    }
+
+    @Test
+    @DisplayName("Lock copies mount, facing, text and wax to every sign, keeping each wood")
+    void lockCopiesEverythingButWood() {
+        List<VariantState> rows = SignRowEdits.setLocked(leaderReady(), 0, true);
+        Block[] expected = {Blocks.OAK_WALL_HANGING_SIGN, Blocks.SPRUCE_WALL_HANGING_SIGN, Blocks.CHERRY_WALL_HANGING_SIGN};
+        for (int i = 0; i < 3; i++) {
+            VariantState r = rows.get(i);
+            assertSame(expected[i], r.state().getBlock(), "row " + i);
+            assertEquals(Direction.EAST, r.state().getValue(BlockStateProperties.HORIZONTAL_FACING), "row " + i);
+            assertEquals(sample().front(), SignVariants.text(r.blockEntityNbt()).front(), "row " + i);
+            assertFalse(SignVariants.text(r.blockEntityNbt()).waxed(), "row " + i);
+            assertTrue(r.sign().locked() && r.sign().shared(), "row " + i);
+        }
+        assertTrue(rows.get(3).sign().isDefault(), "the lantern is untouched");
+        assertSame(cell().get(3).state(), rows.get(3).state());
+    }
+
+    @Test
+    @DisplayName("While locked, a mount or Auto edit on any sign reaches them all")
+    void lockedMountFansOut() {
+        List<VariantState> rows = SignRowEdits.setLocked(cell(), 0, true);
+        rows = SignRowEdits.setMount(rows, 2, SignVariants.Mount.STANDING.ordinal());
+        assertSame(Blocks.OAK_SIGN, rows.get(0).state().getBlock());
+        assertSame(Blocks.SPRUCE_SIGN, rows.get(1).state().getBlock());
+        assertSame(Blocks.CHERRY_SIGN, rows.get(2).state().getBlock());
+        rows = SignRowEdits.setMount(rows, 1, SignVariants.AUTO_WIRE);
+        for (int i = 0; i < 3; i++) assertTrue(rows.get(i).sign().auto(), "row " + i);
+        rows = SignRowEdits.setWaxed(rows, 0, false);
+        for (int i = 0; i < 3; i++) assertFalse(SignVariants.text(rows.get(i).blockEntityNbt()).waxed(), "row " + i);
+    }
+
+    @Test
+    @DisplayName("A sign added to a locked cell takes the lock's settings in its own wood")
+    void addedSignJoinsLock() {
+        List<VariantState> rows = SignRowEdits.setLocked(leaderReady(), 0, true);
+        VariantState added = SignRowEdits.joinShared(rows, VariantState.of(Blocks.BIRCH_SIGN.defaultBlockState()));
+        assertSame(Blocks.BIRCH_WALL_HANGING_SIGN, added.state().getBlock());
+        assertEquals(Direction.EAST, added.state().getValue(BlockStateProperties.HORIZONTAL_FACING));
+        assertEquals(sample().front(), SignVariants.text(added.blockEntityNbt()).front());
+        assertTrue(added.sign().locked());
+    }
+
+    @Test
+    @DisplayName("Unlocking leaves every sign as it is, still sharing its text")
+    void unlockKeepsSettings() {
+        List<VariantState> locked = SignRowEdits.setLocked(leaderReady(), 0, true);
+        List<VariantState> rows = SignRowEdits.setLocked(locked, 1, false);
+        for (int i = 0; i < 3; i++) {
+            assertFalse(rows.get(i).sign().locked(), "row " + i);
+            assertTrue(rows.get(i).sign().shared(), "row " + i);
+            assertSame(locked.get(i).state(), rows.get(i).state(), "row " + i);
+        }
+        rows = SignRowEdits.setMount(rows, 0, SignVariants.Mount.WALL.ordinal());
+        assertSame(Blocks.SPRUCE_WALL_HANGING_SIGN, rows.get(1).state().getBlock(), "unlocked: mount stays per row");
+        assertNull(SignRowEdits.setLocked(rows, 3, true), "not a sign row");
+    }
+
+    @Test
+    @DisplayName("Sign option tokens: locked implies shared and round-trips")
+    void lockToken() {
+        VariantSign locked = new VariantSign(false, false, true);
+        assertTrue(locked.shared());
+        assertEquals("locked", locked.id());
+        assertEquals("auto,locked", locked.withAuto(true).id());
+        assertEquals(locked.withAuto(true), VariantSign.parse("auto,locked"));
+        assertEquals(locked, VariantSign.parse("shared,locked"));
+        assertFalse(locked.withShared(false).locked(), "own text unlocks");
+        assertEquals(new VariantSign(false, true), locked.withLocked(false));
+    }
 }
