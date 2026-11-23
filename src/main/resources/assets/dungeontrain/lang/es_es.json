@@ -6349,7 +6349,7 @@
   "perk.dungeontrain.looting.name": "Botín",
   "perk.dungeontrain.looting.desc": "Tus muertes a veces cuentan como si tu arma tuviera un nivel más de Botín.",
   "perk.dungeontrain.craft-level-stats.name": "Estadísticas de Fabricación",
-  "perk.dungeontrain.craft-level-stats.desc": "El equipo que fabricas obtiene estadísticas del nivel en que estás, algo por debajo de los cofres.",
+  "perk.dungeontrain.craft-level-stats.desc": "El equipo que fabricas obtiene estadísticas según lo adentro del tren que estés.",
   "perk.dungeontrain.enchant-cost.name": "Coste de Encantamiento",
   "perk.dungeontrain.enchant-cost.desc": "Encantar y usar el yunque cuestan menos niveles.",
   "perk.dungeontrain.re-enchant.name": "Reencantar",

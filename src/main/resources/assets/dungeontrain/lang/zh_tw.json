@@ -6294,7 +6294,7 @@
   "perk.dungeontrain.looting.name": "掠奪",
   "perk.dungeontrain.looting.desc": "你的擊殺有時會視為武器多一級掠奪。",
   "perk.dungeontrain.craft-level-stats.name": "製作等級屬性",
-  "perk.dungeontrain.craft-level-stats.desc": "你製作的裝備會獲得所在關卡的屬性，略低於箱子所給的。",
+  "perk.dungeontrain.craft-level-stats.desc": "你製作的裝備會依你深入列車的程度獲得屬性。",
   "perk.dungeontrain.enchant-cost.name": "附魔花費",
   "perk.dungeontrain.enchant-cost.desc": "附魔和鐵砧操作花費的等級更少。",
   "perk.dungeontrain.re-enchant.name": "重新附魔",

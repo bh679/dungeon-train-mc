@@ -6280,7 +6280,7 @@
   "perk.dungeontrain.looting.name": "略奪",
   "perk.dungeontrain.looting.desc": "倒したとき、たまに武器のドロップ増加が1レベル高い扱いになる。",
   "perk.dungeontrain.craft-level-stats.name": "クラフトレベル能力",
-  "perk.dungeontrain.craft-level-stats.desc": "クラフトした装備に今いるレベルの能力値が付く。チェスト産より少し低め。",
+  "perk.dungeontrain.craft-level-stats.desc": "クラフトした装備に、列車のどれだけ奥にいるかに応じた能力値が付く。",
   "perk.dungeontrain.enchant-cost.name": "エンチャントコスト",
   "perk.dungeontrain.enchant-cost.desc": "エンチャントと金床の作業に必要なレベルが減る。",
   "perk.dungeontrain.re-enchant.name": "再エンチャント",

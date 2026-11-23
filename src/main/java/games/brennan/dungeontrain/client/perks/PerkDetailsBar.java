@@ -153,6 +153,14 @@ final class PerkDetailsBar {
             unlockReason = null;
             return true;
         }
+        PerkRegistry.bootstrap();
+        if (!PerkRegistry.isBuilt(shown.id())) {
+            // not built yet: the tab says so itself, in menu, death screen and play alike, with nothing under it
+            unlockButton = UnlockTab.comingSoon(font, screenW / 2, top, Component.translatable("gui.dungeontrain.perks.coming_soon"));
+            unlockReason = null;
+            activateButton = null;
+            return true;
+        }
         // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar.
         // Small and grey until the perk's points are filled, though it can still be pressed; points are gone
         // at death, so the death screen's menu has nothing to fill

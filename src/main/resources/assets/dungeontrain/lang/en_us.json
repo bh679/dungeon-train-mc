@@ -6328,7 +6328,7 @@
   "perk.dungeontrain.looting.name": "Looting",
   "perk.dungeontrain.looting.desc": "Your kills sometimes count as if your weapon had one more level of Looting.",
   "perk.dungeontrain.craft-level-stats.name": "Craft Level Stats",
-  "perk.dungeontrain.craft-level-stats.desc": "Gear you craft gets stats from the level you're in, a little below what chests give.",
+  "perk.dungeontrain.craft-level-stats.desc": "Gear you craft gets stats from how deep into the train you are.",
   "perk.dungeontrain.enchant-cost.name": "Enchant Cost",
   "perk.dungeontrain.enchant-cost.desc": "Enchanting and anvil work cost fewer levels.",
   "perk.dungeontrain.re-enchant.name": "Re-enchant",

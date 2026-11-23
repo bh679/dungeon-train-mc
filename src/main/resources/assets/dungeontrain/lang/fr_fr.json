@@ -6349,7 +6349,7 @@
   "perk.dungeontrain.looting.name": "Butin",
   "perk.dungeontrain.looting.desc": "Vos kills comptent parfois comme si votre arme avait un niveau de Butin en plus.",
   "perk.dungeontrain.craft-level-stats.name": "Stats de fabrication selon le niveau",
-  "perk.dungeontrain.craft-level-stats.desc": "L'équipement fabriqué reçoit les stats du niveau où vous êtes, un peu sous celles des coffres.",
+  "perk.dungeontrain.craft-level-stats.desc": "L'équipement fabriqué reçoit des stats selon votre progression dans le train.",
   "perk.dungeontrain.enchant-cost.name": "Coût d'enchantement",
   "perk.dungeontrain.enchant-cost.desc": "Enchanter et utiliser l'enclume coûtent moins de niveaux.",
   "perk.dungeontrain.re-enchant.name": "Réenchanter",

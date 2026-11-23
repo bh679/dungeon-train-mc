@@ -6280,7 +6280,7 @@
   "perk.dungeontrain.looting.name": "ปล้นสะดม",
   "perk.dungeontrain.looting.desc": "การสังหารของคุณบางครั้งนับเหมือนอาวุธมีการปล้นสะดมเพิ่มหนึ่งระดับ",
   "perk.dungeontrain.craft-level-stats.name": "สถิติเลเวลการคราฟต์",
-  "perk.dungeontrain.craft-level-stats.desc": "อุปกรณ์ที่คุณคราฟต์ได้สถิติจากเลเวลที่คุณอยู่ ต่ำกว่าที่หีบให้เล็กน้อย",
+  "perk.dungeontrain.craft-level-stats.desc": "อุปกรณ์ที่คุณคราฟต์ได้สถิติตามว่าคุณอยู่ลึกเข้าไปในรถไฟแค่ไหน",
   "perk.dungeontrain.enchant-cost.name": "ต้นทุนเอนแชนต์",
   "perk.dungeontrain.enchant-cost.desc": "การเอนแชนต์และการใช้ทั่งใช้เลเวลน้อยลง",
   "perk.dungeontrain.re-enchant.name": "เอนแชนต์ซ้ำ",

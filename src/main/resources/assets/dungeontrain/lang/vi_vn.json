@@ -6280,7 +6280,7 @@
   "perk.dungeontrain.looting.name": "Cướp bóc",
   "perk.dungeontrain.looting.desc": "Đòn hạ gục của bạn đôi khi tính như vũ khí có thêm một cấp Cướp bóc.",
   "perk.dungeontrain.craft-level-stats.name": "Chỉ số cấp độ chế tạo",
-  "perk.dungeontrain.craft-level-stats.desc": "Đồ bạn chế tạo nhận chỉ số theo cấp bạn đang ở, thấp hơn rương một chút.",
+  "perk.dungeontrain.craft-level-stats.desc": "Đồ bạn chế tạo nhận chỉ số theo độ sâu bạn đã vào trong đoàn tàu.",
   "perk.dungeontrain.enchant-cost.name": "Chi phí phù phép",
   "perk.dungeontrain.enchant-cost.desc": "Phù phép và dùng đe tốn ít cấp hơn.",
   "perk.dungeontrain.re-enchant.name": "Phù phép lại",
