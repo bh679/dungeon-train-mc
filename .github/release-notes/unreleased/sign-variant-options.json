@@ -1,0 +1,22 @@
+{
+  "id": "sign-variant-options",
+  "version": "0.1980.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "ui"
+  ],
+  "title": "Signs in block variants",
+  "summary": "Builders can now add signs as block variant options in the editor, give them text, and pick how they hang.",
+  "highlights": [
+    "A sign can be one of a cell's block options, with its own text or one text shared by every sign in the cell",
+    "Choose how it is mounted: on a wall, standing, hanging, on a wall bracket, or Auto to fit whatever is around it",
+    "Write the front and back, pick a text colour and glow, and wax it so passengers can't change it"
+  ],
+  "pr": 2840,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

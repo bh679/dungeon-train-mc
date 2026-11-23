@@ -102,6 +102,8 @@ public final class BlockVariantMenu {
         BED_COLOUR_OPTION,
         /** A button in a slime-type mob row's Slime popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
         SLIME_OPTION,
+        /** A button in a sign row's Sign popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        SIGN_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         /** The row's If pill — opens the condition popup for that row. */
@@ -278,6 +280,33 @@ public final class BlockVariantMenu {
             && games.brennan.dungeontrain.editor.VariantCandles.isCandle(parsed);
     }
 
+    /** True when {@code entry} is a sign row — it shows the Sign pill and popup in the Grow slot. */
+    public static boolean isSignRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.SignVariants.isSign(parsed);
+    }
+
+    private static String signTextKey;
+    private static games.brennan.dungeontrain.editor.SignVariants.Text signTextValue;
+
+    /** The row's sign text, read from its block-entity NBT (blank when it has none). */
+    public static games.brennan.dungeontrain.editor.SignVariants.Text signText(BlockVariantSyncPacket.Entry entry) {
+        String key = entry.beNbt();
+        if (key != null && key.equals(signTextKey)) return signTextValue;
+        net.minecraft.nbt.CompoundTag tag = null;
+        if (key != null && !key.isEmpty()) {
+            try {
+                tag = net.minecraft.nbt.TagParser.parseTag(key);
+            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException ignored) {
+                // Unreadable NBT reads as a blank sign; the row keeps it until the author edits.
+            }
+        }
+        games.brennan.dungeontrain.editor.SignVariants.Text text = games.brennan.dungeontrain.editor.SignVariants.text(tag);
+        signTextKey = key;
+        signTextValue = text;
+        return text;
+    }
+
     /** True when {@code entry} is a flower pot row — it shows the Plant pill and popup in the Grow slot. */
     public static boolean isPotRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
         return entry.entityId() == null && entry.groupRef() <= 0
@@ -365,6 +394,10 @@ public final class BlockVariantMenu {
         if (isPotRow(entry, parsed)) {
             return new SlotPopup(CellKind.POT_OPTION, PotPopupLayout.rows(pot(entry), panelW, halfH));
         }
+        if (isSignRow(entry, parsed)) {
+            return new SlotPopup(CellKind.SIGN_OPTION, SignPopupLayout.rows(parsed, entry.signOptions(),
+                signText(entry).waxed(), panelW, halfH));
+        }
         if (isAnchorRow(entry, parsed)) {
             return new SlotPopup(CellKind.CHARGE_OPTION, ChargePopupLayout.rows(charges(entry),
                 games.brennan.dungeontrain.editor.VariantCharges.maxFor(parsed), panelW, halfH));
@@ -381,6 +414,7 @@ public final class BlockVariantMenu {
     /** True when the row shows an option pill in the Grow slot other than Grow itself. */
     public static boolean usesGrowSlot(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
         return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed)
+            || isSignRow(entry, parsed)
             || isAnchorRow(entry, parsed) || isWhiteBedRow(entry, parsed) || isTrapRow(entry, parsed);
     }
 
