@@ -317,6 +317,10 @@ public final class EditorBrowserPane {
             ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, tile.variant().displayName()) : tile.variant().displayName());
         // A labelled tile keeps its id in reach — it is what every command and file is named by.
         if (tile.variant().isLabelled()) sb.append("  ·  ").append(tile.variant().name());
+        // An ordered dimensional sub-variant says which step of the order it is.
+        if (!asSelf && tile.variant().visits().isOrdered()) {
+            sb.append("  ·  ").append(EditorScreenLang.text(EditorScreenLang.SHEET_ORDER_STEP, tile.variant().visits().order()));
+        }
         int weight = asSelf ? tile.selfWeight() : tile.variant().weight();
         if (weight >= 0) sb.append("  ·  ").append(EditorScreenLang.text(EditorScreenLang.WEIGHT_READ_ONLY, weight));
         if (!asSelf && tile.isGroup()) {

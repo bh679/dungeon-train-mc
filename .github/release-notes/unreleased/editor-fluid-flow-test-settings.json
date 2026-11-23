@@ -1,0 +1,22 @@
+{
+  "id": "editor-fluid-flow-test-settings",
+  "version": "0.1981.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "ui"
+  ],
+  "title": "Editor: still water and separate test settings",
+  "summary": "Water and lava you place while building in the editor now stay put instead of flooding the plot, and saved builds keep only the source blocks you placed. Editor settings like Redstone, TNT and Mobs now remember a separate choice for when you test a carriage.",
+  "highlights": [
+    "New Fluid flow setting in the editor: off while you build, on when you test",
+    "Saved builds no longer bake in half-spread water or lava",
+    "Redstone, TNT, Observers, Auto fly, Mobs and Fluid flow each keep their own setting inside Test the Carriage"
+  ],
+  "pr": 2841,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
