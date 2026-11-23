@@ -19354,5 +19354,15 @@
         "/discord"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.sheet.order_step": {
+    "1": { "label": "the step number in the order", "examples": ["1", "2"] }
+  },
+  "chat.dungeontrain.editor.room_visit_rules_set": {
+    "1": { "label": "the sub-variant template's id", "examples": ["cmra_lobby", "cmra_hallway_basic"] },
+    "2": { "label": "the step number, 0 for any time", "examples": ["1", "0"] },
+    "3": { "label": "yes or no (English word)", "examples": ["yes", "no"] },
+    "4": { "label": "a visit count, 0 for off", "examples": ["3", "0"] },
+    "5": { "label": "a spawn weight number", "examples": ["4", "0"] }
   }
 }

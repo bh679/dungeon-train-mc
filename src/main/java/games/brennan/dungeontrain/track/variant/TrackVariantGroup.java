@@ -71,7 +71,7 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
      * (a union); otherwise the inline {@code gate} applies. A bare {@code (id, weight)} member is
      * eligible everywhere.
      */
-    public record Member(String id, int weight, TemplateGate gate, List<String> stageIds) {
+    public record Member(String id, int weight, TemplateGate gate, List<String> stageIds, VisitRules visits) {
         public Member {
             if (id == null) throw new IllegalArgumentException("Member id must not be null");
             String norm = id.toLowerCase(Locale.ROOT);
@@ -83,19 +83,26 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
             weight = clampWeight(weight);
             if (gate == null) gate = TemplateGate.DEFAULT;
             stageIds = normalizeStages(stageIds);
+            if (visits == null) visits = VisitRules.NONE;
+        }
+
+        /** A member with no visit rules — the shape every member had before ordered sub-variants. */
+        public Member(String id, int weight, TemplateGate gate, List<String> stageIds) {
+            this(id, weight, gate, stageIds, VisitRules.NONE);
         }
 
         /** Back-compat: a member with the default (eligible-everywhere) gate and no Stage link. */
         public Member(String id, int weight) {
-            this(id, weight, TemplateGate.DEFAULT, Collections.emptyList());
+            this(id, weight, TemplateGate.DEFAULT, Collections.emptyList(), VisitRules.NONE);
         }
 
         /** True when this member is linked to at least one Stage (the union gate applies). */
         public boolean isStageLinked() { return !stageIds.isEmpty(); }
 
-        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageIds); }
-        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageIds); }
-        public Member withStages(List<String> newStageIds) { return new Member(id, weight, gate, newStageIds); }
+        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageIds, visits); }
+        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageIds, visits); }
+        public Member withStages(List<String> newStageIds) { return new Member(id, weight, gate, newStageIds, visits); }
+        public Member withVisits(VisitRules newVisits) { return new Member(id, weight, gate, stageIds, newVisits); }
 
         /**
          * New member with {@code stageId} toggled — added (appended) when absent, removed when
@@ -109,7 +116,7 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
             if (s.isEmpty()) return this;
             List<String> next = new ArrayList<>(stageIds);
             if (!next.remove(s)) next.add(s);
-            return new Member(id, weight, gate, next);
+            return new Member(id, weight, gate, next, visits);
         }
 
         private static List<String> normalizeStages(List<String> in) {
@@ -222,6 +229,7 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
             // bare {id, weight} pair it was written as.
             TemplateWeightCodec.writeGateFields(entry, m.gate());
             TemplateWeightCodec.writeStages(entry, m.stageIds());
+            m.visits().writeTo(entry);
             arr.add(entry);
         }
         o.add("variants", arr);
@@ -267,7 +275,8 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
                 }
             }
             out.add(new Member(norm, weight,
-                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStages(entry)));
+                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStages(entry),
+                VisitRules.fromJson(entry)));
         }
         return new TrackVariantGroup(selfWeight, out);
     }
@@ -292,6 +301,12 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
             if (r < cumulative) return m;
         }
         return eligible.get(eligible.size() - 1);
+    }
+
+    /** True when any member carries a visit rule, so the roll depends on who it is rolled for. */
+    public boolean usesVisitRules() {
+        for (Member m : members) if (!m.visits().isNone()) return true;
+        return false;
     }
 
     public static int clampWeight(int value) {
