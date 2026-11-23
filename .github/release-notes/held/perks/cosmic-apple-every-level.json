@@ -7,10 +7,10 @@
     "loot",
     "balance"
   ],
-  "title": "Cosmic apples in every difficulty level",
-  "summary": "Every difficulty level, the first one included, now has at least two cosmic apples to find.",
+  "title": "A cosmic apple in every difficulty level",
+  "summary": "Every difficulty level, the first one included, now has at least one cosmic apple to find.",
   "highlights": [
-    "Every level holds at least two cosmic apples, the first level too"
+    "Levels that used to have none now always have one, the first level too"
   ],
   "pr": 2810,
   "date": "2026-11-22",

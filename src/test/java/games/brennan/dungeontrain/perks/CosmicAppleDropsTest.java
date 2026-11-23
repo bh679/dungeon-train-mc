@@ -110,8 +110,8 @@ final class CosmicAppleDropsTest {
     }
 
     @Test
-    @DisplayName("every Diff-Level, Level 0 included, gets at least two apples on both sides, for many settings")
-    void everyLevelHasTwoApples() {
+    @DisplayName("every Diff-Level, Level 0 included, gets at least one apple on both sides, for many settings")
+    void everyLevelHasAnApple() {
         int[] cpts = {1, 3, 7, 20, 40, 1000};
         for (long seed = 1; seed <= 6; seed++) {
             for (int gs = 1; gs <= 16; gs++) {
@@ -161,8 +161,8 @@ final class CosmicAppleDropsTest {
     }
 
     @Test
-    @DisplayName("the floor tops a level up to exactly two, and never adds to a level that drew two")
-    void floorTopsUpToTwo() {
+    @DisplayName("the floor adds one group only to levels that drew none")
+    void floorOnlyFillsEmptyLevels() {
         int gs = 3;
         int cpt = 20;
         for (long seed = 1; seed <= 200; seed++) {
@@ -177,7 +177,7 @@ final class CosmicAppleDropsTest {
                         floored++;
                     }
                 }
-                assertEquals(Math.max(0, 2 - natural), floored, "seed " + seed + " level " + lvl);
+                assertEquals(Math.max(0, CosmicAppleDrops.MIN_PER_LEVEL - natural), floored, "seed " + seed + " level " + lvl);
             }
         }
     }

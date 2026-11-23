@@ -41,8 +41,8 @@ public final class CosmicAppleDrops {
 
     /** One group in this many gets an apple. */
     static final int EVERY = 5;
-    /** Every Diff-Level (each side of the origin) gets at least this many apple groups, when it has that many groups. */
-    static final int MIN_PER_LEVEL = 2;
+    /** Every Diff-Level (each side of the origin) gets at least this many apple groups. */
+    static final int MIN_PER_LEVEL = 1;
     /** The tier roll is out of this many: basis points, so the curves keep two decimals of a per cent. */
     static final int ROLL_RANGE = 10_000;
     /** Salt so this draw is independent of the portal lottery and the loot rolls. */
