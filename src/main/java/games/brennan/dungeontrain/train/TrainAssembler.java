@@ -866,7 +866,7 @@ public final class TrainAssembler {
         PendingContentsEntitySpawn[] pendingEntities = new PendingContentsEntitySpawn[groupSize];
         PendingRelayEntitySpawn[] pendingRelayEntities = new PendingRelayEntitySpawn[groupSize];
         PendingWholeDecorSpawn[] pendingWholeDecor = new PendingWholeDecorSpawn[groupSize];
-        // Cosmic apples: about one group in five, and at least one per Diff-Level, in the drawn slot's
+        // Cosmic apples: about one group in five, and at least one per Diff-Level (Level 0 too), in the drawn slot's
         // containers (-1 = none here). A drawn slot with no free container (or no contents pass) hands the
         // apple on to the next carriage of the group that has one. None until someone has unlocked a perk
         // (CosmicAppleDrops.open).
