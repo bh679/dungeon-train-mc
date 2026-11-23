@@ -545,9 +545,9 @@ public final class BlockVariantMenuInputHandler {
      * enabled colour is ignored, so one always stays on. Same modal rules as the Grow popup.
      */
     /**
-     * A sign row's Sign popup: Mount switches the block (or turns Auto on), Text / Waxed set the
-     * cell's shared text and the wax, Edit text… opens {@link SignTextScreen}. Same modal rules as
-     * the Grow popup.
+     * A sign row's Sign popup: the icon row toggles the lock and the wax and opens
+     * {@link SignTextScreen}; Mount switches the block (or turns Auto on); Text sets the cell's
+     * shared text. Same modal rules as the Grow popup.
      */
     private static void dispatchSign(BlockVariantMenu.Hit hit, String variantId,
                                      net.minecraft.core.BlockPos local) {
@@ -580,13 +580,18 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_SIGN_SHARED, variantId, local, hit.index(), "", shared ? 1 : 0));
             }
-            case SignPopupLayout.SECTION_WAX -> {
-                boolean waxed = option == SignPopupLayout.WAX_ON;
-                if (waxed == text.waxed()) return;
-                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.SET_SIGN_WAXED, variantId, local, hit.index(), "", waxed ? 1 : 0));
+            case SignPopupLayout.SECTION_TOGGLES -> {
+                switch (option) {
+                    case SignPopupLayout.TOGGLE_LOCK -> DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.SET_SIGN_LOCKED, variantId, local, hit.index(), "",
+                        sign.locked() ? 0 : 1));
+                    case SignPopupLayout.TOGGLE_WAX -> DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.SET_SIGN_WAXED, variantId, local, hit.index(), "",
+                        text.waxed() ? 0 : 1));
+                    case SignPopupLayout.TOGGLE_EDIT -> openSignText(hit.index(), e, parsed, variantId, local);
+                    default -> { }
+                }
             }
-            case SignPopupLayout.SECTION_EDIT -> openSignText(hit.index(), e, parsed, variantId, local);
             default -> { }
         }
     }

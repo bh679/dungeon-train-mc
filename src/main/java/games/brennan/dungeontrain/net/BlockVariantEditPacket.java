@@ -166,7 +166,9 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Sign row: delta 1 = waxed (passengers can't edit it), 0 = not.
                      SET_SIGN_WAXED,
                      // Sign row: stateString = SignVariants.toWire token (both sides + wax).
-                     SET_SIGN_TEXT }
+                     SET_SIGN_TEXT,
+                     // Sign row: delta 1 = lock every sign row of the cell to this one, 0 = unlock.
+                     SET_SIGN_LOCKED }
 
     /** Cap on {@link #stateString} over the wire — a {@code SET_SIGN_TEXT} token is the longest. */
     public static final int STRING_MAX = games.brennan.dungeontrain.editor.SignVariants.WIRE_MAX;
