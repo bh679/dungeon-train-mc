@@ -69,9 +69,8 @@ public final class PortalTwinRandomTicks {
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         List<ServerPlayer> held = heldPlayers(level);
-        if (held.isEmpty()) return;
         int speed = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
-        if (speed <= 0) return;
+        if (!passRuns(level.tickRateManager().runsNormally(), speed, held.size())) return;
         for (long packed : candidateChunks(held)) {
             LevelChunk chunk = tickableChunk(level, new ChunkPos(packed));
             if (chunk == null) continue;
@@ -104,6 +103,15 @@ public final class PortalTwinRandomTicks {
         return out;
     }
 
+    /**
+     * Pure core: whether the pass runs at all this tick. Vanilla's whole spawn-and-tick block sits
+     * behind {@code runsNormally}, so {@code /tick freeze} stops these too; {@code randomTickSpeed 0}
+     * (the editor world) means nothing random-ticks; and with nobody held there is nothing to add.
+     */
+    static boolean passRuns(boolean runsNormally, int randomTickSpeed, int heldPlayers) {
+        return runsNormally && randomTickSpeed > 0 && heldPlayers > 0;
+    }
+
     /** Vanilla's {@code ChunkMap#euclideanDistanceSquared} against the spawning range. */
     static boolean inPlayerRange(int chunkX, int chunkZ, double playerX, double playerZ) {
         double dx = SectionPos.sectionToBlockCoord(chunkX, 8) - playerX;
@@ -113,11 +121,12 @@ public final class PortalTwinRandomTicks {
 
     /**
      * Pure core: whether this pass should random-tick a chunk. Every gate vanilla's chunk loop applies
-     * must pass except the player check, and vanilla must not be ticking it already.
+     * must pass except the player check, and vanilla must not be ticking it already (a player near, or
+     * a NeoForge force-ticked chunk).
      */
     static boolean shouldTick(boolean tickingChunk, boolean spawningAllowed, boolean blocksTick,
-                              boolean vanillaPlayerNear) {
-        return tickingChunk && spawningAllowed && blocksTick && !vanillaPlayerNear;
+                              boolean vanillaTicks) {
+        return tickingChunk && spawningAllowed && blocksTick && !vanillaTicks;
     }
 
     private static LevelChunk tickableChunk(ServerLevel level, ChunkPos pos) {
@@ -125,10 +134,13 @@ public final class PortalTwinRandomTicks {
         ChunkHolder holder = ((ChunkMapChunksInvoker) map).dungeontrain$getVisibleChunkIfPresent(pos.toLong());
         LevelChunk chunk = holder == null ? null : holder.getTickingChunk();
         if (chunk == null) return null;
+        // Vanilla ticks the chunk itself when a player is near OR NeoForge force-ticks it.
+        boolean vanillaTicks = ((ChunkMapSpawnRangeInvoker) map).dungeontrain$anyPlayerCloseEnoughForSpawning(pos)
+            || map.getDistanceManager().shouldForceTicks(pos.toLong());
         boolean tick = shouldTick(true,
             level.isNaturalSpawningAllowed(pos),
             level.shouldTickBlocksAt(pos.toLong()),
-            ((ChunkMapSpawnRangeInvoker) map).dungeontrain$anyPlayerCloseEnoughForSpawning(pos));
+            vanillaTicks);
         return tick ? chunk : null;
     }
 

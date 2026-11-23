@@ -34,4 +34,13 @@ final class PortalTwinRandomTicksTest {
         assertFalse(PortalTwinRandomTicks.shouldTick(true, false, true, false));
         assertFalse(PortalTwinRandomTicks.shouldTick(true, true, false, false));
     }
+
+    @Test
+    @DisplayName("pass is off under /tick freeze, at randomTickSpeed 0, and with nobody held")
+    void passRunsOnlyWhenVanillaWould() {
+        assertTrue(PortalTwinRandomTicks.passRuns(true, 3, 1));
+        assertFalse(PortalTwinRandomTicks.passRuns(false, 3, 1));
+        assertFalse(PortalTwinRandomTicks.passRuns(true, 0, 1));
+        assertFalse(PortalTwinRandomTicks.passRuns(true, 3, 0));
+    }
 }
