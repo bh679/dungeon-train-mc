@@ -16,8 +16,8 @@ import java.util.List;
 
 /**
  * The Drifting Engine Block screen: under the title, the drifting carriage the engine is in, by its name
- * id, and under that who placed the engine (blank when nobody is known), so an engine that drifted in
- * from another world reads as theirs; then the coal slot and this engine's gauge side by side, and under them how many more worlds this
+ * id, and under that the world it is from, by whoever placed the engine (blank when nobody is known), so
+ * an engine that drifted in from another world reads as theirs; then the coal slot and this engine's gauge side by side, and under them how many more worlds this
  * engine's coal lasts, plus, when other engines in the carriage hold coal too, how far all of them carry
  * it. With no carriage the fuel lines give way to a line saying so: fuel only matters to a carriage.
  */

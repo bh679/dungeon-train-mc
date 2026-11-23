@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * The engine screen's "Placed by" name arrives in a carriage blob another world wrote, so only a real
+ * The engine screen's "From <name>'s world" name arrives in a carriage blob another world wrote, so only a real
  * Minecraft player name is ever shown; anything else reads as an unknown placer.
  */
 class EngineMenuPlacerNameTest {

@@ -93,7 +93,7 @@ public class EngineBlock extends BaseEntityBlock {
     }
 
     /**
-     * Remembers who set the engine down, for its screen's "Placed by" line, which travels with the
+     * Remembers who set the engine down, for its screen's "From <name>'s world" line, which travels with the
      * carriage to other worlds. Only with the placer's network consent, the same gate their builds and
      * their name on the passenger log pass through; without it the engine stays unattributed.
      */
