@@ -225,6 +225,8 @@ public final class MobDigGoal extends Goal {
         if (!mob.onGround() && !mob.isInLiquid() && !mob.isPassenger()) return false;
         if (hasWalkablePath(target)) {
             // Not stuck, just fighting (circling, holding range): there is a way round, so dig nothing.
+            LOGGER.debug("[DungeonTrain] MobDigGoal walkable path, no dig: mob={} at={}",
+                    mob.getUUID(), mob.blockPosition());
             bestDistanceTick = now;
             chainUntilTick = Integer.MIN_VALUE;
             return false;
