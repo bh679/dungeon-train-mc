@@ -19279,6 +19279,15 @@
       ]
     }
   },
+  "gui.dungeontrain.engine_block.placed_by": {
+    "1": {
+      "label": "the Minecraft player name of whoever placed the engine, never translated",
+      "examples": [
+        "Steve",
+        "brennan_h"
+      ]
+    }
+  },
   "gui.dungeontrain.known_feature.off": {
     "1": {
       "label": "a mod's name, never translated",

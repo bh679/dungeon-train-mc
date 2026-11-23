@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * One star as the web page's test mode draws it: halo, core, tier-3 dot, one ring segment per unlock
- * level (filled per point), the name, and the Engine as a clock ({@link EngineClock}). Locked stars are
+ * level (filled per point), and the name. The Engine at the centre is a plain gold dot. Locked stars are
  * grey and faint; a locked star a solid line reaches is brighter. Sizes come from {@link SkyPalette}
  * with the floor rule, so the fit view still reads.
  */
@@ -27,9 +27,7 @@ final class StarPainter {
 
     /** How this star is lit beyond its own state. */
     /** {@code namePos}: where the name goes (top-left, screen px), or null to leave it out. */
-    /** {@code centrePoints}: the Engine shows this many unlock points instead of its clock (the death menu); -1 for the clock. */
-    record Look(boolean hovered, boolean selected, int[] namePos, boolean spendable, boolean ghost, boolean glow,
-                int centrePoints) {}
+    record Look(boolean hovered, boolean selected, int[] namePos, boolean spendable, boolean ghost, boolean glow) {}
 
     static void render(GuiGraphics g, Font font, PerkTree tree, PerkTree.Perk p, PerkMenuSnapshot snap, SkyView view,
                        int w, int h, Look look, Map<String, Long> unlockedAt, Map<String, Long> pointAt, long now, double fade) {
@@ -37,7 +35,8 @@ final class StarPainter {
         double x = view.toScreenX(p.x(), w), y = view.toScreenY(p.y(), h);
         double core = SkyPalette.coreRadius(p, z), halo = SkyPalette.haloRadius(p, z);
         if (p.isRoot()) {
-            renderEngine(g, font, snap, x, y, core, halo, look, fade);
+            // the Engine: a gold dot the size of a tier-1 perk, with no number and no ring around it
+            SkyDraw.disc(g, x, y, core, SkyDraw.withAlpha(SkyPalette.GOLD, fade));
             return;
         }
         PerkMenuSnapshot.StarState state = snap.stateOf(tree, p.id());
@@ -150,14 +149,6 @@ final class StarPainter {
                 }
             }
         }
-    }
-
-    private static void renderEngine(GuiGraphics g, Font font, PerkMenuSnapshot snap, double x, double y, double core,
-                                     double halo, Look look, double fade) {
-        SkyDraw.ring(g, x, y, halo, 1.0, SkyDraw.withAlpha(look.selected() ? SkyPalette.GOLD : SkyPalette.GOLD,
-            (look.selected() || look.hovered() ? 1.0 : 0.35) * fade));
-        if (look.centrePoints() >= 0) EngineClock.renderPoints(g, font, x, y, core, look.centrePoints(), fade);
-        else EngineClock.render(g, font, x, y, core, snap.ranksBought(), fade);
     }
 
     private static long age(Map<String, Long> at, String id, long now) {

@@ -1,0 +1,17 @@
+{
+  "id": "perk-menu-clarity",
+  "version": "0.1987.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Clearer perks menu",
+  "summary": "Perks that aren't ready yet now say Coming soon on their button. When unlocking, each perk shows what you've already unlocked, and hovering Unlock previews what the next level gives. The centre of the perks sky is now a small gold point, and Craft Level Stats explains itself more plainly.",
+  "highlights": [],
+  "pr": 2849,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

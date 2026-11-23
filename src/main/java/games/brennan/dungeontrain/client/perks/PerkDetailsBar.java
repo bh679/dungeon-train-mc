@@ -57,6 +57,8 @@ final class PerkDetailsBar {
     private UnlockTab unlockButton;
     /** Why the Unlock tab can't be pressed, said in the bar under it; null when it can. */
     private Component unlockReason;
+    /** Where the mouse was last, for the Unlock tab's stat preview. */
+    private double mouseX = -1, mouseY = -1;
     private Button activateButton;
     /** The death screen's menu: Unlock only, no Activate and no Active Points. */
     private boolean unlockOnly;
@@ -151,6 +153,14 @@ final class PerkDetailsBar {
             unlockButton = null;
             activateButton = null;
             unlockReason = null;
+            return true;
+        }
+        PerkRegistry.bootstrap();
+        if (!PerkRegistry.isBuilt(shown.id())) {
+            // not built yet: the tab says so itself, in menu, death screen and play alike, with nothing under it
+            unlockButton = UnlockTab.comingSoon(font, screenW / 2, top, Component.translatable("gui.dungeontrain.perks.coming_soon"));
+            unlockReason = null;
+            activateButton = null;
             return true;
         }
         // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar.
@@ -460,12 +470,28 @@ final class PerkDetailsBar {
             String why = font.plainSubstrByWidth(Component.translatable(refusalKey).getString(), mw);
             g.drawString(font, why, x, dy + (max - 1) * LINE, (a << 24) | 0xFFC9C9, false);
         }
-        if (!stats.isEmpty()) renderStats(g, stats, snap.points(p.id()), x, chipY, contentRight, a);
+        // unlocking only (points are gone at death): what you've unlocked, filled; in play, the points in it now
+        int statPoints = unlockOnly ? snap.unlockLevel(p.id()) : snap.points(p.id());
+        if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, contentRight, a);
     }
 
-    /** The stat chips; with a graph block hovered, each previews that block's value in gold ({@link StatChips}). */
-    private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int x, int y, int right, int a) {
-        int preview = graphHover >= 0 && graph != null && graphHover < graph.layout(graphW).segments() ? graphHover + 1 : -1;
+    /**
+     * With the Unlock tab hovered, the points the level it names holds when full (its stats at 100%);
+     * otherwise -1. Never for Activate, nor a coming-soon perk.
+     */
+    private int unlockPreview(PerkTree.Perk p, PerkMenuSnapshot snap) {
+        if (activeOnly || !PerkRegistry.isBuilt(p.id()) || !tabContains(mouseX, mouseY)) return -1;
+        return snap.unlockLevel(p.id()) + 1;
+    }
+
+    /**
+     * The stat chips at the perk's points now; with a graph block or the Unlock tab hovered, each previews
+     * that value in gold ({@link StatChips}).
+     */
+    private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int unlockPreview, int x, int y, int right,
+                             int a) {
+        int preview = unlockPreview >= 0 ? unlockPreview
+            : graphHover >= 0 && graph != null && graphHover < graph.layout(graphW).segments() ? graphHover + 1 : -1;
         StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
             SkyPalette.FG, SkyPalette.GOLD, a);
     }
@@ -478,6 +504,8 @@ final class PerkDetailsBar {
 
     /** The mouse moved: light the graph block under it. */
     void mouse(double mx, double my) {
+        mouseX = mx;
+        mouseY = my;
         // lit only where a click acts: a block that takes a point, never one that would need unlocking
         boolean acts = !unlockOnly && overGraph(mx, my) && graph.at(graphW, mx - graphX) != PointsGraph.Kind.LOCKED;
         graphHover = acts ? graph.indexAt(graphW, mx - graphX) : -1;

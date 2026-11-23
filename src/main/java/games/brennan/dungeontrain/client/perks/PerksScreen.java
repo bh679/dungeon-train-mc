@@ -459,7 +459,7 @@ public final class PerksScreen extends Screen {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
-                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows, death != null ? snap.unlockPoints() : -1),
+                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows),
                 unlockedAt, pointAt, now, starFade);
         }
         // names after every star, so no dot covers a label
