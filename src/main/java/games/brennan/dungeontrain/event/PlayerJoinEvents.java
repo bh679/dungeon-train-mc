@@ -260,26 +260,11 @@ public final class PlayerJoinEvents {
         // rather than keeping whatever the last session left behind.
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.EditorMenusModePacket.of(
             games.brennan.dungeontrain.editor.PartPositionMenuController.mode(player)));
-        // And the world's editor Observers setting, for the same reason — it is persisted with the
-        // world, and the client's default is On.
-        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorObserversPacket(
-            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
-                .isEditorObserversOn()));
         // And the X menu quick toggles (Mirror, Frame) — world-persisted, client default On for both.
         games.brennan.dungeontrain.editor.EditorQuickToggles.sendTo(player);
-        // And the editor Redstone and TNT settings — world-persisted, client default On for both.
-        games.brennan.dungeontrain.world.DungeonTrainWorldData editorData =
-            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
-        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorRedstoneTntPacket(
-            editorData.isEditorRedstoneOn(), editorData.isEditorTntOn()));
-        // Likewise the editor Mobs setting (Blocks / Live) — world-persisted, client default Blocks.
-        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobsModePacket(
-            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
-                .isEditorMobsLive()));
-        // And Test Mobs (Frozen / Live) — world-persisted, client default Frozen.
-        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorTestMobsPacket(
-            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
-                .isTestMobsLive()));
+        // And the per-mode editor Settings (Observers, Redstone, TNT, Fluid flow, Auto fly, Mobs, each
+        // with an editing and a test value) — world-persisted, so the client is told, not left guessing.
+        games.brennan.dungeontrain.editor.EditorModeSettingsService.sendTo(player);
         // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
         // the client assumes no session until told otherwise — without this the Back row is gone and
         // the only way out of a sealed basement is a manual /tp. The session itself is server-side

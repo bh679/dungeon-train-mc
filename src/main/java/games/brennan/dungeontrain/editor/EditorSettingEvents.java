@@ -10,8 +10,9 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 /**
- * Server-side half of the editor's Redstone and TNT settings: keeps {@link EditorRedstone}'s fast
- * path in step with whichever world is running, and cancels a TNT explosion {@link EditorTnt} mutes.
+ * Server-side half of the editor's world settings: keeps {@link EditorModeSettingsService}'s copy
+ * and {@link EditorQuickToggles}' in step with whichever world is running, and cancels a TNT
+ * explosion {@link EditorTnt} mutes.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorSettingEvents {
@@ -20,13 +21,13 @@ public final class EditorSettingEvents {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-        EditorRedstone.sync(event.getServer());
+        EditorModeSettingsService.sync(event.getServer());
         EditorQuickToggles.sync(event.getServer());
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
-        EditorRedstone.reset();
+        EditorModeSettingsService.reset();
         EditorQuickToggles.reset();
     }
 
