@@ -1,0 +1,16 @@
+{
+  "id": "nap-carries-photos",
+  "version": "0.1978.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Photos survive a rest",
+  "summary": "Photos you take now come with you when you save and quit at a train bed. Before, they showed as lost on the death screen, and printed photos went blank.",
+  "highlights": [],
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
