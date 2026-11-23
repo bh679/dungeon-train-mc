@@ -531,8 +531,13 @@ public final class BlockVariantMenuRenderer {
                 // "oak_wall_sign: Mind the gap" — the text is what tells two sign rows apart.
                 label = MenuLang.t("common.name_value", shortenStateLabel(entry.stateString()),
                     "\"" + BlockVariantMenu.signText(entry).firstLine() + "\"");
-                // Cut to the name cell so the quoted text never runs under the row's pills.
+                // Cut to the name cell so the quoted text never runs under the row's pills. When the
+                // name and text don't both fit, the text wins: it is what tells sign rows apart (the
+                // icon already shows the block).
                 int room = (int) ((nameCellR - nameCellL - NAME_TEXT_LEFT_OFFSET) / TEXT_SCALE) - 2;
+                if (font.width(label) > room) {
+                    label = "\"" + BlockVariantMenu.signText(entry).firstLine() + "\"";
+                }
                 if (font.width(label) > room) {
                     label = font.plainSubstrByWidth(label, Math.max(0, room - font.width("…"))) + "…";
                 }

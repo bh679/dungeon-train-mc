@@ -5254,6 +5254,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Rândul %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Culoare: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Strălucire: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Unele rânduri sunt prea late pentru un panou suspendat și vor fi tăiate",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Încărcare",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Interval",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Geme",

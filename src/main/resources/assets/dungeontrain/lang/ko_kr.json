@@ -4399,6 +4399,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "%s번째 줄",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "색상: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "발광: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "매다는 표지판에는 너무 긴 줄이 있어 잘립니다",
   "gui.dungeontrain.editor_menu.block_variant.charges": "충전",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "범위",
   "gui.dungeontrain.editor_menu.block_variant.gems": "보석",

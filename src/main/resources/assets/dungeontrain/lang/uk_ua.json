@@ -5251,6 +5251,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Рядок %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Колір: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Сяйво: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Деякі рядки задовгі для підвісної таблички й будуть обрізані",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Заряд",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Діапазон",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Самоцвіти",

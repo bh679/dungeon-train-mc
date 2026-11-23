@@ -4461,6 +4461,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Riga %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Colore: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Bagliore: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Alcune righe sono troppo larghe per un cartello appeso e verranno tagliate",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Carica",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Intervallo",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Gemme",

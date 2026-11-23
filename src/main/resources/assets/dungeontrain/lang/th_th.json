@@ -4399,6 +4399,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "บรรทัด %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "สี: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "เรืองแสง: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "บางบรรทัดยาวเกินไปสำหรับป้ายแขวนและจะถูกตัด",
   "gui.dungeontrain.editor_menu.block_variant.charges": "ประจุ",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "ช่วง",
   "gui.dungeontrain.editor_menu.block_variant.gems": "อัญมณี",

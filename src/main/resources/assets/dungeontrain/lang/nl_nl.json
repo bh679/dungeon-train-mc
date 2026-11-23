@@ -4461,6 +4461,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Regel %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Kleur: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Gloed: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Sommige regels zijn te breed voor een hangend bord en worden afgekapt",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Lading",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Bereik",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Juwelen",

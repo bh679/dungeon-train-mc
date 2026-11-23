@@ -4528,6 +4528,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "64e494c1f89c5a68"},
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "51876b17ce3e0580"},
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "49312be579cbef4e"},
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5b3dd64dbf1e1050"},
   "gui.dungeontrain.editor_menu.block_variant.charges": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "ff9f88ce353a2228"},
   "gui.dungeontrain.editor_menu.block_variant.charges_range": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "5de74a81b192304c"},
   "gui.dungeontrain.editor_menu.block_variant.gems": {"author": "Fable 5.2 (Claude)", "reviewer": "", "source_hash": "6024329694ab96e5"},

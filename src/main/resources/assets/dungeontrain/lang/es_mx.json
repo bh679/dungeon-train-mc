@@ -4461,6 +4461,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Línea %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Color: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Brillo: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Algunas líneas son demasiado anchas para un letrero colgante y se cortarán",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Carga",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Rango",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Gemas",

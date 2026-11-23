@@ -681,6 +681,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
                 }
+                // A sign added to a "same in cell" cell takes the cell's text.
+                newVariant = SignRowEdits.joinShared(mutated, newVariant);
                 for (VariantState existing : mutated) {
                     // Two rows linked to different loot prefabs are distinct
                     // even if their state + beNbt match — the link makes them
@@ -875,7 +877,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             case SET_SIGN_MOUNT, SET_SIGN_SHARED, SET_SIGN_WAXED, SET_SIGN_TEXT -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
-                List<VariantState> next = signEdit(mutated, idx, packet);
+                List<VariantState> next = signEdit(mutated, idx, packet, plot.supportsConnectMode());
                 if (next == null) return;
                 mutated.clear();
                 mutated.addAll(next);
@@ -1875,9 +1877,10 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
 
     /** The cell's rows after one of the Sign popup's edits, or {@code null} to ignore it. */
     @org.jetbrains.annotations.Nullable
-    static List<VariantState> signEdit(List<VariantState> rows, int idx, BlockVariantEditPacket packet) {
+    static List<VariantState> signEdit(List<VariantState> rows, int idx, BlockVariantEditPacket packet,
+                                       boolean autoAllowed) {
         return switch (packet.op()) {
-            case SET_SIGN_MOUNT -> SignRowEdits.setMount(rows, idx, packet.delta());
+            case SET_SIGN_MOUNT -> SignRowEdits.setMount(rows, idx, packet.delta(), autoAllowed);
             case SET_SIGN_SHARED -> SignRowEdits.setShared(rows, idx, packet.delta() != 0);
             case SET_SIGN_WAXED -> SignRowEdits.setWaxed(rows, idx, packet.delta() != 0);
             case SET_SIGN_TEXT -> {

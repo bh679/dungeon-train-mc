@@ -4523,6 +4523,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Linia %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Kolor: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Blask: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Niektóre linie są za szerokie na wiszącą tabliczkę i zostaną ucięte",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Ładunek",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Zakres",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Klejnoty",

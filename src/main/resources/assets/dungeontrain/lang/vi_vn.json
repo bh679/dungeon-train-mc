@@ -4399,6 +4399,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Dòng %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Màu: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Phát sáng: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Một số dòng quá rộng cho bảng treo và sẽ bị cắt",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Sạc",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Khoảng",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Ngọc",

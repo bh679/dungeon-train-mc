@@ -4399,6 +4399,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Baris %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Warna: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Cahaya: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Beberapa baris terlalu lebar untuk papan gantung dan akan terpotong",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Muatan",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Rentang",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Permata",

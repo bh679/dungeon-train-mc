@@ -5187,6 +5187,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Line %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Colour: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Glow: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Some lines are too wide for a hanging sign and will be cut off",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Charge",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Range",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Gems",

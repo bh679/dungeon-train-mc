@@ -4413,6 +4413,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "第 %s 行",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "顏色：%s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "發光：%s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "部分文字行對懸掛告示牌來說太寬，會被截斷",
   "gui.dungeontrain.editor_menu.block_variant.charges": "充能",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "範圍",
   "gui.dungeontrain.editor_menu.block_variant.gems": "寶石",

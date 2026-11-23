@@ -259,6 +259,27 @@ final class SignVariantsTest {
     }
 
     @Test
+    @DisplayName("A sign added to a shared cell takes the cell's text and joins the sharing")
+    void addedSignJoinsShared() {
+        List<VariantState> shared = SignRowEdits.setShared(SignRowEdits.setText(cell(), 0, sample()), 0, true);
+        VariantState added = SignRowEdits.joinShared(shared, VariantState.of(Blocks.BIRCH_SIGN.defaultBlockState()));
+        assertTrue(added.sign().shared());
+        assertEquals(sample(), SignVariants.text(added.blockEntityNbt()));
+
+        VariantState alone = VariantState.of(Blocks.BIRCH_SIGN.defaultBlockState());
+        assertSame(alone, SignRowEdits.joinShared(cell(), alone), "no shared cell: unchanged");
+        VariantState lantern = VariantState.of(Blocks.LANTERN.defaultBlockState());
+        assertSame(lantern, SignRowEdits.joinShared(shared, lantern), "not a sign: unchanged");
+    }
+
+    @Test
+    @DisplayName("Auto is refused on a plot whose placer never runs the post-overlay pass")
+    void autoRefusedWhereUnsupported() {
+        assertNull(SignRowEdits.setMount(cell(), 0, SignVariants.AUTO_WIRE, false));
+        assertNotNull(SignRowEdits.setMount(cell(), 0, SignVariants.Mount.STANDING.ordinal(), false));
+    }
+
+    @Test
     @DisplayName("Waxing a shared row waxes the cell's shared signs and keeps their text")
     void waxShared() {
         List<VariantState> rows = SignRowEdits.setShared(SignRowEdits.setText(cell(), 0, sample()), 0, true);

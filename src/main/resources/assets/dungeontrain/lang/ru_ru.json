@@ -4528,6 +4528,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Строка %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Цвет: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Свечение: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Некоторые строки слишком широкие для подвесной таблички и будут обрезаны",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Заряд",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Диапазон",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Самоцветы",

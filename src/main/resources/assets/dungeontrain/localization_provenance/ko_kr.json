@@ -4402,6 +4402,7 @@
       "gui.dungeontrain.editor_menu.block_variant.sign_screen_line",
       "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour",
       "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow",
+      "gui.dungeontrain.editor_menu.block_variant.sign_too_wide",
       "gui.dungeontrain.editor_menu.block_variant.charges",
       "gui.dungeontrain.editor_menu.block_variant.charges_range",
       "gui.dungeontrain.editor_menu.block_variant.gems",

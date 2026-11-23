@@ -4399,6 +4399,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "%s 行目",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "色: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "発光: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "吊り看板には長すぎる行があり、途中で切れます",
   "gui.dungeontrain.editor_menu.block_variant.charges": "チャージ",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "範囲",
   "gui.dungeontrain.editor_menu.block_variant.gems": "宝石",

@@ -13,8 +13,9 @@ import java.util.List;
  * (a sign never grows), drawn with the Grow popup's {@link GrowthPopupLayout.Row}s.
  *
  * <ul>
- *   <li><b>Mount</b>: {@code Wall | Standing | Hanging | Wall hang | Auto} — only the mounts the
- *       row's wood has a block for.</li>
+ *   <li><b>Mount</b>: {@code Wall | Standing | Hanging | Wall hang | Auto}, two a row — only the
+ *       mounts the row's wood has a block for, and Auto only where the plot's placer runs the
+ *       post-overlay pass.</li>
  *   <li><b>Text</b>: {@code Same in cell | Own}.</li>
  *   <li><b>Waxed</b>: {@code On | Off}.</li>
  *   <li>{@code Edit text…} opens {@link SignTextScreen}.</li>
@@ -105,7 +106,8 @@ final class SignPopupLayout {
         for (SignVariants.Mount m : SignVariants.Mount.values()) {
             if (m == current || SignVariants.sibling(state, m) != null) out.add(m.ordinal());
         }
-        out.add(SignVariants.AUTO_WIRE);
+        // Auto is picked by the placers' post-overlay pass — the same plots that offer Connect.
+        if (BlockVariantMenu.connectSupported()) out.add(SignVariants.AUTO_WIRE);
         return out.stream().mapToInt(Integer::intValue).toArray();
     }
 

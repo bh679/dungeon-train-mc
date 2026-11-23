@@ -4461,6 +4461,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Ligne %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Couleur : %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Lueur : %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Certaines lignes sont trop larges pour un panneau suspendu et seront coupées",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Charge",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Plage",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Gemmes",

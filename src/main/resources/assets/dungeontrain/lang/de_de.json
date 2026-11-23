@@ -4461,6 +4461,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Zeile %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Farbe: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Leuchten: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "Einige Zeilen sind zu breit für ein Hängeschild und werden abgeschnitten",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Ladung",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Bereich",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Juwelen",

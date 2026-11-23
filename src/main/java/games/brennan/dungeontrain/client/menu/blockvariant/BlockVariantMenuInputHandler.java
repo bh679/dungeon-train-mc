@@ -568,6 +568,7 @@ public final class BlockVariantMenuInputHandler {
             int[] wires = SignPopupLayout.mountWires(parsed);
             int button = SignPopupLayout.mountButton(section, option);
             if (button < 0 || button >= wires.length) return;
+            warnIfTooWide(text, wires[button]);
             DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                 BlockVariantEditPacket.Op.SET_SIGN_MOUNT, variantId, local, hit.index(), "", wires[button]));
             return;
@@ -587,6 +588,28 @@ public final class BlockVariantMenuInputHandler {
             }
             case SignPopupLayout.SECTION_EDIT -> openSignText(hit.index(), e, parsed, variantId, local);
             default -> { }
+        }
+    }
+
+    /**
+     * A hanging sign's lines are narrower than a sign's; text written for the wider one is cut
+     * off when it hangs. Say so when a mount switch (or Auto, which may hang) would do that.
+     */
+    private static void warnIfTooWide(games.brennan.dungeontrain.editor.SignVariants.Text text, int wire) {
+        boolean mayHang = wire == games.brennan.dungeontrain.editor.SignVariants.AUTO_WIRE
+            || games.brennan.dungeontrain.editor.SignVariants.isHanging(
+                games.brennan.dungeontrain.editor.SignVariants.Mount.values()[wire]);
+        if (!mayHang) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        java.util.List<String> lines = new java.util.ArrayList<>(text.front().lines());
+        lines.addAll(text.back().lines());
+        for (String line : lines) {
+            if (mc.font.width(line) > games.brennan.dungeontrain.editor.SignVariants.HANGING_LINE_WIDTH) {
+                mc.player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                    games.brennan.dungeontrain.client.menu.MenuLang.t("block_variant.sign_too_wide")), true);
+                return;
+            }
         }
     }
 

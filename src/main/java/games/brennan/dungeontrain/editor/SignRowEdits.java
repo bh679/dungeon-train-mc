@@ -83,16 +83,44 @@ public final class SignRowEdits {
     }
 
     /**
+     * {@code added} as it joins a cell holding {@code cellRows}: a sign added to a cell whose signs
+     * share their text takes that text (and wax) and joins the sharing, so "same in cell" stays
+     * true. Anything else comes back unchanged.
+     */
+    public static VariantState joinShared(List<VariantState> cellRows, VariantState added) {
+        if (!isSignRow(added) || cellRows == null) return added;
+        for (VariantState r : cellRows) {
+            if (isSignRow(r) && r.sign().shared()) {
+                SignVariants.Text text = SignVariants.text(r.blockEntityNbt());
+                return added.withState(added.state(), SignVariants.withText(added.blockEntityNbt(), text))
+                    .withSign(added.sign().withShared(true));
+            }
+        }
+        return added;
+    }
+
+    /**
      * {@code rows} with row {@code idx} mounted per the wire value: 0–3 a fixed
      * {@link SignVariants.Mount} (clearing Auto), {@link SignVariants#AUTO_WIRE} Auto. {@code null}
      * when the wood has no such block.
      */
     @Nullable
     public static List<VariantState> setMount(List<VariantState> rows, int idx, int wire) {
+        return setMount(rows, idx, wire, true);
+    }
+
+    /**
+     * {@link #setMount(List, int, int)}, refusing Auto when {@code autoAllowed} is false — a plot
+     * whose placer never runs the post-overlay pass ({@link BlockVariantPlot#supportsConnectMode}),
+     * where an Auto sign would quietly keep its stored mount.
+     */
+    @Nullable
+    public static List<VariantState> setMount(List<VariantState> rows, int idx, int wire, boolean autoAllowed) {
         if (!valid(rows, idx)) return null;
         VariantState r = rows.get(idx);
         VariantState next;
         if (wire == SignVariants.AUTO_WIRE) {
+            if (!autoAllowed) return null;
             next = r.withSign(r.sign().withAuto(true));
         } else if (wire >= 0 && wire < SignVariants.Mount.values().length) {
             SignVariants.Mount mount = SignVariants.Mount.values()[wire];

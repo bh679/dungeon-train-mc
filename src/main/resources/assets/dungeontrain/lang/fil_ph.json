@@ -4399,6 +4399,7 @@
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": "Linya %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": "Kulay: %s",
   "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": "Kinang: %s",
+  "gui.dungeontrain.editor_menu.block_variant.sign_too_wide": "May mga linyang masyadong malapad para sa nakabiting karatula at mapuputol",
   "gui.dungeontrain.editor_menu.block_variant.charges": "Karga",
   "gui.dungeontrain.editor_menu.block_variant.charges_range": "Saklaw",
   "gui.dungeontrain.editor_menu.block_variant.gems": "Mga Gem",
