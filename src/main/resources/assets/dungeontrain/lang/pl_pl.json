@@ -2779,6 +2779,8 @@
   "gui.dungeontrain.engine_block.spent": "Ten silnik się wypalił",
   "gui.dungeontrain.engine_block.carriage_id": "Wagon: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Wagon: nie znaleziono",
+  "gui.dungeontrain.engine_block.placed_by": "Ze świata gracza %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Z twojego świata",
   "gui.dungeontrain.engine_block.no_carriage": "Nie rozpoznaje tu żadnego wagonu",
   "block.dungeontrain.skybox_block": "Blok nieboskłonu",
   "block.dungeontrain.skybox_surface": "Blok nieboskłonu powierzchni",

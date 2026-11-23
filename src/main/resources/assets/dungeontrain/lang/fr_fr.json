@@ -2728,6 +2728,8 @@
   "gui.dungeontrain.engine_block.spent": "Ce moteur est épuisé",
   "gui.dungeontrain.engine_block.carriage_id": "Wagon : %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Wagon : introuvable",
+  "gui.dungeontrain.engine_block.placed_by": "Du monde de %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "De ton monde",
   "gui.dungeontrain.engine_block.no_carriage": "Il ne reconnaît aucun wagon ici",
   "block.dungeontrain.skybox_block": "Bloc de ciel",
   "block.dungeontrain.skybox_surface": "Bloc de ciel de surface",

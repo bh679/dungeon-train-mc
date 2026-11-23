@@ -2677,6 +2677,8 @@
   "gui.dungeontrain.engine_block.spent": "Động cơ này đã cạn",
   "gui.dungeontrain.engine_block.carriage_id": "Toa: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Toa: không tìm thấy",
+  "gui.dungeontrain.engine_block.placed_by": "Từ thế giới của %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Từ thế giới của bạn",
   "gui.dungeontrain.engine_block.no_carriage": "Nó không nhận ra toa nào ở đây",
   "block.dungeontrain.skybox_block": "Khối Nền Trời",
   "block.dungeontrain.skybox_surface": "Khối Nền Trời Mặt Đất",

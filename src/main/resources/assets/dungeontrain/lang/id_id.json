@@ -2677,6 +2677,8 @@
   "gui.dungeontrain.engine_block.spent": "Mesin ini sudah habis",
   "gui.dungeontrain.engine_block.carriage_id": "Gerbong: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Gerbong: tidak ditemukan",
+  "gui.dungeontrain.engine_block.placed_by": "Dari dunia %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Dari duniamu",
   "gui.dungeontrain.engine_block.no_carriage": "Ia tidak mengenali gerbong di sini",
   "block.dungeontrain.skybox_block": "Blok Skybox",
   "block.dungeontrain.skybox_surface": "Blok Skybox Permukaan",

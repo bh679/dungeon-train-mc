@@ -2677,6 +2677,8 @@
   "gui.dungeontrain.engine_block.spent": "這台引擎已燃盡",
   "gui.dungeontrain.engine_block.carriage_id": "車廂：%s",
   "gui.dungeontrain.engine_block.carriage_not_found": "車廂：找不到",
+  "gui.dungeontrain.engine_block.placed_by": "來自%s的世界",
+  "gui.dungeontrain.engine_block.placed_by_you": "來自你的世界",
   "gui.dungeontrain.engine_block.no_carriage": "它在這裡認不出任何車廂",
   "block.dungeontrain.skybox_block": "天空盒方塊",
   "block.dungeontrain.skybox_surface": "地表天空盒方塊",

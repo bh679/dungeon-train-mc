@@ -2677,6 +2677,8 @@
   "gui.dungeontrain.engine_block.spent": "เครื่องยนต์นี้หมดแล้ว",
   "gui.dungeontrain.engine_block.carriage_id": "ตู้: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "ตู้: ไม่พบ",
+  "gui.dungeontrain.engine_block.placed_by": "จากโลกของ %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "จากโลกของคุณ",
   "gui.dungeontrain.engine_block.no_carriage": "มันไม่รู้จักตู้ใดที่นี่",
   "block.dungeontrain.skybox_block": "บล็อกท้องฟ้า",
   "block.dungeontrain.skybox_surface": "บล็อกท้องฟ้าพื้นผิว",

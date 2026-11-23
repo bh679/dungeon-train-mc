@@ -2677,6 +2677,8 @@
   "gui.dungeontrain.engine_block.spent": "이 엔진은 수명을 다했다",
   "gui.dungeontrain.engine_block.carriage_id": "객차: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "객차: 찾을 수 없음",
+  "gui.dungeontrain.engine_block.placed_by": "%s의 세계에서",
+  "gui.dungeontrain.engine_block.placed_by_you": "내 세계에서",
   "gui.dungeontrain.engine_block.no_carriage": "여기서는 어떤 객차도 알아보지 못한다",
   "block.dungeontrain.skybox_block": "스카이박스 블록",
   "block.dungeontrain.skybox_surface": "지표 스카이박스 블록",

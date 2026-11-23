@@ -2784,6 +2784,8 @@
   "gui.dungeontrain.engine_block.spent": "Этот двигатель выгорел",
   "gui.dungeontrain.engine_block.carriage_id": "Вагон: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Вагон: не найден",
+  "gui.dungeontrain.engine_block.placed_by": "Из мира игрока %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Из твоего мира",
   "gui.dungeontrain.engine_block.no_carriage": "Он не узнаёт здесь ни одного вагона",
   "block.dungeontrain.skybox_block": "Блок скайбокса",
   "block.dungeontrain.skybox_surface": "Наземный блок скайбокса",

@@ -2728,6 +2728,8 @@
   "gui.dungeontrain.engine_block.spent": "Deze motor is opgebrand",
   "gui.dungeontrain.engine_block.carriage_id": "Wagon: %s",
   "gui.dungeontrain.engine_block.carriage_not_found": "Wagon: niet gevonden",
+  "gui.dungeontrain.engine_block.placed_by": "Uit de wereld van %s",
+  "gui.dungeontrain.engine_block.placed_by_you": "Uit jouw wereld",
   "gui.dungeontrain.engine_block.no_carriage": "Hij herkent hier geen wagon",
   "block.dungeontrain.skybox_block": "Skyboxblok",
   "block.dungeontrain.skybox_surface": "Oppervlakte-skyboxblok",
