@@ -27,6 +27,12 @@ public abstract class GuiHalfHeartContainerMixin {
         "renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V";
     private static final int HEART_SIZE = 9;
     private static final int HALF_WIDTH = 5;
+    /** Rows 1-7 of the 9x9 sprite are the heart's body; row 0 is the lobes, row 8 the tip. */
+    private static final int CUT_TOP = 1;
+    private static final int CUT_BOTTOM = 8;
+    private static final int OUTLINE = 0xFF000000;
+    /** The damage flash's container outline. */
+    private static final int OUTLINE_FLASH = 0xFFFFFFFF;
 
     @Unique
     private int dungeontrain$nextHeartIndex = -1;
@@ -58,6 +64,9 @@ public abstract class GuiHalfHeartContainerMixin {
         RenderSystem.enableBlend();
         graphics.blitSprite(type.getSprite(hardcore, half, highlight),
             HEART_SIZE, HEART_SIZE, 0, 0, x, y, HALF_WIDTH, HEART_SIZE);
+        // Close the cut with the container's outline (white while it flashes), one pixel past it.
+        graphics.fill(x + HALF_WIDTH, y + CUT_TOP, x + HALF_WIDTH + 1, y + CUT_BOTTOM,
+            highlight ? OUTLINE_FLASH : OUTLINE);
         RenderSystem.disableBlend();
     }
 }
