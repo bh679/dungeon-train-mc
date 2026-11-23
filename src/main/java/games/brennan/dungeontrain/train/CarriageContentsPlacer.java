@@ -1785,7 +1785,8 @@ public final class CarriageContentsPlacer {
         discardDroppedItemsIn(level, interiorOrigin(carriageOrigin), size);
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, interiorOrigin(carriageOrigin), size, true, Blocks.AIR);
-        return template;
+        // No flowing fluid in a saved template; AIR is ignored here, so no air cells are written.
+        return games.brennan.dungeontrain.template.TemplateDecor.withoutFlowingFluid(level, template, false);
     }
 
     /**
