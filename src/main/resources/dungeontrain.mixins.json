@@ -348,7 +348,8 @@
     "client.ScreenChatClickMixin",
     "client.ClientPacketListenerCommandsMixin",
     "client.ChatComponentAccessor",
-    "client.BookEditScreenInvoker"
+    "client.BookEditScreenInvoker",
+    "client.GuiHalfHeartContainerMixin"
   ],
   "server": [
     "DedicatedServerPropertiesLevelTypeMixin"
