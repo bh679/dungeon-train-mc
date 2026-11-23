@@ -1,0 +1,21 @@
+{
+  "id": "ordered-dimensional-subvariants",
+  "version": "0.1980.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor"
+  ],
+  "title": "Editor: rooms that play in order",
+  "summary": "In the editor, a room's sub-variants can now be set to appear in a set order, to show up only once for each player, or to get rarer or commoner after a player has seen them a few times.",
+  "highlights": [
+    "Order: pick which sub-variant comes first, second and so on",
+    "Seen again: let a sub-variant appear just once per player",
+    "After visits: change how often it appears once a player has been there enough times"
+  ],
+  "pr": 2839,
+  "date": "2026-11-23",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

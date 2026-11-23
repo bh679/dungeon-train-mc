@@ -512,9 +512,10 @@ public final class VariantBlockInteractions {
         // matches the world-space block-variant menu's ADD behavior.
         RotationApplier.OrientedState oriented =
             RotationApplier.orientToPredecessors(newVariant.state(), updated);
-        updated.add(BlockVariantMenuController.withNewRowDefaults(HeadAim.aim(new VariantState(
+        // A sign added to a "same in cell" cell takes the cell's text.
+        updated.add(SignRowEdits.joinShared(updated, BlockVariantMenuController.withNewRowDefaults(HeadAim.aim(new VariantState(
             oriented.state(), newVariant.blockEntityNbt(),
-            newVariant.weight(), oriented.rotation()), local, footprint)));
+            newVariant.weight(), oriented.rotation()), local, footprint))));
         return updated;
     }
 

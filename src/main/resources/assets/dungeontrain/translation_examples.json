@@ -7615,6 +7615,18 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.block_variant.sign_screen_title_shared": {
+    "1": { "label": "how many sign options in the cell share this text", "examples": ["2", "4"] }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.sign_screen_line": {
+    "1": { "label": "the line number on the sign, 1 to 4", "examples": ["1", "4"] }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.sign_screen_colour": {
+    "1": { "label": "the dye colour name of the sign's text", "examples": ["Black", "Light Blue"] }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.sign_screen_glow": {
+    "1": { "label": "whether the text glows: the word On or Off", "examples": ["On", "Off"] }
+  },
   "gui.dungeontrain.editor_menu.container.title_at": {
     "1": {
       "label": "the container's x,y,z inside the plot",
@@ -19338,5 +19350,15 @@
         "/discord"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.sheet.order_step": {
+    "1": { "label": "the step number in the order", "examples": ["1", "2"] }
+  },
+  "chat.dungeontrain.editor.room_visit_rules_set": {
+    "1": { "label": "the sub-variant template's id", "examples": ["cmra_lobby", "cmra_hallway_basic"] },
+    "2": { "label": "the step number, 0 for any time", "examples": ["1", "0"] },
+    "3": { "label": "yes or no (English word)", "examples": ["yes", "no"] },
+    "4": { "label": "a visit count, 0 for off", "examples": ["3", "0"] },
+    "5": { "label": "a spawn weight number", "examples": ["4", "0"] }
   }
 }

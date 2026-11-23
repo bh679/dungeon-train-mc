@@ -66,6 +66,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
     private static final String TAG_OWN_SHELF_PAIRS = "ownShelfPairs";
     private static final String TAG_AUTHOR_ROOM_PICKS = "authorRoomPicks";
+    private static final String TAG_VISIT_RULED_PICKS = "visitRuledRoomPicks";
     private static final String TAG_BUILDER_MODE = "builderMode";
     private static final String TAG_BUILDER_VARIANT = "builderVariant";
     private static final String TAG_BUILDER_STAGE = "builderStage";
@@ -431,6 +432,14 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final int MAX_AUTHOR_ROOM_PICKS = 512;
 
     /**
+     * Rooms rolled through a group's visit rules (ordered steps, seen again, weight after the Xth
+     * visit), by pair key. Such a roll depends on who it was rolled for and what they had seen, none
+     * of which survives a restart, so a pair that re-plans reads its room back from here. Bounded by
+     * {@link #MAX_AUTHOR_ROOM_PICKS}, oldest first out.
+     */
+    private final java.util.LinkedHashMap<Integer, String> visitRuledPicks = new java.util.LinkedHashMap<>();
+
+    /**
      * Pair key → {@code "<room>|<share>"} for pairs that landed on an author room. The room was fitted
      * to an author or a self count fetched from the relay, neither of which is guaranteed to read the
      * same after a restart, so the answer is kept rather than re-derived. Oldest dropped past
@@ -640,6 +649,15 @@ public final class DungeonTrainWorldData extends SavedData {
                 // A hand-edited key that is not a pair key names no pair; skip it.
             }
         }
+        // Absent on every world saved before ordered sub-variants → nothing remembered.
+        net.minecraft.nbt.CompoundTag ruled = tag.getCompound(TAG_VISIT_RULED_PICKS);
+        for (String key : ruled.getAllKeys()) {
+            try {
+                data.visitRuledPicks.put(Integer.parseInt(key), ruled.getString(key));
+            } catch (NumberFormatException ignored) {
+                // A hand-edited key that is not a pair key names no pair; skip it.
+            }
+        }
         // Absent in every world that has never uploaded a build, which is every non-builder world.
         data.builderRelayBuilds.loadFrom(
                 tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
@@ -797,6 +815,11 @@ public final class DungeonTrainWorldData extends SavedData {
             net.minecraft.nbt.CompoundTag picks = new net.minecraft.nbt.CompoundTag();
             authorRoomPicks.forEach((pairKey, pick) -> picks.putString(Integer.toString(pairKey), pick));
             tag.put(TAG_AUTHOR_ROOM_PICKS, picks);
+        }
+        if (!visitRuledPicks.isEmpty()) {
+            net.minecraft.nbt.CompoundTag ruled = new net.minecraft.nbt.CompoundTag();
+            visitRuledPicks.forEach((pairKey, room) -> ruled.putString(Integer.toString(pairKey), room));
+            tag.put(TAG_VISIT_RULED_PICKS, ruled);
         }
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
@@ -1551,6 +1574,22 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Remember that {@code pairKey}'s room was rolled with the own-books library weighted up. */
     public void markOwnShelfPair(int pairKey) {
         if (ownShelfPairs.add(pairKey)) setDirty();
+    }
+
+    /** The room {@code pairKey} rolled through a group's visit rules, or null. */
+    public String visitRuledPick(int pairKey) {
+        return visitRuledPicks.get(pairKey);
+    }
+
+    /** Remember the room {@code pairKey} rolled through a group's visit rules. */
+    public void rememberVisitRuledPick(int pairKey, String room) {
+        if (room == null || room.equals(visitRuledPicks.get(pairKey))) return;
+        visitRuledPicks.remove(pairKey);
+        visitRuledPicks.put(pairKey, room);
+        while (visitRuledPicks.size() > MAX_AUTHOR_ROOM_PICKS) {
+            visitRuledPicks.remove(visitRuledPicks.keySet().iterator().next());
+        }
+        setDirty();
     }
 
     /** {@code pairKey}'s remembered author-room pick as {@code "<room>|<share>"}, or null. */
