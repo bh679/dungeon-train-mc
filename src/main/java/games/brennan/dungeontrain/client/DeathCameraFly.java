@@ -21,10 +21,13 @@ final class DeathCameraFly {
 
     /** Pure: the shot after {@code prev} is flown into, not cut to: the spot orbit to the killer orbit. */
     static boolean fliesInto(DeathShot prev, DeathShot next) {
-        if (prev == null || next == null) return false;
-        boolean spot = prev.kind() == DeathShot.Kind.ORBIT
-            && (prev.target() == DeathShot.Target.BODY || prev.target() == DeathShot.Target.HAZARD);
-        return spot && next.kind() == DeathShot.Kind.ORBIT && next.target() == DeathShot.Target.KILLER;
+        return isSpot(prev) && next != null && next.kind() == DeathShot.Kind.ORBIT && next.target() == DeathShot.Target.KILLER;
+    }
+
+    /** Pure: the orbit of where you died (the body, or the block that killed you). */
+    static boolean isSpot(DeathShot shot) {
+        return shot != null && shot.kind() == DeathShot.Kind.ORBIT
+            && (shot.target() == DeathShot.Target.BODY || shot.target() == DeathShot.Target.HAZARD);
     }
 
     /** Pure: how far through the flight {@code t} ticks in is, 0 to 1. */
