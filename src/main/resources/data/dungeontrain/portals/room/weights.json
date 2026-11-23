@@ -170,6 +170,7 @@
       "name": "PouncingHen"
     }
   },
+  "crma": 1,
   "cubes": {
     "weight": 1,
     "mode": "endless_repetition/exact/off/on/off/end"
