@@ -39,7 +39,6 @@ public final class SignTextScreen extends Screen {
     private final BlockPos localPos;
     private final int row;
     private final int lineWidth;
-    private final int sharedCount;
     @Nullable
     private final Screen parent;
 
@@ -66,7 +65,6 @@ public final class SignTextScreen extends Screen {
         this.localPos = localPos;
         this.row = row;
         this.lineWidth = lineWidth;
-        this.sharedCount = sharedCount;
         this.parent = parent;
         load(0, text.front());
         load(1, text.back());
@@ -101,8 +99,11 @@ public final class SignTextScreen extends Screen {
             EditBox box = new EditBox(this.font, cx - BOX_W / 2, top + 26 + i * ROW_H, BOX_W, 18,
                 Component.literal(MenuLang.t("block_variant.sign_screen_line", i + 1)));
             box.setMaxLength(SignVariants.MAX_LINE_CHARS);
-            box.setFilter(this::fits);
+            // Value first, filter after: a line already wider than this sign allows (written for a
+            // wider sign, or by hand) must load intact, or Done would quietly erase it.
             box.setValue(lines[side][i]);
+            int loaded = this.font.width(lines[side][i]);
+            box.setFilter(v -> fits(v, loaded));
             box.setResponder(v -> lines[side][line] = v);
             boxes.add(box);
             addRenderableWidget(box);
@@ -126,10 +127,13 @@ public final class SignTextScreen extends Screen {
             .bounds(cx + 2, btnY, BOX_W / 2 - 2, 20).build());
     }
 
-    /** A line fits when it is short enough to draw on the narrowest sign it can land on. */
-    private boolean fits(String s) {
-        return s != null && this.font.width(s) <= lineWidth
-            && SignVariants.clampLine(s).equals(s);
+    /**
+     * A line fits when it is short enough to draw on the narrowest sign it can land on. A line that
+     * loaded wider than that ({@code loadedWidth}) may still be edited as long as it doesn't grow.
+     */
+    private boolean fits(String s, int loadedWidth) {
+        if (s == null || !SignVariants.clampLine(s).equals(s)) return false;
+        return this.font.width(s) <= Math.max(lineWidth, loadedWidth);
     }
 
     private Component sideLabel(int s) {

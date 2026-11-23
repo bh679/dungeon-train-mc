@@ -563,13 +563,16 @@ public final class BlockVariantMenuInputHandler {
         int option = GrowthPopupLayout.option(code);
         games.brennan.dungeontrain.editor.VariantSign sign = e.signOptions();
         games.brennan.dungeontrain.editor.SignVariants.Text text = BlockVariantMenu.signText(e);
-        switch (GrowthPopupLayout.section(code)) {
-            case SignPopupLayout.SECTION_MOUNT -> {
-                int[] wires = SignPopupLayout.mountWires(parsed);
-                if (option < 0 || option >= wires.length) return;
-                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.SET_SIGN_MOUNT, variantId, local, hit.index(), "", wires[option]));
-            }
+        int section = GrowthPopupLayout.section(code);
+        if (SignPopupLayout.isMountSection(section)) {
+            int[] wires = SignPopupLayout.mountWires(parsed);
+            int button = SignPopupLayout.mountButton(section, option);
+            if (button < 0 || button >= wires.length) return;
+            DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                BlockVariantEditPacket.Op.SET_SIGN_MOUNT, variantId, local, hit.index(), "", wires[button]));
+            return;
+        }
+        switch (section) {
             case SignPopupLayout.SECTION_TEXT -> {
                 boolean shared = option == SignPopupLayout.TEXT_SHARED;
                 if (shared == sign.shared()) return;

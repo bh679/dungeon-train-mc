@@ -23,6 +23,12 @@ import java.util.List;
 final class SignPopupLayout {
 
     static final int SECTION_MOUNT = 0;
+    /**
+     * Sections of the Mount rows after the first: row {@code k} is {@code MOUNT_SECTIONS[k]}. Two
+     * buttons a row — "Standing" and "Hanging" side by side ran into each other.
+     */
+    static final int[] MOUNT_SECTIONS = {SECTION_MOUNT, 4, 5};
+    static final int PER_ROW = 2;
     static final int SECTION_TEXT = 1;
     static final int SECTION_WAX = 2;
     static final int SECTION_EDIT = 3;
@@ -50,9 +56,14 @@ final class SignPopupLayout {
                 : current != null && wires[i] == current.ordinal();
             if (lit) mountSelected = i;
         }
-        List<Object[]> spec = new ArrayList<>(4);
-        spec.add(new Object[] {SECTION_MOUNT, MenuLang.t("block_variant.sign_mount"), mountButtons,
-            mountSelected < 0 ? NONE_LIT : mountSelected});
+        List<Object[]> spec = new ArrayList<>(6);
+        for (int k = 0; k * PER_ROW < mountButtons.length && k < MOUNT_SECTIONS.length; k++) {
+            int from = k * PER_ROW;
+            int to = Math.min(mountButtons.length, from + PER_ROW);
+            boolean litHere = mountSelected >= from && mountSelected < to;
+            spec.add(new Object[] {MOUNT_SECTIONS[k], k == 0 ? MenuLang.t("block_variant.sign_mount") : "",
+                java.util.Arrays.copyOfRange(mountButtons, from, to), litHere ? mountSelected - from : NONE_LIT});
+        }
         spec.add(new Object[] {SECTION_TEXT, MenuLang.t("block_variant.sign_text"),
             new String[] {MenuLang.t("block_variant.sign_shared"), MenuLang.t("block_variant.sign_own")},
             sign.shared() ? TEXT_SHARED : TEXT_OWN});
@@ -72,6 +83,19 @@ final class SignPopupLayout {
                 left, left + GrowthPopupLayout.POPUP_WIDTH, bottom, bottom + GrowthPopupLayout.ROW_HEIGHT));
         }
         return rows;
+    }
+
+    /** Index into {@link #mountWires} of the Mount button at {@code option} in {@code section}, or -1. */
+    static int mountButton(int section, int option) {
+        for (int k = 0; k < MOUNT_SECTIONS.length; k++) {
+            if (MOUNT_SECTIONS[k] == section) return k * PER_ROW + option;
+        }
+        return -1;
+    }
+
+    /** True when {@code section} is one of the Mount rows. */
+    static boolean isMountSection(int section) {
+        return mountButton(section, 0) >= 0;
     }
 
     /** {@code SET_SIGN_MOUNT} values for the Mount buttons, in order: the wood's mounts, then Auto. */
