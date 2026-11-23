@@ -52,7 +52,7 @@ class DeathCameraCycleTest {
     @Test
     void deathSpotOrbitLeadsIntoAKillerOrStandsInForTheCarriageShot() {
         assertEquals(List.of("carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 1), "on the train, no killer: no spot");
-        assertEquals(List.of("spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 2));
+        assertEquals(List.of("spot", "killer", "carriage"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
         assertEquals(List.of("spot", "leaving"), labels(DeathCameraCycle.buildSequence(false, false, false, false)).subList(0, 2), "off the train: spot instead of the carriage shot");
         assertEquals(List.of("leaving"), labels(DeathCameraCycle.buildSequence(true, false, false, false)).subList(0, 1), "void death: never");
         List<DeathShot> hazard = DeathCameraCycle.buildSequence(false, false, false, true, false, true);
@@ -138,7 +138,13 @@ class DeathCameraCycleTest {
     @Test
     void orbitsHoldThreeSecondsAndTheCarriageShotZoomsThenHolds() {
         for (DeathShot shot : DeathCameraCycle.buildSequence(false, true, true, true)) {
-            if (shot.kind() == DeathShot.Kind.ORBIT) assertEquals(60, shot.holdTicks(), shot.label());
+            if (shot.kind() == DeathShot.Kind.ORBIT) {
+                int want = switch (shot.label()) {
+                    case "killer" -> DeathCameraCycle.KILLER_HOLD_TICKS;
+                    default -> 60;
+                };
+                assertEquals(want, shot.holdTicks(), shot.label());
+            }
             if (shot.kind() == DeathShot.Kind.DOLLY) assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, shot.holdTicks());
         }
     }
