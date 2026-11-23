@@ -28,13 +28,17 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.BooleanOp;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.event.EventHooks;
 import org.joml.Vector3d;
@@ -55,7 +59,14 @@ import java.util.Set;
  * is ground it stands on or steps over, so carpet, slabs and paths at its feet are never in the way.
  * With no
  * path the navigator leaves a mob standing where it gave up, so when the way ahead is open ground
- * the goal first walks it straight at the target until there is something to dig.
+ * (or a one-block rise it can jump, {@link #isStepUp}) the goal first walks it straight at the target
+ * until there is something to dig.
+ *
+ * <p>Nothing is dug while the navigator can still find a walkable path to the target: a mob that is
+ * only circling or holding range in a fight is not stuck. A cell is in the way only when its collision
+ * crosses the mob-wide lane down the middle of the cell ({@link #blocksLane}), so an open door, or a
+ * closed one passed side-on, is not; carpet on the block in front ({@link #isLowProfile}) is never dug; and a
+ * closed door that opens by hand is opened, as a player would, not mined.</p>
  *
  * <p>PlayerMobs always have this goal at {@link ToolTiers#MAX_TIER} (anything but floors), tool or
  * not: with no digging tool they mine at the speed of what is in their main hand, as a player would.</p>
@@ -97,6 +108,12 @@ public final class MobDigGoal extends Goal {
     private static final double CRACK_RANGE_SQR = 32.0 * 32.0;
     /** Padding around a carriage's box when looking for the carriage a cell belongs to. */
     private static final double CARRIAGE_PAD = 2.0;
+    /** Highest rise (above the feet) a mob can jump onto rather than dig through. Vanilla jump is ~1.25. */
+    private static final double JUMP_HEIGHT = 1.1;
+    /** Collision no taller than this is a covering (carpet, thin snow) that needs a block under it. */
+    private static final double LOW_PROFILE_HEIGHT = 0.125;
+    /** Ticks to open a door in the way: a click, with a swing. */
+    private static final int OPEN_DOOR_TICKS = 4;
     /** Luminous Monsters' Miners. They dig with a tool they hold, from any level, and can't without one. */
     private static final Set<String> MINER_IDS =
         Set.of("luminous_monsters:miner_zombie", "luminous_monsters:miner_skeleton");
@@ -104,10 +121,13 @@ public final class MobDigGoal extends Goal {
     /**
      * One cell to break. A carriage cell keeps its ship and plot position (the world cell moves with
      * the train); a world cell has {@code ship == null}. A {@code floor} cell is ground the mob stands
-     * on or can step over: never broken, and never in its way.
+     * on or can step over: never broken, and never in its way. {@code top} is the world height of the
+     * top of its collision; a {@code low} cell is a thin covering ({@link #isLowProfile}). A
+     * {@code door} cell is a closed door that opens by hand: opened, not broken.
      */
     private record DigCell(BlockPos worldPos, ManagedShip ship, ServerSubLevel subLevel, BlockPos plotPos,
-                           BlockState state, InteractionHand hand, int ticks, boolean floor) {
+                           BlockState state, InteractionHand hand, int ticks, boolean floor, double top,
+                           boolean low, boolean door) {
         boolean onCarriage() { return ship != null; }
         BlockPos levelPos() { return onCarriage() ? plotPos : worldPos; }
         Vec3 worldCentre() {
@@ -201,6 +221,12 @@ public final class MobDigGoal extends Goal {
         }
         if (now >= chainUntilTick && now - bestDistanceTick < STUCK_TICKS) return false;
         if (!EventHooks.canEntityGrief(level, mob)) return false;
+        if (hasWalkablePath(target)) {
+            // Not stuck, just fighting (circling, holding range): there is a way round, so dig nothing.
+            bestDistanceTick = now;
+            chainUntilTick = Integer.MIN_VALUE;
+            return false;
+        }
 
         cell = planDig(level, target);
         approaching = cell == null && canApproach(level, target);
@@ -221,7 +247,7 @@ public final class MobDigGoal extends Goal {
         if (approaching) return approachTicks < APPROACH_TICKS;
         if (cell == null) return false;
         if (!currentState(level, cell).equals(cell.state)) return false;
-        if (!bareHanded && !(mob.getItemInHand(cell.hand).getItem() instanceof DiggerItem)) return false;
+        if (!cell.door && !bareHanded && !(mob.getItemInHand(cell.hand).getItem() instanceof DiggerItem)) return false;
         return mob.getEyePosition().distanceTo(cell.worldCentre()) <= REACH;
     }
 
@@ -252,18 +278,19 @@ public final class MobDigGoal extends Goal {
         if (progressTicks % SWING_EVERY_TICKS == 0) mob.swing(cell.hand);
         progressTicks++;
         int stage = Math.min(9, progressTicks * 10 / Math.max(1, cell.ticks));
-        if (stage != lastStage) {
+        if (stage != lastStage && !cell.door) {
             sendCrack(level, cell, stage);
             lastStage = stage;
         }
         if (progressTicks >= cell.ticks) {
-            finishBreak(level, cell);
+            if (cell.door) openDoor(level, cell);
+            else finishBreak(level, cell);
         }
     }
 
     @Override
     public void stop() {
-        if (cell != null && lastStage >= 0 && mob.level() instanceof ServerLevel level) {
+        if (cell != null && !cell.door && lastStage >= 0 && mob.level() instanceof ServerLevel level) {
             sendCrack(level, cell, -1);
         }
         cell = null;
@@ -300,11 +327,33 @@ public final class MobDigGoal extends Goal {
     /** Whether the cells in front are open and stand on solid ground, so walking on is safe. */
     private boolean canApproach(ServerLevel level, LivingEntity target) {
         BlockPos feet = mob.blockPosition();
-        BlockPos front = frontOf(feet, target);
+        Direction dir = directionTo(target);
+        BlockPos front = feet.relative(dir);
         List<ManagedShip> ships = shipsNear(level);
-        return isOpen(resolve(level, ships, front))
-                && isOpen(resolve(level, ships, front.above()))
-                && resolve(level, ships, front.below()) != null;
+        DigCell foot = resolve(level, ships, front, dir);
+        DigCell head = resolve(level, ships, front.above(), dir);
+        if (isStepUp(foot, head, resolve(level, ships, front.above(2), dir))) return true;
+        return isOpen(foot) && isOpen(head) && resolve(level, ships, front.below(), dir) != null;
+    }
+
+    /**
+     * A rise the mob can jump onto instead of digging: the front cell tops out within
+     * {@link #JUMP_HEIGHT} of its feet, with room above it (carpet on top is fine, it is floor).
+     */
+    private boolean isStepUp(DigCell foot, DigCell head, DigCell above) {
+        return foot != null && !foot.floor
+                && isStepUp(head != null && head.low ? head.top : foot.top, mob.getY(),
+                            isOpen(head) || head.low, isOpen(above));
+    }
+
+    static boolean isStepUp(double footTopY, double mobY, boolean headOpen, boolean aboveOpen) {
+        return headOpen && aboveOpen && footTopY <= mobY + JUMP_HEIGHT;
+    }
+
+    /** Whether the navigator can find a walkable path all the way to {@code target}. */
+    private boolean hasWalkablePath(LivingEntity target) {
+        Path path = mob.getNavigation().createPath(target, 0);
+        return path != null && path.canReach();
     }
 
     /** Nothing in the way: no collision, or ground the mob can stand on or step over. */
@@ -312,9 +361,20 @@ public final class MobDigGoal extends Goal {
         return c == null || c.floor;
     }
 
-    /** The cell beside {@code feet} in the target's direction. */
-    private BlockPos frontOf(BlockPos feet, LivingEntity target) {
-        return feet.relative(Direction.getNearest(target.getX() - mob.getX(), 0, target.getZ() - mob.getZ()));
+    /** The horizontal direction from the mob toward {@code target}. */
+    private Direction directionTo(LivingEntity target) {
+        return Direction.getNearest(target.getX() - mob.getX(), 0, target.getZ() - mob.getZ());
+    }
+
+    /** Open a closed door in the way, as a player clicking it would; the next plan walks through. */
+    private void openDoor(ServerLevel level, DigCell target) {
+        if (target.state.getBlock() instanceof DoorBlock door) {
+            door.setOpen(mob, level, target.state, target.levelPos(), true);
+            LOGGER.debug("[DungeonTrain] MobDigGoal open door: mob={} at={} carriage={}",
+                    mob.getUUID(), target.worldPos, target.onCarriage());
+            chainUntilTick = mob.tickCount + CHAIN_TICKS;
+        }
+        cell = null;
     }
 
     private void finishBreak(ServerLevel level, DigCell target) {
@@ -346,17 +406,22 @@ public final class MobDigGoal extends Goal {
     private DigCell planDig(ServerLevel level, LivingEntity target) {
         BlockPos feet = mob.blockPosition();
         boolean targetAbove = target.getY() - mob.getY() > 1.5;
-        BlockPos front = frontOf(feet, target);
-
-        List<BlockPos> candidates = new ArrayList<>(3);
-        if (targetAbove) candidates.add(feet.above(2));
-        candidates.add(front.above());
-        candidates.add(front);
+        Direction dir = directionTo(target);
+        BlockPos front = feet.relative(dir);
 
         List<ManagedShip> ships = shipsNear(level);
+        DigCell foot = resolve(level, ships, front, dir);
+        DigCell head = resolve(level, ships, front.above(), dir);
+        if (!targetAbove && isStepUp(foot, head, resolve(level, ships, front.above(2), dir))) return null;
+
+        List<DigCell> candidates = new ArrayList<>(3);
+        if (targetAbove) candidates.add(resolve(level, ships, feet.above(2), null));
+        // Carpet and the like on the block in front is not in the way: that block is, and it falls with it.
+        if (!(head != null && head.low && !isOpen(foot))) candidates.add(head);
+        candidates.add(foot);
+
         DigCell first = null;
-        for (BlockPos pos : candidates) {
-            DigCell c = resolve(level, ships, pos);
+        for (DigCell c : candidates) {
             if (isOpen(c)) continue;           // open, or floor: nothing to break here
             if (c.ticks < 0) return null;      // blocking and not ours to break
             if (first == null) first = c;
@@ -365,11 +430,12 @@ public final class MobDigGoal extends Goal {
     }
 
     /**
-     * The cell at world {@code pos}: null when open, a cell with {@code ticks < 0} when it blocks but
+     * The cell at world {@code pos} for a mob moving {@code travel} (null: straight up): null when open
+     * or its collision is clear of the mob's lane, a cell with {@code ticks < 0} when it blocks but
      * may not be broken (always so for {@link DigCell#floor floor}), otherwise the cell with its hand
      * and dig time.
      */
-    private DigCell resolve(ServerLevel level, List<ManagedShip> ships, BlockPos pos) {
+    private DigCell resolve(ServerLevel level, List<ManagedShip> ships, BlockPos pos, Direction travel) {
         ManagedShip ship = null;
         ServerSubLevel subLevel = null;
         BlockPos plotPos = null;
@@ -390,10 +456,18 @@ public final class MobDigGoal extends Goal {
         }
         VoxelShape shape = state.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
         if (shape.isEmpty()) return null;
+        if (!blocksLane(shape, laneAxis(travel, ship, pos, plotPos), mob.getBbWidth())) return null;
 
-        boolean floor = isFloor(cellTopY(pos, ship, plotPos, shape), mob.getY(), mob.maxUpStep());
-        DigCell blocked = new DigCell(pos, ship, subLevel, plotPos, state, InteractionHand.MAIN_HAND, -1, floor);
+        double top = cellTopY(pos, ship, plotPos, shape);
+        boolean floor = isFloor(top, mob.getY(), mob.maxUpStep());
+        boolean low = isLowProfile(shape.max(Direction.Axis.Y));
+        DigCell blocked = new DigCell(pos, ship, subLevel, plotPos, state, InteractionHand.MAIN_HAND, -1, floor, top, low, false);
         if (floor) return blocked;
+        if (state.getBlock() instanceof DoorBlock door && door.type().canOpenByHand()
+                && !state.getValue(DoorBlock.OPEN)) {
+            return new DigCell(pos, ship, subLevel, plotPos, state, InteractionHand.MAIN_HAND, OPEN_DOOR_TICKS,
+                    false, top, low, true);
+        }
         float hardness = state.getDestroySpeed(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
         if (hardness < 0 || state.hasBlockEntity()) return blocked;
 
@@ -410,7 +484,44 @@ public final class MobDigGoal extends Goal {
 
         int ticks = digTicks(level, tool, state, hardness);
         if (ticks > MAX_DIG_TICKS) return blocked;
-        return new DigCell(pos, ship, subLevel, plotPos, state, hand, ticks, false);
+        return new DigCell(pos, ship, subLevel, plotPos, state, hand, ticks, false, top, low, false);
+    }
+
+    /**
+     * The horizontal axis the mob moves along through the cell, in the block's own frame (the carriage
+     * plot for a carriage cell, which may sit turned against the world), or null when moving vertically.
+     */
+    private static Direction.Axis laneAxis(Direction travel, ManagedShip ship, BlockPos pos, BlockPos plotPos) {
+        if (travel == null) return null;
+        if (ship == null) return travel.getAxis();
+        BlockPos behind = CarriageDeck.shipLocal(ship, pos.relative(travel.getOpposite()));
+        int dx = plotPos.getX() - behind.getX(), dz = plotPos.getZ() - behind.getZ();
+        if (dx == 0 && dz == 0) return null;
+        return Math.abs(dx) >= Math.abs(dz) ? Direction.Axis.X : Direction.Axis.Z;
+    }
+
+    /**
+     * Whether a cell's collision {@code shape} (block-local) crosses the lane a mob {@code width} wide
+     * walks down the middle of the cell along {@code travel}. An open door or trapdoor, or a closed door
+     * passed side-on, sits against a side of the cell and leaves the lane clear. With no travel axis
+     * (moving vertically) any collision blocks.
+     */
+    static boolean blocksLane(VoxelShape shape, Direction.Axis travel, double width) {
+        if (shape.isEmpty()) return false;
+        if (travel == null || travel == Direction.Axis.Y) return true;
+        double lo = Math.max(0.0, 0.5 - width / 2), hi = Math.min(1.0, 0.5 + width / 2);
+        VoxelShape lane = travel == Direction.Axis.X
+                ? Shapes.box(0, 0, lo, 1, 1, hi)
+                : Shapes.box(lo, 0, 0, hi, 1, 1);
+        return Shapes.joinIsNotEmpty(shape, lane, BooleanOp.AND);
+    }
+
+    /**
+     * Whether a block is a thin covering ({@link #LOW_PROFILE_HEIGHT}: carpet, a thin snow layer). Lying
+     * on the block in front it is not what stops a mob: that block is, and the covering falls with it.
+     */
+    static boolean isLowProfile(double shapeMaxY) {
+        return shapeMaxY <= LOW_PROFILE_HEIGHT;
     }
 
     /**
