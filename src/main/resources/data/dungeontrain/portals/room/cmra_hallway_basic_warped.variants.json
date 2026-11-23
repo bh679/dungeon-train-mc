@@ -58,14 +58,18 @@
     "14,2,5": { "lockId": 7, "states": ["minecraft:white_concrete", "minecraft:magenta_concrete"] },
     "13,2,5": { "lockId": 8, "states": [{"state": "minecraft:white_concrete", "if": "group7=minecraft:white_concrete"}, {"state": "minecraft:black_concrete", "if": "group7=minecraft:magenta_concrete"}] },
     "12,3,5": { "lockId": 8, "states": [{"state": "minecraft:white_concrete", "if": "group7=minecraft:white_concrete"}, {"state": "minecraft:black_concrete", "if": "group7=minecraft:magenta_concrete"}] },
-    "32,3,8": [{"state": "biomesoplenty:null_block", "weight": 10, "groupRef": 10, "groupStates": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}]}, "biomesoplenty:liquid_null[level=0]"],
-    "17,4,6": { "lockId": 9, "states": [{"state": "minecraft:black_concrete", "weight": 4}, "biomesoplenty:liquid_null[level=0]"] },
+    "32,3,8": [{"state": "biomesoplenty:null_block", "weight": 25, "groupRef": 10, "groupStates": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}]}, "biomesoplenty:liquid_null[level=0]"],
+    "17,4,6": { "lockId": 9, "states": [{"state": "minecraft:black_concrete", "weight": 25}, "biomesoplenty:liquid_null[level=0]"] },
     "17,0,6": ["minecraft:gray_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 4, "if": "!group9=minecraft:black_concrete"}],
     "32,1,6": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "32,2,6": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "32,3,6": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "32,3,7": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "32,2,8": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
-    "32,1,8": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] }
+    "32,1,8": { "lockId": 10, "states": ["biomesoplenty:null_block", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
+    "14,0,6": ["minecraft:magenta_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 4, "if": "!group11=minecraft:black_concrete"}],
+    "14,4,6": { "lockId": 11, "states": [{"state": "minecraft:black_concrete", "weight": 8}, "biomesoplenty:liquid_null[level=0]"] },
+    "28,4,8": { "lockId": 12, "states": [{"state": "minecraft:black_concrete", "weight": 8}, "biomesoplenty:liquid_null[level=0]"] },
+    "28,0,8": ["minecraft:magenta_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 4, "if": "!group12=minecraft:black_concrete"}]
   }
 }
