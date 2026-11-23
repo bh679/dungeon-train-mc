@@ -25,7 +25,8 @@ import java.util.function.ToIntFunction;
  *
  * <p><b>Reservations:</b> a room rolled for a rider and stamped, but not yet walked into, counts as
  * visited for that rider's next rolls — two dimensional carriages planned before the player reaches
- * either must not both be the lobby. In memory only; dropped on entry, on eviction and at shutdown.</p>
+ * either must not both be the lobby. In memory only; dropped on entry and at shutdown. An evicted
+ * pair keeps its room and may come back, so it keeps its reservation and entry marks too.</p>
  *
  * <p><b>Restart:</b> a pair whose room came out of a visit-ruled roll is remembered in
  * {@link DungeonTrainWorldData#visitRuledPick}, so re-planning after a restart lands on the same room.</p>
@@ -100,13 +101,6 @@ public final class PortalRoomVisits {
         UUID id = player.getUUID();
         RESERVED.values().removeIf(r -> r.rider().equals(id));
         COUNTED.removeIf(k -> k.startsWith(id + "|"));
-    }
-
-    /** {@code pairKey}'s structure is gone; its reservation and entry marks go with it. */
-    public static void release(int pairKey) {
-        RESERVED.remove(pairKey);
-        String mid = "|" + pairKey + "|";
-        COUNTED.removeIf(k -> k.contains(mid));
     }
 
     public static void clear() {

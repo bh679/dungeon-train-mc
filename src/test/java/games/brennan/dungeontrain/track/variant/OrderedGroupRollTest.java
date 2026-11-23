@@ -43,7 +43,7 @@ final class OrderedGroupRollTest {
     private static Set<String> drawn(int selfWeight, List<TrackVariantGroup.Member> members,
                                      Map<String, Integer> counts) {
         Set<String> out = new HashSet<>();
-        OrderedGroupRoll.Pool pool = OrderedGroupRoll.pool(selfWeight, members, visits(counts));
+        OrderedGroupRoll.Pool pool = OrderedGroupRoll.pool(selfWeight, members, CMRA, visits(counts));
         // One stream: fresh Randoms on consecutive small seeds give near-identical first draws.
         Random rng = new Random(42);
         for (int i = 0; i < 500; i++) {
@@ -86,7 +86,7 @@ final class OrderedGroupRollTest {
     }
 
     private static int weightOf(String id, Map<String, Integer> counts) {
-        return OrderedGroupRoll.pool(0, CMRA, visits(counts)).members().stream()
+        return OrderedGroupRoll.pool(0, CMRA, CMRA, visits(counts)).members().stream()
             .filter(w -> w.member().id().equals(id)).findFirst().orElseThrow().weight();
     }
 
@@ -99,20 +99,19 @@ final class OrderedGroupRollTest {
     }
 
     @Test
-    @DisplayName("a step counts as done when any of its members was seen, eligible here or not")
+    @DisplayName("a step finished through a member gated out here is still finished")
     void stepDoneByIneligibleMember() {
-        // Step 2 was finished through alcove_01 elsewhere; only basic is eligible now.
+        // Step 2 was finished through alcove_01 at another level; here only basic + warped are eligible.
         List<TrackVariantGroup.Member> eligible = List.of(CMRA.get(1), CMRA.get(3));
-        List<TrackVariantGroup.Member> all = CMRA;
-        assertEquals(0, OrderedGroupRoll.currentStep(eligible, all,
-            visits(Map.of("cmra_lobby", 1, "cmra_hallway_alcove_01", 1))));
+        Set<String> got = drawn(5, eligible, Map.of("cmra_lobby", 1, "cmra_hallway_alcove_01", 1));
+        assertTrue(got.containsAll(Set.of("<parent>", "cmra_hallway_basic", "cmra_hallway_basic_warped")), got.toString());
     }
 
     @Test
     @DisplayName("every member used up -> the parent")
     void nothingLeftIsParent() {
         List<TrackVariantGroup.Member> once = List.of(m("a", 1, VisitRules.NONE.withSeenAgain(false)));
-        OrderedGroupRoll.Pool pool = OrderedGroupRoll.pool(0, once, visits(Map.of("a", 1)));
+        OrderedGroupRoll.Pool pool = OrderedGroupRoll.pool(0, once, once, visits(Map.of("a", 1)));
         assertNull(OrderedGroupRoll.pick(new Random(1), pool));
     }
 
@@ -126,7 +125,7 @@ final class OrderedGroupRollTest {
         for (int seed = 0; seed < 2000; seed++) {
             TrackVariantGroup.Member legacy = group.pick(new Random(seed), plain);
             TrackVariantGroup.Member ordered = OrderedGroupRoll.pick(new Random(seed),
-                OrderedGroupRoll.pool(4, plain, id -> 7));
+                OrderedGroupRoll.pool(4, plain, plain, id -> 7));
             assertSame(legacy, ordered, "seed " + seed);
         }
         assertFalse(group.usesVisitRules());

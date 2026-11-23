@@ -34,17 +34,19 @@ public final class OrderedGroupRoll {
 
     /**
      * The pool {@code eligible} draws from for a player with {@code visits}. {@code visits} answers
-     * a member id's visit count (0 when never visited).
+     * a member id's visit count (0 when never visited). {@code allMembers} is the whole group,
+     * gated-out members included: a step finished through a member this context gates out is still
+     * finished.
      */
     public static Pool pool(int selfWeight, List<TrackVariantGroup.Member> eligible,
-                            ToIntFunction<String> visits) {
+                            List<TrackVariantGroup.Member> allMembers, ToIntFunction<String> visits) {
         List<TrackVariantGroup.Member> remaining = new ArrayList<>(eligible.size());
         for (TrackVariantGroup.Member m : eligible) {
             if (!m.visits().seenAgain() && visits.applyAsInt(m.id()) > 0) continue;
             remaining.add(m);
         }
 
-        int step = currentStep(remaining, eligible, visits);
+        int step = currentStep(remaining, allMembers, visits);
         List<Weighted> out = new ArrayList<>(remaining.size());
         for (TrackVariantGroup.Member m : remaining) {
             if (step > 0 && m.visits().order() != step) continue;
@@ -58,13 +60,13 @@ public final class OrderedGroupRoll {
      * step is done. A step counts as done when any member of it — eligible here or not — has been
      * visited, so a lobby seen at another level is not asked for again.
      */
-    static int currentStep(List<TrackVariantGroup.Member> remaining, List<TrackVariantGroup.Member> eligible,
+    static int currentStep(List<TrackVariantGroup.Member> remaining, List<TrackVariantGroup.Member> allMembers,
                            ToIntFunction<String> visits) {
         int best = 0;
         for (TrackVariantGroup.Member m : remaining) {
             int order = m.visits().order();
             if (order == 0 || (best != 0 && order >= best)) continue;
-            if (!stepVisited(order, eligible, visits)) best = order;
+            if (!stepVisited(order, allMembers, visits)) best = order;
         }
         return best;
     }

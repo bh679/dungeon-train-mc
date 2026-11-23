@@ -2961,7 +2961,6 @@ public final class PortalCarriageEvents {
         PortalStructure structure = STRUCTURES.remove(pairKey);
         if (structure == null) return;
         games.brennan.dungeontrain.portal.PortalRoomSaveHold.release(pairKey);
-        games.brennan.dungeontrain.portal.PortalRoomVisits.release(pairKey);
         games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
         // Its drifting room goes back to the relay with whatever was last built in it — before the
         // erase, while the blocks can still be read. The evicted record keeps the room it rolled but

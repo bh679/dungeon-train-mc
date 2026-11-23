@@ -433,7 +433,7 @@ public final class TrackVariantRegistry {
 
         // Visit rules only bite when the roll is for a player; without one the group draws by weight.
         TrackVariantGroup.Member chosen = visits != null && group.usesVisitRules()
-            ? OrderedGroupRoll.pick(rng, OrderedGroupRoll.pool(group.selfWeight(), eligible, visits))
+            ? OrderedGroupRoll.pick(rng, OrderedGroupRoll.pool(group.selfWeight(), eligible, group.members(), visits))
             : group.pick(rng, eligible);
         if (chosen == null) return picked; // self entry won, or every weight is 0
         if (!contains(kind, chosen.id())) {
