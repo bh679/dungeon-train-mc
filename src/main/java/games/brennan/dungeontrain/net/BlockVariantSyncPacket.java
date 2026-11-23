@@ -197,15 +197,19 @@ public record BlockVariantSyncPacket(
         public static final byte SIGN_AUTO = 1;
         /** {@link #sign} bit: the row's text is the cell's shared text. */
         public static final byte SIGN_SHARED = 2;
+        /** {@link #sign} bit: the row is locked to the cell's other sign rows. */
+        public static final byte SIGN_LOCKED = 4;
 
         /** Packs a row's {@link games.brennan.dungeontrain.editor.VariantSign} into {@link #sign}. */
         public static byte signBits(games.brennan.dungeontrain.editor.VariantSign s) {
-            return (byte) ((s.auto() ? SIGN_AUTO : 0) | (s.shared() ? SIGN_SHARED : 0));
+            return (byte) ((s.auto() ? SIGN_AUTO : 0) | (s.shared() ? SIGN_SHARED : 0)
+                | (s.locked() ? SIGN_LOCKED : 0));
         }
 
         /** The row's sign options, unpacked. */
         public games.brennan.dungeontrain.editor.VariantSign signOptions() {
-            return new games.brennan.dungeontrain.editor.VariantSign((sign & SIGN_AUTO) != 0, (sign & SIGN_SHARED) != 0);
+            return new games.brennan.dungeontrain.editor.VariantSign((sign & SIGN_AUTO) != 0, (sign & SIGN_SHARED) != 0,
+                (sign & SIGN_LOCKED) != 0);
         }
 
         /** Backward-compat constructor for call sites that don't carry sign options (none). */

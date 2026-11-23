@@ -13,12 +13,12 @@ import java.util.List;
  * (a sign never grows), drawn with the Grow popup's {@link GrowthPopupLayout.Row}s.
  *
  * <ul>
+ *   <li>A top row of three icons: 🔒 lock (every sign row of the cell copies this one), the
+ *       honeycomb wax toggle and the book-and-quill that opens {@link SignTextScreen}.</li>
  *   <li><b>Mount</b>: {@code Wall | Standing | Hanging | Wall hang | Auto}, two a row — only the
  *       mounts the row's wood has a block for, and Auto only where the plot's placer runs the
  *       post-overlay pass.</li>
- *   <li><b>Text</b>: {@code Same in cell | Own}.</li>
- *   <li><b>Waxed</b>: {@code On | Off}.</li>
- *   <li>{@code Edit text…} opens {@link SignTextScreen}.</li>
+ *   <li><b>Text</b>: {@code Same in cell | Own} — hidden while locked, which shares it already.</li>
  * </ul>
  */
 final class SignPopupLayout {
@@ -31,13 +31,17 @@ final class SignPopupLayout {
     static final int[] MOUNT_SECTIONS = {SECTION_MOUNT, 4, 5};
     static final int PER_ROW = 2;
     static final int SECTION_TEXT = 1;
-    static final int SECTION_WAX = 2;
-    static final int SECTION_EDIT = 3;
+    /** The icon row: {@link #TOGGLE_LOCK}, {@link #TOGGLE_WAX}, {@link #TOGGLE_EDIT}. */
+    static final int SECTION_TOGGLES = 6;
+
+    static final int TOGGLE_LOCK = 0;
+    static final int TOGGLE_WAX = 1;
+    static final int TOGGLE_EDIT = 2;
+    /** The lock button's glyph; the other two are item icons drawn over blank buttons. */
+    static final String LOCK_GLYPH = "\uD83D\uDD12";
 
     static final int TEXT_SHARED = 0;
     static final int TEXT_OWN = 1;
-    static final int WAX_ON = 0;
-    static final int WAX_OFF = 1;
 
     /** A {@code selected} index no button has: lights nothing (see {@code PotPopupLayout}). */
     private static final int NONE_LIT = 99;
@@ -58,6 +62,7 @@ final class SignPopupLayout {
             if (lit) mountSelected = i;
         }
         List<Object[]> spec = new ArrayList<>(6);
+        spec.add(new Object[] {SECTION_TOGGLES, "", new String[] {LOCK_GLYPH, "", ""}, NONE_LIT});
         for (int k = 0; k * PER_ROW < mountButtons.length && k < MOUNT_SECTIONS.length; k++) {
             int from = k * PER_ROW;
             int to = Math.min(mountButtons.length, from + PER_ROW);
@@ -65,14 +70,11 @@ final class SignPopupLayout {
             spec.add(new Object[] {MOUNT_SECTIONS[k], k == 0 ? MenuLang.t("block_variant.sign_mount") : "",
                 java.util.Arrays.copyOfRange(mountButtons, from, to), litHere ? mountSelected - from : NONE_LIT});
         }
-        spec.add(new Object[] {SECTION_TEXT, MenuLang.t("block_variant.sign_text"),
-            new String[] {MenuLang.t("block_variant.sign_shared"), MenuLang.t("block_variant.sign_own")},
-            sign.shared() ? TEXT_SHARED : TEXT_OWN});
-        spec.add(new Object[] {SECTION_WAX, MenuLang.t("block_variant.sign_waxed"),
-            new String[] {MenuLang.t("block_variant.active_on"), MenuLang.t("block_variant.active_off")},
-            waxed ? WAX_ON : WAX_OFF});
-        spec.add(new Object[] {SECTION_EDIT, "",
-            new String[] {MenuLang.t("block_variant.sign_edit")}, NONE_LIT});
+        if (!sign.locked()) {
+            spec.add(new Object[] {SECTION_TEXT, MenuLang.t("block_variant.sign_text"),
+                new String[] {MenuLang.t("block_variant.sign_shared"), MenuLang.t("block_variant.sign_own")},
+                sign.shared() ? TEXT_SHARED : TEXT_OWN});
+        }
 
         double left = Math.max(-panelW / 2.0 + GrowthPopupLayout.PAD, -GrowthPopupLayout.POPUP_WIDTH / 2.0);
         double base = halfH + 2 * GrowthPopupLayout.PAD;
@@ -84,6 +86,16 @@ final class SignPopupLayout {
                 left, left + GrowthPopupLayout.POPUP_WIDTH, bottom, bottom + GrowthPopupLayout.ROW_HEIGHT));
         }
         return rows;
+    }
+
+    /** True when button {@code i} of {@code row} is lit: the row's pick, or an icon toggle that is on. */
+    static boolean isSelected(VariantSign sign, boolean waxed, GrowthPopupLayout.Row row, int i) {
+        if (row.section() != SECTION_TOGGLES) return i == row.selected();
+        return switch (i) {
+            case TOGGLE_LOCK -> sign.locked();
+            case TOGGLE_WAX -> waxed;
+            default -> false;
+        };
     }
 
     /** Index into {@link #mountWires} of the Mount button at {@code option} in {@code section}, or -1. */
@@ -121,8 +133,9 @@ final class SignPopupLayout {
         };
     }
 
-    /** Row pill label: the key word by default, {@code Auto} / {@code Same} when set. */
+    /** Row pill label: the key word by default, {@code Locked} / {@code Auto} / {@code Same} when set. */
     static String shortLabel(VariantSign sign) {
+        if (sign.locked()) return MenuLang.t("block_variant.sign_locked");
         if (sign.auto()) return MenuLang.t("block_variant.sign_auto");
         if (sign.shared()) return MenuLang.t("block_variant.sign_same");
         return MenuLang.t("block_variant.sign");
