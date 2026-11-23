@@ -2132,7 +2132,7 @@ public final class PortalCarriageBuilder {
                             w.entry().linkedLootPrefabId());
                         games.brennan.dungeontrain.editor.GrowthPass.note(level, wWorld, w.entry(), placedState,
                             w.localPos(), worldSeed, cellIndex, within);
-                        games.brennan.dungeontrain.editor.ConnectPass.note(level, wWorld, w.entry().connect(), placedState);
+                        games.brennan.dungeontrain.editor.ConnectPass.note(level, wWorld, w.entry(), placedState);
                     }
                     continue;
                 }
@@ -2165,7 +2165,7 @@ public final class PortalCarriageBuilder {
                     picked.linkedLootPrefabId());
                 games.brennan.dungeontrain.editor.GrowthPass.note(level, world, picked, placedState,
                     local, worldSeed, cellIndex, within);
-                games.brennan.dungeontrain.editor.ConnectPass.note(level, world, picked.connect(), placedState);
+                games.brennan.dungeontrain.editor.ConnectPass.note(level, world, picked, placedState);
             }
         }
     }

@@ -1062,7 +1062,7 @@ public final class CarriagePlacer {
                             level, world, w.state(), w.entry().blockEntityNbt(),
                             games.brennan.dungeontrain.editor.BlockVariantPlot.carriageKey(variant.id()), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
-                        ConnectPass.note(level, world, w.entry().connect(), w.state());
+                        ConnectPass.note(level, world, w.entry(), w.state());
                         games.brennan.dungeontrain.editor.RotationApplier.stampObeliskGems(level, world, w.state(),
                             w.entry(), e.localPos(), seed, carriageIndex, lockId);
                         GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
