@@ -168,6 +168,20 @@ public final class ClientPortalRoomSky {
     }
 
     /**
+     * How much an ordinary overworld sky (Daylight or Day/Night) is in force, {@code 0}..{@code 1}.
+     *
+     * <p>Rooms stand in the basement, a few blocks above the world's floor, where vanilla darkens the
+     * fog towards black and draws its void dome over the lower sky. Under a room's daylight that
+     * turned the clouds near-black and put a black band at the horizon. The fog and sky mixins read
+     * this weight to draw the room's sky as it looks from the surface. Nether and End skies are
+     * coloured by {@code PortalRoomSkyFogEvents} instead, so they read 0 here.</p>
+     */
+    public static float overworldSkyWeight() {
+        PortalRoomSky sky = easing;
+        return sky == PortalRoomSky.DAY || sky == PortalRoomSky.CYCLE ? applied() : 0.0f;
+    }
+
+    /**
      * True when the camera is inside the copies of the room that have actually been stamped.
      *
      * <p>Unlike the fog's test this one has a real vertical term and no horizontal padding: the
