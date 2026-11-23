@@ -19342,12 +19342,6 @@
   "gui.dungeontrain.editor_screen.sheet.order_step": {
     "1": { "label": "the step number in the order", "examples": ["1", "2"] }
   },
-  "gui.dungeontrain.editor_screen.sheet.seen_again": {
-    "1": { "label": "yes or no, already translated", "examples": ["Yes", "No"] }
-  },
-  "gui.dungeontrain.editor_screen.sheet.later_weight": {
-    "1": { "label": "a spawn weight number", "examples": ["4", "0"] }
-  },
   "chat.dungeontrain.editor.room_visit_rules_set": {
     "1": { "label": "the sub-variant template's id", "examples": ["cmra_lobby", "cmra_hallway_basic"] },
     "2": { "label": "the step number, 0 for any time", "examples": ["1", "0"] },

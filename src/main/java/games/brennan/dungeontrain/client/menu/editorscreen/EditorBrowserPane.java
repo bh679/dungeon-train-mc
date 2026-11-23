@@ -263,8 +263,6 @@ public final class EditorBrowserPane {
         float yaw = spin.advance(art == null ? key.toString() : art.spinKey(), hov, seconds);
         int weight = asSelf ? tile.selfWeight() : v.weight();
         String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()) : v.displayName();
-        // An ordered dimensional sub-variant leads with its step, so the group reads in play order.
-        if (!asSelf && v.visits().isOrdered()) name = v.visits().order() + " · " + name;
         TemplateTilePainter.Marks marks = new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost);
         if (cat == PlotCategory.WORKBENCH) {
             // A staged build's picture is its own snapshot; the relay's copy stands in off this machine.
@@ -319,6 +317,10 @@ public final class EditorBrowserPane {
             ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, tile.variant().displayName()) : tile.variant().displayName());
         // A labelled tile keeps its id in reach — it is what every command and file is named by.
         if (tile.variant().isLabelled()) sb.append("  ·  ").append(tile.variant().name());
+        // An ordered dimensional sub-variant says which step of the order it is.
+        if (!asSelf && tile.variant().visits().isOrdered()) {
+            sb.append("  ·  ").append(EditorScreenLang.text(EditorScreenLang.SHEET_ORDER_STEP, tile.variant().visits().order()));
+        }
         int weight = asSelf ? tile.selfWeight() : tile.variant().weight();
         if (weight >= 0) sb.append("  ·  ").append(EditorScreenLang.text(EditorScreenLang.WEIGHT_READ_ONLY, weight));
         if (!asSelf && tile.isGroup()) {

@@ -186,12 +186,19 @@ public final class TemplateDataSheet {
         if (pool != null) out.add(pool);
         Line shellWins = shellWinsLine(tile, key);
         if (shellWins != null) out.add(shellWins);
+        // A dimensional sub-variant's order, seen again and weight after the Xth visit are what an
+        // author sets on it, so they ride up with Weight ahead of the read-only counts: the sheet
+        // drops whatever runs past the pane's height, and those counts have pages of their own.
+        List<Line> visits = VisitRulesLines.of(v, key);
+        Line weight = withGroupsCell(weightLine(tile, key, pending), v, key);
+        if (!visits.isEmpty()) {
+            out.add(weight);
+            out.addAll(visits);
+        }
         out.add(blocksLine(summary, pending));
         out.add(lightsLine(summary, pending));
         out.add(lootLine(summary, pending));
-        out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
-        // A dimensional sub-variant's order, seen again and weight after the Xth visit.
-        out.addAll(VisitRulesLines.of(v, key));
+        if (visits.isEmpty()) out.add(weight);
         out.addAll(stageLines(v, key, pending));
         // After Stage: the sheet drops whatever runs past the pane's height, and the settings page
         // carries a Dates button too, so on a short pane this is the line to lose.
