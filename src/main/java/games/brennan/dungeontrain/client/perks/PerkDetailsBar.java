@@ -470,7 +470,9 @@ final class PerkDetailsBar {
             String why = font.plainSubstrByWidth(Component.translatable(refusalKey).getString(), mw);
             g.drawString(font, why, x, dy + (max - 1) * LINE, (a << 24) | 0xFFC9C9, false);
         }
-        if (!stats.isEmpty()) renderStats(g, stats, snap.points(p.id()), unlockPreview(p, snap), x, chipY, contentRight, a);
+        // unlocking only (points are gone at death): what you've unlocked, filled; in play, the points in it now
+        int statPoints = unlockOnly ? snap.unlockLevel(p.id()) : snap.points(p.id());
+        if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, contentRight, a);
     }
 
     /**
