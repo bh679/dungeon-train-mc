@@ -573,8 +573,14 @@ public final class EditorCommand {
             .then(periodTrack());
     }
 
+    /** The per-mode Settings nodes ({@link EditorModeSettingsCommand}) under {@code editor}. */
+    private static LiteralArgumentBuilder<CommandSourceStack> withModeSettings(LiteralArgumentBuilder<CommandSourceStack> editor) {
+        for (LiteralArgumentBuilder<CommandSourceStack> node : EditorModeSettingsCommand.nodes()) editor.then(node);
+        return editor;
+    }
+
     public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
-        return Commands.literal("editor")
+        return withModeSettings(Commands.literal("editor"))
             .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
             // Test the Carriage for a carriage or contents template — see CarriageTestCommand.
             .then(CarriageTestCommand.build())
@@ -761,27 +767,9 @@ public final class EditorCommand {
             .then(Commands.literal("helppanel")
                 .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
-            .then(Commands.literal("autofly")
-                .then(Commands.literal("on").executes(ctx -> runAutoFly(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> runAutoFly(ctx.getSource(), false))))
             .then(Commands.literal("frame")
                 .then(Commands.literal("on").executes(ctx -> runFrame(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runFrame(ctx.getSource(), false))))
-            .then(Commands.literal("observers")
-                .then(Commands.literal("on").executes(ctx -> runObservers(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> runObservers(ctx.getSource(), false))))
-            .then(Commands.literal("redstone")
-                .then(Commands.literal("on").executes(ctx -> runRedstone(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> runRedstone(ctx.getSource(), false))))
-            .then(Commands.literal("tnt")
-                .then(Commands.literal("on").executes(ctx -> runTnt(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> runTnt(ctx.getSource(), false))))
-            .then(Commands.literal("mobs")
-                .then(Commands.literal("blocks").executes(ctx -> runMobsMode(ctx.getSource(), false)))
-                .then(Commands.literal("live").executes(ctx -> runMobsMode(ctx.getSource(), true))))
-            .then(Commands.literal("testmobs")
-                .then(Commands.literal("frozen").executes(ctx -> runTestMobs(ctx.getSource(), false)))
-                .then(Commands.literal("live").executes(ctx -> runTestMobs(ctx.getSource(), true))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -4182,18 +4170,6 @@ public final class EditorCommand {
     }
 
     /**
-     * Settings → Auto fly On / Off for this world: whether falling below the editor plots' bedrock
-     * frame turns flying on ({@link games.brennan.dungeontrain.editor.EditorAutoFly}).
-     */
-    private static int runAutoFly(CommandSourceStack source, boolean on) {
-        games.brennan.dungeontrain.editor.EditorQuickToggles.setAutoFly(source.getServer(), on);
-        source.sendSuccess(() -> Component.translatable(on
-                ? "chat.dungeontrain.editor.auto_fly_on" : "chat.dungeontrain.editor.auto_fly_off")
-            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
-        return 1;
-    }
-
-    /**
      * X menu / Settings → Frame On / Off for this world: whether Contents plots stand inside their
      * carriage shell. Applies to every standing plot at once; the interiors are kept.
      */
@@ -4202,108 +4178,6 @@ public final class EditorCommand {
         source.sendSuccess(() -> Component.translatable(on
                 ? "chat.dungeontrain.editor.frame_on" : "chat.dungeontrain.editor.frame_off")
             .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
-        return 1;
-    }
-
-    /**
-     * Settings → Observers On / Off for this world: while Off, an observer inside an editor plot
-     * never pulses, so an author can place and break around a contraption without firing it
-     * ({@link games.brennan.dungeontrain.editor.EditorObservers}). World state, so every online
-     * player's Settings row is told.
-     */
-    private static int runObservers(CommandSourceStack source, boolean on) {
-        net.minecraft.server.MinecraftServer server = source.getServer();
-        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
-            .setEditorObserversOn(on);
-        games.brennan.dungeontrain.net.EditorObserversPacket packet =
-            new games.brennan.dungeontrain.net.EditorObserversPacket(on);
-        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
-            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
-        }
-        source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.editor.observers_observers_plots_pulse") : Component.translatable("chat.dungeontrain.editor.observers_off_observers_plots")).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
-        return 1;
-    }
-
-    /**
-     * Settings → Redstone On / Off for this world: while Off, no redstone signal is given inside an
-     * editor plot, so a contraption can be wired without running
-     * ({@link games.brennan.dungeontrain.editor.EditorRedstone}). World state, so every online
-     * player's Settings row is told.
-     */
-    private static int runRedstone(CommandSourceStack source, boolean on) {
-        net.minecraft.server.MinecraftServer server = source.getServer();
-        games.brennan.dungeontrain.editor.EditorRedstone.set(server, on);
-        broadcastRedstoneTnt(server);
-        source.sendSuccess(() -> Component.translatable(on
-                ? "chat.dungeontrain.editor.redstone_on"
-                : "chat.dungeontrain.editor.redstone_off")
-            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
-        return 1;
-    }
-
-    /**
-     * Settings → TNT On / Off for this world: while Off, TNT set off inside an editor plot fizzles
-     * instead of exploding ({@link games.brennan.dungeontrain.editor.EditorTnt}). World state, so
-     * every online player's Settings row is told.
-     */
-    private static int runTnt(CommandSourceStack source, boolean on) {
-        net.minecraft.server.MinecraftServer server = source.getServer();
-        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld()).setEditorTntOn(on);
-        broadcastRedstoneTnt(server);
-        source.sendSuccess(() -> Component.translatable(on
-                ? "chat.dungeontrain.editor.tnt_on"
-                : "chat.dungeontrain.editor.tnt_off")
-            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
-        return 1;
-    }
-
-    /** Tell every online player's Settings rows the world's current Redstone and TNT settings. */
-    private static void broadcastRedstoneTnt(net.minecraft.server.MinecraftServer server) {
-        games.brennan.dungeontrain.world.DungeonTrainWorldData data =
-            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld());
-        games.brennan.dungeontrain.net.EditorRedstoneTntPacket packet =
-            new games.brennan.dungeontrain.net.EditorRedstoneTntPacket(data.isEditorRedstoneOn(), data.isEditorTntOn());
-        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
-            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
-        }
-    }
-
-    /**
-     * Settings → Mobs Blocks / Live for this world. Blocks: a spawn egg used in an editor plot places
-     * a frozen, one-hit mob and variant cells with mob entries show a ghost
-     * ({@link games.brennan.dungeontrain.editor.FrozenMobs}); Live is vanilla eggs. World state, so
-     * every online player's Settings row is told.
-     */
-    private static int runMobsMode(CommandSourceStack source, boolean live) {
-        net.minecraft.server.MinecraftServer server = source.getServer();
-        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
-            .setEditorMobsLive(live);
-        games.brennan.dungeontrain.net.EditorMobsModePacket packet =
-            new games.brennan.dungeontrain.net.EditorMobsModePacket(live);
-        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
-            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
-        }
-        source.sendSuccess(() -> (live ? Component.translatable("chat.dungeontrain.editor.mobs_live_spawn_eggs") : Component.translatable("chat.dungeontrain.editor.mobs_blocks_spawn_eggs")).withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
-        return 1;
-    }
-
-    /**
-     * Settings → Test Mobs Frozen / Live for this world. Live: mobs frozen by Mobs | Blocks come
-     * alive inside a Test-the-Carriage copy ({@link games.brennan.dungeontrain.editor.TestCopyMobs});
-     * Frozen keeps them statues there, as in the plot. Applies from the next test or Reseed.
-     */
-    private static int runTestMobs(CommandSourceStack source, boolean live) {
-        net.minecraft.server.MinecraftServer server = source.getServer();
-        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
-            .setTestMobsLive(live);
-        games.brennan.dungeontrain.net.EditorTestMobsPacket packet =
-            new games.brennan.dungeontrain.net.EditorTestMobsPacket(live);
-        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
-            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
-        }
-        source.sendSuccess(() -> Component.translatable(live
-                ? "chat.dungeontrain.editor.test_mobs_live" : "chat.dungeontrain.editor.test_mobs_frozen")
-            .withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
         return 1;
     }
 
