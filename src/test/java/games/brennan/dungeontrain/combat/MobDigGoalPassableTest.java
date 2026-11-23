@@ -77,6 +77,30 @@ final class MobDigGoalPassableTest {
     }
 
     @Test
+    @DisplayName("carpet in a 2-high doorway stops a 1.95-tall mob, so it is mined; a 1.8-tall one fits")
+    void carpetInLowDoorway() {
+        double floor = 64.0, carpetTop = 64.0625, lintel = 66.0;
+        assertTrue(MobDigGoal.carpetIsInTheWay(carpetTop, floor, 1.95, lintel));
+        assertFalse(MobDigGoal.carpetIsInTheWay(carpetTop, floor, 1.8, lintel));
+    }
+
+    @Test
+    @DisplayName("a carpeted step under a lintel 3 above the floor: fits at 1.8, carpet in the way at 1.95")
+    void carpetedStepUnderLintel() {
+        double step = 65.0, carpetTop = 65.0625, lintel = 67.0;
+        assertTrue(MobDigGoal.fits(carpetTop, 1.8, lintel));
+        assertFalse(MobDigGoal.fits(carpetTop, 1.95, lintel));
+        assertTrue(MobDigGoal.carpetIsInTheWay(carpetTop, step, 1.95, lintel));
+    }
+
+    @Test
+    @DisplayName("no ceiling, or one too low even on the bare block: carpet is not what is in the way")
+    void carpetNotTheProblem() {
+        assertFalse(MobDigGoal.carpetIsInTheWay(64.0625, 64.0, 1.95, Double.POSITIVE_INFINITY));
+        assertFalse(MobDigGoal.carpetIsInTheWay(64.0625, 64.0, 1.95, 65.5));
+    }
+
+    @Test
     @DisplayName("a path ending in the target's column, within a block of height, reaches it")
     void pathEnd() {
         assertTrue(MobDigGoal.endsAtTarget(3, 64, 7, 3, 64, 7));
