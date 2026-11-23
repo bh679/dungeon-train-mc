@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -314,6 +318,58 @@ public final class SignVariants {
         if (!isSign(state)) return captured;
         if (captured != null && !captured.isEmpty()) return captured;
         return withWaxed(null, true);
+    }
+
+    // ---- wire (SET_SIGN_TEXT) ----
+
+    /** Longest {@code SET_SIGN_TEXT} token: eight full lines, escaped, plus the colours and flags. */
+    public static final int WIRE_MAX = 2048;
+
+    /** The {@code SET_SIGN_TEXT} token for {@code text}: compact JSON, so any character survives. */
+    public static String toWire(Text text) {
+        JsonObject o = new JsonObject();
+        o.add("f", sideJson(text.front()));
+        o.add("b", sideJson(text.back()));
+        o.addProperty("w", text.waxed());
+        return o.toString();
+    }
+
+    private static JsonObject sideJson(Side side) {
+        JsonObject o = new JsonObject();
+        JsonArray lines = new JsonArray();
+        for (String l : side.lines()) lines.add(l);
+        o.add("l", lines);
+        o.addProperty("c", side.color().getName());
+        o.addProperty("g", side.glow());
+        return o;
+    }
+
+    /** Parse a {@code SET_SIGN_TEXT} token; {@code null} when malformed. Lines are clamped. */
+    @Nullable
+    public static Text fromWire(@Nullable String token) {
+        if (token == null || token.isBlank() || token.length() > WIRE_MAX) return null;
+        try {
+            JsonObject o = JsonParser.parseString(token).getAsJsonObject();
+            Side front = sideFrom(o.get("f"));
+            Side back = sideFrom(o.get("b"));
+            if (front == null || back == null) return null;
+            return new Text(front, back, o.has("w") && o.get("w").getAsBoolean());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static Side sideFrom(@Nullable JsonElement el) {
+        if (el == null || !el.isJsonObject()) return null;
+        JsonObject o = el.getAsJsonObject();
+        if (!o.has("l") || !o.get("l").isJsonArray()) return null;
+        JsonArray arr = o.getAsJsonArray("l");
+        String[] lines = new String[LINES];
+        for (int i = 0; i < LINES; i++) lines[i] = i < arr.size() ? arr.get(i).getAsString() : "";
+        DyeColor color = o.has("c") ? DyeColor.byName(o.get("c").getAsString(), DyeColor.BLACK) : DyeColor.BLACK;
+        boolean glow = o.has("g") && o.get("g").getAsBoolean();
+        return new Side(List.of(lines), color, glow);
     }
 
     /** Line width in font pixels for {@code mount}. */

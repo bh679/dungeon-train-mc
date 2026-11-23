@@ -341,6 +341,7 @@ public final class BlockVariantMenuInputHandler {
                     BlockVariantEditPacket.Op.SET_CANDLES, variantId, local, hit.index(), next.id(), 0));
             }
             case POT_OPTION -> dispatchPot(hit, variantId, local);
+            case SIGN_OPTION -> dispatchSign(hit, variantId, local);
             case CHARGE_OPTION -> dispatchCharges(hit, variantId, local, shift, button);
             case BED_COLOUR_OPTION -> dispatchBedColours(hit, variantId, local);
             case SLIME_OPTION -> dispatchSlime(hit, variantId, local);
@@ -543,6 +544,76 @@ public final class BlockVariantMenuInputHandler {
      * A white bed row's Colours popup: a swatch switches its colour on or off. Clearing the last
      * enabled colour is ignored, so one always stays on. Same modal rules as the Grow popup.
      */
+    /**
+     * A sign row's Sign popup: Mount switches the block (or turns Auto on), Text / Waxed set the
+     * cell's shared text and the wax, Edit text… opens {@link SignTextScreen}. Same modal rules as
+     * the Grow popup.
+     */
+    private static void dispatchSign(BlockVariantMenu.Hit hit, String variantId,
+                                     net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+        net.minecraft.world.level.block.state.BlockState parsed = BlockVariantMenu.parseState(e.stateString());
+        if (!BlockVariantMenu.isSignRow(e, parsed)) return;
+        int option = GrowthPopupLayout.option(code);
+        games.brennan.dungeontrain.editor.VariantSign sign = e.signOptions();
+        games.brennan.dungeontrain.editor.SignVariants.Text text = BlockVariantMenu.signText(e);
+        switch (GrowthPopupLayout.section(code)) {
+            case SignPopupLayout.SECTION_MOUNT -> {
+                int[] wires = SignPopupLayout.mountWires(parsed);
+                if (option < 0 || option >= wires.length) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_SIGN_MOUNT, variantId, local, hit.index(), "", wires[option]));
+            }
+            case SignPopupLayout.SECTION_TEXT -> {
+                boolean shared = option == SignPopupLayout.TEXT_SHARED;
+                if (shared == sign.shared()) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_SIGN_SHARED, variantId, local, hit.index(), "", shared ? 1 : 0));
+            }
+            case SignPopupLayout.SECTION_WAX -> {
+                boolean waxed = option == SignPopupLayout.WAX_ON;
+                if (waxed == text.waxed()) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_SIGN_WAXED, variantId, local, hit.index(), "", waxed ? 1 : 0));
+            }
+            case SignPopupLayout.SECTION_EDIT -> openSignText(hit.index(), e, parsed, variantId, local);
+            default -> { }
+        }
+    }
+
+    /** Open the sign text screen for row {@code index}, sized to the narrowest sign it can land on. */
+    private static void openSignText(int index, BlockVariantSyncPacket.Entry e,
+                                     net.minecraft.world.level.block.state.BlockState parsed,
+                                     String variantId, net.minecraft.core.BlockPos local) {
+        boolean hanging = false;
+        int shared = 0;
+        java.util.List<BlockVariantSyncPacket.Entry> all = BlockVariantMenu.entries();
+        for (int i = 0; i < all.size(); i++) {
+            BlockVariantSyncPacket.Entry other = all.get(i);
+            boolean target = i == index || (e.signOptions().shared() && other.signOptions().shared());
+            if (!target) continue;
+            net.minecraft.world.level.block.state.BlockState st = BlockVariantMenu.parseState(other.stateString());
+            if (!BlockVariantMenu.isSignRow(other, st)) continue;
+            shared++;
+            games.brennan.dungeontrain.editor.SignVariants.Mount m = games.brennan.dungeontrain.editor.SignVariants.mountOf(st);
+            // Auto can land on a hanging sign, so it gets the narrower width too.
+            if (other.signOptions().auto() || (m != null && games.brennan.dungeontrain.editor.SignVariants.isHanging(m))) {
+                hanging = true;
+            }
+        }
+        int width = hanging ? games.brennan.dungeontrain.editor.SignVariants.HANGING_LINE_WIDTH
+            : games.brennan.dungeontrain.editor.SignVariants.SIGN_LINE_WIDTH;
+        Minecraft.getInstance().setScreen(new SignTextScreen(variantId, local, index,
+            BlockVariantMenu.signText(e), width, Math.max(1, shared),
+            BlockVariantMenu.space().isScreenspace() ? new BlockVariantMenuScreen() : null));
+    }
+
     private static void dispatchBedColours(BlockVariantMenu.Hit hit, String variantId,
                                            net.minecraft.core.BlockPos local) {
         int code = hit.secondary();
