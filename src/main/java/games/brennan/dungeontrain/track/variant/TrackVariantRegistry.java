@@ -258,6 +258,18 @@ public final class TrackVariantRegistry {
      */
     public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx,
                                   games.brennan.dungeontrain.template.TemplateGroup group) {
+        return pickName(kind, worldSeed, tileIndex, gateCtx, group, null);
+    }
+
+    /**
+     * {@link #pickName(TrackKind, long, long, GateContext, games.brennan.dungeontrain.template.TemplateGroup)}
+     * rolled for one player: {@code visits} answers how many times they have visited a sub-variant,
+     * and a group whose members carry {@link VisitRules} draws through {@link OrderedGroupRoll}.
+     * {@code null} (or a group with no rules) draws exactly as before.
+     */
+    public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx,
+                                  games.brennan.dungeontrain.template.TemplateGroup group,
+                                  java.util.function.ToIntFunction<String> visits) {
         // Sub-variants are reached through their parent, never beside it — a member in the top-level
         // pool would be drawn twice over, once on its own and once through the group.
         List<String> pool = withoutHeldRooms(kind, games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind));
@@ -308,13 +320,13 @@ public final class TrackVariantRegistry {
         Random rng = new Random(mixed);
         if (total <= 0) {
             warnAllZeroOnce(kind);
-            return resolveGroup(kind, effective.get(rng.nextInt(en)), rng, gateCtx);
+            return resolveGroup(kind, effective.get(rng.nextInt(en)), rng, gateCtx, visits);
         }
         int r = rng.nextInt(total);
         for (int i = 0; i < en; i++) {
-            if (r < cumulative[i]) return resolveGroup(kind, effective.get(i), rng, gateCtx);
+            if (r < cumulative[i]) return resolveGroup(kind, effective.get(i), rng, gateCtx, visits);
         }
-        return resolveGroup(kind, effective.get(en - 1), rng, gateCtx);
+        return resolveGroup(kind, effective.get(en - 1), rng, gateCtx, visits);
     }
 
     /**
@@ -397,7 +409,8 @@ public final class TrackVariantRegistry {
      * <p>Single-hop only: a member that is itself a parent is treated as a leaf and logged, matching
      * {@code CarriageContentsRegistry}. Anything unresolvable falls back to {@code picked}.</p>
      */
-    private static String resolveGroup(TrackKind kind, String picked, Random rng, GateContext gateCtx) {
+    private static String resolveGroup(TrackKind kind, String picked, Random rng, GateContext gateCtx,
+                                       java.util.function.ToIntFunction<String> visits) {
         Optional<TrackVariantGroup> groupOpt =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, picked);
         if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
@@ -418,7 +431,10 @@ public final class TrackVariantRegistry {
             eligible = gated;
         }
 
-        TrackVariantGroup.Member chosen = group.pick(rng, eligible);
+        // Visit rules only bite when the roll is for a player; without one the group draws by weight.
+        TrackVariantGroup.Member chosen = visits != null && group.usesVisitRules()
+            ? OrderedGroupRoll.pick(rng, OrderedGroupRoll.pool(group.selfWeight(), eligible, visits))
+            : group.pick(rng, eligible);
         if (chosen == null) return picked; // self entry won, or every weight is 0
         if (!contains(kind, chosen.id())) {
             warnUnknownMemberOnce(kind, picked, chosen.id());
