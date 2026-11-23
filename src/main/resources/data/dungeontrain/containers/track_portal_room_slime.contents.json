@@ -1,6 +1,7 @@
 {
   "schemaVersion": 3,
-  "pools": {},
+  "pools": {
+  },
   "links": {
     "3,2,1": "slimes",
     "4,2,2": "slimes"
