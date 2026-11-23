@@ -451,6 +451,13 @@ public final class PlayerRunState {
         }
     }
 
+    /** Drop the camera frames {@code keep} rejects (a nap woke without their photos). Returns how many went. */
+    public int retainCameraFrames(java.util.function.Predicate<Frame> keep) {
+        int before = cameraFrames.size();
+        cameraFrames.removeIf(keep.negate());
+        return before - cameraFrames.size();
+    }
+
     /** Disposable-camera frames taken this run, oldest first — at most {@link #CAMERA_FRAMES_CAP}. */
     public List<Frame> cameraFrames() {
         return List.copyOf(cameraFrames);

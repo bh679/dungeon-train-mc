@@ -250,6 +250,13 @@ public final class NapWake {
         try {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             run.applyNapExtras(plan.nap().runExtras(), player.registryAccess());
+            // Photos were carried into this world before login; a frame whose photo did not come
+            // (a nap from before photos were carried) would only show as "photo lost".
+            int dropped = run.retainCameraFrames(f -> NapExposures.isStored(player.getServer(), f));
+            if (dropped > 0) {
+                LOGGER.info("[DungeonTrain] Nap {}: {} camera frame(s) left behind, their photo did not come",
+                    plan.nap().napId(), dropped);
+            }
             run.forgetChestPositionsKeepingCount();
             // Behind the nap point this world's carriages are re-rolled copies of cleared ones, so
             // count-based run counters step down there for the rest of the life.

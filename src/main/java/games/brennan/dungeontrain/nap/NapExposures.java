@@ -142,25 +142,16 @@ public final class NapExposures {
     }
 
     /**
-     * {@code frames} without those whose exposure this world no longer has (a nap taken before
-     * photos were carried). Frames that are not stored exposures (texture-backed) are kept.
+     * True when {@code frame}'s photo is in this world, or it is not a stored exposure at all
+     * (texture-backed). Also true when the check itself fails: a frame is never dropped on doubt.
      */
-    public static List<Frame> withExposures(MinecraftServer server, List<Frame> frames) {
-        if (frames.isEmpty() || server == null) return frames;
+    public static boolean isStored(MinecraftServer server, Frame frame) {
+        if (server == null || !frame.identifier().isId()) return true;
         try {
-            DimensionDataStorage storage = server.overworld().getDataStorage();
-            List<Frame> kept = new ArrayList<>(frames.size());
-            for (Frame f : frames) {
-                if (!f.identifier().isId() || stored(storage, f.identifier().id()) != null) kept.add(f);
-            }
-            if (kept.size() < frames.size()) {
-                LOGGER.info("[DungeonTrain] {} camera frame(s) dropped: their photo is no longer in this world",
-                    frames.size() - kept.size());
-            }
-            return List.copyOf(kept);
+            return stored(server.overworld().getDataStorage(), frame.identifier().id()) != null;
         } catch (RuntimeException e) {
-            LOGGER.warn("[DungeonTrain] Camera frames not checked against stored photos", e);
-            return frames;
+            LOGGER.warn("[DungeonTrain] Could not check photo {}", frame.identifier(), e);
+            return true;
         }
     }
 

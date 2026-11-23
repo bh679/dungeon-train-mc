@@ -674,8 +674,7 @@ public final class RunStatsEvents {
                 run.earnedAdvancements(),
                 run.tamedCount(),
                 run.tamedAnimals(),
-                // A frame whose photo this world lost (a nap from before photos were carried) is left out.
-                games.brennan.dungeontrain.nap.NapExposures.withExposures(player.getServer(), run.cameraFrames()),
+                run.cameraFrames(),
                 run.photoShots(),
                 run.photosViewed(),
                 run.tributesMade(),
