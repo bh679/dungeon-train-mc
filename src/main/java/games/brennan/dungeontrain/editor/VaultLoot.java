@@ -302,7 +302,7 @@ public final class VaultLoot {
     public static Optional<ItemStack> displayItem(BlockEntity be, RandomSource random) {
         CompoundTag vault = vaultTag(be);
         if (vault == null) return Optional.empty();
-        ContainerContentsPool pool = poolOf(vault);
+        ContainerContentsPool pool = SpearTwins.expand(poolOf(vault));
         if (pool == null) return Optional.empty();
         int total = pool.totalWeight();
         if (total <= 0) return Optional.of(ItemStack.EMPTY);
