@@ -1407,7 +1407,7 @@ public sealed interface Template
         }
 
         @Override public Vec3i plotSize(CarriageDims dims) {
-            return games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE;
+            return games.brennan.dungeontrain.editor.ChunkFrameEditor.plotSize(name);
         }
     }
 

@@ -1707,6 +1707,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "BẬT thêm %s giờ · duy trì bởi %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "BẬT đến ngày mai · duy trì bởi %s",
   "gui.dungeontrain.rewards.status.free_thanks": "Đang bật, nhờ %s",
+  "gui.dungeontrain.rewards.status.paid_by": "BẬT · do %s chi trả",
   "gui.dungeontrain.rewards.give.soon": "Sắp có",
   "gui.dungeontrain.rewards.give.amount": "Tặng %s",
   "gui.dungeontrain.rewards.raised": "Cao hơn khi %s đang bật",

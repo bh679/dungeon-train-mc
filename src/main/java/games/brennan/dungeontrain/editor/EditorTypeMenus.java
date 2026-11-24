@@ -232,7 +232,7 @@ public final class EditorTypeMenus {
         List<String> frames = ChunkFrameRegistry.names();
         if (!frames.isEmpty()) {
             out.add(new EditorTypeMenusPacket.Menu(
-                anchorForXRow(ChunkFrameEditor.rowOrigin(), ChunkFrame.SIZE), FRAMES_TYPE_NAME,
+                anchorForXRow(ChunkFrameEditor.rowOrigin(), ChunkFrameEditor.rowSize()), FRAMES_TYPE_NAME,
                 chunkFrameRows(frames), false, activeId, categoryBar, typeStrip));
         }
         return out;

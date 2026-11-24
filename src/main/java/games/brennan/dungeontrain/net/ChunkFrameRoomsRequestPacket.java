@@ -41,7 +41,7 @@ public record ChunkFrameRoomsRequestPacket(String frame) implements CustomPacket
     /** The frame's selection against every chunk dimension there is — also sent after each edit. */
     public static ChunkFrameRoomsSyncPacket build(String frame) {
         ChunkFrameMeta meta = ChunkFrameMetaStore.get(frame);
-        List<String> rooms = ChunkFrame.chunkRooms();
+        List<String> rooms = ChunkFrame.chunkRooms(frame);
         List<String> selected = rooms.stream().filter(meta::appliesTo).toList();
         return new ChunkFrameRoomsSyncPacket(frame, rooms, selected, meta.allRooms(), meta.weight(),
             meta.dimension().id());

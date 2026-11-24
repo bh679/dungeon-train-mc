@@ -266,16 +266,19 @@ public final class ContributePanel {
         CommunityRewards.Reward reward = pick >= 0 ? order.get(pick) : CommunityRewards.featured(state, now);
         int lh = font.lineHeight;
 
+        // A dev-paid reward (reached with the arrows; never featured) has nothing to give: no button
+        // column, the text takes the card's width.
+        boolean devPaid = CommunityRewards.devPaid(state, reward, now);
         Component noteText = Component.translatable("gui.dungeontrain.contribute.keeps_on");
         // "$9 goes to the dev", grey, under "For everyone" when the relay says it; the column widens to fit it.
-        Component toDev = CommunityRewards.devShareLine(reward);
+        Component toDev = devPaid ? null : CommunityRewards.devShareLine(reward);
         int noteW = Math.max(font.width(noteText), toDev != null ? font.width(toDev) : 0);
-        int sideW = Math.min(w / 3, Math.max(GIVE_W, noteW + 2));
+        int sideW = devPaid ? 0 : Math.min(w / 3, Math.max(GIVE_W, noteW + 2));
         // The reward's icon sits left of its name and line; the text starts after it.
         int iconLeft = x + CARD_PAD;
         int textX = iconLeft + ICON + ICON_GAP;
-        int textW = w - sideW - CARD_PAD * 3 - ICON - ICON_GAP;
-        int sideH = GIVE_H + 2 + lh + (toDev != null ? lh + 1 : 0);
+        int textW = w - sideW - CARD_PAD * (devPaid ? 2 : 3) - ICON - ICON_GAP;
+        int sideH = devPaid ? 0 : GIVE_H + 2 + lh + (toDev != null ? lh + 1 : 0);
         CardLines lines = cardLines(font, reward, state, now, textX, y + CARD_PAD, textW);
         int h = Math.max(lines.bottom() + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
 
@@ -290,18 +293,22 @@ public final class ContributePanel {
             cardH = h;
             int gx = x + w - sideW - CARD_PAD;
             int gy = y + (h - sideH) / 2;
-            giveOnCard = giveButton(reward, CommunityRewards.giftRunning(state, reward, now), state, now,
-                    gx, gy, sideW, GIVE_H, this, true);
-            add.accept(giveOnCard);
-            // "For everyone", under the button even while it reads Soon: it says what the reward is.
-            for (FormattedCharSequence note : font.split(noteText, sideW)) {
-                cardTexts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
-                break; // one line; a language whose note does not fit is cut, never spills out of the card
-            }
-            if (toDev != null) {
-                for (FormattedCharSequence l : font.split(toDev, sideW)) {
-                    cardTexts.add(new Text(l, gx + sideW / 2, gy + GIVE_H + 2 + lh + 1, COLOUR_DEV_SHARE, true));
-                    break; // one line, like the note above
+            if (devPaid) {
+                giveOnCard = null;
+            } else {
+                giveOnCard = giveButton(reward, CommunityRewards.giftRunning(state, reward, now), state, now,
+                        gx, gy, sideW, GIVE_H, this, true);
+                add.accept(giveOnCard);
+                // "For everyone", under the button even while it reads Soon: it says what the reward is.
+                for (FormattedCharSequence note : font.split(noteText, sideW)) {
+                    cardTexts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
+                    break; // one line; a language whose note does not fit is cut, never spills out of the card
+                }
+                if (toDev != null) {
+                    for (FormattedCharSequence l : font.split(toDev, sideW)) {
+                        cardTexts.add(new Text(l, gx + sideW / 2, gy + GIVE_H + 2 + lh + 1, COLOUR_DEV_SHARE, true));
+                        break; // one line, like the note above
+                    }
                 }
             }
             arrowCurrent = order.indexOf(reward);
@@ -329,8 +336,8 @@ public final class ContributePanel {
         }
         if (CommunityRewards.active(state, reward, now)) {
             LiveRewards.Reward live = state.find(reward.id());
-            Component status = live.free()
-                    ? freeThanks(live)
+            Component status = live.devPaid() ? paidBy(live)
+                    : live.free() ? freeThanks(live)
                     : onStatus(live.activeUntilMs(), now, CommunityRewards.keptOnBy(state, reward, now));
             for (FormattedCharSequence l : font.split(status, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_ON, false));
@@ -338,7 +345,7 @@ public final class ContributePanel {
             }
         }
         // Other rewards being on cost this one more to run, so the relay asked more: say which.
-        Component raised = CommunityRewards.raisedLine(reward);
+        Component raised = CommunityRewards.devPaid(state, reward, now) ? null : CommunityRewards.raisedLine(reward);
         if (raised != null) {
             for (FormattedCharSequence l : font.split(raised, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_RAISED, false));
@@ -544,6 +551,11 @@ public final class ContributePanel {
             return Component.translatable(reward.lineKey(), d.normal(), d.quick());
         }
         return Component.translatable(reward.lineKey());
+    }
+
+    /** The green "ON · paid by Brennan" line of a reward the dev pays for outright. */
+    static Component paidBy(LiveRewards.Reward live) {
+        return Component.translatable(CommunityRewards.PAID_BY, live.by());
     }
 
     /** The green line of a reward on through free credits, thanking who keeps it free. */

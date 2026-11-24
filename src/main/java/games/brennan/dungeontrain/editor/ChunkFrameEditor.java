@@ -50,8 +50,17 @@ public final class ChunkFrameEditor {
     public static final int FIRST_PLOT_X = TrackSidePlots.X_PORTALS;
     /** Plots are one block of cage on each side, then the gap. */
     private static final int STRIDE_PAD = EditorLayout.GAP + 2;
-    /** The room rows start at Z_BASELINE and only grow toward +Z; frames stand a gap short of it. */
-    private static final int ROW_Z = TrackSidePlots.Z_BASELINE - STRIDE_PAD - ChunkFrame.SIZE.getZ() + 1;
+    /**
+     * The room rows start at Z_BASELINE and only grow toward +Z; frames stand a gap short of it. Every
+     * plot ends on this Z, so a bigger frame reaches further toward -Z.
+     */
+    private static final int ROW_END_Z = TrackSidePlots.Z_BASELINE - STRIDE_PAD;
+
+    /**
+     * Sizes of frames entered as a copy and not yet saved: a frame has no file to read its size from
+     * until its first save, and its plot is the size of what it was copied from.
+     */
+    private static final Map<String, Vec3i> PENDING_SIZES = new ConcurrentHashMap<>();
 
     /** What each player last entered, which {@code save} writes when they are not standing in a plot. */
     private static final Map<UUID, String> SESSIONS = new ConcurrentHashMap<>();
@@ -60,26 +69,56 @@ public final class ChunkFrameEditor {
 
     // ---- layout --------------------------------------------------------------
 
+    /**
+     * The size of {@code name}'s plot: the frame's own size — a one-chunk frame's or a 3x3 room's —
+     * or, for a frame entered as a copy and not saved yet, the size of the frame it copies.
+     */
+    public static Vec3i plotSize(String name) {
+        Vec3i pending = name == null ? null : PENDING_SIZES.get(name);
+        return pending != null ? pending : ChunkFrameStore.sizeOf(name);
+    }
+
     /** The plot origin of {@code name}, or the next free slot when it is not registered. */
     public static BlockPos plotOrigin(String name) {
         List<String> names = ChunkFrameRegistry.names();
         int index = names.indexOf(name);
-        return slotOrigin(index < 0 ? names.size() : index);
+        return slotOrigin(names, index < 0 ? names.size() : index, plotSize(name));
     }
 
     /** The plot origin of registered frame {@code name}, or null when no such frame is registered. */
     public static BlockPos registeredPlotOrigin(String name) {
-        int index = ChunkFrameRegistry.names().indexOf(name);
-        return index < 0 ? null : slotOrigin(index);
+        List<String> names = ChunkFrameRegistry.names();
+        int index = names.indexOf(name);
+        return index < 0 ? null : slotOrigin(names, index, plotSize(name));
     }
 
-    private static BlockPos slotOrigin(int index) {
-        return new BlockPos(FIRST_PLOT_X + index * (ChunkFrame.SIZE.getX() + STRIDE_PAD), EditorLayout.PLOT_Y, ROW_Z);
+    /** Slot {@code index} of the row {@code names}, for a plot of {@code size}. */
+    private static BlockPos slotOrigin(List<String> names, int index, Vec3i size) {
+        List<Integer> widths = new ArrayList<>();
+        for (int i = 0; i < index && i < names.size(); i++) widths.add(plotSize(names.get(i)).getX());
+        return slotOrigin(widths, size);
+    }
+
+    /**
+     * The origin of a plot of {@code size} standing after plots {@code widthsBefore} wide: each plot a
+     * gap past the one before it along +X, and every plot ending on the same Z. Pure, for tests.
+     */
+    static BlockPos slotOrigin(List<Integer> widthsBefore, Vec3i size) {
+        int x = FIRST_PLOT_X;
+        for (int width : widthsBefore) x += width + STRIDE_PAD;
+        return new BlockPos(x, EditorLayout.PLOT_Y, ROW_END_Z - size.getZ() + 1);
     }
 
     /** The first slot — where the Frames menu anchors. */
     public static BlockPos rowOrigin() {
-        return slotOrigin(0);
+        List<String> names = ChunkFrameRegistry.names();
+        return slotOrigin(List.of(), names.isEmpty() ? ChunkFrame.SIZE : plotSize(names.get(0)));
+    }
+
+    /** The first plot's size — what the Frames menu anchors against. */
+    public static Vec3i rowSize() {
+        List<String> names = ChunkFrameRegistry.names();
+        return names.isEmpty() ? ChunkFrame.SIZE : plotSize(names.get(0));
     }
 
     /**
@@ -89,7 +128,7 @@ public final class ChunkFrameEditor {
     public static Optional<String> plotContaining(BlockPos pos) {
         if (!EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) return Optional.empty();
         for (String name : ChunkFrameRegistry.names()) {
-            if (EditorPlotBox.contains(pos, plotOrigin(name), ChunkFrame.SIZE)) return Optional.of(name);
+            if (EditorPlotBox.contains(pos, plotOrigin(name), plotSize(name))) return Optional.of(name);
         }
         return Optional.empty();
     }
@@ -108,6 +147,10 @@ public final class ChunkFrameEditor {
      */
     public static void enter(ServerPlayer player, ServerLevel level, String name, String copyOf) {
         EditorSessions.rememberReturn(player);
+        // A copy starts at the size of what it copies, until its first save gives it a file of its own.
+        if (copyOf != null && ChunkFrameStore.readTag(name).isEmpty()) {
+            PENDING_SIZES.put(name, ChunkFrameStore.sizeOf(copyOf));
+        }
         if (copyOf != null && !copyOf.equals(name) && ChunkFrameStore.readTag(name).isEmpty()) {
             // A copy is the frame's blocks AND its sidecars: without them the duplicate came up with
             // none of its variants, room selection or chest links. Before the plot is stamped, so the
@@ -123,14 +166,15 @@ public final class ChunkFrameEditor {
         SESSIONS.put(player.getUUID(), name);
         BlockPos origin = plotOrigin(name);
         stampPlot(level, name, origin, ChunkFrameStore.get(level, copyOf != null ? copyOf : name).orElse(null));
-        EditorPlotArrival.land(player, level, origin, ChunkFrame.SIZE, true, EditorPlotArrival.Inside.CENTRE, null);
+        EditorPlotArrival.land(player, level, origin, plotSize(name), true, EditorPlotArrival.Inside.CENTRE, null);
         LOGGER.info("[DungeonTrain] Chunk frame editor: {} entered {} at {}{}", player.getName().getString(),
             name, origin, copyOf != null ? " (copy of " + copyOf + ")" : "");
     }
 
     /**
      * Copy every sidecar of frame {@code from} onto {@code to}: its block variants, its meta (which
-     * rooms it dresses, and its weight) and its chest links. The {@code .nbt} is the caller's to write.
+     * rooms it dresses, its weight, its gate and its dimension) and its chest links. The {@code .nbt}
+     * is the caller's to write.
      */
     public static void copySidecars(String from, String to, boolean toSource) throws java.io.IOException {
         var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(ChunkFrameVariants.loadFor(from));
@@ -148,7 +192,7 @@ public final class ChunkFrameEditor {
     public static void walkTo(ServerPlayer player, ServerLevel level, String name, boolean centre) {
         EditorSessions.rememberReturn(player);
         SESSIONS.put(player.getUUID(), name);
-        EditorPlotArrival.land(player, level, plotOrigin(name), ChunkFrame.SIZE, !centre,
+        EditorPlotArrival.land(player, level, plotOrigin(name), plotSize(name), !centre,
             EditorPlotArrival.Inside.CENTRE, null);
     }
 
@@ -159,12 +203,14 @@ public final class ChunkFrameEditor {
      */
     public static boolean save(ServerPlayer player, ServerLevel level, String name) throws IOException {
         StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(level, plotOrigin(name), ChunkFrame.SIZE, false, null);
+        template.fillFromWorld(level, plotOrigin(name), plotSize(name), false, null);
         boolean toSource = EditorDevMode.isEnabled();
         CompoundTag captured = template.save(new CompoundTag());
         // No flowing fluid in a saved frame; this capture writes air cells, so flow becomes air.
         games.brennan.dungeontrain.template.TemplateFluids.dropFlowing(captured, true);
         ChunkFrameStore.save(name, captured, toSource);
+        // Saved: its file says its size from now on.
+        PENDING_SIZES.remove(name);
         ChunkFrameRegistry.register(name);
         // The variant sidecar travels with its frame, as every other template's does.
         ChunkFramePlot plot = ChunkFramePlot.of(name);
@@ -198,7 +244,7 @@ public final class ChunkFrameEditor {
     /** Erase {@code name}'s plot back to an empty cage — {@code editor clear}. */
     public static void clearPlot(ServerLevel level, String name) {
         BlockPos origin = registeredPlotOrigin(name);
-        if (origin != null) stampBlocks(level, origin, null);
+        if (origin != null) stampBlocks(level, origin, plotSize(name), null);
     }
 
     /**
@@ -215,6 +261,7 @@ public final class ChunkFrameEditor {
         if (!deleted && ChunkFrameStore.isBundled(name)) return false;
         relayRow(level, () -> ChunkFrameStore.invalidate(name));
         SESSIONS.values().removeIf(name::equals);
+        PENDING_SIZES.remove(name);
         return true;
     }
 
@@ -250,7 +297,7 @@ public final class ChunkFrameEditor {
     public static void clearAllPlots(ServerLevel level) {
         for (String name : ChunkFrameRegistry.names()) {
             BlockPos o = plotOrigin(name);
-            EditorPlotBox.erase(level, o, ChunkFrame.SIZE, EditorPlotCage.QUIET);
+            EditorPlotBox.erase(level, o, plotSize(name), EditorPlotCage.QUIET);
             // Nothing stands to compare against any more.
             EditorPlotSnapshots.clear(snapshotKey(name));
         }
@@ -263,17 +310,16 @@ public final class ChunkFrameEditor {
 
     /** Stamp {@code frame} on {@code name}'s plot and take that as the plot's saved baseline. */
     private static void stampPlot(ServerLevel level, String name, BlockPos origin, ChunkFrameTemplate frame) {
-        stampBlocks(level, origin, frame);
+        stampBlocks(level, origin, plotSize(name), frame);
         captureSnapshot(level, name, origin);
     }
 
     private static void captureSnapshot(ServerLevel level, String name, BlockPos origin) {
-        EditorPlotSnapshots.capture(snapshotKey(name), level, origin,
-            ChunkFrame.SIZE.getX(), ChunkFrame.SIZE.getY(), ChunkFrame.SIZE.getZ());
+        Vec3i size = plotSize(name);
+        EditorPlotSnapshots.capture(snapshotKey(name), level, origin, size.getX(), size.getY(), size.getZ());
     }
 
-    private static void stampBlocks(ServerLevel level, BlockPos origin, ChunkFrameTemplate frame) {
-        Vec3i size = ChunkFrame.SIZE;
+    private static void stampBlocks(ServerLevel level, BlockPos origin, Vec3i size, ChunkFrameTemplate frame) {
         EditorPlotBox.erase(level, origin, size, EditorPlotCage.QUIET);
         EditorPlotCage.setOutline(level, origin, size, EditorPlotCage.OUTLINE_BLOCK, EditorPlotCage.QUIET);
         if (frame == null) return;

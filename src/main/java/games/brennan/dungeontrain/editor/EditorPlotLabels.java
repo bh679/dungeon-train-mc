@@ -366,7 +366,7 @@ public final class EditorPlotLabels {
             if (origin == null) continue;
             Provenance p = provenanceOf(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(name));
             int weight = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(name).weight();
-            out.add(new Label(anchorAbove(origin, games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE),
+            out.add(new Label(anchorAbove(origin, ChunkFrameEditor.plotSize(name)),
                 name, weight, category, ChunkFrameEditor.MODEL_ID, name, false, p.isUser, p.isImported));
         }
     }

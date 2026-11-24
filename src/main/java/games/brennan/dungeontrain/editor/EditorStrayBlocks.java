@@ -247,7 +247,7 @@ public final class EditorStrayBlocks {
                 BlockPos o = ChunkFrameEditor.registeredPlotOrigin(name);
                 if (o != null) {
                     found.add(new PlotBox(o.offset(-1, -1, -1),
-                        games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE.offset(2, 2, 2)));
+                        ChunkFrameEditor.plotSize(name).offset(2, 2, 2)));
                 }
             }
         }

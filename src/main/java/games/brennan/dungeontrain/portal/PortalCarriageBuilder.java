@@ -893,7 +893,8 @@ public final class PortalCarriageBuilder {
                                                      net.minecraft.core.Vec3i size, PortalRoomSettings settings,
                                                      games.brennan.dungeontrain.template.GateContext gateCtx) {
         if (!settings.mode().generatesTerrain()
-                || !size.equals(games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.ROOM_SIZE)) {
+                || !games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.validSize(
+                    games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.sizeFor(size))) {
             return settings;
         }
         PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer

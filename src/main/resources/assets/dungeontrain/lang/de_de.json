@@ -1757,6 +1757,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "AN noch %s Stunden · am Laufen dank %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "AN bis morgen · am Laufen dank %s",
   "gui.dungeontrain.rewards.status.free_thanks": "Jetzt live, dank %s",
+  "gui.dungeontrain.rewards.status.paid_by": "AN · bezahlt von %s",
   "gui.dungeontrain.rewards.give.soon": "Bald",
   "gui.dungeontrain.rewards.give.amount": "Gib %s",
   "gui.dungeontrain.rewards.raised": "Höher, solange %s aktiv ist",

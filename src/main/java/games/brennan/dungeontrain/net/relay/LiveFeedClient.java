@@ -105,9 +105,17 @@ public final class LiveFeedClient {
      * relay sets one (3 s segments, a 20-entry window and 3 s keyframes while the server's Quicker Streams
      * reward is on, by default; the relay's env decides), 0 when it does not (the client config and the
      * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
+     * {@code video}: the picture the relay raises this stream to (1080p while the server's HD Streams reward
+     * is on), or null when it does not (the player's own Video size and bitrate decide).
      */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
-                        int segmentSeconds, int listSize, int keyframeSeconds, String channel, Outputs outputs) {
+                        int segmentSeconds, int listSize, int keyframeSeconds, String channel, Outputs outputs,
+                        @Nullable Video video) {
+        public Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                     int segmentSeconds, int listSize, int keyframeSeconds, String channel, Outputs outputs) {
+            this(session, token, playlistUrl, prevName, twitch, segmentSeconds, listSize, keyframeSeconds, channel, outputs, null);
+        }
+
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
             this(session, token, playlistUrl, prevName, null, 0, 0, 0, CHANNEL_MAIN);
         }
@@ -138,6 +146,11 @@ public final class LiveFeedClient {
 
     /** The segment lengths a claim may set; anything outside reads as unset. Matches the config's own range. */
     static final int MIN_SEGMENT_SECONDS = 2, MAX_SEGMENT_SECONDS = 30;
+    /** A claim's {@code video} bounds: 720p to 1080p wide, a 720p bitrate up to the config's own ceiling. */
+    static final int MIN_VIDEO_WIDTH = 1280, MAX_VIDEO_WIDTH = 1920, MIN_VIDEO_KBPS = 2500, MAX_VIDEO_KBPS = 8000;
+
+    /** HD Streams: the broadcast width (even, 16:9 box) and video bitrate ceiling the relay raises a stream to. */
+    public record Video(int width, int kbps) { }
     /** Playlist window sizes a claim may set; anything outside reads as unset. */
     static final int MIN_LIST_SIZE = 3, MAX_LIST_SIZE = 60;
     /** Keyframe intervals a claim may set (Twitch caps them at 4 s); the encoder still checks it divides the segment. */
@@ -767,7 +780,17 @@ public final class LiveFeedClient {
         int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
         int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
         return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe, r.str("channel"),
-            parseOutputs(r.body()));
+            parseOutputs(r.body()), parseVideo(r.body()));
+    }
+
+    /** A claim's {@code video} object, or null when absent, malformed, odd-width or out of range (the stream keeps its own size). */
+    @Nullable
+    static Video parseVideo(@Nullable JsonObject body) {
+        if (body == null || !body.has("video") || !body.get("video").isJsonObject()) return null;
+        JsonObject v = body.getAsJsonObject("video");
+        int width = intIn(v, "width", MIN_VIDEO_WIDTH, MAX_VIDEO_WIDTH);
+        int kbps = intIn(v, "kbps", MIN_VIDEO_KBPS, MAX_VIDEO_KBPS);
+        return width == 0 || width % 2 != 0 || kbps == 0 ? null : new Video(width, kbps);
     }
 
     /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */

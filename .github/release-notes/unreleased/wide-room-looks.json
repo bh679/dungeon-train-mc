@@ -1,0 +1,21 @@
+{
+  "id": "wide-room-looks",
+  "version": "0.2001.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "editor",
+    "train"
+  ],
+  "title": "New looks for the wide rooms",
+  "summary": "The wide rooms now come dressed in a few different styles.",
+  "highlights": [
+    "The wide rooms come in new styles",
+    "Editor: frames can be as wide as the room they dress"
+  ],
+  "pr": 2864,
+  "date": "2026-11-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

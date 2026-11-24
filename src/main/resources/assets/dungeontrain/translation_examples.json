@@ -18233,6 +18233,14 @@
       ]
     }
   },
+  "gui.dungeontrain.rewards.status.paid_by": {
+    "1": {
+      "label": "the name of the person who pays for this reward themselves",
+      "examples": [
+        "Brennan"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.status.on_until_tomorrow": {
     "1": {
       "label": "the name of the player who gave",

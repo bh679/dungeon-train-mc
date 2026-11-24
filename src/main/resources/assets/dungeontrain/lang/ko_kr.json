@@ -1707,6 +1707,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "%s시간 더 켜짐 · %s 님이 유지 중",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "내일까지 켜짐 · %s 님이 유지 중",
   "gui.dungeontrain.rewards.status.free_thanks": "지금 진행 중, %s 덕분이에요",
+  "gui.dungeontrain.rewards.status.paid_by": "켜짐 · %s 님이 비용 부담",
   "gui.dungeontrain.rewards.give.soon": "곧",
   "gui.dungeontrain.rewards.give.amount": "%s 후원",
   "gui.dungeontrain.rewards.raised": "%s 활성 중에는 더 높아요",

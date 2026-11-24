@@ -1707,6 +1707,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "あと%s時間有効 · 寄付: %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "明日まで有効 · 寄付: %s",
   "gui.dungeontrain.rewards.status.free_thanks": "現在稼働中、%sのおかげです",
+  "gui.dungeontrain.rewards.status.paid_by": "有効 · %sが費用を負担",
   "gui.dungeontrain.rewards.give.soon": "近日",
   "gui.dungeontrain.rewards.give.amount": "%sを寄付",
   "gui.dungeontrain.rewards.raised": "%sが有効な間は高くなります",

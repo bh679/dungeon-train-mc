@@ -119,6 +119,7 @@ public final class PortalChunkDimension {
             }
         }
         drainPours(level, dims, live);
+        drainFramings(level, dims, live);
     }
 
     /**
@@ -142,7 +143,7 @@ public final class PortalChunkDimension {
      * would block the server until it was, so the pour carries on as it was instead.
      */
     public static void finishPourIfReady(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
-        if (!POURS.containsKey(pairKey)) return;
+        if (!POURS.containsKey(pairKey) && !FRAMINGS.containsKey(pairKey)) return;
         if (PortalCarriageBuilder.footprintReady(level, structure, dims)) finishPour(level, dims, pairKey, structure);
     }
 
@@ -208,19 +209,25 @@ public final class PortalChunkDimension {
         return new int[] {Math.max(0, at - ARRIVAL_REACH), Math.min(size - 1, at + ARRIVAL_REACH)};
     }
 
-    /** Write the rest of {@code pairKey}'s room now, whatever it costs. */
+    /** Write the rest of {@code pairKey}'s room now, whatever it costs — its frame included. */
     public static void finishPour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
         PortalChunkPour pour = POURS.get(pairKey);
-        if (pour == null) return;
+        if (pour == null) {
+            stepFraming(level, dims, pairKey, structure, true);
+            return;
+        }
         long started = System.nanoTime();
         int height = structure.roomSize().getY();
         if (!pour.done(height)) writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.totalStrips(height));
         completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ true);
+        // A wide room's frame is queued by the dress; whatever costs it, it is wanted now too.
+        stepFraming(level, dims, pairKey, structure, true);
     }
 
     /** Stop writing {@code pairKey}'s room: it is being erased. */
     public static void cancelPour(int pairKey) {
         POURS.remove(pairKey);
+        FRAMINGS.remove(pairKey);
     }
 
     /** One room's next step, the oldest whose chunks are there, so several never share a tick's cost. */
@@ -288,24 +295,103 @@ public final class PortalChunkDimension {
      * that is not a chunk box, is left as its terrain in its lock skin.
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
-        if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
-        // The frame's own roll, salted apart from the room's so a test can re-roll either alone;
-        // unsalted it is a pure function of the pair, as in play.
-        int rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);
-        java.util.Optional<ChunkFramePlacer.Picked> frame =
-            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex,
+        frame(level, structure, dims, pairKey, null);
+    }
+
+    /**
+     * {@link #frame}, then {@code after} once the frame is down (or straight away when there is none).
+     *
+     * <p>A one-chunk room's frame is written here, in one go, as it always was. A room sampled as a
+     * grid of chunks has a frame nine times the size — a 3x3 frame in one tick was 180 to 800 ms —
+     * so it is queued instead and written a few layers a tick ({@link #drainFramings}), and
+     * {@code after} runs when the last layer is down.</p>
+     */
+    private static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey,
+                              Runnable after) {
+        // A room that is not a generated box (an authored chunk-dimension room of its own size) has no
+        // frame that fits it; frameFor then picks among the frames sized for this room.
+        java.util.Optional<ChunkFramePlacer.Picked> frame = java.util.Optional.empty();
+        int rollIndex = 0;
+        if (ChunkFrame.validSize(ChunkFrame.sizeFor(structure.roomSize()))) {
+            // The frame's own roll, salted apart from the room's so a test can re-roll either alone;
+            // unsalted it is a pure function of the pair, as in play.
+            rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);
+            frame = ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex,
                 // A pair planned before a restart has no planned frame left: its column's own context.
                 games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
-        if (frame.isEmpty()) return;
+        }
+        if (frame.isEmpty()) {
+            if (after != null) after.run();
+            return;
+        }
+        if (PortalChunkArea.span(structure.roomSize()) > 1) {
+            FRAMINGS.put(pairKey, new Framing(frame.get(), rollIndex, 0, after));
+            return;
+        }
+        placeFrame(level, structure, dims, frame.get(), rollIndex, 0, Integer.MAX_VALUE);
+        if (after != null) after.run();
+    }
+
+    private static int placeFrame(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                  ChunkFramePlacer.Picked frame, int rollIndex, int yFrom, int yTo) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
         // its plug are kept — which is what cuts the doorway through it.
-        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
-        int changed = ChunkFramePlacer.place(level, frame.get(), roomOrigin,
-            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex,
+        // Under a frame's Void or World Border there is no skin, so the frame's shell is left out too.
+        return ChunkFramePlacer.place(level, frame, structure.roomOrigin(dims, layout),
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex, yFrom, yTo,
             /*skipShell*/ !structure.mode().sealsRoomBox());
-        LOGGER.debug("[DungeonTrain] Chunk room '{}' pair {} framed with '{}' at {}: {} cell(s) changed",
-            structure.roomName(), pairKey, frame.get().name(), roomOrigin, changed);
+    }
+
+    /** A wide frame part way through being written: the next layer, and what to do once it is down. */
+    private record Framing(ChunkFramePlacer.Picked frame, int rollIndex, int nextY, Runnable after) {}
+
+    /** Wide frames still being written, oldest first. Server thread only. */
+    private static final java.util.Map<Integer, Framing> FRAMINGS = new java.util.LinkedHashMap<>();
+
+    /** How long a tick spends on one wide frame's layers: well inside a 50 ms tick. */
+    private static final long FRAMING_NANOS = 20_000_000L;
+
+    /** One wide frame's next layers, the oldest whose chunks are there. */
+    private static void drainFramings(ServerLevel level, CarriageDims dims, IntFunction<PortalStructure> live) {
+        if (FRAMINGS.isEmpty()) return;
+        for (int pairKey : java.util.List.copyOf(FRAMINGS.keySet())) {
+            PortalStructure structure = live.apply(pairKey);
+            if (structure == null) {
+                FRAMINGS.remove(pairKey);
+                continue;
+            }
+            if (!PortalCarriageBuilder.footprintReady(level, structure, dims)) continue;
+            stepFraming(level, dims, pairKey, structure, false);
+            return;
+        }
+    }
+
+    /** Write {@code pairKey}'s frame for this tick's time — or all of it, when {@code all}. */
+    private static void stepFraming(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
+                                    boolean all) {
+        Framing framing = FRAMINGS.get(pairKey);
+        if (framing == null) return;
+        long started = System.nanoTime();
+        int height = framing.frame().template().size().getY();
+        int[] y = {framing.nextY()};
+        games.brennan.dungeontrain.train.StagePlacementScope.run(
+            PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> {
+                do {
+                    placeFrame(level, structure, dims, framing.frame(), framing.rollIndex(), y[0], y[0] + 1);
+                    y[0]++;
+                } while (y[0] < height && (all || System.nanoTime() - started < FRAMING_NANOS));
+                if (y[0] >= height && framing.after() != null) framing.after().run();
+            });
+        if (y[0] >= height) {
+            FRAMINGS.remove(pairKey);
+        } else {
+            FRAMINGS.put(pairKey, new Framing(framing.frame(), framing.rollIndex(), y[0], framing.after()));
+        }
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.frame] pair={} room={} layers={}..{} ms={}{}",
+            pairKey, structure.roomName(), framing.nextY(), y[0], millis(System.nanoTime() - started),
+            y[0] >= height ? " done" : "");
     }
 
     // ---- writing -------------------------------------------------------------
@@ -374,16 +460,22 @@ public final class PortalChunkDimension {
         PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
         int shift = copyShift(structure, dims, size);
 
-        // Before the doorways: the frame's inner layer is written over the terrain's edge row, and
-        // the doorways are cut through it.
-        frame(level, structure, dims, pairKey);
-
-        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
-        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
-
-        if (slice.source().levelKey().equals(net.minecraft.world.level.Level.OVERWORLD)) {
-            paintBiomes(level, origin, size, shift, slice);
-        }
+        Runnable doorways = () -> {
+            openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
+            openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
+        };
+        Runnable afterFrame = () -> {
+            // After the frame: its inner layer is written over the terrain's edge row, and the
+            // doorways are cut through it.
+            doorways.run();
+            if (slice.source().levelKey().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+                paintBiomes(level, origin, size, shift, slice);
+            }
+        };
+        // A wide room's frame lands over the next ticks; its doorways are open meanwhile, so someone
+        // walking in is not met by terrain in the mouth, and cut again once the frame is down.
+        if (PortalChunkArea.span(size) > 1) doorways.run();
+        frame(level, structure, dims, pairKey, afterFrame);
     }
 
     /**

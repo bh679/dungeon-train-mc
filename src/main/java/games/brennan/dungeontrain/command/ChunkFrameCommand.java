@@ -127,10 +127,12 @@ final class ChunkFrameCommand {
     }
 
     private static int list(CommandSourceStack source) {
-        String names = String.join(", ", ChunkFrameRegistry.names());
-        var s = ChunkFrame.SIZE;
-        source.sendSuccess(() -> Component.literal("Chunk frames (" + s.getX() + "x" + s.getY() + "x" + s.getZ()
-            + ", the room plus a one-block shell): " + (names.isEmpty() ? "none yet" : names)), false);
+        String names = ChunkFrameRegistry.names().stream().map(n -> {
+            var s = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.sizeOf(n);
+            return n + " (" + s.getX() + "x" + s.getY() + "x" + s.getZ() + ")";
+        }).collect(java.util.stream.Collectors.joining(", "));
+        source.sendSuccess(() -> Component.literal("Chunk frames (each the room it fits plus a one-block shell): "
+            + (names.isEmpty() ? "none yet" : names)), false);
         return 1;
     }
 
@@ -224,8 +226,8 @@ final class ChunkFrameCommand {
 
     private static int toggleRoom(CommandContext<CommandSourceStack> ctx, boolean on) {
         String room = StringArgumentType.getString(ctx, "room");
-        java.util.List<String> all = ChunkFrame.chunkRooms();
-        if (!all.contains(room)) return fail(ctx.getSource(), room + " is not a chunk dimension.");
+        java.util.List<String> all = ChunkFrame.chunkRooms(StringArgumentType.getString(ctx, "frame"));
+        if (!all.contains(room)) return fail(ctx.getSource(), room + " is not a chunk dimension this frame fits.");
         return editMeta(ctx, m -> m.toggled(room, on, all));
     }
 

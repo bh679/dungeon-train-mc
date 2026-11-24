@@ -102,9 +102,22 @@ public final class CommunityRewards {
         return state.active(reward.id(), now);
     }
 
-    /** Whether a gift's month of {@code reward} is running: free credits leave a new gift starting now, not queued. */
+    /**
+     * Whether a gift's month of {@code reward} is running: free credits leave a new gift starting now,
+     * not queued, and a dev-paid reward takes no gifts at all.
+     */
     static boolean giftRunning(LiveRewards state, Reward reward, long now) {
-        return active(state, reward, now) && !state.find(reward.id()).free();
+        if (!active(state, reward, now)) return false;
+        LiveRewards.Reward live = state.find(reward.id());
+        return !live.free() && !live.devPaid();
+    }
+
+    /**
+     * Whether the dev pays for {@code reward} outright: it shows "ON · paid by …" with no Give button,
+     * no price and no dev-share line, and the Contribute card never features it.
+     */
+    static boolean devPaid(LiveRewards state, Reward reward, long now) {
+        return active(state, reward, now) && state.find(reward.id()).devPaid();
     }
 
     /** Whether {@code reward} is on through free credits, thanking {@link LiveRewards.Reward#by()} instead of a giver. */
@@ -139,7 +152,8 @@ public final class CommunityRewards {
     /**
      * The reward the Contribute panel features: the first in {@link #FEATURE_ORDER} that is off now,
      * so there is always something a giver can switch on today; when all six are on, the one whose
-     * next free month comes soonest (ties in {@link #FEATURE_ORDER}).
+     * next free month comes soonest (ties in {@link #FEATURE_ORDER}). A dev-paid reward is never
+     * featured: there is nothing to give.
      */
     static Reward featured(LiveRewards state, long now) {
         return featured(state, now, CommunityRewards::givingOpen);
@@ -150,8 +164,10 @@ public final class CommunityRewards {
      * card leads with one a giver can actually give; all six when none are open yet.
      */
     static Reward featured(LiveRewards state, long now, java.util.function.Predicate<Reward> open) {
-        List<Reward> order = FEATURE_ORDER.stream().filter(open).toList();
-        if (order.isEmpty()) order = FEATURE_ORDER;
+        List<Reward> givable = FEATURE_ORDER.stream().filter(r -> !devPaid(state, r, now)).toList();
+        if (givable.isEmpty()) givable = FEATURE_ORDER;
+        List<Reward> order = givable.stream().filter(open).toList();
+        if (order.isEmpty()) order = givable;
         for (Reward r : order) {
             if (!active(state, r, now)) return r;
         }
@@ -174,6 +190,8 @@ public final class CommunityRewards {
         LiveRewards.Reward live = state.find(reward.id());
         return live == null ? List.of() : live.queuedBy();
     }
+
+    static final String PAID_BY = KEY + "status.paid_by";
 
     /** Who kept {@code reward} on this month, or "" when it is off. */
     static String keptOnBy(LiveRewards state, Reward reward, long now) {

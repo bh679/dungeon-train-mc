@@ -318,8 +318,8 @@ public final class EditorDirtyCheck {
 
     /** Frame plots: the live blocks against the baseline taken at stamp and at save, plus sidecar edits. */
     private static void scanChunkFrames(ServerLevel level, List<DirtyEntry> out) {
-        Vec3i size = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE;
         for (String name : games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names()) {
+            Vec3i size = ChunkFrameEditor.plotSize(name);
             String key = ChunkFrameEditor.snapshotKey(name);
             if (!EditorPlotSnapshots.has(key) && !EditorPlotSnapshots.sidecarEdited(key)) continue;
             BlockPos origin = ChunkFrameEditor.registeredPlotOrigin(name);

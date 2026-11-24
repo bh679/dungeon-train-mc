@@ -1,0 +1,20 @@
+{
+  "id": "hd-streams-reward",
+  "version": "0.2001.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "HD Streams",
+  "summary": "HD Streams can now be given: a month of sharper 1080p Live Eye streams for everyone.",
+  "highlights": [
+    "While HD Streams is on, streams go out at 1080p instead of 720p",
+    "A smaller stream size you picked yourself is kept, and a slow upload stays at 720p so it never stalls"
+  ],
+  "pr": 2862,
+  "date": "2026-11-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

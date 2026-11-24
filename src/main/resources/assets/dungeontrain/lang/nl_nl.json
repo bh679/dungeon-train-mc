@@ -1757,6 +1757,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "AAN nog %s uur · aangehouden door %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "AAN tot morgen · aangehouden door %s",
   "gui.dungeontrain.rewards.status.free_thanks": "Nu actief, dankzij %s",
+  "gui.dungeontrain.rewards.status.paid_by": "AAN · betaald door %s",
   "gui.dungeontrain.rewards.give.soon": "Binnenkort",
   "gui.dungeontrain.rewards.give.amount": "Geef %s",
   "gui.dungeontrain.rewards.raised": "Hoger zolang %s aan staat",

@@ -104,7 +104,8 @@ public final class ChunkFramePlacer {
     /**
      * {@code roomName}'s frame for pair {@code pairKey}, or empty when no frame dresses it.
      *
-     * <p>The candidates are every frame whose {@link ChunkFrameMeta} names this room (or every room),
+     * <p>The candidates are every frame that fits the room ({@link ChunkFrame#sizeForRoom}) and whose
+     * {@link ChunkFrameMeta} names this room (or every room),
      * picked by their weights on {@code rollIndex} — the room's variant index, fixed for a live pair
      * so a room keeps its frame every time it is re-stamped, and salted by a test's reseed.</p>
      */
@@ -119,14 +120,22 @@ public final class ChunkFramePlacer {
      */
     public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex,
                                             games.brennan.dungeontrain.template.GateContext gateCtx) {
+        Vec3i frameSize = ChunkFrame.sizeForRoom(roomName);
         String name = FORCED.get(pairKey);
         if (name == null) {
             Planned planned = PLANNED.get(pairKey);
             name = planned != null && planned.matches(roomName, rollIndex)
                 ? planned.frame()
-                : pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20), gateCtx);
+                : pick(roomName, frameSize, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20), gateCtx);
         }
         if (name == null || name.isEmpty()) return Optional.empty();
+        // A forced frame is a test's choice, and still has to fit the room it dresses.
+        if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) {
+            if (WARNED.add(roomName + "/" + name + "/size")) {
+                LOGGER.warn("[DungeonTrain] Chunk frame '{}' does not fit room {}; it stays unframed", name, roomName);
+            }
+            return Optional.empty();
+        }
         Optional<ChunkFrameTemplate> template = ChunkFrameStore.get(level, name);
         if (template.isEmpty()) {
             if (WARNED.add(roomName + "/" + name)) {
@@ -166,26 +175,6 @@ public final class ChunkFramePlacer {
         }
     }
 
-    /**
-     * Read every frame that could dress {@code roomName} into its cache, off the server thread.
-     *
-     * <p>A frame's sidecar runs to megabytes, and the first stamp to ask for it would otherwise parse
-     * it inside the tick. Called from the sampler ahead of the room's ground, and a pair cannot be
-     * planned until the ground lands, so the stamp finds these already cached. A failure here costs
-     * only that: the stamp reads the frame itself, as it would have anyway.</p>
-     */
-    public static void preload(ServerLevel level, String roomName) {
-        try {
-            for (String name : ChunkFrameRegistry.names()) {
-                if (!ChunkFrameMetaStore.get(name).appliesTo(roomName)) continue;
-                ChunkFrameStore.get(level, name);
-                ChunkFrameVariants.loadFor(name);
-            }
-        } catch (RuntimeException e) {
-            LOGGER.warn("[DungeonTrain] Could not preload the chunk frames for room {}: {}", roomName, e.toString());
-        }
-    }
-
     /** A frame chosen for a pair at plan time: the room and roll it was chosen for, and the frame ("" for none). */
     record Planned(String room, int rollIndex, String frame) {
         boolean matches(String roomName, int roll) {
@@ -203,26 +192,57 @@ public final class ChunkFramePlacer {
     public static String plannedFrame(ServerLevel level, String roomName, int pairKey,
                                       games.brennan.dungeontrain.template.GateContext gateCtx) {
         int roll = rollIndex(roomName, pairKey);
-        String name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) roll << 20), gateCtx);
+        String name = pick(roomName, ChunkFrame.sizeForRoom(roomName),
+            level.getSeed() ^ FRAME_SALT ^ ((long) roll << 20), gateCtx);
         String frame = name == null ? "" : name;
         PLANNED.put(pairKey, new Planned(roomName, roll, frame));
         return frame;
     }
 
-    /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. Ungated. */
-    static String pick(String roomName, long seed) {
-        return pick(roomName, seed, null);
-    }
-
-    /** The frame {@code seed} lands on among those that dress {@code roomName} and whose gate admits {@code gateCtx}. */
-    static String pick(String roomName, long seed, games.brennan.dungeontrain.template.GateContext gateCtx) {
-        return pickAmong(ChunkFrameRegistry.names(), ChunkFrameMetaStore::get, roomName, seed, gateCtx);
+    /**
+     * Read every frame that could dress {@code roomName} into its cache, off the server thread.
+     *
+     * <p>A frame's sidecar runs to megabytes, and the first stamp to ask for it would otherwise parse
+     * it inside the tick. Called from the sampler ahead of the room's ground, and a pair cannot be
+     * planned until the ground lands, so the stamp finds these already cached. A failure here costs
+     * only that: the stamp reads the frame itself, as it would have anyway.</p>
+     */
+    public static void preload(ServerLevel level, String roomName) {
+        try {
+            Vec3i frameSize = ChunkFrame.sizeForRoom(roomName);
+            for (String name : ChunkFrameRegistry.names()) {
+                if (!ChunkFrameMetaStore.get(name).appliesTo(roomName)) continue;
+                if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) continue;
+                ChunkFrameStore.get(level, name);
+                ChunkFrameVariants.loadFor(name);
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not preload the chunk frames for room {}: {}", roomName, e.toString());
+        }
     }
 
     /**
-     * The weighted pick itself, over {@code names} with their meta from {@code metaOf} — pure, so a test
-     * can run it without the registry. A frame is a candidate when it dresses {@code roomName} and, given
-     * a context, its effective gate (its own, or its Stage's) admits it.
+     * The frame {@code seed} lands on among those that dress {@code roomName} and are
+     * {@code frameSize} — the size that fits the room — or null.
+     */
+    static String pick(String roomName, Vec3i frameSize, long seed) {
+        return pick(roomName, frameSize, seed, null);
+    }
+
+    /** {@link #pick} among the frames whose gate admits {@code gateCtx} (null: no gating). */
+    static String pick(String roomName, Vec3i frameSize, long seed,
+                       games.brennan.dungeontrain.template.GateContext gateCtx) {
+        java.util.List<String> fitting = new java.util.ArrayList<>();
+        for (String name : ChunkFrameRegistry.names()) {
+            if (ChunkFrameStore.sizeOf(name).equals(frameSize)) fitting.add(name);
+        }
+        return pickAmong(fitting, ChunkFrameMetaStore::get, roomName, seed, gateCtx);
+    }
+
+    /**
+     * The weighted pick itself, over {@code frameNames} with their meta from {@code metaOf} — pure, so a
+     * test can run it without the registry. A frame is a candidate when it dresses {@code roomName} and,
+     * given a context, its effective gate (its own, or its Stage's) admits it.
      */
     static String pickAmong(java.util.List<String> frameNames,
                             java.util.function.Function<String, ChunkFrameMeta> metaOf, String roomName,
@@ -260,7 +280,16 @@ public final class ChunkFramePlacer {
      * @return cells changed
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
-        return place(level, picked, roomOrigin, mask, rollIndex, false);
+        return place(level, picked, roomOrigin, mask, rollIndex, 0, picked.template().size().getY(), false);
+    }
+
+    /**
+     * {@link #place} for the frame's layers {@code yFrom} up to (not including) {@code yTo} — what
+     * lets a wide frame be written a few layers a tick, bottom up, instead of all at once.
+     */
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+                            int yFrom, int yTo) {
+        return place(level, picked, roomOrigin, mask, rollIndex, yFrom, yTo, false);
     }
 
     /**
@@ -268,8 +297,8 @@ public final class ChunkFramePlacer {
      * as Void or World Border ({@link ChunkFrameDimension}) has no skin for the shell to dress, and
      * the shell would otherwise hang in the swept space around the chunk.
      */
-    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask,
-                            int rollIndex, boolean skipShell) {
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+                            int yFrom, int yTo, boolean skipShell) {
         ChunkFrameTemplate frame = picked.template();
         VariantDoc variants = picked.variants();
         long seed = level.getSeed();
@@ -283,10 +312,10 @@ public final class ChunkFramePlacer {
             .inside(roomOrigin, size.getX() - 2, size.getY() - 2, size.getZ() - 2)
             .and(p -> !mask.covers(p));
         try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
-            for (int y = 0; y < size.getY(); y++) {
+            for (int y = Math.max(0, yFrom); y < Math.min(size.getY(), yTo); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
                     for (int x = 0; x < size.getX(); x++) {
-                        if (skipShell && ChunkFrame.isShell(x, y, z)) continue;
+                        if (skipShell && ChunkFrame.isShell(x, y, z, size)) continue;
                         BlockState state = frame.at(x, y, z);
                         CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
                         VariantState roll = null;

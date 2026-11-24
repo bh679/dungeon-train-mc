@@ -1710,6 +1710,7 @@
       "gui.dungeontrain.rewards.status.on_for_hours.other",
       "gui.dungeontrain.rewards.status.on_until_tomorrow",
       "gui.dungeontrain.rewards.status.free_thanks",
+      "gui.dungeontrain.rewards.status.paid_by",
       "gui.dungeontrain.rewards.give.soon",
       "gui.dungeontrain.rewards.give.amount",
       "gui.dungeontrain.rewards.raised",
