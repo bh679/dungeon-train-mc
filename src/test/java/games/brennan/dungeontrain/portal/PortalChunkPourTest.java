@@ -89,4 +89,18 @@ class PortalChunkPourTest {
         assertEquals(8L, restarted.totalNanos());
         assertEquals(5L, restarted.maxNanos());
     }
+
+    @Test
+    @DisplayName("A rushed pour keeps its place and its hurry, and a second step in the same tick is not a new tick")
+    void rushedPour() {
+        PortalChunkPour pour = PortalChunkPour.of(slice(48)).advanced(HEIGHT, 1L).rushed();
+        assertTrue(pour.rush());
+        assertEquals(21, pour.nextStrip());
+        assertTrue(pour.restartedWith(slice(48)).rush());
+        PortalChunkPour more = pour.continued(HEIGHT, 7L);
+        assertEquals(42, more.nextStrip());
+        assertEquals(pour.ticks(), more.ticks());
+        assertEquals(7L, more.maxNanos());
+        assertFalse(PortalChunkPour.of(slice(48)).rush());
+    }
 }

@@ -19,7 +19,20 @@ package games.brennan.dungeontrain.portal;
  * @param totalNanos time spent writing so far
  * @param maxNanos   the most any one tick has spent
  */
-record PortalChunkPour(PortalChunkSlice slice, int nextStrip, int ticks, long totalNanos, long maxNanos) {
+record PortalChunkPour(PortalChunkSlice slice, int nextStrip, int ticks, long totalNanos, long maxNanos,
+                       boolean rush) {
+
+    /**
+     * How long a pour in a hurry keeps writing in one tick: someone is already standing in the room
+     * ({@code PortalChunkDimension#finishAround}), and the part they have not reached has to land
+     * before they walk into it. Most of a 50 ms tick, so the server keeps its pace while the room
+     * lands in a second or so rather than four.
+     */
+    static final long RUSH_NANOS = 30_000_000L;
+
+    PortalChunkPour(PortalChunkSlice slice, int nextStrip, int ticks, long totalNanos, long maxNanos) {
+        this(slice, nextStrip, ticks, totalNanos, maxNanos, false);
+    }
 
     /**
      * Cells written per tick: a one-chunk room's four rows (4 x 16 x 16), so its pour is the eight
@@ -28,7 +41,12 @@ record PortalChunkPour(PortalChunkSlice slice, int nextStrip, int ticks, long to
     static final int CELLS_PER_TICK = 1024;
 
     static PortalChunkPour of(PortalChunkSlice slice) {
-        return new PortalChunkPour(slice, 0, 0, 0L, 0L);
+        return new PortalChunkPour(slice, 0, 0, 0L, 0L, false);
+    }
+
+    /** This pour in a hurry, from here on. */
+    PortalChunkPour rushed() {
+        return new PortalChunkPour(slice, nextStrip, ticks, totalNanos, maxNanos, true);
     }
 
     /** Strips written per tick for a slice {@code width} wide: never less than one. */
@@ -53,7 +71,13 @@ record PortalChunkPour(PortalChunkSlice slice, int nextStrip, int ticks, long to
 
     /** This pour with this tick's strips written, having taken {@code nanos}. */
     PortalChunkPour advanced(int height, long nanos) {
-        return new PortalChunkPour(slice, stripsEnd(height), ticks + 1, totalNanos + nanos, Math.max(maxNanos, nanos));
+        return new PortalChunkPour(slice, stripsEnd(height), ticks + 1, totalNanos + nanos, Math.max(maxNanos, nanos),
+            rush);
+    }
+
+    /** This pour with another budget's strips written in the same tick, {@code nanos} into it. */
+    PortalChunkPour continued(int height, long nanos) {
+        return new PortalChunkPour(slice, stripsEnd(height), ticks, totalNanos, Math.max(maxNanos, nanos), rush);
     }
 
     /**
@@ -61,6 +85,6 @@ record PortalChunkPour(PortalChunkSlice slice, int nextStrip, int ticks, long to
      * through. Cells the two samples agree on are skipped by the write, so this is mostly reads.
      */
     PortalChunkPour restartedWith(PortalChunkSlice newer) {
-        return new PortalChunkPour(newer, 0, ticks, totalNanos, maxNanos);
+        return new PortalChunkPour(newer, 0, ticks, totalNanos, maxNanos, rush);
     }
 }

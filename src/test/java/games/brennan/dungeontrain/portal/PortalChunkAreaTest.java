@@ -179,4 +179,15 @@ class PortalChunkAreaTest {
         assertEquals(31, PortalChunkDimension.doorwayDigDepth(new Vec3i(62, 30, 60)), "tasuschristmascarriage");
         assertEquals(32, PortalChunkDimension.doorwayDigDepth(new Vec3i(64, 22, 64)), "the courtyard");
     }
+
+    @Test
+    @DisplayName("An arrival writes the columns within reach of where they land, held inside the room")
+    void arrivalSpan() {
+        // Standing in the entry corridor, just outside the end face: the first nine columns.
+        org.junit.jupiter.api.Assertions.assertArrayEquals(new int[] {0, 8}, PortalChunkDimension.arrivalSpan(-3, 48));
+        // On the door line across the room.
+        org.junit.jupiter.api.Assertions.assertArrayEquals(new int[] {16, 32}, PortalChunkDimension.arrivalSpan(24, 48));
+        // Coming in through the far end.
+        org.junit.jupiter.api.Assertions.assertArrayEquals(new int[] {39, 47}, PortalChunkDimension.arrivalSpan(50, 48));
+    }
 }
