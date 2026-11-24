@@ -131,6 +131,8 @@ public final class SharedPhotos {
     static final String RESTORE_PATH = "/photos/restore";
     static final String BOOST_PATH = "/photos/boost";
     static final String WITHDRAW_PATH = "/photos/withdraw";
+    /** A player's report on a found photo, with its reason ({@link PhotoReports}). */
+    static final String REPORT_PATH = "/photos/report";
 
     /** Chat line families, keyed {@code <key>.1..N} in the lang files. */
     private static final int SEND_OFF_LINES = 5;
