@@ -876,6 +876,24 @@ public final class PortalCarriageBuilder {
      * the stronger case of the two: the kind decides how far apart the twins stand, so a pair that
      * re-drew it mid-visit would move the exit frame out from under a player walking back.</p>
      */
+    /**
+     * {@code settings} enclosed as the frame that will dress the room says: sealed, Void or World
+     * Border ({@link games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension}). Decided when
+     * the pair is planned, with the mode, so the skin or sweep, the lane claim, the fog and the border
+     * all follow from it as they do for any other room. One-chunk boxes only: that is all a frame
+     * dresses. Shared by play and Test the Carriage.
+     */
+    public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
+                                                     net.minecraft.core.Vec3i size, PortalRoomSettings settings) {
+        if (!settings.mode().generatesTerrain()
+                || !size.equals(games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.ROOM_SIZE)) {
+            return settings;
+        }
+        PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
+            .dimensionFor(level, roomName, pairKey).roomMode(settings.mode());
+        return framed == settings.mode() ? settings : settings.withMode(framed);
+    }
+
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
                                                 BlockPos entryOrigin, int pairKey,
                                                 PortalTwinRegion region,
@@ -926,15 +944,7 @@ public final class PortalCarriageBuilder {
             PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
             if (slice == null) return null;
             settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
-            // The frame that will dress this room says how it is enclosed: sealed, Void or World
-            // Border. Decided here, with the mode, so the skin or sweep, the lane claim, the fog and
-            // the border all follow from it as they do for any other room. One-chunk boxes only:
-            // that is all a frame dresses.
-            if (size.equals(games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.ROOM_SIZE)) {
-                PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
-                    .dimensionFor(level, roomName, pairKey).roomMode(settings.mode());
-                if (framed != settings.mode()) settings = settings.withMode(framed);
-            }
+            settings = framedEnclosure(level, roomName, pairKey, size, settings);
         }
 
         // Where this pair stands its exit, decided here with everything else about the pair and then
