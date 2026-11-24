@@ -145,24 +145,29 @@ class PortalChunkAreaTest {
         for (JsonElement e : group.getAsJsonArray("variants")) {
             JsonObject v = e.getAsJsonObject();
             String id = v.get("id").getAsString();
-            if (!id.startsWith("chunk_dimension_3x3")) continue;
+            if (!id.startsWith("chunk_3x3")) continue;
             found.put(id, new int[] {v.get("weight").getAsInt(), v.has("minLevel") ? v.get("minLevel").getAsInt() : 0});
         }
         Map<String, int[]> expected = Map.of(
-            "chunk_dimension_3x3", new int[] {40, 5},
-            "chunk_dimension_3x3_wwoo", new int[] {32, 5},
-            "chunk_dimension_3x3_bop", new int[] {32, 15},
-            "chunk_dimension_3x3_nether", new int[] {6, 5},
-            "chunk_dimension_3x3_nether_better", new int[] {23, 11},
-            "chunk_dimension_3x3_end", new int[] {2, 5},
-            "chunk_dimension_3x3_end_better", new int[] {6, 13});
+            "chunk_3x3", new int[] {40, 5},
+            "chunk_3x3_wwoo", new int[] {32, 5},
+            "chunk_3x3_bop", new int[] {32, 15},
+            "chunk_3x3_nether", new int[] {6, 5},
+            "chunk_3x3_nether_better", new int[] {23, 11},
+            "chunk_3x3_end", new int[] {2, 5},
+            "chunk_3x3_end_better", new int[] {6, 13});
         assertEquals(expected.keySet(), found.keySet());
+        // A name the registry refuses is a room that silently never loads (a 33-character name did).
+        for (String id : found.keySet()) {
+            assertTrue(games.brennan.dungeontrain.track.variant.TrackVariantRegistry.NAME_PATTERN.matcher(id).matches(),
+                id + " is a valid room name");
+        }
         expected.forEach((id, want) -> {
             assertEquals(want[0], found.get(id)[0], id + " weight");
             assertEquals(want[1], found.get(id)[1], id + " minLevel");
         });
         // The look still comes from the name's suffix.
-        assertEquals(PortalChunkTerrain.Source.NETHER_BETTER, PortalChunkTerrain.Source.of("chunk_dimension_3x3_nether_better"));
-        assertEquals(PortalChunkTerrain.Source.OVERWORLD, PortalChunkTerrain.Source.of("chunk_dimension_3x3"));
+        assertEquals(PortalChunkTerrain.Source.NETHER_BETTER, PortalChunkTerrain.Source.of("chunk_3x3_nether_better"));
+        assertEquals(PortalChunkTerrain.Source.OVERWORLD, PortalChunkTerrain.Source.of("chunk_3x3"));
     }
 }

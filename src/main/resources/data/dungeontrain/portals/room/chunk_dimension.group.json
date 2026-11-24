@@ -36,37 +36,37 @@
       "minLevel": 13
     },
     {
-      "id": "chunk_dimension_3x3",
+      "id": "chunk_3x3",
       "weight": 40,
       "minLevel": 5
     },
     {
-      "id": "chunk_dimension_3x3_wwoo",
+      "id": "chunk_3x3_wwoo",
       "weight": 32,
       "minLevel": 5
     },
     {
-      "id": "chunk_dimension_3x3_bop",
+      "id": "chunk_3x3_bop",
       "weight": 32,
       "minLevel": 15
     },
     {
-      "id": "chunk_dimension_3x3_nether",
+      "id": "chunk_3x3_nether",
       "weight": 6,
       "minLevel": 5
     },
     {
-      "id": "chunk_dimension_3x3_nether_better",
+      "id": "chunk_3x3_nether_better",
       "weight": 23,
       "minLevel": 11
     },
     {
-      "id": "chunk_dimension_3x3_end",
+      "id": "chunk_3x3_end",
       "weight": 2,
       "minLevel": 5
     },
     {
-      "id": "chunk_dimension_3x3_end_better",
+      "id": "chunk_3x3_end_better",
       "weight": 6,
       "minLevel": 13
     }

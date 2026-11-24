@@ -7,7 +7,7 @@ is read off this template's size (PortalChunkArea.span), so a 3x3 room is a 48 x
 one-chunk template, tiled three times along X and Z. Nothing else differs, so the templates are
 generated rather than authored: a change to a one-chunk template is carried over by running this.
 
-    chunk_dimension<look>.nbt  (16 x 32 x 16)  ->  chunk_dimension_3x3<look>.nbt  (48 x 32 x 48)
+    chunk_dimension<look>.nbt  (16 x 32 x 16)  ->  chunk_3x3<look>.nbt  (48 x 32 x 48)
 
 Usage:
     python3 scripts/portal/make-chunk-area-templates.py [--check]
@@ -61,7 +61,7 @@ def main():
     stale = []
     for look in LOOKS:
         source = ROOMS / f"chunk_dimension{look}.nbt"
-        target = ROOMS / f"chunk_dimension_3x3{look}.nbt"
+        target = ROOMS / f"chunk_3x3{look}.nbt"
         name, template = read(gzip.decompress(source.read_bytes()))
         data = write(name, tiled(template))
         current = gzip.decompress(target.read_bytes()) if target.exists() else None

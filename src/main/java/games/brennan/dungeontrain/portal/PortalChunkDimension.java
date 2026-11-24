@@ -66,6 +66,9 @@ public final class PortalChunkDimension {
      */
     private static final int DOOR_HEIGHT = 2;
 
+    /** Furthest a buried doorway is dug inward: half a one-chunk room, as it always was. */
+    static final int MAX_DOORWAY_DIG = PortalChunkTerrain.SIZE / 2;
+
     /** Pairs whose sampled mobs have already been spawned into their room. */
     private static final java.util.Set<Integer> POPULATED =
         java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -455,7 +458,10 @@ public final class PortalChunkDimension {
         // open cave rather than left as a door onto a wall. Where the terrain is already open, which
         // is every hillside and most caves, the next column is clear and this stops at the door.
         int step = entry ? 1 : -1;
-        int deepest = size.getX() / 2;
+        // Half the room, but never further than a one-chunk room would dig: in a room several chunks
+        // long, a mouth stood a few rows under a hill that keeps climbing was dug into a trench half
+        // the room long (a 3x3 room's 24 blocks through a hillside or a frozen lake).
+        int deepest = Math.min(size.getX() / 2, MAX_DOORWAY_DIG);
         for (int depth = 0; depth <= deepest; depth++) {
             int cx = x + depth * step;
             if (depth > 0 && walkwayOpen(level, cursor, cx, floorY, z)) break;
