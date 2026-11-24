@@ -229,6 +229,14 @@ public final class ProceduralTiers {
         addIfPositive(pool, "minecraft:diamond_sword",   DIAMOND_W.weight(level));
         addIfPositive(pool, "minecraft:netherite_sword", NETHERITE_W.weight(level));
         addIfPositive(pool, "minecraft:golden_sword",    GOLDEN_WEIGHT);
+        // Spears (VanillaBackport, a hard dependency) sit beside each sword at the same weight —
+        // the same rule loot follows (editor/SpearTwins).
+        addIfPositive(pool, "minecraft:wooden_spear",    WOOD_W.weight(level));
+        addIfPositive(pool, "minecraft:stone_spear",     STONE_W.weight(level));
+        addIfPositive(pool, "minecraft:iron_spear",      IRON_W.weight(level));
+        addIfPositive(pool, "minecraft:diamond_spear",   DIAMOND_W.weight(level));
+        addIfPositive(pool, "minecraft:netherite_spear", NETHERITE_W.weight(level));
+        addIfPositive(pool, "minecraft:golden_spear",    GOLDEN_WEIGHT);
         // Axes carry half weight — present but less common than swords.
         addIfPositive(pool, "minecraft:wooden_axe",    WOOD_W.weight(level)      / 2);
         addIfPositive(pool, "minecraft:stone_axe",     STONE_W.weight(level)     / 2);
