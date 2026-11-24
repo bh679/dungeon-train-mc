@@ -39040,6 +39040,158 @@
       "released": true,
       "released_in": "v0.1997.0",
       "released_at": "2026-11-24T09:46:52Z"
+    },
+    {
+      "id": "hd-streams-reward",
+      "version": "0.2001.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "HD Streams",
+      "summary": "HD Streams can now be given: a month of sharper 1080p Live Eye streams for everyone.",
+      "highlights": [
+        "While HD Streams is on, streams go out at 1080p instead of 720p",
+        "A smaller stream size you picked yourself is kept, and a slow upload stays at 720p so it never stalls"
+      ],
+      "pr": 2862,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "kid-mode-skips-reported-photos",
+      "version": "0.1998.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Safer photos in Kid mode",
+      "summary": "Photos that someone has reported no longer turn up in Kid mode.",
+      "highlights": [],
+      "pr": 2859,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "playermob-hit-and-run",
+      "version": "0.2003.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Skilled echoes hit and run",
+      "summary": "The best melee fighters among echoes now fight like skilled players: they step in to strike when their swing is ready, then back out of your reach while it recharges. Clumsy fighters still stand and trade blows.",
+      "highlights": [
+        "Echoes no longer stumble forward or slide sideways off the train when backing away."
+      ],
+      "pr": 2866,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "playermob-melee-reach",
+      "version": "0.1999.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Echoes fight from reach distance",
+      "summary": "Echoes now swing from a player's reach instead of pushing right up against you. Skilled fighters keep near the edge of their reach; clumsy ones crowd in close.",
+      "highlights": [
+        "A crowded skilled fighter steps back, but never off the train.",
+        "If you duck behind a wall, they walk around it to get back in reach."
+      ],
+      "pr": 2861,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "ragdoll-mismatch-no-crash",
+      "version": "0.2006.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "No more crash on respawn with mismatched ragdoll mods",
+      "summary": "If your Sable: Ragdolls and Sable: Ragdoll - Patch versions don't match, dying and boarding again no longer crashes the game. Death bodies just switch off until the two match again.",
+      "highlights": [],
+      "pr": 2868,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "voice-on-stream-dev-paid",
+      "version": "0.2001.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Voice on Stream is on for everyone",
+      "summary": "Voice on Stream now shows as ON in Community Rewards, paid for by the dev, so there is nothing to give for it.",
+      "highlights": [],
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "wide-room-looks",
+      "version": "0.2001.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "editor",
+        "train"
+      ],
+      "title": "New looks for the wide rooms",
+      "summary": "The wide rooms now come dressed in a few different styles.",
+      "highlights": [
+        "The wide rooms come in new styles",
+        "Editor: frames can be as wide as the room they dress"
+      ],
+      "pr": 2864,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
+    },
+    {
+      "id": "wider-room-to-find",
+      "version": "0.1999.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "A wider room to find",
+      "summary": "A new, much wider room to discover as you ride.",
+      "highlights": [
+        "A wide new room to discover as you ride"
+      ],
+      "pr": 2860,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.2006.0",
+      "released_at": "2026-11-24T17:00:22Z"
     }
   ]
 }
