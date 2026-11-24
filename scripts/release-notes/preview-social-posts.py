@@ -24,7 +24,8 @@ one), or the one named with --music. The card shows the song, where it starts, t
 chances, and the credit line the captions carry. On the card, ▶ plays any track's 12 s preview from where it starts
 (the relay's own previewClip), the vibe menu lists every other vibe's tracks, Use re-renders that update's videos
 with the track, and Pin to update runs set-social-music.py for it (the live relay, after a confirm), so the relay
-posts that exact song. Pin before the release ships. Tracks come from Mojang's asset server once and are kept in
+posts that exact song. Pin before the release ships. Tracks come from Mojang's asset server once (every one is fetched
+in the background at start) and are kept, with their previews, in
 ~/.cache/dungeontrain/mc-music/.
 
 Usage:
@@ -523,6 +524,24 @@ def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = 
 
 SET_SOCIAL_MUSIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "set-social-music.py")
 MAX_BODY = 4096
+# Outside every worktree: the downloaded tracks (the relay's mc-music folder) and their 12 s previews.
+MUSIC_CACHE = os.path.expanduser("~/.cache/dungeontrain/mc-music")
+
+
+def track_start(posts: list[dict], track_id: str) -> float | None:
+    """Where the song card says a track starts, or None if it doesn't say."""
+    for p in posts:
+        for v in song_vibes(p.get("music") or {"vibe": "", "others": []}):
+            for t in v["tracks"]:
+                if t["id"] == track_id and t.get("start") is not None:
+                    return t["start"]
+    return None
+
+
+def preview_file(track_id: str, start: float | None) -> str:
+    """A track's cached 12 s preview; a new start point makes a new file."""
+    at = "" if start is None else f"@{start:g}"
+    return os.path.join(MUSIC_CACHE, "previews", f"{track_id}{at}.m4a")
 
 
 class Preview:
@@ -534,6 +553,8 @@ class Preview:
         self.entries, self.version, self.relay_ref = entries, version, relay_ref
         self.posts: list[dict] = []
         self.lock = threading.Lock()
+        self.lock_guard = threading.Lock()
+        self.listen_locks: dict[str, threading.Lock] = {}
 
     def render(self, entries: list[dict]) -> list[dict]:
         """Run the relay's builders over `entries`; their posts replace any earlier ones of the same id."""
@@ -576,17 +597,42 @@ class Preview:
             self.render([changed])
 
     def listen(self, track_id: str) -> bytes:
-        """The relay's 12 s preview of a track, made once and kept for the session."""
+        """The relay's 12 s preview of a track. Kept in MUSIC_CACHE/previews beside the downloaded tracks, keyed by
+        where the track starts, so it is made once on this machine, not once per run."""
         track = self.check_track(track_id)
-        cache = os.path.join(self.target, "listen", f"{track}.m4a")
-        if not os.path.exists(cache):
-            os.makedirs(os.path.dirname(cache), exist_ok=True)
-            run = subprocess.run(["node", "preview-listen.js", track, cache], cwd=self.relay_copy, env=self.env,
-                                 capture_output=True, text=True, timeout=120)
-            if run.returncode != 0:
-                raise RuntimeError(run.stderr.strip() or f"no preview for {track}")
+        cache = preview_file(track, track_start(self.posts, track))
+        with self.listen_lock(track):
+            if not os.path.exists(cache):
+                os.makedirs(os.path.dirname(cache), exist_ok=True)
+                part = f"{cache}.part"
+                run = subprocess.run(["node", "preview-listen.js", track, part], cwd=self.relay_copy, env=self.env,
+                                     capture_output=True, text=True, timeout=120)
+                if run.returncode != 0:
+                    raise RuntimeError(run.stderr.strip() or f"no preview for {track}")
+                os.replace(part, cache)  # whole or absent: a killed run never leaves half a file behind
         with open(cache, "rb") as f:
             return f.read()
+
+    def listen_lock(self, track: str) -> threading.Lock:
+        with self.lock_guard:
+            return self.listen_locks.setdefault(track, threading.Lock())
+
+    def prefetch(self) -> None:
+        """Fetch every track on the card in the background, so ▶ never waits on Mojang's asset server."""
+        missing = sorted(t for t in track_ids(self.posts)
+                         if not os.path.exists(preview_file(t, track_start(self.posts, t))))
+        if missing:
+            print(f"Fetching {len(missing)} track(s) in the background into {MUSIC_CACHE}", flush=True)
+        failed = []
+        for t in missing:
+            try:
+                self.listen(t)
+            except (RuntimeError, OSError, ValueError, subprocess.TimeoutExpired) as e:
+                failed.append(f"{t} ({e})")
+        if failed:
+            print(f"Could not fetch: {', '.join(failed)}", file=sys.stderr, flush=True)
+        elif missing:
+            print("Every track is on this machine now.", flush=True)
 
     def pin(self, entry_id: str, track_id: str) -> str:
         """Pin the song on the live relay with set-social-music.py, exactly as running it by hand does."""
@@ -700,14 +746,14 @@ def main(argv: list[str] | None = None) -> int:
             env = {**os.environ, "RELAY_DB_DIR": os.path.join(target, "db")}
             os.makedirs(env["RELAY_DB_DIR"])
             # The relay keeps tracks in <RELAY_DB_DIR>/mc-music; keep them between runs instead of refetching.
-            cache = os.path.expanduser("~/.cache/dungeontrain/mc-music")
-            os.makedirs(cache, exist_ok=True)
-            os.symlink(cache, os.path.join(env["RELAY_DB_DIR"], "mc-music"))
+            os.makedirs(MUSIC_CACHE, exist_ok=True)
+            os.symlink(MUSIC_CACHE, os.path.join(env["RELAY_DB_DIR"], "mc-music"))
             preview = Preview(target, relay_copy, site, env, entries, version, args.relay_ref)
             posts = preview.render(entries)
             with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(preview)) as server:
                 print(f"v{version}, {len(posts)} post(s)")
                 print(f"Social posts: http://127.0.0.1:{args.port}/", flush=True)
+                threading.Thread(target=preview.prefetch, name="prefetch-tracks", daemon=True).start()
                 server.serve_forever()
     except KeyboardInterrupt:
         return 0

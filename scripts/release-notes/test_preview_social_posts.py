@@ -154,6 +154,17 @@ class SongPicker(unittest.TestCase):
         self.assertIn('<div class=tracks data-vibe="adventure">', card)
         self.assertIn('<div class=tracks data-vibe="dark" hidden>', card)
 
+    def test_previews_are_kept_outside_the_worktree_keyed_by_start(self):
+        posts = [{**VIBES_POST, "music": {**VIBES_POST["music"], "vibes": [
+            {"id": "dark", "label": "Dark", "tracks": [{"id": "rubedo", "title": "R", "composer": "L", "chance": 1,
+                                                         "start": 209}]}]}}]
+        self.assertEqual(preview.track_start(posts, "rubedo"), 209)
+        self.assertIsNone(preview.track_start(posts, "pigstep"))
+        path = preview.preview_file("rubedo", 209)
+        self.assertTrue(path.startswith(os.path.expanduser("~/.cache/dungeontrain/mc-music/previews/")))
+        self.assertTrue(path.endswith("rubedo@209.m4a"))
+        self.assertNotEqual(path, preview.preview_file("rubedo", 49.7), "a new start is a new preview")
+
     def test_an_old_driver_without_vibes_lists_the_updates_vibe(self):
         self.assertEqual(preview.track_ids([POST]), {"beginning_2", "moog_city_2"})
         self.assertEqual(preview.track_ids([VIBES_POST]), {"beginning_2", "moog_city_2", "rubedo"})
