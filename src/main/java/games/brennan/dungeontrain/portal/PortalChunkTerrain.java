@@ -457,9 +457,12 @@ public final class PortalChunkTerrain {
                 Cached decorated = READY.get(pairKey);
                 // The biome too: it is what says whether a WWOO, BoP or Better room actually landed
                 // in its mod's world generation or quietly came back vanilla.
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}: "
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}{}: "
                         + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
-                    pairKey, source, source.levelKey().location(), sample.pos(), biomeAt(sample), ground,
+                    pairKey, source, source.levelKey().location(), sample.pos(), biomeAt(sample),
+                    sample.sea() == null ? "" : ", sea floor row " + sample.sea().floorRow()
+                        + ", water gap " + sample.sea().waterGap() + ", seabed y " + sample.anchor(),
+                    ground,
                     System.currentTimeMillis() - decoratingFrom,
                     decorated == null ? 0 : decorated.slice().occupants().size());
             } catch (Throwable t) {

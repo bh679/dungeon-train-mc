@@ -199,7 +199,9 @@ public final class ChunkFramePlacer {
                                     variants.rotationLockIdAt(local.immutable()));
                             blockEntity = roll.blockEntityNbt();
                         }
-                        if (games.brennan.dungeontrain.block.ForcedAir.writesAir(state)) {
+                        // Frames are only ever placed into live rooms (the frame editor saves from its own
+                        // plot), so this is live whether or not a placement scope is open.
+                        if (games.brennan.dungeontrain.block.ForcedAir.forStamp(state, true) != state) {
                             // The one block a frame writes as air: plain air in a frame leaves the
                             // sampled terrain (and the sea) alone, Forced Air carves it out.
                             cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,

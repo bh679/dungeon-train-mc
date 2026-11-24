@@ -214,8 +214,11 @@ public final class PortalChunkDimension {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
         // its plug are kept — which is what cuts the doorway through it.
-        ChunkFramePlacer.place(level, frame.get(), structure.roomOrigin(dims, layout),
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        int changed = ChunkFramePlacer.place(level, frame.get(), roomOrigin,
             PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex);
+        LOGGER.debug("[DungeonTrain] Chunk room '{}' pair {} framed with '{}' at {}: {} cell(s) changed",
+            structure.roomName(), pairKey, frame.get().name(), roomOrigin, changed);
     }
 
     // ---- writing -------------------------------------------------------------
