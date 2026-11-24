@@ -169,6 +169,17 @@ public final class ChunkFrameEditor {
         EditorPlotArrival.land(player, level, origin, plotSize(name), true, EditorPlotArrival.Inside.CENTRE, null);
         LOGGER.info("[DungeonTrain] Chunk frame editor: {} entered {} at {}{}", player.getName().getString(),
             name, origin, copyOf != null ? " (copy of " + copyOf + ")" : "");
+        // A frame exists from the moment it is made: a new frame, or a copy, is written to disk now,
+        // as stamped. Until then it had only its settings and variants, no structure, so it vanished
+        // on the next restart — and with nothing changed in its blocks there was nothing to Save.
+        if (ChunkFrameStore.readTag(name).isEmpty()) {
+            try {
+                save(player, level, name);
+                LOGGER.info("[DungeonTrain] Chunk frame editor: wrote new frame {} on creation", name);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Chunk frame editor: could not write new frame {}: {}", name, e.toString());
+            }
+        }
     }
 
     /**
