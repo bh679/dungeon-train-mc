@@ -21,8 +21,10 @@ kept on Facebook and shown as their text, or the `mentions` handle, on Instagram
 An animated picture's feed video carries its song, as the relay posts it (socials-music.js): the update's vibe (from
 its tags, or --vibe) and a track from that vibe, picked the way the relay picks (seeded, so a rerun shows the same
 one), or the one named with --music. The card shows the song, where it starts, the vibe's other tracks and their
-chances, and the credit line the captions carry. Pin the song you settle on with set-social-music.py before the
-release ships, so the relay posts that exact song. Tracks come from Mojang's asset server once and are kept in
+chances, and the credit line the captions carry. On the card, ▶ plays any track's 12 s preview from where it starts
+(the relay's own previewClip), the vibe menu lists every other vibe's tracks, Use re-renders that update's videos
+with the track, and Pin to update runs set-social-music.py for it (the live relay, after a confirm), so the relay
+posts that exact song. Pin before the release ships. Tracks come from Mojang's asset server once and are kept in
 ~/.cache/dungeontrain/mc-music/.
 
 Usage:
@@ -38,15 +40,17 @@ Needs node and a dp-relay clone with its node_modules installed. Keeps serving u
 unreleased major or notable entry has a picture.
 """
 import argparse
-import functools
 import html
 import http.server
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
+import urllib.parse
 
 import changelog_io
 
@@ -82,6 +86,12 @@ function song(e) {
     others: music.tracksIn(vibe).sort((a, b) => b.plays - a.plays)
       .map((x) => ({ id: x.id, title: x.title, composer: x.composer, chance: Math.round(odds.get(x.id) * 1000) / 10 })),
   };
+}
+
+/** Every vibe and its tracks as the relay's Socials page lists them, for the song card's vibe menu. */
+function allVibes() {
+  return music.describe().vibes.map((v) => ({ id: v.id, label: v.label || v.name || v.id,
+    tracks: v.tracks.map((x) => ({ id: x.id, title: x.title, composer: x.composer, chance: x.chance, start: x.start })) }));
 }
 
 /** An entry's own clip as the relay posts it: every video built from the clip, its frame the cover. */
@@ -150,12 +160,82 @@ async function clipPosts(e, save, log) {
     }
     done.push({ id: e.id, title: e.title, files,
       music: tune && { clip: hasClip, id: tune.t.id, title: tune.t.title, composer: tune.t.composer, start: tune.start, vibe: tune.vibe,
-        vibeFrom: tune.vibeFrom, chosen: tune.chosen, others: tune.others, credit: music.credit(track) },
+        vibeFrom: tune.vibeFrom, chosen: tune.chosen, others: tune.others, credit: music.credit(track), vibes: allVibes() },
       captions: Object.fromEntries(['facebook', 'instagram', 'tiktok'].map((p) => [p, updates.caption(e, p, track)])) });
   }
   fs.writeFileSync(path.join(out, 'posts.json'), JSON.stringify(done));
   process.exit(0);
 })().catch((err) => { console.error(err); process.exit(1); });
+"""
+
+# Run inside the relay copy: the relay's own 12 s preview of one track, from where it starts. argv: track id, out file.
+LISTEN_DRIVER = r"""
+'use strict';
+const fs = require('fs');
+const music = require('./socials-music');
+const [id, out] = process.argv.slice(2);
+music.previewClip(id).then((buf) => {
+  if (!buf) { console.error(`no preview for ${id}`); process.exit(1); }
+  fs.writeFileSync(out, buf);
+  process.exit(0);
+}).catch((err) => { console.error(err.message || err); process.exit(1); });
+"""
+
+# The song card's buttons: one track plays at a time; Use and Pin post to the preview server and report back.
+SONG_SCRIPT = r"""
+<script>
+(() => {
+  const audio = new Audio();
+  let playing = null;
+  const say = (card, msg) => { card.querySelector('.status').textContent = msg; };
+  const stop = () => { if (playing) playing.textContent = '▶'; playing = null; };
+  audio.addEventListener('ended', stop);
+  try { const y = sessionStorage.getItem('dt-preview-y'); if (y) { scrollTo(0, +y); sessionStorage.removeItem('dt-preview-y'); } }
+  catch (e) { /* no storage: start at the top */ }
+  document.addEventListener('change', (ev) => {
+    const menu = ev.target.closest('select[data-vibes]');
+    if (!menu) return;
+    menu.closest('.song').querySelectorAll('table[data-vibe]').forEach((t) => { t.hidden = t.dataset.vibe !== menu.value; });
+  });
+  document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button[data-act]');
+    if (!b) return;
+    const card = b.closest('.song');
+    const { act, track, entry, title } = b.dataset;
+    if (act === 'play') {
+      if (playing === b) { audio.pause(); stop(); say(card, ''); return; }
+      audio.pause(); stop();
+      playing = b; b.textContent = '■';
+      say(card, `Loading ${title}…`);
+      audio.src = `/api/listen/${encodeURIComponent(track)}.m4a`;
+      try { await audio.play(); say(card, `Playing ${title}: 12 s from where it starts.`); }
+      catch (e) { stop(); say(card, `Could not play ${title}: ${e.message}`); }
+      return;
+    }
+    if (act === 'pin' && !confirm(`Pin ${title} to this update on the live relay? Its posts will use this song.`)) return;
+    audio.pause(); stop();
+    const buttons = card.querySelectorAll('button, select');
+    buttons.forEach((x) => { x.disabled = true; });
+    say(card, act === 'use' ? `Rendering the videos with ${title}… (up to a minute)` : `Pinning ${title} on the live relay…`);
+    try {
+      const r = await fetch(`/api/${act}`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry, track }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+      if (act === 'use') {
+        try { sessionStorage.setItem('dt-preview-y', String(scrollY)); } catch (e) { /* reload at the top */ }
+        location.reload();
+        return;
+      }
+      say(card, `Pinned. ${j.output || ''}`);
+    } catch (e) {
+      say(card, `${act === 'use' ? 'Render' : 'Pin'} failed: ${e.message}`);
+    } finally {
+      buttons.forEach((x) => { x.disabled = false; });
+    }
+  });
+})();
+</script>
 """
 
 
@@ -310,28 +390,63 @@ def music_block(post: dict) -> str:
     if not m:
         return ""
     start = int(m["start"] or 0)
-    how = "named with --music" if m["chosen"] else "the relay's pick from the vibe (seeded)"
+    how = "picked here (Use) or with --music" if m["chosen"] else "the relay's pick from the vibe (seeded)"
     vibe_from = "chosen with --vibe" if m["vibeFrom"] == "chosen" else "from the update's tags"
-    rows = "".join(
-        f"<tr{' class=on' if t['id'] == m['id'] else ''}><td>{html.escape(t['title'])}</td>"
-        f"<td>{html.escape(t['composer'])}</td><td>{t['chance']}%</td><td><code>{html.escape(t['id'])}</code></td></tr>"
-        for t in m["others"])
+    entry = html.escape(post["id"], quote=True)
     pin = f"python3 scripts/release-notes/set-social-music.py --entry {post['id']} --track {m['id']}"
     return (
         "<div class='card song'><h3>Song</h3>"
-        f"<p class=big>{html.escape(m['title'])} <span class=k>by {html.escape(m['composer'])}, "
-        f"from {start // 60}:{start % 60:02d}</span></p>"
+        f"<p class=big>{_play_button(m['id'], m['title'])} {html.escape(m['title'])} "
+        f"<span class=k>by {html.escape(m['composer'])}, from {start // 60}:{start % 60:02d}</span></p>"
         f"<p class=k>{html.escape(how)}. Vibe: <b>{html.escape(m['vibe'])}</b>, {vibe_from}. "
         + ("Play the videos above with sound: the clip's own sound, the song 10 dB under it.</p>"
            if m.get("clip") else "Play the Instagram video above with sound to hear it.</p>")
-        +
-        f"<p class=k>Caption credit: {html.escape(m['credit'])}</p>"
-        f"<p class=k>Pin it before the release ships:</p><pre>{html.escape(pin)}</pre>"
-        f"<details><summary>Other tracks in {html.escape(m['vibe'])}</summary><table>"
-        "<tr><th>Track</th><th>Composer</th><th>Chance</th><th>Id</th></tr>"
-        f"{rows}</table><p class=k>Preview another: <code>--music {html.escape(post['id'])}=&lt;id&gt;</code></p>"
-        "</details></div>"
+        + f"<p class=k>Caption credit: {html.escape(m['credit'])}</p>"
+        f"<p><button data-act=pin data-entry=\"{entry}\" data-track=\"{html.escape(m['id'], quote=True)}\" "
+        f"data-title=\"{html.escape(m['title'], quote=True)}\">Pin to update</button> "
+        "<span class=k>sets it on the live relay, as the command below does</span></p>"
+        f"<pre>{html.escape(pin)}</pre><p class='k status' aria-live=polite></p>"
+        f"{_vibe_tables(post['id'], m)}</div>"
     )
+
+
+def _play_button(track_id: str, title: str) -> str:
+    return (f"<button class=play data-act=play data-track=\"{html.escape(track_id, quote=True)}\" "
+            f"data-title=\"{html.escape(title, quote=True)}\" aria-label=\"Play {html.escape(title, quote=True)}\">▶</button>")
+
+
+def song_vibes(m: dict) -> list[dict]:
+    """Every vibe with its tracks; a driver from before the vibe menu (no `vibes`) gives the update's own vibe only."""
+    return m.get("vibes") or [{"id": m["vibe"], "label": m["vibe"], "tracks": m["others"]}]
+
+
+def _vibe_tables(entry_id: str, m: dict) -> str:
+    """The vibe menu and one table per vibe (only the update's own shown at first): ▶ to listen, Use to re-render."""
+    vibes = song_vibes(m)
+    entry = html.escape(entry_id, quote=True)
+    options = "".join(
+        f"<option value=\"{html.escape(v['id'], quote=True)}\"{' selected' if v['id'] == m['vibe'] else ''}>"
+        f"{html.escape(v['label'])}{' (this update)' if v['id'] == m['vibe'] else ''}</option>" for v in vibes)
+    tables = []
+    for v in vibes:
+        rows = "".join(
+            f"<tr{' class=on' if t['id'] == m['id'] else ''}><td>{_play_button(t['id'], t['title'])}</td>"
+            f"<td>{html.escape(t['title'])}</td><td>{html.escape(t['composer'])}</td><td>{t['chance']}%</td>"
+            "<td>" + ("in use" if t["id"] == m["id"] else
+                      f"<button data-act=use data-entry=\"{entry}\" data-track=\"{html.escape(t['id'], quote=True)}\" "
+                      f"data-title=\"{html.escape(t['title'], quote=True)}\">Use</button>") + "</td></tr>"
+            for t in v["tracks"])
+        hidden = "" if v["id"] == m["vibe"] else " hidden"
+        tables.append(f"<table data-vibe=\"{html.escape(v['id'], quote=True)}\"{hidden}>"
+                      "<tr><th class=narrow></th><th>Track</th><th>Composer</th><th class=chance>Chance</th><th class=narrow></th></tr>"
+                      f"{rows}</table>")
+    return (f"<p class=k>Listen to any track, or Use one to re-render this update's videos with it:</p>"
+            f"<p><select data-vibes aria-label=Vibe>{options}</select></p>{''.join(tables)}")
+
+
+def track_ids(posts: list[dict]) -> set[str]:
+    """Every track id the song cards list: the only ids the server will play or use."""
+    return {t["id"] for p in posts if p.get("music") for v in song_vibes(p["music"]) for t in v["tracks"]}
 
 
 def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = "origin/main") -> str:
@@ -365,14 +480,153 @@ def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = 
         ".song .big{font-size:18px;font-weight:600;margin:0 0 6px}"
         "table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}"
         "td,th{text-align:left;padding:3px 6px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}"
-        "tr.on td{font-weight:600}"
+        "tr.on td{font-weight:600}th.narrow{width:52px}th.chance{width:62px}"
+        "button,select{font:inherit;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);"
+        "border-radius:6px;padding:3px 9px;cursor:pointer}button:disabled,select:disabled{opacity:.5;cursor:wait}"
+        "button.play{min-width:32px}.status:empty{display:none}"
         ".pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pair figure{margin:0;padding:3px;border-radius:10px;"
         "border:2px solid transparent}.pair figure.on{border-color:#8cc45e}figcaption{font-size:13px;text-align:center}"
         "pre{white-space:pre-wrap;font:13px/1.45 system-ui;background:var(--bg);border-radius:8px;padding:10px}</style>"
         f"<h1>v{html.escape(version)}: social posts</h1>"
         f"<p class=k>Rendered by dp-relay's own code at {html.escape(relay_ref)}. Hashtags rotate by the update's place in the "
-        "live list, so the five shown here can differ from the ones that post.</p>" + "".join(cards)
+        "live list, so the five shown here can differ from the ones that post.</p>" + "".join(cards) + SONG_SCRIPT
     )
+
+
+SET_SOCIAL_MUSIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "set-social-music.py")
+MAX_BODY = 4096
+
+
+class Preview:
+    """The rendered site and what it was rendered from, so the song card can re-render one update or play a track."""
+
+    def __init__(self, target: str, relay_copy: str, site: str, env: dict, entries: list[dict], version: str,
+                 relay_ref: str) -> None:
+        self.target, self.relay_copy, self.site, self.env = target, relay_copy, site, env
+        self.entries, self.version, self.relay_ref = entries, version, relay_ref
+        self.posts: list[dict] = []
+        self.lock = threading.Lock()
+
+    def render(self, entries: list[dict]) -> list[dict]:
+        """Run the relay's builders over `entries`; their posts replace any earlier ones of the same id."""
+        listing = os.path.join(self.target, "entries.json")
+        with open(listing, "w", encoding="utf-8") as f:
+            json.dump(entries, f)
+        out = os.path.join(self.target, "render")
+        os.makedirs(out, exist_ok=True)
+        subprocess.run(["node", "preview-driver.js", listing, out], cwd=self.relay_copy, env=self.env, check=True)
+        with open(os.path.join(out, "posts.json"), encoding="utf-8") as f:
+            fresh = json.load(f)
+        for e in entries:  # move each update's files into the site, replacing its old ones
+            src, dst = os.path.join(out, e["id"]), os.path.join(self.site, e["id"])
+            if os.path.isdir(src):
+                shutil.rmtree(dst, ignore_errors=True)
+                shutil.move(src, dst)
+        self.posts = list({**{p["id"]: p for p in self.posts}, **{p["id"]: p for p in fresh}}.values())
+        with open(os.path.join(self.site, "index.html"), "w", encoding="utf-8") as f:
+            f.write(page(self.version, self.posts, self.entries, self.relay_ref))
+        return fresh
+
+    def entry(self, entry_id: str) -> dict:
+        found = next((e for e in self.entries if e["id"] == entry_id), None)
+        if found is None:
+            raise ValueError(f"no update '{entry_id}' in this preview")
+        return found
+
+    def check_track(self, track_id: str) -> str:
+        if track_id not in track_ids(self.posts):
+            raise ValueError(f"no track '{track_id}' on the song card")
+        return track_id
+
+    def use(self, entry_id: str, track_id: str) -> None:
+        """Re-render one update's posts with `track_id` as its song (from that track's own start)."""
+        e, track = self.entry(entry_id), self.check_track(track_id)
+        with self.lock:
+            changed = {k: v for k, v in e.items() if k != "start"}
+            changed["track"] = track
+            self.entries = [changed if x["id"] == entry_id else x for x in self.entries]
+            self.render([changed])
+
+    def listen(self, track_id: str) -> bytes:
+        """The relay's 12 s preview of a track, made once and kept for the session."""
+        track = self.check_track(track_id)
+        cache = os.path.join(self.target, "listen", f"{track}.m4a")
+        if not os.path.exists(cache):
+            os.makedirs(os.path.dirname(cache), exist_ok=True)
+            run = subprocess.run(["node", "preview-listen.js", track, cache], cwd=self.relay_copy, env=self.env,
+                                 capture_output=True, text=True, timeout=120)
+            if run.returncode != 0:
+                raise RuntimeError(run.stderr.strip() or f"no preview for {track}")
+        with open(cache, "rb") as f:
+            return f.read()
+
+    def pin(self, entry_id: str, track_id: str) -> str:
+        """Pin the song on the live relay with set-social-music.py, exactly as running it by hand does."""
+        self.entry(entry_id)
+        track = self.check_track(track_id)
+        run = subprocess.run([sys.executable, SET_SOCIAL_MUSIC, "--entry", entry_id, "--track", track],
+                             capture_output=True, text=True, timeout=180)
+        if run.returncode != 0:
+            raise RuntimeError(run.stderr.strip() or run.stdout.strip() or "set-social-music.py failed")
+        return run.stdout.strip()
+
+
+def handler_for(preview: Preview) -> type:
+    """Static files from the site, plus the song card's /api/listen, /api/use and /api/pin."""
+
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, directory=preview.site, **kwargs)
+
+        def end_headers(self) -> None:
+            self.send_header("Cache-Control", "no-store")  # a re-render keeps the file names
+            super().end_headers()
+
+        def reply(self, status: int, body: bytes, kind: str) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", kind)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def reply_json(self, status: int, obj: dict) -> None:
+            self.reply(status, json.dumps(obj).encode(), "application/json")
+
+        def do_GET(self) -> None:
+            if not self.path.startswith("/api/listen/"):
+                super().do_GET()
+                return
+            name = urllib.parse.unquote(self.path[len("/api/listen/"):].split("?", 1)[0])
+            try:
+                self.reply(200, preview.listen(name.removesuffix(".m4a")), "audio/mp4")
+            except ValueError as e:
+                self.reply_json(404, {"error": str(e)})
+            except (RuntimeError, OSError, subprocess.TimeoutExpired) as e:
+                print(f"listen {name} failed: {e}", file=sys.stderr)
+                self.reply_json(500, {"error": f"could not make the preview: {e}"})
+
+        def do_POST(self) -> None:
+            action = {"/api/use": preview.use, "/api/pin": preview.pin}.get(self.path)
+            if action is None:
+                self.reply_json(404, {"error": "no such action"})
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if not 0 < length <= MAX_BODY:
+                    raise ValueError("bad request body")
+                body = json.loads(self.rfile.read(length))
+                entry, track = body.get("entry"), body.get("track")
+                if not isinstance(entry, str) or not isinstance(track, str):
+                    raise ValueError("entry and track are needed")
+                output = action(entry, track)
+                self.reply_json(200, {"ok": True, "output": output or ""})
+            except (ValueError, json.JSONDecodeError) as e:
+                self.reply_json(400, {"error": str(e)})
+            except (RuntimeError, OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                print(f"{self.path} failed: {e}", file=sys.stderr)
+                self.reply_json(500, {"error": str(e)})
+
+    return Handler
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -413,22 +667,17 @@ def main(argv: list[str] | None = None) -> int:
             extract_relay(args.relay, relay_copy, args.relay_ref)
             with open(os.path.join(relay_copy, "preview-driver.js"), "w", encoding="utf-8") as f:
                 f.write(DRIVER)
-            listing = os.path.join(target, "entries.json")
-            with open(listing, "w", encoding="utf-8") as f:
-                json.dump(entries, f)
+            with open(os.path.join(relay_copy, "preview-listen.js"), "w", encoding="utf-8") as f:
+                f.write(LISTEN_DRIVER)
             env = {**os.environ, "RELAY_DB_DIR": os.path.join(target, "db")}
             os.makedirs(env["RELAY_DB_DIR"])
             # The relay keeps tracks in <RELAY_DB_DIR>/mc-music; keep them between runs instead of refetching.
             cache = os.path.expanduser("~/.cache/dungeontrain/mc-music")
             os.makedirs(cache, exist_ok=True)
             os.symlink(cache, os.path.join(env["RELAY_DB_DIR"], "mc-music"))
-            subprocess.run(["node", "preview-driver.js", listing, site], cwd=relay_copy, env=env, check=True)
-            with open(os.path.join(site, "posts.json"), encoding="utf-8") as f:
-                posts = json.load(f)
-            with open(os.path.join(site, "index.html"), "w", encoding="utf-8") as f:
-                f.write(page(version, posts, entries, args.relay_ref))
-            handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=site)
-            with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler) as server:
+            preview = Preview(target, relay_copy, site, env, entries, version, args.relay_ref)
+            posts = preview.render(entries)
+            with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(preview)) as server:
                 print(f"v{version}, {len(posts)} post(s)")
                 print(f"Social posts: http://127.0.0.1:{args.port}/", flush=True)
                 server.serve_forever()

@@ -124,5 +124,73 @@ class Clip(unittest.TestCase):
         self.assertIn("at dev/x", page)
 
 
+VIBES_POST = {
+    **POST,
+    "music": {**POST["music"], "vibes": [
+        {"id": "adventure", "label": "Adventure", "tracks": POST["music"]["others"]},
+        {"id": "dark", "label": "Dark", "tracks": [{"id": "rubedo", "title": "Rubedo", "composer": "Lena Raine",
+                                                     "chance": 16.6}]},
+    ]},
+}
+
+
+class SongPicker(unittest.TestCase):
+    def test_every_track_plays_and_others_can_be_used(self):
+        card = preview.music_block(VIBES_POST)
+        for track in ("beginning_2", "moog_city_2", "rubedo"):
+            self.assertIn(f'data-act=play data-track="{track}"', card)
+        self.assertIn('data-act=use data-entry="drifting-engine-block" data-track="moog_city_2"', card)
+        self.assertNotIn('data-act=use data-entry="drifting-engine-block" data-track="beginning_2"', card,
+                         "the song in use has no Use button")
+        self.assertIn("in use", card)
+
+    def test_pin_button_pins_the_current_song(self):
+        self.assertIn('data-act=pin data-entry="drifting-engine-block" data-track="beginning_2"',
+                      preview.music_block(VIBES_POST))
+
+    def test_vibe_menu_shows_the_updates_vibe_first_and_hides_the_rest(self):
+        card = preview.music_block(VIBES_POST)
+        self.assertIn('<option value="adventure" selected>Adventure (this update)</option>', card)
+        self.assertIn('<table data-vibe="adventure">', card)
+        self.assertIn('<table data-vibe="dark" hidden>', card)
+
+    def test_an_old_driver_without_vibes_lists_the_updates_vibe(self):
+        self.assertEqual(preview.track_ids([POST]), {"beginning_2", "moog_city_2"})
+        self.assertEqual(preview.track_ids([VIBES_POST]), {"beginning_2", "moog_city_2", "rubedo"})
+
+    def test_the_page_carries_the_button_script(self):
+        page = preview.page("0.1.0", [{**VIBES_POST, "title": "T", "captions": {"facebook": "f", "instagram": "i"}}],
+                            [{"id": POST["id"], "title": "T", "summary": "S"}])
+        self.assertIn("/api/listen/", page)
+        self.assertIn("confirm(", page, "pinning asks first")
+
+
+class PickerServer(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        entry = {"id": POST["id"], "title": "T", "summary": "S", "start": 12.0}
+        self.p = preview.Preview(self.dir, self.dir, self.dir, {}, [entry], "0.1.0", "origin/main")
+        self.p.posts = [VIBES_POST]
+        self.rendered = []
+        self.p.render = lambda entries: self.rendered.append(entries) or []
+
+    def test_use_re_renders_that_update_with_the_track_from_its_own_start(self):
+        self.p.use(POST["id"], "rubedo")
+        [[e]] = self.rendered
+        self.assertEqual(e["track"], "rubedo")
+        self.assertNotIn("start", e, "the old track's start doesn't carry over")
+        self.assertEqual(self.p.entries[0]["track"], "rubedo")
+
+    def test_unknown_updates_and_tracks_are_refused_before_anything_runs(self):
+        for entry, track in (("nope", "rubedo"), (POST["id"], "../../etc/passwd"), (POST["id"], "not_a_track")):
+            with self.assertRaises(ValueError):
+                self.p.use(entry, track)
+            with self.assertRaises(ValueError):
+                self.p.pin(entry, track)
+            with self.assertRaises(ValueError):
+                self.p.listen(track) if entry == POST["id"] else self.p.entry(entry)
+        self.assertEqual(self.rendered, [])
+
+
 if __name__ == "__main__":
     unittest.main()
