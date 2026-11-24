@@ -96,13 +96,16 @@ differ from the ones that post. Stop it when you are done.
 #### The song
 
 An animated picture's video goes out with a song (Minecraft music, credited in the caption). The
-preview's **Song** card shows which one, from where it starts, and the other tracks in that vibe.
-Play the Instagram video with sound and agree the song with Brennan:
+preview's **Song** card shows which one, from where it starts, and every track by vibe.
+Play the Instagram video with sound and agree the song with Brennan. On the card:
 
-- another track: rerun with `--music <entry-id>=<track-id>` (ids are in the card's track list)
-- another vibe: rerun with `--vibe <entry-id>=<hype|adventure|cozy|dreamy|dark>`
+- **▶** plays any track's 12 s preview from where it starts; the vibe menu lists the other vibes' tracks
+- **Use** re-renders that update's videos with the track (up to a minute), so you hear it under the clip
+- **Pin to update** pins the song in use on the live relay (it asks first), the same as the command below
 
-Then pin it, so the relay posts that exact song rather than drawing one from the vibe:
+From the command line instead: rerun with `--music <entry-id>=<track-id>` or
+`--vibe <entry-id>=<hype|adventure|cozy|dreamy|dark>`. Either way, pin it, so the relay posts that
+exact song rather than drawing one from the vibe:
 
 ```bash
 python3 scripts/release-notes/set-social-music.py --entry <entry-id> --track <track-id>
