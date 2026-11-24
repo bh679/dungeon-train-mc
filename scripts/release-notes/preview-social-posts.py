@@ -187,15 +187,29 @@ SONG_SCRIPT = r"""
 (() => {
   const audio = new Audio();
   let playing = null;
+  // Messages go below the track tables and only errors and results are written, so the buttons never move.
   const say = (card, msg) => { card.querySelector('.status').textContent = msg; };
-  const stop = () => { if (playing) playing.textContent = '▶'; playing = null; };
+  const rowOf = (b) => b.closest('.bar');
+  const bar = (row, p) => row.style.setProperty('--p', `${p}%`);
+  const stop = () => {
+    if (!playing) return;
+    const row = rowOf(playing);
+    row.classList.remove('loading');
+    bar(row, 0);
+    playing.textContent = '▶';
+    playing = null;
+  };
   audio.addEventListener('ended', stop);
+  audio.addEventListener('playing', () => { if (playing) rowOf(playing).classList.remove('loading'); });
+  audio.addEventListener('timeupdate', () => {
+    if (playing && audio.duration) bar(rowOf(playing), Math.min(100, (audio.currentTime / audio.duration) * 100));
+  });
   try { const y = sessionStorage.getItem('dt-preview-y'); if (y) { scrollTo(0, +y); sessionStorage.removeItem('dt-preview-y'); } }
   catch (e) { /* no storage: start at the top */ }
   document.addEventListener('change', (ev) => {
     const menu = ev.target.closest('select[data-vibes]');
     if (!menu) return;
-    menu.closest('.song').querySelectorAll('table[data-vibe]').forEach((t) => { t.hidden = t.dataset.vibe !== menu.value; });
+    menu.closest('.song').querySelectorAll('.tracks[data-vibe]').forEach((t) => { t.hidden = t.dataset.vibe !== menu.value; });
   });
   document.addEventListener('click', async (ev) => {
     const b = ev.target.closest('button[data-act]');
@@ -203,20 +217,23 @@ SONG_SCRIPT = r"""
     const card = b.closest('.song');
     const { act, track, entry, title } = b.dataset;
     if (act === 'play') {
-      if (playing === b) { audio.pause(); stop(); say(card, ''); return; }
+      if (playing === b) { audio.pause(); stop(); return; }
       audio.pause(); stop();
+      say(card, '');
       playing = b; b.textContent = '■';
-      say(card, `Loading ${title}…`);
+      rowOf(b).classList.add('loading');
       audio.src = `/api/listen/${encodeURIComponent(track)}.m4a`;
-      try { await audio.play(); say(card, `Playing ${title}: 12 s from where it starts.`); }
-      catch (e) { stop(); say(card, `Could not play ${title}: ${e.message}`); }
+      try { await audio.play(); }
+      catch (e) { if (playing === b) { stop(); say(card, `Could not play ${title}: ${e.message}`); } }
       return;
     }
     if (act === 'pin' && !confirm(`Pin ${title} to this update on the live relay? Its posts will use this song.`)) return;
     audio.pause(); stop();
+    say(card, '');
+    const row = rowOf(b);
     const buttons = card.querySelectorAll('button, select');
     buttons.forEach((x) => { x.disabled = true; });
-    say(card, act === 'use' ? `Rendering the videos with ${title}… (up to a minute)` : `Pinning ${title} on the live relay…`);
+    row.classList.add('loading');
     try {
       const r = await fetch(`/api/${act}`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entry, track }) });
@@ -231,6 +248,7 @@ SONG_SCRIPT = r"""
     } catch (e) {
       say(card, `${act === 'use' ? 'Render' : 'Pin'} failed: ${e.message}`);
     } finally {
+      row.classList.remove('loading');
       buttons.forEach((x) => { x.disabled = false; });
     }
   });
@@ -396,17 +414,17 @@ def music_block(post: dict) -> str:
     pin = f"python3 scripts/release-notes/set-social-music.py --entry {post['id']} --track {m['id']}"
     return (
         "<div class='card song'><h3>Song</h3>"
-        f"<p class=big>{_play_button(m['id'], m['title'])} {html.escape(m['title'])} "
+        f"<p class='big bar'>{_play_button(m['id'], m['title'])} {html.escape(m['title'])} "
         f"<span class=k>by {html.escape(m['composer'])}, from {start // 60}:{start % 60:02d}</span></p>"
         f"<p class=k>{html.escape(how)}. Vibe: <b>{html.escape(m['vibe'])}</b>, {vibe_from}. "
         + ("Play the videos above with sound: the clip's own sound, the song 10 dB under it.</p>"
            if m.get("clip") else "Play the Instagram video above with sound to hear it.</p>")
         + f"<p class=k>Caption credit: {html.escape(m['credit'])}</p>"
-        f"<p><button data-act=pin data-entry=\"{entry}\" data-track=\"{html.escape(m['id'], quote=True)}\" "
+        f"<p class=bar><button data-act=pin data-entry=\"{entry}\" data-track=\"{html.escape(m['id'], quote=True)}\" "
         f"data-title=\"{html.escape(m['title'], quote=True)}\">Pin to update</button> "
         "<span class=k>sets it on the live relay, as the command below does</span></p>"
-        f"<pre>{html.escape(pin)}</pre><p class='k status' aria-live=polite></p>"
-        f"{_vibe_tables(post['id'], m)}</div>"
+        f"<pre>{html.escape(pin)}</pre>"
+        f"{_vibe_tables(post['id'], m)}<p class='k status' aria-live=polite></p></div>"
     )
 
 
@@ -429,17 +447,18 @@ def _vibe_tables(entry_id: str, m: dict) -> str:
         f"{html.escape(v['label'])}{' (this update)' if v['id'] == m['vibe'] else ''}</option>" for v in vibes)
     tables = []
     for v in vibes:
+        # Grid rows, not a <table>: a row's background (the loading and playback bar) paints across the whole row.
         rows = "".join(
-            f"<tr{' class=on' if t['id'] == m['id'] else ''}><td>{_play_button(t['id'], t['title'])}</td>"
-            f"<td>{html.escape(t['title'])}</td><td>{html.escape(t['composer'])}</td><td>{t['chance']}%</td>"
-            "<td>" + ("in use" if t["id"] == m["id"] else
-                      f"<button data-act=use data-entry=\"{entry}\" data-track=\"{html.escape(t['id'], quote=True)}\" "
-                      f"data-title=\"{html.escape(t['title'], quote=True)}\">Use</button>") + "</td></tr>"
+            f"<div class='row bar{' on' if t['id'] == m['id'] else ''}'><span>{_play_button(t['id'], t['title'])}</span>"
+            f"<span>{html.escape(t['title'])}</span><span>{html.escape(t['composer'])}</span><span>{t['chance']}%</span>"
+            "<span>" + ("in use" if t["id"] == m["id"] else
+                        f"<button data-act=use data-entry=\"{entry}\" data-track=\"{html.escape(t['id'], quote=True)}\" "
+                        f"data-title=\"{html.escape(t['title'], quote=True)}\">Use</button>") + "</span></div>"
             for t in v["tracks"])
         hidden = "" if v["id"] == m["vibe"] else " hidden"
-        tables.append(f"<table data-vibe=\"{html.escape(v['id'], quote=True)}\"{hidden}>"
-                      "<tr><th class=narrow></th><th>Track</th><th>Composer</th><th class=chance>Chance</th><th class=narrow></th></tr>"
-                      f"{rows}</table>")
+        tables.append(f"<div class=tracks data-vibe=\"{html.escape(v['id'], quote=True)}\"{hidden}>"
+                      "<div class='row head'><span></span><span>Track</span><span>Composer</span><span>Chance</span>"
+                      f"<span></span></div>{rows}</div>")
     return (f"<p class=k>Listen to any track, or Use one to re-render this update's videos with it:</p>"
             f"<p><select data-vibes aria-label=Vibe>{options}</select></p>{''.join(tables)}")
 
@@ -480,10 +499,19 @@ def page(version: str, posts: list[dict], entries: list[dict], relay_ref: str = 
         ".song .big{font-size:18px;font-weight:600;margin:0 0 6px}"
         "table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}"
         "td,th{text-align:left;padding:3px 6px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}"
-        "tr.on td{font-weight:600}th.narrow{width:52px}th.chance{width:62px}"
+        "tr.on td{font-weight:600}"
+        ".tracks{font-size:13px}.tracks[hidden]{display:none}"
+        ".row{display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1fr) 54px 46px;gap:4px;align-items:center;"
+        "padding:4px 6px;border-bottom:1px solid var(--line);border-radius:6px}.row span{overflow-wrap:break-word;min-width:0}"
+        ".row.head{font-weight:600}.row.on{font-weight:600}"
         "button,select{font:inherit;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);"
         "border-radius:6px;padding:3px 9px;cursor:pointer}button:disabled,select:disabled{opacity:.5;cursor:wait}"
-        "button.play{min-width:32px}.status:empty{display:none}"
+        "button.play{min-width:32px}.status{min-height:1.5em;margin:8px 0 0}"
+        # Loading and playback show as a bar behind the row, so nothing above the buttons moves.
+        ".song .bar{--p:0%;background:linear-gradient(90deg,rgba(140,196,94,.28) var(--p),transparent var(--p))}"
+        ".song .loading{background:linear-gradient(90deg,transparent 0,rgba(140,196,94,.3) 50%,transparent 100%)"
+        " 0 0/40% 100% no-repeat;animation:dtbar 1.1s linear infinite}"
+        "@keyframes dtbar{from{background-position:-40% 0}to{background-position:140% 0}}"
         ".pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pair figure{margin:0;padding:3px;border-radius:10px;"
         "border:2px solid transparent}.pair figure.on{border-color:#8cc45e}figcaption{font-size:13px;text-align:center}"
         "pre{white-space:pre-wrap;font:13px/1.45 system-ui;background:var(--bg);border-radius:8px;padding:10px}</style>"

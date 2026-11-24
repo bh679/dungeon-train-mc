@@ -151,8 +151,8 @@ class SongPicker(unittest.TestCase):
     def test_vibe_menu_shows_the_updates_vibe_first_and_hides_the_rest(self):
         card = preview.music_block(VIBES_POST)
         self.assertIn('<option value="adventure" selected>Adventure (this update)</option>', card)
-        self.assertIn('<table data-vibe="adventure">', card)
-        self.assertIn('<table data-vibe="dark" hidden>', card)
+        self.assertIn('<div class=tracks data-vibe="adventure">', card)
+        self.assertIn('<div class=tracks data-vibe="dark" hidden>', card)
 
     def test_an_old_driver_without_vibes_lists_the_updates_vibe(self):
         self.assertEqual(preview.track_ids([POST]), {"beginning_2", "moog_city_2"})
