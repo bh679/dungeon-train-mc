@@ -169,6 +169,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             int giveY = y + rowH - PAD - GIVE_H;
             for (int i = start; i < end; i++) {
                 CommunityRewards.Reward r = all[i];
+                if (CommunityRewards.devPaid(state, r, now)) continue; // nothing to give
                 int cx = colX + (i - start) * (cardW + GAP);
                 Button b = ContributePanel.giveButton(r, CommunityRewards.giftRunning(state, r, now), state, now,
                         cx + PAD, giveY, cardW - PAD * 2, GIVE_H, links, false);
@@ -352,12 +353,18 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty = Math.max(ty, iconTop + ICON + 1);
         // The amount is on the Give button; the yellow line only says who it is for.
         ty = wrap(Component.translatable("gui.dungeontrain.contribute.keeps_on"), tx, ty, tw, COLOUR_AMOUNT);
+        // A dev-paid reward has no Give button, so no dev share, raised line or button room either.
+        boolean devPaid = CommunityRewards.devPaid(state, r, now);
         // "$9 goes to the dev", grey, under "For everyone" when the relay says it.
-        Component toDev = CommunityRewards.devShareLine(r);
+        Component toDev = devPaid ? null : CommunityRewards.devShareLine(r);
         if (toDev != null) ty = wrap(toDev, tx, ty, tw, COLOUR_SUB);
         ty += 2;
         ty += 2;
         ty = wrap(ContributePanel.lineOf(r), tx, ty, tw, COLOUR_LINE);
+        if (devPaid) {
+            ty = wrap(ContributePanel.paidBy(state.find(r.id())), tx, ty + 2, tw, ContributePanel.COLOUR_ON);
+            return ty - y + PAD;
+        }
         if (CommunityRewards.onFreeCredits(state, r, now)) {
             ty = wrap(ContributePanel.freeThanks(state.find(r.id())), tx, ty + 2, tw, ContributePanel.COLOUR_ON);
         }
@@ -385,7 +392,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         Map<String, List<Component>> byGiver = new LinkedHashMap<>();
         for (CommunityRewards.Reward r : CommunityRewards.Reward.values()) {
             LiveRewards.Reward live = state.find(r.id());
-            if (live == null || live.activeUntilMs() <= now) continue;
+            if (live == null || live.activeUntilMs() <= now || live.devPaid()) continue; // its card says who pays
             if (!live.by().isEmpty()) {
                 byGiver.computeIfAbsent(live.by(), k -> new ArrayList<>()).add(Component.translatable(r.nameKey()));
             }

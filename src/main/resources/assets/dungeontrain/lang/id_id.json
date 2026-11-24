@@ -1707,6 +1707,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "AKTIF %s jam lagi · berkat %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "AKTIF sampai besok · berkat %s",
   "gui.dungeontrain.rewards.status.free_thanks": "Aktif sekarang, berkat %s",
+  "gui.dungeontrain.rewards.status.paid_by": "AKTIF · dibayar oleh %s",
   "gui.dungeontrain.rewards.give.soon": "Segera",
   "gui.dungeontrain.rewards.give.amount": "Donasi %s",
   "gui.dungeontrain.rewards.raised": "Lebih tinggi selama %s aktif",

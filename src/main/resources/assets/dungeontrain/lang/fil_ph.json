@@ -1707,6 +1707,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "BUKAS pa nang %s oras · salamat kay %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "BUKAS hanggang bukas · salamat kay %s",
   "gui.dungeontrain.rewards.status.free_thanks": "Live na ngayon, salamat kay %s",
+  "gui.dungeontrain.rewards.status.paid_by": "BUKAS · binabayaran ni %s",
   "gui.dungeontrain.rewards.give.soon": "Malapit Na",
   "gui.dungeontrain.rewards.give.amount": "Ibigay %s",
   "gui.dungeontrain.rewards.raised": "Mas mataas habang naka-on ang %s",
