@@ -90,6 +90,27 @@ final class PoolSelection {
 
     // ---- parsing --------------------------------------------------------------
 
+    /**
+     * The held photos a Kid-mode pool answer says to drop ({@code notKidSafe}): photos reported, or kept
+     * adults-only, after this game fetched them. Empty for an adult answer or an older relay.
+     */
+    static Set<Integer> parseNotKidSafe(String body) {
+        JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+        Set<Integer> ids = new HashSet<>();
+        if (json.has("notKidSafe") && json.get("notKidSafe").isJsonArray()) {
+            for (var id : json.getAsJsonArray("notKidSafe")) {
+                if (id.isJsonPrimitive() && id.getAsJsonPrimitive().isNumber()) ids.add(id.getAsInt());
+            }
+        }
+        return ids;
+    }
+
+    /** {@code photos} without the ids in {@code drop}; the same list when there is nothing to drop. */
+    static List<PoolPhoto> without(List<PoolPhoto> photos, Set<Integer> drop) {
+        if (drop.isEmpty()) return photos;
+        return photos.stream().filter(p -> !drop.contains(p.id())).toList();
+    }
+
     /** The rows of a pool answer, in the relay's order; {@code onTotal} hears the archive's size. */
     static List<Row> parseRows(String body, IntConsumer onTotal) {
         JsonObject json = JsonParser.parseString(body).getAsJsonObject();

@@ -38954,6 +38954,80 @@
       "released": true,
       "released_in": "v0.1992.0",
       "released_at": "2026-11-24T07:26:04Z"
+    },
+    {
+      "id": "community-names-every-language",
+      "version": "0.1994.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "mobs"
+      ],
+      "title": "Community names now appear in every language",
+      "summary": "Community names now appear in every language.",
+      "highlights": [],
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1997.0",
+      "released_at": "2026-11-24T09:46:52Z"
+    },
+    {
+      "id": "more-varied-names-more-languages",
+      "version": "0.1995.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "mobs"
+      ],
+      "title": "More varied names in more languages",
+      "summary": "More varied names in more languages.",
+      "highlights": [],
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1997.0",
+      "released_at": "2026-11-24T09:46:52Z"
+    },
+    {
+      "id": "report-a-photo",
+      "version": "0.1996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Report a photo",
+      "summary": "Found a photo that shouldn't be on the train? A faint warning icon next to Close lets you report it and say why.",
+      "highlights": [
+        "Report a photo for a message written in it, a hate symbol, or something else.",
+        "Photos that enough passengers report are taken off the train while they're checked."
+      ],
+      "pr": 2857,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1997.0",
+      "released_at": "2026-11-24T09:46:52Z"
+    },
+    {
+      "id": "underwater-tunnel-room",
+      "version": "0.1997.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "A new room to find",
+      "summary": "A new room to discover as you ride.",
+      "highlights": [
+        "A new room to discover as you ride"
+      ],
+      "pr": 2858,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1997.0",
+      "released_at": "2026-11-24T09:46:52Z"
     }
   ]
 }
