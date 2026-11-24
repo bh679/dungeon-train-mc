@@ -16,9 +16,9 @@ import org.spongepowered.asm.mixin.injection.At;
  * Gives DT's overworld noise settings VanillaBackport's sulfur-cave surface rule.
  *
  * <p>VanillaBackport 1.2+ wraps this same {@code surfaceRule()} read and merges its rule in only for
- * {@code minecraft:overworld}; this wrap does the same merge for {@code dungeontrain:overworld*}
- * ({@link BackportSurfaceRules}). The two wraps chain, and only one of them ever merges for a given
- * generator, so no rule is added twice.</p>
+ * {@code minecraft:overworld}; this wrap does the same merge for the generators DT owns
+ * ({@link BackportSurfaceRules#needsSulfur}). The two wraps chain, and only one of them ever merges for a
+ * given generator, so no rule is added twice.</p>
  */
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class DtOverworldSulfurRuleMixin {
@@ -41,8 +41,6 @@ public abstract class DtOverworldSulfurRuleMixin {
     private SurfaceRules.RuleSource dungeontrain$sulfurRule(NoiseGeneratorSettings noiseSettings,
                                                            Operation<SurfaceRules.RuleSource> original) {
         SurfaceRules.RuleSource rule = original.call(noiseSettings);
-        return settings.unwrapKey().filter(BackportSurfaceRules::isDtOverworld).isPresent()
-                ? BackportSurfaceRules.withSulfur(rule)
-                : rule;
+        return BackportSurfaceRules.needsSulfur(settings) ? BackportSurfaceRules.withSulfur(rule) : rule;
     }
 }

@@ -35,9 +35,13 @@ Audited 2026-11-25 from the pinned jars, using [`../newmod.md`](../newmod.md). A
   paths (`block_entities`, `entities.mob.monster.creaking`, `WorldUtilities$EnvironmentUtils/$SpawnUtils`).
   Every hooked method and call site exists. The `ConfigValue.get()` wrap in `CreakingHeartSettingsMixin` sees only
   `doCreakingHeartsWorkOnDay` in 1.2.2, so its Boolean answer stays type-safe.
-- **Sulfur surface rule.** 1.2 merges it at surface-build time for `minecraft:overworld` only, which would leave
-  DT's Nether-exit sulfur caves as plain stone. `mixin/vanillabackport/DtOverworldSulfurRuleMixin` repeats the
-  merge for `dungeontrain:overworld*`.
+- **Sulfur surface rule.** 1.1 baked it into every `NoiseGeneratorSettings`; 1.2 merges it at surface-build time
+  for `minecraft:overworld` only. `mixin/vanillabackport/DtOverworldSulfurRuleMixin` repeats the merge for
+  `dungeontrain:overworld*` and for the unregistered settings DT builds (legacy bands, portal rooms, samplers).
+  Verified on a dev server, seed 424242, the two Nether-exit caves past the first Nether core: 206 sulfur / 1755
+  cinnabar and 1470 / 3343, identical to `main` on 1.1.7.10; with the wrap disabled, 0 and 0.
+- **Pale oak boats.** 1.2 drops the `pale_oak_boat` / `pale_oak_chest_boat` entity types (the items stay). A pale
+  oak boat already placed in a world made on 1.1.7.10 is lost when the world loads. DT references neither id.
 - **TerraBlender region** still `vanillabackport:overworld`, so `RegionsMixin`'s veto is unchanged.
 - **Mixins** grow from 76 to 167. 19 vanilla classes are newly patched by both VB and DT (`AbstractHorse`,
   `BaseContainerBlockEntity`, `ClientLevel`, `EnchantmentHelper`, `EnderMan`, `GameRenderer`, `Gui`, `Level`,

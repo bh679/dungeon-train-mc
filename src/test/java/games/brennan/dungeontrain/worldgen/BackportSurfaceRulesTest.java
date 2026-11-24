@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.event.VanillaBackportSurfaceRuleCheck;
 import net.minecraft.SharedConstants;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderOwner;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -35,6 +37,24 @@ class BackportSurfaceRulesTest {
         assertFalse(BackportSurfaceRules.isDtOverworld(key("minecraft", "overworld")));
         assertFalse(BackportSurfaceRules.isDtOverworld(key("dungeontrain", "nether")));
         assertFalse(BackportSurfaceRules.isDtOverworld(null));
+    }
+
+    @Test
+    void dtGeneratorsGetTheRuleAndVanillaOverworldIsLeftToVanillaBackport() {
+        HolderOwner<NoiseGeneratorSettings> owner = new HolderOwner<>() {};
+        assertTrue(BackportSurfaceRules.needsSulfur(
+                Holder.Reference.createStandAlone(owner, key("dungeontrain", "overworld_y16"))));
+        assertFalse(BackportSurfaceRules.needsSulfur(
+                Holder.Reference.createStandAlone(owner, key("minecraft", "overworld"))));
+        assertFalse(BackportSurfaceRules.needsSulfur(
+                Holder.Reference.createStandAlone(owner, key("minecraft", "nether"))));
+        assertFalse(BackportSurfaceRules.needsSulfur(null));
+    }
+
+    @Test
+    void unregisteredSettingsCountAsDts() {
+        NoiseGeneratorSettings any = NoiseGeneratorSettings.dummy();
+        assertTrue(BackportSurfaceRules.needsSulfur(Holder.direct(any)));
     }
 
     @Test
