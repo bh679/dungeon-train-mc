@@ -1,0 +1,19 @@
+{
+  "id": "lucky-mob-gear",
+  "version": "0.1992.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "loot",
+    "balance"
+  ],
+  "title": "Some mobs carry better gear",
+  "summary": "Now and then a monster on the train carries gear far better than its neighbours', close to what you'd find in a chest, and it drops that gear much more often.",
+  "highlights": [],
+  "pr": 2853,
+  "date": "2026-11-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
