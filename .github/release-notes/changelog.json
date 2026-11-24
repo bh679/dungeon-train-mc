@@ -38901,6 +38901,59 @@
       "released": true,
       "released_in": "v0.1990.0",
       "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "localized-playermob-names-read-naturally",
+      "version": "0.1993.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "mobs"
+      ],
+      "title": "Player-like names read more naturally in every language",
+      "summary": "Player-like names read more naturally in every language.",
+      "highlights": [],
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1992.0",
+      "released_at": "2026-11-24T07:26:04Z"
+    },
+    {
+      "id": "lucky-mob-gear",
+      "version": "0.1992.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Some mobs carry better gear",
+      "summary": "Now and then a monster on the train carries gear far better than its neighbours', close to what you'd find in a chest, and it drops that gear much more often.",
+      "highlights": [],
+      "pr": 2853,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1992.0",
+      "released_at": "2026-11-24T07:26:04Z"
+    },
+    {
+      "id": "mobs-skip-carpet-doors",
+      "version": "0.1991.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs leave carpet and doors alone",
+      "summary": "Mobs that dig their way to you no longer tear up carpet they could step over or doors they could walk through. They open wooden doors like you would, and only break a carpet when it is really what stops them getting through.",
+      "highlights": [],
+      "pr": 2852,
+      "date": "2026-11-24",
+      "released": true,
+      "released_in": "v0.1992.0",
+      "released_at": "2026-11-24T07:26:04Z"
     }
   ]
 }
