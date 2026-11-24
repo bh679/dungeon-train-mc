@@ -47,4 +47,15 @@ class LiveRewardsTest {
         assertTrue(r.find(LiveRewards.LIVE_TRANSLATION).free());
         assertFalse(r.find(LiveRewards.QUICKER_STREAMS).free());
     }
+
+    @Test
+    void devPaidIsReadWhenSentAndFalseWhenNot() {
+        LiveRewards r = LiveRewards.parseBody("{\"rewards\":["
+            + "{\"id\":\"voice_on_stream\",\"activeUntil\":" + (NOW + 1000) + ",\"by\":\"Brennan\",\"queued\":[],\"devPaid\":true},"
+            + "{\"id\":\"quicker_streams\",\"activeUntil\":" + (NOW + 1000) + ",\"by\":\"Kestrel\"}]}");
+        assertTrue(r.find(LiveRewards.VOICE_ON_STREAM).devPaid());
+        assertFalse(r.find(LiveRewards.VOICE_ON_STREAM).free());
+        assertEquals("Brennan", r.find(LiveRewards.VOICE_ON_STREAM).by());
+        assertFalse(r.find(LiveRewards.QUICKER_STREAMS).devPaid());
+    }
 }

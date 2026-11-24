@@ -1757,6 +1757,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.other": "ACTIVO %s horas más · gracias a %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "ACTIVO hasta mañana · gracias a %s",
   "gui.dungeontrain.rewards.status.free_thanks": "Activo ahora, gracias a %s",
+  "gui.dungeontrain.rewards.status.paid_by": "ACTIVO · pagado por %s",
   "gui.dungeontrain.rewards.give.soon": "Pronto",
   "gui.dungeontrain.rewards.give.amount": "Dona %s",
   "gui.dungeontrain.rewards.raised": "Más alto mientras %s está activo",

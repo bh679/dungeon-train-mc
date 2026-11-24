@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * The community rewards the server is running, as the relay's donation summary payload carries them
- * ({@code rewards[]}: id, activeUntil, by, queued[], free). Read defensively: the block may not exist yet
+ * ({@code rewards[]}: id, activeUntil, by, queued[], free, devPaid). Read defensively: the block may not exist yet
  * (an older relay, or before the rewards shelf ships), and an absent or malformed block simply means
  * no reward is on. The Live Eye death pages read it to thank a buyer or pitch the next month.
  *
@@ -38,15 +38,20 @@ public record LiveRewards(List<Reward> rewards) {
     /**
      * One reward: on until {@code activeUntilMs} (0 = off), bought by {@code by}, later months queued.
      * {@code free}: on through free credits rather than a gift, so {@code by} is thanked, not a buyer.
+     * {@code devPaid}: the dev pays for it outright ("ON · paid by {@code by}"), so there is nothing to give.
      */
-    public record Reward(String id, long activeUntilMs, String by, List<String> queuedBy, boolean free) {
+    public record Reward(String id, long activeUntilMs, String by, List<String> queuedBy, boolean free, boolean devPaid) {
         public Reward {
             by = by == null ? "" : by;
             queuedBy = List.copyOf(queuedBy == null ? List.of() : queuedBy);
         }
 
+        public Reward(String id, long activeUntilMs, String by, List<String> queuedBy, boolean free) {
+            this(id, activeUntilMs, by, queuedBy, free, false);
+        }
+
         public Reward(String id, long activeUntilMs, String by, List<String> queuedBy) {
-            this(id, activeUntilMs, by, queuedBy, false);
+            this(id, activeUntilMs, by, queuedBy, false, false);
         }
     }
 
@@ -256,7 +261,8 @@ public record LiveRewards(List<Reward> rewards) {
                     else if (q.isJsonObject()) queued.add(str(q.getAsJsonObject(), "by"));
                 }
             }
-            out.add(new Reward(id, timeOf(o.get("activeUntil")), str(o, "by"), queued, "true".equals(str(o, "free"))));
+            out.add(new Reward(id, timeOf(o.get("activeUntil")), str(o, "by"), queued,
+                    "true".equals(str(o, "free")), "true".equals(str(o, "devPaid"))));
         }
         return new LiveRewards(out);
     }

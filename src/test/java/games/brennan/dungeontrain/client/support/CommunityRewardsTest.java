@@ -152,4 +152,42 @@ class CommunityRewardsTest {
         assertEquals(0, CommunityRewards.devShareAud(new LiveRewards.Quote(94, 94, List.of(), 0)).getAsInt());
         assertEquals(69, CommunityRewards.devShareAud(new LiveRewards.Quote(90, 90, List.of(), 69)).getAsInt());
     }
+
+    private static LiveRewards.Reward devPaid(String id) {
+        return new LiveRewards.Reward(id, NOW + 7 * DAY, "Brennan", List.of(), false, true);
+    }
+
+    @Test
+    void aDevPaidRewardIsOnButTakesNoGift() {
+        LiveRewards state = new LiveRewards(List.of(devPaid(LiveRewards.VOICE_ON_STREAM)));
+        CommunityRewards.Reward voice = CommunityRewards.Reward.VOICE_ON_STREAM;
+        assertTrue(CommunityRewards.active(state, voice, NOW));
+        assertTrue(CommunityRewards.devPaid(state, voice, NOW));
+        assertFalse(CommunityRewards.giftRunning(state, voice, NOW), "no Give month running");
+        assertFalse(CommunityRewards.onFreeCredits(state, voice, NOW), "not the free-credits line");
+        assertFalse(CommunityRewards.devPaid(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        // Once its term lapses it is just off, never dev-paid.
+        assertFalse(CommunityRewards.devPaid(state, voice, NOW + 8 * DAY));
+    }
+
+    @Test
+    void aDevPaidRewardIsNeverFeatured() {
+        LiveRewards quickerOn = new LiveRewards(List.of(
+                on(LiveRewards.QUICKER_STREAMS, 3 * DAY, "Kestrel"), devPaid(LiveRewards.VOICE_ON_STREAM)));
+        // Voice is next in Brennan's order, but there is nothing to give: Two Streams is featured.
+        assertEquals(CommunityRewards.Reward.TWO_STREAMS, CommunityRewards.featured(quickerOn, NOW));
+        assertEquals(CommunityRewards.Reward.TWO_STREAMS, CommunityRewards.featured(quickerOn, NOW, r -> false));
+        // Even when it is the only reward the open filter lets through (none left: the givable order).
+        assertEquals(CommunityRewards.Reward.TWO_STREAMS, CommunityRewards.featured(quickerOn, NOW,
+                r -> r == CommunityRewards.Reward.VOICE_ON_STREAM));
+        // All on: Voice's term ending soonest still does not make it the featured one.
+        LiveRewards allOn = new LiveRewards(List.of(
+                on(LiveRewards.QUICKER_STREAMS, 20 * DAY, "A"),
+                on(LiveRewards.TWO_STREAMS, 20 * DAY, "B"),
+                devPaid(LiveRewards.VOICE_ON_STREAM),
+                on(LiveRewards.HD_STREAMS, 15 * DAY, "C"),
+                on(LiveRewards.REPLAYS_KEPT, 10 * DAY, "D"),
+                on(LiveRewards.LIVE_TRANSLATION, 12 * DAY, "E")));
+        assertEquals(CommunityRewards.Reward.REPLAYS_KEPT, CommunityRewards.featured(allOn, NOW));
+    }
 }

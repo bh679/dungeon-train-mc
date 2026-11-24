@@ -122,6 +122,7 @@ public final class ContributePreviewCommand {
         switch (state) {
             case "none" -> LiveRewards.preview(LiveRewards.NONE);
             case "some", "give" -> LiveRewards.preview(new LiveRewards(List.of(
+                    new LiveRewards.Reward(LiveRewards.VOICE_ON_STREAM, now + 7 * DAY, "Brennan", List.of(), false, true),
                     new LiveRewards.Reward(LiveRewards.HD_STREAMS, now + 21 * DAY, "Ash", List.of()),
                     new LiveRewards.Reward(LiveRewards.REPLAYS_KEPT, now + 15 * DAY, "Moth", List.of("Kestrel")))));
             case "all", "give-all" -> LiveRewards.preview(new LiveRewards(List.of(
