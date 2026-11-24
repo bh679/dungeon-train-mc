@@ -468,7 +468,9 @@ public final class PortalTestCommand {
                 }
             });
         // The author is about to be stood in it.
-        games.brennan.dungeontrain.portal.PortalChunkDimension.finishPour(overworld, dims, PortalTestSession.PAIR_KEY, structure);
+        // Around where they will stand, as a crossing does; a room of several chunks finishes behind them.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.finishAround(overworld, dims, PortalTestSession.PAIR_KEY,
+            structure, arrival.getX(), arrival.getZ());
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 

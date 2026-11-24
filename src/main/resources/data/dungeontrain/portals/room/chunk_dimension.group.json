@@ -34,6 +34,41 @@
       "id": "chunk_dimension_end_better",
       "weight": 8,
       "minLevel": 13
+    },
+    {
+      "id": "chunk_3x3",
+      "weight": 40,
+      "minLevel": 5
+    },
+    {
+      "id": "chunk_3x3_wwoo",
+      "weight": 32,
+      "minLevel": 5
+    },
+    {
+      "id": "chunk_3x3_bop",
+      "weight": 32,
+      "minLevel": 15
+    },
+    {
+      "id": "chunk_3x3_nether",
+      "weight": 6,
+      "minLevel": 5
+    },
+    {
+      "id": "chunk_3x3_nether_better",
+      "weight": 23,
+      "minLevel": 11
+    },
+    {
+      "id": "chunk_3x3_end",
+      "weight": 2,
+      "minLevel": 5
+    },
+    {
+      "id": "chunk_3x3_end_better",
+      "weight": 6,
+      "minLevel": 13
     }
   ]
 }
