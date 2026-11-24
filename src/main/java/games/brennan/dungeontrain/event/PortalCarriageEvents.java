@@ -2441,7 +2441,8 @@ public final class PortalCarriageEvents {
             // Nobody stands in a room that is still being written: what is left lands now, in the
             // tick they cross.
             if (move.toFrame() == PortalFrames.FRAME_TWIN) {
-                games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, structure);
+                games.brennan.dungeontrain.portal.PortalChunkDimension.finishAround(level, dims, pairKey, structure,
+                    net.minecraft.util.Mth.floor(move.x()), net.minecraft.util.Mth.floor(move.z()));
             }
 
             // Coming out: remember which copy of the room they left from. BASE clears the binding,

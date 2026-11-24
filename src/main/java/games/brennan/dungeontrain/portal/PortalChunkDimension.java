@@ -66,6 +66,20 @@ public final class PortalChunkDimension {
      */
     private static final int DOOR_HEIGHT = 2;
 
+    /** Furthest a grid room's buried doorway is dug inward: half a one-chunk room. */
+    static final int MAX_DOORWAY_DIG = PortalChunkTerrain.SIZE / 2;
+
+    /**
+     * How far in a buried doorway is dug: half the room — except in a room sampled as a grid of
+     * chunks ({@link PortalChunkArea#span}), where a mouth stood a few rows under a hill that keeps
+     * climbing was dug into a trench half the room long (24 blocks through a hillside or a frozen
+     * lake). Those dig no further than a one-chunk room would. Authored rooms keep their own depth.
+     */
+    static int doorwayDigDepth(Vec3i size) {
+        int half = size.getX() / 2;
+        return PortalChunkArea.span(size) > 1 ? Math.min(half, MAX_DOORWAY_DIG) : half;
+    }
+
     /** Pairs whose sampled mobs have already been spawned into their room. */
     private static final java.util.Set<Integer> POPULATED =
         java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -132,13 +146,75 @@ public final class PortalChunkDimension {
         if (PortalCarriageBuilder.footprintReady(level, structure, dims)) finishPour(level, dims, pairKey, structure);
     }
 
+    /**
+     * Make {@code pairKey}'s room safe for someone arriving at world column {@code (worldX, worldZ)},
+     * unless one of its chunks is not there (then the pour carries on as it was, as
+     * {@link #finishPourIfReady} does).
+     *
+     * <p>A one-chunk room, and any authored room, is simply finished: that is a chunk's worth of
+     * writing. A room sampled as a grid of chunks ({@link PortalChunkArea}) is nine times that, and
+     * writing all of it in the tick somebody crossed was a 950 ms tick for a 3x3 Nether. So only the
+     * columns within {@link #ARRIVAL_REACH} of where they land are written now, every row of them;
+     * the rest of the room is left to the pour, which is put in a hurry
+     * ({@link PortalChunkPour#rushed}) so it lands before they can walk out of what is written.</p>
+     */
+    public static void finishAround(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
+                                    int worldX, int worldZ) {
+        PortalChunkPour pour = POURS.get(pairKey);
+        if (pour == null) return;
+        if (PortalChunkArea.span(structure.roomSize()) <= 1) {
+            finishPourIfReady(level, dims, pairKey, structure);
+            return;
+        }
+        long started = System.nanoTime();
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos origin = structure.roomOrigin(dims, layout);
+        int[] xs = arrivalSpan(worldX - origin.getX(), structure.roomSize().getX());
+        int[] zs = arrivalSpan(worldZ - origin.getZ(), structure.roomSize().getZ());
+        int height = structure.roomSize().getY();
+        // Only the chunks this patch is in need to be there: the rest of a 48-wide footprint often is
+        // not yet when someone arrives, and waiting on it left them in an unwritten room.
+        boolean ready = chunksLoaded(level, origin.getX() + xs[0], origin.getX() + xs[1],
+            origin.getZ() + zs[0], origin.getZ() + zs[1]);
+        if (ready && !pour.done(height)) {
+            writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.totalStrips(height),
+                xs[0], xs[1], zs[0], zs[1]);
+        }
+        POURS.put(pairKey, pour.rushed());
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} arrival x={}..{} z={}..{} ms={}",
+            pairKey, structure.roomName(), xs[0], xs[1], zs[0], zs[1], millis(System.nanoTime() - started));
+    }
+
+    /** Whether every chunk over world columns {@code x0..x1} by {@code z0..z1} is loaded, read without loading. */
+    private static boolean chunksLoaded(ServerLevel level, int x0, int x1, int z0, int z1) {
+        for (int cx = x0 >> 4; cx <= x1 >> 4; cx++) {
+            for (int cz = z0 >> 4; cz <= z1 >> 4; cz++) {
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) return false;
+            }
+        }
+        return true;
+    }
+
+    /** Blocks either side of an arrival that a grid room writes at once — see {@link #finishAround}. */
+    static final int ARRIVAL_REACH = 8;
+
+    /**
+     * The room-local span, {@code {from, to}} inclusive, within {@link #ARRIVAL_REACH} of {@code local}
+     * — which is held inside the room first, since a player crossing stands in the corridor just
+     * outside its end face.
+     */
+    static int[] arrivalSpan(int local, int size) {
+        int at = Math.max(0, Math.min(size - 1, local));
+        return new int[] {Math.max(0, at - ARRIVAL_REACH), Math.min(size - 1, at + ARRIVAL_REACH)};
+    }
+
     /** Write the rest of {@code pairKey}'s room now, whatever it costs. */
     public static void finishPour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
         PortalChunkPour pour = POURS.get(pairKey);
         if (pour == null) return;
         long started = System.nanoTime();
         int height = structure.roomSize().getY();
-        if (!pour.rowsDone(height)) writeRows(level, structure, dims, pour.slice(), pour.nextRow(), height);
+        if (!pour.done(height)) writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.totalStrips(height));
         completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ true);
     }
 
@@ -167,12 +243,20 @@ public final class PortalChunkDimension {
         long started = System.nanoTime();
         int height = structure.roomSize().getY();
         // A tick of its own, so the frame's cost does not land on top of the last rows'.
-        if (pour.rowsDone(height)) {
+        if (pour.done(height)) {
             completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ false);
             return;
         }
-        writeRows(level, structure, dims, pour.slice(), pour.nextRow(), pour.rowsEnd(height));
-        POURS.put(pairKey, pour.advanced(height, System.nanoTime() - started));
+        writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.stripsEnd(height));
+        PortalChunkPour next = pour.advanced(height, System.nanoTime() - started);
+        // In a hurry, keep going for as long as this tick's time allows — by time rather than by a
+        // multiple of the budget, because what a strip costs varies tenfold (a Nether room's lava and
+        // lighting made single ticks of 186 ms at the ordinary budget).
+        while (next.rush() && !next.done(height) && System.nanoTime() - started < PortalChunkPour.RUSH_NANOS) {
+            writeStrips(level, structure, dims, next.slice(), next.nextStrip(), next.stripsEnd(height));
+            next = next.continued(height, System.nanoTime() - started);
+        }
+        POURS.put(pairKey, next);
     }
 
     private static void completePour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
@@ -223,9 +307,19 @@ public final class PortalChunkDimension {
 
     // ---- writing -------------------------------------------------------------
 
-    /** Write rows {@code fromRow} up to {@code toRow} of the room's box from {@code slice}. */
-    private static void writeRows(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                  PortalChunkSlice slice, int fromRow, int toRow) {
+    /**
+     * Write strips {@code fromStrip} up to {@code toStrip} of the room's box from {@code slice} — a
+     * strip being one row at one Z, {@code slice.width()} cells along X ({@link PortalChunkPour}).
+     */
+    private static void writeStrips(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                    PortalChunkSlice slice, int fromStrip, int toStrip) {
+        writeStrips(level, structure, dims, slice, fromStrip, toStrip, 0, Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
+    }
+
+    /** {@link #writeStrips} held to room-local columns {@code xFrom..xTo} by {@code zFrom..zTo}, inclusive. */
+    private static void writeStrips(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                    PortalChunkSlice slice, int fromStrip, int toStrip,
+                                    int xFrom, int xTo, int zFrom, int zTo) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
@@ -246,22 +340,24 @@ public final class PortalChunkDimension {
         // skin one block outside it — so the chunk runs all 16 blocks to the sky. Where the end
         // column is open, the mouth's seal ring falls back to that same skin rather than to the
         // floor row (PortalCarriageBuilder#sealFillFor), so an open face still seals with sky.
-        for (int y = fromRow; y < toRow; y++) {
-            for (int z = 0; z < size.getZ() && z < slice.width(); z++) {
-                for (int x = 0; x < size.getX() && x < slice.width(); x++) {
-                    // Null for a row the cube does not reach. Those rows keep whatever the template
-                    // put there, which is a room rather than a hole.
-                    BlockState state = slice.at(x, y + shift, z);
-                    if (state == null) continue;
-                    cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
-                    if (mask.covers(cursor)) continue;
-                    // Cheap, and it is what makes the decoration pass affordable: the second write
-                    // of a room differs from the first only where something grew, so all but a
-                    // handful of these cells are already the block being written.
-                    if (level.getBlockState(cursor) == state) continue;
-                    replaceQuietly(level, cursor, state);
-                    applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
-                }
+        int stripWidth = slice.width();
+        for (int strip = fromStrip; strip < toStrip; strip++) {
+            int y = strip / stripWidth;
+            int z = strip % stripWidth;
+            if (y >= size.getY() || z >= size.getZ() || z < zFrom || z > zTo) continue;
+            for (int x = xFrom; x <= xTo && x < size.getX() && x < slice.width(); x++) {
+                // Null for a row the cube does not reach. Those rows keep whatever the template
+                // put there, which is a room rather than a hole.
+                BlockState state = slice.at(x, y + shift, z);
+                if (state == null) continue;
+                cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
+                if (mask.covers(cursor)) continue;
+                // Cheap, and it is what makes the decoration pass affordable: the second write
+                // of a room differs from the first only where something grew, so all but a
+                // handful of these cells are already the block being written.
+                if (level.getBlockState(cursor) == state) continue;
+                replaceQuietly(level, cursor, state);
+                applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
             }
         }
     }
@@ -453,7 +549,7 @@ public final class PortalChunkDimension {
         // open cave rather than left as a door onto a wall. Where the terrain is already open, which
         // is every hillside and most caves, the next column is clear and this stops at the door.
         int step = entry ? 1 : -1;
-        int deepest = size.getX() / 2;
+        int deepest = doorwayDigDepth(size);
         for (int depth = 0; depth <= deepest; depth++) {
             int cx = x + depth * step;
             if (depth > 0 && walkwayOpen(level, cursor, cx, floorY, z)) break;

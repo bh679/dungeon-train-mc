@@ -1,0 +1,17 @@
+{
+  "id": "kid-mode-skips-reported-photos",
+  "version": "0.1998.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "Safer photos in Kid mode",
+  "summary": "Photos that someone has reported no longer turn up in Kid mode.",
+  "highlights": [],
+  "pr": 2859,
+  "date": "2026-11-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

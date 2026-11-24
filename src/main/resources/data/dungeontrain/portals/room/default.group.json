@@ -34,6 +34,10 @@
     {
       "id": "flooded",
       "weight": 2
+    },
+    {
+      "id": "underwatertunnel2",
+      "weight": 2
     }
   ]
 }

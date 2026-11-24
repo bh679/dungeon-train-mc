@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PoolSelectionTest {
@@ -40,6 +41,23 @@ class PoolSelectionTest {
     }
 
     private static List<Integer> ids(List<Row> rows) { return rows.stream().map(Row::id).toList(); }
+
+    @Test
+    @DisplayName("Kid-mode answer: notKidSafe ids are read; an adult or older answer has none")
+    void parsesNotKidSafe() {
+        assertEquals(Set.of(3, 9), PoolSelection.parseNotKidSafe("{\"ok\":true,\"photos\":[],\"notKidSafe\":[3,9]}"));
+        assertEquals(Set.of(), PoolSelection.parseNotKidSafe("{\"ok\":true,\"photos\":[]}"));
+        assertEquals(Set.of(4), PoolSelection.parseNotKidSafe("{\"notKidSafe\":[4,\"x\",null]}"));
+    }
+
+    @Test
+    @DisplayName("Held photos reported since they were fetched are dropped; the rest are kept in order")
+    void dropsNoLongerKidSafe() {
+        List<PoolPhoto> pool = heldPool(4); // ids 1000..1003
+        assertEquals(List.of(1000, 1002, 1003),
+                PoolSelection.without(pool, Set.of(1001, 77)).stream().map(PoolPhoto::id).toList());
+        assertSame(pool, PoolSelection.without(pool, Set.of()));
+    }
 
     @Test
     @DisplayName("Empty pool: every row of a 10-photo answer is downloaded")

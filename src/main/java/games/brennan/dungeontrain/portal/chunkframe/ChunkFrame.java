@@ -41,7 +41,9 @@ public final class ChunkFrame {
         java.util.List<String> out = new java.util.ArrayList<>();
         for (String room : games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
                 games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
-            if (games.brennan.dungeontrain.portal.PortalRoomSettings.of(room).mode().generatesTerrain()) out.add(room);
+            // A frame is one chunk's box: rooms sampled as a grid of chunks are a size it cannot dress.
+            if (games.brennan.dungeontrain.portal.PortalRoomSettings.of(room).mode().generatesTerrain()
+                    && games.brennan.dungeontrain.portal.PortalChunkArea.spanOf(room) == 1) out.add(room);
         }
         return out;
     }

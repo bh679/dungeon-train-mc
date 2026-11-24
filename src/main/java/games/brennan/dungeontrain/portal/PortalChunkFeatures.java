@@ -193,7 +193,9 @@ final class PortalChunkFeatures {
             // striders that need a lava lake to stand in and rarely find one, falls through to what
             // else lives there.
             if (chunk.getEntities().isEmpty()) {
-                spawnBiomeNatives(level, workspace.region(), chunk, window, worldSeed, pairKey);
+                spawnBiomeNatives(level, workspace.region(), (x, z) -> chunk,
+                    chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), PortalChunkTerrain.SIZE,
+                    window, worldSeed, pairKey);
             }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} — the room "
@@ -221,7 +223,8 @@ final class PortalChunkFeatures {
      * of. The sample spawns them itself, at generation and once: they live in the room from the
      * moment it is built, they can be killed, and nothing replaces them.</p>
      */
-    private static void spawnBiomeNatives(ServerLevel level, WorldGenRegion region, ProtoChunk chunk,
+    private static void spawnBiomeNatives(ServerLevel level, WorldGenRegion region, ChunkAt chunks,
+                                          int minX, int minZ, int width,
                                           BoundingBox window, long worldSeed, int pairKey) {
         RandomSource random = RandomSource.create(worldSeed ^ ((long) pairKey * 0xC2B2AE3D27D4EB4FL));
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
@@ -229,8 +232,10 @@ final class PortalChunkFeatures {
         int noRoom = 0;
         int noMobs = 0;
         for (int attempt = 0; attempt < MONSTER_ATTEMPTS && placed < MONSTERS_PER_ROOM; attempt++) {
-            int x = chunk.getPos().getMinBlockX() + random.nextInt(PortalChunkTerrain.SIZE);
-            int z = chunk.getPos().getMinBlockZ() + random.nextInt(PortalChunkTerrain.SIZE);
+            int x = minX + random.nextInt(width);
+            int z = minZ + random.nextInt(width);
+            ProtoChunk chunk = chunks.at(x, z);
+            if (chunk == null) continue;
             int y = standingRoom(chunk, cursor, x, z, window);
             if (y == Integer.MIN_VALUE) {
                 noRoom++;
@@ -261,6 +266,82 @@ final class PortalChunkFeatures {
                     + "position(s) had nowhere to stand, {} had an empty spawn list",
                 pairKey, placed, MONSTERS_PER_ROOM, noRoom, noMobs);
         }
+    }
+
+    /** The sampled chunk holding world column {@code (x, z)}, or null outside the sample. */
+    @FunctionalInterface
+    interface ChunkAt {
+        ProtoChunk at(int x, int z);
+    }
+
+    // ---- a room of several chunks (PortalChunkArea) ---------------------------
+
+    /**
+     * Plant a structure for a room several chunks across: chosen and started on the middle chunk,
+     * as a one-chunk room's is, and then referenced from every other chunk of the room, so each of
+     * their decoration passes places the part of it that falls inside them. A village sampled into a
+     * 3x3 room is therefore the whole village the grid has room for, not its middle sixteen blocks.
+     */
+    static void plantAcross(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
+                            ProtoChunk centre, List<ProtoChunk> others, BoundingBox window,
+                            long worldSeed, int pairKey, PortalChunkTerrain.Source source) {
+        try {
+            plantStructure(level, generator, random, centre, window, worldSeed, pairKey, source);
+            long at = centre.getPos().toLong();
+            centre.getAllStarts().forEach((structure, start) -> {
+                if (!start.isValid()) return;
+                for (ProtoChunk other : others) other.addReferenceForStructure(structure, at);
+            });
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension structure failed for pair {} — the room "
+                + "goes without one", pairKey, t);
+        }
+    }
+
+    /** The feature pass over one chunk of a multi-chunk room; a failure leaves that chunk bare. */
+    static void decorateOne(NoiseBasedChunkGenerator generator, OfflineChunkSampler.Workspace workspace,
+                            ProtoChunk chunk, PortalChunkTerrain.Source source, int pairKey) {
+        try {
+            OfflineChunkSampler.decorate(generator, workspace, chunk, source.vanillaOnly());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} at {} — that "
+                + "chunk keeps its bare terrain", pairKey, chunk.getPos(), t);
+        }
+    }
+
+    /**
+     * The mob passes for a multi-chunk room, once for the whole room rather than once per chunk.
+     *
+     * <p>Vanilla's creature pass rolls each chunk on its own (about one in ten gets a herd), so a
+     * round asks it of every chunk of the room, and rounds repeat until something landed anywhere in
+     * it, the same trade {@link #decorate} makes for one chunk. Biome natives only when the whole room
+     * is still empty, placed anywhere across it.</p>
+     */
+    static void populateArea(NoiseBasedChunkGenerator generator, ServerLevel level,
+                             List<ProtoChunk> chunks, List<OfflineChunkSampler.Workspace> workspaces,
+                             OfflineChunkSampler.Workspace centre, ChunkAt lookup,
+                             int minX, int minZ, int width, BoundingBox window,
+                             long worldSeed, int pairKey) {
+        try {
+            for (int round = 0; round < MOB_SPAWN_ATTEMPTS && emptyAll(chunks); round++) {
+                for (OfflineChunkSampler.Workspace workspace : workspaces) {
+                    generator.spawnOriginalMobs(workspace.region());
+                }
+            }
+            if (emptyAll(chunks)) {
+                spawnBiomeNatives(level, centre.region(), lookup, minX, minZ, width, window, worldSeed, pairKey);
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension mobs failed for pair {} — the room keeps "
+                + "whatever landed", pairKey, t);
+        }
+    }
+
+    private static boolean emptyAll(List<ProtoChunk> chunks) {
+        for (ProtoChunk chunk : chunks) {
+            if (!chunk.getEntities().isEmpty()) return false;
+        }
+        return true;
     }
 
     /** A row inside the window with ground under it and room to stand, or {@code MIN_VALUE}. */
