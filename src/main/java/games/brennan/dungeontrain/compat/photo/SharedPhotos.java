@@ -18,6 +18,7 @@ import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.narrative.PluralRules;
+import games.brennan.dungeontrain.narrative.WorldLanguage;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -67,6 +68,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -774,14 +776,21 @@ public final class SharedPhotos {
         String exclude = Stream.concat(held.stream().map(PoolPhoto::id), spentIds().stream())
                 .map(String::valueOf).collect(Collectors.joining(","));
         if (!exclude.isEmpty()) url.append("&exclude=").append(exclude);
+        // A Kid-mode host (or none we can resolve: fail closed, as the book pool does) asks for kid-safe
+        // photos only, and hears which held ones were reported since (`notKidSafe`) so they are dropped.
+        if (WorldLanguage.hostFetchesKidSafeBooks(server)) url.append("&kidsafe=1");
+        AtomicReference<Set<Integer>> notKidSafe = new AtomicReference<>(Set.of());
         HttpRequest request = HttpRequest.newBuilder(URI.create(url.toString()))
                 .timeout(REQUEST_TIMEOUT).header("Accept", "application/json").GET().build();
         HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(response -> {
-                    List<PoolSelection.Row> rows = PoolSelection.parseRows(okBody(response), total -> relayTotal = total);
+                    String body = okBody(response);
+                    List<PoolSelection.Row> rows = PoolSelection.parseRows(body, total -> relayTotal = total);
+                    notKidSafe.set(PoolSelection.parseNotKidSafe(body));
+                    List<PoolPhoto> kept = PoolSelection.without(held, notKidSafe.get());
                     // Only what there is room for, plus what must not be lost: the rest stay on the relay.
-                    List<PoolSelection.Row> chosen = PoolSelection.toDownload(rows, held, POOL_MAX, needCosts);
-                    return PoolSelection.download(chosen, held, imageFetcher(base), now, online);
+                    List<PoolSelection.Row> chosen = PoolSelection.toDownload(rows, kept, POOL_MAX, needCosts);
+                    return PoolSelection.download(chosen, kept, imageFetcher(base), now, online);
                 })
                 .whenComplete((fetched, error) -> {
                     fetchInFlight.set(false);
@@ -793,7 +802,10 @@ public final class SharedPhotos {
                         // Someone may have joined while this was in flight: what wasn't checked against them goes.
                         List<PoolPhoto> vetted = PoolSelection.prune(fetched, System.currentTimeMillis(),
                                 HELD_MAX_AGE_MS, onlineUuids(server), spentIds());
-                        pool = PoolSelection.merge(pool, vetted, spentIds(), POOL_MAX, needCosts);
+                        Set<Integer> drop = notKidSafe.get();
+                        if (!drop.isEmpty()) LOGGER.debug("[DungeonTrain] Dropping {} photo(s) no longer kid-safe.", drop.size());
+                        pool = PoolSelection.merge(PoolSelection.without(pool, drop), PoolSelection.without(vetted, drop),
+                                spentIds(), POOL_MAX, needCosts);
                     });
                 });
     }
