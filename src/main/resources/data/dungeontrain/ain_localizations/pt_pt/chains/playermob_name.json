@@ -39,6 +39,22 @@
         {
           "ref": "adventureitemnames:colors",
           "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:mc_streamers",
+          "weight": 50.0
+        },
+        {
+          "ref": "adventureitemnames:discord_people",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:name_plus_ending",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:formula_name",
+          "weight": 100.0
         }
       ]
     },
@@ -47,7 +63,20 @@
       "connection": " ",
       "newline": false,
       "label": "Apelido",
-      "refs": []
+      "refs": [
+        {
+          "ref": "adventureitemnames:formula_name",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:name_plus_ending",
+          "weight": 21.0
+        }
+      ]
     },
     {
       "chance": 0.2,
@@ -73,7 +102,12 @@
           "chance": 0.5
         }
       ],
-      "refs": []
+      "refs": [
+        {
+          "ref": "adventureitemnames:fan_suffix",
+          "weight": 4.0
+        }
+      ]
     },
     {
       "chance": 0.3,

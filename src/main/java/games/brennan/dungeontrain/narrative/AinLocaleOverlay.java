@@ -74,12 +74,24 @@ public final class AinLocaleOverlay {
         restoreBase(); // revert any current overlay to English first
         if (loc.isEmpty()) {
             applied = "";
+            rewireBackers();
             return;
         }
         int pools = overlayPools(resourceManager, loc);
         int chains = overlayChains(resourceManager, loc);
         applied = loc;
         LOGGER.info("[DungeonTrain] AIN item-name overlay applied for '{}' — {} pools, {} chains", loc, pools, chains);
+        rewireBackers();
+    }
+
+    /**
+     * Rebuild the backer segment overrides against the chains that are live NOW. Those overrides
+     * replace a segment's refs with a list copied from whichever chain was live when they were built,
+     * so building them before a locale swap would put the English refs back over the translated ones
+     * (and building them after a swap to a chain without the community-names ref would drop backers).
+     */
+    private static void rewireBackers() {
+        AinBackerOverlay.apply(BackerPool.snapshot());
     }
 
     /** Drop the overlay and re-inject English baselines so names revert immediately. */

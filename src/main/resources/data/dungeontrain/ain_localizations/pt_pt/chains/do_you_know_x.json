@@ -42,6 +42,30 @@
         {
           "ref": "adventureitemnames:the_something",
           "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:discord_people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:atla_characters",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:dungeontrain_first_names",
+          "weight": 19.0
+        },
+        {
+          "ref": "adventureitemnames:dungeontrain_last_names",
+          "weight": 9.0
+        },
+        {
+          "ref": "adventureitemnames:name_plus_ending",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:formula_name",
+          "weight": 10.0
         }
       ]
     },

@@ -55,6 +55,22 @@
         {
           "ref": "adventureitemnames:material_or_element",
           "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:mc_streamers",
+          "weight": 19.0
+        },
+        {
+          "ref": "adventureitemnames:mc_skins",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:discord_people",
+          "weight": 58.0
+        },
+        {
+          "ref": "adventureitemnames:atla_characters",
+          "weight": 34.0
         }
       ]
     },
