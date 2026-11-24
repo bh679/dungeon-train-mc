@@ -383,6 +383,13 @@ public final class BlockVariantMenuInputHandler {
                         BlockVariantEditPacket.Op.REPLACE_WITH_HELD, variantId, local, hit.index(), "", 0));
                     return;
                 }
+                // Right-click holding a water bucket waterlogs the row's block (or dries it).
+                net.minecraft.client.player.LocalPlayer me = net.minecraft.client.Minecraft.getInstance().player;
+                if (button == 1 && me != null && me.getMainHandItem().is(net.minecraft.world.item.Items.WATER_BUCKET)) {
+                    DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.TOGGLE_WATERLOGGED, variantId, local, hit.index(), "", 0));
+                    return;
+                }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
                 // A linked variant row routes to the container menu so the
                 // user can edit the loot template directly. Unlinked rows

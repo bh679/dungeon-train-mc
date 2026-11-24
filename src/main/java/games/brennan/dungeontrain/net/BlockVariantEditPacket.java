@@ -168,7 +168,9 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Sign row: stateString = SignVariants.toWire token (both sides + wax).
                      SET_SIGN_TEXT,
                      // Sign row: delta 1 = lock every sign row of the cell to this one, 0 = unlock.
-                     SET_SIGN_LOCKED }
+                     SET_SIGN_LOCKED,
+                     // Right-click a row name holding a water bucket: the row's block holds water, or stops.
+                     TOGGLE_WATERLOGGED }
 
     /** Cap on {@link #stateString} over the wire — a {@code SET_SIGN_TEXT} token is the longest. */
     public static final int STRING_MAX = games.brennan.dungeontrain.editor.SignVariants.WIRE_MAX;

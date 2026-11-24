@@ -730,6 +730,33 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 mutated.set(idx, replacement);
                 dirty = true;
             }
+            case TOGGLE_WATERLOGGED -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState old = mutated.get(idx);
+                net.minecraft.world.level.block.state.BlockState wet = old.isMob() || old.isGroupRef()
+                    || CarriageVariantBlocks.isEmptyPlaceholder(old.state()) ? null : VariantWaterlog.toggle(old.state());
+                if (wet == null) {
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.cannot_hold_water"),
+                        ChatFormatting.YELLOW);
+                    return;
+                }
+                VariantState replacement = old.withState(wet, old.blockEntityNbt());
+                for (int i = 0; i < mutated.size(); i++) {
+                    VariantState other = mutated.get(i);
+                    if (i != idx && !other.isGroupRef() && sameCandidate(other, replacement)) {
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_already_in_cell"),
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                }
+                mutated.set(idx, replacement);
+                actionBar(player, Component.translatable(VariantWaterlog.isWaterlogged(wet)
+                    ? "chat.dungeontrain.editor_bar.variant_menu.waterlogged"
+                    : "chat.dungeontrain.editor_bar.variant_menu.dried", blockName(wet)), ChatFormatting.GREEN);
+                dirty = true;
+            }
             case BUMP_WEIGHT -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
