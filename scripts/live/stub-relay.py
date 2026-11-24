@@ -6,7 +6,7 @@ Live Eye. The stub answers what the streamer's client needs (claim, presign, sto
 segments, and serves them back the way the live bucket's edge would: the playlist is held for the
 max-age it was uploaded with (2 s, or 1 s for a Quicker Streams session), segments never change.
 
-    python3 -I scripts/live/stub-relay.py --port 8787 --out <dir> [--quick] [--relay-public <dp-relay>/public/dungeontrain]
+    python3 -I scripts/live/stub-relay.py --port 8787 --out <dir> [--quick] [--hd] [--relay-public <dp-relay>/public/dungeontrain]
 
 --quick makes every claim a Quicker Streams one (--quick-seconds, default 3: segmentSeconds 3,
 listSize 20, keyframeSeconds 3), as the relay does while the reward is on.
@@ -235,6 +235,8 @@ class Handler(BaseHTTPRequestHandler):
                 out.update(segmentSeconds=seg, listSize=max(6, -(-60 // seg)))
                 if seg % 2:
                     out["keyframeSeconds"] = seg if seg <= 4 else 1
+            if ARGS.hd:
+                out["video"] = {"width": 1920, "kbps": 4500}  # HD Streams on (relay live.js videoAt)
             print("[stub] claim -> session %s (%s)" % (session, "%d s quick" % ARGS.quick_seconds if ARGS.quick else "default cadence"), flush=True)
             return self._send(200, out)
         if path.endswith("/live/presign"):
@@ -390,6 +392,7 @@ def main():
     p.add_argument("--out", required=True)
     p.add_argument("--quick", action="store_true")
     p.add_argument("--quick-seconds", type=int, default=3)
+    p.add_argument("--hd", action="store_true", help="every claim is an HD Streams one (video 1920 wide, 4500 kbit/s)")
     p.add_argument("--relay-public", default="")
     p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
     p.add_argument("--two-streams", action="store_true", help="every status says the Two Streams reward is on (twoStreams: true)")
