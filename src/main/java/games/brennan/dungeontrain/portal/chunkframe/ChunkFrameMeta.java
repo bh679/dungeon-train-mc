@@ -3,10 +3,14 @@ package games.brennan.dungeontrain.portal.chunkframe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -21,8 +25,14 @@ import java.util.Set;
  * room.</p>
  *
  * <p>{@link #dimension} is how the rooms it dresses are enclosed — see {@link ChunkFrameDimension}.</p>
+ *
+ * <p>{@link #gate} and {@link #stageId} say where along the train the frame may appear, as every
+ * other template's spawn gate does: a Diff-Level range, the bands (phases) and dates it is allowed
+ * in, or a Stage preset that owns the levels and bands. The effective gate is
+ * {@link games.brennan.dungeontrain.editor.StageStore#effectiveGate}.</p>
  */
-public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension) {
+public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension,
+                             TemplateGate gate, String stageId) {
 
     public static final int SCHEMA_VERSION = 1;
     public static final int MIN_WEIGHT = 1;
@@ -35,11 +45,18 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
         rooms = rooms == null ? null : Set.copyOf(new LinkedHashSet<>(rooms));
         weight = Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, weight));
         dimension = dimension == null ? ChunkFrameDimension.DEFAULT : dimension;
+        gate = gate == null ? TemplateGate.DEFAULT : gate;
+        stageId = stageId == null || stageId.isBlank() ? null : stageId.trim().toLowerCase(Locale.ROOT);
     }
 
-    /** Rooms and weight, enclosed in the default {@link ChunkFrameDimension#BEDROCK}. */
+    /** Rooms and weight, enclosed in the default {@link ChunkFrameDimension#BEDROCK}, ungated. */
     public ChunkFrameMeta(Set<String> rooms, int weight) {
         this(rooms, weight, ChunkFrameDimension.DEFAULT);
+    }
+
+    /** Rooms, weight and dimension, ungated. */
+    public ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension) {
+        this(rooms, weight, dimension, TemplateGate.DEFAULT, null);
     }
 
     /** True when the frame dresses every chunk dimension. */
@@ -60,24 +77,56 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
         Set<String> next = new LinkedHashSet<>(rooms == null ? allRooms : rooms);
         if (on) next.add(room); else next.remove(room);
         // Back to "every room" when it is every room, so a later chunk dimension joins it too.
-        if (next.containsAll(allRooms)) return new ChunkFrameMeta(null, weight, dimension);
-        return new ChunkFrameMeta(next, weight, dimension);
+        if (next.containsAll(allRooms)) return withRooms(null);
+        return withRooms(next);
+    }
+
+    private ChunkFrameMeta withRooms(Set<String> newRooms) {
+        return new ChunkFrameMeta(newRooms, weight, dimension, gate, stageId);
     }
 
     public ChunkFrameMeta withAllRooms() {
-        return new ChunkFrameMeta(null, weight, dimension);
+        return withRooms(null);
     }
 
     public ChunkFrameMeta withNoRooms() {
-        return new ChunkFrameMeta(Set.of(), weight, dimension);
+        return withRooms(Set.of());
     }
 
     public ChunkFrameMeta withWeight(int newWeight) {
-        return new ChunkFrameMeta(rooms, newWeight, dimension);
+        return new ChunkFrameMeta(rooms, newWeight, dimension, gate, stageId);
     }
 
     public ChunkFrameMeta withDimension(ChunkFrameDimension newDimension) {
-        return new ChunkFrameMeta(rooms, weight, newDimension);
+        return new ChunkFrameMeta(rooms, weight, newDimension, gate, stageId);
+    }
+
+    public ChunkFrameMeta withGate(TemplateGate newGate) {
+        return new ChunkFrameMeta(rooms, weight, dimension, newGate, stageId);
+    }
+
+    /** Linked to Stage {@code newStageId}, or back to Custom (its own gate) when null. */
+    public ChunkFrameMeta withStage(String newStageId) {
+        return new ChunkFrameMeta(rooms, weight, dimension, gate, newStageId);
+    }
+
+    /** {@code gate} with the min level changed; a max under it rises to meet it, as TemplateGate does. */
+    public ChunkFrameMeta withMinLevel(int min) {
+        return withGate(new TemplateGate(min, gate.maxLevel(), gate.phases(), gate.periods()));
+    }
+
+    /** {@code gate} with the max level changed ({@link TemplateGate#ALL} for no cap); never under the min. */
+    public ChunkFrameMeta withMaxLevel(int max) {
+        int clamped = max == TemplateGate.ALL ? max : Math.max(gate.minLevel(), max);
+        return withGate(new TemplateGate(gate.minLevel(), clamped, gate.phases(), gate.periods()));
+    }
+
+    /** {@code gate} with {@code phase} allowed or not; turning off the last one leaves every phase on. */
+    public ChunkFrameMeta withPhase(TrainPhase phase, boolean on) {
+        Set<TrainPhase> next = EnumSet.noneOf(TrainPhase.class);
+        next.addAll(gate.phases());
+        if (on) next.add(phase); else next.remove(phase);
+        return withGate(new TemplateGate(gate.minLevel(), gate.maxLevel(), next, gate.periods()));
     }
 
     public JsonObject toJson() {
@@ -90,6 +139,20 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
             rooms.stream().sorted().forEach(arr::add);
             o.add("rooms", arr);
         }
+        // The gate in the shape weights.json entries use, and only what differs from ungated.
+        if (gate.minLevel() != 0) o.addProperty("minLevel", gate.minLevel());
+        if (gate.maxLevel() != TemplateGate.ALL) o.addProperty("maxLevel", gate.maxLevel());
+        if (gate.phases().size() != TemplateGate.ALL_PHASES.size()) {
+            JsonArray arr = new JsonArray();
+            gate.phases().forEach(p -> arr.add(p.name()));
+            o.add("phases", arr);
+        }
+        if (!gate.periods().isEmpty()) {
+            JsonArray arr = new JsonArray();
+            gate.periods().forEach(arr::add);
+            o.add("periods", arr);
+        }
+        if (stageId != null) o.addProperty("stage", stageId);
         return o;
     }
 
@@ -98,14 +161,41 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
         int weight = o.has("weight") && o.get("weight").isJsonPrimitive() ? o.get("weight").getAsInt() : MIN_WEIGHT;
         Set<String> rooms = null;
         if (o.has("rooms") && o.get("rooms").isJsonArray()) {
-            List<String> list = new ArrayList<>();
-            for (JsonElement el : o.getAsJsonArray("rooms")) {
-                if (el.isJsonPrimitive()) list.add(el.getAsString());
-            }
-            rooms = new LinkedHashSet<>(list);
+            rooms = new LinkedHashSet<>(strings(o.getAsJsonArray("rooms")));
         }
         ChunkFrameDimension dimension = o.has("dimension") && o.get("dimension").isJsonPrimitive()
             ? ChunkFrameDimension.parse(o.get("dimension").getAsString()) : ChunkFrameDimension.DEFAULT;
-        return new ChunkFrameMeta(rooms, weight, dimension);
+        int min = intOr(o, "minLevel", 0);
+        int max = intOr(o, "maxLevel", TemplateGate.ALL);
+        Set<TrainPhase> phases = EnumSet.noneOf(TrainPhase.class);
+        if (o.has("phases") && o.get("phases").isJsonArray()) {
+            for (String name : strings(o.getAsJsonArray("phases"))) {
+                try {
+                    phases.add(TrainPhase.valueOf(name.trim().toUpperCase(Locale.ROOT)));
+                } catch (IllegalArgumentException ignored) {
+                    // A phase this build does not know — dropped, as weights.json does.
+                }
+            }
+        }
+        List<String> periods = o.has("periods") && o.get("periods").isJsonArray()
+            ? strings(o.getAsJsonArray("periods")) : List.of();
+        String stage = o.has("stage") && o.get("stage").isJsonPrimitive() ? o.get("stage").getAsString() : null;
+        return new ChunkFrameMeta(rooms, weight, dimension, new TemplateGate(min, max, phases, new LinkedHashSet<>(periods)), stage);
+    }
+
+    private static int intOr(JsonObject o, String key, int fallback) {
+        try {
+            return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsInt() : fallback;
+        } catch (RuntimeException e) {
+            return fallback;
+        }
+    }
+
+    private static List<String> strings(JsonArray arr) {
+        List<String> out = new ArrayList<>();
+        for (JsonElement el : arr) {
+            if (el.isJsonPrimitive()) out.add(el.getAsString());
+        }
+        return out;
     }
 }

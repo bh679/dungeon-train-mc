@@ -885,12 +885,19 @@ public final class PortalCarriageBuilder {
      */
     public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
                                                      net.minecraft.core.Vec3i size, PortalRoomSettings settings) {
+        return framedEnclosure(level, roomName, pairKey, size, settings, null);
+    }
+
+    /** {@link #framedEnclosure} with the frame picked among those whose spawn gate admits {@code gateCtx}. */
+    public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
+                                                     net.minecraft.core.Vec3i size, PortalRoomSettings settings,
+                                                     games.brennan.dungeontrain.template.GateContext gateCtx) {
         if (!settings.mode().generatesTerrain()
                 || !size.equals(games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.ROOM_SIZE)) {
             return settings;
         }
         PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
-            .dimensionFor(level, roomName, pairKey).roomMode(settings.mode());
+            .dimensionFor(level, roomName, pairKey, gateCtx).roomMode(settings.mode());
         return framed == settings.mode() ? settings : settings.withMode(framed);
     }
 
@@ -944,7 +951,7 @@ public final class PortalCarriageBuilder {
             PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
             if (slice == null) return null;
             settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
-            settings = framedEnclosure(level, roomName, pairKey, size, settings);
+            settings = framedEnclosure(level, roomName, pairKey, size, settings, gateCtx);
         }
 
         // Where this pair stands its exit, decided here with everything else about the pair and then

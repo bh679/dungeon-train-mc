@@ -45,8 +45,15 @@ public final class ChunkFramePlacer {
     private ChunkFramePlacer() {}
 
     /** Forget the per-session warnings — a new world may have the missing frames. */
+    /** A frame's gate as selection reads it: its Stage's when it links one, else its own. */
+    static games.brennan.dungeontrain.template.TemplateGate effectiveGate(ChunkFrameMeta meta) {
+        return meta.stageId() == null ? meta.gate()
+            : games.brennan.dungeontrain.editor.StageStore.effectiveGate(meta.gate(), meta.stageId());
+    }
+
     public static void clear() {
         WARNED.clear();
+        PLANNED.clear();
         FORCED.clear();
         SALTS.clear();
     }
@@ -102,9 +109,24 @@ public final class ChunkFramePlacer {
      * so a room keeps its frame every time it is re-stamped, and salted by a test's reseed.</p>
      */
     public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex) {
+        return frameFor(level, roomName, pairKey, rollIndex, null);
+    }
+
+    /**
+     * {@link #frameFor} among the frames whose spawn gate admits {@code gateCtx} (null: every frame).
+     * A frame already chosen for this pair at plan time ({@link #plannedFrame}) is the answer when the
+     * room and roll still match, so the frame that decided the enclosure is the frame that dresses it.
+     */
+    public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex,
+                                            games.brennan.dungeontrain.template.GateContext gateCtx) {
         String name = FORCED.get(pairKey);
-        if (name == null) name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20));
-        if (name == null) return Optional.empty();
+        if (name == null) {
+            Planned planned = PLANNED.get(pairKey);
+            name = planned != null && planned.matches(roomName, rollIndex)
+                ? planned.frame()
+                : pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20), gateCtx);
+        }
+        if (name == null || name.isEmpty()) return Optional.empty();
         Optional<ChunkFrameTemplate> template = ChunkFrameStore.get(level, name);
         if (template.isEmpty()) {
             if (WARNED.add(roomName + "/" + name)) {
@@ -123,12 +145,21 @@ public final class ChunkFramePlacer {
      * frame dresses the room.
      */
     public static ChunkFrameDimension dimensionFor(ServerLevel level, String roomName, int pairKey) {
+        return dimensionFor(level, roomName, pairKey, null);
+    }
+
+    /**
+     * {@link #dimensionFor} for a pair planned in {@code gateCtx}: the frame is picked among those
+     * whose gate admits it, and remembered for the pair ({@link #plannedFrame}) so the later dress
+     * places that same frame.
+     */
+    public static ChunkFrameDimension dimensionFor(ServerLevel level, String roomName, int pairKey,
+                                                   games.brennan.dungeontrain.template.GateContext gateCtx) {
         try {
             String name = FORCED.get(pairKey);
-            if (name == null) {
-                name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex(roomName, pairKey) << 20));
-            }
-            return name == null ? ChunkFrameDimension.DEFAULT : ChunkFrameMetaStore.get(name).dimension();
+            if (name == null) name = plannedFrame(level, roomName, pairKey, gateCtx);
+            return name == null || name.isEmpty() ? ChunkFrameDimension.DEFAULT
+                : ChunkFrameMetaStore.get(name).dimension();
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Could not read the frame dimension for room {}: {}", roomName, e.toString());
             return ChunkFrameDimension.DEFAULT;
@@ -155,14 +186,54 @@ public final class ChunkFramePlacer {
         }
     }
 
-    /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. */
+    /** A frame chosen for a pair at plan time: the room and roll it was chosen for, and the frame ("" for none). */
+    record Planned(String room, int rollIndex, String frame) {
+        boolean matches(String roomName, int roll) {
+            return java.util.Objects.equals(room, roomName) && rollIndex == roll;
+        }
+    }
+
+    /** Frames chosen at plan time, by pair — so the dress places the frame the plan enclosed the room for. */
+    private static final java.util.Map<Integer, Planned> PLANNED = new ConcurrentHashMap<>();
+
+    /**
+     * Pick {@code roomName}'s frame for {@code pairKey} in {@code gateCtx} and remember it. Returns the
+     * frame name, or "" when no frame's gate admits the pair.
+     */
+    public static String plannedFrame(ServerLevel level, String roomName, int pairKey,
+                                      games.brennan.dungeontrain.template.GateContext gateCtx) {
+        int roll = rollIndex(roomName, pairKey);
+        String name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) roll << 20), gateCtx);
+        String frame = name == null ? "" : name;
+        PLANNED.put(pairKey, new Planned(roomName, roll, frame));
+        return frame;
+    }
+
+    /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. Ungated. */
     static String pick(String roomName, long seed) {
+        return pick(roomName, seed, null);
+    }
+
+    /** The frame {@code seed} lands on among those that dress {@code roomName} and whose gate admits {@code gateCtx}. */
+    static String pick(String roomName, long seed, games.brennan.dungeontrain.template.GateContext gateCtx) {
+        return pickAmong(ChunkFrameRegistry.names(), ChunkFrameMetaStore::get, roomName, seed, gateCtx);
+    }
+
+    /**
+     * The weighted pick itself, over {@code names} with their meta from {@code metaOf} — pure, so a test
+     * can run it without the registry. A frame is a candidate when it dresses {@code roomName} and, given
+     * a context, its effective gate (its own, or its Stage's) admits it.
+     */
+    static String pickAmong(java.util.List<String> frameNames,
+                            java.util.function.Function<String, ChunkFrameMeta> metaOf, String roomName,
+                            long seed, games.brennan.dungeontrain.template.GateContext gateCtx) {
         java.util.List<String> names = new java.util.ArrayList<>();
         java.util.List<Integer> weights = new java.util.ArrayList<>();
         int total = 0;
-        for (String name : ChunkFrameRegistry.names()) {
-            ChunkFrameMeta meta = ChunkFrameMetaStore.get(name);
+        for (String name : frameNames) {
+            ChunkFrameMeta meta = metaOf.apply(name);
             if (!meta.appliesTo(roomName)) continue;
+            if (gateCtx != null && !gateCtx.allows(effectiveGate(meta))) continue;
             names.add(name);
             weights.add(meta.weight());
             total += meta.weight();

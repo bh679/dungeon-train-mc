@@ -293,7 +293,9 @@ public final class PortalChunkDimension {
         // unsalted it is a pure function of the pair, as in play.
         int rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);
         java.util.Optional<ChunkFramePlacer.Picked> frame =
-            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex);
+            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex,
+                // A pair planned before a restart has no planned frame left: its column's own context.
+                games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
         if (frame.isEmpty()) return;
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and

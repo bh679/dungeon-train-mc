@@ -95,6 +95,8 @@ final class ChunkFrameCommand {
                         .then(Commands.literal("off").executes(ctx -> toggleRoom(ctx, false))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
+                    .then(Commands.literal("inc").executes(ctx -> editMeta(ctx, m -> m.withWeight(m.weight() + 1))))
+                    .then(Commands.literal("dec").executes(ctx -> editMeta(ctx, m -> m.withWeight(m.weight() - 1))))
                     .then(Commands.argument("weight",
                             IntegerArgumentType.integer(ChunkFrameMeta.MIN_WEIGHT, ChunkFrameMeta.MAX_WEIGHT))
                         .executes(ctx -> editMeta(ctx, m -> m.withWeight(IntegerArgumentType.getInteger(ctx, "weight")))))))
@@ -106,7 +108,22 @@ final class ChunkFrameCommand {
                     .then(Commands.literal("void").executes(ctx -> editMeta(ctx,
                         m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.VOID))))
                     .then(Commands.literal("world_border").executes(ctx -> editMeta(ctx,
-                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.WORLD_BORDER))))));
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.WORLD_BORDER))))))
+            // Spawn gate, the same subcommands every template's gate takes: where along the train the
+            // frame may appear. The editor's gate rows send these (PlotCategory.CHUNK_FRAMES).
+            .then(EditorCommand.minLevelSingle(FRAMES, ChunkFrameCommand::editGate))
+            .then(EditorCommand.maxLevelSingle(FRAMES, ChunkFrameCommand::editGate))
+            .then(EditorCommand.phaseSingle(FRAMES, ChunkFrameCommand::editGate))
+            .then(EditorCommand.periodSingle(FRAMES, ChunkFrameCommand::editGate))
+            // Link to a Stage preset (it then owns the levels and bands), or "custom" for the frame's own.
+            .then(Commands.literal("stage")
+                .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
+                    .then(Commands.argument("stage", StringArgumentType.word())
+                        .executes(ctx -> {
+                            String token = StringArgumentType.getString(ctx, "stage");
+                            String stage = "custom".equalsIgnoreCase(token) ? null : token;
+                            return editMeta(ctx, m -> m.withStage(stage));
+                        }))));
     }
 
     private static int list(CommandSourceStack source) {
@@ -213,8 +230,11 @@ final class ChunkFrameCommand {
     }
 
     private static int editMeta(CommandContext<CommandSourceStack> ctx, java.util.function.UnaryOperator<ChunkFrameMeta> edit) {
-        CommandSourceStack source = ctx.getSource();
-        String frame = StringArgumentType.getString(ctx, "frame");
+        return editMetaNamed(ctx.getSource(), StringArgumentType.getString(ctx, "frame"), edit);
+    }
+
+    private static int editMetaNamed(CommandSourceStack source, String frame,
+                                     java.util.function.UnaryOperator<ChunkFrameMeta> edit) {
         if (!ChunkFrameRegistry.names().contains(frame)) return fail(source, "No frame named " + frame + ".");
         try {
             ChunkFrameMetaStore.save(frame, edit.apply(ChunkFrameMetaStore.get(frame)), EditorDevMode.isEnabled());
@@ -226,6 +246,12 @@ final class ChunkFrameCommand {
         ServerPlayer player = source.getPlayer();
         if (player != null) DungeonTrainNet.sendTo(player, ChunkFrameRoomsRequestPacket.build(frame));
         return 1;
+    }
+
+    /** The gate subcommands' apply step for a frame: {@code op} over its meta's own gate. */
+    private static int editGate(CommandSourceStack source, String frame,
+                                java.util.function.UnaryOperator<games.brennan.dungeontrain.template.TemplateGate> op) {
+        return editMetaNamed(source, frame, m -> m.withGate(op.apply(m.gate())));
     }
 
     private static int fail(CommandSourceStack source, String message) {
