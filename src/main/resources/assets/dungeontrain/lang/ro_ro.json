@@ -1107,7 +1107,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Bullying sau hărțuire",
   "gui.dungeontrain.photo_report.topic.illicit": "Periculos sau ilegal",
   "gui.dungeontrain.photo_report.topic.profanity": "Înjurături",
-  "gui.dungeontrain.photo_report.confirm": "Raportezi? Apasă din nou",
+  "gui.dungeontrain.photo_report.send": "Raportează",
   "gui.dungeontrain.photo_report.back": "Înapoi",
   "gui.dungeontrain.photo_report.cancel": "Anulează",
   "chat.dungeontrain.photo_report.response.1": "Raportată. Cineva se va uita atent la această fotografie.",

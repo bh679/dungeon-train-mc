@@ -958,7 +958,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "괴롭힘",
   "gui.dungeontrain.photo_report.topic.illicit": "위험하거나 불법적인 내용",
   "gui.dungeontrain.photo_report.topic.profanity": "욕설",
-  "gui.dungeontrain.photo_report.confirm": "신고할까? 한 번 더 클릭",
+  "gui.dungeontrain.photo_report.send": "신고하기",
   "gui.dungeontrain.photo_report.back": "뒤로",
   "gui.dungeontrain.photo_report.cancel": "취소",
   "chat.dungeontrain.photo_report.response.1": "신고했어. 누군가 이 사진을 제대로 살펴볼 거야.",

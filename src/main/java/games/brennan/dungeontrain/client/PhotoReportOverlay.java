@@ -37,9 +37,10 @@ import java.util.List;
  * screen would get.</p>
  *
  * <p>Pages: the first offers "Text with an inappropriate message" ›, "Hate symbol" and "Something
- * else" ›; both › pages list {@link PhotoReportReason#TOPICS}. A reason is clicked once to arm it
- * and again to send, as on a book's report icon. Sending closes the photo; the normal close path
- * counts the view and burns it. Book reports are a separate control and are unaffected.</p>
+ * else" ›; both › pages list {@link PhotoReportReason#TOPICS}. Clicking a reason selects it (outlined)
+ * and turns the page's Cancel into a highlighted Report button that sends it. Sending closes the
+ * photo; the normal close path counts the view and burns it. Book reports are a separate control and
+ * are unaffected.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoReportOverlay {
@@ -60,6 +61,11 @@ public final class PhotoReportOverlay {
     private static final int COLOR_PANEL = 0xF0100A06;
     private static final int COLOR_PANEL_EDGE = 0xFF6B4A1E;
     private static final int COLOR_TITLE = 0xFFE7C77B;
+    private static final int COLOR_SELECTED = 0xFFFFD45E;
+    /** Report button tint over the vanilla sprite: a clear red that survives its shading. */
+    private static final float SEND_TINT_R = 1.6F;
+    private static final float SEND_TINT_G = 0.45F;
+    private static final float SEND_TINT_B = 0.45F;
     private static final int RESPONSE_COUNT = 3;
 
     private static final ResourceLocation REPORT_SPRITE =
@@ -75,6 +81,9 @@ public final class PhotoReportOverlay {
     private static Page page = Page.CLOSED;
     private static String armed;
     private static List<Button> rows = List.of();
+    /** The selected reason's row and the Report button, outlined while a reason is selected. */
+    private static Button selectedRow;
+    private static Button sendButton;
     private static int panelLeft;
     private static int panelTop;
     private static int panelHeight;
@@ -105,12 +114,16 @@ public final class PhotoReportOverlay {
         page = Page.CLOSED;
         armed = null;
         rows = List.of();
+        selectedRow = null;
+        sendButton = null;
     }
 
     /** Lay out the current page's buttons, centred on the screen. */
     private static void build() {
         if (shownOn == null || page == Page.CLOSED) return;
         List<Button> next = new ArrayList<>();
+        selectedRow = null;
+        sendButton = null;
         int rowCount = page == Page.MAIN ? 3 : PhotoReportReason.TOPICS.size();
         int listHeight = rowCount * (ROW_HEIGHT + ROW_GAP) - ROW_GAP;
         panelHeight = PANEL_PAD + TITLE_HEIGHT + listHeight + FOOTER_GAP + ROW_HEIGHT + PANEL_PAD;
@@ -140,8 +153,17 @@ public final class PhotoReportOverlay {
             next.add(new DarkTintedButton(x, y, FOOTER_WIDTH, ROW_HEIGHT,
                 Component.translatable("gui.dungeontrain.photo_report.back"), b -> open(Page.MAIN)));
         }
-        next.add(new DarkTintedButton(x + w - FOOTER_WIDTH, y, FOOTER_WIDTH, ROW_HEIGHT,
-            Component.translatable("gui.dungeontrain.photo_report.cancel"), b -> close()));
+        if (armed != null) {
+            // A reason is selected: Cancel becomes the button that sends it.
+            String reason = armed;
+            sendButton = new DarkTintedButton(x + w - FOOTER_WIDTH, y, FOOTER_WIDTH, ROW_HEIGHT,
+                Component.translatable("gui.dungeontrain.photo_report.send"), b -> send(reason),
+                SEND_TINT_R, SEND_TINT_G, SEND_TINT_B).withStrongHover();
+            next.add(sendButton);
+        } else {
+            next.add(new DarkTintedButton(x + w - FOOTER_WIDTH, y, FOOTER_WIDTH, ROW_HEIGHT,
+                Component.translatable("gui.dungeontrain.photo_report.cancel"), b -> close()));
+        }
         rows = List.copyOf(next);
     }
 
@@ -150,19 +172,26 @@ public final class PhotoReportOverlay {
             Component.translatable(key).append(" >"), b -> open(target));
     }
 
-    /** First click arms (the label asks to confirm); a second click on the same row sends. */
+    /** Clicking a reason selects it; the Report button (in place of Cancel) sends it. */
     private static Button reasonRow(int x, int y, int w, String reason, Component label) {
-        Component shown = reason.equals(armed)
-            ? Component.translatable("gui.dungeontrain.photo_report.confirm").withStyle(ChatFormatting.RED)
-            : label;
-        return new DarkTintedButton(x, y, w, ROW_HEIGHT, shown, b -> {
-            if (reason.equals(armed)) {
-                send(reason);
-            } else {
-                armed = reason;
-                build();
-            }
+        Button row = new DarkTintedButton(x, y, w, ROW_HEIGHT, label, b -> {
+            armed = reason;
+            build();
         });
+        if (reason.equals(armed)) selectedRow = row;
+        return row;
+    }
+
+    /** A 1px frame just outside {@code b}. */
+    private static void outline(GuiGraphics g, Button b, int color) {
+        int x0 = b.getX() - 1;
+        int y0 = b.getY() - 1;
+        int x1 = b.getX() + b.getWidth() + 1;
+        int y1 = b.getY() + b.getHeight() + 1;
+        g.fill(x0, y0, x1, y0 + 1, color);
+        g.fill(x0, y1 - 1, x1, y1, color);
+        g.fill(x0, y0, x0 + 1, y1, color);
+        g.fill(x1 - 1, y0, x1, y1, color);
     }
 
     private static void send(String reason) {
@@ -204,10 +233,12 @@ public final class PhotoReportOverlay {
         g.drawCenteredString(font, Component.translatable(titleKey), panelLeft + PANEL_WIDTH / 2,
             panelTop + PANEL_PAD, COLOR_TITLE);
         for (Button row : rows) row.render(g, mx, my, event.getPartialTick());
+        if (selectedRow != null) outline(g, selectedRow, COLOR_SELECTED);
+        if (sendButton != null) outline(g, sendButton, COLOR_SELECTED);
         g.pose().popPose();
     }
 
-    /** While the picker is open it takes every click; a click off the armed row disarms it. */
+    /** While the picker is open it takes every click; a click off every button clears the selection. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onMouseClicked(ScreenEvent.MouseButtonPressed.Pre event) {
         if (event.getScreen() != shownOn || !isOpen()) return;
@@ -237,7 +268,7 @@ public final class PhotoReportOverlay {
         if (event.getScreen() == shownOn && isOpen()) event.setCanceled(true);
     }
 
-    /** Esc disarms, then steps back, then closes the picker; the photo stays open. Other keys do nothing. */
+    /** Esc clears the selection, then steps back, then closes the picker; the photo stays open. Other keys do nothing. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
         if (event.getScreen() != shownOn || !isOpen()) return;

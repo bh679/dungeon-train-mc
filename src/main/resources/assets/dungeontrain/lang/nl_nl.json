@@ -993,7 +993,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Pesten of intimidatie",
   "gui.dungeontrain.photo_report.topic.illicit": "Gevaarlijk of illegaal",
   "gui.dungeontrain.photo_report.topic.profanity": "Vloeken",
-  "gui.dungeontrain.photo_report.confirm": "Rapporteren? Klik nogmaals",
+  "gui.dungeontrain.photo_report.send": "Rapporteren",
   "gui.dungeontrain.photo_report.back": "Terug",
   "gui.dungeontrain.photo_report.cancel": "Annuleren",
   "chat.dungeontrain.photo_report.response.1": "Gerapporteerd. Iemand gaat deze foto goed bekijken.",

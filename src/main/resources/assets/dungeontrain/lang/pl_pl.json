@@ -1028,7 +1028,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Nękanie lub prześladowanie",
   "gui.dungeontrain.photo_report.topic.illicit": "Niebezpieczne lub nielegalne",
   "gui.dungeontrain.photo_report.topic.profanity": "Przekleństwa",
-  "gui.dungeontrain.photo_report.confirm": "Zgłosić? Kliknij ponownie",
+  "gui.dungeontrain.photo_report.send": "Zgłoś",
   "gui.dungeontrain.photo_report.back": "Wstecz",
   "gui.dungeontrain.photo_report.cancel": "Anuluj",
   "chat.dungeontrain.photo_report.response.1": "Zgłoszono. Ktoś dokładnie obejrzy to zdjęcie.",

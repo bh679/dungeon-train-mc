@@ -993,7 +993,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Acoso o bullying",
   "gui.dungeontrain.photo_report.topic.illicit": "Peligroso o ilegal",
   "gui.dungeontrain.photo_report.topic.profanity": "Groserías",
-  "gui.dungeontrain.photo_report.confirm": "¿Reportar? Clic otra vez",
+  "gui.dungeontrain.photo_report.send": "Reportar",
   "gui.dungeontrain.photo_report.back": "Atrás",
   "gui.dungeontrain.photo_report.cancel": "Cancelar",
   "chat.dungeontrain.photo_report.response.1": "Reportada. Alguien revisará esta foto con calma.",

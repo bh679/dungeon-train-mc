@@ -1072,7 +1072,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Bullying or harassment",
   "gui.dungeontrain.photo_report.topic.illicit": "Dangerous or illegal",
   "gui.dungeontrain.photo_report.topic.profanity": "Swearing",
-  "gui.dungeontrain.photo_report.confirm": "Report? Click again",
+  "gui.dungeontrain.photo_report.send": "Report",
   "gui.dungeontrain.photo_report.back": "Back",
   "gui.dungeontrain.photo_report.cancel": "Cancel",
   "chat.dungeontrain.photo_report.response.1": "Reported. Someone will look at this photo properly.",

@@ -958,7 +958,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "いじめ・嫌がらせ",
   "gui.dungeontrain.photo_report.topic.illicit": "危険・違法",
   "gui.dungeontrain.photo_report.topic.profanity": "汚い言葉",
-  "gui.dungeontrain.photo_report.confirm": "報告する？もう一度クリック",
+  "gui.dungeontrain.photo_report.send": "報告する",
   "gui.dungeontrain.photo_report.back": "戻る",
   "gui.dungeontrain.photo_report.cancel": "キャンセル",
   "chat.dungeontrain.photo_report.response.1": "報告しました。この写真はきちんと確認されます。",

@@ -958,7 +958,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "霸凌或骚扰",
   "gui.dungeontrain.photo_report.topic.illicit": "危险或违法",
   "gui.dungeontrain.photo_report.topic.profanity": "脏话",
-  "gui.dungeontrain.photo_report.confirm": "确定举报？再点一次",
+  "gui.dungeontrain.photo_report.send": "举报",
   "gui.dungeontrain.photo_report.back": "返回",
   "gui.dungeontrain.photo_report.cancel": "取消",
   "chat.dungeontrain.photo_report.response.1": "已举报。会有人认真查看这张照片。",

@@ -993,7 +993,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Mobbing oder Belästigung",
   "gui.dungeontrain.photo_report.topic.illicit": "Gefährlich oder illegal",
   "gui.dungeontrain.photo_report.topic.profanity": "Fluchen",
-  "gui.dungeontrain.photo_report.confirm": "Melden? Nochmal klicken",
+  "gui.dungeontrain.photo_report.send": "Melden",
   "gui.dungeontrain.photo_report.back": "Zurück",
   "gui.dungeontrain.photo_report.cancel": "Abbrechen",
   "chat.dungeontrain.photo_report.response.1": "Gemeldet. Jemand wird sich dieses Foto genau ansehen.",

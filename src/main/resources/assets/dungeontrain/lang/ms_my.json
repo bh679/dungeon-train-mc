@@ -958,7 +958,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Buli atau gangguan",
   "gui.dungeontrain.photo_report.topic.illicit": "Berbahaya atau haram",
   "gui.dungeontrain.photo_report.topic.profanity": "Kata-kata kesat",
-  "gui.dungeontrain.photo_report.confirm": "Laporkan? Klik lagi",
+  "gui.dungeontrain.photo_report.send": "Laporkan",
   "gui.dungeontrain.photo_report.back": "Kembali",
   "gui.dungeontrain.photo_report.cancel": "Batal",
   "chat.dungeontrain.photo_report.response.1": "Dilaporkan. Seseorang akan meneliti foto ini dengan betul.",

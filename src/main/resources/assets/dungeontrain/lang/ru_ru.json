@@ -1033,7 +1033,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Травля или домогательства",
   "gui.dungeontrain.photo_report.topic.illicit": "Опасное или незаконное",
   "gui.dungeontrain.photo_report.topic.profanity": "Ругательства",
-  "gui.dungeontrain.photo_report.confirm": "Пожаловаться? Нажмите снова",
+  "gui.dungeontrain.photo_report.send": "Пожаловаться",
   "gui.dungeontrain.photo_report.back": "Назад",
   "gui.dungeontrain.photo_report.cancel": "Отмена",
   "chat.dungeontrain.photo_report.response.1": "Жалоба отправлена. Это фото внимательно проверят.",

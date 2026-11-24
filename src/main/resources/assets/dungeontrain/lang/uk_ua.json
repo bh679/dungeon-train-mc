@@ -1107,7 +1107,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Цькування або домагання",
   "gui.dungeontrain.photo_report.topic.illicit": "Небезпечне або незаконне",
   "gui.dungeontrain.photo_report.topic.profanity": "Лайка",
-  "gui.dungeontrain.photo_report.confirm": "Поскаржитися? Натисни ще раз",
+  "gui.dungeontrain.photo_report.send": "Поскаржитися",
   "gui.dungeontrain.photo_report.back": "Назад",
   "gui.dungeontrain.photo_report.cancel": "Скасувати",
   "chat.dungeontrain.photo_report.response.1": "Скаргу надіслано. Хтось уважно перегляне це фото.",

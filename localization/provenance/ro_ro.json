@@ -1107,7 +1107,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7ebda100f472b680"},
   "gui.dungeontrain.photo_report.topic.illicit": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f1dd5d0ab255108c"},
   "gui.dungeontrain.photo_report.topic.profanity": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e7dff0be190191c4"},
-  "gui.dungeontrain.photo_report.confirm": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "945e6479fe1fd865"},
+  "gui.dungeontrain.photo_report.send": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b6ce788d9786917c"},
   "gui.dungeontrain.photo_report.back": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "76900f1bfd16c8d4"},
   "gui.dungeontrain.photo_report.cancel": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "19766ed6ccb2f4a3"},
   "chat.dungeontrain.photo_report.response.1": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6e56fa7d1857a79c"},

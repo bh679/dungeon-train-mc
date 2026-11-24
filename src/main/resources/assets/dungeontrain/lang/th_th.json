@@ -958,7 +958,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "การกลั่นแกล้งหรือคุกคาม",
   "gui.dungeontrain.photo_report.topic.illicit": "อันตรายหรือผิดกฎหมาย",
   "gui.dungeontrain.photo_report.topic.profanity": "คำหยาบ",
-  "gui.dungeontrain.photo_report.confirm": "รายงาน? คลิกอีกครั้ง",
+  "gui.dungeontrain.photo_report.send": "รายงาน",
   "gui.dungeontrain.photo_report.back": "กลับ",
   "gui.dungeontrain.photo_report.cancel": "ยกเลิก",
   "chat.dungeontrain.photo_report.response.1": "รายงานแล้ว จะมีคนตรวจดูรูปนี้อย่างละเอียด",

@@ -993,7 +993,7 @@
   "gui.dungeontrain.photo_report.topic.harassment": "Bullismo o molestie",
   "gui.dungeontrain.photo_report.topic.illicit": "Pericoloso o illegale",
   "gui.dungeontrain.photo_report.topic.profanity": "Parolacce",
-  "gui.dungeontrain.photo_report.confirm": "Segnalare? Clicca ancora",
+  "gui.dungeontrain.photo_report.send": "Segnala",
   "gui.dungeontrain.photo_report.back": "Indietro",
   "gui.dungeontrain.photo_report.cancel": "Annulla",
   "chat.dungeontrain.photo_report.response.1": "Segnalata. Qualcuno esaminerà questa foto con attenzione.",
