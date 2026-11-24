@@ -101,7 +101,7 @@
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
   },
   "chunk_dimension": {
-    "weight": 1,
+    "weight": 2,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
   },
   "chunk_dimension_bop": {
