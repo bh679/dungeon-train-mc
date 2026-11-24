@@ -2380,6 +2380,63 @@
       "woodLocked": true
     }
   },
+  "poplar": {
+    "name": "poplar",
+    "group": "wood",
+    "minLevel": 996,
+    "maxLevel": 1011,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:poplar_planks",
+        "minecraft:poplar_wood",
+        "minecraft:stripped_poplar_wood",
+        "minecraft:poplar_log",
+        "minecraft:stripped_poplar_log"
+      ],
+      "stairs": [
+        "minecraft:poplar_stairs",
+        "minecraft:poplar_stairs"
+      ],
+      "slabs": [
+        "minecraft:poplar_slab",
+        "minecraft:poplar_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "poplar",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:yellow_terracotta",
+        "minecraft:orange_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:yellow_concrete",
+        "minecraft:orange_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "pythadendron": {
     "name": "pythadendron",
     "group": "wood",
@@ -2621,7 +2678,7 @@
   "spruce": {
     "name": "spruce",
     "group": "wood",
-    "minLevel": 996,
+    "minLevel": 1012,
     "phases": [
       "OVERWORLD",
       "VOID",

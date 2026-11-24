@@ -76,6 +76,8 @@ WOODS = [
     ("jellyshroom", BE, "jellyshroom", "bcl", ("purple", "light_blue", "black"), ("purple", "light_blue", "black")),
     ("mossy_glowshroom", BE, "mossy_glowshroom", "bcl", ("light_blue", "green", "gray"), ("light_blue", "green", "gray")),
     ("umbrella_tree", BE, "umbrella_tree", "bcl", ("green", "light_blue", "black"), ("green", "light_blue", "gray")),
+    # VanillaBackport 1.2+ (minecraft:); appended last so only spruce's open-ended top band moves.
+    ("poplar", "minecraft", "poplar", "vanilla", ("yellow", "orange", "white"), ("yellow", "orange", "white")),
 ]
 
 

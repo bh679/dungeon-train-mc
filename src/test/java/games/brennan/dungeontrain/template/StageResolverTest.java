@@ -84,7 +84,10 @@ final class StageResolverTest {
         assertEquals("nether_willow", at(835, TrainPhase.OVERWORLD));
         assertEquals("dragon_tree", at(836, TrainPhase.OVERWORLD));
         assertEquals("umbrella_tree", at(995, TrainPhase.OVERWORLD));
-        assertEquals("spruce", at(996, TrainPhase.OVERWORLD));
+        // Poplar's band runs past the gate cap, so it holds 996-1000 and spruce takes over above it.
+        assertEquals("poplar", at(996, TrainPhase.OVERWORLD));
+        assertEquals("poplar", at(1000, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(1001, TrainPhase.OVERWORLD));
     }
 
     /**
@@ -137,7 +140,7 @@ final class StageResolverTest {
     @Test
     @DisplayName("a level above every named band still resolves — the top band runs open-ended")
     void aboveAllBandsResolvesToTheTopStage() {
-        assertEquals("spruce", at(996, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(1012, TrainPhase.OVERWORLD));
         assertEquals("spruce", at(5000, TrainPhase.OVERWORLD));
         // The top band runs open-ended in every phase it lists — but not END, which it no longer lists.
         assertEquals("spruce", at(5000, TrainPhase.CHUNCKS));
