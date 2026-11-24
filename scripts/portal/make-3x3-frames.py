@@ -7,7 +7,7 @@ laid out wider: every cell of the new frame is mapped to a cell of stone_frame, 
 block and its block-variant roll from the sidecar, so the new frames keep stone_frame's look and
 rolls. Once generated they are ordinary frames: open, edit and save them in the editor.
 
-    stone_frame_bays       stone_frame's inside tiled 3x3: nine timber bays
+    stone_frame_bays       stone_frame's inside tiled 3x3: nine bays marked by pillars and beams
     stone_frame_hall       corners kept, the 5-block post and beam rhythm carried on, mirrored at the middle
     stone_frame_courtyard  the hall's walls and corners only: floor and roof open past a 2-block rim
 
@@ -35,6 +35,9 @@ INSIDE = 16
 PERIOD = 5           # stone_frame's post and beam rhythm along a wall
 RHYTHM_START = 6     # where that rhythm's first whole period starts
 RIM = 2              # how far in from the edge the courtyard keeps its floor and roof
+WALL_BAND = (0, 1, INSIDE - 2, INSIDE - 1)   # a tile's wall columns and the posts against them
+FLOOR_ROWS = (0, 2)      # stone_frame's floor and its beams
+CEILING_ROWS = (31, 33)  # its ceiling beams and roof
 
 
 def bays(i):
@@ -60,13 +63,34 @@ def hall(i):
     return OLD - 1 - hall_half(NEW - 1 - i)
 
 
+def bays_keeps(x, y, z):
+    """Whether the bays keep a cell: not where stone_frame's own walls would stand on a chunk line.
+
+    Tiling stone_frame's inside also tiles its plank walls, which would wall the room into nine
+    boxes. On the chunk lines inside the room only the corner pillars (where two lines cross) and the
+    floor and ceiling beams stay, so the room stays one space with nine bays marked out overhead.
+    """
+    # The outer walls stay whole: only the chunk lines inside the room are thinned.
+    if min(x, NEW - 1 - x, z, NEW - 1 - z) <= RIM:
+        return True
+    line_x = 0 < x < NEW - 1 and (x - 1) % INSIDE in WALL_BAND and x not in (1, 2, NEW - 3, NEW - 2)
+    line_z = 0 < z < NEW - 1 and (z - 1) % INSIDE in WALL_BAND and z not in (1, 2, NEW - 3, NEW - 2)
+    if not (line_x or line_z):
+        return True
+    if FLOOR_ROWS[0] <= y <= FLOOR_ROWS[1] or CEILING_ROWS[0] <= y <= CEILING_ROWS[1]:
+        return True
+    pillar_x = line_x and (x - 1) % INSIDE in (0, INSIDE - 1)
+    pillar_z = line_z and (z - 1) % INSIDE in (0, INSIDE - 1)
+    return pillar_x and pillar_z
+
+
 def courtyard_keeps(x, y, z):
     """Whether the courtyard keeps a cell: anything within the rim of a wall, at any height."""
     return min(x, NEW - 1 - x, z, NEW - 1 - z) <= RIM
 
 
 DESIGNS = {
-    "stone_frame_bays": (bays, None),
+    "stone_frame_bays": (bays, bays_keeps),
     "stone_frame_hall": (hall, None),
     "stone_frame_courtyard": (hall, courtyard_keeps),
 }

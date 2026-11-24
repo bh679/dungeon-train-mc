@@ -185,6 +185,15 @@ public final class ChunkFramePlacer {
      * @return cells changed
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
+        return place(level, picked, roomOrigin, mask, rollIndex, 0, picked.template().size().getY());
+    }
+
+    /**
+     * {@link #place} for the frame's layers {@code yFrom} up to (not including) {@code yTo} — what
+     * lets a wide frame be written a few layers a tick, bottom up, instead of all at once.
+     */
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+                            int yFrom, int yTo) {
         ChunkFrameTemplate frame = picked.template();
         VariantDoc variants = picked.variants();
         long seed = level.getSeed();
@@ -198,7 +207,7 @@ public final class ChunkFramePlacer {
             .inside(roomOrigin, size.getX() - 2, size.getY() - 2, size.getZ() - 2)
             .and(p -> !mask.covers(p));
         try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
-            for (int y = 0; y < size.getY(); y++) {
+            for (int y = Math.max(0, yFrom); y < Math.min(size.getY(), yTo); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
                     for (int x = 0; x < size.getX(); x++) {
                         BlockState state = frame.at(x, y, z);
