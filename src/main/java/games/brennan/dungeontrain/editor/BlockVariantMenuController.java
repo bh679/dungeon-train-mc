@@ -874,7 +874,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
-            case SET_SIGN_MOUNT, SET_SIGN_SHARED, SET_SIGN_WAXED, SET_SIGN_TEXT -> {
+            case SET_SIGN_MOUNT, SET_SIGN_SHARED, SET_SIGN_WAXED, SET_SIGN_TEXT, SET_SIGN_LOCKED -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 List<VariantState> next = signEdit(mutated, idx, packet, plot.supportsConnectMode());
@@ -1883,6 +1883,7 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
             case SET_SIGN_MOUNT -> SignRowEdits.setMount(rows, idx, packet.delta(), autoAllowed);
             case SET_SIGN_SHARED -> SignRowEdits.setShared(rows, idx, packet.delta() != 0);
             case SET_SIGN_WAXED -> SignRowEdits.setWaxed(rows, idx, packet.delta() != 0);
+            case SET_SIGN_LOCKED -> SignRowEdits.setLocked(rows, idx, packet.delta() != 0);
             case SET_SIGN_TEXT -> {
                 SignVariants.Text text = SignVariants.fromWire(packet.stateString());
                 yield text == null ? null : SignRowEdits.setText(rows, idx, text);

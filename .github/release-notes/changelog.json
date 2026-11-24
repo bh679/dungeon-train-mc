@@ -38671,6 +38671,236 @@
       "released": true,
       "released_in": "v0.1978.0",
       "released_at": "2026-11-22T23:58:50Z"
+    },
+    {
+      "id": "death-camera-flies-to-killer",
+      "version": "0.1986.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Death camera flies to your killer",
+      "summary": "After you die, the camera now flies through the world from your body to whoever killed you, and back again, instead of cutting through black.",
+      "highlights": [
+        "A shorter look at the mob that killed you",
+        "The flight back carries straight on into the next shot"
+      ],
+      "pr": 2847,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "editor-fluid-flow-test-settings",
+      "version": "0.1981.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: still water and separate test settings",
+      "summary": "Water and lava you place while building in the editor now stay put instead of flooding the plot, and saved builds keep only the source blocks you placed. Editor settings like Redstone, TNT and Mobs now remember a separate choice for when you test a carriage.",
+      "highlights": [
+        "New Fluid flow setting in the editor: off while you build, on when you test",
+        "Saved builds no longer bake in half-spread water or lava",
+        "Redstone, TNT, Observers, Auto fly, Mobs and Fluid flow each keep their own setting inside Test the Carriage"
+      ],
+      "pr": 2841,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "engine-screen-world-of-origin",
+      "version": "0.1987.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train",
+        "ui"
+      ],
+      "title": "Drifting engines show their home world",
+      "summary": "Open a Drifting Engine Block and it now tells you whose world it came from, right under the carriage id. Engines you place say they are from your world, wherever they travel.",
+      "highlights": [],
+      "pr": 2850,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "half-heart-max-health",
+      "version": "0.1982.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Half hearts show as half hearts",
+      "summary": "Gaining half a heart of max health now shows half a heart on your health bar, instead of a whole empty one you could never fill.",
+      "highlights": [],
+      "pr": 2842,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "no-advancements-while-dead",
+      "version": "0.1979.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancements are no longer earned while you lie dead waiting to respawn.",
+      "highlights": [],
+      "pr": 2838,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "ordered-dimensional-subvariants",
+      "version": "0.1980.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor: rooms that play in order",
+      "summary": "In the editor, a room's sub-variants can now be set to appear in a set order, to show up only once for each player, or to get rarer or commoner after a player has seen them a few times.",
+      "highlights": [
+        "Order: pick which sub-variant comes first, second and so on",
+        "Seen again: let a sub-variant appear just once per player",
+        "After visits: change how often it appears once a player has been there enough times"
+      ],
+      "pr": 2839,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "pot-plants-wait-for-band",
+      "version": "0.1982.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Flower pot fix",
+      "summary": "Potted plants in carriages now match how far the train has travelled.",
+      "highlights": [],
+      "pr": 2843,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "redstone-ore-fades-dimensional-carriages",
+      "version": "0.1984.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Redstone ore fix",
+      "summary": "Glowing redstone ore in dimensional carriages now fades back to normal over time, the same as everywhere else.",
+      "highlights": [],
+      "pr": 2846,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "room-lighting-sky-fix",
+      "version": "0.1984.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Lighting and sky fix",
+      "summary": "Lighting and sky fix.",
+      "highlights": [],
+      "pr": 2844,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "room-loot-and-new-rooms",
+      "version": "0.1990.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot"
+      ],
+      "title": "New rooms and a chest loot fix",
+      "summary": "A handful of new rooms built by the community join the train, and chests in several existing rooms now hold fresh loot each time instead of always the same items.",
+      "highlights": [
+        "New rooms from community builders",
+        "Chests in several rooms now roll their loot"
+      ],
+      "pr": 2851,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "sign-variant-lock",
+      "version": "0.1987.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Lock signs together in block variants",
+      "summary": "Builders can now lock all the signs in a block variant cell to one sign's settings.",
+      "highlights": [
+        "Click the lock on a sign and every other sign in the cell copies its mount, facing, text, colour, glow and wax, keeping its own wood",
+        "While locked, a change to any of them reaches them all, and new signs added to the cell join in",
+        "Wax and text editing are now quick icon buttons at the top of the sign popup"
+      ],
+      "pr": 2848,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
+    },
+    {
+      "id": "sign-variant-options",
+      "version": "0.1980.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Signs in block variants",
+      "summary": "Builders can now add signs as block variant options in the editor, give them text, and pick how they hang.",
+      "highlights": [
+        "A sign can be one of a cell's block options, with its own text or one text shared by every sign in the cell",
+        "Choose how it is mounted: on a wall, standing, hanging, on a wall bracket, or Auto to fit whatever is around it",
+        "Write the front and back, pick a text colour and glow, and wax it so passengers can't change it"
+      ],
+      "pr": 2840,
+      "date": "2026-11-23",
+      "released": true,
+      "released_in": "v0.1990.0",
+      "released_at": "2026-11-23T08:23:56Z"
     }
   ]
 }

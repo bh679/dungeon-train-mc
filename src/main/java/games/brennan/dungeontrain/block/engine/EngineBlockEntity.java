@@ -50,8 +50,19 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     private static final int[] SLOTS = {0};
     /** Set when the input holds charcoal rather than coal, so a reload gives back the same item. */
     private static final String TAG_INPUT_CHARCOAL = "InputCharcoal";
+    /** Who set this engine down, and their uuid: see {@link #setPlacedBy}. Absent when nobody is known. */
+    static final String TAG_PLACED_BY = "PlacedBy", TAG_PLACED_BY_UUID = "PlacedByUuid";
 
     private int banked;
+
+    /**
+     * The player who set this engine down, {@code ""} when unknown (spawned with its carriage, placed before
+     * engines kept a placer, or placed without network consent). Saved with the engine, so it rides the
+     * carriage's blob to every world it drifts into.
+     */
+    private String placedBy = "";
+    /** {@link #placedBy}'s uuid, to tell them it is theirs; {@code ""} alongside an unknown placer. */
+    private String placedByUuid = "";
 
     /**
      * The input, as a real stack: vanilla slot code edits the stack {@link #getItem} returns in place,
@@ -98,10 +109,30 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         return build == null || build.isCulled() ? null : build;
     }
 
-    /** The open-screen data for {@link EngineMenu#fromNetwork}: the carriage this engine is in, and its name id. */
-    public void writeMenuExtra(net.minecraft.network.RegistryFriendlyByteBuf buf) {
+    /**
+     * The open-screen data for {@link EngineMenu#fromNetwork}: the carriage this engine is in, its name id,
+     * and who placed the engine, as seen by {@code viewer}.
+     */
+    public void writeMenuExtra(net.minecraft.network.RegistryFriendlyByteBuf buf, Player viewer) {
         games.brennan.dungeontrain.train.SharedBuild build = liveBuild();
-        EngineMenu.writeExtra(buf, build != null, build == null ? "" : build.nameId());
+        EngineMenu.writeExtra(buf, build != null, build == null ? "" : build.nameId(), placedBy, isPlacedBy(viewer));
+    }
+
+    /** Record who set this engine down. Server side, from {@link EngineBlock#setPlacedBy}. */
+    public void setPlacedBy(String name, java.util.UUID uuid) {
+        placedBy = name == null ? "" : name;
+        placedByUuid = placedBy.isEmpty() || uuid == null ? "" : uuid.toString();
+        setChanged();
+    }
+
+    /** Who set this engine down, {@code ""} when unknown. */
+    public String placedBy() {
+        return placedBy;
+    }
+
+    /** Whether {@code player} is the one who set this engine down. False whenever the placer is unknown. */
+    public boolean isPlacedBy(Player player) {
+        return player != null && !placedByUuid.isEmpty() && placedByUuid.equals(player.getUUID().toString());
     }
 
     private int inputCount() {
@@ -210,7 +241,8 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
         games.brennan.dungeontrain.train.SharedBuild build = liveBuild();
-        return new EngineMenu(id, inventory, this, data, build != null, build == null ? "" : build.nameId());
+        return new EngineMenu(id, inventory, this, data, build != null, build == null ? "" : build.nameId(),
+                placedBy, isPlacedBy(player));
     }
 
     // ---- change propagation ----
@@ -245,6 +277,10 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         tag.putInt(DriftEngine.TAG_COAL, coal());
         if (inputCount() > 0) tag.putInt(DriftEngine.TAG_INPUT, inputCount());
         if (input.is(Items.CHARCOAL)) tag.putBoolean(TAG_INPUT_CHARCOAL, true);
+        if (!placedBy.isEmpty()) {
+            tag.putString(TAG_PLACED_BY, placedBy);
+            tag.putString(TAG_PLACED_BY_UUID, placedByUuid);
+        }
     }
 
     @Override
@@ -254,6 +290,8 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         int in = Math.max(0, Math.min(total, tag.getInt(DriftEngine.TAG_INPUT)));
         banked = total - in;
         input = in > 0 ? new ItemStack(tag.getBoolean(TAG_INPUT_CHARCOAL) ? Items.CHARCOAL : Items.COAL, in) : ItemStack.EMPTY;
+        placedBy = EngineMenu.clampName(tag.getString(TAG_PLACED_BY));
+        placedByUuid = placedBy.isEmpty() ? "" : tag.getString(TAG_PLACED_BY_UUID);
     }
 
     @Override

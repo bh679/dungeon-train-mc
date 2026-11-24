@@ -92,11 +92,27 @@ public class EngineBlock extends BaseEntityBlock {
         return new EngineBlockEntity(pos, state);
     }
 
+    /**
+     * Remembers who set the engine down, for its screen's "From <name>'s world" line, which travels with the
+     * carriage to other worlds. Only with the placer's network consent, the same gate their builds and
+     * their name on the passenger log pass through; without it the engine stays unattributed.
+     */
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, net.minecraft.world.entity.LivingEntity placer,
+                            net.minecraft.world.item.ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (level.isClientSide || !(placer instanceof net.minecraft.server.level.ServerPlayer player)) return;
+        if (!games.brennan.dungeontrain.event.SharedCarriageGate.canContribute(player)) return;
+        if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
+            engine.setPlacedBy(player.getGameProfile().getName(), player.getUUID());
+        }
+    }
+
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
         if (level.isClientSide) return InteractionResult.SUCCESS;
-        if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) player.openMenu(engine, engine::writeMenuExtra);
+        if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) player.openMenu(engine, buf -> engine.writeMenuExtra(buf, player));
         return InteractionResult.CONSUME;
     }
 

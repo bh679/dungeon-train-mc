@@ -12,6 +12,10 @@ import java.util.List;
  * <p>Shared text ({@link VariantSign#shared}) is resolved here, at edit time: a text or wax edit
  * on a shared row is written into every shared sign row of the cell, so the placers keep stamping
  * each row's own NBT.</p>
+ *
+ * <p>Locked rows ({@link VariantSign#locked}) go further: a mount or Auto edit on one is copied
+ * to every locked row too ({@link SignVariants#copyPlacement}), so the cell's signs differ only
+ * in wood.</p>
  */
 public final class SignRowEdits {
 
@@ -83,12 +87,45 @@ public final class SignRowEdits {
     }
 
     /**
-     * {@code added} as it joins a cell holding {@code cellRows}: a sign added to a cell whose signs
+     * {@code rows} with every sign row locked to row {@code idx} ({@code on}) or unlocked. Locking
+     * copies row {@code idx}'s mount, facing, rotation, Auto, text and wax onto the other sign rows
+     * (each keeps its wood); unlocking clears the lock only, so the text stays shared and nothing
+     * visible changes.
+     */
+    @Nullable
+    public static List<VariantState> setLocked(List<VariantState> rows, int idx, boolean on) {
+        if (!valid(rows, idx)) return null;
+        VariantState leader = rows.get(idx);
+        List<VariantState> out = new ArrayList<>(rows);
+        for (int i = 0; i < out.size(); i++) {
+            VariantState r = out.get(i);
+            if (!isSignRow(r)) continue;
+            out.set(i, on ? follow(leader, r, i == idx) : r.withSign(r.sign().withLocked(false)));
+        }
+        return out;
+    }
+
+    /** {@code row} made to match {@code leader} in everything but wood, and locked. */
+    private static VariantState follow(VariantState leader, VariantState row, boolean isLeader) {
+        VariantState next = isLeader ? row : SignVariants.copyPlacement(leader, row);
+        if (!isLeader) {
+            SignVariants.Text text = SignVariants.text(leader.blockEntityNbt());
+            next = next.withState(next.state(), SignVariants.withText(next.blockEntityNbt(), text));
+        }
+        return next.withSign(next.sign().withAuto(leader.sign().auto()).withLocked(true));
+    }
+
+    /**
+     * {@code added} as it joins a cell holding {@code cellRows}: a sign added to a locked cell takes
+     * everything but its wood from the lock; one added to a cell whose signs
      * share their text takes that text (and wax) and joins the sharing, so "same in cell" stays
      * true. Anything else comes back unchanged.
      */
     public static VariantState joinShared(List<VariantState> cellRows, VariantState added) {
         if (!isSignRow(added) || cellRows == null) return added;
+        for (VariantState r : cellRows) {
+            if (isSignRow(r) && r.sign().locked()) return follow(r, added, false);
+        }
         for (VariantState r : cellRows) {
             if (isSignRow(r) && r.sign().shared()) {
                 SignVariants.Text text = SignVariants.text(r.blockEntityNbt());
@@ -132,6 +169,14 @@ public final class SignRowEdits {
         }
         List<VariantState> out = new ArrayList<>(rows);
         out.set(idx, next);
+        if (r.sign().locked()) {
+            for (int i = 0; i < out.size(); i++) {
+                VariantState o = out.get(i);
+                if (i == idx || !isSignRow(o) || !o.sign().locked()) continue;
+                VariantState placed = SignVariants.copyPlacement(next, o);
+                out.set(i, placed.withSign(placed.sign().withAuto(next.sign().auto())));
+            }
+        }
         return out;
     }
 

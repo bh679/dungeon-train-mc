@@ -100,6 +100,47 @@
     "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
   },
+  "cmra_hallway_alcove_01": {
+    "weight": 1,
+    "name": "hallway_alcove",
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
+    }
+  },
+  "cmra_hallway_alcove_breakroom": {
+    "weight": 1,
+    "name": "hallway_alcove_breakroom",
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
+    }
+  },
+  "cmra_hallway_basic": {
+    "weight": 1,
+    "name": "hallway_basic",
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
+    }
+  },
+  "cmra_hallway_basic_warped": {
+    "weight": 1,
+    "name": "hallway_basic_warped",
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
+    }
+  },
+  "cmra_lobby": {
+    "weight": 1,
+    "name": "lobby",
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
+    }
+  },
+  "crma": 1,
   "cubes": {
     "weight": 1,
     "mode": "endless_repetition/exact/off/on/off/end"
@@ -619,6 +660,21 @@
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
+    }
+  },
+  "tas_archive_01": {
+    "weight": 1,
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
+    }
+  },
+  "tas_readingnook": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_surface",
+    "builder": {
+      "uuid": "6f7af1de8d4e4239ae1cc76dc9320291",
+      "name": "PouncingHen"
     }
   },
   "taschristmascarriage": {

@@ -255,6 +255,14 @@
     {
       "id": "fallactivitiescart1",
       "weight": 10
+    },
+    {
+      "id": "tas_readingnook",
+      "weight": 4
+    },
+    {
+      "id": "tas_archive_01",
+      "weight": 4
     }
   ]
 }

@@ -16,7 +16,8 @@ import java.util.List;
 
 /**
  * The Drifting Engine Block screen: under the title, the drifting carriage the engine is in, by its name
- * id; then the coal slot and this engine's gauge side by side, and under them how many more worlds this
+ * id, and under that the world it is from, by whoever placed the engine (blank when nobody is known), so
+ * an engine that drifted in from another world reads as theirs; then the coal slot and this engine's gauge side by side, and under them how many more worlds this
  * engine's coal lasts, plus, when other engines in the carriage hold coal too, how far all of them carry
  * it. With no carriage the fuel lines give way to a line saying so: fuel only matters to a carriage.
  */
@@ -32,15 +33,18 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
      * part picks up the gradient where the banked part leaves off.
      */
     private static final int GAUGE_X = 37, GAUGE_Y = 25 + EngineMenu.CARRIAGE_LINE_H, GAUGE_W = 130, GAUGE_H = 5;
-    private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 180, GAUGE_INPUT_V = 186;
+    private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 200, GAUGE_INPUT_V = 206;
     /**
      * The status line, under the slot row at the full width of the panel: lined up with the title and the
      * inventory label, and wide enough that "It recognises no carriage here" stays on one line.
      */
     private static final int TEXT_X = 8, STATUS_Y = 42 + EngineMenu.CARRIAGE_LINE_H, TEXT_WIDTH = 160;
     private static final int TEXT_COLOUR = 0x404040;
-    /** The carriage line, one line under the title, in the lighter grey a label's detail takes. */
-    private static final int CARRIAGE_Y_BELOW_TITLE = 10, CARRIAGE_COLOUR = 0x808080;
+    /**
+     * The carriage line, one line under the title, and the placer line under it, both in the lighter grey a
+     * label's detail takes.
+     */
+    private static final int CARRIAGE_Y_BELOW_TITLE = 10, PLACED_BY_Y_BELOW_TITLE = 20, CARRIAGE_COLOUR = 0x808080;
 
     public EngineScreen(EngineMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -90,6 +94,10 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
         super.renderLabels(graphics, mouseX, mouseY);
         graphics.drawString(font, carriageLine(menu.carriageId()), titleLabelX, titleLabelY + CARRIAGE_Y_BELOW_TITLE,
                 CARRIAGE_COLOUR, false);
+        Component placedBy = placedByLine(menu.placedBy(), menu.placedByYou());
+        if (placedBy != null) {
+            graphics.drawString(font, placedBy, titleLabelX, titleLabelY + PLACED_BY_Y_BELOW_TITLE, CARRIAGE_COLOUR, false);
+        }
         List<FormattedCharSequence> lines = new java.util.ArrayList<>();
         if (!menu.inCarriage()) {
             // No carriage: nothing for the fuel to carry anywhere.
@@ -113,6 +121,14 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
         return carriageId.isEmpty()
                 ? Component.translatable("gui.dungeontrain.engine_block.carriage_not_found")
                 : Component.translatable("gui.dungeontrain.engine_block.carriage_id", carriageId);
+    }
+
+    /** The line under the carriage: who placed the engine (a player name, never translated), or null when unknown. */
+    private static Component placedByLine(String placedBy, boolean placedByYou) {
+        if (placedBy.isEmpty()) return null;
+        return placedByYou
+                ? Component.translatable("gui.dungeontrain.engine_block.placed_by_you")
+                : Component.translatable("gui.dungeontrain.engine_block.placed_by", placedBy);
     }
 
     /** This engine's line: the worlds its own coal lasts, or spent while others still burn, or the end of the line. */

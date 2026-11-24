@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 3,
+  "pools": {},
+  "links": {
+    "21,7,19": "mining2",
+    "25,7,40": "mining2"
+  }
+}
