@@ -105,6 +105,6 @@ public final class ChunkFrameVariants {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read chunk frame variants for {}: {}", name, e.toString());
         }
-        return TrackVariantBlocks.fromJsonText(json, null, name, ChunkFrame.SIZE);
+        return TrackVariantBlocks.fromJsonText(json, null, name, ChunkFrameStore.sizeOf(name));
     }
 }

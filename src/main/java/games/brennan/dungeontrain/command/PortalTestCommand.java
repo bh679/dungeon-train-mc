@@ -159,7 +159,7 @@ public final class PortalTestCommand {
         }
         games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta =
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(frame);
-        java.util.List<String> chunkRooms = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.chunkRooms();
+        java.util.List<String> chunkRooms = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.chunkRooms(frame);
         var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
             games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, CHUNK_DIMENSIONS_GROUP)
             .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY);
