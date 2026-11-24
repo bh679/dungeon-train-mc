@@ -47,6 +47,14 @@
         {
           "ref": "adventureitemnames:discord_people",
           "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:name_plus_ending",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:formula_name",
+          "weight": 100.0
         }
       ]
     },
@@ -55,7 +63,20 @@
       "connection": " ",
       "newline": false,
       "label": "Apellido",
-      "refs": []
+      "refs": [
+        {
+          "ref": "adventureitemnames:formula_name",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:name_plus_ending",
+          "weight": 21.0
+        }
+      ]
     },
     {
       "chance": 0.2,
