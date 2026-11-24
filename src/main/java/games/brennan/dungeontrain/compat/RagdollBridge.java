@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,8 +33,10 @@ import java.util.UUID;
  *
  * <p>The mod is a required dependency, but DT never trusts a third-party API to keep linking: every
  * call is confined to the nested {@link Api} holder, which is only loaded once the mod list says the
- * mod is there, and the first {@link LinkageError} switches the bridge off for the rest of the
- * session. Without it the death scene plays exactly as it did before the body existed.</p>
+ * mod is there, and the first {@link Error} (a {@link LinkageError}, or a mixin that another mod
+ * failed to apply to Ragdolls) switches the bridge off for the rest of the session; {@link #probe()}
+ * looks for that at server start. Without it the death scene plays exactly as it did before the
+ * body existed.</p>
  */
 public final class RagdollBridge {
 
@@ -82,7 +85,7 @@ public final class RagdollBridge {
         if (!present) return null;
         try {
             return Api.spawn(level, position, yawDegrees, profile, velocityPerSecond, equipmentFrom, lifetimeTicks);
-        } catch (LinkageError e) {
+        } catch (Error e) {
             disable(e);
             return null;
         } catch (RuntimeException e) {
@@ -96,7 +99,7 @@ public final class RagdollBridge {
         if (!present) return Set.of();
         try {
             return Api.ragdollParts(level);
-        } catch (LinkageError e) {
+        } catch (Error e) {
             disable(e);
             return Set.of();
         }
@@ -115,7 +118,7 @@ public final class RagdollBridge {
         if (!present || bodyId == null) return -1;
         try {
             return Api.throwBody(level, bodyId, before, velocityPerSecond);
-        } catch (LinkageError e) {
+        } catch (Error e) {
             disable(e);
             return -1;
         } catch (RuntimeException e) {
@@ -129,7 +132,7 @@ public final class RagdollBridge {
         if (!present || bodyId == null) return;
         try {
             Api.release(bodyId);
-        } catch (LinkageError e) {
+        } catch (Error e) {
             disable(e);
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Sable: Ragdolls failed to release body {}: {}", bodyId, e.toString());
@@ -141,12 +144,65 @@ public final class RagdollBridge {
         if (!present) return;
         try {
             Api.clear();
-        } catch (LinkageError e) {
+        } catch (Error e) {
             disable(e);
         }
     }
 
-    private static void disable(LinkageError e) {
+    /**
+     * Internals of Sable: Ragdolls that DT's calls reach and the mod's own expiry runs through. Other
+     * mods mixin into them (Sable: Ragdoll - Patch does), and a mixin applies when its target class
+     * first loads, so a patch built for another Ragdolls version only fails at that moment.
+     */
+    static final List<String> PROBED_CLASSES = List.of(
+        "dev.leo.sableplayerragdoll.physics.RagdollExpireHelper",
+        "dev.leo.sableplayerragdoll.physics.RagdollBlockOwnership");
+
+    /** What a failure loading or calling into Sable: Ragdolls means for the bridge. */
+    enum Verdict {
+        /** The class is not there (renamed in another Ragdolls version): nothing to judge. */
+        SKIP,
+        /** Ragdolls (or a mod patching it) is broken: switch death bodies off. */
+        DISABLE,
+        /** The JVM itself is in trouble: not ours to swallow. */
+        RETHROW
+    }
+
+    static Verdict judge(Throwable t) {
+        if (t instanceof VirtualMachineError) return Verdict.RETHROW;
+        if (t instanceof ClassNotFoundException) return Verdict.SKIP;
+        return Verdict.DISABLE;
+    }
+
+    /**
+     * Load (without initialising) each of {@link #PROBED_CLASSES} up front, so a mod patching Sable:
+     * Ragdolls for a different version fails here, at server start, instead of in the tick where a
+     * death body is released or expires. The mod expires DT's bodies itself, out of DT's reach, so
+     * once a probe fails no body is spawned at all.
+     */
+    public static void probe() {
+        if (!present) return;
+        for (String name : PROBED_CLASSES) {
+            try {
+                Class.forName(name, false, RagdollBridge.class.getClassLoader());
+            } catch (Throwable t) {
+                switch (judge(t)) {
+                    case SKIP -> LOGGER.debug("[DungeonTrain] Sable: Ragdolls has no {}; not probed", name);
+                    case RETHROW -> throw (VirtualMachineError) t;
+                    case DISABLE -> {
+                        present = false;
+                        LOGGER.warn("[DungeonTrain] {} failed to load, most likely a mod that patches Sable: Ragdolls "
+                            + "(such as Sable: Ragdoll - Patch) does not match the installed Ragdolls version. "
+                            + "Death bodies are off for this session: {}", name, t.toString());
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private static void disable(Error e) {
+        if (judge(e) == Verdict.RETHROW) throw e;
         present = false;
         LOGGER.warn("[DungeonTrain] Sable: Ragdolls API no longer links; death bodies are off for this session: {}", e.toString());
     }
