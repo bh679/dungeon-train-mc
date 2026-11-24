@@ -410,6 +410,12 @@ public final class PortalChunkTerrain {
                 // Ahead of the ground, which is what the pair's planning waits on, so the stamp that
                 // follows never parses a frame's sidecar inside its tick.
                 games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.preload(level, roomName);
+                // A room bigger than one chunk samples a grid of them: see PortalChunkArea.
+                int span = PortalChunkArea.spanOf(roomName);
+                if (span > 1) {
+                    PortalChunkArea.sample(server, source, seed, pairKey, roll, span, roomName);
+                    return;
+                }
                 // Two passes, and the split is what keeps a portal carriage crossable. The first is
                 // the ground — noise, surface rules and the carvers — which the pair cannot be
                 // planned without, because its doorways stand on it. The second is everything that
@@ -478,6 +484,7 @@ public final class PortalChunkTerrain {
         DECORATED.clear();
         ROLLS.clear();
         PortalChunkSources.clear();
+        PortalChunkArea.clear();
         cacheSeed = Long.MIN_VALUE;
     }
 
@@ -495,6 +502,36 @@ public final class PortalChunkTerrain {
     /** Say that {@code pairKey}'s room has been rewritten with its decorated cube. */
     static void decorationApplied(int pairKey) {
         DECORATED.remove(pairKey);
+    }
+
+    // ---- hand-off for PortalChunkArea's multi-chunk samples --------------------
+
+    /** Queue {@code task} on the sampler thread, behind whatever is already waiting there. */
+    static void submit(Runnable task) {
+        SAMPLER.execute(task);
+    }
+
+    /** Publish a multi-chunk sample's ground: the pair can be planned and crossed from now. */
+    static void publishGround(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
+        if (READY.size() >= MAX_CACHE) READY.clear();
+        READY.put(pairKey, new Cached(roomName, roll, slice));
+    }
+
+    /**
+     * Publish a multi-chunk sample's decorated cube, unless the pair has since moved on (re-rolled,
+     * another room filed under its key, or the cache cleared): then it is nobody's ground and is
+     * dropped.
+     */
+    static void publishDecorated(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
+        Cached current = READY.get(pairKey);
+        if (current == null || !sameRoom(current.roomName(), roomName) || current.roll() != roll) return;
+        READY.put(pairKey, new Cached(roomName, roll, slice));
+        DECORATED.add(pairKey);
+    }
+
+    /** Say a multi-chunk sample found no ground; see {@link #failed}. */
+    static void markFailed(int pairKey, String roomName) {
+        FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
     }
 
     // ---- sampling ------------------------------------------------------------
@@ -764,7 +801,7 @@ public final class PortalChunkTerrain {
     }
 
     /** What {@link #standableRow} answers for a column with nowhere to stand. */
-    private static final int NO_GROUND = Integer.MIN_VALUE;
+    static final int NO_GROUND = Integer.MIN_VALUE;
 
     /**
      * The row a player's feet would go on in this column: the highest air row with <b>solid</b>
@@ -781,7 +818,7 @@ public final class PortalChunkTerrain {
      * the pair tries somewhere else — while a lake or a river, which is ground with a puddle on it,
      * still passes on the columns either side.</p>
      */
-    private static int standableRow(ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+    static int standableRow(ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int worldX = chunk.getPos().getMinBlockX() + localX;
         int worldZ = chunk.getPos().getMinBlockZ() + localZ;
@@ -812,7 +849,7 @@ public final class PortalChunkTerrain {
      * <p>Only the overworld has them, which is why a Nether sample was always fast and an overworld
      * one was not.</p>
      */
-    private static boolean voidedByBand(ServerLevel level, ChunkPos site) {
+    static boolean voidedByBand(ServerLevel level, ChunkPos site) {
         if (!level.dimension().equals(Level.OVERWORLD)) return false;
         try {
             return ChuncksBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())

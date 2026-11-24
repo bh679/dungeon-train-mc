@@ -76,6 +76,34 @@
     "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
   },
+  "chunk_dimension_3x3": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
+  },
+  "chunk_dimension_3x3_bop": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
+  },
+  "chunk_dimension_3x3_end": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9/0/9/dungeontrain:skybox_end"
+  },
+  "chunk_dimension_3x3_end_better": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9/0/9/dungeontrain:skybox_end"
+  },
+  "chunk_dimension_3x3_nether": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9/0/9/dungeontrain:skybox_nether"
+  },
+  "chunk_dimension_3x3_nether_better": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9/0/9/dungeontrain:skybox_nether"
+  },
+  "chunk_dimension_3x3_wwoo": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
+  },
   "chunk_dimension_bop": {
     "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"

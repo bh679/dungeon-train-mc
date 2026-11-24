@@ -138,7 +138,7 @@ public final class PortalChunkDimension {
         if (pour == null) return;
         long started = System.nanoTime();
         int height = structure.roomSize().getY();
-        if (!pour.rowsDone(height)) writeRows(level, structure, dims, pour.slice(), pour.nextRow(), height);
+        if (!pour.done(height)) writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.totalStrips(height));
         completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ true);
     }
 
@@ -167,11 +167,11 @@ public final class PortalChunkDimension {
         long started = System.nanoTime();
         int height = structure.roomSize().getY();
         // A tick of its own, so the frame's cost does not land on top of the last rows'.
-        if (pour.rowsDone(height)) {
+        if (pour.done(height)) {
             completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ false);
             return;
         }
-        writeRows(level, structure, dims, pour.slice(), pour.nextRow(), pour.rowsEnd(height));
+        writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.stripsEnd(height));
         POURS.put(pairKey, pour.advanced(height, System.nanoTime() - started));
     }
 
@@ -220,9 +220,12 @@ public final class PortalChunkDimension {
 
     // ---- writing -------------------------------------------------------------
 
-    /** Write rows {@code fromRow} up to {@code toRow} of the room's box from {@code slice}. */
-    private static void writeRows(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                  PortalChunkSlice slice, int fromRow, int toRow) {
+    /**
+     * Write strips {@code fromStrip} up to {@code toStrip} of the room's box from {@code slice} — a
+     * strip being one row at one Z, {@code slice.width()} cells along X ({@link PortalChunkPour}).
+     */
+    private static void writeStrips(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                    PortalChunkSlice slice, int fromStrip, int toStrip) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
@@ -243,22 +246,24 @@ public final class PortalChunkDimension {
         // skin one block outside it — so the chunk runs all 16 blocks to the sky. Where the end
         // column is open, the mouth's seal ring falls back to that same skin rather than to the
         // floor row (PortalCarriageBuilder#sealFillFor), so an open face still seals with sky.
-        for (int y = fromRow; y < toRow; y++) {
-            for (int z = 0; z < size.getZ() && z < slice.width(); z++) {
-                for (int x = 0; x < size.getX() && x < slice.width(); x++) {
-                    // Null for a row the cube does not reach. Those rows keep whatever the template
-                    // put there, which is a room rather than a hole.
-                    BlockState state = slice.at(x, y + shift, z);
-                    if (state == null) continue;
-                    cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
-                    if (mask.covers(cursor)) continue;
-                    // Cheap, and it is what makes the decoration pass affordable: the second write
-                    // of a room differs from the first only where something grew, so all but a
-                    // handful of these cells are already the block being written.
-                    if (level.getBlockState(cursor) == state) continue;
-                    replaceQuietly(level, cursor, state);
-                    applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
-                }
+        int stripWidth = slice.width();
+        for (int strip = fromStrip; strip < toStrip; strip++) {
+            int y = strip / stripWidth;
+            int z = strip % stripWidth;
+            if (y >= size.getY() || z >= size.getZ()) continue;
+            for (int x = 0; x < size.getX() && x < slice.width(); x++) {
+                // Null for a row the cube does not reach. Those rows keep whatever the template
+                // put there, which is a room rather than a hole.
+                BlockState state = slice.at(x, y + shift, z);
+                if (state == null) continue;
+                cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
+                if (mask.covers(cursor)) continue;
+                // Cheap, and it is what makes the decoration pass affordable: the second write
+                // of a room differs from the first only where something grew, so all but a
+                // handful of these cells are already the block being written.
+                if (level.getBlockState(cursor) == state) continue;
+                replaceQuietly(level, cursor, state);
+                applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
             }
         }
     }
