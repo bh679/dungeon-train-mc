@@ -113,7 +113,8 @@ public final class PhotoTributeButtons {
         ViewCounter views = new ViewCounter(font, seen + 1, seen + viewsLeft);
         int viewsWidth = views.getWidth();
         int tributeWidth = TributeButton.widthFor(font, cost);
-        int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth) / 2;
+        int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth
+            - GAP - PhotoReportOverlay.FLAG_SIZE) / 2;
 
         views.setPosition(left, y);
         views.setTooltip(Tooltip.create(viewerLine(seen + 1).append("\n").append(remainingLine(viewsLeft - 1))));
@@ -130,6 +131,8 @@ public final class PhotoTributeButtons {
         event.addListener(views);
         event.addListener(tribute);
         event.addListener(close);
+        // The report flag, faded, after X (PhotoReportOverlay draws it and its reason picker).
+        PhotoReportOverlay.attach(event, screen, left + tributeWidth + GAP + closeWidth + GAP, y);
         shownOn = screen;
         shown = List.of(tribute, close);
         viewsShown = views;

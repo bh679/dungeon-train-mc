@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "214";
+    public static final String PROTOCOL_VERSION = "215";
 
     private DungeonTrainNet() {}
 
@@ -175,6 +175,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(PhotoTributePacket.TYPE, PhotoTributePacket.STREAM_CODEC, PhotoTributePacket::handle);
         registrar.playToServer(OwnPhotoTributePacket.TYPE, OwnPhotoTributePacket.STREAM_CODEC, OwnPhotoTributePacket::handle);
         registrar.playToServer(OwnPhotoTrashPacket.TYPE, OwnPhotoTrashPacket.STREAM_CODEC, OwnPhotoTrashPacket::handle);
+        registrar.playToServer(PhotoReportPacket.TYPE, PhotoReportPacket.STREAM_CODEC, PhotoReportPacket::handle);
         registrar.playToClient(OwnPhotoTributeCostPacket.TYPE, OwnPhotoTributeCostPacket.STREAM_CODEC, OwnPhotoTributeCostPacket::handle);
 
         // Book-read telemetry: client measures a book read (open→close, per-page timing) and sends it on
