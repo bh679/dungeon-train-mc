@@ -1077,6 +1077,12 @@ public final class PortalCarriageBuilder {
             bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
+            // A chunk of terrain enclosed as Void or World Border has no skin, and its sea or lava
+            // runs right up to the box's faces. Fluid must never leave it — not even after a restart,
+            // when the fluid barrier no longer knows the room is there — so it gets a skin that only
+            // fluid notices: invisible, walk-through, and refusing every fluid (ForcedAirBlock).
+            BlockState guard = fluidGuardFor(structure.mode());
+            if (guard != null) bedrockSkin(level, roomOrigin, roomSize, guard);
         } else if (structure.mode().tiles()) {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
@@ -1265,9 +1271,10 @@ public final class PortalCarriageBuilder {
             // A chunk dimension has no floor row of its own to fall back on — its bottom row is
             // sampled terrain — so an open cell of its end column seals with its lock skin, the sky
             // the whole chunk stands in, rather than with a slab of stone across open air.
-            // Under a frame's Void or World Border there is no skin to match, so those cells stay open.
+            // Under a frame's Void or World Border there is no skin to match: those cells take the
+            // fluid guard, open to walk through but closed to the room's water.
             base.mode().generatesTerrain()
-                ? (base.mode().sealsRoomBox() ? lockStateFor(base) : Blocks.AIR.defaultBlockState())
+                ? (base.mode().sealsRoomBox() ? lockStateFor(base) : fluidGuardOrAir(base.mode()))
                 : null);
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
@@ -1382,6 +1389,22 @@ public final class PortalCarriageBuilder {
      * room. The corridor's own ring stops one column short of the same plane for the mirror-image
      * reason: bedrock there would frame the doorway.</p>
      */
+    /**
+     * The skin a room that generates terrain but is not sealed gets so its fluids stay in: Forced
+     * Air, which looks and walks like air but no fluid can enter. Null for every other mode — a sealed
+     * room has its lock, and an authored Void room is its author's to make watertight.
+     */
+    static BlockState fluidGuardFor(PortalRoomMode mode) {
+        if (mode == null || !mode.generatesTerrain() || mode.sealsRoomBox()) return null;
+        if (!games.brennan.dungeontrain.registry.ModBlocks.FORCED_AIR.isBound()) return null;
+        return games.brennan.dungeontrain.registry.ModBlocks.FORCED_AIR.get().defaultBlockState();
+    }
+
+    private static BlockState fluidGuardOrAir(PortalRoomMode mode) {
+        BlockState guard = fluidGuardFor(mode);
+        return guard != null ? guard : Blocks.AIR.defaultBlockState();
+    }
+
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                     BlockState lock) {
         int x0 = roomOrigin.getX() - 1;
