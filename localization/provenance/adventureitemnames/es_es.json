@@ -68,5 +68,19 @@
   "command.adventureitemnames.config.client_only": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
   "item.adventureitemnames.random_chest": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
   "item.adventureitemnames.random_named_chest": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
-  "item.adventureitemnames.random_enchanted_chest": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""}
+  "item.adventureitemnames.random_enchanted_chest": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.button": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.button_count": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.tooltip_none": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.skip_if.reset": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.rule": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.appears": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.picks": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.and": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.or": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
+  "screen.adventureitemnames.chance_if.tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""}
 }

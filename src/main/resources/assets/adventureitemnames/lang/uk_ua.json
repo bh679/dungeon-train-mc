@@ -68,5 +68,19 @@
   "command.adventureitemnames.config.client_only": "Екран налаштувань іменування доступний лише на клієнті — виконай цю команду в одиночній грі або в сеансі віддаленого клієнта.",
   "item.adventureitemnames.random_chest": "Випадкова скриня",
   "item.adventureitemnames.random_named_chest": "Випадкова іменована скриня",
-  "item.adventureitemnames.random_enchanted_chest": "Випадкова зачарована скриня"
+  "item.adventureitemnames.random_enchanted_chest": "Випадкова зачарована скриня",
+  "screen.adventureitemnames.skip_if.button": "Якщо…",
+  "screen.adventureitemnames.skip_if.button_count": "Якщо (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Випадає завжди. Натисніть, щоб пропускати цю частину, коли з’являються інші частини.",
+  "screen.adventureitemnames.skip_if.tooltip": "Пропускається, якщо з’являється будь-яка з: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: лише коли ці не з’являються",
+  "screen.adventureitemnames.skip_if.hint": "Пропускається, якщо позначена частина з’являється в тому самому імені, до або після неї.",
+  "screen.adventureitemnames.skip_if.reset": "Скинути",
+  "screen.adventureitemnames.chance_if.header": "Зміни шансу (задані у файлі ланцюжка)",
+  "screen.adventureitemnames.chance_if.rule": "%s, коли %s",
+  "screen.adventureitemnames.chance_if.appears": "з’являється %s",
+  "screen.adventureitemnames.chance_if.picks": "%s вибирає %s",
+  "screen.adventureitemnames.chance_if.and": " і ",
+  "screen.adventureitemnames.chance_if.or": " або ",
+  "screen.adventureitemnames.chance_if.tooltip": "Її шанс також залежить від інших частин."
 }

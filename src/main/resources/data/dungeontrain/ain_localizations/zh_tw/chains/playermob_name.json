@@ -54,6 +54,25 @@
       "connection": "",
       "newline": false,
       "label": "粉絲",
+      "skip_if": [
+        0,
+        2,
+        5
+      ],
+      "chance_if": [
+        {
+          "when": [
+            {
+              "segment": 1,
+              "refs": [
+                "adventureitemnames:discord_people",
+                "dungeontrain:backers"
+              ]
+            }
+          ],
+          "chance": 0.5
+        }
+      ],
       "refs": []
     },
     {
@@ -61,6 +80,40 @@
       "connection": "",
       "newline": false,
       "label": "字尾",
+      "skip_if": [
+        0,
+        2,
+        5
+      ],
+      "chance_if": [
+        {
+          "when": [
+            {
+              "segment": 1,
+              "refs": [
+                "adventureitemnames:discord_people",
+                "dungeontrain:backers"
+              ]
+            },
+            {
+              "segment": 3
+            }
+          ],
+          "chance": 0.04
+        },
+        {
+          "when": [
+            {
+              "segment": 1,
+              "refs": [
+                "adventureitemnames:discord_people",
+                "dungeontrain:backers"
+              ]
+            }
+          ],
+          "chance": 0.8
+        }
+      ],
       "refs": [
         {
           "ref": "adventureitemnames:playernamesuffix",

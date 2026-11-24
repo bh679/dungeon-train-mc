@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Random na Kaban",
   "item.adventureitemnames.random_named_chest": "Random na Pinangalanang Kaban",
-  "item.adventureitemnames.random_enchanted_chest": "Random na Enchanted na Kaban"
+  "item.adventureitemnames.random_enchanted_chest": "Random na Enchanted na Kaban",
+  "screen.adventureitemnames.skip_if.button": "Kung…",
+  "screen.adventureitemnames.skip_if.button_count": "Kung (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Laging nirorolyo. I-click para laktawan ang bahaging ito kapag lumitaw ang ibang bahagi.",
+  "screen.adventureitemnames.skip_if.tooltip": "Nilalaktawan kapag lumitaw ang alinman dito: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: lamang kapag hindi lumitaw ang mga ito",
+  "screen.adventureitemnames.skip_if.hint": "Nilalaktawan kung lumitaw ang alinmang may tsek na bahagi sa parehong pangalan, bago man o pagkatapos nito.",
+  "screen.adventureitemnames.skip_if.reset": "I-reset",
+  "screen.adventureitemnames.chance_if.header": "Mga pagbabago sa tsansa (itinakda sa chain file)",
+  "screen.adventureitemnames.chance_if.rule": "%s kapag %s",
+  "screen.adventureitemnames.chance_if.appears": "lumitaw ang %s",
+  "screen.adventureitemnames.chance_if.picks": "pinili ng %s ang %s",
+  "screen.adventureitemnames.chance_if.and": " at ",
+  "screen.adventureitemnames.chance_if.or": " o ",
+  "screen.adventureitemnames.chance_if.tooltip": "Nagbabago rin ang tsansa nito ayon sa ibang bahagi."
 }

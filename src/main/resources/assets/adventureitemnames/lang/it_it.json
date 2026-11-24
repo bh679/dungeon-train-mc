@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Baule casuale",
   "item.adventureitemnames.random_named_chest": "Baule con nome casuale",
-  "item.adventureitemnames.random_enchanted_chest": "Baule incantato casuale"
+  "item.adventureitemnames.random_enchanted_chest": "Baule incantato casuale",
+  "screen.adventureitemnames.skip_if.button": "Se…",
+  "screen.adventureitemnames.skip_if.button_count": "Se (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Tirato sempre. Clicca per saltare questa parte quando compaiono altre parti.",
+  "screen.adventureitemnames.skip_if.tooltip": "Saltata quando compare una di queste: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: solo quando queste non compaiono",
+  "screen.adventureitemnames.skip_if.hint": "Saltata se una parte spuntata compare nello stesso nome, prima o dopo.",
+  "screen.adventureitemnames.skip_if.reset": "Ripristina",
+  "screen.adventureitemnames.chance_if.header": "Modifiche di probabilità (impostate nel file della catena)",
+  "screen.adventureitemnames.chance_if.rule": "%s quando %s",
+  "screen.adventureitemnames.chance_if.appears": "compare %s",
+  "screen.adventureitemnames.chance_if.picks": "%s sceglie %s",
+  "screen.adventureitemnames.chance_if.and": " e ",
+  "screen.adventureitemnames.chance_if.or": " o ",
+  "screen.adventureitemnames.chance_if.tooltip": "La sua probabilità cambia anche in base ad altre parti."
 }

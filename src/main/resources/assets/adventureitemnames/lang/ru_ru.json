@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Случайный сундук",
   "item.adventureitemnames.random_named_chest": "Случайный сундук с названием",
-  "item.adventureitemnames.random_enchanted_chest": "Случайный зачарованный сундук"
+  "item.adventureitemnames.random_enchanted_chest": "Случайный зачарованный сундук",
+  "screen.adventureitemnames.skip_if.button": "Если…",
+  "screen.adventureitemnames.skip_if.button_count": "Если (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Выпадает всегда. Нажмите, чтобы пропускать эту часть, когда появляются другие части.",
+  "screen.adventureitemnames.skip_if.tooltip": "Пропускается, если появляется любая из: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: только когда эти не появляются",
+  "screen.adventureitemnames.skip_if.hint": "Пропускается, если отмеченная часть появляется в том же имени, до или после неё.",
+  "screen.adventureitemnames.skip_if.reset": "Сбросить",
+  "screen.adventureitemnames.chance_if.header": "Изменения шанса (заданы в файле цепочки)",
+  "screen.adventureitemnames.chance_if.rule": "%s, когда %s",
+  "screen.adventureitemnames.chance_if.appears": "появляется %s",
+  "screen.adventureitemnames.chance_if.picks": "%s выбирает %s",
+  "screen.adventureitemnames.chance_if.and": " и ",
+  "screen.adventureitemnames.chance_if.or": " или ",
+  "screen.adventureitemnames.chance_if.tooltip": "Её шанс также зависит от других частей."
 }

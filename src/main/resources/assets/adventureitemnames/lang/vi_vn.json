@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Rương Ngẫu nhiên",
   "item.adventureitemnames.random_named_chest": "Rương Có tên Ngẫu nhiên",
-  "item.adventureitemnames.random_enchanted_chest": "Rương Phù phép Ngẫu nhiên"
+  "item.adventureitemnames.random_enchanted_chest": "Rương Phù phép Ngẫu nhiên",
+  "screen.adventureitemnames.skip_if.button": "Nếu…",
+  "screen.adventureitemnames.skip_if.button_count": "Nếu (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Luôn được tung. Nhấp để bỏ qua phần này khi các phần khác xuất hiện.",
+  "screen.adventureitemnames.skip_if.tooltip": "Bị bỏ qua khi bất kỳ phần nào sau đây xuất hiện: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: chỉ khi những phần này không xuất hiện",
+  "screen.adventureitemnames.skip_if.hint": "Bị bỏ qua nếu một phần được đánh dấu xuất hiện trong cùng tên, trước hay sau nó.",
+  "screen.adventureitemnames.skip_if.reset": "Đặt lại",
+  "screen.adventureitemnames.chance_if.header": "Thay đổi tỉ lệ (đặt trong tệp chuỗi)",
+  "screen.adventureitemnames.chance_if.rule": "%s khi %s",
+  "screen.adventureitemnames.chance_if.appears": "%s xuất hiện",
+  "screen.adventureitemnames.chance_if.picks": "%s chọn %s",
+  "screen.adventureitemnames.chance_if.and": " và ",
+  "screen.adventureitemnames.chance_if.or": " hoặc ",
+  "screen.adventureitemnames.chance_if.tooltip": "Tỉ lệ của nó cũng thay đổi theo các phần khác."
 }

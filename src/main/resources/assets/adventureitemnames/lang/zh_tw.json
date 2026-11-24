@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "隨機儲物箱",
   "item.adventureitemnames.random_named_chest": "隨機命名儲物箱",
-  "item.adventureitemnames.random_enchanted_chest": "隨機附魔儲物箱"
+  "item.adventureitemnames.random_enchanted_chest": "隨機附魔儲物箱",
+  "screen.adventureitemnames.skip_if.button": "條件…",
+  "screen.adventureitemnames.skip_if.button_count": "條件 (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "總是參與隨機。點擊後，當其他部分出現時跳過此部分。",
+  "screen.adventureitemnames.skip_if.tooltip": "以下任一出現時跳過：%s",
+  "screen.adventureitemnames.skip_if.title": "%s：僅在這些未出現時",
+  "screen.adventureitemnames.skip_if.hint": "若勾選的部分出現在同一名稱中（無論前後），則跳過。",
+  "screen.adventureitemnames.skip_if.reset": "重設",
+  "screen.adventureitemnames.chance_if.header": "機率變化（在鏈檔案中設定）",
+  "screen.adventureitemnames.chance_if.rule": "%s（條件：%s）",
+  "screen.adventureitemnames.chance_if.appears": "出現%s",
+  "screen.adventureitemnames.chance_if.picks": "%s選中%s",
+  "screen.adventureitemnames.chance_if.and": "，",
+  "screen.adventureitemnames.chance_if.or": " 或 ",
+  "screen.adventureitemnames.chance_if.tooltip": "其機率也會隨其他部分變化。"
 }

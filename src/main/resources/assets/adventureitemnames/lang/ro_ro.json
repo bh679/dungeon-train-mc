@@ -68,5 +68,19 @@
   "command.adventureitemnames.config.client_only": "Ecranul de configurare a denumirilor e doar pe client — rulează comanda într-o sesiune single-player sau de client la distanță.",
   "item.adventureitemnames.random_chest": "Cufăr aleatoriu",
   "item.adventureitemnames.random_named_chest": "Cufăr denumit aleatoriu",
-  "item.adventureitemnames.random_enchanted_chest": "Cufăr fermecat aleatoriu"
+  "item.adventureitemnames.random_enchanted_chest": "Cufăr fermecat aleatoriu",
+  "screen.adventureitemnames.skip_if.button": "Dacă…",
+  "screen.adventureitemnames.skip_if.button_count": "Dacă (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Se trage mereu. Apasă pentru a sări peste această parte când apar alte părți.",
+  "screen.adventureitemnames.skip_if.tooltip": "Sărită când apare oricare dintre acestea: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: doar când acestea nu apar",
+  "screen.adventureitemnames.skip_if.hint": "Sărită dacă o parte bifată apare în același nume, înainte sau după.",
+  "screen.adventureitemnames.skip_if.reset": "Resetează",
+  "screen.adventureitemnames.chance_if.header": "Modificări de șansă (setate în fișierul lanțului)",
+  "screen.adventureitemnames.chance_if.rule": "%s când %s",
+  "screen.adventureitemnames.chance_if.appears": "apare %s",
+  "screen.adventureitemnames.chance_if.picks": "%s alege %s",
+  "screen.adventureitemnames.chance_if.and": " și ",
+  "screen.adventureitemnames.chance_if.or": " sau ",
+  "screen.adventureitemnames.chance_if.tooltip": "Șansa ei se schimbă și în funcție de alte părți."
 }

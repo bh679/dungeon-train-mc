@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "무작위 상자",
   "item.adventureitemnames.random_named_chest": "무작위 이름 상자",
-  "item.adventureitemnames.random_enchanted_chest": "무작위 마법 부여 상자"
+  "item.adventureitemnames.random_enchanted_chest": "무작위 마법 부여 상자",
+  "screen.adventureitemnames.skip_if.button": "조건…",
+  "screen.adventureitemnames.skip_if.button_count": "조건 (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "항상 굴립니다. 클릭하면 다른 부분이 나올 때 이 부분을 건너뜁니다.",
+  "screen.adventureitemnames.skip_if.tooltip": "다음 중 하나가 나오면 건너뜀: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: 이것들이 나오지 않을 때만",
+  "screen.adventureitemnames.skip_if.hint": "체크한 부분이 같은 이름에 나오면 앞뒤에 상관없이 건너뜁니다.",
+  "screen.adventureitemnames.skip_if.reset": "초기화",
+  "screen.adventureitemnames.chance_if.header": "확률 변경 (체인 파일에서 설정)",
+  "screen.adventureitemnames.chance_if.rule": "%s (조건: %s)",
+  "screen.adventureitemnames.chance_if.appears": "%s 나옴",
+  "screen.adventureitemnames.chance_if.picks": "%s에서 %s 선택",
+  "screen.adventureitemnames.chance_if.and": ", ",
+  "screen.adventureitemnames.chance_if.or": " 또는 ",
+  "screen.adventureitemnames.chance_if.tooltip": "다른 부분에 따라 확률도 바뀝니다."
 }

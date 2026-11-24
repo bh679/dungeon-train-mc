@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Losowa skrzynia",
   "item.adventureitemnames.random_named_chest": "Losowa nazwana skrzynia",
-  "item.adventureitemnames.random_enchanted_chest": "Losowa zaklęta skrzynia"
+  "item.adventureitemnames.random_enchanted_chest": "Losowa zaklęta skrzynia",
+  "screen.adventureitemnames.skip_if.button": "Jeśli…",
+  "screen.adventureitemnames.skip_if.button_count": "Jeśli (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Losowana zawsze. Kliknij, aby pomijać tę część, gdy pojawią się inne części.",
+  "screen.adventureitemnames.skip_if.tooltip": "Pomijana, gdy pojawi się którakolwiek z: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: tylko gdy te się nie pojawiają",
+  "screen.adventureitemnames.skip_if.hint": "Pomijana, jeśli zaznaczona część pojawi się w tej samej nazwie, przed nią lub po niej.",
+  "screen.adventureitemnames.skip_if.reset": "Resetuj",
+  "screen.adventureitemnames.chance_if.header": "Zmiany szansy (ustawione w pliku łańcucha)",
+  "screen.adventureitemnames.chance_if.rule": "%s, gdy %s",
+  "screen.adventureitemnames.chance_if.appears": "pojawia się %s",
+  "screen.adventureitemnames.chance_if.picks": "%s wybiera %s",
+  "screen.adventureitemnames.chance_if.and": " i ",
+  "screen.adventureitemnames.chance_if.or": " lub ",
+  "screen.adventureitemnames.chance_if.tooltip": "Jej szansa zmienia się też zależnie od innych części."
 }

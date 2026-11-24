@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "ランダムチェスト",
   "item.adventureitemnames.random_named_chest": "ランダム命名チェスト",
-  "item.adventureitemnames.random_enchanted_chest": "ランダムエンチャントチェスト"
+  "item.adventureitemnames.random_enchanted_chest": "ランダムエンチャントチェスト",
+  "screen.adventureitemnames.skip_if.button": "条件…",
+  "screen.adventureitemnames.skip_if.button_count": "条件 (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "常に抽選されます。クリックすると、他のパーツが出たときにこのパーツをスキップします。",
+  "screen.adventureitemnames.skip_if.tooltip": "次のいずれかが出るとスキップ: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: これらが出ないときのみ",
+  "screen.adventureitemnames.skip_if.hint": "チェックしたパーツが同じ名前に出ると、前後を問わずスキップされます。",
+  "screen.adventureitemnames.skip_if.reset": "リセット",
+  "screen.adventureitemnames.chance_if.header": "確率の変化 (チェーンファイルで設定)",
+  "screen.adventureitemnames.chance_if.rule": "%s (条件: %s)",
+  "screen.adventureitemnames.chance_if.appears": "%sが出る",
+  "screen.adventureitemnames.chance_if.picks": "%sが%sを選ぶ",
+  "screen.adventureitemnames.chance_if.and": "、",
+  "screen.adventureitemnames.chance_if.or": " または ",
+  "screen.adventureitemnames.chance_if.tooltip": "他のパーツによって確率も変わります。"
 }
