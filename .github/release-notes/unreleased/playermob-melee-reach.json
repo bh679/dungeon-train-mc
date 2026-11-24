@@ -1,0 +1,21 @@
+{
+  "id": "playermob-melee-reach",
+  "version": "0.1999.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "balance"
+  ],
+  "title": "Echoes fight from reach distance",
+  "summary": "Echoes now swing from a player's reach instead of pushing right up against you. Skilled fighters keep near the edge of their reach; clumsy ones crowd in close.",
+  "highlights": [
+    "A crowded skilled fighter steps back, but never off the train.",
+    "If you duck behind a wall, they walk around it to get back in reach."
+  ],
+  "pr": 2861,
+  "date": "2026-11-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
