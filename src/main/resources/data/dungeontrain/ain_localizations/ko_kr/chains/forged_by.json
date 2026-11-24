@@ -43,6 +43,30 @@
         {
           "ref": "adventureitemnames:title_combinations",
           "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:mc_streamers",
+          "weight": 19.0
+        },
+        {
+          "ref": "adventureitemnames:mc_skins",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:discord_people",
+          "weight": 59.0
+        },
+        {
+          "ref": "adventureitemnames:atla_characters",
+          "weight": 34.0
+        },
+        {
+          "ref": "adventureitemnames:dungeontrain_first_names",
+          "weight": 19.0
+        },
+        {
+          "ref": "adventureitemnames:dungeontrain_last_names",
+          "weight": 9.0
         }
       ]
     },
@@ -91,6 +115,22 @@
         {
           "ref": "adventureitemnames:the_something",
           "weight": 150.0
+        },
+        {
+          "ref": "adventureitemnames:discord_people",
+          "weight": 59.0
+        },
+        {
+          "ref": "adventureitemnames:atla_characters",
+          "weight": 34.0
+        },
+        {
+          "ref": "adventureitemnames:dungeontrain_first_names",
+          "weight": 19.0
+        },
+        {
+          "ref": "adventureitemnames:dungeontrain_last_names",
+          "weight": 9.0
         }
       ]
     }
