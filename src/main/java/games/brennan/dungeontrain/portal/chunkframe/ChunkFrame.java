@@ -8,7 +8,7 @@ import net.minecraft.core.Vec3i;
  * room — its walls, floor, roof and ends together.
  *
  * <p>A frame is the room box grown by one block on every side: {@link #SIZE} is {@code 18 × 34 × 18}
- * for the {@code 16 × 32 × 16} box, and template cell {@code (0,0,0)} lands one block below and
+ * for the {@code 16 × 32 × 16} box and {@code 50 × 34 × 50} for a 3x3 room ({@link #sizeFor}), and template cell {@code (0,0,0)} lands one block below and
  * outside the room's own origin ({@link #OFFSET}). So the template holds two regions, written by
  * different rules in {@link ChunkFramePlacer}:</p>
  * <ul>
@@ -21,36 +21,83 @@ import net.minecraft.core.Vec3i;
  */
 public final class ChunkFrame {
 
-    /** The room box a frame fits — a dimensional carriage's own. */
+    /** The one-chunk room box — what most frames fit. */
     public static final Vec3i ROOM_SIZE = new Vec3i(PortalChunkTerrain.SIZE, PortalChunkTerrain.HEIGHT,
         PortalChunkTerrain.SIZE);
 
-    /** The template's size: the room plus one block on every side. */
-    public static final Vec3i SIZE = new Vec3i(ROOM_SIZE.getX() + 2, ROOM_SIZE.getY() + 2, ROOM_SIZE.getZ() + 2);
+    /** A one-chunk room's frame: the room plus one block on every side. */
+    public static final Vec3i SIZE = sizeFor(ROOM_SIZE);
 
-    /** Where template cell (0,0,0) sits relative to the room origin. */
+    /** Where template cell (0,0,0) sits relative to the room origin — the same for every size. */
     public static final Vec3i OFFSET = new Vec3i(-1, -1, -1);
 
     private ChunkFrame() {}
 
+    // ---- sizes ---------------------------------------------------------------
+
     /**
-     * Every dimensional carriage room a frame can dress — the room variants whose walls are
+     * The frame that fits a room of {@code roomSize}: one block bigger on every side. A frame dresses
+     * exactly the rooms it fits — a one-chunk frame the one-chunk rooms, a 3x3 frame the 3x3 rooms —
+     * whatever its {@link ChunkFrameMeta} room list says.
+     */
+    public static Vec3i sizeFor(Vec3i roomSize) {
+        return new Vec3i(roomSize.getX() + 2, roomSize.getY() + 2, roomSize.getZ() + 2);
+    }
+
+    /** The room a frame of {@code frameSize} fits. */
+    public static Vec3i roomFor(Vec3i frameSize) {
+        return new Vec3i(frameSize.getX() - 2, frameSize.getY() - 2, frameSize.getZ() - 2);
+    }
+
+    /**
+     * Whether a frame may be {@code frameSize}: it fits a generated room — the one-chunk box, or a
+     * grid of chunks {@link games.brennan.dungeontrain.portal.PortalChunkArea} samples — at the
+     * generated rooms' height.
+     */
+    public static boolean validSize(Vec3i frameSize) {
+        if (frameSize == null) return false;
+        Vec3i room = roomFor(frameSize);
+        if (room.getY() != PortalChunkTerrain.HEIGHT) return false;
+        return room.equals(ROOM_SIZE) || games.brennan.dungeontrain.portal.PortalChunkArea.span(room) > 1;
+    }
+
+    /** The frame size a generated room called {@code room} takes, from its template's footprint. */
+    public static Vec3i sizeForRoom(String room) {
+        int width = games.brennan.dungeontrain.portal.PortalChunkArea.spanOf(room) * PortalChunkTerrain.SIZE;
+        return sizeFor(new Vec3i(width, PortalChunkTerrain.HEIGHT, width));
+    }
+
+    // ---- rooms ---------------------------------------------------------------
+
+    /**
+     * Every generated room a frame of any size can dress — the room variants whose walls are
      * {@code chunk_dimension} — in the room registry's order.
      */
     public static java.util.List<String> chunkRooms() {
         java.util.List<String> out = new java.util.ArrayList<>();
         for (String room : games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
                 games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
-            // A frame is one chunk's box: rooms sampled as a grid of chunks are a size it cannot dress.
-            if (games.brennan.dungeontrain.portal.PortalRoomSettings.of(room).mode().generatesTerrain()
-                    && games.brennan.dungeontrain.portal.PortalChunkArea.spanOf(room) == 1) out.add(room);
+            if (games.brennan.dungeontrain.portal.PortalRoomSettings.of(room).mode().generatesTerrain()) out.add(room);
         }
         return out;
     }
 
-    /** True when template-local {@code (x, y, z)} is in the shell, outside the room box. */
+    /** The generated rooms frame {@code frame} fits — what its room toggles list. */
+    public static java.util.List<String> chunkRooms(String frame) {
+        Vec3i frameSize = ChunkFrameStore.sizeOf(frame);
+        return chunkRooms().stream().filter(room -> sizeForRoom(room).equals(frameSize)).toList();
+    }
+
+    // ---- cells ---------------------------------------------------------------
+
+    /** True when template-local {@code (x, y, z)} is in a one-chunk frame's shell, outside the room box. */
     public static boolean isShell(int x, int y, int z) {
+        return isShell(x, y, z, SIZE);
+    }
+
+    /** True when template-local {@code (x, y, z)} is in the shell of a frame of {@code size}. */
+    public static boolean isShell(int x, int y, int z, Vec3i size) {
         return x == 0 || y == 0 || z == 0
-            || x == SIZE.getX() - 1 || y == SIZE.getY() - 1 || z == SIZE.getZ() - 1;
+            || x == size.getX() - 1 || y == size.getY() - 1 || z == size.getZ() - 1;
     }
 }

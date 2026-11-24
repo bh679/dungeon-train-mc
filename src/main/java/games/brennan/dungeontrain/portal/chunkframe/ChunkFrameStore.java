@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.editor.DoubleBlockTemplateRepair;
 import games.brennan.dungeontrain.editor.UserContentPaths;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -61,11 +62,31 @@ public final class ChunkFrameStore {
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        SIZES.clear();
+    }
+
+    /** Each frame's size, read from its template's {@code size} field without decoding the blocks. */
+    private static final Map<String, Vec3i> SIZES = new HashMap<>();
+
+    /**
+     * {@code name}'s size — config first, then bundled — or the one-chunk frame's for a name with no
+     * template yet (a frame being made, which starts as a one-chunk frame unless it copies another).
+     */
+    public static synchronized Vec3i sizeOf(String name) {
+        if (name == null) return ChunkFrame.SIZE;
+        return SIZES.computeIfAbsent(name, n -> readTag(n).map(ChunkFrameStore::sizeIn).orElse(ChunkFrame.SIZE));
+    }
+
+    private static Vec3i sizeIn(CompoundTag tag) {
+        net.minecraft.nbt.ListTag size = tag.getList("size", net.minecraft.nbt.Tag.TAG_INT);
+        if (size.size() != 3) return ChunkFrame.SIZE;
+        return new Vec3i(size.getInt(0), size.getInt(1), size.getInt(2));
     }
 
     /** Drop {@code name}'s loaded copy, so the next read comes from disk. */
     public static synchronized void invalidate(String name) {
         CACHE.remove(name);
+        SIZES.remove(name);
     }
 
     /** {@code name}'s template — config first, then bundled — or empty. */
@@ -88,6 +109,7 @@ public final class ChunkFrameStore {
         Files.createDirectories(file.getParent());
         NbtIo.writeCompressed(repaired, file);
         CACHE.remove(name);
+        SIZES.remove(name);
         LOGGER.info("[DungeonTrain] Saved chunk frame {} to {}", name, file);
         if (!toSource) return;
         Path source = sourceFileFor(name);
@@ -133,6 +155,7 @@ public final class ChunkFrameStore {
             if (source != null) deleted |= Files.deleteIfExists(source);
         }
         CACHE.remove(name);
+        SIZES.remove(name);
         if (deleted) LOGGER.info("[DungeonTrain] Deleted chunk frame {}", name);
         return deleted;
     }
@@ -164,10 +187,9 @@ public final class ChunkFrameStore {
     }
 
     private static boolean fits(String name, ChunkFrameTemplate template) {
-        if (template.size().equals(ChunkFrame.SIZE)) return true;
-        LOGGER.warn("[DungeonTrain] Chunk frame {} is {}x{}x{}, expected {}x{}x{} — ignoring.", name,
-            template.size().getX(), template.size().getY(), template.size().getZ(),
-            ChunkFrame.SIZE.getX(), ChunkFrame.SIZE.getY(), ChunkFrame.SIZE.getZ());
+        if (ChunkFrame.validSize(template.size())) return true;
+        LOGGER.warn("[DungeonTrain] Chunk frame {} is {}x{}x{}, which fits no generated room — ignoring.", name,
+            template.size().getX(), template.size().getY(), template.size().getZ());
         return false;
     }
 }

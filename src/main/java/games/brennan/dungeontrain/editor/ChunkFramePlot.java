@@ -48,7 +48,7 @@ public final class ChunkFramePlot implements BlockVariantPlot {
     @Override public String dirtySnapshotKey() { return ChunkFrameEditor.snapshotKey(name); }
     @Override public Path sidecarFile() { return ChunkFrameVariants.configPathFor(name); }
     @Override public BlockPos origin() { return origin; }
-    @Override public Vec3i footprint() { return ChunkFrame.SIZE; }
+    @Override public Vec3i footprint() { return ChunkFrameEditor.plotSize(name); }
     @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
     @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); BlockVariantPlot.noteEdit(this, l); }
     @Override public boolean remove(BlockPos l) { BlockVariantPlot.noteEdit(this, l); return sidecar.remove(l); }
