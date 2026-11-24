@@ -61,6 +61,9 @@ public final class DifficultyApplier {
     /** Sticky marker tag — present on a mob once we've rolled difficulty for it. */
     public static final String APPLIED_TAG = "dungeontrain_difficulty_applied";
 
+    /** Tag on a mob whose gear rolled lucky ({@link LuckyGear}) — find them with {@code @e[tag=...]}. */
+    public static final String LUCKY_TAG = "dungeontrain_lucky_gear";
+
     /** Persistent-data key holding a tool mob's {@link ToolTiers#breakTier break tier}; absent = no digging. */
     public static final String DIG_TIER_KEY = "dungeontrain_dig_tier";
 
@@ -177,6 +180,7 @@ public final class DifficultyApplier {
             int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
             int maxCount = rollEffectsAt(mob, effectLevel, tier.name(), rng);
             lucky = rng.nextDouble() < LuckyGear.luckyChance(effectLevel, maxCount);
+            if (lucky) mob.addTag(LUCKY_TAG);
             if (lucky && DebugFlags.logLootRolls()) {
                 LOGGER.info("[DungeonTrain] Lucky gear: uuid={} type={} tier={} effectLevel={} maxEffects={}",
                         mob.getUUID(), mob.getType().getDescriptionId(), tierIndex, effectLevel, maxCount);

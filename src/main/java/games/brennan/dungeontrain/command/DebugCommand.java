@@ -374,6 +374,9 @@ public final class DebugCommand {
             // /dungeontrain debug vault-roll <trial|ominous|green> [times] — rolls a vault type's default
             // reward as that many players and logs every item ([DT-vault-roll]); chat gets the tally.
             .then(VaultRollDebug.node())
+            // /dungeontrain debug lucky-gear <level> [count] [entity] — runs the carriage difficulty pass on
+            // off-world mobs and reports the lucky-gear share and lucky vs normal armor (LuckyGearDebug).
+            .then(LuckyGearDebug.node())
             // /dungeontrain debug traingen on|off|status — the backward-generation
             // investigation switch. `on` arms EVERY probe the backward lane has in one
             // go (the [bwdgen] decision trace, the spawn-stall detector, the
