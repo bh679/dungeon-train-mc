@@ -1,0 +1,17 @@
+{
+  "id": "ragdoll-mismatch-no-crash",
+  "version": "0.2006.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "No more crash on respawn with mismatched ragdoll mods",
+  "summary": "If your Sable: Ragdolls and Sable: Ragdoll - Patch versions don't match, dying and boarding again no longer crashes the game. Death bodies just switch off until the two match again.",
+  "highlights": [],
+  "pr": 2868,
+  "date": "2026-11-24",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
