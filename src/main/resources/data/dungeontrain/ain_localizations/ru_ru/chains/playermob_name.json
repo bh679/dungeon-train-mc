@@ -39,6 +39,14 @@
         {
           "ref": "adventureitemnames:colors",
           "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:mc_streamers",
+          "weight": 50.0
+        },
+        {
+          "ref": "adventureitemnames:discord_people",
+          "weight": 100.0
         }
       ]
     },
@@ -73,7 +81,12 @@
           "chance": 0.5
         }
       ],
-      "refs": []
+      "refs": [
+        {
+          "ref": "adventureitemnames:fan_suffix",
+          "weight": 4.0
+        }
+      ]
     },
     {
       "chance": 0.3,
