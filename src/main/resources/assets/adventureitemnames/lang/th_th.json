@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "หีบสุ่ม",
   "item.adventureitemnames.random_named_chest": "หีบสุ่มมีชื่อ",
-  "item.adventureitemnames.random_enchanted_chest": "หีบสุ่มร่ายมนตร์"
+  "item.adventureitemnames.random_enchanted_chest": "หีบสุ่มร่ายมนตร์",
+  "screen.adventureitemnames.skip_if.button": "ถ้า…",
+  "screen.adventureitemnames.skip_if.button_count": "ถ้า (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "สุ่มเสมอ คลิกเพื่อข้ามส่วนนี้เมื่อส่วนอื่นปรากฏ",
+  "screen.adventureitemnames.skip_if.tooltip": "ข้ามเมื่อส่วนใดส่วนหนึ่งต่อไปนี้ปรากฏ: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: เฉพาะเมื่อส่วนเหล่านี้ไม่ปรากฏ",
+  "screen.adventureitemnames.skip_if.hint": "ข้ามถ้าส่วนที่เลือกไว้ปรากฏในชื่อเดียวกัน ไม่ว่าจะก่อนหรือหลัง",
+  "screen.adventureitemnames.skip_if.reset": "รีเซ็ต",
+  "screen.adventureitemnames.chance_if.header": "การเปลี่ยนโอกาส (ตั้งค่าในไฟล์เชน)",
+  "screen.adventureitemnames.chance_if.rule": "%s เมื่อ %s",
+  "screen.adventureitemnames.chance_if.appears": "%s ปรากฏ",
+  "screen.adventureitemnames.chance_if.picks": "%s เลือก %s",
+  "screen.adventureitemnames.chance_if.and": " และ ",
+  "screen.adventureitemnames.chance_if.or": " หรือ ",
+  "screen.adventureitemnames.chance_if.tooltip": "โอกาสของส่วนนี้เปลี่ยนตามส่วนอื่นด้วย"
 }

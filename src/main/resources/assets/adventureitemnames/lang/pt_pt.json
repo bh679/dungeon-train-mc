@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Baú aleatório",
   "item.adventureitemnames.random_named_chest": "Baú com nome aleatório",
-  "item.adventureitemnames.random_enchanted_chest": "Baú encantado aleatório"
+  "item.adventureitemnames.random_enchanted_chest": "Baú encantado aleatório",
+  "screen.adventureitemnames.skip_if.button": "Se…",
+  "screen.adventureitemnames.skip_if.button_count": "Se (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Sorteada sempre. Clica para saltar esta parte quando aparecerem outras partes.",
+  "screen.adventureitemnames.skip_if.tooltip": "Saltada quando aparece qualquer uma destas: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: só quando estas não aparecem",
+  "screen.adventureitemnames.skip_if.hint": "Saltada se uma parte assinalada aparecer no mesmo nome, antes ou depois.",
+  "screen.adventureitemnames.skip_if.reset": "Repor",
+  "screen.adventureitemnames.chance_if.header": "Alterações de probabilidade (definidas no ficheiro da cadeia)",
+  "screen.adventureitemnames.chance_if.rule": "%s quando %s",
+  "screen.adventureitemnames.chance_if.appears": "%s aparece",
+  "screen.adventureitemnames.chance_if.picks": "%s escolhe %s",
+  "screen.adventureitemnames.chance_if.and": " e ",
+  "screen.adventureitemnames.chance_if.or": " ou ",
+  "screen.adventureitemnames.chance_if.tooltip": "A probabilidade dela também muda com outras partes."
 }

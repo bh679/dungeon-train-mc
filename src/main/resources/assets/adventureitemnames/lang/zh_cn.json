@@ -68,5 +68,19 @@
   "item.adventureitemnames.random_named_chest": "随机命名箱",
   "item.adventureitemnames.random_enchanted_chest": "随机附魔箱",
   "screen.adventureitemnames.action.delete": "✕",
-  "screen.adventureitemnames.action.reset": "↺"
+  "screen.adventureitemnames.action.reset": "↺",
+  "screen.adventureitemnames.skip_if.button": "条件…",
+  "screen.adventureitemnames.skip_if.button_count": "条件 (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "总是参与随机。点击后，当其他部分出现时跳过此部分。",
+  "screen.adventureitemnames.skip_if.tooltip": "以下任一出现时跳过：%s",
+  "screen.adventureitemnames.skip_if.title": "%s：仅在这些未出现时",
+  "screen.adventureitemnames.skip_if.hint": "若勾选的部分出现在同一名称中（无论前后），则跳过。",
+  "screen.adventureitemnames.skip_if.reset": "重置",
+  "screen.adventureitemnames.chance_if.header": "概率变化（在链文件中设置）",
+  "screen.adventureitemnames.chance_if.rule": "%s（条件：%s）",
+  "screen.adventureitemnames.chance_if.appears": "出现%s",
+  "screen.adventureitemnames.chance_if.picks": "%s选中%s",
+  "screen.adventureitemnames.chance_if.and": "，",
+  "screen.adventureitemnames.chance_if.or": " 或 ",
+  "screen.adventureitemnames.chance_if.tooltip": "其概率也会随其他部分变化。"
 }

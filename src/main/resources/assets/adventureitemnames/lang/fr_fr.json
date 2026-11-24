@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Coffre aléatoire",
   "item.adventureitemnames.random_named_chest": "Coffre nommé aléatoire",
-  "item.adventureitemnames.random_enchanted_chest": "Coffre enchanté aléatoire"
+  "item.adventureitemnames.random_enchanted_chest": "Coffre enchanté aléatoire",
+  "screen.adventureitemnames.skip_if.button": "Si…",
+  "screen.adventureitemnames.skip_if.button_count": "Si (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Toujours tiré. Cliquez pour ignorer cette partie quand d'autres parties apparaissent.",
+  "screen.adventureitemnames.skip_if.tooltip": "Ignorée quand l'une de celles-ci apparaît : %s",
+  "screen.adventureitemnames.skip_if.title": "%s : seulement quand celles-ci n'apparaissent pas",
+  "screen.adventureitemnames.skip_if.hint": "Ignorée si une partie cochée apparaît dans le même nom, avant ou après.",
+  "screen.adventureitemnames.skip_if.reset": "Réinitialiser",
+  "screen.adventureitemnames.chance_if.header": "Changements de chance (définis dans le fichier de la chaîne)",
+  "screen.adventureitemnames.chance_if.rule": "%s quand %s",
+  "screen.adventureitemnames.chance_if.appears": "%s apparaît",
+  "screen.adventureitemnames.chance_if.picks": "%s choisit %s",
+  "screen.adventureitemnames.chance_if.and": " et ",
+  "screen.adventureitemnames.chance_if.or": " ou ",
+  "screen.adventureitemnames.chance_if.tooltip": "Sa chance change aussi selon d'autres parties."
 }

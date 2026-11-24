@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Willekeurige kist",
   "item.adventureitemnames.random_named_chest": "Willekeurige benoemde kist",
-  "item.adventureitemnames.random_enchanted_chest": "Willekeurige betoverde kist"
+  "item.adventureitemnames.random_enchanted_chest": "Willekeurige betoverde kist",
+  "screen.adventureitemnames.skip_if.button": "Als…",
+  "screen.adventureitemnames.skip_if.button_count": "Als (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Wordt altijd gerold. Klik om dit deel over te slaan als andere delen verschijnen.",
+  "screen.adventureitemnames.skip_if.tooltip": "Overgeslagen als een van deze verschijnt: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: alleen als deze niet verschijnen",
+  "screen.adventureitemnames.skip_if.hint": "Overgeslagen als een aangevinkt deel in dezelfde naam verschijnt, ervoor of erna.",
+  "screen.adventureitemnames.skip_if.reset": "Resetten",
+  "screen.adventureitemnames.chance_if.header": "Kanswijzigingen (ingesteld in het ketenbestand)",
+  "screen.adventureitemnames.chance_if.rule": "%s als %s",
+  "screen.adventureitemnames.chance_if.appears": "%s verschijnt",
+  "screen.adventureitemnames.chance_if.picks": "%s kiest %s",
+  "screen.adventureitemnames.chance_if.and": " en ",
+  "screen.adventureitemnames.chance_if.or": " of ",
+  "screen.adventureitemnames.chance_if.tooltip": "De kans verandert ook met andere delen."
 }

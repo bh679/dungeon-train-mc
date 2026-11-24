@@ -68,5 +68,19 @@
   "command.adventureitemnames.config.client_only": "Skrin konfigurasi penamaan adalah untuk klien sahaja — jalankan arahan ini pada sesi pemain tunggal atau klien jauh.",
   "item.adventureitemnames.random_chest": "Peti Rawak",
   "item.adventureitemnames.random_named_chest": "Peti Bernama Rawak",
-  "item.adventureitemnames.random_enchanted_chest": "Peti Bertuah Rawak"
+  "item.adventureitemnames.random_enchanted_chest": "Peti Bertuah Rawak",
+  "screen.adventureitemnames.skip_if.button": "Jika…",
+  "screen.adventureitemnames.skip_if.button_count": "Jika (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Sentiasa diundi. Klik untuk melangkau bahagian ini apabila bahagian lain muncul.",
+  "screen.adventureitemnames.skip_if.tooltip": "Dilangkau apabila mana-mana ini muncul: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: hanya apabila ini tidak muncul",
+  "screen.adventureitemnames.skip_if.hint": "Dilangkau jika mana-mana bahagian yang ditanda muncul dalam nama yang sama, sebelum atau selepasnya.",
+  "screen.adventureitemnames.skip_if.reset": "Tetap Semula",
+  "screen.adventureitemnames.chance_if.header": "Perubahan peluang (ditetapkan dalam fail rantai)",
+  "screen.adventureitemnames.chance_if.rule": "%s apabila %s",
+  "screen.adventureitemnames.chance_if.appears": "%s muncul",
+  "screen.adventureitemnames.chance_if.picks": "%s memilih %s",
+  "screen.adventureitemnames.chance_if.and": " dan ",
+  "screen.adventureitemnames.chance_if.or": " atau ",
+  "screen.adventureitemnames.chance_if.tooltip": "Peluangnya juga berubah mengikut bahagian lain."
 }

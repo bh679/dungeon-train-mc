@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Zufällige Truhe",
   "item.adventureitemnames.random_named_chest": "Zufällige benannte Truhe",
-  "item.adventureitemnames.random_enchanted_chest": "Zufällige verzauberte Truhe"
+  "item.adventureitemnames.random_enchanted_chest": "Zufällige verzauberte Truhe",
+  "screen.adventureitemnames.skip_if.button": "Wenn…",
+  "screen.adventureitemnames.skip_if.button_count": "Wenn (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Wird immer gewürfelt. Klicken, um diesen Teil zu überspringen, wenn andere Teile erscheinen.",
+  "screen.adventureitemnames.skip_if.tooltip": "Übersprungen, wenn einer davon erscheint: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: nur wenn diese nicht erscheinen",
+  "screen.adventureitemnames.skip_if.hint": "Übersprungen, wenn ein markierter Teil im selben Namen erscheint, davor oder danach.",
+  "screen.adventureitemnames.skip_if.reset": "Zurücksetzen",
+  "screen.adventureitemnames.chance_if.header": "Chancen-Änderungen (in der Kettendatei festgelegt)",
+  "screen.adventureitemnames.chance_if.rule": "%s, wenn %s",
+  "screen.adventureitemnames.chance_if.appears": "%s erscheint",
+  "screen.adventureitemnames.chance_if.picks": "%s wählt %s",
+  "screen.adventureitemnames.chance_if.and": " und ",
+  "screen.adventureitemnames.chance_if.or": " oder ",
+  "screen.adventureitemnames.chance_if.tooltip": "Seine Chance ändert sich auch mit anderen Teilen."
 }

@@ -79,5 +79,19 @@
 
   "item.adventureitemnames.random_chest": "Cofre aleatorio",
   "item.adventureitemnames.random_named_chest": "Cofre nombrado aleatorio",
-  "item.adventureitemnames.random_enchanted_chest": "Cofre encantado aleatorio"
+  "item.adventureitemnames.random_enchanted_chest": "Cofre encantado aleatorio",
+  "screen.adventureitemnames.skip_if.button": "Si…",
+  "screen.adventureitemnames.skip_if.button_count": "Si (%s)",
+  "screen.adventureitemnames.skip_if.tooltip_none": "Siempre se tira. Haz clic para omitir esta parte cuando aparezcan otras partes.",
+  "screen.adventureitemnames.skip_if.tooltip": "Se omite cuando aparece alguna de estas: %s",
+  "screen.adventureitemnames.skip_if.title": "%s: solo cuando estas no aparecen",
+  "screen.adventureitemnames.skip_if.hint": "Se omite si alguna parte marcada aparece en el mismo nombre, antes o después.",
+  "screen.adventureitemnames.skip_if.reset": "Restablecer",
+  "screen.adventureitemnames.chance_if.header": "Cambios de probabilidad (definidos en el archivo de la cadena)",
+  "screen.adventureitemnames.chance_if.rule": "%s cuando %s",
+  "screen.adventureitemnames.chance_if.appears": "aparece %s",
+  "screen.adventureitemnames.chance_if.picks": "%s elige %s",
+  "screen.adventureitemnames.chance_if.and": " y ",
+  "screen.adventureitemnames.chance_if.or": " o ",
+  "screen.adventureitemnames.chance_if.tooltip": "Su probabilidad también cambia según otras partes."
 }

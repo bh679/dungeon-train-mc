@@ -5719,7 +5719,21 @@
       "screen.adventureitemnames.delete.title",
       "screen.adventureitemnames.delete.confirm",
       "item.adventureitemnames.random_chest",
-      "item.adventureitemnames.random_enchanted_chest"
+      "item.adventureitemnames.random_enchanted_chest",
+      "screen.adventureitemnames.skip_if.button",
+      "screen.adventureitemnames.skip_if.button_count",
+      "screen.adventureitemnames.skip_if.tooltip_none",
+      "screen.adventureitemnames.skip_if.tooltip",
+      "screen.adventureitemnames.skip_if.title",
+      "screen.adventureitemnames.skip_if.hint",
+      "screen.adventureitemnames.skip_if.reset",
+      "screen.adventureitemnames.chance_if.header",
+      "screen.adventureitemnames.chance_if.rule",
+      "screen.adventureitemnames.chance_if.appears",
+      "screen.adventureitemnames.chance_if.picks",
+      "screen.adventureitemnames.chance_if.and",
+      "screen.adventureitemnames.chance_if.or",
+      "screen.adventureitemnames.chance_if.tooltip"
     ],
     "playermob": "*",
     "discordpresence": [
