@@ -2683,6 +2683,8 @@
   "subtitles.dungeontrain.train_engine": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "1aa3e513ecc7daa0"},
   "block.dungeontrain.narrative_lectern": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "4da87b137b982eb4"},
   "block.dungeontrain.variant_placeholder": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5e90c31f7ba73bf6"},
+  "block.dungeontrain.forced_air": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6fe1222d16ca7531"},
+  "block.dungeontrain.forced_air.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0f8d4b9193b97534"},
   "block.dungeontrain.flag_1": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "436a9127854023ff"},
   "block.dungeontrain.flag_2": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6cc0c1b1d08c48e7"},
   "block.dungeontrain.flag_3": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6e874075262aafa0"},

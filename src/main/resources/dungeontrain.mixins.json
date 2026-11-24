@@ -352,7 +352,8 @@
     "client.ClientPacketListenerCommandsMixin",
     "client.ChatComponentAccessor",
     "client.BookEditScreenInvoker",
-    "client.GuiHalfHeartContainerMixin"
+    "client.GuiHalfHeartContainerMixin",
+    "client.ClientLevelForcedAirMarkerMixin"
   ],
   "server": [
     "DedicatedServerPropertiesLevelTypeMixin"

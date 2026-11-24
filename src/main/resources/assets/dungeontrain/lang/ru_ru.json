@@ -2788,6 +2788,8 @@
   "subtitles.dungeontrain.train_engine": "Локомотив пыхтит",
   "block.dungeontrain.narrative_lectern": "Кафедра для повествования",
   "block.dungeontrain.variant_placeholder": "Заполнитель варианта",
+  "block.dungeontrain.forced_air": "Принудительный воздух",
+  "block.dungeontrain.forced_air.tooltip": "Используется в подводном измерении-чанке",
   "block.dungeontrain.flag_1": "Флаг Dungeon Train 1",
   "block.dungeontrain.flag_2": "Флаг Dungeon Train 2",
   "block.dungeontrain.flag_3": "Флаг Dungeon Train 3",

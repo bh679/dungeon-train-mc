@@ -160,6 +160,11 @@ public final class PortalChunkTerrain {
         OVERWORLD_WWOO(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.WWOO),
         /** The overworld as the added-biomes stretch dresses it — see {@link SecondLapOverworld}. */
         OVERWORLD_BOP(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.BOP),
+        /**
+         * One chunk of vanilla ocean, sea floor low in the box and the water up to (or near) the
+         * roof — sites taken only on ocean biomes, sea set by {@link UnderwaterLayout}.
+         */
+        UNDERWATER(Level.OVERWORLD, "minecraft:gravel", SecondLapOverworld.Stretch.VANILLA),
         /** The Nether as vanilla generates it — cut with {@link SampleGenerators}' vanilla-biome generator. */
         NETHER(Level.NETHER, "minecraft:netherrack", null),
         /** The Nether's BetterNether biomes — sites taken only where the live Nether places one. */
@@ -204,6 +209,11 @@ public final class PortalChunkTerrain {
          * mods also add features to the vanilla biomes and list them in their structures' biome tags —
          * see {@link games.brennan.dungeontrain.worldgen.VanillaOnlySample}.
          */
+        /** True for the underwater room, whose ground is the seabed and whose box is flooded. */
+        public boolean underwater() {
+            return this == UNDERWATER;
+        }
+
         public boolean vanillaOnly() {
             return this == NETHER || this == END;
         }
@@ -238,6 +248,7 @@ public final class PortalChunkTerrain {
         public static Source of(String roomName) {
             if (roomName == null) return OVERWORLD;
             String key = roomName.trim().toLowerCase(Locale.ROOT);
+            if (key.endsWith(UNDERWATER_SUFFIX)) return UNDERWATER;
             if (key.endsWith(NETHER_SUFFIX + BETTER_SUFFIX)) return NETHER_BETTER;
             if (key.endsWith(END_SUFFIX + BETTER_SUFFIX)) return END_BETTER;
             if (key.endsWith(NETHER_SUFFIX)) return NETHER;
@@ -262,6 +273,12 @@ public final class PortalChunkTerrain {
 
     /** What the overhauled-vanilla overworld variant's name ends with. */
     private static final String WWOO_SUFFIX = "_wwoo";
+
+    /** What the underwater variant's name ends with. */
+    private static final String UNDERWATER_SUFFIX = "_underwater";
+
+    /** Fewest blocks of water over a seabed for an underwater site to count as open sea. */
+    private static final int MIN_SEA_DEPTH = 8;
 
     /** What the added-biomes overworld variant's name ends with. */
     private static final String BOP_SUFFIX = "_bop";
@@ -505,22 +522,36 @@ public final class PortalChunkTerrain {
      */
     private record Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
                           ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, ChunkPos pos,
-                          Source source, int anchor, int minY, int maxY, int probes) {
+                          Source source, int anchor, int minY, int maxY, int probes,
+                          int surfaceRow, UnderwaterLayout sea) {
+
+        Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
+               ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, ChunkPos pos,
+               Source source, int anchor, int minY, int maxY, int probes) {
+            this(level, generator, random, chunk, workspace, pos, source, anchor, minY, maxY, probes,
+                SURFACE_ROW, null);
+        }
 
         /** The same sample cut around a different row — what carving the ground under it moves. */
         Sample at(int newAnchor) {
             return new Sample(level, generator, random, chunk, workspace, pos, source, newAnchor,
-                minY, maxY, probes);
+                minY, maxY, probes, surfaceRow, sea);
+        }
+
+        /** The same sample cut so its seabed stands on {@code layout}'s floor row, and flooded to its sea. */
+        Sample withSea(UnderwaterLayout layout) {
+            return new Sample(level, generator, random, chunk, workspace, pos, source, anchor,
+                minY, maxY, probes, layout.floorRow(), layout);
         }
 
         /** The cube as the chunk currently stands — called once per generation pass. */
         PortalChunkSlice read() {
-            return readSlice(level, source, chunk, pos, anchor, minY, maxY);
+            return readSlice(level, source, chunk, pos, anchor, minY, maxY, surfaceRow, sea);
         }
 
         /** The rows of the chunk the room will show, in world coordinates. */
         BoundingBox window() {
-            int lo = anchor - SURFACE_ROW;
+            int lo = anchor - surfaceRow;
             return new BoundingBox(pos.getMinBlockX(), lo, pos.getMinBlockZ(),
                 pos.getMaxBlockX(), lo + HEIGHT - 1, pos.getMaxBlockZ());
         }
@@ -614,8 +645,45 @@ public final class PortalChunkTerrain {
             level.getSeed(), pairKey);
         // Re-read after carving: a cavern opened under the middle column moves the row this cube is
         // cut around, and the doorways are fitted to whatever it ends up being.
-        int anchor = standableRow(best.chunk(), SIZE / 2, SIZE / 2, minY, maxY);
-        return anchor == NO_GROUND ? best : best.at(anchor);
+        int anchor = anchorRow(source, best.chunk(), SIZE / 2, SIZE / 2, minY, maxY);
+        Sample anchored = anchor == NO_GROUND ? best : best.at(anchor);
+        return source.underwater()
+            ? anchored.withSea(UnderwaterLayout.roll(worldSeed, pairKey, roll))
+            : anchored;
+    }
+
+    /** The row a room is cut around: the seabed under water for the underwater room, else standable ground. */
+    private static int anchorRow(Source source, ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+        return source.underwater()
+            ? seabedRow(chunk, localX, localZ, minY, maxY)
+            : standableRow(chunk, localX, localZ, minY, maxY);
+    }
+
+    /**
+     * The lowest water row of the topmost stretch of open sea in a column — the row a diver stands
+     * in on the seabed — or {@link #NO_GROUND} when the column has no ground with at least
+     * {@link #MIN_SEA_DEPTH} blocks of water over it.
+     */
+    static int seabedRow(ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int worldX = chunk.getPos().getMinBlockX() + localX;
+        int worldZ = chunk.getPos().getMinBlockZ() + localZ;
+        return seabedRow(y -> chunk.getBlockState(cursor.set(worldX, y, worldZ)), minY, maxY);
+    }
+
+    /** {@link #seabedRow(ChunkAccess, int, int, int, int)} over any column, by world Y. */
+    static int seabedRow(java.util.function.IntFunction<BlockState> column, int minY, int maxY) {
+        int depth = 0;
+        for (int y = maxY; y > minY; y--) {
+            BlockState state = column.apply(y);
+            if (state.blocksMotion()) {
+                if (depth >= MIN_SEA_DEPTH) return y + 1;
+                depth = 0;
+                continue;
+            }
+            depth = state.getFluidState().getType().isSame(net.minecraft.world.level.material.Fluids.WATER) ? depth + 1 : 0;
+        }
+        return NO_GROUND;
     }
 
     /**
@@ -637,7 +705,7 @@ public final class PortalChunkTerrain {
         ProtoChunk ground = OfflineChunkSampler.fillGround(level, generator, random, chunk, workspace);
         if (ground == null) return null;
 
-        int anchor = standableRow(ground, SIZE / 2, SIZE / 2, minY, maxY);
+        int anchor = anchorRow(source, ground, SIZE / 2, SIZE / 2, minY, maxY);
         if (anchor == NO_GROUND) return null;
 
         int agreeing = 1;
@@ -648,7 +716,7 @@ public final class PortalChunkTerrain {
             {SIZE - 1 - PROBE_INSET, SIZE - 1 - PROBE_INSET},
         };
         for (int[] corner : corners) {
-            int row = standableRow(ground, corner[0], corner[1], minY, maxY);
+            int row = anchorRow(source, ground, corner[0], corner[1], minY, maxY);
             if (row != NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
         }
         return new Sample(level, generator, random, ground, workspace, pos, source, anchor, minY,
@@ -657,12 +725,13 @@ public final class PortalChunkTerrain {
 
     /** Copy the column around the anchor out of the sampled chunk, room-local. */
     private static PortalChunkSlice readSlice(ServerLevel level, Source source, ProtoChunk chunk,
-                                              ChunkPos pos, int anchor, int minY, int maxY) {
+                                              ChunkPos pos, int anchor, int minY, int maxY,
+                                              int surfaceRow, UnderwaterLayout sea) {
         BlockState[] states = new BlockState[SIZE * SIZE * HEIGHT];
         BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = 0; y < HEIGHT; y++) {
-            int worldY = anchor + (y - SURFACE_ROW);
+            int worldY = anchor + (y - surfaceRow);
             for (int z = 0; z < SIZE; z++) {
                 for (int x = 0; x < SIZE; x++) {
                     BlockState state = air;
@@ -674,8 +743,10 @@ public final class PortalChunkTerrain {
                 }
             }
         }
+        if (sea != null) states = UnderwaterFlood.apply(states, SIZE, HEIGHT, sea.topWaterRow(HEIGHT));
         return new PortalChunkSlice(source, SIZE, HEIGHT, states,
-            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor), biomesIn(chunk, pos, anchor, minY, maxY));
+            blockEntitiesIn(level, chunk, pos, anchor, surfaceRow), occupantsIn(chunk, pos, anchor, surfaceRow),
+            biomesIn(chunk, pos, anchor, minY, maxY, surfaceRow));
     }
 
     /**
@@ -684,12 +755,12 @@ public final class PortalChunkTerrain {
      */
     @SuppressWarnings("unchecked")
     private static Holder<Biome>[] biomesIn(ProtoChunk chunk, ChunkPos pos, int anchor, int minY,
-                                            int maxY) {
+                                            int maxY, int surfaceRow) {
         int qw = PortalChunkSlice.quarts(SIZE);
         int qh = PortalChunkSlice.quarts(HEIGHT);
         Holder<Biome>[] out = new Holder[qw * qh * qw];
         for (int qy = 0; qy < qh; qy++) {
-            int worldY = Math.max(minY, Math.min(maxY, anchor - SURFACE_ROW + qy * 4 + 2));
+            int worldY = Math.max(minY, Math.min(maxY, anchor - surfaceRow + qy * 4 + 2));
             for (int qz = 0; qz < qw; qz++) {
                 for (int qx = 0; qx < qw; qx++) {
                     out[(qy * qw + qz) * qw + qx] = chunk.getNoiseBiome(
@@ -712,15 +783,15 @@ public final class PortalChunkTerrain {
      * {@code SilentBlockOps.evictBlockEntity} for the same distinction from the other direction.</p>
      */
     private static Map<Integer, CompoundTag> blockEntitiesIn(ServerLevel level, ProtoChunk chunk,
-                                                             ChunkPos pos, int anchor) {
+                                                             ChunkPos pos, int anchor, int surfaceRow) {
         Map<Integer, CompoundTag> out = new java.util.HashMap<>();
         chunk.getBlockEntityNbts().forEach((at, nbt) -> {
             if (OfflineChunkSampler.isPlaceholderBlockEntity(nbt)) return;   // data-less; the live block makes its own
-            Integer index = windowIndex(at, pos, anchor);
+            Integer index = windowIndex(at, pos, anchor, surfaceRow);
             if (index != null) out.put(index, nbt.copy());
         });
         chunk.getBlockEntities().forEach((at, blockEntity) -> {
-            Integer index = windowIndex(at, pos, anchor);
+            Integer index = windowIndex(at, pos, anchor, surfaceRow);
             if (index != null) {
                 out.put(index, blockEntity.saveWithFullMetadata(level.registryAccess()));
             }
@@ -736,13 +807,13 @@ public final class PortalChunkTerrain {
      * one does rather than as live entities in a world.</p>
      */
     private static java.util.List<PortalChunkSlice.Occupant> occupantsIn(ProtoChunk chunk,
-                                                                        ChunkPos pos, int anchor) {
+                                                                        ChunkPos pos, int anchor, int surfaceRow) {
         java.util.List<PortalChunkSlice.Occupant> out = new java.util.ArrayList<>();
         for (CompoundTag nbt : chunk.getEntities()) {
             net.minecraft.nbt.ListTag position = nbt.getList("Pos", net.minecraft.nbt.Tag.TAG_DOUBLE);
             if (position.size() != 3) continue;
             double x = position.getDouble(0) - pos.getMinBlockX();
-            double y = position.getDouble(1) - anchor + SURFACE_ROW;
+            double y = position.getDouble(1) - anchor + surfaceRow;
             double z = position.getDouble(2) - pos.getMinBlockZ();
             if (x < 0 || z < 0 || x >= SIZE || z >= SIZE || y < 0 || y >= HEIGHT) continue;
             CompoundTag copy = nbt.copy();
@@ -755,10 +826,10 @@ public final class PortalChunkTerrain {
     }
 
     /** Where a world position falls in the cut window, or null when it falls outside it. */
-    private static Integer windowIndex(BlockPos at, ChunkPos pos, int anchor) {
+    private static Integer windowIndex(BlockPos at, ChunkPos pos, int anchor, int surfaceRow) {
         int x = at.getX() - pos.getMinBlockX();
         int z = at.getZ() - pos.getMinBlockZ();
-        int y = at.getY() - anchor + SURFACE_ROW;
+        int y = at.getY() - anchor + surfaceRow;
         if (x < 0 || z < 0 || y < 0 || x >= SIZE || z >= SIZE || y >= HEIGHT) return null;
         return (y * SIZE + z) * SIZE + x;
     }
@@ -842,10 +913,16 @@ public final class PortalChunkTerrain {
      * falls back to the plain room's sites rather than to an empty room.</p>
      */
     record SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges,
-                    String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler) {
+                    String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler,
+                    boolean oceanOnly) {
 
         SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges) {
-            this(cycle, stretch, ranges, null, null, null);
+            this(cycle, stretch, ranges, null, null, null, false);
+        }
+
+        SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges,
+                 String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler) {
+            this(cycle, stretch, ranges, biomeNamespace, biomes, sampler, false);
         }
 
         static SitePlan of(ServerLevel level, Source source) {
@@ -867,6 +944,12 @@ public final class PortalChunkTerrain {
                 return new SitePlan(null, null, List.of());
             }
             WorldGenCycle cycle = liveCycle();
+            if (source.underwater()) {
+                // The plain overworld's sites, kept to the ones whose centre is an ocean biome: the
+                // only way a scattered site is open sea rather than a field the flood would drown.
+                return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of(), null, biomes,
+                    sampler, true);
+            }
             if (source.stretch() == SecondLapOverworld.Stretch.VANILLA) {
                 return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
             }
@@ -910,10 +993,12 @@ public final class PortalChunkTerrain {
                 return null;
             }
             List<int[]> gaps = StretchSites.chunkRanges(cycle, stretch, (long) SAMPLE_SPREAD * SIZE);
-            return gaps.isEmpty() ? null : new SitePlan(cycle, stretch, gaps);
+            return gaps.isEmpty() ? null
+                : new SitePlan(cycle, stretch, gaps, biomeNamespace, biomes, sampler, oceanOnly);
         }
 
         boolean accepts(ChunkPos site) {
+            if (oceanOnly && !isOceanAt(biomes, sampler, site)) return false;
             if (biomeNamespace != null && !biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site))) {
                 return false;
             }
@@ -941,6 +1026,17 @@ public final class PortalChunkTerrain {
      * The namespace of the biome {@code biomes} places at the middle of {@code site}, at
      * {@link #BIOME_PROBE_Y} — one noise lookup, no generation. {@code null} if the source cannot say.
      */
+    /** Whether the biome at a site's centre is an ocean — {@code #minecraft:is_ocean}, deep ones included. */
+    static boolean isOceanAt(BiomeSource biomes, Climate.Sampler sampler, ChunkPos site) {
+        try {
+            return biomes.getNoiseBiome(QuartPos.fromBlock(site.getMiddleBlockX()),
+                QuartPos.fromBlock(BIOME_PROBE_Y), QuartPos.fromBlock(site.getMiddleBlockZ()), sampler)
+                .is(net.minecraft.tags.BiomeTags.IS_OCEAN);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static String biomeNamespaceAt(BiomeSource biomes, Climate.Sampler sampler, ChunkPos site) {
         try {
             Holder<Biome> biome = biomes.getNoiseBiome(QuartPos.fromBlock(site.getMiddleBlockX()),

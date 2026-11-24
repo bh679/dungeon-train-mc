@@ -2733,6 +2733,8 @@
   "subtitles.dungeontrain.train_engine": "La locomotiva sbuffa",
   "block.dungeontrain.narrative_lectern": "Leggio narrativo",
   "block.dungeontrain.variant_placeholder": "Segnaposto variante",
+  "block.dungeontrain.forced_air": "Aria forzata",
+  "block.dungeontrain.forced_air.tooltip": "Usata nella dimensione chunk sottomarina",
   "block.dungeontrain.flag_1": "Bandiera Dungeon Train 1",
   "block.dungeontrain.flag_2": "Bandiera Dungeon Train 2",
   "block.dungeontrain.flag_3": "Bandiera Dungeon Train 3",

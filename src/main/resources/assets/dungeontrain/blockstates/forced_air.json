@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "dungeontrain:block/forced_air" }
+  }
+}

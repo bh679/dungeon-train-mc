@@ -1,0 +1,68 @@
+package games.brennan.dungeontrain.portal;
+
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.function.IntFunction;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** The underwater room's source naming and seabed rule. */
+class PortalChunkUnderwaterTest {
+
+    private static final int NO_GROUND = Integer.MIN_VALUE;
+
+    @BeforeAll
+    static void bootstrapMinecraft() {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
+
+    @Test
+    @DisplayName("_underwater names the underwater source; the others are unchanged")
+    void sourceOf() {
+        assertSame(PortalChunkTerrain.Source.UNDERWATER,
+            PortalChunkTerrain.Source.of("chunk_dimension_underwater"));
+        assertTrue(PortalChunkTerrain.Source.UNDERWATER.underwater());
+        assertFalse(PortalChunkTerrain.Source.UNDERWATER.vanillaOnly());
+        assertSame(PortalChunkTerrain.Source.OVERWORLD, PortalChunkTerrain.Source.of("chunk_dimension"));
+        assertSame(PortalChunkTerrain.Source.NETHER, PortalChunkTerrain.Source.of("chunk_dimension_nether"));
+        assertSame(PortalChunkTerrain.Source.OVERWORLD_WWOO, PortalChunkTerrain.Source.of("chunk_dimension_wwoo"));
+        assertFalse(PortalChunkTerrain.Source.OVERWORLD.underwater());
+    }
+
+    /** Stone to {@code bed}, water to {@code surface}, air above. */
+    private static IntFunction<BlockState> sea(int bed, int surface) {
+        return y -> y <= bed ? Blocks.STONE.defaultBlockState()
+            : y <= surface ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+    }
+
+    @Test
+    @DisplayName("seabed is the first water row over the ocean floor")
+    void seabed() {
+        assertEquals(41, PortalChunkTerrain.seabedRow(sea(40, 62), -64, 200));
+    }
+
+    @Test
+    @DisplayName("a shallow sea (under 8 deep) and dry land are not open sea")
+    void notSea() {
+        assertEquals(NO_GROUND, PortalChunkTerrain.seabedRow(sea(58, 62), -64, 200));
+        assertEquals(NO_GROUND, PortalChunkTerrain.seabedRow(sea(70, 62), -64, 200));
+    }
+
+    @Test
+    @DisplayName("ice on the surface does not hide the sea under it; kelp counts as water")
+    void iceAndKelp() {
+        IntFunction<BlockState> frozen = y -> y == 63 ? Blocks.ICE.defaultBlockState()
+            : y == 45 ? Blocks.KELP.defaultBlockState() : sea(40, 62).apply(y);
+        assertEquals(41, PortalChunkTerrain.seabedRow(frozen, -64, 200));
+    }
+}

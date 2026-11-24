@@ -2733,6 +2733,8 @@
   "subtitles.dungeontrain.train_engine": "Zuglok tuckert",
   "block.dungeontrain.narrative_lectern": "Erzähl-Lesepult",
   "block.dungeontrain.variant_placeholder": "Varianten-Platzhalter",
+  "block.dungeontrain.forced_air": "Erzwungene Luft",
+  "block.dungeontrain.forced_air.tooltip": "Wird in der Unterwasser-Chunk-Dimension verwendet",
   "block.dungeontrain.flag_1": "Dungeon-Train-Flagge 1",
   "block.dungeontrain.flag_2": "Dungeon-Train-Flagge 2",
   "block.dungeontrain.flag_3": "Dungeon-Train-Flagge 3",

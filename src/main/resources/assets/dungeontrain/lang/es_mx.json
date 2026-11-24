@@ -2733,6 +2733,8 @@
   "subtitles.dungeontrain.train_engine": "La locomotora traquetea",
   "block.dungeontrain.narrative_lectern": "Atril narrativo",
   "block.dungeontrain.variant_placeholder": "Marcador de variante",
+  "block.dungeontrain.forced_air": "Aire forzado",
+  "block.dungeontrain.forced_air.tooltip": "Se usa en la dimensión de chunk submarina",
   "block.dungeontrain.flag_1": "Bandera de Dungeon Train 1",
   "block.dungeontrain.flag_2": "Bandera de Dungeon Train 2",
   "block.dungeontrain.flag_3": "Bandera de Dungeon Train 3",

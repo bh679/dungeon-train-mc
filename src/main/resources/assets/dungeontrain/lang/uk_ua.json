@@ -3344,6 +3344,8 @@
   "subtitles.dungeontrain.train_engine": "Пихкає двигун потяга",
   "block.dungeontrain.narrative_lectern": "Оповідна кафедра",
   "block.dungeontrain.variant_placeholder": "Заповнювач варіанта",
+  "block.dungeontrain.forced_air": "Примусове повітря",
+  "block.dungeontrain.forced_air.tooltip": "Використовується в підводному вимірі-чанку",
   "block.dungeontrain.flag_1": "Прапор Dungeon Train 1",
   "block.dungeontrain.flag_2": "Прапор Dungeon Train 2",
   "block.dungeontrain.flag_3": "Прапор Dungeon Train 3",

@@ -199,6 +199,19 @@ public final class ChunkFramePlacer {
                                     variants.rotationLockIdAt(local.immutable()));
                             blockEntity = roll.blockEntityNbt();
                         }
+                        if (games.brennan.dungeontrain.block.ForcedAir.writesAir(state)) {
+                            // The one block a frame writes as air: plain air in a frame leaves the
+                            // sampled terrain (and the sea) alone, Forced Air carves it out.
+                            cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
+                                roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
+                                roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
+                            if (mask.covers(cursor) || level.getBlockState(cursor).isAir()) continue;
+                            if (level.getBlockState(cursor).hasBlockEntity()) level.removeBlockEntity(cursor);
+                            games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilentNoCascade(level, cursor,
+                                net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
+                            changed++;
+                            continue;
+                        }
                         if (state == null || state.isAir()) continue;
                         // Stage placeholders become the stage's real blocks, as in every other stamp.
                         state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);

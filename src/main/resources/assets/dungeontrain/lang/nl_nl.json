@@ -2733,6 +2733,8 @@
   "subtitles.dungeontrain.train_engine": "Treinmotor puft",
   "block.dungeontrain.narrative_lectern": "Verhaallessenaar",
   "block.dungeontrain.variant_placeholder": "Variant-plaatshouder",
+  "block.dungeontrain.forced_air": "Geforceerde lucht",
+  "block.dungeontrain.forced_air.tooltip": "Gebruikt in de onderwater-chunkdimensie",
   "block.dungeontrain.flag_1": "Dungeon Train-vlag 1",
   "block.dungeontrain.flag_2": "Dungeon Train-vlag 2",
   "block.dungeontrain.flag_3": "Dungeon Train-vlag 3",

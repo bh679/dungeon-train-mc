@@ -2733,6 +2733,8 @@
   "subtitles.dungeontrain.train_engine": "La locomotive ahane",
   "block.dungeontrain.narrative_lectern": "Pupitre narratif",
   "block.dungeontrain.variant_placeholder": "Espace réservé de variante",
+  "block.dungeontrain.forced_air": "Air forcé",
+  "block.dungeontrain.forced_air.tooltip": "Utilisé dans la dimension chunk sous-marine",
   "block.dungeontrain.flag_1": "Drapeau Dungeon Train 1",
   "block.dungeontrain.flag_2": "Drapeau Dungeon Train 2",
   "block.dungeontrain.flag_3": "Drapeau Dungeon Train 3",

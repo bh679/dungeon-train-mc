@@ -34,6 +34,10 @@
       "id": "chunk_dimension_end_better",
       "weight": 8,
       "minLevel": 13
+    },
+    {
+      "id": "chunk_dimension_underwater",
+      "weight": 20
     }
   ]
 }

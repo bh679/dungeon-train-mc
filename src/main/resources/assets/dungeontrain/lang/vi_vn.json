@@ -2683,6 +2683,8 @@
   "subtitles.dungeontrain.train_engine": "Đầu máy tàu phì phò",
   "block.dungeontrain.narrative_lectern": "Bục Giảng Cốt Truyện",
   "block.dungeontrain.variant_placeholder": "Khối giữ chỗ biến thể",
+  "block.dungeontrain.forced_air": "Không khí cưỡng bức",
+  "block.dungeontrain.forced_air.tooltip": "Dùng trong chiều không gian chunk dưới nước",
   "block.dungeontrain.flag_1": "Cờ Dungeon Train 1",
   "block.dungeontrain.flag_2": "Cờ Dungeon Train 2",
   "block.dungeontrain.flag_3": "Cờ Dungeon Train 3",

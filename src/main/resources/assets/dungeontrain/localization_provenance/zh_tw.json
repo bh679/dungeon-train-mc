@@ -2673,6 +2673,8 @@
       "subtitles.dungeontrain.train_engine",
       "block.dungeontrain.narrative_lectern",
       "block.dungeontrain.variant_placeholder",
+      "block.dungeontrain.forced_air",
+      "block.dungeontrain.forced_air.tooltip",
       "block.dungeontrain.flag_1",
       "block.dungeontrain.flag_2",
       "block.dungeontrain.flag_3",

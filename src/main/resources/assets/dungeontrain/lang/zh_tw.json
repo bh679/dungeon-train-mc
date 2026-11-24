@@ -2683,6 +2683,8 @@
   "subtitles.dungeontrain.train_engine": "列車引擎轟隆作響",
   "block.dungeontrain.narrative_lectern": "敘事講台",
   "block.dungeontrain.variant_placeholder": "變體佔位方塊",
+  "block.dungeontrain.forced_air": "強制空氣",
+  "block.dungeontrain.forced_air.tooltip": "用於水下區塊維度",
   "block.dungeontrain.flag_1": "Dungeon Train 旗幟 1",
   "block.dungeontrain.flag_2": "Dungeon Train 旗幟 2",
   "block.dungeontrain.flag_3": "Dungeon Train 旗幟 3",

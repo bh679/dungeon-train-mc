@@ -2683,6 +2683,8 @@
   "subtitles.dungeontrain.train_engine": "汽車がガタゴトと進む",
   "block.dungeontrain.narrative_lectern": "物語の書見台",
   "block.dungeontrain.variant_placeholder": "バリアントプレースホルダー",
+  "block.dungeontrain.forced_air": "強制空気",
+  "block.dungeontrain.forced_air.tooltip": "水中チャンク次元で使用",
   "block.dungeontrain.flag_1": "Dungeon Train の旗 1",
   "block.dungeontrain.flag_2": "Dungeon Train の旗 2",
   "block.dungeontrain.flag_3": "Dungeon Train の旗 3",

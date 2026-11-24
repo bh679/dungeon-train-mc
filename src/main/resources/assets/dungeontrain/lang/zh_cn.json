@@ -2683,6 +2683,8 @@
   "subtitles.dungeontrain.train_engine": "列车发动机轰鸣",
   "block.dungeontrain.narrative_lectern": "叙事讲台",
   "block.dungeontrain.variant_placeholder": "变体占位方块",
+  "block.dungeontrain.forced_air": "强制空气",
+  "block.dungeontrain.forced_air.tooltip": "用于水下区块维度",
   "block.dungeontrain.flag_1": "地牢列车旗帜 1",
   "block.dungeontrain.flag_2": "地牢列车旗帜 2",
   "block.dungeontrain.flag_3": "地牢列车旗帜 3",

@@ -2783,6 +2783,8 @@
   "subtitles.dungeontrain.train_engine": "Lokomotywa sapie",
   "block.dungeontrain.narrative_lectern": "Mównica narracyjna",
   "block.dungeontrain.variant_placeholder": "Symbol zastępczy wariantu",
+  "block.dungeontrain.forced_air": "Wymuszone powietrze",
+  "block.dungeontrain.forced_air.tooltip": "Używane w podwodnym wymiarze chunka",
   "block.dungeontrain.flag_1": "Flaga Dungeon Train 1",
   "block.dungeontrain.flag_2": "Flaga Dungeon Train 2",
   "block.dungeontrain.flag_3": "Flaga Dungeon Train 3",

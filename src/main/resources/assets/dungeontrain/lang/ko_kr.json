@@ -2683,6 +2683,8 @@
   "subtitles.dungeontrain.train_engine": "기차 엔진이 칙칙거림",
   "block.dungeontrain.narrative_lectern": "서사 독서대",
   "block.dungeontrain.variant_placeholder": "변형 자리표시자",
+  "block.dungeontrain.forced_air": "강제 공기",
+  "block.dungeontrain.forced_air.tooltip": "수중 청크 차원에서 사용",
   "block.dungeontrain.flag_1": "Dungeon Train 깃발 1",
   "block.dungeontrain.flag_2": "Dungeon Train 깃발 2",
   "block.dungeontrain.flag_3": "Dungeon Train 깃발 3",

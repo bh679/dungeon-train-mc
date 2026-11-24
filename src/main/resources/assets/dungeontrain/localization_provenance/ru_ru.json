@@ -2294,6 +2294,8 @@
       "gui.dungeontrain.number_input.tiles_per_row",
       "subtitles.dungeontrain.train_engine",
       "block.dungeontrain.variant_placeholder",
+      "block.dungeontrain.forced_air",
+      "block.dungeontrain.forced_air.tooltip",
       "block.dungeontrain.flag_1",
       "block.dungeontrain.flag_2",
       "block.dungeontrain.flag_3",
