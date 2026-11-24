@@ -38929,14 +38929,26 @@
         "loot",
         "balance"
       ],
-      "title": "Some mobs carry better gear",
+      "title": "Harder Mobs Drop Better Gear & Smarter Echoes",
       "summary": "Now and then a monster on the train carries gear far better than its neighbours', close to what you'd find in a chest, and it drops that gear much more often.",
       "highlights": [],
       "pr": 2853,
       "date": "2026-11-24",
       "released": true,
       "released_in": "v0.1992.0",
-      "released_at": "2026-11-24T07:26:04Z"
+      "released_at": "2026-11-24T07:26:04Z",
+      "major": true,
+      "notable": true,
+      "description": "Some monsters on the train now carry gear far better than their neighbours', close to what you'd find in a chest, and they drop it much more often. Take one down and that gear can be yours.\n\n## Echoes fight smarter\nEchoes you meet now use their reach in a fight. The better the life they echo was at combat, the more they keep their distance and strike from the edge of their reach.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/harder-mobs-drop-better-gear.gif",
+      "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/harder-mobs-drop-better-gear.mp4",
+      "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/harder-mobs-drop-better-gear.loop.mp4",
+      "video_cover": 0.6,
+      "videos": {
+        "feed": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/harder-mobs-drop-better-gear-feed.mp4",
+        "story": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/harder-mobs-drop-better-gear-story.mp4",
+        "tiktok": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/harder-mobs-drop-better-gear-story.mp4"
+      }
     },
     {
       "id": "mobs-skip-carpet-doors",
