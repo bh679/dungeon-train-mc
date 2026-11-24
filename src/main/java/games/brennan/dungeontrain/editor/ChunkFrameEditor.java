@@ -108,6 +108,17 @@ public final class ChunkFrameEditor {
      */
     public static void enter(ServerPlayer player, ServerLevel level, String name, String copyOf) {
         EditorSessions.rememberReturn(player);
+        if (copyOf != null && !copyOf.equals(name) && ChunkFrameStore.readTag(name).isEmpty()) {
+            // A copy is the frame's blocks AND its sidecars: without them the duplicate came up with
+            // none of its variants, room selection or chest links. Before the plot is stamped, so the
+            // plot loads the copied variants rather than an empty sidecar.
+            try {
+                copySidecars(copyOf, name, EditorDevMode.isEnabled());
+            } catch (java.io.IOException e) {
+                LOGGER.warn("[DungeonTrain] Chunk frame editor: could not copy {}'s sidecars to {}: {}",
+                    copyOf, name, e.toString());
+            }
+        }
         ChunkFrameRegistry.register(name);
         SESSIONS.put(player.getUUID(), name);
         BlockPos origin = plotOrigin(name);
@@ -115,6 +126,19 @@ public final class ChunkFrameEditor {
         EditorPlotArrival.land(player, level, origin, ChunkFrame.SIZE, true, EditorPlotArrival.Inside.CENTRE, null);
         LOGGER.info("[DungeonTrain] Chunk frame editor: {} entered {} at {}{}", player.getName().getString(),
             name, origin, copyOf != null ? " (copy of " + copyOf + ")" : "");
+    }
+
+    /**
+     * Copy every sidecar of frame {@code from} onto {@code to}: its block variants, its meta (which
+     * rooms it dresses, and its weight) and its chest links. The {@code .nbt} is the caller's to write.
+     */
+    public static void copySidecars(String from, String to, boolean toSource) throws java.io.IOException {
+        var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(ChunkFrameVariants.loadFor(from));
+        ChunkFrameVariants.save(to, variants, toSource);
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.save(to,
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(from), toSource);
+        TemplateCopy.copy(new games.brennan.dungeontrain.template.Template.ChunkFrame(from),
+            new games.brennan.dungeontrain.template.Template.ChunkFrame(to));
     }
 
     /**
