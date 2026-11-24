@@ -71,6 +71,16 @@ public final class PortalChunkDoors {
         if (slice == null) return settings;
         int[] zSpan = doorwayColumns(dims, layout, size, settings.doorOffset().value());
         int max = PortalRoomLayout.maxDoorHeightOffset(dims, size.getY());
+        if (slice.source().underwater()) {
+            // An underwater room's doors are not stood on the seabed: both open at the middle of the
+            // box, so a player swims in mid-water whatever height the floor rolled.
+            int middle = middleDoorRow(max);
+            LOGGER.info("[DungeonTrain] Chunk dimension doors: underwater, both at middle row {} (of {} allowed)",
+                middle, max);
+            return settings
+                .withDoorHeightOffset(new PortalRoomDoorHeightOffset(middle))
+                .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(middle));
+        }
 
         int entryGround = groundRow(slice, 0, MOUTH_DEPTH - 1, zSpan[0], zSpan[1], max);
         int exitGround = groundRow(slice, size.getX() - MOUTH_DEPTH, size.getX() - 1, zSpan[0], zSpan[1], max);
@@ -94,6 +104,11 @@ public final class PortalChunkDoors {
      * built on it. Standing that door on a row of terrain that is not under it hung it in the air
      * (the 64-wide courtyard's two doors, eight rows over its own floor).</p>
      */
+    /** The door row that centres a doorway in the box: half the offset the box can spend. */
+    static int middleDoorRow(int maxOffset) {
+        return Math.max(0, maxOffset / 2);
+    }
+
     private static int orAuthored(int ground, int authored) {
         return ground == OUTSIDE_SAMPLE ? authored : ground;
     }

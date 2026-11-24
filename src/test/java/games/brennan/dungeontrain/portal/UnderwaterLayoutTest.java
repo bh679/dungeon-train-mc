@@ -9,22 +9,22 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The underwater room's sea rolls: floor 1-16 off the bottom, half flooded to the roof, else a 2-8 gap. */
+/** The underwater room's sea rolls: floor 0-8 off the bottom, half flooded to the roof, else a 2-8 gap. */
 class UnderwaterLayoutTest {
 
     private static final long SEED = 0x5EED_CAFEL;
     private static final int PAIRS = 10_000;
 
     @Test
-    @DisplayName("floor always lands 1 to 16 rows off the bottom, and every row is reached")
+    @DisplayName("floor always lands 0 to 8 rows off the bottom, and every row is reached")
     void floorRange() {
         Set<Integer> seen = new HashSet<>();
         for (int pair = 0; pair < PAIRS; pair++) {
             int floor = UnderwaterLayout.roll(SEED, pair, 0).floorRow();
-            assertTrue(floor >= 1 && floor <= 16, "floor " + floor);
+            assertTrue(floor >= 0 && floor <= 8, "floor " + floor);
             seen.add(floor);
         }
-        assertEquals(16, seen.size(), "every floor row should roll: " + seen);
+        assertEquals(9, seen.size(), "every floor row should roll: " + seen);
     }
 
     @Test
@@ -58,12 +58,12 @@ class UnderwaterLayoutTest {
     }
 
     @Test
-    @DisplayName("the water always stands at least 7 deep over the floor in a 32-tall box")
+    @DisplayName("the water always stands at least 16 deep over the floor in a 32-tall box")
     void alwaysWater() {
         for (int pair = 0; pair < PAIRS; pair++) {
             UnderwaterLayout sea = UnderwaterLayout.roll(SEED, pair, 0);
             int top = sea.topWaterRow(PortalChunkTerrain.HEIGHT);
-            assertTrue(top - sea.floorRow() + 1 >= 7, sea + " top " + top);
+            assertTrue(top - sea.floorRow() + 1 >= 16, sea + " top " + top);
         }
         assertEquals(31, new UnderwaterLayout(5, 0).topWaterRow(32));
         assertEquals(23, new UnderwaterLayout(5, 8).topWaterRow(32));

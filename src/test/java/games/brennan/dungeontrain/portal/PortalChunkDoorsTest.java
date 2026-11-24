@@ -93,4 +93,23 @@ class PortalChunkDoorsTest {
         assertEquals(PortalChunkTerrain.SURFACE_ROW - 1, fitted.doorHeightOffset().value());
         assertEquals(PortalChunkTerrain.SURFACE_ROW - 1, fitted.exitDoorHeightOffset().value());
     }
+
+    @Test
+    @DisplayName("An underwater room opens both doors at the middle of the box, whatever the seabed")
+    void underwater_doorsAtMiddle() {
+        Vec3i size = new Vec3i(CHUNK, HEIGHT, CHUNK);
+        int max = PortalRoomLayout.maxDoorHeightOffset(DIMS, HEIGHT);
+        for (int seabed : new int[] {0, 5, 8}) {
+            PortalChunkSlice flat = flatSlice(seabed);
+            BlockState[] states = new BlockState[CHUNK * HEIGHT * CHUNK];
+            for (int y = 0; y < HEIGHT; y++) {
+                for (int i = 0; i < CHUNK * CHUNK; i++) states[y * CHUNK * CHUNK + i] = flat.at(0, y, 0);
+            }
+            PortalChunkSlice sea = new PortalChunkSlice(PortalChunkTerrain.Source.UNDERWATER, CHUNK, HEIGHT,
+                states, Map.of(), List.of());
+            PortalRoomSettings fitted = fit("chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9", sea, size);
+            assertEquals(max / 2, fitted.doorHeightOffset().value(), "seabed " + seabed);
+            assertEquals(max / 2, fitted.exitDoorHeightOffset().value(), "seabed " + seabed);
+        }
+    }
 }

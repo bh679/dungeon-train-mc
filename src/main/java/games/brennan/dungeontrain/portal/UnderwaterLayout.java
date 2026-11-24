@@ -8,14 +8,14 @@ package games.brennan.dungeontrain.portal;
  * life of the world and Test the Carriage's reseed gives a fresh one. The floor roll places the
  * middle column's seabed; every other column follows the ocean floor the sample actually has.</p>
  *
- * @param floorRow room-local row a player stands on at the middle of the seabed, 1 to 16
+ * @param floorRow room-local row a player stands on at the middle of the seabed, 0 to 8
  * @param waterGap blocks of air between the water's top row and the roof: 0 (flooded to the roof)
  *                 half the time, otherwise 2 to 8
  */
 public record UnderwaterLayout(int floorRow, int waterGap) {
 
-    public static final int MIN_FLOOR_ROW = 1;
-    public static final int MAX_FLOOR_ROW = 16;
+    public static final int MIN_FLOOR_ROW = 0;
+    public static final int MAX_FLOOR_ROW = 8;
     public static final int MIN_GAP = 2;
     public static final int MAX_GAP = 8;
 
