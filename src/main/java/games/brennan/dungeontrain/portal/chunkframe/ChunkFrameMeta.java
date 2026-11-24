@@ -19,8 +19,10 @@ import java.util.Set;
  *
  * <p>{@link #weight} is how often the frame is picked against the other frames that dress the same
  * room.</p>
+ *
+ * <p>{@link #dimension} is how the rooms it dresses are enclosed — see {@link ChunkFrameDimension}.</p>
  */
-public record ChunkFrameMeta(Set<String> rooms, int weight) {
+public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension) {
 
     public static final int SCHEMA_VERSION = 1;
     public static final int MIN_WEIGHT = 1;
@@ -32,6 +34,12 @@ public record ChunkFrameMeta(Set<String> rooms, int weight) {
     public ChunkFrameMeta {
         rooms = rooms == null ? null : Set.copyOf(new LinkedHashSet<>(rooms));
         weight = Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, weight));
+        dimension = dimension == null ? ChunkFrameDimension.DEFAULT : dimension;
+    }
+
+    /** Rooms and weight, enclosed in the default {@link ChunkFrameDimension#BEDROCK}. */
+    public ChunkFrameMeta(Set<String> rooms, int weight) {
+        this(rooms, weight, ChunkFrameDimension.DEFAULT);
     }
 
     /** True when the frame dresses every chunk dimension. */
@@ -52,26 +60,31 @@ public record ChunkFrameMeta(Set<String> rooms, int weight) {
         Set<String> next = new LinkedHashSet<>(rooms == null ? allRooms : rooms);
         if (on) next.add(room); else next.remove(room);
         // Back to "every room" when it is every room, so a later chunk dimension joins it too.
-        if (next.containsAll(allRooms)) return new ChunkFrameMeta(null, weight);
-        return new ChunkFrameMeta(next, weight);
+        if (next.containsAll(allRooms)) return new ChunkFrameMeta(null, weight, dimension);
+        return new ChunkFrameMeta(next, weight, dimension);
     }
 
     public ChunkFrameMeta withAllRooms() {
-        return new ChunkFrameMeta(null, weight);
+        return new ChunkFrameMeta(null, weight, dimension);
     }
 
     public ChunkFrameMeta withNoRooms() {
-        return new ChunkFrameMeta(Set.of(), weight);
+        return new ChunkFrameMeta(Set.of(), weight, dimension);
     }
 
     public ChunkFrameMeta withWeight(int newWeight) {
-        return new ChunkFrameMeta(rooms, newWeight);
+        return new ChunkFrameMeta(rooms, newWeight, dimension);
+    }
+
+    public ChunkFrameMeta withDimension(ChunkFrameDimension newDimension) {
+        return new ChunkFrameMeta(rooms, weight, newDimension);
     }
 
     public JsonObject toJson() {
         JsonObject o = new JsonObject();
         o.addProperty("schemaVersion", SCHEMA_VERSION);
         o.addProperty("weight", weight);
+        if (dimension != ChunkFrameDimension.DEFAULT) o.addProperty("dimension", dimension.id());
         if (rooms != null) {
             JsonArray arr = new JsonArray();
             rooms.stream().sorted().forEach(arr::add);
@@ -91,6 +104,8 @@ public record ChunkFrameMeta(Set<String> rooms, int weight) {
             }
             rooms = new LinkedHashSet<>(list);
         }
-        return new ChunkFrameMeta(rooms, weight);
+        ChunkFrameDimension dimension = o.has("dimension") && o.get("dimension").isJsonPrimitive()
+            ? ChunkFrameDimension.parse(o.get("dimension").getAsString()) : ChunkFrameDimension.DEFAULT;
+        return new ChunkFrameMeta(rooms, weight, dimension);
     }
 }

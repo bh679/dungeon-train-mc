@@ -300,7 +300,8 @@ public final class PortalChunkDimension {
         // its plug are kept — which is what cuts the doorway through it.
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         int changed = ChunkFramePlacer.place(level, frame.get(), roomOrigin,
-            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex);
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex,
+            /*skipShell*/ !structure.mode().sealsRoomBox());
         LOGGER.debug("[DungeonTrain] Chunk room '{}' pair {} framed with '{}' at {}: {} cell(s) changed",
             structure.roomName(), pairKey, frame.get().name(), roomOrigin, changed);
     }

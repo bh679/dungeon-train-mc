@@ -97,7 +97,16 @@ final class ChunkFrameCommand {
                 .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
                     .then(Commands.argument("weight",
                             IntegerArgumentType.integer(ChunkFrameMeta.MIN_WEIGHT, ChunkFrameMeta.MAX_WEIGHT))
-                        .executes(ctx -> editMeta(ctx, m -> m.withWeight(IntegerArgumentType.getInteger(ctx, "weight")))))));
+                        .executes(ctx -> editMeta(ctx, m -> m.withWeight(IntegerArgumentType.getInteger(ctx, "weight")))))))
+            // How the rooms this frame dresses are enclosed: bedrock (sealed), void, or world_border.
+            .then(Commands.literal("dimension")
+                .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
+                    .then(Commands.literal("bedrock").executes(ctx -> editMeta(ctx,
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.BEDROCK))))
+                    .then(Commands.literal("void").executes(ctx -> editMeta(ctx,
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.VOID))))
+                    .then(Commands.literal("world_border").executes(ctx -> editMeta(ctx,
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.WORLD_BORDER))))));
     }
 
     private static int list(CommandSourceStack source) {

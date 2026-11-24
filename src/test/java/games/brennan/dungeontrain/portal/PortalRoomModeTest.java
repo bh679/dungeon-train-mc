@@ -87,7 +87,9 @@ final class PortalRoomModeTest {
     @DisplayName("clearing the surroundings is Void and World Border — no other mode sweeps a boundary")
     void onlyVoidAndWorldBorderClear() {
         for (PortalRoomMode m : PortalRoomMode.values()) {
-            boolean expected = m == PortalRoomMode.VOID || m == PortalRoomMode.WORLD_BORDER;
+            boolean expected = m == PortalRoomMode.VOID || m == PortalRoomMode.WORLD_BORDER
+                // A chunk room a frame encloses as Void or World Border sweeps exactly as they do.
+                || m == PortalRoomMode.CHUNK_VOID || m == PortalRoomMode.CHUNK_WORLD_BORDER;
             assertEquals(expected, m.clearsSurroundings(), m.id());
         }
     }
@@ -97,7 +99,8 @@ final class PortalRoomModeTest {
     void worldBorderDrawsBorderAndBehavesAsVoid() {
         assertSame(PortalRoomMode.WORLD_BORDER, PortalRoomMode.parse("world_border"));
         for (PortalRoomMode m : PortalRoomMode.values()) {
-            assertEquals(m == PortalRoomMode.WORLD_BORDER, m.drawsBorder(), m.id());
+            assertEquals(m == PortalRoomMode.WORLD_BORDER || m == PortalRoomMode.CHUNK_WORLD_BORDER,
+                m.drawsBorder(), m.id());
         }
         PortalRoomMode b = PortalRoomMode.WORLD_BORDER;
         assertTrue(b.fogs());
@@ -162,7 +165,10 @@ final class PortalRoomModeTest {
         assertFalse(PortalRoomMode.CHUNK_DIMENSION.fogs());
         // Void with a drawn edge: the same clearance, the same edge worth hiding.
         assertTrue(PortalRoomMode.WORLD_BORDER.fogs());
-        assertEquals(6, PortalRoomMode.values().length,
+        // A chunk room enclosed as Void or World Border by its frame has the Void edge to hide.
+        assertTrue(PortalRoomMode.CHUNK_VOID.fogs());
+        assertTrue(PortalRoomMode.CHUNK_WORLD_BORDER.fogs());
+        assertEquals(8, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it fogs — add it to this test");
     }
 
@@ -182,7 +188,10 @@ final class PortalRoomModeTest {
         // A chunk dimension appends nothing: its terrain is one sample, sliced once.
         assertFalse(PortalRoomMode.CHUNK_DIMENSION.copiesApply());
         assertFalse(PortalRoomMode.WORLD_BORDER.copiesApply());
-        assertEquals(6, PortalRoomMode.values().length,
+        // One sample, sliced once, whatever encloses it.
+        assertFalse(PortalRoomMode.CHUNK_VOID.copiesApply());
+        assertFalse(PortalRoomMode.CHUNK_WORLD_BORDER.copiesApply());
+        assertEquals(8, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it takes a Copies setting — add it to this test");
     }
 
@@ -204,22 +213,28 @@ final class PortalRoomModeTest {
         assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsRoomBox());
         // Its edge is a picture a player walks through, so nothing is sealed.
         assertFalse(PortalRoomMode.WORLD_BORDER.sealsCorridors());
-        assertEquals(6, PortalRoomMode.values().length,
+        // A frame's Void or World Border takes the skin away, so nothing is sealed there either.
+        assertFalse(PortalRoomMode.CHUNK_VOID.sealsCorridors());
+        assertFalse(PortalRoomMode.CHUNK_WORLD_BORDER.sealsCorridors());
+        assertEquals(8, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it seals its corridors — add it to this test");
     }
 
     @Test
-    @DisplayName("next() cycles through every mode and returns to where it started")
+    @DisplayName("next() cycles through every authored mode and returns to where it started")
     void nextCycles() {
         PortalRoomMode start = PortalRoomMode.DEFAULT;
+        long authored = java.util.Arrays.stream(PortalRoomMode.values()).filter(PortalRoomMode::authored).count();
         Set<PortalRoomMode> visited = new HashSet<>();
         PortalRoomMode m = start;
-        for (int i = 0; i < PortalRoomMode.values().length; i++) {
+        for (int i = 0; i < authored; i++) {
             assertTrue(visited.add(m), "next() revisited " + m + " before covering every mode");
+            assertTrue(m.authored(), "next() offered the frame-only mode " + m);
             assertNotEquals(m, m.next());
             m = m.next();
         }
         assertSame(start, m);
-        assertEquals(PortalRoomMode.values().length, visited.size());
+        assertEquals(authored, visited.size());
+        assertEquals(PortalRoomMode.values().length - 2, authored, "only the two chunk enclosures are frame-only");
     }
 }

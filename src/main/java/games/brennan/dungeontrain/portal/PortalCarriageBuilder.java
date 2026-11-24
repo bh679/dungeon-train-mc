@@ -926,6 +926,15 @@ public final class PortalCarriageBuilder {
             PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
             if (slice == null) return null;
             settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
+            // The frame that will dress this room says how it is enclosed: sealed, Void or World
+            // Border. Decided here, with the mode, so the skin or sweep, the lane claim, the fog and
+            // the border all follow from it as they do for any other room. One-chunk boxes only:
+            // that is all a frame dresses.
+            if (size.equals(games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.ROOM_SIZE)) {
+                PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
+                    .dimensionFor(level, roomName, pairKey).roomMode(settings.mode());
+                if (framed != settings.mode()) settings = settings.withMode(framed);
+            }
         }
 
         // Where this pair stands its exit, decided here with everything else about the pair and then
@@ -1238,7 +1247,10 @@ public final class PortalCarriageBuilder {
             // A chunk dimension has no floor row of its own to fall back on — its bottom row is
             // sampled terrain — so an open cell of its end column seals with its lock skin, the sky
             // the whole chunk stands in, rather than with a slab of stone across open air.
-            base.mode().generatesTerrain() ? lockStateFor(base) : null);
+            // Under a frame's Void or World Border there is no skin to match, so those cells stay open.
+            base.mode().generatesTerrain()
+                ? (base.mode().sealsRoomBox() ? lockStateFor(base) : Blocks.AIR.defaultBlockState())
+                : null);
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two

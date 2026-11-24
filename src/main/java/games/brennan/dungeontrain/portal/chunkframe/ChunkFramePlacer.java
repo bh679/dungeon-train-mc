@@ -117,6 +117,25 @@ public final class ChunkFramePlacer {
     }
 
     /**
+     * How the frame {@code roomName} gets at {@code pairKey} encloses it — the same pick
+     * {@link #frameFor} makes (the forced frame first, then the weighted roll), read from the frames'
+     * meta alone so it is cheap enough for plan time. {@link ChunkFrameDimension#BEDROCK} when no
+     * frame dresses the room.
+     */
+    public static ChunkFrameDimension dimensionFor(ServerLevel level, String roomName, int pairKey) {
+        try {
+            String name = FORCED.get(pairKey);
+            if (name == null) {
+                name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex(roomName, pairKey) << 20));
+            }
+            return name == null ? ChunkFrameDimension.DEFAULT : ChunkFrameMetaStore.get(name).dimension();
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not read the frame dimension for room {}: {}", roomName, e.toString());
+            return ChunkFrameDimension.DEFAULT;
+        }
+    }
+
+    /**
      * Read every frame that could dress {@code roomName} into its cache, off the server thread.
      *
      * <p>A frame's sidecar runs to megabytes, and the first stamp to ask for it would otherwise parse
@@ -170,6 +189,16 @@ public final class ChunkFramePlacer {
      * @return cells changed
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
+        return place(level, picked, roomOrigin, mask, rollIndex, false);
+    }
+
+    /**
+     * {@link #place}, leaving the frame's shell layer out when {@code skipShell} — a room enclosed
+     * as Void or World Border ({@link ChunkFrameDimension}) has no skin for the shell to dress, and
+     * the shell would otherwise hang in the swept space around the chunk.
+     */
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask,
+                            int rollIndex, boolean skipShell) {
         ChunkFrameTemplate frame = picked.template();
         VariantDoc variants = picked.variants();
         long seed = level.getSeed();
@@ -186,6 +215,7 @@ public final class ChunkFramePlacer {
             for (int y = 0; y < size.getY(); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
                     for (int x = 0; x < size.getX(); x++) {
+                        if (skipShell && ChunkFrame.isShell(x, y, z)) continue;
                         BlockState state = frame.at(x, y, z);
                         CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
                         VariantState roll = null;
