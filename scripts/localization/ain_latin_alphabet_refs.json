@@ -1,0 +1,111 @@
+{
+  "_note": "AIN chain refs only locales written in the Latin alphabet carry (AIN's procedural names are Latin syllables). validate-locale.py drops these refs from the es_es reference when checking any other locale. LocalizedCommunityNameRefsTest pins the same rows.",
+  "locales": [
+    "de_de",
+    "es_es",
+    "es_mx",
+    "fil_ph",
+    "fr_fr",
+    "id_id",
+    "it_it",
+    "ms_my",
+    "nl_nl",
+    "pl_pl",
+    "pt_br",
+    "pt_pt",
+    "ro_ro",
+    "vi_vn"
+  ],
+  "refs": [
+    {
+      "chain": "do_you_know_x",
+      "segment": 1,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "do_you_know_x",
+      "segment": 1,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "forged_by",
+      "segment": 1,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "forged_by",
+      "segment": 1,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "looks_like_something",
+      "segment": 1,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "looks_like_something",
+      "segment": 1,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "mob_name",
+      "segment": 1,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "mob_name",
+      "segment": 1,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "mob_name",
+      "segment": 2,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "mob_name",
+      "segment": 2,
+      "ref": "adventureitemnames:names"
+    },
+    {
+      "chain": "mob_name",
+      "segment": 2,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "playermob_name",
+      "segment": 1,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "playermob_name",
+      "segment": 1,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "playermob_name",
+      "segment": 2,
+      "ref": "adventureitemnames:formula_name"
+    },
+    {
+      "chain": "playermob_name",
+      "segment": 2,
+      "ref": "adventureitemnames:names"
+    },
+    {
+      "chain": "playermob_name",
+      "segment": 2,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "title_combinations",
+      "segment": 1,
+      "ref": "adventureitemnames:name_plus_ending"
+    },
+    {
+      "chain": "title_combinations",
+      "segment": 1,
+      "ref": "adventureitemnames:formula_name"
+    }
+  ]
+}

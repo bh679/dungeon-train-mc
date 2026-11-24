@@ -31,6 +31,7 @@ not be imported over it). That debt is paid off and both build.yml and the impor
 full question again. The flag is kept as the escape hatch for the same situation recurring —
 reach for it only to unblock work while a locale is being repaired, never as the steady state.
 """
+import copy
 import json
 import sys
 from pathlib import Path
@@ -195,6 +196,30 @@ def validate_gui(loc, errors, warnings, values_only=False):
                 errors.append(f"[gui:{mod}] '{key}': empty value")
 
 
+LATIN_ALPHABET_REFS = load(Path(__file__).resolve().parent / "ain_latin_alphabet_refs.json")
+
+
+def reference_for(loc, sub, rel, ref):
+    """The es_es reference ``loc`` is shape-checked against.
+
+    es_es is written in the Latin alphabet, so its AIN chains carry AIN's procedural names
+    (Latin syllables). Locales in other scripts deliberately leave those refs out, so for them
+    exactly the refs listed in ``ain_latin_alphabet_refs.json`` are dropped from the reference;
+    every other ref, weight and key is still compared.
+    """
+    if sub != "ain_localizations" or not rel.startswith("chains/") \
+            or loc in LATIN_ALPHABET_REFS["locales"]:
+        return ref
+    chain = rel[len("chains/"):-len(".json")]
+    drop = {(r["segment"], r["ref"]) for r in LATIN_ALPHABET_REFS["refs"] if r["chain"] == chain}
+    if not drop:
+        return ref
+    out = copy.deepcopy(ref)
+    for i, seg in enumerate(out.get("segments", [])):
+        seg["refs"] = [r for r in seg.get("refs", []) if (i, r.get("ref")) not in drop]
+    return out
+
+
 def validate_data(loc, errors, values_only=False):
     for sub in DATA_SUBTREES:
         ref_root, loc_root = DATA / sub / REF, DATA / sub / loc
@@ -215,7 +240,7 @@ def validate_data(loc, errors, values_only=False):
                         and flat_text_pool(ref):
                     compare_flat_pool(ref, cur, f"{sub}/{rel}", errors)
                 else:
-                    compare_shape(ref, cur, f"{sub}/{rel}", errors)
+                    compare_shape(reference_for(loc, sub, rel, ref), cur, f"{sub}/{rel}", errors)
             if any(rel.endswith(f"random_books/{book}.json") for book in TRIGGER_BOOKS):
                 title = cur.get("title", "")
                 if len(title) > MAX_TITLE_CHARS:
