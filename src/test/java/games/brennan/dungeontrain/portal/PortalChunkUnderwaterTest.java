@@ -59,6 +59,18 @@ class PortalChunkUnderwaterTest {
     }
 
     @Test
+    @DisplayName("a shallow sea over a flooded cave is not open sea; the cave is never picked")
+    void shallowOverCave() {
+        // 4 water over rock at 58..54, a 10-deep flooded cave 53..44, rock below.
+        IntFunction<BlockState> column = y -> y > 62 ? Blocks.AIR.defaultBlockState()
+            : y >= 59 ? Blocks.WATER.defaultBlockState()
+            : y >= 54 ? Blocks.STONE.defaultBlockState()
+            : y >= 44 ? Blocks.WATER.defaultBlockState()
+            : Blocks.STONE.defaultBlockState();
+        assertEquals(NO_GROUND, PortalChunkTerrain.seabedRow(column, -64, 200));
+    }
+
+    @Test
     @DisplayName("ice on the surface does not hide the sea under it; kelp counts as water")
     void iceAndKelp() {
         IntFunction<BlockState> frozen = y -> y == 63 ? Blocks.ICE.defaultBlockState()

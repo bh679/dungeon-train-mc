@@ -677,14 +677,21 @@ public final class PortalChunkTerrain {
     /** {@link #seabedRow(ChunkAccess, int, int, int, int)} over any column, by world Y. */
     static int seabedRow(java.util.function.IntFunction<BlockState> column, int minY, int maxY) {
         int depth = 0;
+        boolean seenWater = false;
         for (int y = maxY; y > minY; y--) {
             BlockState state = column.apply(y);
             if (state.blocksMotion()) {
                 if (depth >= MIN_SEA_DEPTH) return y + 1;
+                // The first floor under the sea decides. A shallow sea (or an island) over a flooded
+                // cave is not open sea, and cutting the room around the cave would bury it in rock.
+                // Solids above the first water (ice, an overhang) are skipped.
+                if (seenWater) return NO_GROUND;
                 depth = 0;
                 continue;
             }
-            depth = state.getFluidState().getType().isSame(net.minecraft.world.level.material.Fluids.WATER) ? depth + 1 : 0;
+            boolean water = state.getFluidState().getType().isSame(net.minecraft.world.level.material.Fluids.WATER);
+            seenWater |= water;
+            depth = water ? depth + 1 : 0;
         }
         return NO_GROUND;
     }
