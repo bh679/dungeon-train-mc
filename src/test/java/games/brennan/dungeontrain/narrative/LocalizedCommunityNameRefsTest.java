@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,6 +86,35 @@ class LocalizedCommunityNameRefsTest {
             row("weapon_name_full", 1, "discord_people", 58.0f),
             row("weapon_name_full", 1, "atla_characters", 34.0f));
 
+    /**
+     * AIN's procedural names ({@code formula_name}, {@code name_plus_ending}: Latin syllables) and the
+     * Last Name parts AIN's base chains carry. Only languages written in the Latin alphabet get them;
+     * in the others the syllables would read as foreign text.
+     */
+    private static final List<Row> PROCEDURAL = List.of(
+            row("do_you_know_x", 1, "name_plus_ending", 10.0f),
+            row("do_you_know_x", 1, "formula_name", 10.0f),
+            row("forged_by", 1, "name_plus_ending", 135.0f),
+            row("forged_by", 1, "formula_name", 100.0f),
+            row("looks_like_something", 1, "name_plus_ending", 13.0f),
+            row("looks_like_something", 1, "formula_name", 10.0f),
+            row("mob_name", 1, "name_plus_ending", 100.0f),
+            row("mob_name", 1, "formula_name", 450.0f),
+            row("mob_name", 2, "formula_name", 100.0f),
+            row("mob_name", 2, "names", 30.0f),
+            row("mob_name", 2, "name_plus_ending", 60.0f),
+            row("playermob_name", 1, "name_plus_ending", 100.0f),
+            row("playermob_name", 1, "formula_name", 100.0f),
+            row("playermob_name", 2, "formula_name", 10.0f),
+            row("playermob_name", 2, "names", 20.0f),
+            row("playermob_name", 2, "name_plus_ending", 21.0f),
+            row("title_combinations", 1, "name_plus_ending", 5.0f),
+            row("title_combinations", 1, "formula_name", 5.0f));
+
+    private static final Set<String> LATIN_ALPHABET = Set.of(
+            "de_de", "es_es", "es_mx", "fil_ph", "fr_fr", "id_id", "it_it", "ms_my", "nl_nl",
+            "pl_pl", "pt_br", "pt_pt", "ro_ro", "vi_vn");
+
     private static List<Path> locales() throws Exception {
         List<Path> out = new ArrayList<>();
         try (Stream<Path> dirs = Files.list(RepoPaths.root().resolve(ROOT))) {
@@ -115,6 +145,30 @@ class LocalizedCommunityNameRefsTest {
                 assertEquals(row.weight(), hits.get(0).weight(), 1e-6, where);
             }
         }
+    }
+
+    @Test
+    @DisplayName("procedural names reach Latin-alphabet translations only, at AIN's segment and weight")
+    void proceduralNamesLatinOnly() throws Exception {
+        int latin = 0;
+        for (Path locale : locales()) {
+            boolean isLatin = LATIN_ALPHABET.contains(locale.getFileName().toString());
+            if (isLatin) latin++;
+            for (Row row : PROCEDURAL) {
+                NameSegment seg = chain(locale, row.chain()).segments().get(row.segment());
+                ResourceLocation pool = ResourceLocation.fromNamespaceAndPath(AIN, row.pool());
+                List<NameSegment.WeightedRef> hits = seg.refs().stream()
+                        .filter(r -> pool.equals(r.ref())).toList();
+                String where = locale.getFileName() + " " + row.chain() + "/" + row.segment() + " " + row.pool();
+                if (isLatin) {
+                    assertEquals(1, hits.size(), where);
+                    assertEquals(row.weight(), hits.get(0).weight(), 1e-6, where);
+                } else {
+                    assertTrue(hits.isEmpty(), where);
+                }
+            }
+        }
+        assertEquals(LATIN_ALPHABET.size(), latin);
     }
 
     @Test

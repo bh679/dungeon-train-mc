@@ -109,6 +109,14 @@
         {
           "ref": "adventureitemnames:dungeontrain_last_names",
           "weight": 9.0
+        },
+        {
+          "ref": "adventureitemnames:name_plus_ending",
+          "weight": 5.0
+        },
+        {
+          "ref": "adventureitemnames:formula_name",
+          "weight": 5.0
         }
       ]
     }
