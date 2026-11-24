@@ -288,7 +288,9 @@ public final class PortalChunkDimension {
      * that is not a chunk box, is left as its terrain in its lock skin.
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
-        if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
+        // A room that is not a generated box (an authored chunk-dimension room of its own size) has no
+        // frame that fits it; frameFor then picks among the frames sized for this room.
+        if (!ChunkFrame.validSize(ChunkFrame.sizeFor(structure.roomSize()))) return;
         // The frame's own roll, salted apart from the room's so a test can re-roll either alone;
         // unsalted it is a pure function of the pair, as in play.
         int rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);

@@ -97,14 +97,23 @@ public final class ChunkFramePlacer {
     /**
      * {@code roomName}'s frame for pair {@code pairKey}, or empty when no frame dresses it.
      *
-     * <p>The candidates are every frame whose {@link ChunkFrameMeta} names this room (or every room),
+     * <p>The candidates are every frame that fits the room ({@link ChunkFrame#sizeForRoom}) and whose
+     * {@link ChunkFrameMeta} names this room (or every room),
      * picked by their weights on {@code rollIndex} — the room's variant index, fixed for a live pair
      * so a room keeps its frame every time it is re-stamped, and salted by a test's reseed.</p>
      */
     public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex) {
+        Vec3i frameSize = ChunkFrame.sizeForRoom(roomName);
         String name = FORCED.get(pairKey);
-        if (name == null) name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20));
+        if (name == null) name = pick(roomName, frameSize, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20));
         if (name == null) return Optional.empty();
+        // A forced frame is a test's choice, and still has to fit the room it dresses.
+        if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) {
+            if (WARNED.add(roomName + "/" + name + "/size")) {
+                LOGGER.warn("[DungeonTrain] Chunk frame '{}' does not fit room {}; it stays unframed", name, roomName);
+            }
+            return Optional.empty();
+        }
         Optional<ChunkFrameTemplate> template = ChunkFrameStore.get(level, name);
         if (template.isEmpty()) {
             if (WARNED.add(roomName + "/" + name)) {
@@ -126,8 +135,10 @@ public final class ChunkFramePlacer {
      */
     public static void preload(ServerLevel level, String roomName) {
         try {
+            Vec3i frameSize = ChunkFrame.sizeForRoom(roomName);
             for (String name : ChunkFrameRegistry.names()) {
                 if (!ChunkFrameMetaStore.get(name).appliesTo(roomName)) continue;
+                if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) continue;
                 ChunkFrameStore.get(level, name);
                 ChunkFrameVariants.loadFor(name);
             }
@@ -136,14 +147,18 @@ public final class ChunkFramePlacer {
         }
     }
 
-    /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. */
-    static String pick(String roomName, long seed) {
+    /**
+     * The frame {@code seed} lands on among those that dress {@code roomName} and are
+     * {@code frameSize} — the size that fits the room — or null.
+     */
+    static String pick(String roomName, Vec3i frameSize, long seed) {
         java.util.List<String> names = new java.util.ArrayList<>();
         java.util.List<Integer> weights = new java.util.ArrayList<>();
         int total = 0;
         for (String name : ChunkFrameRegistry.names()) {
             ChunkFrameMeta meta = ChunkFrameMetaStore.get(name);
             if (!meta.appliesTo(roomName)) continue;
+            if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) continue;
             names.add(name);
             weights.add(meta.weight());
             total += meta.weight();
