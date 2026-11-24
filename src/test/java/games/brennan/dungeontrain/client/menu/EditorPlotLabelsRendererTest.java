@@ -893,4 +893,114 @@ class EditorPlotLabelsRendererTest {
         assertEquals("Sky: End",
             EditorPlotLabelsRenderer.roomSkyLabel("bedrock/exact/off/off/off/end"));
     }
+
+    // ---------- chunk frame panel ----------
+
+    private static final String FRAME = "stone_frame";
+
+    private static EditorPlotLabelsPacket.Entry frame(boolean inPlot) {
+        return new EditorPlotLabelsPacket.Entry(
+            POS, FRAME, 3, "CHUNK_FRAMES", "chunk_frame", FRAME, inPlot, false, false);
+    }
+
+    private static void seedFrameSnapshot(java.util.List<String> rooms, java.util.List<String> selected) {
+        games.brennan.dungeontrain.client.ChunkFrameRoomsClient.accept(
+            new games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket(
+                FRAME, rooms, selected, false, 3, "void"));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearFrameSnapshots() {
+        games.brennan.dungeontrain.client.ChunkFrameRoomsClient.clear();
+    }
+
+    @Test
+    @DisplayName("A frame panel outside its plot shows only its name and weight, neither clickable but the name")
+    void frameOutOfPlot_nameAndWeightOnly() {
+        seedFrameSnapshot(java.util.List.of("ocean", "desert"), java.util.List.of("ocean"));
+        EditorPlotLabelsPacket.Entry e = frame(false);
+        assertArrayEquals(new RowKind[]{RowKind.NAME, RowKind.WEIGHT}, EditorPlotLabelsRenderer.rows(e));
+        assertEquals(CellKind.NAME, EditorPlotLabelsRenderer.cellAt(e, 1.5, 0, rowCentreY(e, 0)));
+        assertEquals(CellKind.NONE, EditorPlotLabelsRenderer.cellAt(e, 1.5, 0, rowCentreY(e, 1)));
+    }
+
+    @Test
+    @DisplayName("A frame panel in its plot without a snapshot yet shows Loading where the snapshot rows go, and no Enter or action row")
+    void frameInPlot_loading() {
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.FRAME_LEVELS, RowKind.FRAME_GATE,
+                RowKind.FRAME_LOADING, RowKind.FRAME_SAVE},
+            EditorPlotLabelsRenderer.rows(frame(true)));
+        EditorPlotLabelsPacket.Entry e = frame(true);
+        assertEquals(CellKind.NONE, EditorPlotLabelsRenderer.cellAt(e, 1.5, 0, rowCentreY(e, 4)));
+    }
+
+    @Test
+    @DisplayName("A frame panel in its plot lays out Name, Dimension, Weight, Min|Max, Phases|Stage, All|None, one row per room, Save")
+    void frameInPlot_rowOrder() {
+        seedFrameSnapshot(java.util.List.of("ocean", "desert", "mesa"), java.util.List.of("desert"));
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.FRAME_DIMENSION, RowKind.WEIGHT, RowKind.FRAME_LEVELS,
+                RowKind.FRAME_GATE, RowKind.FRAME_ROOMS_ALL, RowKind.FRAME_ROOM, RowKind.FRAME_ROOM,
+                RowKind.FRAME_ROOM, RowKind.FRAME_SAVE},
+            EditorPlotLabelsRenderer.rows(frame(true)));
+    }
+
+    @Test
+    @DisplayName("A frame panel's cells: three dimensions, two levels, Phases/Stage, All/None, a toggle per room, Save")
+    void frameInPlot_cells() {
+        seedFrameSnapshot(java.util.List.of("ocean", "desert"), java.util.List.of("desert"));
+        EditorPlotLabelsPacket.Entry e = frame(true);
+        double halfW = 1.5;
+        double third = 2 * halfW / 3.0;
+        // Dimension row: left, middle and right thirds.
+        double y = rowCentreY(e, 1);
+        assertEquals(CellKind.FRAME_DIM_BEDROCK, EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + third / 2, y));
+        assertEquals(CellKind.FRAME_DIM_VOID, EditorPlotLabelsRenderer.cellAt(e, halfW, 0, y));
+        assertEquals(CellKind.FRAME_DIM_WORLD_BORDER, EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - third / 2, y));
+        assertEquals("bedrock", EditorPlotLabelsRenderer.frameDimensionToken(CellKind.FRAME_DIM_BEDROCK));
+        assertEquals("world_border", EditorPlotLabelsRenderer.frameDimensionToken(CellKind.FRAME_DIM_WORLD_BORDER));
+        // Weight is a number cell in the plot.
+        assertEquals(CellKind.WEIGHT_NUMBER, EditorPlotLabelsRenderer.cellAt(e, halfW, 0, rowCentreY(e, 2)));
+        // Min | Max.
+        assertEquals(CellKind.FRAME_MIN_LEVEL_NUMBER, EditorPlotLabelsRenderer.cellAt(e, halfW, -0.5, rowCentreY(e, 3)));
+        assertEquals(CellKind.FRAME_MAX_LEVEL_NUMBER, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.5, rowCentreY(e, 3)));
+        // Phases | Stage.
+        assertEquals(CellKind.FRAME_PHASES, EditorPlotLabelsRenderer.cellAt(e, halfW, -0.5, rowCentreY(e, 4)));
+        assertEquals(CellKind.FRAME_STAGE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.5, rowCentreY(e, 4)));
+        // All | None.
+        assertEquals(CellKind.FRAME_ROOMS_ALL, EditorPlotLabelsRenderer.cellAt(e, halfW, -0.5, rowCentreY(e, 5)));
+        assertEquals(CellKind.FRAME_ROOMS_NONE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.5, rowCentreY(e, 5)));
+        // Each room row is the same cell; the row says which room.
+        assertEquals(CellKind.FRAME_ROOM_TOGGLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0, rowCentreY(e, 6)));
+        assertEquals(CellKind.FRAME_ROOM_TOGGLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0, rowCentreY(e, 7)));
+        assertEquals(6, EditorPlotLabelsRenderer.rowIndexAt(e, rowCentreY(e, 6)));
+        assertEquals("ocean", EditorPlotLabelsRenderer.frameRoomAt(e, 6));
+        assertEquals("desert", EditorPlotLabelsRenderer.frameRoomAt(e, 7));
+        assertEquals(null, EditorPlotLabelsRenderer.frameRoomAt(e, 5));
+        assertEquals(CellKind.FRAME_SAVE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0, rowCentreY(e, 8)));
+        assertEquals("desert [ON]", EditorPlotLabelsRenderer.frameRoomLabel("desert", true));
+        assertEquals("Stage: Custom", EditorPlotLabelsRenderer.frameStageLabel(""));
+    }
+
+    @Test
+    @DisplayName("A frame panel is wide enough for its three-cell Dimension row")
+    void frameInPlot_widthFitsDimensionRow() {
+        seedFrameSnapshot(java.util.List.of("ocean"), java.util.List.of());
+        double halfW = EditorPlotLabelsRenderer.halfWidth(frame(true), SIX_PX);
+        double third = 2 * halfW / 3.0;
+        assertTrue(third >= "World border".length() * 6 * EditorPlotLabelsRenderer.TEXT_SCALE,
+            "each Dimension cell fits its label");
+    }
+
+    @Test
+    @DisplayName("A portal room's panel is untouched by a frame snapshot of the same name")
+    void portalRoom_ignoresFrameSnapshot() {
+        seedFrameSnapshot(java.util.List.of("ocean"), java.util.List.of());
+        EditorPlotLabelsPacket.Entry room = new EditorPlotLabelsPacket.Entry(
+            POS, FRAME, 1, "PORTALS", "portal_room", FRAME, true, false, false, 11, 13, 7, "bedrock");
+        for (RowKind k : EditorPlotLabelsRenderer.rows(room)) {
+            assertFalse(k.name().startsWith("FRAME_"), k.name());
+        }
+    }
 }

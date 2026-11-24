@@ -803,7 +803,8 @@ public final class VariantOverlayRenderer {
             if (located.isPresent()) {
                 Template model = located.get().model();
                 currentId = model.id();
-                currentName = modelNameFor(model);
+                // A frame's variantName is its kind tag, but its label is keyed by the frame name.
+                currentName = model instanceof Template.ChunkFrame frame ? frame.name() : modelNameFor(model);
             }
         }
 
@@ -1597,7 +1598,8 @@ public final class VariantOverlayRenderer {
 
         BlockPos perPlotAnchor = null;
         for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(EditorCategory.PORTALS, dims)) {
-            if (active.equals(l.modelName())) {
+            // The PORTALS labels include the chunk frames too; a frame may share a room's name.
+            if (kind.id().equals(l.modelId()) && active.equals(l.modelName())) {
                 perPlotAnchor = l.worldPos();
                 break;
             }
