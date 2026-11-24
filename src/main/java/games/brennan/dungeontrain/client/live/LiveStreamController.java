@@ -660,7 +660,11 @@ public final class LiveStreamController {
             Files.createDirectories(d);
             boolean adaptive = LiveFeedClientConfig.adaptiveQuality();
             int learned = adaptive ? LiveFeedClientConfig.learnedUploadKbps() : 0;
-            int boxW = LiveQualityGovernor.startWidth(LiveFeedClientConfig.captureWidth(), learned);
+            // HD Streams: the claim may raise the picture (and bitrate) for this whole stream (LiveHdVideo).
+            int configuredW = LiveFeedClientConfig.captureWidth();
+            boolean hd = LiveHdVideo.applies(configuredW, c.video());
+            int wantW = LiveHdVideo.width(configuredW, c.video());
+            int boxW = LiveQualityGovernor.startWidth(wantW, learned);
             // The streamer's own window shape inside that size, fixed for the stream (LiveAspect).
             RenderTarget main = mc.getMainRenderTarget();
             int[] size = LiveAspect.frameSize(boxW, LiveFeedClientConfig.heightFor(boxW), main.width, main.height);
@@ -675,7 +679,7 @@ public final class LiveStreamController {
             LiveFrameGrabber grab = new LiveFrameGrabber(w, h);
             grabber = grab;
             int fps = LiveFeedClientConfig.captureFps();
-            int bitrate = LiveFeedClientConfig.bitrateKbps();
+            int bitrate = LiveHdVideo.kbps(LiveFeedClientConfig.bitrateKbps(), configuredW, c.video());
             LiveEncoder.Cadence cadence = cadenceOf(c);
             boolean save = LiveFeedClientConfig.saveBandwidth();
             // Off, not possible here, or an unapproved mod loaded (it could play anything):
@@ -693,7 +697,8 @@ public final class LiveStreamController {
             switching = false;
             tsOffsetSeconds = 0;
             toldLowered = false;
-            if (kbps < ceiling || boxW < LiveFeedClientConfig.captureWidth()) {
+            if (hd) LOGGER.info("[DungeonTrain] live quality: HD Streams is on, streaming up to {} wide at {} kbit/s", wantW, ceiling);
+            if (kbps < ceiling || boxW < wantW) {
                 LOGGER.info("[DungeonTrain] live quality: starting at {}x{} {} kbit/s (set {} kbit/s) for the {} kbit/s upload measured last stream",
                     w, h, kbps, ceiling, learned);
             }
