@@ -2,8 +2,8 @@ package games.brennan.dungeontrain.difficulty;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
-import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.combat.MobDigGoal;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -166,26 +166,34 @@ public final class DifficultyApplier {
 
         int heldBowStatTier = ItemStatLevelScaling.heldBowTier(statScaling != StatScaling.NONE, tierIndex);
 
+        // Effects roll first: how many land at their stage's top level decides whether this mob is
+        // one of the lucky few whose gear rolls near chest quality (LuckyGear). Creepers convert
+        // their active effects into a lingering AreaEffectCloud on explosion (vanilla
+        // Creeper#explodeCreeper), so they never get difficulty effects — and so are never lucky.
+        // The effect curve is read later for mobs that first spawn further down the train (and for
+        // babies), so they are not buffed the moment they appear.
+        boolean lucky = false;
+        if (applyEffects && !(mob instanceof Creeper)) {
+            int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
+            int maxCount = rollEffectsAt(mob, effectLevel, tier.name(), rng);
+            lucky = rng.nextDouble() < LuckyGear.luckyChance(effectLevel, maxCount);
+            if (lucky && DebugFlags.logLootRolls()) {
+                LOGGER.info("[DungeonTrain] Lucky gear: uuid={} type={} tier={} effectLevel={} maxEffects={}",
+                        mob.getUUID(), mob.getType().getDescriptionId(), tierIndex, effectLevel, maxCount);
+            }
+        }
+
         boolean armorOk = supportsArmor(mob);
         ServerLevel serverLevel = mob.level() instanceof ServerLevel sl ? sl : null;
         HolderLookup.Provider registries = serverLevel != null ? serverLevel.registryAccess() : null;
 
         if (armorOk) {
-            applyArmorSlot(mob, EquipmentSlot.HEAD,  tier.armor().helmet(),     tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
-            applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
-            applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
-            applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
-            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, heldBowStatTier, tierIndex);
-            applyToolSlot(mob, tier.enchant(), registries, rng, statScalingTier, tierIndex);
-        }
-
-        // Creepers convert their active effects into a lingering AreaEffectCloud on
-        // explosion (vanilla Creeper#explodeCreeper), so never give them difficulty
-        // potion effects — otherwise every train creeper leaves a potion cloud behind.
-        // The effect curve is read later for mobs that first spawn further down the train
-        // (and for babies), so they are not buffed the moment they appear.
-        if (applyEffects && !(mob instanceof Creeper)) {
-            rollEffects(mob, tierIndex, tier.name(), rng);
+            applyArmorSlot(mob, EquipmentSlot.HEAD,  tier.armor().helmet(),     tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex, lucky);
+            applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex, lucky);
+            applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex, lucky);
+            applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex, lucky);
+            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, heldBowStatTier, tierIndex, lucky);
+            applyToolSlot(mob, tier.enchant(), registries, rng, statScalingTier, tierIndex, lucky);
         }
 
         mob.addTag(APPLIED_TAG);
@@ -227,7 +235,9 @@ public final class DifficultyApplier {
         rollEffectsAt(mob, tierIndex - MobEffectOffsets.offsetFor(mob), tierName, rng);
     }
 
-    private static void rollEffectsAt(Mob mob, int effectLevel, String tierName, RandomSource rng) {
+    /** Rolls and applies the effects at {@code effectLevel}; returns how many landed at their stage's top level. */
+    private static int rollEffectsAt(Mob mob, int effectLevel, String tierName, RandomSource rng) {
+        int atCap = 0;
         for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
             if (rng.nextDouble() >= spec.chance()) continue;
             Holder<MobEffect> holder = lookupEffect(spec.id());
@@ -241,8 +251,11 @@ public final class DifficultyApplier {
             int duration = spec.durationTicks() < 0
                     ? MobEffectInstance.INFINITE_DURATION
                     : spec.durationTicks();
-            mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng), false, true));
+            int amplifier = rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng);
+            if (LuckyGear.isAtCap(amplifier, spec)) atCap++;
+            mob.addEffect(new MobEffectInstance(holder, duration, amplifier, false, true));
         }
+        return atCap;
     }
 
     /**
@@ -264,15 +277,16 @@ public final class DifficultyApplier {
                                        HolderLookup.Provider registries,
                                        RandomSource rng,
                                        int statScalingTier,
-                                       int tierIndex) {
+                                       int tierIndex,
+                                       boolean lucky) {
         if (pool.isEmpty() || slotChance <= 0.0) return;
         if (!mob.getItemBySlot(slot).isEmpty()) return;
         if (rng.nextDouble() >= slotChance) return;
 
-        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier, tierIndex);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier, tierIndex, lucky);
         if (stack == null) return;
         mob.setItemSlot(slot, stack);
-        mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
+        mob.setDropChance(slot, dropChance(lucky));
     }
 
     /**
@@ -294,29 +308,37 @@ public final class DifficultyApplier {
                                         RandomSource rng,
                                         int statScalingTier,
                                         int heldBowStatTier,
-                                        int tierIndex) {
+                                        int tierIndex,
+                                        boolean lucky) {
         ItemStack current = mob.getItemBySlot(EquipmentSlot.MAINHAND);
         if (!current.isEmpty()) {
             if (isRangedWeapon(current)) {
                 maybeEnchant(current, enchant, registries, rng, tierIndex);
-                rollHeldBow(current, rng, heldBowStatTier);
+                rollHeldBow(current, rng, heldBowStatTier, tierIndex, lucky);
                 mob.setItemSlot(EquipmentSlot.MAINHAND, current);
+                // A normal held bow keeps its vanilla drop chance; a lucky one drops like lucky gear.
+                if (lucky) mob.setDropChance(EquipmentSlot.MAINHAND, LuckyGear.LUCKY_DROP_CHANCE);
             }
             return;
         }
         if (pool.isEmpty() || chance <= 0.0) return;
         if (rng.nextDouble() >= chance) return;
 
-        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier, tierIndex);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier, tierIndex, lucky);
         if (stack == null) return;
         mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
-        mob.setDropChance(EquipmentSlot.MAINHAND, DIFFICULTY_DROP_CHANCE);
+        mob.setDropChance(EquipmentSlot.MAINHAND, dropChance(lucky));
     }
 
     /** AIS stats for a bow from default equipment. A bow already carrying its own stats (author-baked) keeps them. */
-    private static void rollHeldBow(ItemStack bow, RandomSource rng, int heldBowStatTier) {
+    private static void rollHeldBow(ItemStack bow, RandomSource rng, int heldBowStatTier,
+                                    int tierIndex, boolean lucky) {
         if (bow.getComponentsPatch().get(DataComponents.ATTRIBUTE_MODIFIERS) != null) return;
-        StatsModifier.applyStats(bow, rng, ItemStatLevelScaling.primaryStatBonus(bow, heldBowStatTier));
+        LuckyGear.applyStats(bow, rng, ItemStatLevelScaling.primaryStatBonus(bow, heldBowStatTier), tierIndex, lucky);
+    }
+
+    private static float dropChance(boolean lucky) {
+        return lucky ? LuckyGear.LUCKY_DROP_CHANCE : DIFFICULTY_DROP_CHANCE;
     }
 
     /**
@@ -330,7 +352,8 @@ public final class DifficultyApplier {
                                       HolderLookup.Provider registries,
                                       RandomSource rng,
                                       int statScalingTier,
-                                      int tierIndex) {
+                                      int tierIndex,
+                                      boolean lucky) {
         if (!canHoldTools(mob)) return;
         int digTier = ToolTiers.rollTier(tierIndex, rng::nextDouble);
         if (digTier == ToolTiers.NO_TIER) return;
@@ -339,10 +362,10 @@ public final class DifficultyApplier {
                 : EquipmentSlot.OFFHAND;
         if (!mob.getItemBySlot(slot).isEmpty()) return;
 
-        ItemStack stack = rollEquipment(ToolTiers.toolPool(tierIndex), enchant, registries, rng, statScalingTier, tierIndex);
+        ItemStack stack = rollEquipment(ToolTiers.toolPool(tierIndex), enchant, registries, rng, statScalingTier, tierIndex, lucky);
         if (stack == null) return;
         mob.setItemSlot(slot, stack);
-        mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
+        mob.setDropChance(slot, dropChance(lucky));
         mob.getPersistentData().putInt(DIG_TIER_KEY, digTier);
         MobDigGoal.attach(mob);
     }
@@ -369,7 +392,8 @@ public final class DifficultyApplier {
                                            HolderLookup.Provider registries,
                                            RandomSource rng,
                                            int statScalingTier,
-                                           int tierIndex) {
+                                           int tierIndex,
+                                           boolean lucky) {
         DifficultyTier.WeightedItem picked = weightedPick(pool, rng);
         if (picked == null) return null;
         Item item = BuiltInRegistries.ITEM.get(picked.item());
@@ -380,8 +404,8 @@ public final class DifficultyApplier {
         ItemStack stack = new ItemStack(item);
         maybeEnchant(stack, enchant, registries, rng, tierIndex);
         NameComposer.applyName(stack, rng);
-        StatsModifier.applyStats(stack, rng,
-            ItemStatLevelScaling.primaryStatBonus(stack, statScalingTier));
+        LuckyGear.applyStats(stack, rng,
+            ItemStatLevelScaling.primaryStatBonus(stack, statScalingTier), tierIndex, lucky);
         return stack;
     }
 
