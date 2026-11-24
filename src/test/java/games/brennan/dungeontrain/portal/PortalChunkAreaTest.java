@@ -170,4 +170,13 @@ class PortalChunkAreaTest {
         assertEquals(PortalChunkTerrain.Source.NETHER_BETTER, PortalChunkTerrain.Source.of("chunk_3x3_nether_better"));
         assertEquals(PortalChunkTerrain.Source.OVERWORLD, PortalChunkTerrain.Source.of("chunk_3x3"));
     }
+
+    @Test
+    @DisplayName("Only a grid room's buried doorway dig is capped; one-chunk and authored rooms keep half their length")
+    void doorwayDigCappedForGridRoomsOnly() {
+        assertEquals(8, PortalChunkDimension.doorwayDigDepth(new Vec3i(48, 32, 48)));
+        assertEquals(8, PortalChunkDimension.doorwayDigDepth(new Vec3i(16, 32, 16)));
+        assertEquals(31, PortalChunkDimension.doorwayDigDepth(new Vec3i(62, 30, 60)), "tasuschristmascarriage");
+        assertEquals(32, PortalChunkDimension.doorwayDigDepth(new Vec3i(64, 22, 64)), "the courtyard");
+    }
 }

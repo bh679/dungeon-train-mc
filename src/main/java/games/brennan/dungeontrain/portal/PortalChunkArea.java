@@ -159,8 +159,8 @@ public final class PortalChunkArea {
         }
         PortalChunkTerrain.publishGround(pairKey, roomName, roll, grid.read());
         long ground = System.currentTimeMillis() - startedAt;
-        LOGGER.info("[DungeonTrain] Chunk dimension pair {} ({}x{}) ground sampled from {} at {} in {} ms",
-            pairKey, span, span, source, grid.centre(), ground);
+        LOGGER.info("[DungeonTrain] Chunk dimension pair {} ({}x{}) ground sampled from {} at {} in {}, in {} ms",
+            pairKey, span, span, source, grid.centre(), biomeAt(grid), ground);
         decorateInTurn(grid, roomName, pairKey, roll, 0, System.currentTimeMillis(), 0L);
     }
 
@@ -206,6 +206,18 @@ public final class PortalChunkArea {
         }
         long worked = workedMs + System.currentTimeMillis() - stepStart;
         PortalChunkTerrain.submit(() -> decorateInTurn(grid, roomName, pairKey, roll, step + 1, startedAt, worked));
+    }
+
+    /** The biome at the middle of the grid's surface row, by id — what says the look landed. */
+    private static String biomeAt(Grid grid) {
+        try {
+            ProtoChunk centre = grid.chunks().get(grid.centre().toLong());
+            return centre.getNoiseBiome(QuartPos.fromBlock(grid.centre().getMiddleBlockX()),
+                    QuartPos.fromBlock(grid.anchor()), QuartPos.fromBlock(grid.centre().getMiddleBlockZ()))
+                .unwrapKey().map(k -> k.location().toString()).orElse("?");
+        } catch (Throwable t) {
+            return "?";
+        }
     }
 
     /** Pick a site, generate its whole grid's ground and carve it. Null when no site had ground. */
