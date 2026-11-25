@@ -2006,6 +2006,11 @@ public final class PortalCarriageEvents {
         // from the origin had that player a corridor length further off than a forward walker,
         // and the structure was placed only once they were already inside.
         double approachX = role == PortalCarriageRole.ENTRY ? originX : originX + layout.length();
+        // A chunk dimension's ground takes seconds to sample, so it is asked for at confirm range,
+        // long before the pair is planned at approach range. See PortalChunkPrefetch.
+        if (structure == null) {
+            prefetchChunkRoom(level, players, dims, pairKey, structureAnchorX, originY, originZ);
+        }
         if (!occupied && !anyPlayerWithin(players, approachX, originY, originZ, APPROACH_RANGE)) {
             // Nobody near this pair. Drop its puppets rather than leaving the last set standing in a
             // corridor the train has since rolled away from — and log the removals on the way out.
@@ -2661,6 +2666,30 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * Start sampling a pair's chunk dimension terrain once a player is within confirm range, from
+     * the same inputs {@link #ensureStructure} will plan it with, or from the room an evicted pair
+     * kept. Once per pair: {@link games.brennan.dungeontrain.portal.PortalChunkPrefetch}.
+     */
+    private static void prefetchChunkRoom(ServerLevel level, List<ServerPlayer> players, CarriageDims dims,
+                                          int pairKey, double anchorX, double originY, double originZ) {
+        if (games.brennan.dungeontrain.portal.PortalChunkPrefetch.asked(pairKey)) return;
+        if (!anyPlayerWithin(players, anchorX, originY, originZ, CONFIRM_RANGE)) return;
+        ServerPlayer rider = nearestRider(players, anchorX, originZ);
+        double distance = rider == null ? -1 : Math.sqrt(rider.distanceToSqr(anchorX, originY, originZ));
+        PortalStructure evicted = EVICTED.get(pairKey);
+        if (evicted != null) {
+            if (evicted.settings().mode().generatesTerrain()) {
+                games.brennan.dungeontrain.portal.PortalChunkPrefetch.askFor(
+                    level, pairKey, evicted.roomName(), distance);
+            }
+            return;
+        }
+        games.brennan.dungeontrain.portal.PortalChunkPrefetch.ask(level, pairKey,
+            GateContext.forCarriageAtWorldX(level, Mth.floor(anchorX), pairKey, dims.length()),
+            ownShelfBoostFor(level, players, pairKey, anchorX, originZ), rider, distance);
+    }
+
+    /**
      * Whether {@code pairKey} rolls its room with the own-books library weighted up — see
      * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
      *
@@ -2989,6 +3018,8 @@ public final class PortalCarriageEvents {
         rememberTouchedCopies(level, dims, pairKey, structure);
         PortalRoomMobs.reapPair(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey);
         PortalCarriageBuilder.eraseTwin(level, structure, dims);
+        // Its sampled ground goes with it: re-sampled (identically) if the pair is ever needed again.
+        games.brennan.dungeontrain.portal.PortalChunkTerrain.forget(pairKey);
         EVICTED.put(pairKey, structure.withBlob(null));
         STAMPED_AT.remove(pairKey);
         PortalWalkThrough.forget(pairKey);
