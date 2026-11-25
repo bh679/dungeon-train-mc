@@ -321,6 +321,17 @@ public final class ChunkFramePlacer {
         return writer.changed;
     }
 
+    /**
+     * How long the last {@link #placeRows} spent growing and hanging what its rows noted, once they
+     * were down — work its deadline cannot stop part way. For the perf line; server thread only.
+     */
+    private static long lastGrowNanos;
+
+    /** See {@link #lastGrowNanos}. */
+    public static long lastGrowNanos() {
+        return lastGrowNanos;
+    }
+
     /** Rows in {@code picked}'s frame — a row being one layer at one Z, {@code size.x} cells along X. */
     public static int rows(Picked picked) {
         return picked.template().size().getY() * picked.template().size().getZ();
@@ -339,37 +350,56 @@ public final class ChunkFramePlacer {
         Writer writer = new Writer(level, picked, roomOrigin, mask, rollIndex, skipShell, seaTopY);
         int rows = rows(picked);
         int row = Math.max(0, rowFrom);
+        long growFrom;
         try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
             while (row < rows) {
                 writer.row(row++);
                 if (System.nanoTime() - deadlineNanos >= 0) break;
             }
+            growFrom = System.nanoTime();
         }
+        lastGrowNanos = System.nanoTime() - growFrom;
         int depth = picked.template().size().getZ();
         writer.logWet(rowFrom / depth, (row + depth - 1) / depth);
         return row;
     }
 
     /**
-     * Write the frame's cells at frame-local {@code (x, y, z)}, given as consecutive triples in
-     * {@code cells[0..count)} — and nothing else. For a room whose terrain has just been rewritten
-     * there: the frame goes back over it as the whole frame would have, Forced Air included, and a
-     * cell where the frame is plain air (or outside it) is left as the terrain.
-     *
-     * @return how many cells changed
+     * A frame written one cell at a time, wherever its caller says ({@link CellPlacer#place}), so the
+     * caller can interleave it with its own writes and stop on its own clock. Closing it grows what
+     * the cells noted, as {@link #place}'s scope does.
      */
-    public static int placeAt(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask,
-                              int rollIndex, boolean skipShell, int seaTopY, int[] cells, int count) {
-        Writer writer = new Writer(level, picked, roomOrigin, mask, rollIndex, skipShell, seaTopY);
-        Vec3i size = picked.template().size();
-        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
-            for (int i = 0; i + 2 < count; i += 3) {
-                int x = cells[i], y = cells[i + 1], z = cells[i + 2];
-                if (x < 0 || y < 0 || z < 0 || x >= size.getX() || y >= size.getY() || z >= size.getZ()) continue;
-                writer.cell(x, y, z);
-            }
+    public static CellPlacer cellPlacer(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask,
+                                        int rollIndex, boolean skipShell, int seaTopY) {
+        return new CellPlacer(new Writer(level, picked, roomOrigin, mask, rollIndex, skipShell, seaTopY));
+    }
+
+    /** See {@link #cellPlacer}. */
+    public static final class CellPlacer implements AutoCloseable {
+        private final Writer writer;
+        private final games.brennan.dungeontrain.editor.GrowthPass.Scope scope;
+
+        private CellPlacer(Writer writer) {
+            this.writer = writer;
+            this.scope = games.brennan.dungeontrain.editor.GrowthPass.open();
         }
-        return writer.changed;
+
+        /** Write the frame's cell at frame-local {@code (x, y, z)}, if the frame has one there. */
+        public void place(int x, int y, int z) {
+            Vec3i size = writer.size;
+            if (x < 0 || y < 0 || z < 0 || x >= size.getX() || y >= size.getY() || z >= size.getZ()) return;
+            writer.cell(x, y, z);
+        }
+
+        /** How many cells changed so far. */
+        public int changed() {
+            return writer.changed;
+        }
+
+        @Override
+        public void close() {
+            scope.close();
+        }
     }
 
     /** One placement's state: what it writes with, and what it has written. */

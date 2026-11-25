@@ -324,37 +324,44 @@ public final class PortalChunkDimension {
                                   PortalChunkPour pour, long deadline) {
         TerrainWriter writer = new TerrainWriter(level, structure, dims, pour.slice());
         Standing standing = pour.dressed() ? STANDING.get(pairKey) : null;
-        boolean reframe = standing != null && standing.frame() != null;
+        int[] next = {pour.patchNext()};
+        if (standing == null || standing.frame() == null) {
+            next[0] = writePatchCells(writer, pour, next[0], deadline, null);
+            return next[0];
+        }
+        // The frame's stage placeholders resolve as they did when it was first put down.
+        games.brennan.dungeontrain.train.StagePlacementScope.run(
+            PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> {
+                try (ChunkFramePlacer.CellPlacer frame = ChunkFramePlacer.cellPlacer(level, standing.frame(), writer.origin,
+                        PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), standing.rollIndex(),
+                        /*skipShell*/ !structure.mode().sealsRoomBox(), seaTopY(structure, dims, pairKey, writer.origin))) {
+                    next[0] = writePatchCells(writer, pour, next[0], deadline, frame);
+                }
+            });
+        return next[0];
+    }
+
+    /**
+     * Patch entries {@code from} on, until {@code deadline}: each terrain cell, then the frame's cell
+     * over it when {@code frame} is given — one clock for both. Returns the next entry.
+     */
+    private static int writePatchCells(TerrainWriter writer, PortalChunkPour pour, int from, long deadline,
+                                       ChunkFramePlacer.CellPlacer frame) {
         int[] patch = pour.patch();
-        int[] frameCells = reframe ? new int[96] : null;
-        int frameCount = 0;
-        int i = pour.patchNext();
         PortalChunkSlice slice = pour.slice();
+        int i = from;
         while (i < patch.length) {
             int index = patch[i++];
             int x = slice.xOf(index);
             int z = slice.zOf(index);
             int roomY = slice.yOf(index) - writer.shift;
             writer.cell(x, roomY, z);
-            if (reframe) {
-                if (frameCount + 3 > frameCells.length) frameCells = java.util.Arrays.copyOf(frameCells, frameCells.length * 2);
-                // Frame-local: the frame stands one block out from the room on every side.
-                frameCells[frameCount++] = x - ChunkFrame.OFFSET.getX();
-                frameCells[frameCount++] = roomY - ChunkFrame.OFFSET.getY();
-                frameCells[frameCount++] = z - ChunkFrame.OFFSET.getZ();
+            // Frame-local: the frame stands one block out from the room on every side.
+            if (frame != null) {
+                frame.place(x - ChunkFrame.OFFSET.getX(), roomY - ChunkFrame.OFFSET.getY(), z - ChunkFrame.OFFSET.getZ());
             }
-            if ((i & 31) == 0 && past(deadline)) break;
-        }
-        if (reframe && frameCount > 0) {
-            int[] cells = frameCells;
-            int count = frameCount;
-            games.brennan.dungeontrain.train.StagePlacementScope.run(
-                PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
-                java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)),
-                () -> ChunkFramePlacer.placeAt(level, standing.frame(), writer.origin,
-                    PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), standing.rollIndex(),
-                    /*skipShell*/ !structure.mode().sealsRoomBox(), seaTopY(structure, dims, pairKey, writer.origin),
-                    cells, count));
+            if ((i & 15) == 0 && past(deadline)) break;
         }
         return i;
     }
@@ -379,10 +386,10 @@ public final class PortalChunkDimension {
             spawnOccupants(level, structure, dims, pour.slice(), pairKey);
             PortalChunkTerrain.decorationApplied(pairKey);
         }
-        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={} patched={} dress={}",
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={} patched={} dress={} fluidTicks={}",
             pairKey, structure.roomName(), pour.ticks(), millis(pour.totalNanos()), millis(pour.maxNanos()),
             millis(rowNanos), millis(System.nanoTime() - started), flushed, pour.patched(),
-            pour.dressed() ? "touchUp" : "full");
+            pour.dressed() ? "touchUp" : "full", level.getFluidTicks().count());
     }
 
     /**
@@ -579,9 +586,10 @@ public final class PortalChunkDimension {
                 pairKey, structure.roomName(), millis(System.nanoTime() - started));
             return;
         }
-        AsyncPerfLog.debug(PERF_LOGGER, "[portal.frame] pair={} room={} layers={}..{} ms={}{} rows={}..{}/{}",
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.frame] pair={} room={} layers={}..{} ms={}{} rows={}..{}/{} growMs={}",
             pairKey, structure.roomName(), framing.nextRow() / depth, (row[0] + depth - 1) / depth,
-            millis(System.nanoTime() - started), row[0] >= rows ? " done" : "", framing.nextRow(), row[0], rows);
+            millis(System.nanoTime() - started), row[0] >= rows ? " done" : "", framing.nextRow(), row[0], rows,
+            millis(ChunkFramePlacer.lastGrowNanos()));
     }
 
     // ---- writing -------------------------------------------------------------
