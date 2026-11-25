@@ -39644,6 +39644,74 @@
       "released": true,
       "released_in": "v0.2026.0",
       "released_at": "2026-11-25T13:48:53Z"
+    },
+    {
+      "id": "dimensional-carriage-memory",
+      "version": "0.2024.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Lighter dimensional carriages",
+      "summary": "Dimensional carriages use far less memory on a long run, and one you come back to is always built in full.",
+      "highlights": [],
+      "pr": 2894,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2031.0",
+      "released_at": "2026-11-25T15:03:32Z"
+    },
+    {
+      "id": "fluxer-webhooks",
+      "version": "0.2029.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Fluxer webhooks",
+      "summary": "Your own webhooks can now point at a Fluxer server as well as Discord: paste a Fluxer webhook link in Options, Account, and your Tributes and passenger log post there.",
+      "highlights": [],
+      "pr": 2896,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2031.0",
+      "released_at": "2026-11-25T15:03:32Z"
+    },
+    {
+      "id": "playermob-carpet-doorway",
+      "version": "0.2029.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "PlayerMobs fit through doorways on carpet",
+      "summary": "PlayerMobs no longer get stuck on carpet in front of doorways.",
+      "highlights": [],
+      "pr": 2897,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2031.0",
+      "released_at": "2026-11-25T15:03:32Z"
+    },
+    {
+      "id": "playermob-carriage-locator",
+      "version": "0.2027.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "internal"
+      ],
+      "title": "Mob performance tweak",
+      "summary": "Echoes on the train take a little less work to run.",
+      "highlights": [],
+      "pr": 2898,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2031.0",
+      "released_at": "2026-11-25T15:03:32Z"
     }
   ]
 }
