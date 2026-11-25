@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The shutdown breadcrumb's contract: a write can be read back by the next launch exactly once, a
  * clean stop leaves nothing, a damaged file still reports (as "unknown") instead of throwing, and
- * the watchdog's checkpoints run 5 s, 15 s, 30 s, 60 s, then every minute to the cap.
+ * the watchdog's checkpoints run 10 s, 20 s, 30 s, 60 s, then every minute to the cap.
  */
 class ShutdownTraceTest {
 
@@ -66,8 +66,8 @@ class ShutdownTraceTest {
 
     @Test
     void checkpointScheduleRunsToTheCap() {
-        assertEquals(5_000L, ShutdownTrace.checkpointMs(0));
-        assertEquals(15_000L, ShutdownTrace.checkpointMs(1));
+        assertEquals(10_000L, ShutdownTrace.checkpointMs(0));
+        assertEquals(20_000L, ShutdownTrace.checkpointMs(1));
         assertEquals(30_000L, ShutdownTrace.checkpointMs(2));
         assertEquals(60_000L, ShutdownTrace.checkpointMs(3));
         assertEquals(120_000L, ShutdownTrace.checkpointMs(4));

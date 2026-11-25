@@ -34,8 +34,12 @@ public final class ShutdownTrace {
     static final String KEY_PHASE = "phase: ";
     static final String KEY_ELAPSED = "elapsedMs: ";
 
-    /** First checkpoints, in ms after the shutdown started; then one every {@link #CHECKPOINT_STEP_MS}. */
-    private static final long[] FIRST_CHECKPOINTS_MS = {5_000L, 15_000L, 30_000L, 60_000L};
+    /**
+     * First checkpoints, in ms after the shutdown started; then one every {@link #CHECKPOINT_STEP_MS}.
+     * Starts at 10 s because an ordinary dedicated-server stop already takes about 7 s (DT's train
+     * cleanup pumps Sable for a second per dimension), and a dump on every normal stop is noise.
+     */
+    private static final long[] FIRST_CHECKPOINTS_MS = {10_000L, 20_000L, 30_000L, 60_000L};
     static final long CHECKPOINT_STEP_MS = 60_000L;
     /** The watchdog stops after this long: a game frozen for 15 minutes has long been killed. */
     public static final long WATCHDOG_MAX_MS = 15 * 60_000L;
@@ -55,7 +59,7 @@ public final class ShutdownTrace {
 
     /**
      * The {@code index}th checkpoint in ms after the shutdown started, or -1 once past
-     * {@link #WATCHDOG_MAX_MS}: 5 s, 15 s, 30 s, 60 s, then every minute.
+     * {@link #WATCHDOG_MAX_MS}: 10 s, 20 s, 30 s, 60 s, then every minute.
      */
     public static long checkpointMs(int index) {
         if (index < 0) return -1L;

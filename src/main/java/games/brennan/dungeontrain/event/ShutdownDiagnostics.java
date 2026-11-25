@@ -37,10 +37,10 @@ import java.util.Map;
  * and so never saw a freeze inside an earlier listener (the 2026-11-24 report froze right there).</p>
  *
  * <p><b>Watchdog.</b> One daemon thread, {@code DT-Shutdown-Watchdog}, polls every
- * {@value #POLL_INTERVAL_MS} ms. At each checkpoint ({@link ShutdownTrace#checkpointMs}: 5 s, 15 s,
+ * {@value #POLL_INTERVAL_MS} ms. At each checkpoint ({@link ShutdownTrace#checkpointMs}: 10 s, 20 s,
  * 30 s, 60 s, then every minute to 15 min) it logs the phase, the Server thread's stack, every thread
  * caught in file I/O or a log4j appender (so a stalled disk reads as one), and the chunk-map state of
- * each level. A clean shutdown takes a few seconds and so logs no dump.</p>
+ * each level. A clean shutdown takes 2 to 8 s and so logs no dump.</p>
  *
  * <p><b>Breadcrumb.</b> The watchdog also writes {@link ShutdownTrace}'s file outside log4j, which a
  * stalled disk can block, on each phase change and each checkpoint; {@link ServerStoppedEvent}
