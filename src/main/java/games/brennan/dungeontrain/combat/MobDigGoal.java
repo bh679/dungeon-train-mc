@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.combat;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.ToolTiers;
 import games.brennan.dungeontrain.ship.CarriageDeck;
@@ -165,8 +167,12 @@ public final class MobDigGoal extends Goal {
     private int lastStage;
     /** "No dig" answers in a row; each makes the next look wait longer ({@link DigRecheck#waitTicks}). */
     private int calmStreak;
-    /** Where the target stood, and whether the mob saw it, at the last "no dig" answer. */
+    /**
+     * Where the target stood, and whether the mob saw it, at the last "no dig" answer. On a carriage the cell is in
+     * the carriage's own frame ({@code answerFrame}): its world cell changes every tick the train moves.
+     */
     private BlockPos answerTargetPos = BlockPos.ZERO;
+    private SubLevel answerFrame;
     private boolean answerSeen;
 
     private MobDigGoal(Mob mob, boolean bareHanded, boolean miner) {
@@ -238,7 +244,7 @@ public final class MobDigGoal extends Goal {
         }
         // Something that could change the last "no dig" answer (sight lost, target moved): back to the usual clock.
         if (calmStreak > 0 && DigRecheck.resetsBackoff(answerSeen, seen,
-                DigRecheck.blocksApart(target.blockPosition(), answerTargetPos))) {
+                movedSinceAnswer(target))) {
             calmStreak = 0;
         }
         if (now >= chainUntilTick && now - bestDistanceTick < DigRecheck.waitTicks(calmStreak)) return false;
@@ -288,10 +294,25 @@ public final class MobDigGoal extends Goal {
      */
     private void noteNoDig(LivingEntity target, boolean seen, boolean wedged, int now) {
         calmStreak = wedged ? 0 : DigRecheck.grow(calmStreak);
-        answerTargetPos = target.blockPosition();
+        answerFrame = Sable.HELPER.getTrackingSubLevel(target);
+        answerTargetPos = cellIn(answerFrame, target);
         answerSeen = seen;
         restartWindow(now);
         chainUntilTick = Integer.MIN_VALUE;
+    }
+
+    /** Blocks the target has moved since the last "no dig" answer; boarding or leaving a carriage counts as far. */
+    private int movedSinceAnswer(LivingEntity target) {
+        SubLevel frame = Sable.HELPER.getTrackingSubLevel(target);
+        if (frame != answerFrame) return DigRecheck.MOVED_BLOCKS;
+        return DigRecheck.blocksApart(cellIn(frame, target), answerTargetPos);
+    }
+
+    /** {@code e}'s cell in {@code frame} (a carriage's plot), or its world cell with none. */
+    private static BlockPos cellIn(SubLevel frame, LivingEntity e) {
+        if (frame == null || frame.isRemoved()) return e.blockPosition();
+        Vector3d local = frame.logicalPose().transformPositionInverse(new Vector3d(e.getX(), e.getY(), e.getZ()));
+        return BlockPos.containing(local.x, local.y, local.z);
     }
 
     /** Start a new stuck window: the clock, and where the mob stood. */
