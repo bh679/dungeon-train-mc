@@ -123,6 +123,12 @@ public final class TributeTvVisit {
         return texture == null ? TV_ASPECT : texture.aspect();
     }
 
+    /** The visit's picture, for the TV that shows it. Null when nothing is up. */
+    @Nullable
+    static ScreenToTexture texture() {
+        return texture;
+    }
+
     /** The visit's texture, for the TV that shows it. Null when nothing is up. */
     @Nullable
     static net.minecraft.resources.ResourceLocation textureLocation() {
@@ -199,10 +205,7 @@ public final class TributeTvVisit {
     public static void onFrameStart(float partialTick) {
         if (phase == Phase.IDLE) return;
         long now = System.currentTimeMillis();
-        if (texture != null && phase != Phase.ENDING) {
-            int[] m = zoomed() ? new int[] {TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN} : tvMouse();
-            texture.renderFrame(m[0], m[1], partialTick);
-        }
+        drawPicture(partialTick);
         Minecraft mc = Minecraft.getInstance();
         switch (phase) {
             case AWAITING_ROOM -> {
@@ -239,6 +242,31 @@ public final class TributeTvVisit {
     }
 
     /**
+     * The TV's picture for this frame. While the menu is on the window (waiting for the room, then
+     * dissolving into the TV) the window shows it, so every frame; from then on only when the TV is seen
+     * and the picture is due ({@link TvRedrawPolicy}). A page lifted onto the window is drawn there.
+     */
+    private static void drawPicture(float partialTick) {
+        if (texture == null || phase == Phase.ENDING) return;
+        if (phase == Phase.AWAITING_ROOM || phase == Phase.FADING_IN) {
+            texture.renderFrame(TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN, partialTick);
+            return;
+        }
+        if (zoomed()) return;
+        int[] m = tvMouse();
+        texture.drawIfDue(m[0], m[1], partialTick, m[0] != TvPointer.OFF_SCREEN, distanceSqToScreen());
+    }
+
+    /** Squared distance from the camera to the middle of the TV; far when unknown. */
+    private static double distanceSqToScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        if (screenBox == null) return Double.MAX_VALUE;
+        return mc.gameRenderer.getMainCamera().getPosition().distanceToSqr(
+            (screenBox.minX() + screenBox.maxX() + 1) / 2.0, (screenBox.minY() + screenBox.maxY() + 1) / 2.0,
+            (screenBox.minZ() + screenBox.maxZ() + 1) / 2.0);
+    }
+
+    /**
      * The tubes are the way out: the view darkens with every block walked into one, and at its far
      * end, fully black, the visit ends and the next world loads under the black.
      */
@@ -255,6 +283,7 @@ public final class TributeTvVisit {
 
     public static void onClientTick() {
         if (texture != null && phase != Phase.IDLE && phase != Phase.ENDING && !zoomed()) texture.tick();
+        if (texture != null && phase == Phase.WATCHING) texture.releaseIfIdle();
     }
 
     /**
@@ -321,6 +350,7 @@ public final class TributeTvVisit {
             if (m[0] == TvPointer.OFF_SCREEN) return true;
             page.mouseClicked(m[0], m[1], 0);
             page.mouseReleased(m[0], m[1], 0);
+            texture.markDirty();
             return true;
         }
         if (sneaking) {
@@ -334,6 +364,7 @@ public final class TributeTvVisit {
         // Held locally: the click can end the visit (a page's button that leaves the world, e.g.
         // Board anew), which clears recapScreen before the release would reach it.
         NarrativeDeathScreen page = recapScreen;
+        texture.markDirty();
         page.mouseClicked(m[0], m[1], 0);
         if (recapScreen != page) return true;
         page.mouseReleased(m[0], m[1], 0);
@@ -348,6 +379,7 @@ public final class TributeTvVisit {
      */
     public static boolean pressNext(BlockPos tv) {
         if (phase != Phase.WATCHING || !showsOn(tv) || texture == null) return false;
+        texture.markDirty();
         if (recapShowing()) {
             // The last page loops back to the first screen: the perks menu, whose Next Screen
             // starts the recap over.
@@ -427,6 +459,7 @@ public final class TributeTvVisit {
         int[] m = tvMouse();
         if (m[0] == TvPointer.OFF_SCREEN) return false;
         recapScreen.mouseScrolled(m[0], m[1], dx, dy);
+        texture.markDirty();
         return true;
     }
 
