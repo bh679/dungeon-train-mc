@@ -36,7 +36,8 @@
       "released_at": "2026-05-01T06:55:53Z",
       "major": true,
       "notable": true,
-      "description": "The train now runs on Sable, a new physics engine for moving ships, in place of Valkyrien Skies. Dungeon Train moved to Minecraft 1.21.1 on NeoForge with it."
+      "description": "The train now runs on Sable, a new physics engine for moving ships, in place of Valkyrien Skies. Dungeon Train moved to Minecraft 1.21.1 on NeoForge with it.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/sable-physics.jpg"
     },
     {
       "id": "release-launched-on-curseforge",
