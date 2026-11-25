@@ -2832,12 +2832,18 @@ public final class PortalCarriageEvents {
             // A whole room to capture and erase, not one still being written. Whatever could not be
             // written now never will be: the erase is about to take the room.
             games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, existing);
+            // Read before cancelPour, which forgets it.
+            boolean bareShell = games.brennan.dungeontrain.portal.PortalChunkDimension.awaitingResample(pairKey);
             games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
             // A drifting room somebody has built in — or one lent by another world — is re-laid as
             // it stands, not re-rolled from the template. Captured while the old blocks are still
             // there, before the erase below; null means the template will do.
             games.brennan.dungeontrain.portal.PortalRoomBlob carried;
-            if (regeneratedSinceStamp(level, dims, pairKey, existing)) {
+            if (bareShell) {
+                // Re-stamped after its terrain cube left the cache and not poured yet: the shell is
+                // all there is, so lay the room afresh (its cube is resampled to the same ground).
+                carried = null;
+            } else if (regeneratedSinceStamp(level, dims, pairKey, existing)) {
                 // Its chunks were dropped unsaved after it was stamped and came back as empty
                 // basement: a capture now would carry an empty room on and overwrite the good copy in
                 // memory. The last copy remembered is the room as it was left.

@@ -159,6 +159,8 @@ public final class PortalChunkDimension {
             if (slice == null) continue;
             WAITING.remove(pairKey);
             startPour(pairKey, slice);
+            // Somebody may already be standing in the bare room: lay it as fast as a tick allows.
+            POURS.put(pairKey, POURS.get(pairKey).rushed());
             AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} resampled; pouring", pairKey, structure.roomName());
         }
     }
@@ -310,6 +312,14 @@ public final class PortalChunkDimension {
         stepFraming(level, dims, pairKey, structure, true);
     }
 
+    /**
+     * Whether {@code pairKey}'s room is standing bare, waiting for its cube to be resampled — nothing
+     * in it is worth capturing, and a capture would carry the bare room on in place of its terrain.
+     */
+    public static boolean awaitingResample(int pairKey) {
+        return WAITING.contains(pairKey);
+    }
+
     /** Stop writing {@code pairKey}'s room: it is being erased. */
     public static void cancelPour(int pairKey) {
         POURS.remove(pairKey);
@@ -442,12 +452,25 @@ public final class PortalChunkDimension {
      */
     private static int seaTopY(PortalStructure structure, CarriageDims dims, int pairKey, BlockPos origin) {
         PortalChunkSlice slice = PortalChunkTerrain.peek(pairKey);
-        if (slice == null || !slice.source().underwater()) {
-            return games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog.NO_SEA;
-        }
-        int top = topWaterRow(slice);
+        // A room laid from a captured blob is framed with no cube of its own in hand, and the cache
+        // may have let its cube go by then: the row remembered from its first pour stands in.
+        int top = slice != null ? rememberTopWaterRow(pairKey, slice) : TOP_WATER_ROWS.getOrDefault(pairKey, -1);
         if (top < 0) return games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog.NO_SEA;
         return origin.getY() + top - copyShift(structure, dims, structure.roomSize());
+    }
+
+    /**
+     * Each underwater pair's highest water row, kept past its cube so a room re-laid from a blob is
+     * still framed waterlogged after the cube has left the cache. A few ints a pair. Server thread only.
+     */
+    private static final java.util.Map<Integer, Integer> TOP_WATER_ROWS = new java.util.HashMap<>();
+
+    /** {@link #topWaterRow} of {@code slice}, or -1 for a room that is not underwater; remembered for the pair. */
+    private static int rememberTopWaterRow(int pairKey, PortalChunkSlice slice) {
+        if (!slice.source().underwater()) return -1;
+        int top = topWaterRow(slice);
+        TOP_WATER_ROWS.put(pairKey, top);
+        return top;
     }
 
     /** The highest row of {@code slice} with water in it, or -1 when it holds none. */
@@ -670,6 +693,7 @@ public final class PortalChunkDimension {
         POURS.clear();
         WAITING.clear();
         UNDECORATED.clear();
+        TOP_WATER_ROWS.clear();
     }
 
     /**
