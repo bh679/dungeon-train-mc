@@ -1,0 +1,17 @@
+{
+  "id": "playermob-carriage-locator",
+  "version": "0.2027.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "internal"
+  ],
+  "title": "Mob performance tweak",
+  "summary": "Echoes on the train take a little less work to run.",
+  "highlights": [],
+  "pr": 2898,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
