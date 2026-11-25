@@ -57,6 +57,19 @@ final class PortalCopyTiming {
         lastMark = now;
     }
 
+    /**
+     * Stop timing without logging a copy line, for a caller that reports the phases itself
+     * ({@code PortalCarriageBuilder#stampPairStructure}'s {@code [portal.stamp]}).
+     */
+    static void end() {
+        timing = false;
+    }
+
+    /** What {@link #begin} has charged to {@code phase} so far. */
+    static long phaseNanos(Phase phase) {
+        return PHASE_NANOS[phase.ordinal()];
+    }
+
     static void finish(Kind kind, String roomName, int pairKey, PortalRoomTiling.Tile tile) {
         timing = false;
         long total = System.nanoTime() - startedAt;

@@ -1046,14 +1046,29 @@ public final class PortalCarriageBuilder {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
         long startedAt = System.nanoTime();
+        long trimNanos = 0L;
+        BoundingBox pourOnly = null;
+        long clearNanos = 0L;
+        long templateNanos = 0L;
 
         if (structure.stampsFromBlob()) {
             // A drifted copy, or this world's own room carried across a relocation: laid as
             // captured, with none of the passes that would re-roll what somebody built.
             stampRoomFromBlob(level, roomOrigin, roomSize, structure.blob(), pairKey);
         } else {
+            // A generated room's pour writes every cell its sample reaches, so the stamp only empties
+            // that volume, cheaply, and lays the template around it. See PortalChunkStampTrim.
+            pourOnly = pourOnlyBox(level, structure, dims, pairKey, roomOrigin, roomSize);
+            PortalCorridorMask spared = PortalCorridorMask.NONE;
+            if (pourOnly != null) {
+                long trimAt = System.nanoTime();
+                PortalClear.clearBox(level, pourOnly, PortalCorridorMask.NONE);
+                trimNanos = System.nanoTime() - trimAt;
+                spared = spared.plus(pourOnly);
+            }
+            PortalCopyTiming.begin();
             stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-                PortalCorridorMask.NONE, PortalCorridorMask.NONE,
+                spared, spared,
                 structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
                 structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
                 PortalRoomTiling.Tile.BASE,
@@ -1062,6 +1077,9 @@ public final class PortalCarriageBuilder {
                 // The base room lands in solid rock with no copy beside it yet, so every liquid in its
                 // skin is an aquifer; the copies the tiler adds later are what spare their neighbours.
                 PLUG_EVERY_FLUID);
+            PortalCopyTiming.end();
+            clearNanos = PortalCopyTiming.phaseNanos(PortalCopyTiming.Phase.CLEAR);
+            templateNanos = PortalCopyTiming.phaseNanos(PortalCopyTiming.Phase.TEMPLATE);
         }
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
@@ -1111,14 +1129,38 @@ public final class PortalCarriageBuilder {
         // out of it. It and a room with no sample only want the frame, which they get now.
         boolean poured = structure.mode().generatesTerrain() && !structure.stampsFromBlob()
             && PortalChunkDimension.beginPour(level, structure, pairKey);
+        if (pourOnly != null && !poured) {
+            // The sample went between the stamp and the pour (its cache was emptied), so nothing
+            // will write the box the stamp left empty. Lay the room's template over it after all.
+            LOGGER.warn("[DungeonTrain] Portal pair {} room '{}' lost its sample mid-stamp; laying its template",
+                pairKey, structure.roomName());
+            stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
+                PortalCorridorMask.NONE, PortalCorridorMask.NONE, PLUG_EVERY_FLUID);
+        }
         if (structure.mode().generatesTerrain() && !poured) {
             PortalChunkDimension.frame(level, structure, dims, pairKey);
         }
 
         long endedAt = System.nanoTime();
-        AsyncPerfLog.debug(PERF_LOGGER, "[portal.stamp] pair={} room={} mode={} roomMs={} skinMs={} corridorsMs={} restMs={} totalMs={} poured={}",
-            pairKey, structure.roomName(), structure.mode().name(), stampMillis(roomAt - startedAt), stampMillis(skinAt - roomAt),
-            stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured);
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.stamp] pair={} room={} mode={} roomMs={} (trimMs={} clearMs={} templateMs={}) skinMs={} corridorsMs={} restMs={} totalMs={} poured={} trimmed={}",
+            pairKey, structure.roomName(), structure.mode().name(), stampMillis(roomAt - startedAt),
+            stampMillis(trimNanos), stampMillis(clearNanos), stampMillis(templateNanos), stampMillis(skinAt - roomAt),
+            stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured,
+            pourOnly != null);
+    }
+
+    /**
+     * The world box a generated room's pour will write and its stamp may leave to it, or null to
+     * stamp the whole room as before: not a generated room, no sample in hand, or nothing to skip.
+     * Read from the same sample {@code beginPour} starts from, in the same tick.
+     */
+    private static BoundingBox pourOnlyBox(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                           int pairKey, BlockPos roomOrigin, Vec3i roomSize) {
+        if (!structure.mode().generatesTerrain()) return null;
+        PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
+        if (slice == null) return null;
+        return PortalChunkStampTrim.worldBox(roomOrigin, roomSize, slice,
+            PortalChunkDimension.copyShift(structure, dims, roomSize), corridorMask(structure, dims));
     }
 
     private static String stampMillis(long nanos) {
