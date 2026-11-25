@@ -18,14 +18,14 @@ Audited 2026-11-25 from the pinned jars, using [`../newmod.md`](../newmod.md). A
 
 | Category | Count | Action |
 |---|---:|---|
-| Weapons | 7 spears (wooden, stone, copper, iron, golden, diamond, netherite) | Kept. Roll beside every sword in DT loot at the sword's weight (`editor/SpearTwins`) and in the mob weapon pool (`difficulty/ProceduralTiers`) |
-| Tools and armour | Copper set, copper/netherite horse armour, 5 nautilus armours | Kept |
+| Weapons | 7 spears (wooden, stone, copper, iron, golden, diamond, netherite) | Kept. A spear entry beside every sword in DT's bundled loot pools at the sword's weight (`scripts/loot/add-spears-and-copper.py`), and beside each sword in the mob weapon pool (`difficulty/ProceduralTiers`) |
+| Tools and armour | Copper set, copper/netherite horse armour, 5 nautilus armours | Kept. Copper is its own band in the mob gear progression (armour between leather and chainmail, weapons/tools between stone and iron; later bands moved 8 levels, netherite caps at 58), and goes into loot pools between those neighbours at their mean weight |
 | Mobs | Nautilus, Zombie Nautilus, Camel Husk, Parched, Copper Golem (+ zombie horse spawns) | Kept. Spawn under VB's own rules, not level-gated (`minecraft:` ids) |
 | Structures | Abandoned Camp (3 loot tables) | Kept |
 | Enchantments | `minecraft:lunge` | Kept (`isDisabledEnchantment` keeps `minecraft:`) |
 | Potion effects | Breath of the Nautilus | Kept |
 | Advancements | 1 new non-recipe (`spear_many_mobs`); recipe advancements 113 → 332 | Kept |
-| New blocks | About 150 (copper chests, lanterns, chains, bars, golem statues; shelves; cushions; wool/concrete slabs and stairs; Poplar set) | Kept. Poplar gets a train stage (`StageWoodFamily.POPLAR`) |
+| New blocks | About 150 (copper chests, lanterns, chains, bars, golem statues; shelves; cushions; wool/concrete slabs and stairs; Poplar set) | Kept. Poplar gets a train stage at levels 452-467 beside pale oak (`StageWoodFamily.POPLAR`); later wood stages moved 16 levels |
 | Biomes | Dappled Forest | Already in `worldgen/BackportBiomes` |
 | Creative tabs | VB's own tabs | Hidden (`HIDDEN_TAB_NAMESPACES`) |
 
@@ -52,8 +52,8 @@ Audited 2026-11-25 from the pinned jars, using [`../newmod.md`](../newmod.md). A
 
 ## DT systems it reaches
 
-- **Loot:** spears via `SpearTwins` at roll time; stored pools and the editor are unchanged.
-- **Mob gear:** spears in `ProceduralTiers.weaponSet`; VB's `has_spears` also lets vanilla monsters spawn holding one.
+- **Loot:** 11,792 entries added to 167 bundled pool files (spears beside swords; copper beside stone/leather). The editor's pool cap rose from 64 to 96 (largest pool 75).
+- **Mob gear:** spears and copper in `ProceduralTiers`; VB's `has_spears` also lets vanilla monsters spawn holding one. Copper shares stone's step on the villager trade ladder (`dominantWeaponStage`).
 - **Trade Everything:** spears and Lunge books are outside `GearValueProvider`'s formula and fall back to TE's
   recipe pricing; copper gear is priced by its tags.
 - **Mob photos:** none of the new mobs is placed by a DT room, so `categories.json` needs nothing yet.
