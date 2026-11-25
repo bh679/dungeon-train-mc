@@ -1,0 +1,22 @@
+{
+  "id": "market-room-villager-job-mode",
+  "version": "0.2017.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "A new room to find",
+  "summary": "A new room to discover as you ride.",
+  "highlights": [
+    "A new room to discover as you ride",
+    "Editor: villagers in block variants can take the nearest job, a random job, or be nitwits",
+    "Editor: the Solid condition no longer counts slabs and stairs"
+  ],
+  "pr": 2883,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
