@@ -13,11 +13,12 @@ class TributeSiteCacheTest {
 
     @Test
     void keptChunksAreEveryChunkTheStampWaitsOn() {
-        BoundingBox window = new BoundingBox(-4, -63, -516, 40, -51, -502);
+        int z = TributeRoomVisitSite.Z_BAND;
+        BoundingBox window = new BoundingBox(-4, -63, z - 4, 40, -51, z + 10);
         List<ChunkPos> chunks = TributeSiteCache.chunksOf(window);
         assertEquals(TributeRoomVisitTickets.waitedOn(window), chunks.size());
-        assertTrue(chunks.contains(new ChunkPos(-2, -34)));
-        assertTrue(chunks.contains(new ChunkPos(3, -31)));
+        assertTrue(chunks.contains(new ChunkPos(-2, ((z - 4) >> 4) - 1)));
+        assertTrue(chunks.contains(new ChunkPos(3, ((z + 10) >> 4) + 1)));
         for (ChunkPos p : chunks) assertTrue(TributeRoomVisitSite.isSiteChunk(p.x, p.z), "kept but not saved: " + p);
     }
 

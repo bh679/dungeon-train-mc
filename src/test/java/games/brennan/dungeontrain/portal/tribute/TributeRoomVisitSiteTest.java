@@ -30,7 +30,8 @@ class TributeRoomVisitSiteTest {
     void bandIsOffTheTestRigs() {
         // PortalTestCommand stands tests at +512; the visit band is the other way.
         assertTrue(TributeRoomVisitSite.Z_BAND < 0);
-        assertNotEquals(512, Math.abs(TributeRoomVisitSite.Z_BAND) == 512 ? -1 : 512);
+        assertNotEquals(512, TributeRoomVisitSite.Z_BAND);
+        assertFalse(TributeRoomVisitSite.isSiteChunk(0, 512 >> 4));
     }
 
     @Test
@@ -58,5 +59,11 @@ class TributeRoomVisitSiteTest {
         assertFalse(TributeRoomVisitSite.isSiteChunk(-100, TributeRoomVisitSite.Z_BAND >> 4), "behind slot 0");
         int pastKept = (TributeRoomVisitSite.KEPT_SLOTS + 2) * TributeRoomVisitSite.SLOT_STRIDE;
         assertFalse(TributeRoomVisitSite.isSiteChunk(pastKept >> 4, TributeRoomVisitSite.Z_BAND >> 4), "past the kept slots");
+    }
+
+    @Test
+    void bandIsFarOffTheTrackWhereNoOneWalks() {
+        assertTrue(TributeRoomVisitSite.Z_BAND <= -10_000, "the kept site's surface must be out of reach");
+        assertEquals(0, TributeRoomVisitSite.Z_BAND & 15, "chunk-aligned");
     }
 }

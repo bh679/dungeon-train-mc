@@ -2899,11 +2899,14 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
+            // A room standing bare while its terrain is resampled has nothing worth carrying. Read
+            // before cancelPour, which forgets it.
+            boolean bareShell = games.brennan.dungeontrain.portal.PortalChunkDimension.awaitingResample(pairKey);
             // A drifting room somebody has built in — or one lent by another world — is re-laid as
             // it stands, not re-rolled from the template. Captured while the old blocks are still
             // there, before the erase below; null means the template will do.
             boolean regenerated = regeneratedSinceStamp(level, dims, pairKey, existing);
-            boolean captured = !regenerated && (SharedRoomEvents.capturesForRelocation(pairKey)
+            boolean captured = !bareShell && !regenerated && (SharedRoomEvents.capturesForRelocation(pairKey)
                 || PortalRoomMemory.isTouched(pairKey));
             // A room about to be captured is finished first, so the capture is a whole room and not
             // one still being written. One that is not is simply dropped: the erase takes whatever
@@ -2917,7 +2920,11 @@ public final class PortalCarriageEvents {
                 "[portal.relocate] pair={} room={} drift={} allowance={} captured={} pourFlushed={}",
                 pairKey, existing.roomName(), fmt(drift), fmt(allowance), captured, captured);
             games.brennan.dungeontrain.portal.PortalRoomBlob carried;
-            if (regenerated) {
+            if (bareShell) {
+                // Re-stamped after its terrain left the cache and not poured yet: the shell is all
+                // there is, so lay the room afresh (its terrain is resampled to the same ground).
+                carried = null;
+            } else if (regenerated) {
                 // Its chunks were dropped unsaved after it was stamped and came back as empty
                 // basement: a capture now would carry an empty room on and overwrite the good copy in
                 // memory. The last copy remembered is the room as it was left.

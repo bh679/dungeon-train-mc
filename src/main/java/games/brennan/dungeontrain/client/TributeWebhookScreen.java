@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Options › Account › Discord webhooks: paste Discord webhook links, up to {@link TributeWebhook#MAX_LINKS},
+ * Options › Account › Discord webhooks: paste Discord or Fluxer webhook links, up to {@link TributeWebhook#MAX_LINKS},
  * give each an optional name, and pick what each gets: the photos the player pays Tribute to, their
  * passenger log ({@link WebhookFeed}), or both.
  *
