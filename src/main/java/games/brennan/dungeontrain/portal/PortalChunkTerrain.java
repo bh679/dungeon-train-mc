@@ -363,13 +363,7 @@ public final class PortalChunkTerrain {
      * own template and asks again next tick; see {@code PortalChunkDimension}.</p>
      */
     public static PortalChunkSlice slice(ServerLevel level, int pairKey, String roomName) {
-        long seed = level.getSeed();
-        if (seed != cacheSeed) {
-            READY.clear();
-            IN_FLIGHT.clear();
-            FAILED.clear();
-            cacheSeed = seed;
-        }
+        dropIfSeedChanged(level.getSeed());
         Cached ready = READY.get(pairKey);
         if (ready != null) {
             if (sameRoom(ready.roomName(), roomName) && ready.roll() == rollOf(pairKey)) {
@@ -381,6 +375,20 @@ public final class PortalChunkTerrain {
         }
         request(level, pairKey, roomName);
         return null;
+    }
+
+    /**
+     * Forget every cube when the world's seed is not the one they were sampled under. Checked by
+     * {@link #request} as well as {@link #slice}: a prefetch requests long before anything slices,
+     * and a seed recorded only by the first slice made that slice drop every cube prefetched ahead
+     * of it.
+     */
+    private static void dropIfSeedChanged(long seed) {
+        if (seed == cacheSeed) return;
+        READY.clear();
+        IN_FLIGHT.clear();
+        FAILED.clear();
+        cacheSeed = seed;
     }
 
     /**
@@ -423,6 +431,7 @@ public final class PortalChunkTerrain {
         long seed = level.getSeed();
         MinecraftServer server = level.getServer();
         if (server == null) return;
+        dropIfSeedChanged(seed);
         if (READY.containsKey(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
         FAILED.remove(pairKey);
