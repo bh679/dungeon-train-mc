@@ -431,13 +431,6 @@ public final class ContainerContentsRoller {
                                              @Nullable Level level) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
-        // A vault keeps the pool as authored: its rewards roll through rollStacks on unlock,
-        // which adds the spear twins then.
-        if (VaultLoot.isVault(state)) {
-            if (pool.totalWeight() <= 0) return baseNbt;
-            return VaultLoot.writeVault(pool, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
-        }
-        pool = SpearTwins.expand(pool);
         int totalWeight = pool.totalWeight();
         if (totalWeight <= 0) return baseNbt;
 
@@ -454,6 +447,10 @@ public final class ContainerContentsRoller {
         // Container at all — an authored pool rolls into it the way a vase does.
         if (isBrushable(state)) {
             return rollBrushable(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+        }
+        // A vault rolls nothing now: it carries the pool and rolls each player's reward on unlock.
+        if (VaultLoot.isVault(state)) {
+            return VaultLoot.writeVault(pool, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
         int slots = containerSlotsFor(state);
         if (slots <= 0) return baseNbt;
@@ -545,7 +542,6 @@ public final class ContainerContentsRoller {
                                               HolderLookup.Provider registries) {
         if (pool == null || pool.isEmpty()) return List.of();
         if (slotCount <= 0) return List.of();
-        pool = SpearTwins.expand(pool);
         int totalWeight = pool.totalWeight();
         if (totalWeight <= 0) return List.of();
 
@@ -1959,7 +1955,7 @@ public final class ContainerContentsRoller {
                 prefabId, found.isEmpty() ? "does not exist" : "has no entries");
             return;
         }
-        ContainerContentsPool pool = SpearTwins.expand(withoutContents(found.get()));
+        ContainerContentsPool pool = withoutContents(found.get());
         int totalWeight = pool.totalWeight();
         if (totalWeight <= 0) return;
         long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHULKER_CONTENTS);
