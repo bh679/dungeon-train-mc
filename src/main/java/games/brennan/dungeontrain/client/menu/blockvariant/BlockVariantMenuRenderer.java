@@ -1181,7 +1181,8 @@ public final class BlockVariantMenuRenderer {
             case RANDOM -> hover ? 0xC066AAFF : 0x8033679B;  // shared blue
             case NITWIT -> hover ? 0xC07FA07F : 0x804D6B4D;  // muted green
         };
-        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        // No inset: the pill fills its whole cell.
+        drawQuad(ps, buffer, cellL, rowBottom, cellR, rowTop, tint);
         String label = switch (mode) {
             case JOB -> MenuLang.t("block_variant.villager_job");
             case RANDOM -> MenuLang.t("block_variant.villager_random");
