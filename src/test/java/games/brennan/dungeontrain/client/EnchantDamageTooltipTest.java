@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /** Pins the tooltip to the amounts in vanilla's own enchantment data, read from the Minecraft jar. */
@@ -104,5 +106,16 @@ class EnchantDamageTooltipTest {
                 (net.minecraft.network.chat.contents.TranslatableContents) line.getSiblings().get(0).getContents();
         assertEquals("tooltip.dungeontrain.perk_damage", inner.getKey());
         assertEquals("0.3", inner.getArgs()[0]);
+    }
+
+    @Test
+    void plainUnperkedItemsSkipTheLineWalk() {
+        assertFalse(EnchantDamageTooltip.needsLines(false, false));
+        assertTrue(EnchantDamageTooltip.needsLines(true, false));
+        assertTrue(EnchantDamageTooltip.needsLines(false, true));
+        assertTrue(EnchantDamageTooltip.needsLines(true, true));
+        // Rank 0 has no perk line, so an un-enchanted sword is skipped; rank 1 is not.
+        assertFalse(EnchantDamageTooltip.needsLines(EnchantDamageTooltip.perkLine(0).isPresent(), false));
+        assertTrue(EnchantDamageTooltip.needsLines(EnchantDamageTooltip.perkLine(1).isPresent(), false));
     }
 }
