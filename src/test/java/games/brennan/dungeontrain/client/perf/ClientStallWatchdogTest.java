@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 import static games.brennan.dungeontrain.client.perf.ClientStallWatchdog.LONG_STALL_MS;
 import static games.brennan.dungeontrain.client.perf.ClientStallWatchdog.MAX_SHORT_DUMPS;
 import static games.brennan.dungeontrain.client.perf.ClientStallWatchdog.NEVER;
+import static games.brennan.dungeontrain.client.perf.ClientStallWatchdog.PROMPT_MIN_FREEZE_MS;
 import static games.brennan.dungeontrain.client.perf.ClientStallWatchdog.SHORT_DUMP_COOLDOWN_MS;
 import static games.brennan.dungeontrain.client.perf.ClientStallWatchdog.STALL_LOG_MS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,7 +47,22 @@ final class ClientStallWatchdogTest {
     }
 
     @Test
-    @DisplayName("Short freezes stop once the session budget is spent")
+    @DisplayName("Freezes from 750 ms are dumped, so a 1 s hitch carries a stack")
+    void oneSecondFreezeIsDumped() {
+        assertEquals(750, STALL_LOG_MS);
+        assertTrue(ClientStallWatchdog.mayDump(1_000, NEVER, 0, NOW));
+    }
+
+    @Test
+    @DisplayName("Only a freeze of 2 s or more offers the chat lag prompt")
+    void promptNeedsTwoSeconds() {
+        assertFalse(ClientStallWatchdog.shouldPrompt(1_105));
+        assertFalse(ClientStallWatchdog.shouldPrompt(PROMPT_MIN_FREEZE_MS - 1));
+        assertTrue(ClientStallWatchdog.shouldPrompt(PROMPT_MIN_FREEZE_MS));
+    }
+
+    @Test
+    @DisplayName("Short freezes stop once the hour's budget is spent")
     void shortBudgetIsCapped() {
         assertFalse(ClientStallWatchdog.mayDump(STALL_LOG_MS, NEVER, MAX_SHORT_DUMPS, NOW));
     }

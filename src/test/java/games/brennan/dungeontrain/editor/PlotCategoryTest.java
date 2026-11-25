@@ -137,13 +137,14 @@ final class PlotCategoryTest {
         // Buildings: a new building's roster weight (a shipped one has none of its own).
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.WHOLE_HALF, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS,
+                PlotCategory.CHUNK_FRAMES),
             matching(PlotCategory::hasWeightPool));
 
         // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same arms, whole rows included.
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.WHOLE_HALF, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.CHUNK_FRAMES),
             matching(PlotCategory::hasGate));
 
         // The twelve !"PORTALS".equals(category) guards in EditorPlotTeleport.

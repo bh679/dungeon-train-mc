@@ -1957,6 +1957,8 @@ public final class CarriagePlacer {
         settings.addProcessor(new StagePlaceholderProcessor());
         settings.addProcessor(new FlagPlaceholderProcessor(level));
         settings.addProcessor(new VariantPlaceholderAirProcessor());
+        // Forced Air becomes air here; placeInWorld writes the air (the section-local twin writes it itself).
+        settings.addProcessor(new ForcedAirProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
         template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }

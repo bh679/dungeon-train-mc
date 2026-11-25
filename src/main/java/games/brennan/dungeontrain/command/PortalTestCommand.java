@@ -367,6 +367,9 @@ public final class PortalTestCommand {
         if (slice != null) {
             settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
                 PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
+            // Enclosed as its frame says, exactly as in play.
+            settings = PortalCarriageBuilder.framedEnclosure(overworld, roomName, PortalTestSession.PAIR_KEY,
+                roomSize, settings);
         }
 
         // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored

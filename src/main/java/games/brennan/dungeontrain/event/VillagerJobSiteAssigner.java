@@ -69,6 +69,15 @@ public final class VillagerJobSiteAssigner {
 
     private VillagerJobSiteAssigner() {}
 
+    /**
+     * The 13 vanilla job professions (one per job-site block), in a fixed order — the pool a
+     * villager variant row set to Random draws from ({@code VariantVillager.Mode#RANDOM}).
+     */
+    public static List<VillagerProfession> jobProfessions() {
+        return JOB_BLOCKS.values().stream().distinct()
+            .sorted(java.util.Comparator.comparing(VillagerProfession::name)).toList();
+    }
+
     private static Map<Block, VillagerProfession> buildJobBlocks() {
         Map<Block, VillagerProfession> m = new HashMap<>();
         m.put(Blocks.COMPOSTER, VillagerProfession.FARMER);

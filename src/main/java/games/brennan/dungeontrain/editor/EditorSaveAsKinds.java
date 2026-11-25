@@ -497,11 +497,7 @@ public final class EditorSaveAsKinds {
                 .orElseThrow(() -> new IOException("'" + from + "' has no saved frame to copy."));
             boolean toSource = EditorDevMode.isEnabled();
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.save(name, tag, toSource);
-            var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(
-                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(from));
-            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.save(name, variants, toSource);
-            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.save(name,
-                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(from), toSource);
+            ChunkFrameEditor.copySidecars(from, name, toSource);
             ChunkFrameEditor.enter(player, level, name, null);
             return new Template.ChunkFrame(name);
         }

@@ -96,7 +96,17 @@ public enum PortalRoomMode {
      * one dimension. This one is walk-through, turns red while a player is outside it, and the
      * clearance it stands in is what lets them build out there.</p>
      */
-    WORLD_BORDER("world_border", "World Border");
+    WORLD_BORDER("world_border", "World Border"),
+
+    /**
+     * {@link #CHUNK_DIMENSION}'s terrain enclosed as {@link #VOID} is: no skin, the surroundings
+     * swept and fogged. Never authored — a chunk room takes it at plan time when the frame dressing
+     * it says Void ({@code ChunkFrameDimension}) — and skipped by {@link #next}.
+     */
+    CHUNK_VOID("chunk_void", "Chunk Dimension (Void)"),
+
+    /** {@link #CHUNK_VOID} with the drawn border of {@link #WORLD_BORDER}. Never authored either. */
+    CHUNK_WORLD_BORDER("chunk_world_border", "Chunk Dimension (World Border)");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
     public static final PortalRoomMode DEFAULT = BEDROCK;
@@ -167,7 +177,7 @@ public enum PortalRoomMode {
      * neither, because their boundary is the next copy of the room.</p>
      */
     public boolean clearsSurroundings() {
-        return this == VOID || this == WORLD_BORDER;
+        return this == VOID || this == WORLD_BORDER || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER;
     }
 
     /**
@@ -175,7 +185,7 @@ public enum PortalRoomMode {
      * {@link #WORLD_BORDER} alone. What the server asks before sending a border region.
      */
     public boolean drawsBorder() {
-        return this == WORLD_BORDER;
+        return this == WORLD_BORDER || this == CHUNK_WORLD_BORDER;
     }
 
     /**
@@ -217,7 +227,7 @@ public enum PortalRoomMode {
      * once the template is down.
      */
     public boolean generatesTerrain() {
-        return this == CHUNK_DIMENSION;
+        return this == CHUNK_DIMENSION || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER;
     }
 
     /**
@@ -320,6 +330,18 @@ public enum PortalRoomMode {
     /** The mode after this one, wrapping — what the editor's cycle button steps through. */
     public PortalRoomMode next() {
         PortalRoomMode[] all = values();
-        return all[(ordinal() + 1) % all.length];
+        PortalRoomMode m = this;
+        do {
+            m = all[(m.ordinal() + 1) % all.length];
+        } while (!m.authored());
+        return m;
+    }
+
+    /**
+     * False for the modes a chunk room only ever takes from its frame at plan time — never offered
+     * by the editor's mode cycle.
+     */
+    public boolean authored() {
+        return this != CHUNK_VOID && this != CHUNK_WORLD_BORDER;
     }
 }

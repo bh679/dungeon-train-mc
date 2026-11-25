@@ -876,12 +876,53 @@ public final class PortalCarriageBuilder {
      * the stronger case of the two: the kind decides how far apart the twins stand, so a pair that
      * re-drew it mid-visit would move the exit frame out from under a player walking back.</p>
      */
-    public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
-                                                BlockPos entryOrigin, int pairKey,
-                                                PortalTwinRegion region,
-                                                games.brennan.dungeontrain.template.GateContext gateCtx,
-                                                boolean ownShelfBoost,
-                                                net.minecraft.server.level.ServerPlayer rider) {
+    /**
+     * {@code settings} enclosed as the frame that will dress the room says: sealed, Void or World
+     * Border ({@link games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension}). Decided when
+     * the pair is planned, with the mode, so the skin or sweep, the lane claim, the fog and the border
+     * all follow from it as they do for any other room. One-chunk boxes only: that is all a frame
+     * dresses. Shared by play and Test the Carriage.
+     */
+    public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
+                                                     net.minecraft.core.Vec3i size, PortalRoomSettings settings) {
+        return framedEnclosure(level, roomName, pairKey, size, settings, null);
+    }
+
+    /** {@link #framedEnclosure} with the frame picked among those whose spawn gate admits {@code gateCtx}. */
+    public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
+                                                     net.minecraft.core.Vec3i size, PortalRoomSettings settings,
+                                                     games.brennan.dungeontrain.template.GateContext gateCtx) {
+        if (!settings.mode().generatesTerrain()
+                || !games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.validSize(
+                    games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.sizeFor(size))) {
+            return settings;
+        }
+        PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
+            .dimensionFor(level, roomName, pairKey, gateCtx).roomMode(settings.mode());
+        return framed == settings.mode() ? settings : settings.withMode(framed);
+    }
+
+    /**
+     * The seeded part of a pair's room roll: the weighted pick (or the visit-ruled one it already
+     * stood), adjusted for how often a library of the rider's own books may answer. Everything
+     * {@link #planStructure} rolls before the author-room split, which is the one part that commits
+     * anything (locks and a remembered pick) and so stays there.
+     *
+     * <p>Shared with {@link PortalChunkPrefetch}, which asks for a chunk dimension's terrain once a
+     * player is within confirm range, long before planning: one function, so the room it samples for
+     * is the room planning rolls from the same inputs. When the inputs move in between (another rider
+     * now nearest, a gate crossed), planning still rolls afresh and the sampler re-samples for the
+     * room it lands on.</p>
+     *
+     * @param pickAt the draw at any key, as {@link PortalAuthorRooms#plan} and the own-books redraw read it
+     */
+    public record RoomRoll(PortalOwnShelves.Outcome picked, java.util.function.LongFunction<String> pickAt) {}
+
+    /** See {@link RoomRoll}. Side-effect free. */
+    public static RoomRoll rollRoom(ServerLevel level, int pairKey,
+                                    games.brennan.dungeontrain.template.GateContext gateCtx,
+                                    boolean ownShelfBoost,
+                                    net.minecraft.server.level.ServerPlayer rider) {
         long seed = level.getSeed();
         // A group with visit rules (ordered steps, seen again, weight after the Xth visit) draws for
         // the rider; every other group ignores the view and draws by weight as it always has.
@@ -892,19 +933,47 @@ public final class PortalCarriageBuilder {
         // A room deleted since stands nowhere; the pair rolls afresh.
         String remembered = recalled != null && TrackVariantRegistry.contains(TrackKind.PORTAL_ROOM, recalled)
             ? recalled : null;
+        return rollRoomFrom(seed, pairKey, remembered,
+            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx, null, visits),
+            () -> TrackVariantRegistry.leafOdds(TrackKind.PORTAL_ROOM, gateCtx),
+            PortalAuthorRooms::lotteryBooks,
+            DungeonTrainConfig.getOwnLibraryChanceScale(ownShelfBoost));
+    }
+
+    /**
+     * {@link #rollRoom} once its inputs have been read off the level and the rider: pure, and so
+     * the same answer for the same inputs every time it is asked, which is what lets the terrain be
+     * sampled ahead of planning.
+     *
+     * @param remembered the visit-ruled room this pair already stood, or null
+     * @param draw       the seeded weighted pick at any key
+     */
+    static RoomRoll rollRoomFrom(long seed, int pairKey, String remembered,
+                                 java.util.function.LongFunction<String> draw,
+                                 java.util.function.Supplier<java.util.Map<String, Double>> leafOdds,
+                                 java.util.function.Function<String, PortalRoomBooks> booksOf,
+                                 double ownLibraryScale) {
         java.util.function.LongFunction<String> pickAt = index -> remembered != null && index == pairKey
             ? remembered
-            : TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx, null, visits);
+            : draw.apply(index);
         // The seeded pick, then how often it may answer "a library of the rider's own books" — the
         // one outcome whose weight depends on the run rather than on the room weights alone. See
         // PortalOwnShelves; at a scale of 1 this is the pick and nothing else. An author room's
         // share is its parent's split, so that is the Books the lottery reads for one.
         PortalOwnShelves.Outcome picked = PortalOwnShelves.adjust(seed, pairKey,
-            pickAt.apply(pairKey),
-            () -> TrackVariantRegistry.leafOdds(TrackKind.PORTAL_ROOM, gateCtx),
-            PortalAuthorRooms::lotteryBooks,
-            pickAt,
-            DungeonTrainConfig.getOwnLibraryChanceScale(ownShelfBoost));
+            pickAt.apply(pairKey), leafOdds, booksOf, pickAt, ownLibraryScale);
+        return new RoomRoll(picked, pickAt);
+    }
+
+    public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
+                                                BlockPos entryOrigin, int pairKey,
+                                                PortalTwinRegion region,
+                                                games.brennan.dungeontrain.template.GateContext gateCtx,
+                                                boolean ownShelfBoost,
+                                                net.minecraft.server.level.ServerPlayer rider) {
+        RoomRoll roll = rollRoom(level, pairKey, gateCtx, ownShelfBoost, rider);
+        PortalOwnShelves.Outcome picked = roll.picked();
+        java.util.function.LongFunction<String> pickAt = roll.pickAt();
         // Landing on an author room is one outcome; which of them stands is decided by the parent's
         // split and what fits it. See PortalAuthorRooms.
         PortalAuthorRooms.Planned authorRoom = PortalAuthorRooms.plan(
@@ -926,6 +995,7 @@ public final class PortalCarriageBuilder {
             PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
             if (slice == null) return null;
             settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
+            settings = framedEnclosure(level, roomName, pairKey, size, settings, gateCtx);
         }
 
         // Where this pair stands its exit, decided here with everything else about the pair and then
@@ -1050,6 +1120,12 @@ public final class PortalCarriageBuilder {
             bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
+            // A chunk of terrain enclosed as Void or World Border has no skin, and its sea or lava
+            // runs right up to the box's faces. Fluid must never leave it — not even after a restart,
+            // when the fluid barrier no longer knows the room is there — so it gets a skin that only
+            // fluid notices: invisible, walk-through, and refusing every fluid (ForcedAirBlock).
+            BlockState guard = fluidGuardFor(structure.mode());
+            if (guard != null) bedrockSkin(level, roomOrigin, roomSize, guard);
         } else if (structure.mode().tiles()) {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
@@ -1238,7 +1314,11 @@ public final class PortalCarriageBuilder {
             // A chunk dimension has no floor row of its own to fall back on — its bottom row is
             // sampled terrain — so an open cell of its end column seals with its lock skin, the sky
             // the whole chunk stands in, rather than with a slab of stone across open air.
-            base.mode().generatesTerrain() ? lockStateFor(base) : null);
+            // Under a frame's Void or World Border there is no skin to match: those cells take the
+            // fluid guard, open to walk through but closed to the room's water.
+            base.mode().generatesTerrain()
+                ? (base.mode().sealsRoomBox() ? lockStateFor(base) : fluidGuardOrAir(base.mode()))
+                : null);
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -1352,6 +1432,22 @@ public final class PortalCarriageBuilder {
      * room. The corridor's own ring stops one column short of the same plane for the mirror-image
      * reason: bedrock there would frame the doorway.</p>
      */
+    /**
+     * The skin a room that generates terrain but is not sealed gets so its fluids stay in: Forced
+     * Air, which looks and walks like air but no fluid can enter. Null for every other mode — a sealed
+     * room has its lock, and an authored Void room is its author's to make watertight.
+     */
+    static BlockState fluidGuardFor(PortalRoomMode mode) {
+        if (mode == null || !mode.generatesTerrain() || mode.sealsRoomBox()) return null;
+        if (!games.brennan.dungeontrain.registry.ModBlocks.FORCED_AIR.isBound()) return null;
+        return games.brennan.dungeontrain.registry.ModBlocks.FORCED_AIR.get().defaultBlockState();
+    }
+
+    private static BlockState fluidGuardOrAir(PortalRoomMode mode) {
+        BlockState guard = fluidGuardFor(mode);
+        return guard != null ? guard : Blocks.AIR.defaultBlockState();
+    }
+
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                     BlockState lock) {
         int x0 = roomOrigin.getX() - 1;

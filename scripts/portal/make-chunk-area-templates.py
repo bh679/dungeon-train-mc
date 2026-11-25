@@ -26,7 +26,7 @@ ROOMS = (Path(__file__).resolve().parents[2]
          / "src/main/resources/data/dungeontrain/portals/room")
 
 # The look suffixes PortalChunkTerrain.Source.of reads off a room's name (it matches endsWith).
-LOOKS = ("", "_wwoo", "_bop", "_nether", "_nether_better", "_end", "_end_better")
+LOOKS = ("", "_wwoo", "_bop", "_nether", "_nether_better", "_end", "_end_better", "_underwater")
 
 SPAN = 3
 CHUNK = 16

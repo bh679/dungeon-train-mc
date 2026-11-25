@@ -127,11 +127,19 @@ public final class BlockVariantMenuInputHandler {
         return true;
     }
 
+    /** A right-click on any of a row's cells but its number cells, holding a water bucket — the waterlog toggle. */
+    private static boolean isWaterBucketOnRow(BlockVariantMenu.Hit hit) {
+        if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT || !isRowCell(hit.kind()) || isNumberCell(hit)) return false;
+        if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return false;
+        net.minecraft.client.player.LocalPlayer me = Minecraft.getInstance().player;
+        return me != null && me.getMainHandItem().is(net.minecraft.world.item.Items.WATER_BUCKET);
+    }
+
     /** The cells drawn on a variant row, whose {@code index} is that row. */
     private static boolean isRowCell(BlockVariantMenu.CellKind kind) {
         return switch (kind) {
             case ENTRY_NAME, ENTRY_WEIGHT, ENTRY_REMOVE_X, ENTRY_ROT_MODE, ENTRY_ROT_DIRS,
-                 ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
+                 ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_VILLAGER_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
             default -> false;
         };
     }
@@ -165,6 +173,16 @@ public final class BlockVariantMenuInputHandler {
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !shift && openGroupPanel(hit)) return;
         // Otherwise right-click is a number cell's step-down and nothing else — on any other cell
         // it is swallowed (the press was already cancelled so nothing is placed).
+        // Right-click anywhere on a row (name, On/R/Off, half, rotation…) holding a water bucket
+        // waterlogs that row's block, or dries it. Number cells keep right-click as their step-down.
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && isWaterBucketOnRow(hit)) {
+            net.minecraft.core.BlockPos waterAt = BlockVariantMenu.localPos();
+            if (waterAt != null) {
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.TOGGLE_WATERLOGGED, BlockVariantMenu.variantId(), waterAt, hit.index(), "", 0));
+            }
+            return;
+        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
@@ -383,6 +401,13 @@ public final class BlockVariantMenuInputHandler {
                         BlockVariantEditPacket.Op.REPLACE_WITH_HELD, variantId, local, hit.index(), "", 0));
                     return;
                 }
+                // Right-click holding a water bucket waterlogs the row's block (or dries it).
+                net.minecraft.client.player.LocalPlayer me = net.minecraft.client.Minecraft.getInstance().player;
+                if (button == 1 && me != null && me.getMainHandItem().is(net.minecraft.world.item.Items.WATER_BUCKET)) {
+                    DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.TOGGLE_WATERLOGGED, variantId, local, hit.index(), "", 0));
+                    return;
+                }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
                 // A linked variant row routes to the container menu so the
                 // user can edit the loot template directly. Unlinked rows
@@ -426,6 +451,14 @@ public final class BlockVariantMenuInputHandler {
                 int nextOrd = (currentOrd + 1) % modeCount;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
+            }
+            case ENTRY_VILLAGER_MODE -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                games.brennan.dungeontrain.editor.VariantVillager.Mode next =
+                    games.brennan.dungeontrain.editor.VariantVillager.Mode.fromOrdinal(e.villagerMode() & 0xFF).next();
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_VILLAGER_MODE, variantId, local, hit.index(), "", next.ordinal()));
             }
             case ENTRY_ARM_NORTH, ENTRY_ARM_EAST, ENTRY_ARM_SOUTH, ENTRY_ARM_WEST -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;

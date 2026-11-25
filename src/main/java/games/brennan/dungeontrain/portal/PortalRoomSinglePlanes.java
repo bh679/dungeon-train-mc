@@ -231,6 +231,10 @@ public final class PortalRoomSinglePlanes {
         // one list with no group to agree with, so each cell rolls its own facing under RANDOM.
         BlockState state = RotationApplier.apply(picked.state(), picked,
             local, worldSeed, variantIndex, /*lockId*/ 0);
+        if (games.brennan.dungeontrain.block.ForcedAir.writesAir(state)) {
+            SilentBlockOps.setBlockSilentNoCascade(level, pos, Blocks.AIR.defaultBlockState(), null);
+            return;
+        }
 
         // A block entity in a floor plane is legal — an author can put a chest in a palette — and it
         // has to be evicted rather than written over, or its contents spray across the floor. Same

@@ -355,7 +355,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 conditionValuesToken(plot, localPos, s.condition()),
                 s.candles().id(), s.pot().id(), s.trapped(),
                 s.charges().toInt(), s.bedColours().mask(), s.slime().mask(),
-                BlockVariantSyncPacket.Entry.signBits(s.sign())));
+                BlockVariantSyncPacket.Entry.signBits(s.sign()),
+                (byte) s.villager().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -730,6 +731,33 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 mutated.set(idx, replacement);
                 dirty = true;
             }
+            case TOGGLE_WATERLOGGED -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState old = mutated.get(idx);
+                net.minecraft.world.level.block.state.BlockState wet = old.isMob() || old.isGroupRef()
+                    || CarriageVariantBlocks.isEmptyPlaceholder(old.state()) ? null : VariantWaterlog.toggle(old.state());
+                if (wet == null) {
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.cannot_hold_water"),
+                        ChatFormatting.YELLOW);
+                    return;
+                }
+                VariantState replacement = old.withState(wet, old.blockEntityNbt());
+                for (int i = 0; i < mutated.size(); i++) {
+                    VariantState other = mutated.get(i);
+                    if (i != idx && !other.isGroupRef() && sameCandidate(other, replacement)) {
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_already_in_cell"),
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                }
+                mutated.set(idx, replacement);
+                actionBar(player, Component.translatable(VariantWaterlog.isWaterlogged(wet)
+                    ? "chat.dungeontrain.editor_bar.variant_menu.waterlogged"
+                    : "chat.dungeontrain.editor_bar.variant_menu.dried", blockName(wet)), ChatFormatting.GREEN);
+                dirty = true;
+            }
             case BUMP_WEIGHT -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -930,6 +958,19 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantSlime next = new VariantSlime(packet.delta());
                 if (next.equals(entry.slime())) return;
                 mutated.set(idx, entry.withSlime(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_VILLAGER_MODE -> {
+                // delta = VariantVillager.Mode ordinal; only a villager mob row carries one.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob() || !VariantVillager.isVillager(entry.entityId())) return;
+                VariantVillager.Mode next = VariantVillager.Mode.fromOrdinal(packet.delta());
+                if (next == entry.villager()) return;
+                mutated.set(idx, entry.withVillager(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

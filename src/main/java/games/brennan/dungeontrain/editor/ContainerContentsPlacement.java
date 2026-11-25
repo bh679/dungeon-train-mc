@@ -85,6 +85,12 @@ public final class ContainerContentsPlacement {
                              @Nullable CompoundTag baseBeNbt, String plotKey,
                              BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                              @Nullable String variantLinkedLootPrefabId) {
+        if (games.brennan.dungeontrain.block.ForcedAir.writesAir(state)) {
+            // Forced Air in a live stamp is plain air, over whatever was there. No cascade, so the
+            // water around a carved pocket is not told to flow into it.
+            SilentBlockOps.setBlockSilentNoCascade(level, worldPos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
+            return;
+        }
         FlagPlaceholders.Resolved flag = FlagPlaceholders.resolveInScope(state, level.registryAccess(), level.getSeed());
         if (flag != null) {
             state = flag.state();
@@ -128,6 +134,12 @@ public final class ContainerContentsPlacement {
                                      @Nullable CompoundTag baseBeNbt, String plotKey,
                                      BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                                      @Nullable String variantLinkedLootPrefabId) {
+        // Worldgen is always a live placement: Forced Air is air here, scope or not.
+        if (games.brennan.dungeontrain.block.ForcedAir.forStamp(state, true) != state) {
+            level.setBlock(worldPos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),
+                net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+            return;
+        }
         // WorldGenLevel is not a Level, so pass null for the optional roll
         // context (used only by the furnace-slot path for recipe lookups).
         FlagPlaceholders.Resolved flag = FlagPlaceholders.resolveInScope(state, level.registryAccess(), level.getSeed());

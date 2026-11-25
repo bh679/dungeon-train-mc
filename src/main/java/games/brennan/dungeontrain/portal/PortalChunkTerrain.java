@@ -38,8 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -133,8 +131,12 @@ public final class PortalChunkTerrain {
     /** How far a probe's own ground may sit from the centre's and still count as the same ground. */
     private static final int PROBE_SPREAD = 8;
 
-    /** Crude bound on the cache: a world with more portal pairs than this drops the oldest wholesale. */
-    private static final int MAX_CACHE = 512;
+    /**
+     * How many cells of sampled ground the cache holds before it drops the least recently used:
+     * sixty-four 3x3 rooms (each 48 x 32 x 48), or eight times as many one-chunk ones. About 19 MB
+     * of block-state references at the most, where the old 512-entry bound allowed about 150 MB.
+     */
+    static final long MAX_CACHED_CELLS = 64L * 48 * 48 * HEIGHT;
 
     private static final int SITE_X_SALT = 12;
     private static final int SITE_Z_SALT = 13;
@@ -160,6 +162,11 @@ public final class PortalChunkTerrain {
         OVERWORLD_WWOO(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.WWOO),
         /** The overworld as the added-biomes stretch dresses it — see {@link SecondLapOverworld}. */
         OVERWORLD_BOP(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.BOP),
+        /**
+         * One chunk of vanilla ocean, sea floor low in the box and the water up to (or near) the
+         * roof — sites taken only on ocean biomes, sea set by {@link UnderwaterLayout}.
+         */
+        UNDERWATER(Level.OVERWORLD, "minecraft:gravel", SecondLapOverworld.Stretch.VANILLA),
         /** The Nether as vanilla generates it — cut with {@link SampleGenerators}' vanilla-biome generator. */
         NETHER(Level.NETHER, "minecraft:netherrack", null),
         /** The Nether's BetterNether biomes — sites taken only where the live Nether places one. */
@@ -204,6 +211,11 @@ public final class PortalChunkTerrain {
          * mods also add features to the vanilla biomes and list them in their structures' biome tags —
          * see {@link games.brennan.dungeontrain.worldgen.VanillaOnlySample}.
          */
+        /** True for the underwater room, whose ground is the seabed and whose box is flooded. */
+        public boolean underwater() {
+            return this == UNDERWATER;
+        }
+
         public boolean vanillaOnly() {
             return this == NETHER || this == END;
         }
@@ -238,6 +250,7 @@ public final class PortalChunkTerrain {
         public static Source of(String roomName) {
             if (roomName == null) return OVERWORLD;
             String key = roomName.trim().toLowerCase(Locale.ROOT);
+            if (key.endsWith(UNDERWATER_SUFFIX)) return UNDERWATER;
             if (key.endsWith(NETHER_SUFFIX + BETTER_SUFFIX)) return NETHER_BETTER;
             if (key.endsWith(END_SUFFIX + BETTER_SUFFIX)) return END_BETTER;
             if (key.endsWith(NETHER_SUFFIX)) return NETHER;
@@ -263,6 +276,12 @@ public final class PortalChunkTerrain {
     /** What the overhauled-vanilla overworld variant's name ends with. */
     private static final String WWOO_SUFFIX = "_wwoo";
 
+    /** What the underwater variant's name ends with. */
+    private static final String UNDERWATER_SUFFIX = "_underwater";
+
+    /** Fewest blocks of water over a seabed for an underwater site to count as open sea. */
+    private static final int MIN_SEA_DEPTH = 8;
+
     /** What the added-biomes overworld variant's name ends with. */
     private static final String BOP_SUFFIX = "_bop";
 
@@ -274,7 +293,8 @@ public final class PortalChunkTerrain {
     // Each cube carries the room it was sampled for. A live pair's room never changes under its key,
     // but Test the Carriage files every room under the one PortalTestSession.PAIR_KEY — and without
     // the name, testing the Nether room after the Overworld one stamped the Overworld's ground into it.
-    private static final Map<Integer, Cached> READY = new ConcurrentHashMap<>();
+    private static final PortalChunkCache<Cached> READY =
+        new PortalChunkCache<>(MAX_CACHED_CELLS, cached -> (long) cached.slice().width() * cached.slice().width() * cached.slice().height());
     private static final Set<Integer> IN_FLIGHT = ConcurrentHashMap.newKeySet();
 
     /**
@@ -322,9 +342,11 @@ public final class PortalChunkTerrain {
      * so. On a thread of its own the sampler can wait on the pool without being part of it.</p>
      *
      * <p>One thread rather than several, so a train that plans a run of chunk dimensions at once
-     * samples them in turn instead of contending with the worldgen pool for every core.</p>
+     * samples them in turn instead of contending with the worldgen pool for every core. Ground runs
+     * ahead of decoration on it ({@link PortalChunkSamplerQueue}): a pair's corridor waits on its
+     * ground, and nobody waits on trees.</p>
      */
-    private static final ExecutorService SAMPLER = Executors.newSingleThreadExecutor(task -> {
+    private static final PortalChunkSamplerQueue SAMPLER = new PortalChunkSamplerQueue(task -> {
         Thread thread = new Thread(task, "DungeonTrain-chunk-dimension-sampler");
         thread.setDaemon(true);
         return thread;
@@ -341,13 +363,7 @@ public final class PortalChunkTerrain {
      * own template and asks again next tick; see {@code PortalChunkDimension}.</p>
      */
     public static PortalChunkSlice slice(ServerLevel level, int pairKey, String roomName) {
-        long seed = level.getSeed();
-        if (seed != cacheSeed) {
-            READY.clear();
-            IN_FLIGHT.clear();
-            FAILED.clear();
-            cacheSeed = seed;
-        }
+        dropIfSeedChanged(level.getSeed());
         Cached ready = READY.get(pairKey);
         if (ready != null) {
             if (sameRoom(ready.roomName(), roomName) && ready.roll() == rollOf(pairKey)) {
@@ -359,6 +375,20 @@ public final class PortalChunkTerrain {
         }
         request(level, pairKey, roomName);
         return null;
+    }
+
+    /**
+     * Forget every cube when the world's seed is not the one they were sampled under. Checked by
+     * {@link #request} as well as {@link #slice}: a prefetch requests long before anything slices,
+     * and a seed recorded only by the first slice made that slice drop every cube prefetched ahead
+     * of it.
+     */
+    private static void dropIfSeedChanged(long seed) {
+        if (seed == cacheSeed) return;
+        READY.clear();
+        IN_FLIGHT.clear();
+        FAILED.clear();
+        cacheSeed = seed;
     }
 
     /**
@@ -393,19 +423,21 @@ public final class PortalChunkTerrain {
     /**
      * Start sampling this pair's cube if nothing is holding it yet.
      *
-     * <p>Called from {@code planStructure} as well as from the stamp, so the work is usually already
-     * done by the time a player has walked far enough down the train to reach the carriage.</p>
+     * <p>Called from {@code planStructure} and the stamp, and ahead of both by
+     * {@link PortalChunkPrefetch} once a player is within confirm range of the pair, so the work is
+     * usually already done by the time they have walked far enough down the train to reach it.</p>
      */
     public static void request(ServerLevel level, int pairKey, String roomName) {
         long seed = level.getSeed();
         MinecraftServer server = level.getServer();
         if (server == null) return;
+        dropIfSeedChanged(seed);
         if (READY.containsKey(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
         FAILED.remove(pairKey);
         Source source = Source.of(roomName);
         int roll = rollOf(pairKey);
-        SAMPLER.execute(() -> {
+        SAMPLER.execute(PortalChunkSamplerQueue.Priority.GROUND, () -> {
             try {
                 // Ahead of the ground, which is what the pair's planning waits on, so the stamp that
                 // follows never parses a frame's sidecar inside its tick.
@@ -420,7 +452,8 @@ public final class PortalChunkTerrain {
                 // the ground — noise, surface rules and the carvers — which the pair cannot be
                 // planned without, because its doorways stand on it. The second is everything that
                 // grows on that ground, which costs seconds and moves nothing, so the room is built
-                // from the first and rewritten when the second lands.
+                // from the first and rewritten when the second lands. The second is its own task, so
+                // another pair's ground can run between them.
                 long startedAt = System.currentTimeMillis();
                 Sample sample = sampleTerrain(server, source, seed, pairKey, roll);
                 if (sample == null) {
@@ -430,27 +463,10 @@ public final class PortalChunkTerrain {
                         + "room stamps as its plain template", pairKey, roomName, source);
                     return;
                 }
-                if (READY.size() >= MAX_CACHE) READY.clear();
-                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
+                publishGround(pairKey, roomName, roll, sample.read());
                 long ground = System.currentTimeMillis() - startedAt;
-
-                long decoratingFrom = System.currentTimeMillis();
-                PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
-                    sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
-                    pairKey, sample.source());
-                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
-                DECORATED.add(pairKey);
-                // The first number is what a portal carriage waits out before it can cross at all,
-                // so it is the one worth watching; the second is only how long the room takes to
-                // grow afterwards.
-                Cached decorated = READY.get(pairKey);
-                // The biome too: it is what says whether a WWOO, BoP or Better room actually landed
-                // in its mod's world generation or quietly came back vanilla.
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}: "
-                        + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
-                    pairKey, source, source.levelKey().location(), sample.pos(), biomeAt(sample), ground,
-                    System.currentTimeMillis() - decoratingFrom,
-                    decorated == null ? 0 : decorated.slice().occupants().size());
+                SAMPLER.execute(PortalChunkSamplerQueue.Priority.DECORATION,
+                    () -> decorateOne(sample, pairKey, roomName, roll, ground));
             } catch (Throwable t) {
                 FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
                 // A failed sample is a room that stamps as its plain template — never a crashed
@@ -461,6 +477,34 @@ public final class PortalChunkTerrain {
                 IN_FLIGHT.remove(pairKey);
             }
         });
+    }
+
+    /** A one-chunk sample's second pass: everything that grows on its ground. Sampler thread only. */
+    private static void decorateOne(Sample sample, int pairKey, String roomName, int roll, long groundMs) {
+        try {
+            long decoratingFrom = System.currentTimeMillis();
+            PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
+                sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
+                pairKey, sample.source());
+            PortalChunkSlice decorated = sample.read();
+            publishDecorated(pairKey, roomName, roll, decorated);
+            // The first number is what a portal carriage waits out before it can cross at all,
+            // so it is the one worth watching; the second is only how long the room takes to
+            // grow afterwards. The biome too: it is what says whether a WWOO, BoP or Better room
+            // actually landed in its mod's world generation or quietly came back vanilla.
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}{}: "
+                    + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
+                pairKey, sample.source(), sample.source().levelKey().location(), sample.pos(), biomeAt(sample),
+                sample.sea() == null ? "" : ", sea floor row " + sample.sea().floorRow()
+                    + ", water gap " + sample.sea().waterGap() + ", seabed y " + sample.anchor(),
+                groundMs,
+                System.currentTimeMillis() - decoratingFrom,
+                decorated.occupants().size());
+        } catch (Throwable t) {
+            // The ground already stands; a failed decoration leaves the room bare, not broken.
+            LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} ({})",
+                pairKey, sample.source(), t);
+        }
     }
 
     /** The biome at the middle of a sample's surface row, by id — for the log. */
@@ -475,6 +519,17 @@ public final class PortalChunkTerrain {
         }
     }
 
+    /**
+     * Drop {@code pairKey}'s cube: its room has been erased and is stamped afresh when next needed.
+     * Sampling is a pure function of the seed, the pair and its roll, so the cube that comes back
+     * then is the same ground.
+     */
+    public static void forget(int pairKey) {
+        READY.remove(pairKey);
+        DECORATED.remove(pairKey);
+        PortalChunkPrefetch.forget(pairKey);
+    }
+
     /** Drop every sampled cube — the next world's pair keys mean different rooms. */
     public static void clear() {
         SampleGenerators.clear();
@@ -485,6 +540,7 @@ public final class PortalChunkTerrain {
         ROLLS.clear();
         PortalChunkSources.clear();
         PortalChunkArea.clear();
+        PortalChunkPrefetch.clear();
         cacheSeed = Long.MIN_VALUE;
     }
 
@@ -506,14 +562,16 @@ public final class PortalChunkTerrain {
 
     // ---- hand-off for PortalChunkArea's multi-chunk samples --------------------
 
-    /** Queue {@code task} on the sampler thread, behind whatever is already waiting there. */
-    static void submit(Runnable task) {
-        SAMPLER.execute(task);
+    /**
+     * Queue a decoration step on the sampler thread: behind every ground task, waiting or yet to be
+     * queued, and behind the decoration already waiting.
+     */
+    static void submitDecoration(Runnable task) {
+        SAMPLER.execute(PortalChunkSamplerQueue.Priority.DECORATION, task);
     }
 
-    /** Publish a multi-chunk sample's ground: the pair can be planned and crossed from now. */
+    /** Publish a sample's ground: the pair can be planned and crossed from now. */
     static void publishGround(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
-        if (READY.size() >= MAX_CACHE) READY.clear();
         READY.put(pairKey, new Cached(roomName, roll, slice));
     }
 
@@ -542,22 +600,36 @@ public final class PortalChunkTerrain {
      */
     private record Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
                           ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, ChunkPos pos,
-                          Source source, int anchor, int minY, int maxY, int probes) {
+                          Source source, int anchor, int minY, int maxY, int probes,
+                          int surfaceRow, UnderwaterLayout sea) {
+
+        Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
+               ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, ChunkPos pos,
+               Source source, int anchor, int minY, int maxY, int probes) {
+            this(level, generator, random, chunk, workspace, pos, source, anchor, minY, maxY, probes,
+                SURFACE_ROW, null);
+        }
 
         /** The same sample cut around a different row — what carving the ground under it moves. */
         Sample at(int newAnchor) {
             return new Sample(level, generator, random, chunk, workspace, pos, source, newAnchor,
-                minY, maxY, probes);
+                minY, maxY, probes, surfaceRow, sea);
+        }
+
+        /** The same sample cut so its seabed stands on {@code layout}'s floor row, and flooded to its sea. */
+        Sample withSea(UnderwaterLayout layout) {
+            return new Sample(level, generator, random, chunk, workspace, pos, source, anchor,
+                minY, maxY, probes, layout.floorRow(), layout);
         }
 
         /** The cube as the chunk currently stands — called once per generation pass. */
         PortalChunkSlice read() {
-            return readSlice(level, source, chunk, pos, anchor, minY, maxY);
+            return readSlice(level, source, chunk, pos, anchor, minY, maxY, surfaceRow, sea);
         }
 
         /** The rows of the chunk the room will show, in world coordinates. */
         BoundingBox window() {
-            int lo = anchor - SURFACE_ROW;
+            int lo = anchor - surfaceRow;
             return new BoundingBox(pos.getMinBlockX(), lo, pos.getMinBlockZ(),
                 pos.getMaxBlockX(), lo + HEIGHT - 1, pos.getMaxBlockZ());
         }
@@ -651,8 +723,52 @@ public final class PortalChunkTerrain {
             level.getSeed(), pairKey);
         // Re-read after carving: a cavern opened under the middle column moves the row this cube is
         // cut around, and the doorways are fitted to whatever it ends up being.
-        int anchor = standableRow(best.chunk(), SIZE / 2, SIZE / 2, minY, maxY);
-        return anchor == NO_GROUND ? best : best.at(anchor);
+        int anchor = anchorRow(source, best.chunk(), SIZE / 2, SIZE / 2, minY, maxY);
+        Sample anchored = anchor == NO_GROUND ? best : best.at(anchor);
+        return source.underwater()
+            ? anchored.withSea(UnderwaterLayout.roll(worldSeed, pairKey, roll))
+            : anchored;
+    }
+
+    /** The row a room is cut around: the seabed under water for the underwater room, else standable ground. */
+    static int anchorRow(Source source, ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+        return source.underwater()
+            ? seabedRow(chunk, localX, localZ, minY, maxY)
+            : standableRow(chunk, localX, localZ, minY, maxY);
+    }
+
+    /**
+     * The lowest water row of the topmost stretch of open sea in a column — the row a diver stands
+     * in on the seabed — or {@link #NO_GROUND} when the column has no ground with at least
+     * {@link #MIN_SEA_DEPTH} blocks of water over it.
+     */
+    static int seabedRow(ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int worldX = chunk.getPos().getMinBlockX() + localX;
+        int worldZ = chunk.getPos().getMinBlockZ() + localZ;
+        return seabedRow(y -> chunk.getBlockState(cursor.set(worldX, y, worldZ)), minY, maxY);
+    }
+
+    /** {@link #seabedRow(ChunkAccess, int, int, int, int)} over any column, by world Y. */
+    static int seabedRow(java.util.function.IntFunction<BlockState> column, int minY, int maxY) {
+        int depth = 0;
+        boolean seenWater = false;
+        for (int y = maxY; y > minY; y--) {
+            BlockState state = column.apply(y);
+            if (state.blocksMotion()) {
+                if (depth >= MIN_SEA_DEPTH) return y + 1;
+                // The first floor under the sea decides. A shallow sea (or an island) over a flooded
+                // cave is not open sea, and cutting the room around the cave would bury it in rock.
+                // Solids above the first water (ice, an overhang) are skipped.
+                if (seenWater) return NO_GROUND;
+                depth = 0;
+                continue;
+            }
+            boolean water = state.getFluidState().getType().isSame(net.minecraft.world.level.material.Fluids.WATER);
+            seenWater |= water;
+            depth = water ? depth + 1 : 0;
+        }
+        return NO_GROUND;
     }
 
     /**
@@ -674,7 +790,7 @@ public final class PortalChunkTerrain {
         ProtoChunk ground = OfflineChunkSampler.fillGround(level, generator, random, chunk, workspace);
         if (ground == null) return null;
 
-        int anchor = standableRow(ground, SIZE / 2, SIZE / 2, minY, maxY);
+        int anchor = anchorRow(source, ground, SIZE / 2, SIZE / 2, minY, maxY);
         if (anchor == NO_GROUND) return null;
 
         int agreeing = 1;
@@ -685,7 +801,7 @@ public final class PortalChunkTerrain {
             {SIZE - 1 - PROBE_INSET, SIZE - 1 - PROBE_INSET},
         };
         for (int[] corner : corners) {
-            int row = standableRow(ground, corner[0], corner[1], minY, maxY);
+            int row = anchorRow(source, ground, corner[0], corner[1], minY, maxY);
             if (row != NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
         }
         return new Sample(level, generator, random, ground, workspace, pos, source, anchor, minY,
@@ -694,12 +810,13 @@ public final class PortalChunkTerrain {
 
     /** Copy the column around the anchor out of the sampled chunk, room-local. */
     private static PortalChunkSlice readSlice(ServerLevel level, Source source, ProtoChunk chunk,
-                                              ChunkPos pos, int anchor, int minY, int maxY) {
+                                              ChunkPos pos, int anchor, int minY, int maxY,
+                                              int surfaceRow, UnderwaterLayout sea) {
         BlockState[] states = new BlockState[SIZE * SIZE * HEIGHT];
         BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = 0; y < HEIGHT; y++) {
-            int worldY = anchor + (y - SURFACE_ROW);
+            int worldY = anchor + (y - surfaceRow);
             for (int z = 0; z < SIZE; z++) {
                 for (int x = 0; x < SIZE; x++) {
                     BlockState state = air;
@@ -711,8 +828,10 @@ public final class PortalChunkTerrain {
                 }
             }
         }
+        if (sea != null) states = UnderwaterFlood.apply(states, SIZE, HEIGHT, sea.topWaterRow(HEIGHT));
         return new PortalChunkSlice(source, SIZE, HEIGHT, states,
-            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor), biomesIn(chunk, pos, anchor, minY, maxY));
+            blockEntitiesIn(level, chunk, pos, anchor, surfaceRow), occupantsIn(chunk, pos, anchor, surfaceRow),
+            biomesIn(chunk, pos, anchor, minY, maxY, surfaceRow));
     }
 
     /**
@@ -721,12 +840,12 @@ public final class PortalChunkTerrain {
      */
     @SuppressWarnings("unchecked")
     private static Holder<Biome>[] biomesIn(ProtoChunk chunk, ChunkPos pos, int anchor, int minY,
-                                            int maxY) {
+                                            int maxY, int surfaceRow) {
         int qw = PortalChunkSlice.quarts(SIZE);
         int qh = PortalChunkSlice.quarts(HEIGHT);
         Holder<Biome>[] out = new Holder[qw * qh * qw];
         for (int qy = 0; qy < qh; qy++) {
-            int worldY = Math.max(minY, Math.min(maxY, anchor - SURFACE_ROW + qy * 4 + 2));
+            int worldY = Math.max(minY, Math.min(maxY, anchor - surfaceRow + qy * 4 + 2));
             for (int qz = 0; qz < qw; qz++) {
                 for (int qx = 0; qx < qw; qx++) {
                     out[(qy * qw + qz) * qw + qx] = chunk.getNoiseBiome(
@@ -749,15 +868,15 @@ public final class PortalChunkTerrain {
      * {@code SilentBlockOps.evictBlockEntity} for the same distinction from the other direction.</p>
      */
     private static Map<Integer, CompoundTag> blockEntitiesIn(ServerLevel level, ProtoChunk chunk,
-                                                             ChunkPos pos, int anchor) {
+                                                             ChunkPos pos, int anchor, int surfaceRow) {
         Map<Integer, CompoundTag> out = new java.util.HashMap<>();
         chunk.getBlockEntityNbts().forEach((at, nbt) -> {
             if (OfflineChunkSampler.isPlaceholderBlockEntity(nbt)) return;   // data-less; the live block makes its own
-            Integer index = windowIndex(at, pos, anchor);
+            Integer index = windowIndex(at, pos, anchor, surfaceRow);
             if (index != null) out.put(index, nbt.copy());
         });
         chunk.getBlockEntities().forEach((at, blockEntity) -> {
-            Integer index = windowIndex(at, pos, anchor);
+            Integer index = windowIndex(at, pos, anchor, surfaceRow);
             if (index != null) {
                 out.put(index, blockEntity.saveWithFullMetadata(level.registryAccess()));
             }
@@ -773,13 +892,13 @@ public final class PortalChunkTerrain {
      * one does rather than as live entities in a world.</p>
      */
     private static java.util.List<PortalChunkSlice.Occupant> occupantsIn(ProtoChunk chunk,
-                                                                        ChunkPos pos, int anchor) {
+                                                                        ChunkPos pos, int anchor, int surfaceRow) {
         java.util.List<PortalChunkSlice.Occupant> out = new java.util.ArrayList<>();
         for (CompoundTag nbt : chunk.getEntities()) {
             net.minecraft.nbt.ListTag position = nbt.getList("Pos", net.minecraft.nbt.Tag.TAG_DOUBLE);
             if (position.size() != 3) continue;
             double x = position.getDouble(0) - pos.getMinBlockX();
-            double y = position.getDouble(1) - anchor + SURFACE_ROW;
+            double y = position.getDouble(1) - anchor + surfaceRow;
             double z = position.getDouble(2) - pos.getMinBlockZ();
             if (x < 0 || z < 0 || x >= SIZE || z >= SIZE || y < 0 || y >= HEIGHT) continue;
             CompoundTag copy = nbt.copy();
@@ -792,10 +911,10 @@ public final class PortalChunkTerrain {
     }
 
     /** Where a world position falls in the cut window, or null when it falls outside it. */
-    private static Integer windowIndex(BlockPos at, ChunkPos pos, int anchor) {
+    private static Integer windowIndex(BlockPos at, ChunkPos pos, int anchor, int surfaceRow) {
         int x = at.getX() - pos.getMinBlockX();
         int z = at.getZ() - pos.getMinBlockZ();
-        int y = at.getY() - anchor + SURFACE_ROW;
+        int y = at.getY() - anchor + surfaceRow;
         if (x < 0 || z < 0 || y < 0 || x >= SIZE || z >= SIZE || y >= HEIGHT) return null;
         return (y * SIZE + z) * SIZE + x;
     }
@@ -879,10 +998,16 @@ public final class PortalChunkTerrain {
      * falls back to the plain room's sites rather than to an empty room.</p>
      */
     record SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges,
-                    String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler) {
+                    String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler,
+                    boolean oceanOnly) {
 
         SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges) {
-            this(cycle, stretch, ranges, null, null, null);
+            this(cycle, stretch, ranges, null, null, null, false);
+        }
+
+        SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges,
+                 String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler) {
+            this(cycle, stretch, ranges, biomeNamespace, biomes, sampler, false);
         }
 
         static SitePlan of(ServerLevel level, Source source) {
@@ -904,6 +1029,12 @@ public final class PortalChunkTerrain {
                 return new SitePlan(null, null, List.of());
             }
             WorldGenCycle cycle = liveCycle();
+            if (source.underwater()) {
+                // The plain overworld's sites, kept to the ones whose centre is an ocean biome: the
+                // only way a scattered site is open sea rather than a field the flood would drown.
+                return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of(), null, biomes,
+                    sampler, true);
+            }
             if (source.stretch() == SecondLapOverworld.Stretch.VANILLA) {
                 return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
             }
@@ -947,10 +1078,12 @@ public final class PortalChunkTerrain {
                 return null;
             }
             List<int[]> gaps = StretchSites.chunkRanges(cycle, stretch, (long) SAMPLE_SPREAD * SIZE);
-            return gaps.isEmpty() ? null : new SitePlan(cycle, stretch, gaps);
+            return gaps.isEmpty() ? null
+                : new SitePlan(cycle, stretch, gaps, biomeNamespace, biomes, sampler, oceanOnly);
         }
 
         boolean accepts(ChunkPos site) {
+            if (oceanOnly && !isOceanAt(biomes, sampler, site)) return false;
             if (biomeNamespace != null && !biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site))) {
                 return false;
             }
@@ -978,6 +1111,17 @@ public final class PortalChunkTerrain {
      * The namespace of the biome {@code biomes} places at the middle of {@code site}, at
      * {@link #BIOME_PROBE_Y} — one noise lookup, no generation. {@code null} if the source cannot say.
      */
+    /** Whether the biome at a site's centre is an ocean — {@code #minecraft:is_ocean}, deep ones included. */
+    static boolean isOceanAt(BiomeSource biomes, Climate.Sampler sampler, ChunkPos site) {
+        try {
+            return biomes.getNoiseBiome(QuartPos.fromBlock(site.getMiddleBlockX()),
+                QuartPos.fromBlock(BIOME_PROBE_Y), QuartPos.fromBlock(site.getMiddleBlockZ()), sampler)
+                .is(net.minecraft.tags.BiomeTags.IS_OCEAN);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static String biomeNamespaceAt(BiomeSource biomes, Climate.Sampler sampler, ChunkPos site) {
         try {
             Holder<Biome> biome = biomes.getNoiseBiome(QuartPos.fromBlock(site.getMiddleBlockX()),

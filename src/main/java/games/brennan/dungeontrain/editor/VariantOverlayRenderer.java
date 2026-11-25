@@ -461,16 +461,23 @@ public final class VariantOverlayRenderer {
                 String frame = chunk.get();
                 boolean chunkDevmode = EditorDevMode.isEnabled();
                 boolean[] chunkMirror = mirrorAxesAt(player, dims);
+                // The frame's weight and spawn gate, so the menu's Weight / Min Lv / Max Lv / Phases /
+                // Stage rows show and edit them as they do every other template's.
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta chunkMeta =
+                    games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(frame);
+                games.brennan.dungeontrain.template.TemplateGate chunkGate = chunkMeta.gate();
+                String chunkStage = chunkMeta.stageId() == null ? "" : chunkMeta.stageId();
                 String chunkKey = "CHUNK_FRAMES|" + frame + "|" + chunkDevmode
-                    + "|" + chunkMirror[0] + chunkMirror[1] + chunkMirror[2] + chunkMirror[3];
+                    + "|" + chunkMirror[0] + chunkMirror[1] + chunkMirror[2] + chunkMirror[3]
+                    + "|" + chunkMeta.weight() + "|" + chunkGate + "|" + chunkStage;
                 if (chunkKey.equals(prev)) return;
                 LAST_STATUS.put(uuid, chunkKey);
                 DungeonTrainNet.sendTo(player, new EditorStatusPacket(
                     PlotCategory.CHUNK_FRAMES.id(), frame, ChunkFrameEditor.MODEL_ID, frame,
-                    chunkDevmode, EditorStatusPacket.NO_WEIGHT,
-                    0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
+                    chunkDevmode, chunkMeta.weight(),
+                    chunkGate.minLevel(), chunkGate.maxLevel(), TrainPhase.toMask(chunkGate.phases()),
                     false, chunkMirror[0], chunkMirror[1], chunkMirror[2], chunkMirror[3],
-                    Collections.emptySet(), ""));
+                    Collections.emptySet(), chunkStage));
                 return;
             }
         }
@@ -796,7 +803,8 @@ public final class VariantOverlayRenderer {
             if (located.isPresent()) {
                 Template model = located.get().model();
                 currentId = model.id();
-                currentName = modelNameFor(model);
+                // A frame's variantName is its kind tag, but its label is keyed by the frame name.
+                currentName = model instanceof Template.ChunkFrame frame ? frame.name() : modelNameFor(model);
             }
         }
 
@@ -1590,7 +1598,8 @@ public final class VariantOverlayRenderer {
 
         BlockPos perPlotAnchor = null;
         for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(EditorCategory.PORTALS, dims)) {
-            if (active.equals(l.modelName())) {
+            // The PORTALS labels include the chunk frames too; a frame may share a room's name.
+            if (kind.id().equals(l.modelId()) && active.equals(l.modelName())) {
                 perPlotAnchor = l.worldPos();
                 break;
             }

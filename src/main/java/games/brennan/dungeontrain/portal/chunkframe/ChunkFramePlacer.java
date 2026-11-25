@@ -45,8 +45,15 @@ public final class ChunkFramePlacer {
     private ChunkFramePlacer() {}
 
     /** Forget the per-session warnings — a new world may have the missing frames. */
+    /** A frame's gate as selection reads it: its Stage's when it links one, else its own. */
+    static games.brennan.dungeontrain.template.TemplateGate effectiveGate(ChunkFrameMeta meta) {
+        return meta.stageId() == null ? meta.gate()
+            : games.brennan.dungeontrain.editor.StageStore.effectiveGate(meta.gate(), meta.stageId());
+    }
+
     public static void clear() {
         WARNED.clear();
+        PLANNED.clear();
         FORCED.clear();
         SALTS.clear();
     }
@@ -103,10 +110,25 @@ public final class ChunkFramePlacer {
      * so a room keeps its frame every time it is re-stamped, and salted by a test's reseed.</p>
      */
     public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex) {
+        return frameFor(level, roomName, pairKey, rollIndex, null);
+    }
+
+    /**
+     * {@link #frameFor} among the frames whose spawn gate admits {@code gateCtx} (null: every frame).
+     * A frame already chosen for this pair at plan time ({@link #plannedFrame}) is the answer when the
+     * room and roll still match, so the frame that decided the enclosure is the frame that dresses it.
+     */
+    public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex,
+                                            games.brennan.dungeontrain.template.GateContext gateCtx) {
         Vec3i frameSize = ChunkFrame.sizeForRoom(roomName);
         String name = FORCED.get(pairKey);
-        if (name == null) name = pick(roomName, frameSize, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20));
-        if (name == null) return Optional.empty();
+        if (name == null) {
+            Planned planned = PLANNED.get(pairKey);
+            name = planned != null && planned.matches(roomName, rollIndex)
+                ? planned.frame()
+                : pick(roomName, frameSize, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20), gateCtx);
+        }
+        if (name == null || name.isEmpty()) return Optional.empty();
         // A forced frame is a test's choice, and still has to fit the room it dresses.
         if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) {
             if (WARNED.add(roomName + "/" + name + "/size")) {
@@ -123,6 +145,58 @@ public final class ChunkFramePlacer {
             return Optional.empty();
         }
         return Optional.of(new Picked(name, template.get(), ChunkFrameVariants.loadFor(name)));
+    }
+
+    /**
+     * How the frame {@code roomName} gets at {@code pairKey} encloses it — the same pick
+     * {@link #frameFor} makes (the forced frame first, then the weighted roll), read from the frames'
+     * meta alone so it is cheap enough for plan time. {@link ChunkFrameDimension#BEDROCK} when no
+     * frame dresses the room.
+     */
+    public static ChunkFrameDimension dimensionFor(ServerLevel level, String roomName, int pairKey) {
+        return dimensionFor(level, roomName, pairKey, null);
+    }
+
+    /**
+     * {@link #dimensionFor} for a pair planned in {@code gateCtx}: the frame is picked among those
+     * whose gate admits it, and remembered for the pair ({@link #plannedFrame}) so the later dress
+     * places that same frame.
+     */
+    public static ChunkFrameDimension dimensionFor(ServerLevel level, String roomName, int pairKey,
+                                                   games.brennan.dungeontrain.template.GateContext gateCtx) {
+        try {
+            String name = FORCED.get(pairKey);
+            if (name == null) name = plannedFrame(level, roomName, pairKey, gateCtx);
+            return name == null || name.isEmpty() ? ChunkFrameDimension.DEFAULT
+                : ChunkFrameMetaStore.get(name).dimension();
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not read the frame dimension for room {}: {}", roomName, e.toString());
+            return ChunkFrameDimension.DEFAULT;
+        }
+    }
+
+    /** A frame chosen for a pair at plan time: the room and roll it was chosen for, and the frame ("" for none). */
+    record Planned(String room, int rollIndex, String frame) {
+        boolean matches(String roomName, int roll) {
+            return java.util.Objects.equals(room, roomName) && rollIndex == roll;
+        }
+    }
+
+    /** Frames chosen at plan time, by pair — so the dress places the frame the plan enclosed the room for. */
+    private static final java.util.Map<Integer, Planned> PLANNED = new ConcurrentHashMap<>();
+
+    /**
+     * Pick {@code roomName}'s frame for {@code pairKey} in {@code gateCtx} and remember it. Returns the
+     * frame name, or "" when no frame's gate admits the pair.
+     */
+    public static String plannedFrame(ServerLevel level, String roomName, int pairKey,
+                                      games.brennan.dungeontrain.template.GateContext gateCtx) {
+        int roll = rollIndex(roomName, pairKey);
+        String name = pick(roomName, ChunkFrame.sizeForRoom(roomName),
+            level.getSeed() ^ FRAME_SALT ^ ((long) roll << 20), gateCtx);
+        String frame = name == null ? "" : name;
+        PLANNED.put(pairKey, new Planned(roomName, roll, frame));
+        return frame;
     }
 
     /**
@@ -152,13 +226,34 @@ public final class ChunkFramePlacer {
      * {@code frameSize} — the size that fits the room — or null.
      */
     static String pick(String roomName, Vec3i frameSize, long seed) {
+        return pick(roomName, frameSize, seed, null);
+    }
+
+    /** {@link #pick} among the frames whose gate admits {@code gateCtx} (null: no gating). */
+    static String pick(String roomName, Vec3i frameSize, long seed,
+                       games.brennan.dungeontrain.template.GateContext gateCtx) {
+        java.util.List<String> fitting = new java.util.ArrayList<>();
+        for (String name : ChunkFrameRegistry.names()) {
+            if (ChunkFrameStore.sizeOf(name).equals(frameSize)) fitting.add(name);
+        }
+        return pickAmong(fitting, ChunkFrameMetaStore::get, roomName, seed, gateCtx);
+    }
+
+    /**
+     * The weighted pick itself, over {@code frameNames} with their meta from {@code metaOf} — pure, so a
+     * test can run it without the registry. A frame is a candidate when it dresses {@code roomName} and,
+     * given a context, its effective gate (its own, or its Stage's) admits it.
+     */
+    static String pickAmong(java.util.List<String> frameNames,
+                            java.util.function.Function<String, ChunkFrameMeta> metaOf, String roomName,
+                            long seed, games.brennan.dungeontrain.template.GateContext gateCtx) {
         java.util.List<String> names = new java.util.ArrayList<>();
         java.util.List<Integer> weights = new java.util.ArrayList<>();
         int total = 0;
-        for (String name : ChunkFrameRegistry.names()) {
-            ChunkFrameMeta meta = ChunkFrameMetaStore.get(name);
+        for (String name : frameNames) {
+            ChunkFrameMeta meta = metaOf.apply(name);
             if (!meta.appliesTo(roomName)) continue;
-            if (!ChunkFrameStore.sizeOf(name).equals(frameSize)) continue;
+            if (gateCtx != null && !gateCtx.allows(effectiveGate(meta))) continue;
             names.add(name);
             weights.add(meta.weight());
             total += meta.weight();
@@ -185,7 +280,7 @@ public final class ChunkFramePlacer {
      * @return cells changed
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
-        return place(level, picked, roomOrigin, mask, rollIndex, 0, picked.template().size().getY());
+        return place(level, picked, roomOrigin, mask, rollIndex, 0, picked.template().size().getY(), false);
     }
 
     /**
@@ -194,10 +289,32 @@ public final class ChunkFramePlacer {
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
                             int yFrom, int yTo) {
+        return place(level, picked, roomOrigin, mask, rollIndex, yFrom, yTo, false);
+    }
+
+    /**
+     * {@link #place}, leaving the frame's shell layer out when {@code skipShell} — a room enclosed
+     * as Void or World Border ({@link ChunkFrameDimension}) has no skin for the shell to dress, and
+     * the shell would otherwise hang in the swept space around the chunk.
+     */
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+                            int yFrom, int yTo, boolean skipShell) {
+        return place(level, picked, roomOrigin, mask, rollIndex, yFrom, yTo, skipShell, FrameWaterlog.NO_SEA);
+    }
+
+    /**
+     * {@link #place}, with the room's sea: a block that can hold water and lands at or under world
+     * row {@code seaTopY} is written waterlogged, unless it touches the frame's Forced Air
+     * ({@link FrameWaterlog}). {@link FrameWaterlog#NO_SEA} for a room with no sea.
+     */
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+                            int yFrom, int yTo, boolean skipShell, int seaTopY) {
         ChunkFrameTemplate frame = picked.template();
         VariantDoc variants = picked.variants();
         long seed = level.getSeed();
         int changed = 0;
+        int wetted = 0;
+        int keptDry = 0;
         Vec3i size = frame.size();
         BlockPos.MutableBlockPos local = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
@@ -210,6 +327,7 @@ public final class ChunkFramePlacer {
             for (int y = Math.max(0, yFrom); y < Math.min(size.getY(), yTo); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
                     for (int x = 0; x < size.getX(); x++) {
+                        if (skipShell && ChunkFrame.isShell(x, y, z, size)) continue;
                         BlockState state = frame.at(x, y, z);
                         CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
                         VariantState roll = null;
@@ -222,6 +340,21 @@ public final class ChunkFramePlacer {
                                     local.immutable(), seed, rollIndex, variants.lockIdAt(local.immutable()),
                                     variants.rotationLockIdAt(local.immutable()));
                             blockEntity = roll.blockEntityNbt();
+                        }
+                        // Frames are only ever placed into live rooms (the frame editor saves from its own
+                        // plot), so this is live whether or not a placement scope is open.
+                        if (games.brennan.dungeontrain.block.ForcedAir.forStamp(state, true) != state) {
+                            // The one block a frame writes as air: plain air in a frame leaves the
+                            // sampled terrain (and the sea) alone, Forced Air carves it out.
+                            cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
+                                roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
+                                roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
+                            if (mask.covers(cursor) || level.getBlockState(cursor).isAir()) continue;
+                            if (level.getBlockState(cursor).hasBlockEntity()) level.removeBlockEntity(cursor);
+                            games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilentNoCascade(level, cursor,
+                                net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
+                            changed++;
+                            continue;
                         }
                         if (state == null || state.isAir()) continue;
                         // Stage placeholders become the stage's real blocks, as in every other stamp.
@@ -238,6 +371,12 @@ public final class ChunkFramePlacer {
                             roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
                             roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
                         if (mask.covers(cursor)) continue;
+                        if (seaTopY != FrameWaterlog.NO_SEA && cursor.getY() <= seaTopY
+                                && FrameWaterlog.canHoldWater(state)) {
+                            boolean dry = touchesForcedAir(frame, variants, x, y, z, seed, rollIndex);
+                            state = FrameWaterlog.apply(state, cursor.getY(), seaTopY, dry);
+                            if (dry) keptDry++; else wetted++;
+                        }
                         BlockState current = level.getBlockState(cursor);
                         if (current != state) {
                             if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
@@ -253,7 +392,30 @@ public final class ChunkFramePlacer {
                 }
             }
         }
+        if (wetted + keptDry > 0) {
+            LOGGER.debug("[DungeonTrain] Chunk frame '{}' layers {}..{}: {} block(s) waterlogged under the sea "
+                + "(top y {}), {} kept dry beside Forced Air", picked.name(), yFrom, yTo - 1, wetted, seaTopY, keptDry);
+        }
         return changed;
+    }
+
+    /** The six cells around frame cell {@code (x, y, z)}: does any of them write Forced Air, as rolled? */
+    private static boolean touchesForcedAir(ChunkFrameTemplate frame, VariantDoc variants, int x, int y, int z,
+                                            long seed, int rollIndex) {
+        Vec3i size = frame.size();
+        int[][] sides = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+        for (int[] d : sides) {
+            int nx = x + d[0], ny = y + d[1], nz = z + d[2];
+            if (nx < 0 || ny < 0 || nz < 0 || nx >= size.getX() || ny >= size.getY() || nz >= size.getZ()) continue;
+            BlockPos at = new BlockPos(nx, ny, nz);
+            BlockState state = frame.at(nx, ny, nz);
+            if (variants.statesAt(at) != null) {
+                VariantState roll = variants.resolve(at, seed, rollIndex);
+                state = roll == null || roll.isMob() ? null : roll.state();
+            }
+            if (state != null && games.brennan.dungeontrain.block.ForcedAir.is(state)) return true;
+        }
+        return false;
     }
 
     private static void applyBlockEntity(ServerLevel level, BlockPos pos, CompoundTag nbt) {

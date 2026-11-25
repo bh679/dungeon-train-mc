@@ -316,7 +316,9 @@ public final class PortalChunkDimension {
             // The frame's own roll, salted apart from the room's so a test can re-roll either alone;
             // unsalted it is a pure function of the pair, as in play.
             rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);
-            frame = ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex);
+            frame = ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex,
+                // A pair planned before a restart has no planned frame left: its column's own context.
+                games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
         }
         if (frame.isEmpty()) {
             if (after != null) after.run();
@@ -326,17 +328,51 @@ public final class PortalChunkDimension {
             FRAMINGS.put(pairKey, new Framing(frame.get(), rollIndex, 0, after));
             return;
         }
-        placeFrame(level, structure, dims, frame.get(), rollIndex, 0, Integer.MAX_VALUE);
+        placeFrame(level, structure, dims, pairKey, frame.get(), rollIndex, 0, Integer.MAX_VALUE);
         if (after != null) after.run();
     }
 
-    private static int placeFrame(ServerLevel level, PortalStructure structure, CarriageDims dims,
+    private static int placeFrame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey,
                                   ChunkFramePlacer.Picked frame, int rollIndex, int yFrom, int yTo) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
         // its plug are kept — which is what cuts the doorway through it.
+        // Under a frame's Void or World Border there is no skin, so the frame's shell is left out too.
         return ChunkFramePlacer.place(level, frame, structure.roomOrigin(dims, layout),
-            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex, yFrom, yTo);
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex, yFrom, yTo,
+            /*skipShell*/ !structure.mode().sealsRoomBox(),
+            seaTopY(structure, dims, pairKey, structure.roomOrigin(dims, layout)));
+    }
+
+    /**
+     * The world row of an underwater room's sea surface — the highest row of its sample holding water,
+     * brought into the room as its terrain was ({@link #copyShift}) — or
+     * {@link games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog#NO_SEA} for any other room.
+     */
+    private static int seaTopY(PortalStructure structure, CarriageDims dims, int pairKey, BlockPos origin) {
+        PortalChunkSlice slice = PortalChunkTerrain.peek(pairKey);
+        if (slice == null || !slice.source().underwater()) {
+            return games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog.NO_SEA;
+        }
+        int top = topWaterRow(slice);
+        if (top < 0) return games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog.NO_SEA;
+        return origin.getY() + top - copyShift(structure, dims, structure.roomSize());
+    }
+
+    /** The highest row of {@code slice} with water in it, or -1 when it holds none. */
+    static int topWaterRow(PortalChunkSlice slice) {
+        for (int y = slice.height() - 1; y >= 0; y--) {
+            for (int z = 0; z < slice.width(); z++) {
+                for (int x = 0; x < slice.width(); x++) {
+                    BlockState state = slice.at(x, y, z);
+                    if (state != null && state.getFluidState().getType()
+                            .isSame(net.minecraft.world.level.material.Fluids.WATER)) {
+                        return y;
+                    }
+                }
+            }
+        }
+        return -1;
     }
 
     /** A wide frame part way through being written: the next layer, and what to do once it is down. */
@@ -375,7 +411,7 @@ public final class PortalChunkDimension {
             PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
             java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> {
                 do {
-                    placeFrame(level, structure, dims, framing.frame(), framing.rollIndex(), y[0], y[0] + 1);
+                    placeFrame(level, structure, dims, pairKey, framing.frame(), framing.rollIndex(), y[0], y[0] + 1);
                     y[0]++;
                 } while (y[0] < height && (all || System.nanoTime() - started < FRAMING_NANOS));
                 if (y[0] >= height && framing.after() != null) framing.after().run();

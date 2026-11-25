@@ -123,7 +123,8 @@ public final class EditorPlotPanelInputHandler {
     private static boolean isNumberCell(CellKind cell) {
         return switch (cell) {
             case WEIGHT_NUMBER, LENGTH_NUMBER, WIDTH_NUMBER, HEIGHT_NUMBER,
-                 EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER -> true;
+                 EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER,
+                 FRAME_MIN_LEVEL_NUMBER, FRAME_MAX_LEVEL_NUMBER -> true;
             default -> false;
         };
     }
@@ -150,7 +151,8 @@ public final class EditorPlotPanelInputHandler {
             }
             // Number rows: click steps up, shift- or right-click steps down, cmd-click types.
             case WEIGHT_NUMBER, LENGTH_NUMBER, WIDTH_NUMBER, HEIGHT_NUMBER,
-                 EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER -> {
+                 EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER,
+                 FRAME_MIN_LEVEL_NUMBER, FRAME_MAX_LEVEL_NUMBER -> {
                 NumberField field = rowNumber(hit.cell(), entry);
                 if (field != null) {
                     NumberStepper.click(field, button, shift, MenuClickModifiers.cmdDown(), NumberPad.returningTo(null));
@@ -183,8 +185,50 @@ public final class EditorPlotPanelInputHandler {
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
             case BUTTON_CONTENTS -> openContents(entry);
             case BUTTON_ENTER_INSIDE -> dispatchAction(entry, EditorPlotActionPacket.Action.ENTER_INSIDE);
+            case FRAME_DIM_BEDROCK, FRAME_DIM_VOID, FRAME_DIM_WORLD_BORDER -> runFrame(entry,
+                "dimension", EditorPlotLabelsRenderer.frameDimensionToken(hit.cell()));
+            case FRAME_PHASES -> openDrillIn(new games.brennan.dungeontrain.client.menu.PhaseSelectScreen(
+                PlotCategory.CHUNK_FRAMES, entry.modelId(), entry.modelName()));
+            case FRAME_STAGE -> openDrillIn(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
+                PlotCategory.CHUNK_FRAMES, entry.modelId(), entry.modelName(),
+                EditorPlotLabelsRenderer.statusIsFor(entry) ? EditorStatusHudOverlay.stageId() : ""));
+            case FRAME_ROOMS_ALL -> runFrame(entry, "rooms", "all");
+            case FRAME_ROOMS_NONE -> runFrame(entry, "rooms", "none");
+            case FRAME_ROOM_TOGGLE -> dispatchFrameRoomToggle(entry, hit.row());
+            case FRAME_SAVE -> {
+                if (EditorPlotLabelsRenderer.isFramePanel(entry)) {
+                    CommandRunner.run(games.brennan.dungeontrain.client.menu.EditorMenuScreen.CHUNK_FRAME_SAVE_COMMAND);
+                }
+            }
             default -> {}
         }
+    }
+
+    /** The chunk frame command root; the frame panel's own rows have no {@link PlotCategory.Verb}. */
+    private static final String CHUNK_FRAME_COMMAND = "dungeontrain editor chunkframe";
+
+    /** {@code dungeontrain editor chunkframe <sub> <frame> <arg>} — nothing for a non-frame entry. */
+    private static void runFrame(EditorPlotLabelsPacket.Entry entry, String sub, String arg) {
+        if (!EditorPlotLabelsRenderer.isFramePanel(entry) || arg == null || entry.modelName().isEmpty()) return;
+        CommandRunner.run(CHUNK_FRAME_COMMAND + " " + sub + " " + entry.modelName() + " " + arg);
+    }
+
+    /** Flip the chunk room on row {@code row} of a frame panel: on → off, off → on. */
+    private static void dispatchFrameRoomToggle(EditorPlotLabelsPacket.Entry entry, int row) {
+        String room = EditorPlotLabelsRenderer.frameRoomAt(entry, row);
+        if (room == null) return;
+        boolean on = EditorPlotLabelsRenderer.frameSnapshot(entry)
+            .map(s -> s.selected().contains(room)).orElse(false);
+        runFrame(entry, "room", room + " " + (on ? "off" : "on"));
+    }
+
+    /**
+     * Open the keyboard menu drilled into {@code screen} — the same two steps {@link #openContents}
+     * takes, so Back returns to the editor menu.
+     */
+    private static void openDrillIn(games.brennan.dungeontrain.client.menu.MenuScreen screen) {
+        CommandMenuState.open();
+        CommandMenuState.drillIn(screen);
     }
 
     /**
@@ -330,7 +374,12 @@ public final class EditorPlotPanelInputHandler {
             case WEIGHT_NUMBER -> entry.weight() == EditorPlotLabelsPacket.NO_WEIGHT
                 || EditorPlotTeleport.weightCommandFor(category, entry.modelId(), entry.modelName(), "inc") == null
                 ? null
-                : NumberField.ofTokens(NumberTitle.of("weight"), entry.weight(), 0, 100, false,
+                : NumberField.ofTokens(NumberTitle.of("weight"), entry.weight(),
+                    // A frame's weight floors at 1 (ChunkFrameMeta); every other pool at 0.
+                    category == PlotCategory.CHUNK_FRAMES
+                        ? games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta.MIN_WEIGHT : 0,
+                    category == PlotCategory.CHUNK_FRAMES
+                        ? games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta.MAX_WEIGHT : 100, false,
                     token -> EditorPlotTeleport.weightCommandFor(category, entry.modelId(), entry.modelName(), token));
             case LENGTH_NUMBER -> dimension(category, "length", "length", entry.roomLength());
             case WIDTH_NUMBER -> dimension(category, "width", "width", entry.roomWidth());
@@ -347,8 +396,31 @@ public final class EditorPlotPanelInputHandler {
                 entry.copiesFloorHeight(),
                 PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT, PortalRoomCopiesVariant.MAX_FLOOR_HEIGHT,
                 token -> EditorPlotTeleport.copiesFloorHeightCommandFor(category, token));
+            case FRAME_MIN_LEVEL_NUMBER -> frameLevel(entry, "minlevel");
+            case FRAME_MAX_LEVEL_NUMBER -> frameLevel(entry, "maxlevel");
             default -> null;
         };
+    }
+
+    /**
+     * A frame's level bound, edited as the keyboard menu's Min Lv / Max Lv rows are
+     * ({@code EditorMenuScreen.levelNumber}): min runs 0..MAX_LEVEL; max runs from the min up and a
+     * blank value is "all" ({@code -1}). Null until the status overlay reports this frame, so a step
+     * never starts from another plot's numbers.
+     */
+    private static NumberField frameLevel(EditorPlotLabelsPacket.Entry entry, String sub) {
+        if (!EditorPlotLabelsRenderer.isFramePanel(entry) || !EditorPlotLabelsRenderer.statusIsFor(entry)) return null;
+        String prefix = PlotCategory.CHUNK_FRAMES.levelCommand(sub, entry.modelId(), entry.modelName()).orElse(null);
+        if (prefix == null) return null;
+        int max = games.brennan.dungeontrain.template.TemplateGate.MAX_LEVEL;
+        int minLv = Math.max(0, EditorStatusHudOverlay.minLevel());
+        java.util.function.Function<String, String> commandFor = token -> prefix + " " + token;
+        if ("maxlevel".equals(sub)) {
+            int maxLv = EditorStatusHudOverlay.maxLevel();
+            return NumberField.ofTokens(NumberTitle.of("max_level"), maxLv < 0 ? NumberField.ALL : maxLv,
+                minLv, max, true, commandFor);
+        }
+        return NumberField.ofTokens(NumberTitle.of("min_level"), minLv, 0, max, false, commandFor);
     }
 
     private static NumberField dimension(PlotCategory category, String axis, String title, int value) {

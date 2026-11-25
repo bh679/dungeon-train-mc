@@ -32,6 +32,7 @@ final class PortalSitesDebug {
         PortalChunkTerrain.Source.OVERWORLD,
         PortalChunkTerrain.Source.OVERWORLD_WWOO,
         PortalChunkTerrain.Source.OVERWORLD_BOP,
+        PortalChunkTerrain.Source.UNDERWATER,
         PortalChunkTerrain.Source.NETHER,
         PortalChunkTerrain.Source.NETHER_BETTER,
         PortalChunkTerrain.Source.END,

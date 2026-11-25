@@ -74,6 +74,8 @@ public final class BlockVariantMenu {
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
         ENTRY_ACTIVE_MODE,
+        /** Villager row's J / R / N job-mode pill, in the Grow slot. */
+        ENTRY_VILLAGER_MODE,
         /** The four fence / wall / pane connect-mode segments, in {@code VariantConnect.Mode} order. */
         ENTRY_CONNECT_DEFAULT,
         ENTRY_CONNECT_AUTO,
@@ -334,6 +336,11 @@ public final class BlockVariantMenu {
      */
     public static boolean isSlimeRow(BlockVariantSyncPacket.Entry entry) {
         return entry.groupRef() <= 0 && games.brennan.dungeontrain.editor.VariantSlime.isSlime(entry.entityId());
+    }
+
+    /** True when {@code entry} is a villager mob row — it shows the J / R / N pill in the Grow slot. */
+    public static boolean isVillagerRow(BlockVariantSyncPacket.Entry entry) {
+        return entry.groupRef() <= 0 && games.brennan.dungeontrain.editor.VariantVillager.isVillager(entry.entityId());
     }
 
     /** The row's slime options (any size / type on every other row). */

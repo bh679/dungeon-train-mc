@@ -6,6 +6,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.function.Function;
+
 /**
  * The one place Crafter effect code reads a rank: {@link Perks#rank(Player, String)} behind
  * null-safe helpers, so every mixin asks the same question the same way.
@@ -29,10 +31,16 @@ public final class CrafterRank {
      * or hand slots? Identity, not equality, so a copy on a tooltip or in a chest never qualifies.
      */
     public static boolean isWornOrHeld(Player player, ItemStack stack) {
-        if (player == null || stack == null || stack.isEmpty()) return false;
+        if (player == null) return false;
+        return isInGearSlot(stack, player::getItemBySlot);
+    }
+
+    /** The rule behind {@link #isWornOrHeld}: {@code stack} is the very object in an armour or hand slot (BODY excluded). */
+    static boolean isInGearSlot(ItemStack stack, Function<EquipmentSlot, ItemStack> slots) {
+        if (stack == null || stack.isEmpty()) return false;
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             if (slot == EquipmentSlot.BODY) continue;
-            if (player.getItemBySlot(slot) == stack) return true;
+            if (slots.apply(slot) == stack) return true;
         }
         return false;
     }

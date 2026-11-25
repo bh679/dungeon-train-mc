@@ -315,7 +315,8 @@ public final class EditorPlotTeleport {
             case WHOLE -> "dungeontrain editor stage apply whole " + modelId + " " + stageToken;
             case WHOLE_GROUP -> "dungeontrain editor stage apply whole_group " + modelId + " " + stageToken;
             case WHOLE_HALF -> "dungeontrain editor stage apply whole_half " + modelId + " " + stageToken;
-            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no stage link — refused by the guard above
+            case CHUNK_FRAMES -> "dungeontrain editor chunkframe stage " + modelName + " " + stageToken;
+            case PARTS, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no stage link — refused by the guard above
         };
     }
 

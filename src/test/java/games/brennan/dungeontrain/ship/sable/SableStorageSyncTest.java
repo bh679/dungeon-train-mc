@@ -133,4 +133,36 @@ final class SableStorageSyncTest {
     void escapeHatchOffByDefault() {
         assertFalse(SableStorageSync.forcesOnAutosave());
     }
+
+    @Test
+    @DisplayName("the phase split lists every phase, then what is left of the total as other")
+    void formatsPhasesWithRemainder() {
+        long[] ms = {1, 2, 3, 4, 5, 6, 7, 8};
+        assertEquals("phases: changes 1, deps 2, move 3, save 4, holding 5, flush 6, prune 7, tickets 8, other 964 ms",
+            SableStorageSync.formatPhases(1_000, ms));
+    }
+
+    @Test
+    @DisplayName("other is never negative when the rounded phases add up past the total")
+    void otherIsClamped() {
+        long[] ms = {10, 0, 0, 0, 0, 0, 0, 0};
+        assertTrue(SableStorageSync.formatPhases(5, ms).endsWith("other 0 ms"));
+    }
+
+    @Test
+    @DisplayName("a new save starts every phase at zero")
+    void beginSaveResetsPhases() {
+        SableStorageSync.addPhaseNanos(SableStorageSync.SavePhase.FLUSH, 3_000_000L);
+        SableStorageSync.beginSave();
+        assertArrayEquals(new long[SableStorageSync.SavePhase.values().length], SableStorageSync.phaseMsSinceBegin());
+    }
+
+    @Test
+    @DisplayName("a phase's nanoseconds add up across calls in one save")
+    void phasesAccumulate() {
+        SableStorageSync.beginSave();
+        SableStorageSync.addPhaseNanos(SableStorageSync.SavePhase.MOVE, 1_500_000L);
+        SableStorageSync.addPhaseNanos(SableStorageSync.SavePhase.MOVE, 1_500_000L);
+        assertEquals(3, SableStorageSync.phaseMsSinceBegin()[SableStorageSync.SavePhase.MOVE.ordinal()]);
+    }
 }
