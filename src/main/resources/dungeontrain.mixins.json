@@ -86,6 +86,7 @@
     "NoiseBasedChunkGeneratorInvoker",
     "EchoDropCreditMixin",
     "PlayerMobCameraHolderMixin",
+    "PlayerMobCarriageLookupMixin",
     "PlayerMobFeelingMixin",
     "PlayerMobFeelingsAccessor",
     "AlbumMenuMixin",
