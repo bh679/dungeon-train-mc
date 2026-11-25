@@ -87,7 +87,87 @@ public final class PortalChunkDimension {
     /** Rooms part-way through being written, oldest first. Server thread only. */
     private static final java.util.Map<Integer, PortalChunkPour> POURS = new java.util.LinkedHashMap<>();
 
+    /**
+     * Terrain rooms stamped while their cube was not in hand (dropped from the cache after the room
+     * was first built, then re-stamped by a relocation): they wait for the resample and pour then,
+     * rather than standing as their bare template. Server thread only.
+     */
+    private static final java.util.Set<Integer> WAITING = new java.util.LinkedHashSet<>();
+
+    /**
+     * Rooms poured from a cube that has not had its decoration pass yet, so their cube must be kept
+     * until it lands and is applied. Server thread only.
+     */
+    private static final java.util.Set<Integer> UNDECORATED = new java.util.HashSet<>();
+
     private PortalChunkDimension() {}
+
+    /**
+     * The pairs whose rooms are still being built from their cube — pouring, framing, waiting for it,
+     * or waiting for its decoration — which {@link PortalChunkTerrain}'s cache must never drop.
+     * Forgets pairs whose room is gone, or whose decoration will never come.
+     */
+    private static java.util.Set<Integer> stillBuilding(IntFunction<PortalStructure> live) {
+        WAITING.removeIf(pairKey -> live.apply(pairKey) == null);
+        UNDECORATED.removeIf(pairKey -> {
+            PortalStructure structure = live.apply(pairKey);
+            return structure == null || PortalChunkTerrain.failed(pairKey, structure.roomName());
+        });
+        java.util.Set<Integer> building = new java.util.HashSet<>(POURS.keySet());
+        building.addAll(FRAMINGS.keySet());
+        building.addAll(WAITING);
+        building.addAll(UNDECORATED);
+        building.add(PortalTestSession.PAIR_KEY);
+        // A standing room's slice is only kept to diff its decoration against. Once the cache has let
+        // that pair's cube go, holding the slice here would keep it alive outside the budget; without
+        // it a later decoration is simply poured whole.
+        STANDING.keySet().removeIf(pairKey -> !building.contains(pairKey) && PortalChunkTerrain.peek(pairKey) == null);
+        return building;
+    }
+
+    /** Start pouring {@code slice} into {@code pairKey}'s room, keeping its cube until it is decorated. */
+    private static void startPour(int pairKey, PortalChunkSlice slice) {
+        POURS.put(pairKey, PortalChunkPour.of(slice));
+        if (!PortalChunkTerrain.isDecorated(pairKey, slice)) UNDECORATED.add(pairKey);
+    }
+
+    /** The decoration pass for {@code pairKey} is done with, applied or not needed. */
+    private static void decorationDone(int pairKey) {
+        PortalChunkTerrain.decorationApplied(pairKey);
+        UNDECORATED.remove(pairKey);
+    }
+
+    /**
+     * Rooms waiting on a resample: pour the ones whose cube has landed; stand the ones whose sample
+     * failed as their template, framed, as a room with no sample always has been.
+     */
+    private static void drainWaiting(ServerLevel level, CarriageDims dims, IntFunction<PortalStructure> live) {
+        if (WAITING.isEmpty()) return;
+        for (int pairKey : java.util.List.copyOf(WAITING)) {
+            PortalStructure structure = live.apply(pairKey);
+            if (structure == null) {
+                WAITING.remove(pairKey);
+                continue;
+            }
+            // Before asking again: asking clears the failure and samples once more.
+            if (PortalChunkTerrain.failed(pairKey, structure.roomName())) {
+                WAITING.remove(pairKey);
+                // Outside the stamp's stage scope here, so open it again for the frame's placeholders.
+                games.brennan.dungeontrain.train.StagePlacementScope.run(
+                    PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+                    java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)),
+                    () -> frame(level, structure, dims, pairKey));
+                continue;
+            }
+            PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
+            if (slice == null) continue;
+            WAITING.remove(pairKey);
+            startPour(pairKey, slice);
+            // Somebody may already be standing in the bare room: lay it as fast as a tick allows.
+            POURS.put(pairKey, POURS.get(pairKey).rushed());
+            AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} resampled; pouring", pairKey, structure.roomName());
+        }
+    }
 
     /**
      * Rewrite the rooms whose cube has since grown its structure and its features.
@@ -99,6 +179,8 @@ public final class PortalChunkDimension {
      */
     public static void applyPendingDecoration(ServerLevel level, CarriageDims dims,
                                               IntFunction<PortalStructure> live) {
+        PortalChunkTerrain.retainPins(stillBuilding(live));
+        drainWaiting(level, dims, live);
         for (int pairKey : PortalChunkTerrain.decorated()) {
             PortalStructure structure = live.apply(pairKey);
             // Not stamped yet — normal, since a cube is usually decorated before the pair that asked
@@ -108,7 +190,7 @@ public final class PortalChunkDimension {
             // A room laid from a captured blob already stands as it was left — decorated, mined and
             // with whatever lived there — so the pass would only undo that.
             if (slice == null || structure.stampsFromBlob()) {
-                PortalChunkTerrain.decorationApplied(pairKey);
+                decorationDone(pairKey);
                 continue;
             }
             PortalChunkPour pour = POURS.get(pairKey);
@@ -139,12 +221,22 @@ public final class PortalChunkDimension {
      * @return whether a pour started, which is whether it will dress the room in its frame
      */
     public static boolean beginPour(ServerLevel level, PortalStructure structure, int pairKey) {
+        WAITING.remove(pairKey);
         PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
         // A fresh stamp: whatever stood under this key before is gone, and a decoration diff is only
         // good against the ground this pour writes.
         STANDING.remove(pairKey);
-        if (slice == null) return false;
-        POURS.put(pairKey, PortalChunkPour.of(slice));
+        if (slice != null) {
+            startPour(pairKey, slice);
+            return true;
+        }
+        // A pair is planned only once its cube is in hand, so a miss here is a room re-stamped after
+        // its cube was dropped from the cache. slice() has just asked for it again (same roll, same
+        // site): wait for it and pour then, which dresses the room in its frame as any pour does.
+        if (PortalChunkTerrain.failed(pairKey, structure.roomName())) return false;
+        WAITING.add(pairKey);
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} cube not held; waiting for its resample",
+            pairKey, structure.roomName());
         return true;
     }
 
@@ -236,10 +328,20 @@ public final class PortalChunkDimension {
         stepFraming(level, dims, pairKey, structure, true);
     }
 
+    /**
+     * Whether {@code pairKey}'s room is standing bare, waiting for its cube to be resampled — nothing
+     * in it is worth capturing, and a capture would carry the bare room on in place of its terrain.
+     */
+    public static boolean awaitingResample(int pairKey) {
+        return WAITING.contains(pairKey);
+    }
+
     /** Stop writing {@code pairKey}'s room: it is being erased. */
     public static void cancelPour(int pairKey) {
         POURS.remove(pairKey);
         FRAMINGS.remove(pairKey);
+        WAITING.remove(pairKey);
+        UNDECORATED.remove(pairKey);
         STANDING.remove(pairKey);
     }
 
@@ -384,7 +486,10 @@ public final class PortalChunkDimension {
         // A sample decorated before its room was stamped needs no second pass: this was it.
         if (PortalChunkTerrain.decorated().contains(pairKey) && PortalChunkTerrain.peek(pairKey) == pour.slice()) {
             spawnOccupants(level, structure, dims, pour.slice(), pairKey);
-            PortalChunkTerrain.decorationApplied(pairKey);
+            decorationDone(pairKey);
+        } else if (PortalChunkTerrain.isDecorated(pairKey, pour.slice())) {
+            // Poured from a cube decorated and applied before (a re-stamp): nothing more is coming.
+            UNDECORATED.remove(pairKey);
         }
         AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={} patched={} dress={} fluidTicks={}",
             pairKey, structure.roomName(), pour.ticks(), millis(pour.totalNanos()), millis(pour.maxNanos()),
@@ -492,12 +597,25 @@ public final class PortalChunkDimension {
      */
     private static int seaTopY(PortalStructure structure, CarriageDims dims, int pairKey, BlockPos origin) {
         PortalChunkSlice slice = PortalChunkTerrain.peek(pairKey);
-        if (slice == null || !slice.source().underwater()) {
-            return games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog.NO_SEA;
-        }
-        int top = topWaterRow(slice);
+        // A room laid from a captured blob is framed with no cube of its own in hand, and the cache
+        // may have let its cube go by then: the row remembered from its first pour stands in.
+        int top = slice != null ? rememberTopWaterRow(pairKey, slice) : TOP_WATER_ROWS.getOrDefault(pairKey, -1);
         if (top < 0) return games.brennan.dungeontrain.portal.chunkframe.FrameWaterlog.NO_SEA;
         return origin.getY() + top - copyShift(structure, dims, structure.roomSize());
+    }
+
+    /**
+     * Each underwater pair's highest water row, kept past its cube so a room re-laid from a blob is
+     * still framed waterlogged after the cube has left the cache. A few ints a pair. Server thread only.
+     */
+    private static final java.util.Map<Integer, Integer> TOP_WATER_ROWS = new java.util.HashMap<>();
+
+    /** {@link #topWaterRow} of {@code slice}, or -1 for a room that is not underwater; remembered for the pair. */
+    private static int rememberTopWaterRow(int pairKey, PortalChunkSlice slice) {
+        if (!slice.source().underwater()) return -1;
+        int top = topWaterRow(slice);
+        TOP_WATER_ROWS.put(pairKey, top);
+        return top;
     }
 
     /** The highest row of {@code slice} with water in it, or -1 when it holds none. */
@@ -785,6 +903,9 @@ public final class PortalChunkDimension {
     public static void clear() {
         POPULATED.clear();
         POURS.clear();
+        WAITING.clear();
+        UNDECORATED.clear();
+        TOP_WATER_ROWS.clear();
         FRAMINGS.clear();
         STANDING.clear();
     }

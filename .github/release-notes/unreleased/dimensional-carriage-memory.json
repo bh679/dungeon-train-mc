@@ -1,0 +1,17 @@
+{
+  "id": "dimensional-carriage-memory",
+  "version": "0.2024.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "train"
+  ],
+  "title": "Lighter dimensional carriages",
+  "summary": "Dimensional carriages use far less memory on a long run, and one you come back to is always built in full.",
+  "highlights": [],
+  "pr": 2894,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

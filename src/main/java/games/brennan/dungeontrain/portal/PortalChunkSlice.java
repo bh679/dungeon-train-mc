@@ -31,6 +31,7 @@ public final class PortalChunkSlice {
     private final BlockState[] states;
     private final Map<Integer, CompoundTag> blockEntities;
     private final List<Occupant> occupants;
+    private final long approxBytes;
 
     /**
      * The sampled chunk's biomes over the cut, one per quart (4×4×4 cells) — what the room is
@@ -62,6 +63,8 @@ public final class PortalChunkSlice {
         this.ground = null;
         this.changes = null;
         this.biomesChanged = true;
+        this.approxBytes = approxBytes(states == null ? 0 : states.length,
+            biomes == null ? 0 : biomes.length, nbtBytes(this.blockEntities, this.occupants));
     }
 
     /** {@code decorated}, said to differ from {@code ground} at exactly {@code changes}. */
@@ -77,6 +80,9 @@ public final class PortalChunkSlice {
         this.ground = ground;
         this.changes = changes;
         this.biomesChanged = biomesChanged;
+        // A diffed slice keeps its ground alive too, so it costs both, plus the diff itself.
+        this.approxBytes = decorated.approxBytes + ground.approxBytes
+            + HEADER_BYTES + (long) changes.length * Integer.BYTES;
     }
 
     // ---- what a decorated slice changed (PortalChunkDecorationDiff) ----------
@@ -156,6 +162,38 @@ public final class PortalChunkSlice {
     /** The pour's strip ({@link PortalChunkPour}) holding cell index {@code index}: its row, then its Z. */
     int stripOf(int index) {
         return index / width;
+    }
+
+    /** Bytes of one object header, and of one reference: a 64-bit JVM with compressed pointers. */
+    static final int HEADER_BYTES = 16;
+    static final int REF_BYTES = 4;
+
+    /** Rough per-entry cost of a map entry or list slot over and above the NBT it holds. */
+    static final int ENTRY_OVERHEAD_BYTES = 48;
+
+    /**
+     * About how much heap this slice holds on to — what {@link PortalSliceCache} budgets by. The
+     * states are the registry's own singletons, so only the references count; the same goes for the
+     * biomes. The NBT is the part that is really this slice's.
+     */
+    public long approxBytes() {
+        return approxBytes;
+    }
+
+    static long approxBytes(int stateCount, int biomeCount, long nbtBytes) {
+        return HEADER_BYTES * 4L
+            + HEADER_BYTES + (long) stateCount * REF_BYTES
+            + HEADER_BYTES + (long) biomeCount * REF_BYTES
+            + nbtBytes;
+    }
+
+    private static long nbtBytes(Map<Integer, CompoundTag> blockEntities, List<Occupant> occupants) {
+        long bytes = 0;
+        for (CompoundTag tag : blockEntities.values()) bytes += ENTRY_OVERHEAD_BYTES + tag.sizeInBytes();
+        for (Occupant occupant : occupants) {
+            bytes += ENTRY_OVERHEAD_BYTES + (occupant.nbt() == null ? 0 : occupant.nbt().sizeInBytes());
+        }
+        return bytes;
     }
 
     /**

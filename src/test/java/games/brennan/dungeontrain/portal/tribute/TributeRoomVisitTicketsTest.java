@@ -22,8 +22,9 @@ class TributeRoomVisitTicketsTest {
 
     @Test
     void ticketCoversTheVisitWindowAndItsRing() {
-        // The window a slot-0 visit stood in a dev world.
-        assertTicketCoversWait(new BoundingBox(-4, -63, -516, 40, -51, -502));
+        // The window a slot-0 visit stood in a dev world, at the band.
+        int z = TributeRoomVisitSite.Z_BAND;
+        assertTicketCoversWait(new BoundingBox(-4, -63, z - 4, 40, -51, z + 10));
     }
 
     @Test
@@ -41,8 +42,9 @@ class TributeRoomVisitTicketsTest {
 
     @Test
     void waitCountsTheWindowAndOneRing() {
-        BoundingBox window = new BoundingBox(-4, -63, -516, 40, -51, -502);
-        // x chunks -1..2 plus a ring = 6, z chunks -33..-32 plus a ring = 4.
+        int z = TributeRoomVisitSite.Z_BAND;
+        BoundingBox window = new BoundingBox(-4, -63, z - 4, 40, -51, z + 10);
+        // x chunks -1..2 plus a ring = 6; z spans two chunks (the band is chunk-aligned) plus a ring = 4.
         assertEquals(24, TributeRoomVisitTickets.waitedOn(window));
     }
 }

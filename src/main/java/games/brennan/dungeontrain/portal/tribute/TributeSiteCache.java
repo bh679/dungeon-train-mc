@@ -38,7 +38,7 @@ import java.util.UUID;
  *
  * <p>Only slot 0 is kept: one visitor at a time is the singleplayer case and the common server one. The
  * chunks are whole columns, so a world's surface over the site shows the terrain of the world they were
- * generated in; the site is 512 blocks off the track. World-specific data is left out: structure starts
+ * generated in; the site is 100,000 blocks off the track ({@link TributeRoomVisitSite#Z_BAND}). World-specific data is left out: structure starts
  * and references, scheduled ticks and attachments. Mobs live in the entity storage and are not copied.</p>
  */
 public final class TributeSiteCache {

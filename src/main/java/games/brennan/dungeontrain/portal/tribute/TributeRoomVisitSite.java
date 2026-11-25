@@ -13,8 +13,13 @@ import java.util.Set;
  */
 public final class TributeRoomVisitSite {
 
-    /** Z of every visit structure. Negative where the test rig's is positive; the track band is near 0. */
-    public static final int Z_BAND = -512;
+    /**
+     * Z of every visit structure: far out at right angles to the track (which runs along X at Z near 0),
+     * where no one walks. Far, because the site's chunks are copied into every world
+     * ({@link TributeSiteCache}) and their surface is the first world's terrain. Bands are chosen by X, so
+     * the site is the same plain basement here as beside the track. Chunk-aligned.
+     */
+    public static final int Z_BAND = -100_000;
     /** X between slots. A structure's span is the room plus two corridors and plugs: well under this. */
     public static final int SLOT_STRIDE = 64;
 
