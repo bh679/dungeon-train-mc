@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.portal.tribute.TributeRoomStore;
 import games.brennan.dungeontrain.portal.tribute.TributeRoomVisitService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -21,7 +22,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,18 +50,30 @@ public final class TributeRoomEnterEvents {
         sendReport(level, player, standing);
     }
 
+    /**
+     * The owner's room is read on the IO thread, and the banner and report go out back on the server
+     * thread, only if the player is still in that room by then.
+     */
     private static void sendReport(ServerLevel level, ServerPlayer player, TributeRoomRegistry.Standing standing) {
         if (standing.owner().isEmpty()) return;
-        Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(standing.owner(), standing.key());
-        if (blob.isEmpty()) return;
-        TributeRoomPlacement.showBanner(player, blob.get());
-        if (!blob.get().hasReport()) return;
+        MinecraftServer server = level.getServer();
+        TributeRoomStore.loadByOwnerAsync(standing.owner(), standing.key()).whenComplete((blob, error) -> server.execute(() -> {
+            if (error != null || blob == null || blob.isEmpty() || player.hasDisconnected() || player.level() != level) return;
+            TributeRoomRegistry.Standing now = TributeRoomRegistry.at(level.dimension(), player.blockPosition());
+            if (now == null || !now.room().equals(standing.room())) return;
+            show(level, player, standing, blob.get());
+        }));
+    }
+
+    private static void show(ServerLevel level, ServerPlayer player, TributeRoomRegistry.Standing standing, TributeRoomBlob blob) {
+        TributeRoomPlacement.showBanner(player, blob);
+        if (!blob.hasReport()) return;
         List<BlockPos> screen = new ArrayList<>();
         Direction facing = TributeRoomVisitService.screenBlocks(level, standing.room(), screen);
         if (screen.isEmpty()) return;
         BoundingBox box = TributeRoomVisitService.boxOf(screen);
-        DungeonTrainNet.sendTo(player, TributeRoomReportPacket.of(box, facing, blob.get().ownerName(),
-            blob.get().reportMessage(), blob.get().report()));
+        DungeonTrainNet.sendTo(player, TributeRoomReportPacket.of(box, facing, blob.ownerName(),
+            blob.reportMessage(), blob.report()));
     }
 
     @SubscribeEvent
