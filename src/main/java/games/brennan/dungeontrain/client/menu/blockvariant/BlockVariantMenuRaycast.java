@@ -295,7 +295,9 @@ public final class BlockVariantMenuRaycast {
             || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed))
             || BlockVariantMenu.isSlimeRow(entry) || BlockVariantMenu.isVillagerRow(entry);
         double growthCellR = armsCellL;
-        double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
+        double growthCellL = !growable ? growthCellR
+            : growthCellR - (BlockVariantMenu.isVillagerRow(entry)
+                ? BlockVariantMenuRenderer.VILLAGER_MODE_CELL_WIDTH : BlockVariantMenuRenderer.GROWTH_CELL_WIDTH);
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();

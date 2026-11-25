@@ -140,6 +140,8 @@ public final class BlockVariantMenuRenderer {
     static final double CONNECT_CELL_WIDTH = 0.96;
     /** Grow pill width — "Grow" or a column range such as "↓12-32". */
     static final double GROWTH_CELL_WIDTH = 0.62;
+    /** Villager row's J / R / N pill: one letter, so a thin cell in place of the Grow slot. */
+    static final double VILLAGER_MODE_CELL_WIDTH = 0.16;
     /** N/E/S/W locked-arm toggles width — shown beside the connect pill on a Lock row. */
     static final double ARMS_CELL_WIDTH = 0.72;
     /** Inset of the connect pill's segments inside its cell — shared with the raycaster's segment maths. */
@@ -438,7 +440,8 @@ public final class BlockVariantMenuRenderer {
             boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
                 && GrowthShapes.canGrow(parsed)) || slotRow || villagerRow;
             double growthCellR = armsCellL;
-            double growthCellL = growable ? growthCellR - GROWTH_CELL_WIDTH : growthCellR;
+            double growthCellL = !growable ? growthCellR
+                : growthCellR - (villagerRow ? VILLAGER_MODE_CELL_WIDTH : GROWTH_CELL_WIDTH);
             // Difficulty min/max cells (mob rows only) sit between the name and
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
