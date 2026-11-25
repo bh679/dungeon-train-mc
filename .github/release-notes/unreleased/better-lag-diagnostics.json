@@ -1,0 +1,16 @@
+{
+  "id": "better-lag-diagnostics",
+  "version": "0.2008.0",
+  "type": "chore",
+  "tags": [
+    "internal"
+  ],
+  "title": "Better lag diagnostics",
+  "summary": "When the game hitches for a second or so, the log now records what was running, so lag reports can be traced to their cause.",
+  "highlights": [],
+  "pr": 2870,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

@@ -314,16 +314,16 @@ final class ServerStallWatchdogTest {
     }
 
     @Test
-    @DisplayName("Short stalls stop being dumped at the per-session cap; the last one under it still is")
-    void shortStalls_stopAtSessionCap() {
+    @DisplayName("Short stalls stop being dumped at the hourly cap; the last one under it still is")
+    void shortStalls_stopAtHourlyCap() {
         int cap = ServerStallWatchdog.MAX_SHORT_DUMPS;
         assertTrue(ServerStallWatchdog.mayDump(2_600, ServerStallWatchdog.NEVER, cap - 1, T));
         assertFalse(ServerStallWatchdog.mayDump(2_600, ServerStallWatchdog.NEVER, cap, T));
     }
 
     @Test
-    @DisplayName("A long stall is dumped even after the per-session cap is used up")
-    void longStall_ignoresSessionCap() {
+    @DisplayName("A long stall is dumped even after the hourly cap is used up")
+    void longStall_ignoresHourlyCap() {
         assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.LONG_STALL_MS, ServerStallWatchdog.NEVER,
             ServerStallWatchdog.MAX_SHORT_DUMPS, T));
     }

@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
@@ -190,6 +191,12 @@ public final class DeathBodyRagdoll {
         }
         THROWS.clear();
         THROWS.putAll(next);
+    }
+
+    /** Find out now, not in the tick a body is released, if a mod patching Sable: Ragdolls is broken. */
+    @SubscribeEvent
+    public static void onServerStarting(ServerStartingEvent event) {
+        RagdollBridge.probe();
     }
 
     @SubscribeEvent

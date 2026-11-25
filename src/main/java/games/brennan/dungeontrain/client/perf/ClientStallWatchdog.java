@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.perf;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.util.RollingDumpWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
@@ -11,6 +12,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import org.slf4j.Logger;
 
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -25,7 +27,7 @@ import java.util.Map;
  *
  * <h2>What is a freeze</h2>
  * <p>Simpler than the server's question. The render loop keeps drawing frames in the pause menu, in
- * every screen and on loading screens, so a frame that has not started for two seconds is a hang
+ * every screen and on loading screens, so a frame that has not started for {@link #STALL_LOG_MS} is a hang
  * whatever the player is doing — there is no idle state to filter out. The one thing that looks like a
  * hang and may not be is macOS holding the main thread in {@code glfwPollEvents} while the window is
  * dragged or resized. That is labelled ({@code osEventLoop=true}), not skipped: a driver hang sits in
@@ -38,7 +40,7 @@ import java.util.Map;
  * the sound executor shows only the wait, not what the sound thread is doing.</p>
  *
  * <h2>Getting the log home</h2>
- * <p>When a dumped freeze ends, {@link LagReportPrompt} may offer in chat to send the log to the
+ * <p>When a dumped freeze ends, {@link LagReportPrompt} may offer in chat (only after a freeze of {@link #PROMPT_MIN_FREEZE_MS} or more) to send the log to the
  * developer.</p>
  *
  * <h2>Recent builds only</h2>
@@ -51,10 +53,10 @@ import java.util.Map;
  * a freeze from {@link #LONG_STALL_MS} is always dumped; a shorter one at most once per
  * {@link #SHORT_DUMP_COOLDOWN_MS} (only in-world dumps start that cooldown: a join's loading-screen
  * freezes would otherwise hide the first in-world minute) and {@link #MAX_SHORT_DUMPS} times per
- * session; a freeze that persists is re-dumped every {@link #REDUMP_COOLDOWN_MS}. See {@link #mayDump}.</p>
+ * rolling hour; a freeze that persists is re-dumped every {@link #REDUMP_COOLDOWN_MS}. See {@link #mayDump}.</p>
  *
  * <p>Cost: one volatile write per frame, and a sampler that sleeps 250 ms between reads of it. Stacks
- * are taken only inside a freeze already two seconds old. Never interrupts, never touches game state.
+ * are taken only inside a freeze already {@link #STALL_LOG_MS} old. Never interrupts, never touches game state.
  * Runs in release builds — player reports are the point.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -62,13 +64,22 @@ public final class ClientStallWatchdog {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** A frame that has not started for this long gets its first stack dump. */
-    static final long STALL_LOG_MS = 2_000;
+    /**
+     * A frame that has not started for this long gets its first stack dump. Sampled every 250 ms,
+     * so freezes from about 1 s are reliably caught (it was 2 s until a Lag report of 24 Nov 2026
+     * held one unexplained 1,105 ms frame).
+     */
+    static final long STALL_LOG_MS = 750;
+    /**
+     * The chat lag prompt is only offered after a freeze this long: dumping 1 s freezes is for
+     * the log, and must not ask players about every hitch.
+     */
+    static final long PROMPT_MIN_FREEZE_MS = 2_000;
     /** A freeze this long is always dumped; shorter ones share {@link #SHORT_DUMP_COOLDOWN_MS}. */
     static final long LONG_STALL_MS = 5_000;
     /** At most one short-freeze dump this often, so a hitchy session cannot fill the log tail. */
     static final long SHORT_DUMP_COOLDOWN_MS = 60_000;
-    /** At most this many short-freeze dumps per session; long freezes are not counted or capped. */
+    /** At most this many short-freeze dumps in any rolling hour ({@link RollingDumpWindow}); long freezes are not counted or capped. */
     static final int MAX_SHORT_DUMPS = 10;
     /** {@code lastShortDumpAt} before the first short dump. */
     static final long NEVER = -1;
@@ -112,7 +123,7 @@ public final class ClientStallWatchdog {
         boolean frozenInWorld = false;
         long lastProbeAt = 0;
         long lastShortDumpAt = NEVER;
-        int shortDumps = 0;
+        RollingDumpWindow shortDumps = new RollingDumpWindow(MAX_SHORT_DUMPS);
         try {
             while (render.isAlive()) {
                 Thread.sleep(SAMPLE_INTERVAL_MS);
@@ -123,7 +134,9 @@ public final class ClientStallWatchdog {
                     // Both stamps are frame starts, so this is the frozen frame's length to the frame.
                     long freezeMs = (frame - frozenFrame) / 1_000_000L;
                     LOGGER.warn("[DT-ClientStallWatchdog] render thread recovered after ~{} ms freeze", freezeMs);
-                    LagReportPrompt.onFreezeRecovered(freezeMs, frozenSince, frozenInWorld);
+                    if (shouldPrompt(freezeMs)) {
+                        LagReportPrompt.onFreezeRecovered(freezeMs, frozenSince, frozenInWorld);
+                    }
                     frozenFrame = 0;
                     lastProbeAt = 0;
                 }
@@ -138,7 +151,7 @@ public final class ClientStallWatchdog {
                     frozenFrame = 0;
                     continue;
                 }
-                if (!mayDump(stalled, lastShortDumpAt, shortDumps, now)) continue;
+                if (!mayDump(stalled, lastShortDumpAt, shortDumps.countWithin(now), now)) continue;
 
                 StackTraceElement[] stack = render.getStackTrace();
                 // The frame may have started between reading the clock and taking the stack.
@@ -154,10 +167,10 @@ public final class ClientStallWatchdog {
                     // Loading-screen freezes are routine on every join; letting them start the
                     // cooldown would leave the first in-world minute, and its lag prompt, undumped.
                     if (inWorld) lastShortDumpAt = now;
-                    shortDumps++;
-                    if (shortDumps == MAX_SHORT_DUMPS) {
-                        LOGGER.warn("[DT-ClientStallWatchdog] {} short-freeze dumps written; freezes under {} ms are no longer dumped this session",
-                            MAX_SHORT_DUMPS, LONG_STALL_MS);
+                    shortDumps.record(now);
+                    if (shortDumps.countWithin(now) == MAX_SHORT_DUMPS) {
+                        LOGGER.warn("[DT-ClientStallWatchdog] {} short-freeze dumps written in the last hour; freezes under {} ms are not dumped until {}",
+                            MAX_SHORT_DUMPS, LONG_STALL_MS, Instant.ofEpochMilli(shortDumps.reopensAt(now)));
                     }
                 }
             }
@@ -169,7 +182,7 @@ public final class ClientStallWatchdog {
     /**
      * Whether a freeze this long may be dumped now: never under {@link #STALL_LOG_MS}, always from
      * {@link #LONG_STALL_MS}, and in between only once per {@link #SHORT_DUMP_COOLDOWN_MS} and while
-     * fewer than {@link #MAX_SHORT_DUMPS} short dumps have been written ({@code lastShortDumpAt} is
+     * fewer than {@link #MAX_SHORT_DUMPS} short dumps were written in the last hour ({@code lastShortDumpAt} is
      * when the last one was written, or {@link #NEVER}). Package-private and pure, unit-tested.
      */
     static boolean mayDump(long stalledMs, long lastShortDumpAt, int shortDumps, long now) {
@@ -177,6 +190,11 @@ public final class ClientStallWatchdog {
         if (stalledMs >= LONG_STALL_MS) return true;
         if (shortDumps >= MAX_SHORT_DUMPS) return false;
         return lastShortDumpAt == NEVER || now - lastShortDumpAt >= SHORT_DUMP_COOLDOWN_MS;
+    }
+
+    /** Whether a recovered freeze this long may offer the chat lag prompt. Pure, unit-tested. */
+    static boolean shouldPrompt(long freezeMs) {
+        return freezeMs >= PROMPT_MIN_FREEZE_MS;
     }
 
     /**
