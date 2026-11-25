@@ -61,6 +61,11 @@ final class ChunkFrameCommand {
             .then(Commands.literal("save").executes(ctx -> save(ctx.getSource(), null))
                 .then(Commands.argument("name", StringArgumentType.word()).suggests(FRAMES)
                     .executes(ctx -> save(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
+            // New blank frame at a size: 1x1 (one chunk) or 3x3 (a 3x3 room's), the New menu's two blanks.
+            .then(Commands.literal("new")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .then(Commands.literal("1x1").executes(ctx -> newFrame(ctx, 1)))
+                    .then(Commands.literal("3x3").executes(ctx -> newFrame(ctx, 3)))))
             .then(Commands.literal("enter")
                 .then(Commands.argument("name", StringArgumentType.word()).suggests(FRAMES)
                     .executes(ctx -> enter(ctx, null))
@@ -133,6 +138,24 @@ final class ChunkFrameCommand {
         }).collect(java.util.stream.Collectors.joining(", "));
         source.sendSuccess(() -> Component.literal("Chunk frames (each the room it fits plus a one-block shell): "
             + (names.isEmpty() ? "none yet" : names)), false);
+        return 1;
+    }
+
+    private static int newFrame(CommandContext<CommandSourceStack> ctx, int span) {
+        CommandSourceStack source = ctx.getSource();
+        ServerPlayer player = EditorCommand.playerOrNull(source);
+        if (player == null) return 0;
+        String name = StringArgumentType.getString(ctx, "name");
+        if (!ChunkFrameRegistry.NAME.matcher(name).matches()) {
+            return fail(source, "Frame names are lower-case letters, digits and _ (max 32).");
+        }
+        if (ChunkFrameRegistry.names().contains(name)) return fail(source, "There is already a frame named " + name + ".");
+        if (!EditorCommand.ensureCategoryResident(source, EditorCategory.PORTALS)) return 0;
+        int width = span * games.brennan.dungeontrain.portal.PortalChunkTerrain.SIZE;
+        net.minecraft.core.Vec3i size = ChunkFrame.sizeFor(new net.minecraft.core.Vec3i(
+            width, games.brennan.dungeontrain.portal.PortalChunkTerrain.HEIGHT, width));
+        ChunkFrameEditor.enterNew(player, source.getServer().overworld(), name, size);
+        source.sendSuccess(() -> Component.literal("New " + span + "x" + span + " frame '" + name + "'."), false);
         return 1;
     }
 

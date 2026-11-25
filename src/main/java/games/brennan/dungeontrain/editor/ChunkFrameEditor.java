@@ -145,6 +145,15 @@ public final class ChunkFrameEditor {
      * Stamp {@code name}'s plot and put {@code player} on it. {@code copyOf} seeds a new frame from an
      * existing one; null stamps what is saved, or an empty plot for a new name.
      */
+    /**
+     * Make blank frame {@code name} at {@code frameSize} — a one-chunk frame's or a 3x3 room's — and
+     * put {@code player} on it. Written to disk straight away, as every new frame is ({@link #enter}).
+     */
+    public static void enterNew(ServerPlayer player, ServerLevel level, String name, Vec3i frameSize) {
+        if (ChunkFrameStore.readTag(name).isEmpty()) PENDING_SIZES.put(name, frameSize);
+        enter(player, level, name, null);
+    }
+
     public static void enter(ServerPlayer player, ServerLevel level, String name, String copyOf) {
         EditorSessions.rememberReturn(player);
         // A copy starts at the size of what it copies, until its first save gives it a file of its own.
