@@ -470,6 +470,10 @@ public final class BlockVariantMenuRenderer {
             } else {
                 drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY, icons);
             }
+            // A waterlogged row looks like its dry block in the icon, so it carries a blue dot.
+            if (!entry.isMob() && parsed != null && games.brennan.dungeontrain.editor.VariantWaterlog.isWaterlogged(parsed)) {
+                drawWaterloggedDot(ps, buffer, nameCellL, rowCY);
+            }
             // Linked rows show the loot-prefab id instead of the block path
             // so two rows backed by the same block (e.g. two barrels linked
             // to different templates) read distinctly. Dangling links — the
@@ -1573,6 +1577,23 @@ public final class BlockVariantMenuRenderer {
         font.drawInBatch(text, 0, y, colour, false, mat, buffer,
             Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
         ps.popPose();
+    }
+
+    /** Water blue, opaque. */
+    private static final int WATERLOGGED_DOT = 0xFF3F76E4;
+
+    /** How wide the waterlogged dot is, in panel units. */
+    private static final double WATERLOGGED_DOT_SIZE = 0.06;
+
+    /**
+     * The waterlogged mark: a small blue square at the top-left corner of a row's icon. It sits
+     * mostly in the gap left of the icon, because the icons are drawn after the panel's quads and
+     * would cover anything placed inside them.
+     */
+    static void drawWaterloggedDot(PoseStack ps, MultiBufferSource buffer, double cellLeftX, double rowCY) {
+        double left = cellLeftX + ICON_LEFT_PAD - WATERLOGGED_DOT_SIZE * 0.6;
+        double top = rowCY + ICON_SIZE / 2.0;
+        drawQuad(ps, buffer, left, top - WATERLOGGED_DOT_SIZE, left + WATERLOGGED_DOT_SIZE, top, WATERLOGGED_DOT);
     }
 
     static void drawQuad(PoseStack ps, MultiBufferSource buffer,
