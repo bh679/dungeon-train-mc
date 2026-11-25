@@ -5,10 +5,14 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
@@ -27,10 +31,11 @@ import java.util.function.IntFunction;
  * hook. This does the same writes for a fraction of that, and keeps what those updates were for:</p>
  * <ul>
  *   <li><b>Block entities</b> are evicted before their block goes, so nothing spills.</li>
- *   <li><b>Light:</b> a cell that was emitting is relit, and a section's emptiness is reported. A
- *       written cell otherwise keeps the light it had, which is right for what is written here: an
- *       opaque block hides it, and {@code ForcedAir} keeps the 0 of basement rock or the open-air
- *       value of an attic. {@link #quietSafe} keeps everything else on the ordinary path.</li>
+ *   <li><b>Light,</b> as {@code LevelChunk.setBlockState} keeps it: where a cell's light properties
+ *       change, the column's sky source is moved and a light check is queued, and a section's
+ *       emptiness is reported. The check is skipped only where it could find nothing: the sky source
+ *       did not move and neither the section nor any beside it holds light (basement rock, the usual
+ *       case). {@link #quietSafe} keeps glowing and see-through shell blocks on the ordinary path.</li>
  *   <li><b>Heightmaps</b> are updated per cell, so an attic room's ceiling counts for rain, snow
  *       and spawning as it did.</li>
  *   <li><b>Shapes:</b> a cell inside {@code loud} (callers pass the corridors, grown by one) is
@@ -95,6 +100,7 @@ final class PortalQuietFill {
                 if (sIdx < 0 || sIdx >= chunk.getSectionsCount()) return;
                 LevelChunkSection section = chunk.getSection(sIdx);
                 int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+                boolean lit = lightNear(level, SectionPos.of(minX >> 4, baseY >> 4, minZ >> 4));
                 int count = 0;
                 for (int y = minY; y <= maxY; y++) {
                     BlockState row = rowAt.apply(y);
@@ -110,8 +116,8 @@ final class PortalQuietFill {
                                 continue;
                             }
                             if (state.hasBlockEntity()) SilentBlockOps.evictBlockEntity(chunk, pos);
-                            if (state.getLightEmission() > 0) emitters.add(pos.immutable());
                             section.setBlockState(x & 15, y - baseY, z & 15, row, false);
+                            if (needsLightCheck(chunk, pos, state, row, lit)) emitters.add(pos.immutable());
                             updateHeightmaps(chunk, x, y, z, row);
                             level.getChunkSource().blockChanged(pos);
                             count++;
@@ -152,7 +158,46 @@ final class PortalQuietFill {
             level.getChunkSource().getLightEngine().updateSectionStatus(
                 SectionPos.of(pos.getX() >> 4, baseY >> 4, pos.getZ() >> 4), section.hasOnlyAir());
         }
-        if (old.getLightEmission() > 0) level.getChunkSource().getLightEngine().checkBlock(pos);
+        if (needsLightCheck(chunk, pos, old, state,
+                lightNear(level, SectionPos.of(pos.getX() >> 4, baseY >> 4, pos.getZ() >> 4)))) {
+            level.getChunkSource().getLightEngine().checkBlock(pos);
+        }
+    }
+
+    /**
+     * What {@code LevelChunk.setBlockState} does for light, after the write: where the light
+     * properties changed, move the column's sky source and ask for a light check. The check is skipped
+     * only where it could find nothing: the sky source did not move and neither this section nor any
+     * beside it holds light, which is basement rock.
+     */
+    private static boolean needsLightCheck(LevelChunk chunk, BlockPos pos, BlockState old, BlockState now,
+                                           boolean lightNear) {
+        if (!LightEngine.hasDifferentLightProperties(chunk, pos, old, now)) return false;
+        boolean skyMoved = chunk.getSkyLightSources().update(chunk, pos.getX() & 15, pos.getY(), pos.getZ() & 15);
+        return skyMoved || lightNear;
+    }
+
+    /** Whether {@code section} or any of its six neighbours may hold light. */
+    private static boolean lightNear(ServerLevel level, SectionPos section) {
+        if (holdsLight(level, section)) return true;
+        for (net.minecraft.core.Direction d : net.minecraft.core.Direction.values()) {
+            SectionPos beside = SectionPos.of(
+                section.x() + d.getStepX(), section.y() + d.getStepY(), section.z() + d.getStepZ());
+            if (holdsLight(level, beside)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Whether any cell of the section may hold light, sky or block. Conservative: a sky layer the
+     * engine holds no data for counts as lit, since the sky may be standing in for it.
+     */
+    private static boolean holdsLight(ServerLevel level, SectionPos section) {
+        LevelLightEngine engine = level.getChunkSource().getLightEngine();
+        DataLayer block = engine.getLayerListener(LightLayer.BLOCK).getDataLayerData(section);
+        if (block != null && !block.isDefinitelyFilledWith(0)) return true;
+        DataLayer sky = engine.getLayerListener(LightLayer.SKY).getDataLayerData(section);
+        return sky == null || !sky.isDefinitelyFilledWith(0);
     }
 
     private static void updateHeightmaps(LevelChunk chunk, int x, int y, int z, BlockState state) {
@@ -162,6 +207,7 @@ final class PortalQuietFill {
     }
 
     private static void relight(ServerLevel level, List<BlockPos> emitters) {
+        // Cells whose light needs another look (see needsLightCheck), queued as setBlock would.
         for (BlockPos emitter : emitters) {
             level.getChunkSource().getLightEngine().checkBlock(emitter);
         }
