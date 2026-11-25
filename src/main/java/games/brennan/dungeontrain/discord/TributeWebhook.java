@@ -15,19 +15,20 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * A player's own Discord webhook, set on the Options Account tab. Each link gets the feeds the player
+ * A player's own Discord or Fluxer webhook, set on the Options Account tab. Fluxer's execute route takes
+ * Discord's body (username, avatar_url, embeds, allowed_mentions, payload_json + files[0]), so one post fits both. Each link gets the feeds the player
  * picked for it ({@link WebhookFeed}): the photos they pay Tribute to ({@link TributePhotoReporter#postPersonal})
  * and their own passenger log posts ({@link PassengerLogWebhooks}).
  *
  * <p>The link is a secret (anyone holding it can post to that channel), and on a multiplayer server it
- * is a URL the <i>server</i> fetches on a player's say-so. So: {@link #isValid} accepts a Discord webhook
- * link and nothing else, the server re-checks it on receipt, and nothing here ever logs it. Posts are
+ * is a URL the <i>server</i> fetches on a player's say-so. So: {@link #isValid} accepts a Discord or Fluxer
+ * webhook link on an official host and nothing else, the server re-checks it on receipt, and nothing here ever logs it. Posts are
  * best-effort and never retried or queued to disk.</p>
  *
  * <p>No Minecraft types: shared by the client (Send test) and the server (the Tribute post).</p>
@@ -44,10 +45,27 @@ public final class TributeWebhook {
      */
     public static final int MAX_LINKS = 25;
 
-    private static final Set<String> HOSTS =
-            Set.of("discord.com", "discordapp.com", "ptb.discord.com", "canary.discord.com");
-    /** {@code /api/webhooks/<id>/<token>} with an optional trailing slash, nothing else. */
-    private static final Pattern PATH = Pattern.compile("/api/webhooks/(\\d{1,25})/([A-Za-z0-9_-]{1,100})/?");
+    /** {@code /webhooks/<id>/<token>} with an optional trailing slash, behind each platform's prefix. */
+    private static final String WEBHOOK = "/webhooks/(\\d{1,25})/([A-Za-z0-9_-]{1,100})/?";
+    /** Discord: {@code /api/webhooks/<id>/<token>}, nothing else. */
+    private static final Pattern DISCORD_PATH = Pattern.compile("/api" + WEBHOOK);
+    /** Fluxer's public API under {@code /api}, with or without its {@code /v1} version. */
+    private static final Pattern FLUXER_API_PATH = Pattern.compile("/api(?:/v1)?" + WEBHOOK);
+    /** Fluxer's API host, which serves the same routes at its root. */
+    private static final Pattern FLUXER_ROOT_PATH = Pattern.compile("(?:/v1)?" + WEBHOOK);
+
+    /**
+     * Every host a link may point at, with the path it must have there. Official hosts only: on a
+     * multiplayer server the server fetches the link, so a self-hosted Fluxer (any host) is refused.
+     */
+    private static final Map<String, Pattern> PATHS = Map.of(
+            "discord.com", DISCORD_PATH,
+            "discordapp.com", DISCORD_PATH,
+            "ptb.discord.com", DISCORD_PATH,
+            "canary.discord.com", DISCORD_PATH,
+            "fluxer.com", FLUXER_API_PATH,
+            "web.fluxer.app", FLUXER_API_PATH,
+            "api.fluxer.app", FLUXER_ROOT_PATH);
 
     /** Discord's embed limits: a post over any of them is refused whole. */
     static final int MAX_TITLE = 256;
@@ -74,23 +92,38 @@ public final class TributeWebhook {
         return raw == null ? "" : raw.strip();
     }
 
-    /** Whether {@code raw} (after {@link #normalize}) is a Discord webhook link. */
+    /** Whether {@code raw} (after {@link #normalize}) is a Discord or Fluxer webhook link. */
     public static boolean isValid(String raw) {
+        return match(raw) != null;
+    }
+
+    /** The matched webhook path of a valid link (group 1 = id, group 2 = token), or null. */
+    private static java.util.regex.Matcher match(String raw) {
         String url = normalize(raw);
-        if (url.isEmpty() || url.length() > MAX_LENGTH) return false;
+        if (url.isEmpty() || url.length() > MAX_LENGTH) return null;
         URI uri;
         try {
             uri = new URI(url);
         } catch (URISyntaxException e) {
-            return false;
+            return null;
         }
-        if (!"https".equals(uri.getScheme())) return false;
-        if (uri.getRawUserInfo() != null || uri.getPort() != -1) return false;
-        if (uri.getRawQuery() != null || uri.getRawFragment() != null) return false;
+        if (!"https".equals(uri.getScheme())) return null;
+        if (uri.getRawUserInfo() != null || uri.getPort() != -1) return null;
+        if (uri.getRawQuery() != null || uri.getRawFragment() != null) return null;
         String host = uri.getHost();
-        if (host == null || !HOSTS.contains(host.toLowerCase(Locale.ROOT))) return false;
         String path = uri.getRawPath();
-        return path != null && PATH.matcher(path).matches();
+        if (host == null || path == null) return null;
+        Pattern pattern = PATHS.get(host.toLowerCase(Locale.ROOT));
+        if (pattern == null) return null;
+        java.util.regex.Matcher m = pattern.matcher(path);
+        return m.matches() ? m : null;
+    }
+
+    /** {@code "Discord"} or {@code "Fluxer"} for a valid link, {@code ""} otherwise. */
+    public static String platform(String raw) {
+        if (!isValid(raw)) return "";
+        String host = URI.create(normalize(raw)).getHost().toLowerCase(Locale.ROOT);
+        return host.endsWith("fluxer.com") || host.endsWith("fluxer.app") ? "Fluxer" : "Discord";
     }
 
     /**
@@ -123,15 +156,21 @@ public final class TributeWebhook {
     /** Two spellings of one link compare equal: host case and a trailing slash don't matter. */
     static String sameLinkKey(String url) {
         String u = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-        int path = u.indexOf("/api/");
-        return path < 0 ? u : u.substring(0, path).toLowerCase(Locale.ROOT) + u.substring(path);
+        try {
+            URI uri = new URI(u);
+            if (uri.getHost() != null && uri.getRawPath() != null) {
+                return uri.getScheme() + "://" + uri.getHost().toLowerCase(Locale.ROOT) + uri.getRawPath();
+            }
+        } catch (URISyntaxException ignored) {
+            // not a link: compare as typed
+        }
+        return u;
     }
 
     /** The webhook's numeric id (not secret), or {@code ""} for an invalid link. */
     public static String webhookId(String raw) {
-        if (!isValid(raw)) return "";
-        java.util.regex.Matcher m = PATH.matcher(URI.create(normalize(raw)).getRawPath());
-        return m.matches() ? m.group(1) : "";
+        java.util.regex.Matcher m = match(raw);
+        return m == null ? "" : m.group(1);
     }
 
     /** Whether {@code url} is already in {@code links} (as {@link #sameLinkKey} sees it). */
