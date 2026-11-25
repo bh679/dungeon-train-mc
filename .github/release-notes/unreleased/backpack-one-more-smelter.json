@@ -1,0 +1,17 @@
+{
+  "id": "backpack-one-more-smelter",
+  "version": "0.2014.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility",
+    "ui"
+  ],
+  "title": "Backpack beside one more smelter",
+  "summary": "Your backpack now also opens beside one more smelter, so you can feed it and collect from it straight from your backpack.",
+  "highlights": [],
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
