@@ -1128,8 +1128,11 @@ public final class PortalCarriageBuilder {
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Void writes nothing around the room at all and sweeps the space instead.
         long roomAt = System.nanoTime();
+        // A generated room's shell goes into the sections rather than through setBlock, all but the
+        // cells beside a corridor. See PortalQuietFill.
+        List<BoundingBox> quiet = quietAround(structure, dims);
         if (structure.mode().sealsRoomBox()) {
-            bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
+            bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure), quiet);
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
             // A chunk of terrain enclosed as Void or World Border has no skin, and its sea or lava
@@ -1137,7 +1140,7 @@ public final class PortalCarriageBuilder {
             // when the fluid barrier no longer knows the room is there — so it gets a skin that only
             // fluid notices: invisible, walk-through, and refusing every fluid (ForcedAirBlock).
             BlockState guard = fluidGuardFor(structure.mode());
-            if (guard != null) bedrockSkin(level, roomOrigin, roomSize, guard);
+            if (guard != null) bedrockSkin(level, roomOrigin, roomSize, guard, quiet);
         } else if (structure.mode().tiles()) {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
@@ -1152,9 +1155,9 @@ public final class PortalCarriageBuilder {
         if (structure.mode().sealsCorridors()) {
             BlockState lock = lockStateFor(structure);
             bedrockSkinCorridor(level, structure.origin(), dims, layout, PortalCarriageRole.ENTRY,
-                roomOrigin, roomSize, lock);
+                roomOrigin, roomSize, lock, quiet);
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
-                PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
+                PortalCarriageRole.EXIT, roomOrigin, roomSize, lock, quiet);
         }
 
         long corridorsAt = System.nanoTime();
@@ -1176,6 +1179,16 @@ public final class PortalCarriageBuilder {
             stampMillis(clearNanos), stampMillis(templateNanos), stampMillis(skinAt - roomAt),
             stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured,
             laid != null);
+    }
+
+    /**
+     * For a room that generates terrain, the cells its quiet shell writes must still write loudly:
+     * its corridors and plugs, grown by one ({@link PortalQuietFill}). Null for every other room,
+     * whose shell is written as it always was.
+     */
+    private static List<BoundingBox> quietAround(PortalStructure structure, CarriageDims dims) {
+        if (!structure.mode().generatesTerrain()) return null;
+        return PortalQuietFill.grown(corridorMask(structure, dims, /*withSeals*/ false));
     }
 
     private static String stampMillis(long nanos) {
@@ -1332,7 +1345,10 @@ public final class PortalCarriageBuilder {
             // fluid guard, open to walk through but closed to the room's water.
             base.mode().generatesTerrain()
                 ? (base.mode().sealsRoomBox() ? lockStateFor(base) : fluidGuardOrAir(base.mode()))
-                : null);
+                : null,
+            // A generated room's seal plane goes into the sections, all but the cells beside the
+            // corridor, whose blocks still get their shape updates. See PortalQuietFill.
+            quietAround(base, dims));
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -1463,7 +1479,7 @@ public final class PortalCarriageBuilder {
     }
 
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size,
-                                    BlockState lock) {
+                                    BlockState lock, List<BoundingBox> quiet) {
         int x0 = roomOrigin.getX() - 1;
         int x1 = roomOrigin.getX() + size.getX();
         int z0 = roomOrigin.getZ();
@@ -1472,6 +1488,17 @@ public final class PortalCarriageBuilder {
         int ceilingY = floorY + size.getY() - 1;
         int belowY = lowestWritableY(level.getMinBuildHeight(), floorY);
         int aboveY = highestWritableY(level.getMaxBuildHeight(), ceilingY);
+
+        if (quiet != null && PortalQuietFill.quietSafe(lock)) {
+            // The same planes as below, written into the sections.
+            PortalQuietFill.fill(level, new BoundingBox(x0, belowY, z0 - 1, x1, aboveY, z0 - 1), lock, quiet);
+            PortalQuietFill.fill(level, new BoundingBox(x0, belowY, z1 + 1, x1, aboveY, z1 + 1), lock, quiet);
+            PortalQuietFill.fill(level, new BoundingBox(x0, aboveY, z0 - 1, x1, aboveY, z1 + 1), lock, quiet);
+            if (belowY < floorY) {
+                PortalQuietFill.fill(level, new BoundingBox(x0, belowY, z0 - 1, x1, belowY, z1 + 1), lock, quiet);
+            }
+            return;
+        }
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -1512,17 +1539,25 @@ public final class PortalCarriageBuilder {
     private static void bedrockSkinCorridor(ServerLevel level, BlockPos corridorOrigin,
                                             CarriageDims dims, PortalCarriageLayout layout,
                                             PortalCarriageRole role, BlockPos roomOrigin,
-                                            Vec3i roomSize, BlockState lock) {
+                                            Vec3i roomSize, BlockState lock, List<BoundingBox> quiet) {
         int worldMinY = level.getMinBuildHeight();
         int worldMaxY = level.getMaxBuildHeight();
         fill(level, corridorLockBoxes(
-            corridorOrigin, dims, layout.length(), role, worldMinY, worldMaxY), lock);
+            corridorOrigin, dims, layout.length(), role, worldMinY, worldMaxY), lock, quiet);
         fill(level, roomEndCapBoxes(
-            corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY, worldMaxY), lock);
+            corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY, worldMaxY), lock, quiet);
     }
 
-    /** Write {@code lock} into every cell of every box. */
-    private static void fill(ServerLevel level, List<BoundingBox> boxes, BlockState lock) {
+    /**
+     * Write {@code lock} into every cell of every box: into the sections when {@code quiet} is given
+     * and the block allows it ({@link PortalQuietFill}), through {@code setBlock} otherwise.
+     */
+    private static void fill(ServerLevel level, List<BoundingBox> boxes, BlockState lock,
+                             List<BoundingBox> quiet) {
+        if (quiet != null && PortalQuietFill.quietSafe(lock)) {
+            for (BoundingBox box : boxes) PortalQuietFill.fill(level, box, lock, quiet);
+            return;
+        }
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (BoundingBox box : boxes) {
             for (int x = box.minX(); x <= box.maxX(); x++) {
@@ -2771,7 +2806,8 @@ public final class PortalCarriageBuilder {
     private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
                                           CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize,
                                           BlockPos baseRoomOrigin, PortalCarriageRole role,
-                                          boolean wallOnly, BlockState openFill) {
+                                          boolean wallOnly, BlockState openFill,
+                                          List<BoundingBox> quiet) {
         int floorY = roomOrigin.getY();
         int ceilingY = floorY + roomSize.getY() - 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -2792,7 +2828,12 @@ public final class PortalCarriageBuilder {
                 BlockState fill = sealFillFor(level, baseRoomOrigin, roomOrigin, roomSize, role,
                     y, z, floorY, wallOnly, openFill);
                 if (fill == null) continue;
-                level.setBlock(pos.set(planeX, y, z), fill, Block.UPDATE_ALL);
+                pos.set(planeX, y, z);
+                if (quiet != null && PortalQuietFill.quietSafe(fill)) {
+                    PortalQuietFill.set(level, pos, fill, quiet);
+                } else {
+                    level.setBlock(pos, fill, Block.UPDATE_ALL);
+                }
             }
         }
     }

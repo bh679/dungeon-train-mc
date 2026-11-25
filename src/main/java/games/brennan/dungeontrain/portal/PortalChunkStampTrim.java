@@ -1,19 +1,14 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.mixin.StructureTemplateAccessor;
-import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -123,73 +118,12 @@ final class PortalChunkStampTrim {
     }
 
     /**
-     * Write {@code plan}'s rows over its box, chunk section by section: no light engine, no
-     * neighbour updates, no drops — {@link PortalClear#clearBox}'s write, with the row's state for
-     * air. A block entity is evicted before its block goes; a cell that was emitting light is relit;
-     * a column that is not loaded takes the silent per-cell path, as {@code PortalClear} does.
+     * Write {@code plan}'s rows over its box straight into the chunk sections ({@link PortalQuietFill}).
      *
      * @return how many cells changed
      */
     static int lay(ServerLevel level, Plan plan, int roomOriginY) {
-        int[] changed = {0};
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        List<BlockPos> emitters = new ArrayList<>();
-        PortalClear.forEachSpan(plan.box(), level.getMinBuildHeight(), level.getMaxBuildHeight() - 1,
-            (minX, minY, minZ, maxX, maxY, maxZ) -> {
-                LevelChunk chunk = level.getChunkSource().getChunkNow(minX >> 4, minZ >> 4);
-                if (chunk == null) {
-                    changed[0] += laySlow(level, pos, plan.rows(), roomOriginY, minX, minY, minZ, maxX, maxY, maxZ);
-                    return;
-                }
-                int sIdx = chunk.getSectionIndex(minY);
-                if (sIdx < 0 || sIdx >= chunk.getSectionsCount()) return;
-                LevelChunkSection section = chunk.getSection(sIdx);
-                int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
-                int count = 0;
-                for (int y = minY; y <= maxY; y++) {
-                    BlockState row = plan.rows()[y - roomOriginY];
-                    if (row.isAir() && section.hasOnlyAir()) continue;
-                    for (int x = minX; x <= maxX; x++) {
-                        for (int z = minZ; z <= maxZ; z++) {
-                            BlockState state = section.getBlockState(x & 15, y - baseY, z & 15);
-                            if (state == row) continue;
-                            pos.set(x, y, z);
-                            if (state.hasBlockEntity()) SilentBlockOps.evictBlockEntity(chunk, pos);
-                            if (state.getLightEmission() > 0) emitters.add(pos.immutable());
-                            section.setBlockState(x & 15, y - baseY, z & 15, row, false);
-                            level.getChunkSource().blockChanged(pos);
-                            count++;
-                        }
-                    }
-                }
-                if (count > 0) {
-                    chunk.setUnsaved(true);
-                    level.getChunkSource().getLightEngine().updateSectionStatus(
-                        SectionPos.of(minX >> 4, baseY >> 4, minZ >> 4), section.hasOnlyAir());
-                    changed[0] += count;
-                }
-            });
-        for (BlockPos emitter : emitters) {
-            level.getChunkSource().getLightEngine().checkBlock(emitter);
-        }
-        return changed[0];
-    }
-
-    /** {@link #lay} for a column that is not loaded: correct and slow, as {@code PortalClear}'s fallback. */
-    private static int laySlow(ServerLevel level, BlockPos.MutableBlockPos pos, BlockState[] rows, int roomOriginY,
-                               int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        int count = 0;
-        for (int y = minY; y <= maxY; y++) {
-            BlockState row = rows[y - roomOriginY];
-            for (int x = minX; x <= maxX; x++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    pos.set(x, y, z);
-                    if (level.getBlockState(pos) == row) continue;
-                    SilentBlockOps.setBlockSilentNoCascade(level, pos, row, null);
-                    count++;
-                }
-            }
-        }
-        return count;
+        BlockState[] rows = plan.rows();
+        return PortalQuietFill.fill(level, plan.box(), y -> rows[y - roomOriginY], List.of());
     }
 }
