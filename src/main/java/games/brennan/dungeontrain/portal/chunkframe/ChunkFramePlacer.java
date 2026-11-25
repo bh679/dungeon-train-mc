@@ -313,6 +313,8 @@ public final class ChunkFramePlacer {
         VariantDoc variants = picked.variants();
         long seed = level.getSeed();
         int changed = 0;
+        int wetted = 0;
+        int keptDry = 0;
         Vec3i size = frame.size();
         BlockPos.MutableBlockPos local = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
@@ -371,8 +373,9 @@ public final class ChunkFramePlacer {
                         if (mask.covers(cursor)) continue;
                         if (seaTopY != FrameWaterlog.NO_SEA && cursor.getY() <= seaTopY
                                 && FrameWaterlog.canHoldWater(state)) {
-                            state = FrameWaterlog.apply(state, cursor.getY(), seaTopY,
-                                touchesForcedAir(frame, variants, x, y, z, seed, rollIndex));
+                            boolean dry = touchesForcedAir(frame, variants, x, y, z, seed, rollIndex);
+                            state = FrameWaterlog.apply(state, cursor.getY(), seaTopY, dry);
+                            if (dry) keptDry++; else wetted++;
                         }
                         BlockState current = level.getBlockState(cursor);
                         if (current != state) {
@@ -388,6 +391,10 @@ public final class ChunkFramePlacer {
                     }
                 }
             }
+        }
+        if (wetted + keptDry > 0) {
+            LOGGER.debug("[DungeonTrain] Chunk frame '{}' layers {}..{}: {} block(s) waterlogged under the sea "
+                + "(top y {}), {} kept dry beside Forced Air", picked.name(), yFrom, yTo - 1, wetted, seaTopY, keptDry);
         }
         return changed;
     }
