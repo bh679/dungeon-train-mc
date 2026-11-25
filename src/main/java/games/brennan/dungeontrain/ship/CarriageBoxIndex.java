@@ -176,6 +176,97 @@ public final class CarriageBoxIndex<T> {
         return -1;
     }
 
+    /**
+     * The first index at or after {@code from} whose grown box lies within {@code pad} of the point
+     * (touching or inside counts), or {@code -1}. The "near" counterpart of {@link #nextCandidate}.
+     */
+    public int nextWithin(double x, double y, double z, double pad, int from) {
+        if (x < unionMinX - pad || x > unionMaxX + pad
+            || y < unionMinY - pad || y > unionMaxY + pad
+            || z < unionMinZ - pad || z > unionMaxZ + pad) {
+            return -1;
+        }
+        for (int i = Math.max(from, 0); i < handles.length; i++) {
+            if (x >= minX[i] - pad && x <= maxX[i] + pad
+                && y >= minY[i] - pad && y <= maxY[i] + pad
+                && z >= minZ[i] - pad && z <= maxZ[i] + pad) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * The first carriage, in index order, whose <b>live</b> box grown by {@code margin} holds the
+     * point, or {@code -1}. Coarse boxes only pick the candidates; {@code live} settles each one, so
+     * a carriage that has moved since the snapshot is judged where it is now. Index order keeps the
+     * old "first match in {@code findAll} order" tie-break where two carriages' margins overlap.
+     *
+     * @param scratch at least 6 doubles, overwritten
+     */
+    public int firstContaining(double x, double y, double z, double margin, BoxReader<T> live, double[] scratch) {
+        for (int i = nextWithin(x, y, z, margin, 0); i >= 0; i = nextWithin(x, y, z, margin, i + 1)) {
+            live.read(handle(i), scratch);
+            if (!ShipAabbs.isDegenerate(scratch[0], scratch[1], scratch[2], scratch[3], scratch[4], scratch[5])
+                && insideGrown(scratch, x, y, z, margin)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * The (at most) two carriages nearest the point whose <b>live</b> box lies within {@code pad} of
+     * it, nearest first, written to {@code out[0..1]}; returns how many (0, 1 or 2). A point inside a
+     * box is at distance 0. Every coarse candidate is measured against its live box before any is
+     * dropped: near a gap a point sits inside several grown boxes, so cutting on the coarse boxes
+     * could lose the carriage it is actually on. Ties keep index order. No allocation.
+     *
+     * @param scratch at least 6 doubles, overwritten
+     * @param out     at least 2 ints
+     */
+    public int nearestTwo(double x, double y, double z, double pad, BoxReader<T> live,
+                          double[] scratch, int[] out) {
+        double padSq = pad * pad;
+        int first = -1, second = -1;
+        double firstD = Double.POSITIVE_INFINITY, secondD = Double.POSITIVE_INFINITY;
+        for (int i = nextWithin(x, y, z, pad, 0); i >= 0; i = nextWithin(x, y, z, pad, i + 1)) {
+            live.read(handle(i), scratch);
+            if (ShipAabbs.isDegenerate(scratch[0], scratch[1], scratch[2], scratch[3], scratch[4], scratch[5])) {
+                continue;
+            }
+            double d = boxDistanceSq(scratch, x, y, z);
+            if (d > padSq) continue;
+            if (d < firstD) {
+                second = first;
+                secondD = firstD;
+                first = i;
+                firstD = d;
+            } else if (d < secondD) {
+                second = i;
+                secondD = d;
+            }
+        }
+        int n = 0;
+        if (first >= 0) out[n++] = first;
+        if (second >= 0) out[n++] = second;
+        return n;
+    }
+
+    /** Squared distance from the point to box {@code b[0..5]}; 0 inside or on it. */
+    static double boxDistanceSq(double[] b, double x, double y, double z) {
+        double dx = Math.max(Math.max(b[0] - x, 0.0), x - b[3]);
+        double dy = Math.max(Math.max(b[1] - y, 0.0), y - b[4]);
+        double dz = Math.max(Math.max(b[2] - z, 0.0), z - b[5]);
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    private static boolean insideGrown(double[] b, double x, double y, double z, double margin) {
+        return x >= b[0] - margin && x <= b[3] + margin
+            && y >= b[1] - margin && y <= b[4] + margin
+            && z >= b[2] - margin && z <= b[5] + margin;
+    }
+
     /** The handle indexed at {@code i}, as returned by {@link #nextCandidate}. */
     @SuppressWarnings("unchecked")
     public T handle(int i) {

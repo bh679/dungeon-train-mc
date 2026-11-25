@@ -10,7 +10,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.MobBreakContext;
 import games.brennan.dungeontrain.train.PlayerBlockBreakOff;
 import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
-import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.train.NearbyCarriages;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -42,7 +42,6 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.event.EventHooks;
 import org.joml.Vector3d;
-import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -770,19 +769,22 @@ public final class MobDigGoal extends Goal {
         return level.getBlockState(c.worldPos);
     }
 
-    /** Carriages whose box (padded) holds the mob. */
+    /** {@link #shipsNear}'s answer for {@link #shipsTick}: one lookup per tick, however many callers. */
+    private List<ManagedShip> ships = List.of();
+    private int shipsTick = Integer.MIN_VALUE;
+
+    /**
+     * The nearest carriages (at most two, the one it stands on first) whose box, padded by
+     * {@link #CARRIAGE_PAD}, holds the mob. Every cell this goal reads is next to the mob, so two is
+     * all it can need. From the per-tick carriage index ({@link NearbyCarriages}), and asked once per
+     * tick: {@code canUse} reaches here up to four times.
+     */
     private List<ManagedShip> shipsNear(ServerLevel level) {
-        List<ManagedShip> out = new ArrayList<>();
-        double x = mob.getX(), y = mob.getY(), z = mob.getZ();
-        for (Trains.Carriage c : Trains.allCarriages(level)) {
-            if (!(c.ship() instanceof SableManagedShip sable) || sable.subLevel() == null) continue;
-            AABBdc bb = c.ship().worldAABB();
-            if (x < bb.minX() - CARRIAGE_PAD || x > bb.maxX() + CARRIAGE_PAD) continue;
-            if (y < bb.minY() - CARRIAGE_PAD || y > bb.maxY() + CARRIAGE_PAD) continue;
-            if (z < bb.minZ() - CARRIAGE_PAD || z > bb.maxZ() + CARRIAGE_PAD) continue;
-            out.add(c.ship());
+        if (shipsTick != mob.tickCount) {
+            ships = NearbyCarriages.nearestTwo(level, mob.getX(), mob.getY(), mob.getZ(), CARRIAGE_PAD);
+            shipsTick = mob.tickCount;
         }
-        return out;
+        return ships;
     }
 
     /**
