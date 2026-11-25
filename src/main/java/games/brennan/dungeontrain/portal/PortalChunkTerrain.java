@@ -583,7 +583,7 @@ public final class PortalChunkTerrain {
     static void publishDecorated(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
         Cached current = READY.get(pairKey);
         if (current == null || !sameRoom(current.roomName(), roomName) || current.roll() != roll) return;
-        READY.put(pairKey, new Cached(roomName, roll, slice));
+        READY.put(pairKey, new Cached(roomName, roll, PortalChunkDecorationDiff.attach(current.slice(), slice)));
         DECORATED.add(pairKey);
     }
 
