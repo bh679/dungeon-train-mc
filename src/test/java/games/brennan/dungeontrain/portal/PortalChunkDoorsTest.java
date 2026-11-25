@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Where {@link PortalChunkDoors#fit} stands a chunk dimension's two doorways: on the sampled
@@ -45,6 +47,62 @@ class PortalChunkDoorsTest {
     private static PortalRoomSettings fit(String tag, PortalChunkSlice slice, Vec3i size) {
         return PortalChunkDoors.fit(PortalRoomSettings.parse(tag), slice, DIMS,
             PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.DEFAULT), size);
+    }
+
+    /** A 3x3 sample: stone up to {@code topRow} only in columns {@code zFrom..zTo} (every x), air elsewhere. */
+    private static PortalChunkSlice stripSlice(int width, int topRow, int zFrom, int zTo) {
+        BlockState[] states = new BlockState[width * HEIGHT * width];
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int z = 0; z < width; z++) {
+                for (int x = 0; x < width; x++) {
+                    boolean stone = y <= topRow && z >= zFrom && z <= zTo;
+                    states[PortalChunkArea.index(width, x, y, z)] = stone
+                        ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState();
+                }
+            }
+        }
+        return new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width, HEIGHT, states,
+            Map.of(), List.of());
+    }
+
+    private static final String TAG_3X3 =
+        "chunk_dimension/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_surface";
+
+    @Test
+    @DisplayName("A 3x3 door with no ground in its mouth slides sideways onto ground, each end on its own")
+    void threeByThree_slidesDoorSidewaysOntoGround() {
+        Vec3i size = new Vec3i(3 * CHUNK, 22, 3 * CHUNK);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.DEFAULT);
+        int limit = PortalRoomLayout.maxDoorOffset(DIMS, size.getZ());
+        assertTrue(limit > 0, "a 3x3 room leaves the door room to move");
+        int[] far = PortalChunkDoors.doorwayColumns(DIMS, layout, size, limit);
+        int[] centre = PortalChunkDoors.doorwayColumns(DIMS, layout, size, 0);
+        // Ground only under the far-offset doorway's columns that the centred doorway does not cover.
+        int zFrom = Math.max(far[0], centre[1] + 1);
+        int zTo = far[1];
+        assertTrue(zFrom <= zTo, "the far doorway reaches columns the centred one does not");
+        PortalChunkSlice slice = stripSlice(size.getX(), 5, zFrom, zTo);
+
+        PortalRoomSettings fitted = fit(TAG_3X3, slice, size);
+
+        assertNotEquals(0, fitted.doorOffset().value(), "entry moved off the empty centre");
+        assertNotEquals(0, fitted.exitDoorOffset().value(), "exit moved off the empty centre");
+        int[] entry = PortalChunkDoors.doorwayColumns(DIMS, layout, size, fitted.doorOffset().value());
+        assertTrue(PortalChunkDoors.mouthHasGround(slice, 0, 1, entry[0], entry[1], 22),
+            "the moved entry starts against a block");
+    }
+
+    @Test
+    @DisplayName("A 3x3 door stays put when its mouth already has ground, or when no offset has any")
+    void threeByThree_keepsDoorWhenGroundedOrHopeless() {
+        Vec3i size = new Vec3i(3 * CHUNK, 22, 3 * CHUNK);
+        PortalRoomSettings grounded = fit(TAG_3X3, stripSlice(size.getX(), 5, 0, size.getZ() - 1), size);
+        assertEquals(0, grounded.doorOffset().value());
+        assertEquals(0, grounded.exitDoorOffset().value());
+
+        PortalRoomSettings empty = fit(TAG_3X3, stripSlice(size.getX(), -1, 0, 0), size);
+        assertEquals(0, empty.doorOffset().value());
+        assertEquals(0, empty.exitDoorOffset().value());
     }
 
     @Test
