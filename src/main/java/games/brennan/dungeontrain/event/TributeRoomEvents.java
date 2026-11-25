@@ -57,6 +57,23 @@ public final class TributeRoomEvents {
         TributeRoomDeathKit.rememberLayout(player.getUUID(), player.getInventory());
     }
 
+    /**
+     * Start standing the room the moment they die, so the death cinematic and the perks menu both cover
+     * the wait for its chunks. A tick later, so a handler that revives them after this one never starts a
+     * room; the perks menu's own prepare is then a no-op.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingDeathPrepare(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.isCanceled()) return;
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null || server.isHardcore() || !games.brennan.dungeontrain.perks.PerksGate.isOn()) return;
+        if (TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
+        server.execute(() -> {
+            if (player.hasDisconnected() || !player.isDeadOrDying()) return;
+            TributeRoomVisitService.prepare(player);
+        });
+    }
+
     /** After every other handler has had its say on the drops, so the kit is what really fell. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDrops(LivingDropsEvent event) {

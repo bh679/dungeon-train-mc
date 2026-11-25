@@ -200,8 +200,9 @@ public final class TributeRoomVisitService {
 
     /** Server tick: sweeps that are due, then one step of every room being stood. */
     public static void tick(MinecraftServer server) {
-        if (JOBS.isEmpty() && SWEEPS.isEmpty()) return;
+        if (JOBS.isEmpty() && SWEEPS.isEmpty() && PREPARED.isEmpty()) return;
         runDueSweeps(server);
+        dropRevived(server);
         for (TributeRoomStandJob job : List.copyOf(JOBS.values())) {
             if (JOBS.get(job.player) != job) continue;
             try {
@@ -210,6 +211,22 @@ public final class TributeRoomVisitService {
                 LOGGER.error("[DungeonTrain] tribute room: standing {}'s room failed", job.playerName, t);
                 fail(server, job, "it threw " + t);
             }
+        }
+    }
+
+    /**
+     * A room standing, or stood, for someone alive again without having come (a revive, a command): let
+     * go, so its slot and tickets do not wait for them to log out. A visitor is alive too, but is not here.
+     */
+    private static void dropRevived(MinecraftServer server) {
+        if (JOBS.isEmpty() && PREPARED.isEmpty()) return;
+        java.util.Set<UUID> ids = new java.util.HashSet<>(JOBS.keySet());
+        ids.addAll(PREPARED.keySet());
+        for (UUID id : ids) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player == null || player.isDeadOrDying() || TributeRoomVisitSessions.isVisiting(id)) continue;
+            LOGGER.info("[DungeonTrain] tribute room: {} is alive again without visiting — letting their room go", player.getName().getString());
+            discardPrepared(player);
         }
     }
 
@@ -314,7 +331,9 @@ public final class TributeRoomVisitService {
      */
     private static void fail(MinecraftServer server, TributeRoomStandJob job, String why) {
         if (!JOBS.remove(job.player, job)) return;
-        LOGGER.info("[DungeonTrain] tribute room: gave up standing {}'s room ({})", job.playerName, why);
+        LOGGER.info("[DungeonTrain] tribute room: gave up standing {}'s room ({}) in phase {}, {}/{} chunk(s) in, after {} ms",
+            job.playerName, why, job.phase, TributeRoomVisitTickets.loaded(server.overworld(), job.window),
+            TributeRoomVisitTickets.waitedOn(job.window), TributeRoomStandJob.ms(System.nanoTime() - job.startedNs));
         TributeRoomVisitTickets.releaseDeathSpot(server.getLevel(job.deathDim), job.deathPos, job.player);
         if (job.laid) {
             queueSweep(server, job.player, job.slot, job.window, job.playerName);
