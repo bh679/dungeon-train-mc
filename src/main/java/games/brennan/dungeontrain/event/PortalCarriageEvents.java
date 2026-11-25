@@ -2813,7 +2813,9 @@ public final class PortalCarriageEvents {
         // it and past it before it drifts out again: twice the distance per stamp, never further than
         // the allowance on either side. Not across a twin-region edge (the upside-down band): the
         // room would stand in a sealed space the carriage is not over, so it is laid level instead.
-        double lead = PortalTwinDrift.lead(allowance, travelSign);
+        // A relocation only: a first stamp is for somebody already walking up to the carriage, and
+        // laying it a few chunks ahead would only make it wait on chunks further from them.
+        double lead = existing == null ? 0.0 : PortalTwinDrift.lead(allowance, travelSign);
         if (lead != 0.0) {
             PortalTwinRegion ahead = PortalTwinSpace.regionFor(
                 level, Mth.floor(originX + lead), tallestWanted(dims));
