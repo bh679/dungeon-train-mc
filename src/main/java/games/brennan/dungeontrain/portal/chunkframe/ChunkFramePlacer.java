@@ -309,94 +309,188 @@ public final class ChunkFramePlacer {
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
                             int yFrom, int yTo, boolean skipShell, int seaTopY) {
-        ChunkFrameTemplate frame = picked.template();
-        VariantDoc variants = picked.variants();
-        long seed = level.getSeed();
-        int changed = 0;
-        int wetted = 0;
-        int keptDry = 0;
-        Vec3i size = frame.size();
-        BlockPos.MutableBlockPos local = new BlockPos.MutableBlockPos();
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        // A grown column stays inside the room: the frame's outer layer is the skybox skin, and a
-        // column through it would open the lock.
-        java.util.function.Predicate<BlockPos> within = games.brennan.dungeontrain.editor.GrowthPass
-            .inside(roomOrigin, size.getX() - 2, size.getY() - 2, size.getZ() - 2)
-            .and(p -> !mask.covers(p));
+        Writer writer = new Writer(level, picked, roomOrigin, mask, rollIndex, skipShell, seaTopY);
+        int depth = picked.template().size().getZ();
+        int height = picked.template().size().getY();
+        int from = Math.max(0, yFrom) * depth;
+        int to = Math.min(height, Math.max(0, yTo)) * depth;
         try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
-            for (int y = Math.max(0, yFrom); y < Math.min(size.getY(), yTo); y++) {
-                for (int z = 0; z < size.getZ(); z++) {
-                    for (int x = 0; x < size.getX(); x++) {
-                        if (skipShell && ChunkFrame.isShell(x, y, z, size)) continue;
-                        BlockState state = frame.at(x, y, z);
-                        CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
-                        VariantState roll = null;
-                        if (variants.statesAt(local.set(x, y, z)) != null) {
-                            roll = variants.resolve(local.immutable(), seed, rollIndex);
-                            if (roll == null || roll.isMob()) continue;
-                            // The roll's authored facing / half / toggle, not just its captured state.
-                            state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null
-                                : games.brennan.dungeontrain.editor.RotationApplier.apply(roll.state(), roll,
-                                    local.immutable(), seed, rollIndex, variants.lockIdAt(local.immutable()),
-                                    variants.rotationLockIdAt(local.immutable()));
-                            blockEntity = roll.blockEntityNbt();
-                        }
-                        // Frames are only ever placed into live rooms (the frame editor saves from its own
-                        // plot), so this is live whether or not a placement scope is open.
-                        if (games.brennan.dungeontrain.block.ForcedAir.forStamp(state, true) != state) {
-                            // The one block a frame writes as air: plain air in a frame leaves the
-                            // sampled terrain (and the sea) alone, Forced Air carves it out.
-                            cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
-                                roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
-                                roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
-                            if (mask.covers(cursor) || level.getBlockState(cursor).isAir()) continue;
-                            if (level.getBlockState(cursor).hasBlockEntity()) level.removeBlockEntity(cursor);
-                            games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilentNoCascade(level, cursor,
-                                net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
-                            changed++;
-                            continue;
-                        }
-                        if (state == null || state.isAir()) continue;
-                        // Stage placeholders become the stage's real blocks, as in every other stamp.
-                        state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);
-                        // Dungeon Train flags roll into their banners, as in every other stamp.
-                        games.brennan.dungeontrain.block.flag.FlagPlaceholders.Resolved flag =
-                            games.brennan.dungeontrain.block.flag.FlagPlaceholders.resolveInScope(
-                                state, level.registryAccess(), level.getSeed());
-                        if (flag != null) {
-                            state = flag.state();
-                            blockEntity = flag.nbt();
-                        }
-                        cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
-                            roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
-                            roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
-                        if (mask.covers(cursor)) continue;
-                        if (seaTopY != FrameWaterlog.NO_SEA && cursor.getY() <= seaTopY
-                                && FrameWaterlog.canHoldWater(state)) {
-                            boolean dry = touchesForcedAir(frame, variants, x, y, z, seed, rollIndex);
-                            state = FrameWaterlog.apply(state, cursor.getY(), seaTopY, dry);
-                            if (dry) keptDry++; else wetted++;
-                        }
-                        BlockState current = level.getBlockState(cursor);
-                        if (current != state) {
-                            if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
-                            level.setBlock(cursor, state, Block.UPDATE_ALL);
-                            applyBlockEntity(level, cursor, blockEntity);
-                            changed++;
-                        }
-                        if (roll != null) {
-                            games.brennan.dungeontrain.editor.GrowthPass.note(level, cursor.immutable(), roll, state,
-                                local.immutable(), seed, rollIndex, within);
-                        }
-                    }
-                }
+            for (int row = from; row < to; row++) writer.row(row);
+        }
+        writer.logWet(yFrom, yTo);
+        return writer.changed;
+    }
+
+    /** Rows in {@code picked}'s frame — a row being one layer at one Z, {@code size.x} cells along X. */
+    public static int rows(Picked picked) {
+        return picked.template().size().getY() * picked.template().size().getZ();
+    }
+
+    /**
+     * {@link #place}, by rows rather than whole layers ({@link #rows}), from row {@code rowFrom} and
+     * stopping at the first row boundary past {@code deadlineNanos} ({@link System#nanoTime}) — always
+     * after at least one row. A 3x3 frame's layer is 2,500 cells, so stopping only between layers
+     * overran a 20 ms tick budget by a layer's worth.
+     *
+     * @return the next row to write; {@link #rows} once the frame is down
+     */
+    public static int placeRows(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask,
+                                int rollIndex, int rowFrom, long deadlineNanos, boolean skipShell, int seaTopY) {
+        Writer writer = new Writer(level, picked, roomOrigin, mask, rollIndex, skipShell, seaTopY);
+        int rows = rows(picked);
+        int row = Math.max(0, rowFrom);
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            while (row < rows) {
+                writer.row(row++);
+                if (System.nanoTime() - deadlineNanos >= 0) break;
             }
         }
-        if (wetted + keptDry > 0) {
-            LOGGER.debug("[DungeonTrain] Chunk frame '{}' layers {}..{}: {} block(s) waterlogged under the sea "
-                + "(top y {}), {} kept dry beside Forced Air", picked.name(), yFrom, yTo - 1, wetted, seaTopY, keptDry);
+        int depth = picked.template().size().getZ();
+        writer.logWet(rowFrom / depth, (row + depth - 1) / depth);
+        return row;
+    }
+
+    /**
+     * Write the frame's cells at frame-local {@code (x, y, z)}, given as consecutive triples in
+     * {@code cells[0..count)} — and nothing else. For a room whose terrain has just been rewritten
+     * there: the frame goes back over it as the whole frame would have, Forced Air included, and a
+     * cell where the frame is plain air (or outside it) is left as the terrain.
+     *
+     * @return how many cells changed
+     */
+    public static int placeAt(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask,
+                              int rollIndex, boolean skipShell, int seaTopY, int[] cells, int count) {
+        Writer writer = new Writer(level, picked, roomOrigin, mask, rollIndex, skipShell, seaTopY);
+        Vec3i size = picked.template().size();
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            for (int i = 0; i + 2 < count; i += 3) {
+                int x = cells[i], y = cells[i + 1], z = cells[i + 2];
+                if (x < 0 || y < 0 || z < 0 || x >= size.getX() || y >= size.getY() || z >= size.getZ()) continue;
+                writer.cell(x, y, z);
+            }
         }
-        return changed;
+        return writer.changed;
+    }
+
+    /** One placement's state: what it writes with, and what it has written. */
+    private static final class Writer {
+        private final ServerLevel level;
+        private final Picked picked;
+        private final ChunkFrameTemplate frame;
+        private final VariantDoc variants;
+        private final long seed;
+        private final BlockPos roomOrigin;
+        private final PortalCorridorMask mask;
+        private final int rollIndex;
+        private final boolean skipShell;
+        private final int seaTopY;
+        private final Vec3i size;
+        private final BlockPos.MutableBlockPos local = new BlockPos.MutableBlockPos();
+        private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        private final java.util.function.Predicate<BlockPos> within;
+        int changed;
+        int wetted;
+        int keptDry;
+
+        Writer(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+               boolean skipShell, int seaTopY) {
+            this.level = level;
+            this.picked = picked;
+            this.frame = picked.template();
+            this.variants = picked.variants();
+            this.seed = level.getSeed();
+            this.roomOrigin = roomOrigin;
+            this.mask = mask;
+            this.rollIndex = rollIndex;
+            this.skipShell = skipShell;
+            this.seaTopY = seaTopY;
+            this.size = frame.size();
+            // A grown column stays inside the room: the frame's outer layer is the skybox skin, and a
+            // column through it would open the lock.
+            this.within = games.brennan.dungeontrain.editor.GrowthPass
+                .inside(roomOrigin, size.getX() - 2, size.getY() - 2, size.getZ() - 2)
+                .and(p -> !mask.covers(p));
+        }
+
+        /** Row {@code row}: layer {@code row / size.z}, at Z {@code row % size.z}. */
+        void row(int row) {
+            int y = row / size.getZ();
+            int z = row % size.getZ();
+            for (int x = 0; x < size.getX(); x++) cell(x, y, z);
+        }
+
+        void logWet(int yFrom, int yTo) {
+            if (wetted + keptDry > 0) {
+                LOGGER.debug("[DungeonTrain] Chunk frame '{}' layers {}..{}: {} block(s) waterlogged under the sea "
+                    + "(top y {}), {} kept dry beside Forced Air", picked.name(), yFrom, yTo - 1, wetted, seaTopY, keptDry);
+            }
+        }
+
+        void cell(int x, int y, int z) {
+            if (skipShell && ChunkFrame.isShell(x, y, z, size)) return;
+            BlockState state = frame.at(x, y, z);
+            CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
+            VariantState roll = null;
+            if (variants.statesAt(local.set(x, y, z)) != null) {
+                roll = variants.resolve(local.immutable(), seed, rollIndex);
+                if (roll == null || roll.isMob()) return;
+                // The roll's authored facing / half / toggle, not just its captured state.
+                state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null
+                    : games.brennan.dungeontrain.editor.RotationApplier.apply(roll.state(), roll,
+                        local.immutable(), seed, rollIndex, variants.lockIdAt(local.immutable()),
+                        variants.rotationLockIdAt(local.immutable()));
+                blockEntity = roll.blockEntityNbt();
+            }
+            // Frames are only ever placed into live rooms (the frame editor saves from its own
+            // plot), so this is live whether or not a placement scope is open.
+            if (games.brennan.dungeontrain.block.ForcedAir.forStamp(state, true) != state) {
+                // The one block a frame writes as air: plain air in a frame leaves the
+                // sampled terrain (and the sea) alone, Forced Air carves it out.
+                at(x, y, z);
+                if (mask.covers(cursor) || level.getBlockState(cursor).isAir()) return;
+                if (level.getBlockState(cursor).hasBlockEntity()) level.removeBlockEntity(cursor);
+                games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilentNoCascade(level, cursor,
+                    net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
+                changed++;
+                return;
+            }
+            if (state == null || state.isAir()) return;
+            // Stage placeholders become the stage's real blocks, as in every other stamp.
+            state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);
+            // Dungeon Train flags roll into their banners, as in every other stamp.
+            games.brennan.dungeontrain.block.flag.FlagPlaceholders.Resolved flag =
+                games.brennan.dungeontrain.block.flag.FlagPlaceholders.resolveInScope(
+                    state, level.registryAccess(), level.getSeed());
+            if (flag != null) {
+                state = flag.state();
+                blockEntity = flag.nbt();
+            }
+            at(x, y, z);
+            if (mask.covers(cursor)) return;
+            if (seaTopY != FrameWaterlog.NO_SEA && cursor.getY() <= seaTopY
+                    && FrameWaterlog.canHoldWater(state)) {
+                boolean dry = touchesForcedAir(frame, variants, x, y, z, seed, rollIndex);
+                state = FrameWaterlog.apply(state, cursor.getY(), seaTopY, dry);
+                if (dry) keptDry++; else wetted++;
+            }
+            BlockState current = level.getBlockState(cursor);
+            if (current != state) {
+                if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
+                level.setBlock(cursor, state, Block.UPDATE_ALL);
+                applyBlockEntity(level, cursor, blockEntity);
+                changed++;
+            }
+            if (roll != null) {
+                games.brennan.dungeontrain.editor.GrowthPass.note(level, cursor.immutable(), roll, state,
+                    local.immutable(), seed, rollIndex, within);
+            }
+        }
+
+        private void at(int x, int y, int z) {
+            cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
+                roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
+                roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
+        }
     }
 
     /** The six cells around frame cell {@code (x, y, z)}: does any of them write Forced Air, as rolled? */

@@ -448,14 +448,17 @@ public final class PortalChunkTerrain {
                     return;
                 }
                 if (READY.size() >= MAX_CACHE) READY.clear();
-                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
+                PortalChunkSlice groundSlice = sample.read();
+                READY.put(pairKey, new Cached(roomName, roll, groundSlice));
                 long ground = System.currentTimeMillis() - startedAt;
 
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
                     sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
                     pairKey, sample.source());
-                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
+                // With what changed since the ground, so a standing room has only that written.
+                READY.put(pairKey, new Cached(roomName, roll,
+                    PortalChunkDecorationDiff.attach(groundSlice, sample.read())));
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
                 // so it is the one worth watching; the second is only how long the room takes to
@@ -545,7 +548,7 @@ public final class PortalChunkTerrain {
     static void publishDecorated(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
         Cached current = READY.get(pairKey);
         if (current == null || !sameRoom(current.roomName(), roomName) || current.roll() != roll) return;
-        READY.put(pairKey, new Cached(roomName, roll, slice));
+        READY.put(pairKey, new Cached(roomName, roll, PortalChunkDecorationDiff.attach(current.slice(), slice)));
         DECORATED.add(pairKey);
     }
 
