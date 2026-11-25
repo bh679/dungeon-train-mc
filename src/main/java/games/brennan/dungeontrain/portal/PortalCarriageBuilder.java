@@ -1047,7 +1047,7 @@ public final class PortalCarriageBuilder {
         Vec3i roomSize = structure.roomSize();
         long startedAt = System.nanoTime();
         long trimNanos = 0L;
-        BoundingBox pourOnly = null;
+        PortalChunkStampTrim.Plan trim = null;
         long clearNanos = 0L;
         long templateNanos = 0L;
 
@@ -1056,15 +1056,16 @@ public final class PortalCarriageBuilder {
             // captured, with none of the passes that would re-roll what somebody built.
             stampRoomFromBlob(level, roomOrigin, roomSize, structure.blob(), pairKey);
         } else {
-            // A generated room's pour writes every cell its sample reaches, so the stamp only empties
-            // that volume, cheaply, and lays the template around it. See PortalChunkStampTrim.
-            pourOnly = pourOnlyBox(level, structure, dims, pairKey, roomOrigin, roomSize);
+            // A generated room's pour writes every cell its sample reaches, so over that volume the
+            // stamp lays its template's rows straight into the sections, and stamps the template
+            // proper only around it. See PortalChunkStampTrim.
+            trim = trimFor(level, structure, dims, pairKey, roomOrigin, roomSize);
             PortalCorridorMask spared = PortalCorridorMask.NONE;
-            if (pourOnly != null) {
+            if (trim != null) {
                 long trimAt = System.nanoTime();
-                PortalClear.clearBox(level, pourOnly, PortalCorridorMask.NONE);
+                PortalChunkStampTrim.lay(level, trim, roomOrigin.getY());
                 trimNanos = System.nanoTime() - trimAt;
-                spared = spared.plus(pourOnly);
+                spared = spared.plus(trim.box());
             }
             PortalCopyTiming.begin();
             stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
@@ -1129,13 +1130,15 @@ public final class PortalCarriageBuilder {
         // out of it. It and a room with no sample only want the frame, which they get now.
         boolean poured = structure.mode().generatesTerrain() && !structure.stampsFromBlob()
             && PortalChunkDimension.beginPour(level, structure, pairKey);
-        if (pourOnly != null && !poured) {
-            // The sample went between the stamp and the pour (its cache was emptied), so nothing
-            // will write the box the stamp left empty. Lay the room's template over it after all.
-            LOGGER.warn("[DungeonTrain] Portal pair {} room '{}' lost its sample mid-stamp; laying its template",
+        if (trim != null && !poured) {
+            // The sample went between the stamp and the pour (its cache was emptied). The box already
+            // holds the template's rows, so the room stands; it is only stamped whole again so the
+            // template's own write path (processors, light) has the last word, around the corridors.
+            LOGGER.warn("[DungeonTrain] Portal pair {} room '{}' lost its sample mid-stamp; stamping its template",
                 pairKey, structure.roomName());
+            PortalCorridorMask corridors = corridorMask(structure, dims);
             stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-                PortalCorridorMask.NONE, PortalCorridorMask.NONE, PLUG_EVERY_FLUID);
+                corridors, corridors, PLUG_EVERY_FLUID);
         }
         if (structure.mode().generatesTerrain() && !poured) {
             PortalChunkDimension.frame(level, structure, dims, pairKey);
@@ -1146,21 +1149,23 @@ public final class PortalCarriageBuilder {
             pairKey, structure.roomName(), structure.mode().name(), stampMillis(roomAt - startedAt),
             stampMillis(trimNanos), stampMillis(clearNanos), stampMillis(templateNanos), stampMillis(skinAt - roomAt),
             stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured,
-            pourOnly != null);
+            trim != null);
     }
 
     /**
-     * The world box a generated room's pour will write and its stamp may leave to it, or null to
-     * stamp the whole room as before: not a generated room, no sample in hand, or nothing to skip.
-     * Read from the same sample {@code beginPour} starts from, in the same tick.
+     * How a generated room's stamp may lay the box its pour will write, or null to stamp the whole
+     * room as before: not a generated room, no sample in hand, nothing to trim, or a template that is
+     * not plain rows. Read from the same sample {@code beginPour} starts from, in the same tick.
      */
-    private static BoundingBox pourOnlyBox(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                           int pairKey, BlockPos roomOrigin, Vec3i roomSize) {
+    private static PortalChunkStampTrim.Plan trimFor(ServerLevel level, PortalStructure structure,
+                                                     CarriageDims dims, int pairKey,
+                                                     BlockPos roomOrigin, Vec3i roomSize) {
         if (!structure.mode().generatesTerrain()) return null;
         PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
         if (slice == null) return null;
-        return PortalChunkStampTrim.worldBox(roomOrigin, roomSize, slice,
-            PortalChunkDimension.copyShift(structure, dims, roomSize), corridorMask(structure, dims));
+        return PortalChunkStampTrim.plan(roomOrigin, roomSize, slice,
+            PortalChunkDimension.copyShift(structure, dims, roomSize), corridorMask(structure, dims),
+            PortalRoomTemplateStore.get(level, structure.roomName(), dims).orElse(null));
     }
 
     private static String stampMillis(long nanos) {
