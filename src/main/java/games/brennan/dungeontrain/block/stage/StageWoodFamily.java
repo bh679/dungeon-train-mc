@@ -45,6 +45,8 @@ public enum StageWoodFamily {
 
     // VanillaBackport — registers pale oak under minecraft:.
     PALE_OAK("pale_oak"),
+    // VanillaBackport 1.2+ — poplar has no plain poplar_leaves, only orange / red / yellow ones.
+    POPLAR("poplar", "minecraft:yellow_poplar_leaves"),
 
     // Biomes O' Plenty.
     BOP_FIR(Mods.BOP, "fir", Style.VANILLA),
@@ -124,6 +126,15 @@ public enum StageWoodFamily {
         this.id = id;
         this.namespace = VANILLA_NS;
         this.blocks = Map.copyOf(buildBlocks(id));
+    }
+
+    /** A vanilla ({@code minecraft:}) wood whose leaves are not {@code <w>_leaves}. */
+    StageWoodFamily(String id, String leaves) {
+        this.id = id;
+        this.namespace = VANILLA_NS;
+        Map<WoodKind, String> m = buildBlocks(id);
+        m.put(WoodKind.LEAVES, leaves);
+        this.blocks = Map.copyOf(m);
     }
 
     StageWoodFamily(String namespace, String name, Style style) {

@@ -61,6 +61,13 @@ class MobPhotoCategoriesTest {
         return out;
     }
 
+    /**
+     * Mobs whose spawn category is MONSTER while their class is not an {@code Enemy}, so the photo tally
+     * ({@code PhotoSubjectTally}) still counts them as animals. VanillaBackport 1.2 makes zombie horses
+     * MONSTER-category night spawns, as vanilla's Mounts of Mayhem does, without making them enemies.
+     */
+    private static final Set<String> MONSTER_CATEGORY_ANIMALS = Set.of("minecraft:zombie_horse");
+
     @Test
     @DisplayName("vanilla hostile/animal calls match the game's mob category")
     void vanillaMatchesGame() throws IOException {
@@ -76,7 +83,8 @@ class MobPhotoCategoriesTest {
                 wrong.add(id + " is not a vanilla entity type");
                 continue;
             }
-            boolean monster = type.getCategory() == MobCategory.MONSTER;
+            boolean monster = type.getCategory() == MobCategory.MONSTER
+                    && !MONSTER_CATEGORY_ANIMALS.contains(e.getKey());
             if (monster != "hostile".equals(category)) wrong.add(id + " is " + type.getCategory() + " but listed " + category);
         }
         assertTrue(wrong.isEmpty(), String.join("\n", wrong));

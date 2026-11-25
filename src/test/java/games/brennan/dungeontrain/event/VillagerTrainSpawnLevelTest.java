@@ -82,12 +82,13 @@ final class VillagerTrainSpawnLevelTest {
         assertEquals(2, VillagerTrainSpawnEvents.maxLevelForTier(1));   // wood → 2
         assertEquals(2, VillagerTrainSpawnEvents.maxLevelForTier(7));
         assertEquals(3, VillagerTrainSpawnEvents.maxLevelForTier(8));   // stone → 3
-        assertEquals(3, VillagerTrainSpawnEvents.maxLevelForTier(17));
-        assertEquals(4, VillagerTrainSpawnEvents.maxLevelForTier(18));  // iron → 4
-        assertEquals(4, VillagerTrainSpawnEvents.maxLevelForTier(31));
-        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(32));  // diamond → 5
-        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(49));
-        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(50));  // netherite clamps at 5
+        assertEquals(3, VillagerTrainSpawnEvents.maxLevelForTier(20));  // copper shares stone's step
+        assertEquals(3, VillagerTrainSpawnEvents.maxLevelForTier(28));
+        assertEquals(4, VillagerTrainSpawnEvents.maxLevelForTier(29));  // iron → 4
+        assertEquals(4, VillagerTrainSpawnEvents.maxLevelForTier(39));
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(40));  // diamond → 5
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(57));
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(58));  // netherite clamps at 5
         assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(100));
     }
 

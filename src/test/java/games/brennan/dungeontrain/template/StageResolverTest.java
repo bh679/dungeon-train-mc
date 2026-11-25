@@ -76,15 +76,21 @@ final class StageResolverTest {
         assertEquals("bamboo", at(356, TrainPhase.OVERWORLD));
         assertEquals("darkwood", at(376, TrainPhase.OVERWORLD));
         assertEquals("bamboo_mosaic", at(416, TrainPhase.OVERWORLD));
-        // Then the modded woods, 16 levels each (gate bounds cap at TemplateGate.MAX_LEVEL 1000): pale oak, Biomes O' Plenty, BetterNether, BetterEnd.
+        // Then the modded woods, 16 levels each (gate bounds cap at TemplateGate.MAX_LEVEL 1000): pale oak and
+        // poplar (VanillaBackport), Biomes O' Plenty, BetterNether, BetterEnd.
         assertEquals("pale_oak", at(436, TrainPhase.OVERWORLD));
-        assertEquals("fir", at(452, TrainPhase.OVERWORLD));
-        assertEquals("empyreal", at(644, TrainPhase.OVERWORLD));
-        assertEquals("anchor_tree", at(660, TrainPhase.OVERWORLD));
-        assertEquals("nether_willow", at(835, TrainPhase.OVERWORLD));
-        assertEquals("dragon_tree", at(836, TrainPhase.OVERWORLD));
-        assertEquals("umbrella_tree", at(995, TrainPhase.OVERWORLD));
-        assertEquals("spruce", at(996, TrainPhase.OVERWORLD));
+        assertEquals("poplar", at(452, TrainPhase.OVERWORLD));
+        assertEquals("poplar", at(467, TrainPhase.OVERWORLD));
+        assertEquals("fir", at(468, TrainPhase.OVERWORLD));
+        assertEquals("empyreal", at(660, TrainPhase.OVERWORLD));
+        assertEquals("anchor_tree", at(676, TrainPhase.OVERWORLD));
+        assertEquals("nether_willow", at(851, TrainPhase.OVERWORLD));
+        assertEquals("dragon_tree", at(852, TrainPhase.OVERWORLD));
+        assertEquals("mossy_glowshroom", at(995, TrainPhase.OVERWORLD));
+        // The last wood's band runs past the gate cap, so it holds 996-1000 and spruce takes over above it.
+        assertEquals("umbrella_tree", at(996, TrainPhase.OVERWORLD));
+        assertEquals("umbrella_tree", at(1000, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(1001, TrainPhase.OVERWORLD));
     }
 
     /**
@@ -137,7 +143,7 @@ final class StageResolverTest {
     @Test
     @DisplayName("a level above every named band still resolves — the top band runs open-ended")
     void aboveAllBandsResolvesToTheTopStage() {
-        assertEquals("spruce", at(996, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(1012, TrainPhase.OVERWORLD));
         assertEquals("spruce", at(5000, TrainPhase.OVERWORLD));
         // The top band runs open-ended in every phase it lists — but not END, which it no longer lists.
         assertEquals("spruce", at(5000, TrainPhase.CHUNCKS));
