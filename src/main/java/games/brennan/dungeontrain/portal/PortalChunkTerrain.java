@@ -132,11 +132,16 @@ public final class PortalChunkTerrain {
     private static final int PROBE_SPREAD = 8;
 
     /**
-     * How many cells of sampled ground the cache holds before it drops the least recently used:
-     * sixty-four 3x3 rooms (each 48 x 32 x 48), or eight times as many one-chunk ones. About 19 MB
-     * of block-state references at the most, where the old 512-entry bound allowed about 150 MB.
+     * How much the sampled cubes may hold, in KiB, before the least recently used is dropped: 20 MiB,
+     * about sixty-four 3x3 rooms (~290 KB each) or eight times as many one-chunk ones (~34 KB each),
+     * where the old 512-entry bound allowed about 150 MB. A cube a room is still being built from is
+     * never dropped, budget or not; see {@link PortalSliceCache}.
      */
-    static final long MAX_CACHED_CELLS = 64L * 48 * 48 * HEIGHT;
+    static final long DEFAULT_BUDGET_KB = 20L * 1024;
+
+    /** System property, then environment variable, that override {@link #DEFAULT_BUDGET_KB} (testing). */
+    static final String BUDGET_PROPERTY = "dungeontrain.portalSliceCacheKb";
+    static final String BUDGET_ENV = "DUNGEONTRAIN_SLICE_CACHE_KB";
 
     private static final int SITE_X_SALT = 12;
     private static final int SITE_Z_SALT = 13;
@@ -293,8 +298,10 @@ public final class PortalChunkTerrain {
     // Each cube carries the room it was sampled for. A live pair's room never changes under its key,
     // but Test the Carriage files every room under the one PortalTestSession.PAIR_KEY — and without
     // the name, testing the Nether room after the Overworld one stamped the Overworld's ground into it.
-    private static final PortalChunkCache<Cached> READY =
-        new PortalChunkCache<>(MAX_CACHED_CELLS, cached -> (long) cached.slice().width() * cached.slice().width() * cached.slice().height());
+    private static final PortalSliceCache<Cached> READY = new PortalSliceCache<>(budgetKb() * 1024L);
+    private static final org.slf4j.Logger PERF_LOGGER =
+        org.slf4j.LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.PERF);
+    private static volatile boolean warnedOverBudget;
     private static final Set<Integer> IN_FLIGHT = ConcurrentHashMap.newKeySet();
 
     /**
@@ -309,7 +316,7 @@ public final class PortalChunkTerrain {
     private static final Map<Integer, String> FAILED = new ConcurrentHashMap<>();
 
     /** A sampled cube, the room it was sampled for, and the roll it was sampled at. */
-    private record Cached(String roomName, int roll, PortalChunkSlice slice) {}
+    private record Cached(String roomName, int roll, PortalChunkSlice slice, boolean decorated) {}
 
     /**
      * How many times each pair's chunk has been re-rolled — Test the Carriage's reseed.
@@ -432,7 +439,7 @@ public final class PortalChunkTerrain {
         MinecraftServer server = level.getServer();
         if (server == null) return;
         dropIfSeedChanged(seed);
-        if (READY.containsKey(pairKey)) return;
+        if (READY.contains(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
         FAILED.remove(pairKey);
         Source source = Source.of(roomName);
@@ -546,8 +553,14 @@ public final class PortalChunkTerrain {
 
     /** This pair's cube if one has been sampled, without asking for one that has not. */
     static PortalChunkSlice peek(int pairKey) {
-        Cached cached = READY.get(pairKey);
+        Cached cached = READY.peek(pairKey);
         return cached == null ? null : cached.slice();
+    }
+
+    /** Whether {@code slice} is this pair's held cube and has had its decoration pass. */
+    static boolean isDecorated(int pairKey, PortalChunkSlice slice) {
+        Cached cached = READY.peek(pairKey);
+        return cached != null && cached.slice() == slice && cached.decorated();
     }
 
     /** The pairs whose rooms are a decoration pass behind their cube, as a snapshot. */
@@ -572,7 +585,7 @@ public final class PortalChunkTerrain {
 
     /** Publish a sample's ground: the pair can be planned and crossed from now. */
     static void publishGround(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
-        READY.put(pairKey, new Cached(roomName, roll, slice));
+        publish(pairKey, new Cached(roomName, roll, slice, false));
     }
 
     /**
@@ -581,10 +594,58 @@ public final class PortalChunkTerrain {
      * dropped.
      */
     static void publishDecorated(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
-        Cached current = READY.get(pairKey);
+        Cached current = READY.peek(pairKey);
         if (current == null || !sameRoom(current.roomName(), roomName) || current.roll() != roll) return;
-        READY.put(pairKey, new Cached(roomName, roll, PortalChunkDecorationDiff.attach(current.slice(), slice)));
+        publish(pairKey, new Cached(roomName, roll, PortalChunkDecorationDiff.attach(current.slice(), slice), true));
         DECORATED.add(pairKey);
+    }
+
+    /**
+     * Hold {@code cached} for its pair, dropping the least recently used cubes no room is being built
+     * from if that takes the cache over budget. A dropped pair loses its pending decoration with its
+     * cube: nothing is waiting on it, and a room that wants it again resamples (same roll, same site).
+     */
+    private static void publish(int pairKey, Cached cached) {
+        List<Integer> evicted = READY.put(pairKey, cached, cached.slice().approxBytes());
+        for (int key : evicted) {
+            DECORATED.remove(key);
+            games.brennan.dungeontrain.util.AsyncPerfLog.debug(PERF_LOGGER,
+                "[portal.slice-cache] evicted pair={} for pair={} totalKb={} entries={} pinned={} budgetKb={}",
+                key, pairKey, READY.bytes() / 1024, READY.size(), READY.pinnedCount(), READY.budget() / 1024);
+        }
+        if (READY.overBudget() && !warnedOverBudget) {
+            warnedOverBudget = true;
+            LOGGER.warn("[DungeonTrain] Chunk dimension sample cache is over its {} KiB budget ({} KiB) on "
+                    + "samples rooms are still being built from; holding them rather than dropping one",
+                READY.budget() / 1024, READY.bytes() / 1024);
+        }
+    }
+
+    /**
+     * Keep pinned only {@code building}, the pairs whose rooms are mid-build, plus any pair asked for
+     * since the last call. Server thread, once a tick; see {@link PortalSliceCache#retainPins}.
+     */
+    static void retainPins(Set<Integer> building) {
+        READY.retainPins(building);
+    }
+
+    /** The cache's budget in KiB: {@link #BUDGET_PROPERTY}, else {@link #BUDGET_ENV}, else the default. */
+    static long budgetKb() {
+        return parseBudgetKb(System.getProperty(BUDGET_PROPERTY), System.getenv(BUDGET_ENV));
+    }
+
+    static long parseBudgetKb(String property, String env) {
+        for (String raw : new String[] {property, env}) {
+            if (raw == null || raw.isBlank()) continue;
+            try {
+                long kb = Long.parseLong(raw.trim());
+                if (kb > 0) return kb;
+            } catch (NumberFormatException ignored) {
+                // Not a number: fall through to the next source, then the default.
+            }
+            LOGGER.warn("[DungeonTrain] Ignoring chunk dimension cache budget '{}' (want a positive KiB count)", raw);
+        }
+        return DEFAULT_BUDGET_KB;
     }
 
     /** Say a multi-chunk sample found no ground; see {@link #failed}. */
