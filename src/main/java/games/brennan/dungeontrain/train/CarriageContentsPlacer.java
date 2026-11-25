@@ -1713,7 +1713,7 @@ public final class CarriageContentsPlacer {
         // biome type) and before the villager joins, so VillagerTrainSpawnEvents sees the profession:
         // a Random job skips the job-block claim and gets its level and trades; a nitwit gets none.
         if (entity instanceof Villager villager) {
-            applyVillagerMode(villager, picked.villager(), level.getRandom());
+            applyVillagerMode(villager, picked.villager(), level);
         }
         long spawnTick = level.getGameTime();
         entity.getSelfAndPassengers().forEach(e -> stampContentsEntity(e, pos, spawnTick, carriagePIdx));
@@ -1750,21 +1750,27 @@ public final class CarriageContentsPlacer {
     /**
      * Apply a villager variant row's job mode: Job leaves the villager to claim the nearest job
      * block on join, Random gives it one of the vanilla job professions, Nitwit makes it a nitwit.
+     * The brain is rebuilt for the new profession so it stops seeking job blocks it can't keep.
      */
     static void applyVillagerMode(Villager villager,
                                   games.brennan.dungeontrain.editor.VariantVillager.Mode mode,
-                                  net.minecraft.util.RandomSource random) {
+                                  ServerLevel level) {
         VillagerProfession profession = switch (mode) {
             case JOB -> null;
             case NITWIT -> VillagerProfession.NITWIT;
             case RANDOM -> {
                 List<VillagerProfession> pool =
                     games.brennan.dungeontrain.event.VillagerJobSiteAssigner.jobProfessions();
-                yield pool.get(random.nextInt(pool.size()));
+                yield pool.get(level.getRandom().nextInt(pool.size()));
             }
         };
         if (profession == null) return;
         villager.setVillagerData(villager.getVillagerData().setProfession(profession));
+        // The brain was built at construction for a jobless villager, so it still hunts every job
+        // block, and vanilla's AssignProfessionFromJobSite then overwrites the profession (a nitwit
+        // turned farmer, green particles). Rebuild it for the new profession, as vanilla does
+        // whenever a profession changes.
+        villager.refreshBrain(level);
     }
 
     /**
