@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Random ticks for the chunks around a player inside a dimensional carriage.
@@ -60,6 +62,12 @@ public final class PortalTwinRandomTicks {
     /** How often the ticked-chunk count is logged at debug, in ticks. */
     private static final int LOG_EVERY = 600;
 
+    /** Per held player, their last reach square. Weak keys: a player who leaves or respawns drops out. */
+    private static final Map<ServerPlayer, Reach> REACH = new WeakHashMap<>();
+
+    /** Chunks already ticked this pass, used only with two or more held players. Server thread only. */
+    private static final LongSet SEEN = new LongOpenHashSet();
+
     private static long chunksTicked;
     private static long lastLogAt;
 
@@ -68,14 +76,22 @@ public final class PortalTwinRandomTicks {
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+        // Nearly every tick nobody is in a room: stop before allocating anything.
+        if (!PortalTwinChunkHold.anyHeld()) return;
         List<ServerPlayer> held = heldPlayers(level);
         int speed = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
         if (!passRuns(level.tickRateManager().runsNormally(), speed, held.size())) return;
-        for (long packed : candidateChunks(held)) {
-            LevelChunk chunk = tickableChunk(level, new ChunkPos(packed));
-            if (chunk == null) continue;
-            randomTickChunk(level, chunk, speed);
-            chunksTicked++;
+        boolean dedupe = held.size() > 1;
+        if (dedupe) SEEN.clear();
+        for (ServerPlayer player : held) {
+            for (ChunkPos pos : reachFor(player)) {
+                if (!inPlayerRange(pos.x, pos.z, player.getX(), player.getZ())) continue;
+                if (dedupe && !SEEN.add(pos.toLong())) continue;
+                LevelChunk chunk = tickableChunk(level, pos);
+                if (chunk == null) continue;
+                randomTickChunk(level, chunk, speed);
+                chunksTicked++;
+            }
         }
         logNow(level);
     }
@@ -88,19 +104,35 @@ public final class PortalTwinRandomTicks {
         return held;
     }
 
-    /** Every chunk whose centre lies within vanilla's spawning range of a held player, de-duplicated. */
-    private static LongSet candidateChunks(List<ServerPlayer> held) {
-        LongSet out = new LongOpenHashSet();
-        for (ServerPlayer player : held) {
-            int pcx = SectionPos.blockToSectionCoord(player.getBlockX());
-            int pcz = SectionPos.blockToSectionCoord(player.getBlockZ());
-            for (int cx = pcx - CHUNK_REACH; cx <= pcx + CHUNK_REACH; cx++) {
-                for (int cz = pcz - CHUNK_REACH; cz <= pcz + CHUNK_REACH; cz++) {
-                    if (inPlayerRange(cx, cz, player.getX(), player.getZ())) out.add(ChunkPos.asLong(cx, cz));
+    /** The reach square around {@code player}'s chunk, rebuilt only when they cross into another chunk. */
+    private static ChunkPos[] reachFor(ServerPlayer player) {
+        int pcx = SectionPos.blockToSectionCoord(player.getBlockX());
+        int pcz = SectionPos.blockToSectionCoord(player.getBlockZ());
+        Reach next = Reach.forChunk(REACH.get(player), pcx, pcz);
+        REACH.put(player, next);
+        return next.chunks();
+    }
+
+    /**
+     * The {@code (2 * CHUNK_REACH + 1)}-square of chunks around one player chunk. Only the chunk
+     * coordinates are cached: the range test still runs every tick against the player's exact position,
+     * because which edge chunks are in range changes as the player moves inside a chunk.
+     */
+    record Reach(int cx, int cz, ChunkPos[] chunks) {
+
+        /** {@code previous} again when it is for this chunk, else a fresh square. */
+        static Reach forChunk(Reach previous, int cx, int cz) {
+            if (previous != null && previous.cx == cx && previous.cz == cz) return previous;
+            int side = 2 * CHUNK_REACH + 1;
+            ChunkPos[] chunks = new ChunkPos[side * side];
+            int i = 0;
+            for (int x = cx - CHUNK_REACH; x <= cx + CHUNK_REACH; x++) {
+                for (int z = cz - CHUNK_REACH; z <= cz + CHUNK_REACH; z++) {
+                    chunks[i++] = new ChunkPos(x, z);
                 }
             }
+            return new Reach(cx, cz, chunks);
         }
-        return out;
     }
 
     /**
