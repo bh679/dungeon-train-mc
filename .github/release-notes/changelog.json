@@ -39210,6 +39210,106 @@
       "released_in": "v0.2007.0",
       "released_at": "2026-11-25T02:11:59Z",
       "pr": 2869
+    },
+    {
+      "id": "backpack-every-workstation",
+      "version": "0.2011.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Backpack at every workstation",
+      "summary": "Your backpack now also opens beside enchanting tables, grindstones, stonecutters, looms, cartography tables, brewing stands, crafters, dispensers and droppers, so you can feed them straight from it.",
+      "highlights": [],
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2013.0",
+      "released_at": "2026-11-25T05:49:54Z",
+      "pr": 2874
+    },
+    {
+      "id": "better-lag-diagnostics",
+      "version": "0.2008.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Better lag diagnostics",
+      "summary": "When the game hitches for a second or so, the log now records what was running, so lag reports can be traced to their cause.",
+      "highlights": [],
+      "pr": 2870,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2013.0",
+      "released_at": "2026-11-25T05:49:54Z"
+    },
+    {
+      "id": "bookshelf-books-into-backpack",
+      "version": "0.2011.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Books from shelves go into your backpack",
+      "summary": "Taking a book from a chiseled bookshelf with a full inventory now puts it straight into your open backpack instead of dropping it on the floor.",
+      "highlights": [],
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2013.0",
+      "released_at": "2026-11-25T05:49:54Z"
+    },
+    {
+      "id": "cheap-carriage-photo-scan",
+      "version": "0.2012.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "Lighter shared carriage saves",
+      "summary": "Sharing a carriage with full chests costs the game less each time it saves. Photos inside it still travel with it.",
+      "highlights": [],
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2013.0",
+      "released_at": "2026-11-25T05:49:54Z"
+    },
+    {
+      "id": "dimensional-carriages-under-the-sea",
+      "version": "0.2010.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages under the sea",
+      "summary": "Some dimensional carriages now open under the sea.",
+      "highlights": [
+        "Builders get a Forced Air block and can waterlog block variants with a water bucket."
+      ],
+      "pr": 2873,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2013.0",
+      "released_at": "2026-11-25T05:49:54Z"
+    },
+    {
+      "id": "release-photos-on-r2",
+      "version": "0.2009.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update photos load faster on the website",
+      "summary": "Photos on the website's update cards and Updates page now come from a faster image host.",
+      "highlights": [],
+      "pr": 2872,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2013.0",
+      "released_at": "2026-11-25T05:49:54Z"
     }
   ]
 }
