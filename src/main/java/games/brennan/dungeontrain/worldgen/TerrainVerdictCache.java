@@ -18,6 +18,16 @@ final class TerrainVerdictCache {
 
     private static final byte MISSING = -1;
 
+    /** How a lookup uses the cache. */
+    enum Use {
+        /** Read it, and store a worked-out answer: periodic saves of a loaded chunk. */
+        REMEMBER,
+        /** Read it, store nothing: entity saves, which can run after the chunk unloaded. */
+        PEEK,
+        /** Work it out and store nothing: the unload save, the one that loses data if it is wrong. */
+        FRESH
+    }
+
     private final Long2ByteOpenHashMap byChunk = new Long2ByteOpenHashMap();
     private long hits;
     private long misses;
@@ -26,21 +36,17 @@ final class TerrainVerdictCache {
         byChunk.defaultReturnValue(MISSING);
     }
 
-    /**
-     * The terrain verdict for chunk {@code key}, from the cache or {@code compute}. {@code remember} stores
-     * a computed answer; callers that run after the chunk may have unloaded pass {@code false}, so they
-     * cannot leave an entry behind that nothing will remove.
-     */
-    synchronized UntouchedChunkSaves.Verdict get(long key, boolean remember,
+    /** The terrain verdict for chunk {@code key}, from the cache or {@code compute}, as {@code use} says. */
+    synchronized UntouchedChunkSaves.Verdict get(long key, Use use,
                                                  LongFunction<UntouchedChunkSaves.Verdict> compute) {
-        byte cached = byChunk.get(key);
+        byte cached = use == Use.FRESH ? MISSING : byChunk.get(key);
         if (cached != MISSING) {
             hits++;
             return UntouchedChunkSaves.Verdict.values()[cached];
         }
         misses++;
         UntouchedChunkSaves.Verdict verdict = compute.apply(key);
-        if (remember) byChunk.put(key, (byte) verdict.ordinal());
+        if (use == Use.REMEMBER) byChunk.put(key, (byte) verdict.ordinal());
         return verdict;
     }
 

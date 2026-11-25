@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ImposterProtoChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,7 +28,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p><b>Unloading.</b> Vanilla's unload clears {@code LevelChunk#loaded} just before its final save; a
  * {@code ProtoChunk} reaches {@code save} only from there ({@code ImposterProtoChunk} is never unsaved).
- * Only a skip on that save records a drop, and the chunk's cached terrain verdict is forgotten then.</p>
+ * Only a skip on that save records a drop; it judges the terrain fresh, and the chunk's cached terrain
+ * verdict is forgotten then.</p>
  */
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapUntouchedSaveSkipMixin {
@@ -42,8 +44,9 @@ public abstract class ChunkMapUntouchedSaveSkipMixin {
 
     @Inject(method = "save(Lnet/minecraft/world/level/chunk/ChunkAccess;)Z", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$skipUntouched(ChunkAccess chunk, CallbackInfoReturnable<Boolean> cir) {
-        boolean unloading = !(chunk instanceof LevelChunk levelChunk)
-                || !((LevelChunkLoadedAccessor) levelChunk).dungeontrain$isLoaded();
+        boolean unloading = chunk instanceof LevelChunk levelChunk
+                ? !((LevelChunkLoadedAccessor) levelChunk).dungeontrain$isLoaded()
+                : !(chunk instanceof ImposterProtoChunk);
         long key = chunk.getPos().toLong();
         if (chunk.isUnsaved() && UntouchedChunkSaves.shouldSkipSave(this.level, chunk, unloading)) {
             if (!unloading) this.chunkSaveCooldowns.put(key, System.currentTimeMillis() + DUNGEONTRAIN$SKIP_COOLDOWN_MS);

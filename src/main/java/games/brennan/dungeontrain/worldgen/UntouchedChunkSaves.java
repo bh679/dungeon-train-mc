@@ -79,7 +79,9 @@ public final class UntouchedChunkSaves {
     public static boolean shouldSkipSave(ServerLevel level, ChunkAccess chunk, boolean unloading) {
         ChunkAccess live = chunk instanceof ImposterProtoChunk imposter ? imposter.getWrapped() : chunk;
         JUDGED.incrementAndGet();
-        Verdict verdict = verdict(level, live.getPos(), TouchedChunks.isTouched(level, live), true);
+        // The unload save is the one that loses data if it is wrong, so it works the terrain out fresh.
+        Verdict verdict = verdict(level, live.getPos(), TouchedChunks.isTouched(level, live),
+                unloading ? TerrainVerdictCache.Use.FRESH : TerrainVerdictCache.Use.REMEMBER);
         return settle(verdict, unloading, live.getPos().toLong(), level.getGameTime());
     }
 
@@ -116,19 +118,21 @@ public final class UntouchedChunkSaves {
      */
     public static List<Entity> entitiesToKeep(ServerLevel level, ChunkPos pos, List<Entity> entities) {
         // Entities can be written after their chunk unloads, so this reads the terrain cache without filling it.
-        if (verdict(level, pos, TouchedChunks.isTouched(level, pos), false) != Verdict.DROP) return entities;
+        if (verdict(level, pos, TouchedChunks.isTouched(level, pos), TerrainVerdictCache.Use.PEEK) != Verdict.DROP) {
+            return entities;
+        }
         return entities.stream().filter(UntouchedChunkSaves::isPlayersOwn).toList();
     }
 
-    /** {@code remember}: keep a freshly worked-out terrain verdict for this chunk (see {@link TerrainVerdictCache}). */
-    public static Verdict verdict(ServerLevel level, ChunkPos pos, boolean touched, boolean remember) {
+    /** {@code use}: how the terrain part reads {@link TerrainVerdictCache}. */
+    static Verdict verdict(ServerLevel level, ChunkPos pos, boolean touched, TerrainVerdictCache.Use use) {
         if (!DungeonTrainCommonConfig.isDropUntouchedWorldGen()) return Verdict.OFF;
         if (!level.dimension().equals(Level.OVERWORLD)) return Verdict.NOT_OVERWORLD;
         long key = pos.toLong();
         int keep = level.getServer().getPlayerList().getViewDistance() + KEEP_MARGIN_CHUNKS;
         boolean nearAtStop = !level.getServer().isRunning() && nearAnySpot(stopSpots, pos, keep);
         return liveVerdict(touched, PortalRoomSaveHold.isHeld(key), nearAtStop,
-                () -> TERRAIN.get(key, remember, k -> terrainVerdict(level, pos)));
+                () -> TERRAIN.get(key, use, k -> terrainVerdict(level, pos)));
     }
 
     /**
