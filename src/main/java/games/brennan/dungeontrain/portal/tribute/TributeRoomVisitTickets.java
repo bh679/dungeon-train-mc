@@ -24,27 +24,42 @@ final class TributeRoomVisitTickets {
 
     private TributeRoomVisitTickets() {}
 
-    static void hold(ServerLevel roomLevel, BoundingBox window, @Nullable ServerLevel deathLevel, Vec3 deathPos, UUID player) {
+    /** The room's window, so its chunks load (or generate) on the worker threads ahead of the stamp. */
+    static void holdRoom(ServerLevel roomLevel, BoundingBox window, UUID player) {
         roomLevel.getChunkSource().addRegionTicket(ROOM, centre(window), radius(window), player);
-        if (deathLevel != null) {
-            deathLevel.getChunkSource().addRegionTicket(DEATH_SPOT, new ChunkPos(BlockPos.containing(deathPos)), DEATH_SPOT_RADIUS, player);
-        }
     }
 
-    static void release(ServerLevel roomLevel, BoundingBox window, @Nullable ServerLevel deathLevel, Vec3 deathPos, UUID player) {
+    static void releaseRoom(ServerLevel roomLevel, BoundingBox window, UUID player) {
         roomLevel.getChunkSource().removeRegionTicket(ROOM, centre(window), radius(window), player);
-        if (deathLevel != null) {
-            deathLevel.getChunkSource().removeRegionTicket(DEATH_SPOT, new ChunkPos(BlockPos.containing(deathPos)), DEATH_SPOT_RADIUS, player);
+    }
+
+    static void holdDeathSpot(@Nullable ServerLevel deathLevel, Vec3 deathPos, UUID player) {
+        if (deathLevel == null) return;
+        deathLevel.getChunkSource().addRegionTicket(DEATH_SPOT, new ChunkPos(BlockPos.containing(deathPos)), DEATH_SPOT_RADIUS, player);
+    }
+
+    static void releaseDeathSpot(@Nullable ServerLevel deathLevel, Vec3 deathPos, UUID player) {
+        if (deathLevel == null) return;
+        deathLevel.getChunkSource().removeRegionTicket(DEATH_SPOT, new ChunkPos(BlockPos.containing(deathPos)), DEATH_SPOT_RADIUS, player);
+    }
+
+    /** Whether every chunk {@code window} reaches into, and the ring around it, is loaded and full. Never loads one. */
+    static boolean ready(ServerLevel level, BoundingBox window) {
+        for (int cx = (window.minX() >> 4) - 1; cx <= (window.maxX() >> 4) + 1; cx++) {
+            for (int cz = (window.minZ() >> 4) - 1; cz <= (window.maxZ() >> 4) + 1; cz++) {
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) return false;
+            }
         }
+        return true;
     }
 
     private static ChunkPos centre(BoundingBox window) {
         return new ChunkPos(((window.minX() + window.maxX()) / 2) >> 4, ((window.minZ() + window.maxZ()) / 2) >> 4);
     }
 
-    /** Chunks either side of the centre that cover the whole window, plus one. */
+    /** Chunks either side of the centre that cover the whole window and the ring {@link #ready} waits on, plus one. */
     private static int radius(BoundingBox window) {
         int span = Math.max(window.getXSpan(), window.getZSpan());
-        return (span >> 4) / 2 + 2;
+        return (span >> 4) / 2 + 3;
     }
 }

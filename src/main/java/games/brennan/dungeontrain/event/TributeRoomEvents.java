@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * The tribute room visit's lifecycle around the visit itself: the drops remembered at death
@@ -81,10 +82,18 @@ public final class TributeRoomEvents {
         TributeRoomVisitService.discardPrepared(player);
     }
 
-    /** Ahead of the world's own save, so a Quit from inside the room still keeps the room. */
+    /** Rooms being stood a step a tick, and sites swept once their visitors are out. */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        TributeRoomVisitService.tick(event.getServer());
+    }
+
+    /**
+     * Ahead of the world's own save, so a Quit from inside the room still keeps the room. Always waits
+     * on the room files, since a visit that just ended may still have its save queued.
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
-        if (TributeRoomVisitSessions.isEmpty()) return;
         TributeRoomVisitService.saveAll(event.getServer());
     }
 
