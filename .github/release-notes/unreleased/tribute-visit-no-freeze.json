@@ -1,0 +1,17 @@
+{
+  "id": "tribute-visit-no-freeze",
+  "version": "0.2022.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "internal"
+  ],
+  "title": "Performance fix",
+  "summary": "A freeze of several seconds that could follow a death is gone.",
+  "highlights": [],
+  "pr": 2890,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
