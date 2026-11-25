@@ -1,0 +1,30 @@
+{
+  "id": "copper-age",
+  "version": "0.2007.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "compatibility",
+    "train",
+    "mobs",
+    "loot",
+    "balance"
+  ],
+  "title": "Copper Age",
+  "summary": "Copper has arrived on the train. Copper gear, spears, and the new Dappled Forest.",
+  "highlights": [],
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "major": true,
+  "description": "Copper has arrived on the train. Copper gear, spears, and the new Dappled Forest.\nYou'll also find a new series of underwater dimensional carriages, bigger and improved chunk dimensions and a new market carriage. Backpacks now open in workstations, and some performance optimisations (with more to come).\n\n- **Copper gear.** Copper armour, tools and weapons now sit between stone and iron. You'll find them in chests, and your enemies will be wearing them.\n- **Spears.** Every tier, from wooden to netherite. They turn up wherever swords do, in chests and in the hands of the things trying to stop you.\n- **A longer climb.** With copper in the mix, iron, diamond and netherite gear arrive a little later on the train.\n- **A new wood**, with a train stage of its own, plus a host of new blocks to find.",
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/copper-age.gif",
+  "video": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/copper-age.mp4",
+  "videos": {
+    "feed": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/copper-age-feed.mp4",
+    "story": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/copper-age-story.mp4",
+    "tiktok": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/copper-age-story.mp4"
+  },
+  "loop": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/copper-age.loop.mp4"
+}
