@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.portal.PortalRoomSaveHold;
+import games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSite;
 import games.brennan.dungeontrain.world.TouchedChunks;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.MinecraftServer;
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>A dimensional carriage stands in it ({@link PortalRoomSaveHold}). Each relocation stamps the
  *       room into new chunks that no player has changed; dropped, they came back as empty basement and
  *       the next relocation carried the empty room on.</li>
+ *   <li>It is under a tribute room visit site ({@link TributeRoomVisitSite#isSiteChunk}), so the site is
+ *       generated once per world rather than on every death.</li>
  *   <li>The server is shutting down and a player was within view distance + {@link #KEEP_MARGIN_CHUNKS}
  *       when it began to ({@link #onServerStopping}; the players are gone by the time the worlds save), so
  *       reopening a world loads where you stood instead of generating it. Measured at the player's real
@@ -69,7 +72,7 @@ public final class UntouchedChunkSaves {
     private UntouchedChunkSaves() {}
 
     /** Why a chunk is written, or {@link #DROP}. */
-    public enum Verdict { DROP, OFF, NOT_OVERWORLD, TOUCHED, PORTAL_ROOM, NEAR_PLAYER, MIRRORED, END_ISLANDS }
+    public enum Verdict { DROP, OFF, NOT_OVERWORLD, TOUCHED, PORTAL_ROOM, TRIBUTE_SITE, NEAR_PLAYER, MIRRORED, END_ISLANDS }
 
     /**
      * Whether {@code ChunkMap#save} should skip {@code chunk}. {@code unloading} is true for the save
@@ -131,8 +134,10 @@ public final class UntouchedChunkSaves {
         long key = pos.toLong();
         int keep = level.getServer().getPlayerList().getViewDistance() + KEEP_MARGIN_CHUNKS;
         boolean nearAtStop = !level.getServer().isRunning() && nearAnySpot(stopSpots, pos, keep);
+        // A visit site is kept by where it is, like terrain, but is not terrain: it sits ahead of the cache.
         return liveVerdict(touched, PortalRoomSaveHold.isHeld(key), nearAtStop,
-                () -> TERRAIN.get(key, use, k -> terrainVerdict(level, pos)));
+                () -> TributeRoomVisitSite.isSiteChunk(pos.x, pos.z) ? Verdict.TRIBUTE_SITE
+                        : TERRAIN.get(key, use, k -> terrainVerdict(level, pos)));
     }
 
     /**
