@@ -1,0 +1,47 @@
+# Mirror the release-note photos to the website's R2 bucket (dt-site-media, served at
+# https://media.dungeon.training/release-notes/images/). dungeon.training loads each update's photo from
+# there and falls back to the raw.githubusercontent.com URL changelog.json names (dp-relay's DtRelay.media()).
+# Runs when a push to main adds or changes a photo; dispatch it by hand to re-check the whole folder.
+# Uploads only missing or changed files, deletes nothing (scripts/release-notes/mirror-images-r2.py).
+#
+# Secrets: SITE_MEDIA_R2_ENDPOINT, SITE_MEDIA_R2_ACCESS_KEY_ID, SITE_MEDIA_R2_SECRET_ACCESS_KEY (the
+# bucket-scoped dt-site-media-deploy key dp-relay's deploy uses); variable SITE_MEDIA_BUCKET.
+# Unset, the job warns and skips: the site keeps showing the GitHub copies.
+name: Mirror release images to R2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/release-notes/images/**'
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-release-images
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/release-notes/images
+            scripts/release-notes
+      - name: Upload new or changed photos
+        env:
+          SITE_MEDIA_BUCKET: ${{ vars.SITE_MEDIA_BUCKET }}
+          SITE_MEDIA_R2_ENDPOINT: ${{ secrets.SITE_MEDIA_R2_ENDPOINT }}
+          SITE_MEDIA_R2_ACCESS_KEY_ID: ${{ secrets.SITE_MEDIA_R2_ACCESS_KEY_ID }}
+          SITE_MEDIA_R2_SECRET_ACCESS_KEY: ${{ secrets.SITE_MEDIA_R2_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$SITE_MEDIA_BUCKET" ] || [ -z "$SITE_MEDIA_R2_SECRET_ACCESS_KEY" ]; then
+            echo "::warning::SITE_MEDIA_* not set: release photos not mirrored to R2 (the site falls back to GitHub)"
+            exit 0
+          fi
+          python3 scripts/release-notes/mirror-images-r2.py
