@@ -46,6 +46,8 @@ public final class ScreenToTexture {
     @Nullable private static RenderTarget scratch;
     /** Screens drawn and own targets alive, for the {@code [tributetv]} perf line. */
     private static int draws;
+    /** Every screen drawn into a TV since the client started, for a harness to difference. */
+    static long totalDraws;
     private static int liveTargets;
     /** Dev harness switch: draw every TV every frame, as before on-demand drawing, for a before/after. */
     static boolean alwaysDrawForDev;
@@ -203,6 +205,7 @@ public final class ScreenToTexture {
         lastDrawnMs = Util.getMillis();
         dirty = false;
         draws++;
+        totalDraws++;
     }
 
     /** The scratch picture, upside down (and scaled down to this TV's size), into the target a TV samples. */
@@ -217,7 +220,7 @@ public final class ScreenToTexture {
 
     /** Unseen long enough: let this TV's target go (the screen and its state stay). */
     public void releaseIfIdle() {
-        if (flipped != null && TvRedrawPolicy.shouldRelease(Util.getMillis(), lastSeenMs)) releaseTarget();
+        if (flipped != null && !alwaysDrawForDev && TvRedrawPolicy.shouldRelease(Util.getMillis(), lastSeenMs)) releaseTarget();
     }
 
     private RenderTarget ownTarget() {
