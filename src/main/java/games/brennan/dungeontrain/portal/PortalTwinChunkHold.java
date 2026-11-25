@@ -102,6 +102,11 @@ public final class PortalTwinChunkHold {
 
     private PortalTwinChunkHold() {}
 
+    /** Whether any player is held anywhere: a cheap check before a per-player walk. */
+    public static boolean anyHeld() {
+        return !HELD.isEmpty();
+    }
+
     /** Whether vanilla should skip this player's view-distance tickets: held, and still in twin space. */
     public static boolean isHeld(ServerPlayer player) {
         if (HELD.isEmpty()) return false;
