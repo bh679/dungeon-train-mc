@@ -632,7 +632,7 @@ public final class PortalChunkDimension {
      * it down and the offset clamps with it — and then the shortfall is spent at the top of the
      * column, which is sky, rather than under a player's feet.</p>
      */
-    static int copyShift(PortalStructure structure, CarriageDims dims, Vec3i size) {
+    private static int copyShift(PortalStructure structure, CarriageDims dims, Vec3i size) {
         int askedFor = structure.settings().doorHeightOffset().value();
         return askedFor - PortalRoomLayout.clampDoorHeightOffset(dims, size.getY(), askedFor);
     }

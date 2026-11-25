@@ -19,26 +19,27 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * The part of a chunk-dimension room's box that its pour will write, laid cheaply.
+ * A chunk-dimension room's template, laid straight into the chunk sections.
  *
  * <p>A generated room is stamped from its template (rows of the look's ground block, air above)
- * and then poured from its sample ({@link PortalChunkDimension}), which writes every cell the sample
- * reaches. Laying that template through the light engine, after clearing the box the same way, put
- * a 3x3 room's 73,728 cells through two {@code setBlock}s each in the stamp's own tick: 112 ms
- * median in the editor, 554 ms in a ride. So over the pour's box the stamp writes the template's
- * rows straight into the chunk sections instead, the way {@link PortalClear} empties a box, and the
- * template proper is laid only around it. The room stands exactly as it did before the pour reaches
- * a row (ground to walk on, air above), and the pour finds the same blocks to skip.</p>
+ * and then poured from its sample ({@link PortalChunkDimension}), which writes nearly every cell
+ * again. Stamping that template the ordinary way cleared the box through the light engine and then
+ * ran every template block through the structure processors and a {@code setBlock}: for a 3x3 room's
+ * 73,728 cells that was 112 ms median in the editor and 554 ms in a ride, all in one tick. Because
+ * these templates are plain rows, the stamp can write each row's state straight into the sections
+ * instead, the way {@link PortalClear} empties a box. The room ends up block for block as the
+ * ordinary stamp left it (ground to walk on, air above, until the pour reaches a row), and the pour
+ * finds the same blocks to skip.</p>
  *
- * <p><b>Why a box.</b> A slice holds a state for every cell inside its bounds (air where the cube
- * ran out), so the cells a pour writes are exactly the room cells whose shifted row falls inside
- * the slice: one box. The box leaves out the two end columns (room-local X {@code 0} and
- * {@code size.x - 1}), which the corridors' mouth seals copy while they are stamped, before any
- * pour ({@code PortalCarriageBuilder#sealFillFor}); those keep the template stamp itself.</p>
+ * <p><b>Only plain rows.</b> Taken only when every row of the template is one plain vanilla block
+ * with no block entity across its whole footprint, or air, and the template has no entities.
+ * Anything else (a placeholder a processor resolves, a chest, a mixed row, a picture) is stamped
+ * the ordinary way.</p>
  *
- * <p><b>Only plain rows.</b> The fast path writes one state per row, so it is taken only when every
- * row of the template is a single plain vanilla block with no block entity (or empty). Anything
- * else (a placeholder a processor resolves, a chest, a mixed row) stamps the room whole, as before.</p>
+ * <p><b>Light.</b> A section write skips the light engine, as {@code PortalClear}'s does: cells that
+ * were emitting are relit, and the section's emptiness is reported. The rooms stand in the twin
+ * space under the bedrock, where there is no sky to let in; {@code PortalRoomSky} lights them on
+ * the client. The pour writes its terrain through {@code setBlock}, which lights it.</p>
  */
 final class PortalChunkStampTrim {
 
@@ -52,24 +53,8 @@ final class PortalChunkStampTrim {
 
     private PortalChunkStampTrim() {}
 
-    /** A trimmed stamp's plan: the world box left to the pour, and the template's state per row. */
+    /** A laid stamp's plan: the room's box, and the template's state per row. */
     record Plan(BoundingBox box, BlockState[] rows) {}
-
-    /**
-     * The room-local box {@code {minX, minY, minZ, maxX, maxY, maxZ}} the pour writes and the stamp
-     * may lay cheaply, or null when there is none.
-     *
-     * <p>Pure geometry, so it is unit-tested without a level. The pour reads the slice at row
-     * {@code y + shift} for room row {@code y} ({@code PortalChunkDimension#writeStrips}).</p>
-     */
-    static int[] localBox(Vec3i size, int sliceWidth, int sliceHeight, int shift) {
-        int maxX = Math.min(size.getX(), sliceWidth) - 2;
-        int maxZ = Math.min(size.getZ(), sliceWidth) - 1;
-        int minY = Math.max(0, -shift);
-        int maxY = Math.min(size.getY(), sliceHeight - shift) - 1;
-        if (maxX < 1 || maxZ < 0 || maxY < minY) return null;
-        return new int[] {1, minY, 0, maxX, maxY, maxZ};
-    }
 
     /**
      * What a template holds in each row when every row is one plain state, filled across its whole
@@ -112,21 +97,19 @@ final class PortalChunkStampTrim {
     }
 
     /**
-     * The plan for a trimmed stamp, or null to stamp the whole room: no slice, nothing to trim, a
-     * corridor reaching into the box (the pour skips corridor cells, so the stamp must not), or a
-     * template whose rows are not plain.
+     * The plan for laying a room of {@code size} at {@code roomOrigin} from {@code template}'s rows,
+     * or null to stamp it the ordinary way: no template, one of another size (a resize the author
+     * has not saved), saved entities, or rows that are not plain.
      */
-    static Plan plan(BlockPos roomOrigin, Vec3i size, PortalChunkSlice slice, int shift,
-                     PortalCorridorMask corridors, StructureTemplate template) {
-        if (slice == null || template == null || !template.getSize().equals(size)) return null;
-        int[] b = localBox(size, slice.width(), slice.height(), shift);
-        if (b == null) return null;
+    static Plan plan(BlockPos roomOrigin, Vec3i size, StructureTemplate template) {
+        if (template == null || !template.getSize().equals(size)) return null;
+        if (!((StructureTemplateAccessor) template).dungeontrain$entityInfoList().isEmpty()) return null;
         BlockState[] rows = rowsOf(template, size);
         if (rows == null) return null;
-        BoundingBox box = new BoundingBox(
-            roomOrigin.getX() + b[0], roomOrigin.getY() + b[1], roomOrigin.getZ() + b[2],
-            roomOrigin.getX() + b[3], roomOrigin.getY() + b[4], roomOrigin.getZ() + b[5]);
-        return corridors.intersects(box) ? null : new Plan(box, rows);
+        return new Plan(new BoundingBox(
+            roomOrigin.getX(), roomOrigin.getY(), roomOrigin.getZ(),
+            roomOrigin.getX() + size.getX() - 1, roomOrigin.getY() + size.getY() - 1,
+            roomOrigin.getZ() + size.getZ() - 1), rows);
     }
 
     private static BlockState[] rowsOf(StructureTemplate template, Vec3i size) {

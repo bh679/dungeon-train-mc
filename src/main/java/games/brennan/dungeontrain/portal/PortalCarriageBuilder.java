@@ -1046,8 +1046,7 @@ public final class PortalCarriageBuilder {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
         long startedAt = System.nanoTime();
-        long trimNanos = 0L;
-        PortalChunkStampTrim.Plan trim = null;
+        PortalChunkStampTrim.Plan laid = null;
         long clearNanos = 0L;
         long templateNanos = 0L;
 
@@ -1056,20 +1055,14 @@ public final class PortalCarriageBuilder {
             // captured, with none of the passes that would re-roll what somebody built.
             stampRoomFromBlob(level, roomOrigin, roomSize, structure.blob(), pairKey);
         } else {
-            // A generated room's pour writes every cell its sample reaches, so over that volume the
-            // stamp lays its template's rows straight into the sections, and stamps the template
-            // proper only around it. See PortalChunkStampTrim.
-            trim = trimFor(level, structure, dims, pairKey, roomOrigin, roomSize);
-            PortalCorridorMask spared = PortalCorridorMask.NONE;
-            if (trim != null) {
-                long trimAt = System.nanoTime();
-                PortalChunkStampTrim.lay(level, trim, roomOrigin.getY());
-                trimNanos = System.nanoTime() - trimAt;
-                spared = spared.plus(trim.box());
-            }
+            // A generated room's template is plain rows of ground and air that its pour mostly writes
+            // over, so it is laid straight into the sections rather than stamped. See PortalChunkStampTrim.
+            laid = structure.mode().generatesTerrain()
+                ? PortalChunkStampTrim.plan(roomOrigin, roomSize,
+                    PortalRoomTemplateStore.get(level, structure.roomName(), dims).orElse(null))
+                : null;
             PortalCopyTiming.begin();
-            stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-                spared, spared,
+            stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, laid,
                 structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
                 structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
                 PortalRoomTiling.Tile.BASE,
@@ -1130,42 +1123,16 @@ public final class PortalCarriageBuilder {
         // out of it. It and a room with no sample only want the frame, which they get now.
         boolean poured = structure.mode().generatesTerrain() && !structure.stampsFromBlob()
             && PortalChunkDimension.beginPour(level, structure, pairKey);
-        if (trim != null && !poured) {
-            // The sample went between the stamp and the pour (its cache was emptied). The box already
-            // holds the template's rows, so the room stands; it is only stamped whole again so the
-            // template's own write path (processors, light) has the last word, around the corridors.
-            LOGGER.warn("[DungeonTrain] Portal pair {} room '{}' lost its sample mid-stamp; stamping its template",
-                pairKey, structure.roomName());
-            PortalCorridorMask corridors = corridorMask(structure, dims);
-            stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-                corridors, corridors, PLUG_EVERY_FLUID);
-        }
         if (structure.mode().generatesTerrain() && !poured) {
             PortalChunkDimension.frame(level, structure, dims, pairKey);
         }
 
         long endedAt = System.nanoTime();
-        AsyncPerfLog.debug(PERF_LOGGER, "[portal.stamp] pair={} room={} mode={} roomMs={} (trimMs={} clearMs={} templateMs={}) skinMs={} corridorsMs={} restMs={} totalMs={} poured={} trimmed={}",
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.stamp] pair={} room={} mode={} roomMs={} (clearMs={} templateMs={}) skinMs={} corridorsMs={} restMs={} totalMs={} poured={} laid={}",
             pairKey, structure.roomName(), structure.mode().name(), stampMillis(roomAt - startedAt),
-            stampMillis(trimNanos), stampMillis(clearNanos), stampMillis(templateNanos), stampMillis(skinAt - roomAt),
+            stampMillis(clearNanos), stampMillis(templateNanos), stampMillis(skinAt - roomAt),
             stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured,
-            trim != null);
-    }
-
-    /**
-     * How a generated room's stamp may lay the box its pour will write, or null to stamp the whole
-     * room as before: not a generated room, no sample in hand, nothing to trim, or a template that is
-     * not plain rows. Read from the same sample {@code beginPour} starts from, in the same tick.
-     */
-    private static PortalChunkStampTrim.Plan trimFor(ServerLevel level, PortalStructure structure,
-                                                     CarriageDims dims, int pairKey,
-                                                     BlockPos roomOrigin, Vec3i roomSize) {
-        if (!structure.mode().generatesTerrain()) return null;
-        PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
-        if (slice == null) return null;
-        return PortalChunkStampTrim.plan(roomOrigin, roomSize, slice,
-            PortalChunkDimension.copyShift(structure, dims, roomSize), corridorMask(structure, dims),
-            PortalRoomTemplateStore.get(level, structure.roomName(), dims).orElse(null));
+            laid != null);
     }
 
     private static String stampMillis(long nanos) {
@@ -1990,6 +1957,35 @@ public final class PortalCarriageBuilder {
      * ran through a plain {@code setBlock} over a live block entity — so each copy sprayed its
      * contents across the floor. See {@link PortalClear} for the same hazard, found earlier.</p>
      */
+    /**
+     * The base room of a pair: {@code laid}, when there is one, puts the template down straight into
+     * the chunk sections ({@link PortalChunkStampTrim}); otherwise it is stamped through the light
+     * engine with no masks. The passes after it are the same either way.
+     */
+    private static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                    String roomName, Vec3i size, PortalChunkStampTrim.Plan laid,
+                                    int variantIndex, int exactIndex, int pairKey,
+                                    PortalRoomTiling.Tile tile,
+                                    int liveMobCount, PortalRoomContents contents,
+                                    PortalRoomBooks books,
+                                    java.util.function.Predicate<BlockPos> keepFluid) {
+        if (laid == null) {
+            stampRoomAt(level, roomOrigin, dims, roomName, size, /*relight*/ true,
+                PortalCorridorMask.NONE, PortalCorridorMask.NONE, variantIndex, exactIndex, pairKey, tile,
+                liveMobCount, contents, books, keepFluid);
+            return;
+        }
+        CarriageStampGuard.run(() -> {
+            // What stampRoomAtGuarded does, in its order: the box, the intruders, the skin's liquids.
+            PortalChunkStampTrim.lay(level, laid, roomOrigin.getY());
+            clearIntruders(level, roomOrigin, size);
+            plugFluidsAround(level, roomOrigin, size, keepFluid);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
+            applyRoomPasses(level, roomOrigin, roomName, size, PortalCorridorMask.NONE, variantIndex,
+                exactIndex, pairKey, tile, liveMobCount, contents, books);
+        });
+    }
+
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
@@ -2015,6 +2011,15 @@ public final class PortalCarriageBuilder {
                                               java.util.function.Predicate<BlockPos> keepFluid) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask, keepFluid);
         PortalCopyTiming.mark(PortalCopyTiming.Phase.TEMPLATE);
+        applyRoomPasses(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex, pairKey,
+            tile, liveMobCount, contents, books);
+    }
+
+    /** Everything a template room gets after its blocks are down: decor, contents, pools, variants, books. */
+    private static void applyRoomPasses(ServerLevel level, BlockPos roomOrigin, String roomName, Vec3i size,
+                                        PortalCorridorMask writeMask, int variantIndex, int exactIndex,
+                                        int pairKey, PortalRoomTiling.Tile tile, int liveMobCount,
+                                        PortalRoomContents contents, PortalRoomBooks books) {
         // Claim the pictures that stamp just hung, before anything else can walk in and be mistaken
         // for one. A dimensional carriage REPEATS — the tiling window is 121 copies and it has no
         // memory, so walking back over ground you left re-stamps it — and an item frame is a
