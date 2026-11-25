@@ -77,11 +77,6 @@ public final class TributeRoomVisitService {
     private TributeRoomVisitService() {}
 
     /**
-     * Stand {@code dead} in their tribute room. {@code false} when the visit cannot start (hardcore, no
-     * template, the room does not fit this world), in which case nothing was changed and the client is
-     * told to fall back to the full-screen recap.
-     */
-    /**
      * A room stood ahead of the visit, while the perks menu still shows: everything the stamp needs
      * done, so {@link #begin} only has to move the player in. Discarded if they never come.
      */
@@ -89,47 +84,56 @@ public final class TributeRoomVisitService {
                     BoundingBox room, List<BlockPos> screen, Direction facing, TributeRoomCamera.Pose pose,
                     TributeRoomBlob blob, List<BoundingBox> tubes, PortalCarriageLayout layout) {}
 
+    /** What {@link #begin} did: moved them in, will move them in once the room stands, or cannot. */
+    public enum BeginResult { STARTED, PENDING, REFUSED }
+
+    /** A site to clear once its visitor has gone; its slot stays taken and its room ticket held until then. */
+    private record Sweep(UUID player, int slot, BoundingBox window, long dueTick, String who) {}
+
     private static final Map<UUID, Prepared> PREPARED = new ConcurrentHashMap<>();
+    /** Rooms still being stood up, a step a tick ({@link TributeRoomStandJob}). */
+    private static final Map<UUID, TributeRoomStandJob> JOBS = new ConcurrentHashMap<>();
+    private static final List<Sweep> SWEEPS = java.util.Collections.synchronizedList(new ArrayList<>());
+    /**
+     * Bumped when the server stops. The statics outlive a singleplayer world, so a file read that lands
+     * after the world is gone must not put anything back.
+     */
+    private static volatile int epoch;
 
     /**
-     * Stand {@code dead}'s room now, in the background, so the visit that follows the perks menu opens
-     * at once. Idempotent per death. False when no room can stand (then {@link #begin} fails too).
+     * Start standing {@code dead}'s room now, in the background, so the visit that follows the perks
+     * menu opens at once. Idempotent per death. False when no room can stand (then {@link #begin} fails too).
      */
     public static boolean prepare(ServerPlayer dead) {
         MinecraftServer server = dead.getServer();
         if (server == null || server.isHardcore() || !dead.isDeadOrDying()) return false;
-        if (PREPARED.containsKey(dead.getUUID())) return true;
+        if (PREPARED.containsKey(dead.getUUID()) || JOBS.containsKey(dead.getUUID())) return true;
         // Died inside the room (their own lava, say): the old visit is saved and swept, and a fresh one stands.
         if (TributeRoomVisitSessions.isVisiting(dead.getUUID())) end(dead, false);
-        Prepared prepared = stand(server, dead);
-        if (prepared == null) return false;
-        PREPARED.put(dead.getUUID(), prepared);
-        LOGGER.info("[DungeonTrain] tribute room: stood {}'s room (rev {}) ahead of the visit at slot {}",
-            dead.getName().getString(), prepared.blob().revision(), prepared.slot());
-        return true;
+        return startJob(server, dead) != null;
     }
 
-    /** A room stood ahead that nobody came to: swept, its tickets let go. */
+    /** A room stood ahead, or still standing, that nobody came to: swept, its tickets let go. */
     public static void discardPrepared(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
         Prepared prepared = PREPARED.remove(player.getUUID());
-        if (prepared == null || player.getServer() == null) return;
-        ServerLevel overworld = player.getServer().overworld();
-        TributeRoomVisitTickets.release(overworld, prepared.window(), player.getServer().getLevel(prepared.deathDim()),
-            prepared.deathPos(), player.getUUID());
-        PortalClear.clearBox(overworld, prepared.window(), PortalCorridorMask.NONE);
-        PortalTestSweep.discardMobs(overworld, prepared.window());
-        LOGGER.info("[DungeonTrain] tribute room: swept the room stood ahead for {}", player.getName().getString());
+        if (prepared != null) {
+            TributeRoomVisitTickets.releaseDeathSpot(server.getLevel(prepared.deathDim()), prepared.deathPos(), player.getUUID());
+            queueSweep(server, player.getUUID(), prepared.slot(), prepared.window(), player.getName().getString());
+            LOGGER.info("[DungeonTrain] tribute room: sweeping the room stood ahead for {}", player.getName().getString());
+        }
+        TributeRoomStandJob job = JOBS.get(player.getUUID());
+        if (job != null) fail(server, job, "nobody came");
     }
 
-    /** The room, its tubes, floor, heads and TV, stood and ticketed; null when nothing can stand. */
-    @Nullable
-    private static Prepared stand(MinecraftServer server, ServerPlayer dead) {
-        ServerLevel overworld = server.overworld();
-        DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
-        CarriageDims dims = worldData.dims();
+    /** Where a visit in {@code slot} stands: its blob-less structure, layout, room box and sweep window. */
+    record Site(PortalStructure geometry, PortalCarriageLayout layout, BlockPos roomOrigin, Vec3i roomSize, BoundingBox window) {}
 
-        TributeRoomBlob blob = TributeRoomStore.loadOrDefault(overworld, dead, dims).orElse(null);
-        if (blob == null) return null;
+    /** The site of a visit in {@code slot} in this world; null when the room does not fit its basement. No level write. */
+    @Nullable
+    static Site planSite(ServerLevel overworld, int slot) {
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         Vec3i size = TributeRooms.size(overworld, dims);
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
         Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, size);
@@ -140,59 +144,297 @@ public final class TributeRoomVisitService {
                 size.getX(), size.getY(), size.getZ());
             return null;
         }
-
         PortalRoomSettings settings = PortalRoomSettings.of(TributeRooms.TEMPLATE);
         int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(dims, roomSize.getY(), settings.doorHeightOffset().value());
-        Set<Integer> taken = new java.util.HashSet<>(TributeRoomVisitSessions.takenSlots());
-        for (Prepared p : PREPARED.values()) taken.add(p.slot());
-        int slot = TributeRoomVisitSite.freeSlot(taken);
-        PortalStructure structure = new PortalStructure(
-            TributeRoomVisitSite.originFor(slot, laneFloor, doorHeightOffset), TributeRooms.TEMPLATE, roomSize, settings,
-            PortalRoomTiling.base(), PortalExitCopies.NONE, PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
-            PortalStructure.NO_SALT, blob.toPortalRoomBlob());
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
-        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
-        BoundingBox room = BoundingBox.fromCorners(roomOrigin, roomOrigin.offset(roomSize.getX() - 1, roomSize.getY() - 1, roomSize.getZ() - 1));
-
-        // The room as saved, then the visit's own entrance and exit tubes against its doors — not the
-        // pair corridors a room gets on the train (TributeRoomCorridors).
-        StagePlacementScope.run(PortalCarriageBuilder.stageIdFor(overworld, TributeRooms.PAIR_KEY, dims),
-            () -> PortalCarriageBuilder.stampRoomFromBlob(overworld, roomOrigin, roomSize, structure.blob(), TributeRooms.PAIR_KEY));
-        List<BoundingBox> tubes = TributeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
-        TributeRoomHeads.dress(overworld, roomOrigin, roomSize, blob.owner(), blob.ownerName());
-        TributeRoomFloor.lay(overworld, roomOrigin, roomSize);
-        games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(overworld, room);
-        TributeTvButton.place(overworld, room);
-        BoundingBox window = TributeRoomCorridors.window(room, tubes);
-
-        List<BlockPos> screen = new ArrayList<>();
-        Direction facing = screenBlocks(overworld, room, screen);
-        if (screen.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] tribute room: {}'s room has no TV — sweeping it and skipping the visit", dead.getName().getString());
-            PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
-            return null;
-        }
-        TributeRoomCamera.Pose pose = arrivalPose(overworld, room, screen, facing);
-        powerOn(overworld, screen);
-        TributeRoomVisitTickets.hold(overworld, window, dead.serverLevel(), dead.position(), dead.getUUID());
-        return new Prepared(slot, dead.level().dimension(), dead.position(), structure, window, room, List.copyOf(screen),
-            facing, pose, blob, tubes, layout);
+        PortalStructure geometry = structureAt(TributeRoomVisitSite.originFor(slot, laneFloor, doorHeightOffset),
+            roomSize, settings, null);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, geometry.kind());
+        BlockPos roomOrigin = geometry.roomOrigin(dims, layout);
+        BoundingBox window = TributeRoomCorridors.windowFor(overworld, geometry, dims);
+        return new Site(geometry, layout, roomOrigin, roomSize, window);
     }
 
-    public static boolean begin(ServerPlayer dead) {
+    /** Whether nothing (a visit, a room standing or stood, a sweep) is using {@code slot} right now. */
+    static boolean slotFree(int slot) {
+        return !takenSlots().contains(slot);
+    }
+
+    /**
+     * Plan {@code dead}'s room and start it: slot, window and tickets now, the file on the IO thread, the
+     * stamp once the chunks are in ({@link #tick}). Nothing is written to the level here. Null when no
+     * room can stand in this world.
+     */
+    @Nullable
+    private static TributeRoomStandJob startJob(MinecraftServer server, ServerPlayer dead) {
+        ServerLevel overworld = server.overworld();
+        int slot = TributeRoomVisitSite.freeSlot(takenSlots());
+        Site site = planSite(overworld, slot);
+        if (site == null) return null;
+        PortalStructure geometry = site.geometry();
+        PortalCarriageLayout layout = site.layout();
+        BlockPos roomOrigin = site.roomOrigin();
+        Vec3i roomSize = site.roomSize();
+        BoundingBox window = site.window();
+        UUID id = dead.getUUID();
+        String key = TributeRoomKeys.keyFor(overworld, dead);
+
+        // The ticket first: the chunks load (or generate) on the worker threads while the file is read,
+        // and the stamp waits for them rather than pulling them in itself.
+        TributeRoomVisitTickets.holdRoom(overworld, window, id);
+        TributeRoomVisitTickets.holdDeathSpot(dead.serverLevel(), dead.position(), id);
+        int myEpoch = epoch;
+        TributeRoomStandJob job = new TributeRoomStandJob(id, dead.getName().getString(), myEpoch, slot, key,
+            dead.level().dimension(), dead.position(), geometry, layout, roomOrigin, roomSize, window, System.nanoTime());
+        JOBS.put(id, job);
+        TributeRoomStore.loadAsync(id, key).whenComplete((saved, error) -> server.execute(() -> {
+            if (myEpoch != epoch || JOBS.get(id) != job) return;
+            if (error != null) {
+                LOGGER.warn("[DungeonTrain] tribute room: could not read {}'s room — starting from the default: {}",
+                    job.playerName, error.toString());
+            }
+            job.loaded = saved == null ? java.util.Optional.empty() : saved;
+            job.loadedNs = System.nanoTime();
+        }));
+        return job;
+    }
+
+    private static PortalStructure structureAt(BlockPos origin, Vec3i roomSize, PortalRoomSettings settings,
+                                               @Nullable games.brennan.dungeontrain.portal.PortalRoomBlob blob) {
+        return new PortalStructure(origin, TributeRooms.TEMPLATE, roomSize, settings,
+            PortalRoomTiling.base(), PortalExitCopies.NONE, PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
+            PortalStructure.NO_SALT, blob);
+    }
+
+    /** Every slot a visit, a room stood ahead, a room standing or a sweep still holds. */
+    private static Set<Integer> takenSlots() {
+        Set<Integer> taken = new java.util.HashSet<>(TributeRoomVisitSessions.takenSlots());
+        for (Prepared p : PREPARED.values()) taken.add(p.slot());
+        for (TributeRoomStandJob j : JOBS.values()) taken.add(j.slot);
+        synchronized (SWEEPS) {
+            for (Sweep s : SWEEPS) taken.add(s.slot());
+        }
+        return taken;
+    }
+
+    // ---- the tick --------------------------------------------------------------
+
+    /** Server tick: sweeps that are due, then one step of every room being stood. */
+    public static void tick(MinecraftServer server) {
+        if (JOBS.isEmpty() && SWEEPS.isEmpty() && PREPARED.isEmpty()) return;
+        runDueSweeps(server);
+        dropRevived(server);
+        for (TributeRoomStandJob job : List.copyOf(JOBS.values())) {
+            if (JOBS.get(job.player) != job) continue;
+            try {
+                step(server, job);
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] tribute room: standing {}'s room failed", job.playerName, t);
+                fail(server, job, "it threw " + t);
+            }
+        }
+    }
+
+    /**
+     * A room standing, or stood, for someone alive again without having come (a revive, a command): let
+     * go, so its slot and tickets do not wait for them to log out. A visitor is alive too, but is not here.
+     */
+    private static void dropRevived(MinecraftServer server) {
+        if (JOBS.isEmpty() && PREPARED.isEmpty()) return;
+        java.util.Set<UUID> ids = new java.util.HashSet<>(JOBS.keySet());
+        ids.addAll(PREPARED.keySet());
+        for (UUID id : ids) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player == null || player.isDeadOrDying() || TributeRoomVisitSessions.isVisiting(id)) continue;
+            LOGGER.info("[DungeonTrain] tribute room: {} is alive again without visiting — letting their room go", player.getName().getString());
+            discardPrepared(player);
+        }
+    }
+
+    private static void step(MinecraftServer server, TributeRoomStandJob job) {
+        if (job.beginOverdue(System.currentTimeMillis())) {
+            fail(server, job, "not ready within " + TributeRoomStandJob.BEGIN_DEADLINE_MS + " ms of Next");
+            return;
+        }
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        switch (job.phase) {
+            case LOADING -> {
+                if (job.loaded == null) return;
+                ServerPlayer player = server.getPlayerList().getPlayer(job.player);
+                if (player == null) {
+                    fail(server, job, "they left");
+                    return;
+                }
+                TributeRoomBlob blob = TributeRoomStore.orDefault(overworld, player, dims, job.loaded).orElse(null);
+                if (blob == null) {
+                    fail(server, job, "no room and no template");
+                    return;
+                }
+                job.blob = blob;
+                job.structure = structureAt(job.geometry.origin(), job.roomSize, job.geometry.settings(), blob.toPortalRoomBlob());
+                job.phase = TributeRoomStandJob.Phase.CHUNKS;
+                stepChunks(overworld, job);
+            }
+            case CHUNKS -> stepChunks(overworld, job);
+            case STAMP_ROOM -> {
+                long t0 = System.nanoTime();
+                job.laid = true;
+                // The room as saved, then (next tick) the visit's own entrance and exit tubes against its
+                // doors — not the pair corridors a room gets on the train (TributeRoomCorridors).
+                StagePlacementScope.run(PortalCarriageBuilder.stageIdFor(overworld, TributeRooms.PAIR_KEY, dims),
+                    () -> PortalCarriageBuilder.stampRoomFromBlob(overworld, job.roomOrigin, job.roomSize,
+                        job.structure.blob(), TributeRooms.PAIR_KEY));
+                job.stampRoomMs = TributeRoomStandJob.ms(System.nanoTime() - t0);
+                job.phase = TributeRoomStandJob.Phase.STAMP_DRESS;
+            }
+            case STAMP_DRESS -> {
+                long t0 = System.nanoTime();
+                job.tubes = TributeRoomCorridors.stamp(overworld, job.roomOrigin, job.roomSize, dims);
+                TributeRoomHeads.dress(overworld, job.roomOrigin, job.roomSize, job.blob.owner(), job.blob.ownerName());
+                TributeRoomFloor.lay(overworld, job.roomOrigin, job.roomSize);
+                TvBlocks.tuneTributeTvs(overworld, job.room);
+                TributeTvButton.place(overworld, job.room);
+                job.stampDressMs = TributeRoomStandJob.ms(System.nanoTime() - t0);
+                job.phase = TributeRoomStandJob.Phase.FINISH;
+            }
+            case FINISH -> finish(server, overworld, job);
+        }
+    }
+
+    private static void stepChunks(ServerLevel overworld, TributeRoomStandJob job) {
+        if (!TributeRoomVisitTickets.ready(overworld, job.window)) {
+            long waited = TributeRoomStandJob.ms(System.nanoTime() - job.loadedNs);
+            if (!job.slowLogged && waited >= TributeRoomStandJob.SLOW_CHUNKS_LOG_MS) {
+                job.slowLogged = true;
+                LOGGER.info("[DungeonTrain] tribute room: {}'s room is still waiting on its chunks after {} ms", job.playerName, waited);
+            }
+            return;
+        }
+        job.chunksNs = System.nanoTime();
+        job.phase = TributeRoomStandJob.Phase.STAMP_ROOM;
+    }
+
+    private static void finish(MinecraftServer server, ServerLevel overworld, TributeRoomStandJob job) {
+        long t0 = System.nanoTime();
+        BoundingBox laidWindow = TributeRoomCorridors.window(job.room, job.tubes);
+        if (!laidWindow.equals(job.window)) {
+            LOGGER.warn("[DungeonTrain] tribute room: {}'s room laid {} but was ticketed for {}", job.playerName, laidWindow, job.window);
+        }
+        List<BlockPos> screen = new ArrayList<>();
+        Direction facing = screenBlocks(overworld, job.room, screen);
+        if (screen.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] tribute room: {}'s room has no TV — sweeping it and skipping the visit", job.playerName);
+            fail(server, job, "no TV");
+            return;
+        }
+        TributeRoomCamera.Pose pose = arrivalPose(overworld, job.room, screen, facing);
+        powerOn(overworld, screen);
+        job.finishMs = TributeRoomStandJob.ms(System.nanoTime() - t0);
+        Prepared prepared = new Prepared(job.slot, job.deathDim, job.deathPos, job.structure, job.window, job.room,
+            List.copyOf(screen), facing, pose, job.blob, job.tubes, job.layout);
+        JOBS.remove(job.player, job);
+        PREPARED.put(job.player, prepared);
+        LOGGER.info("[DungeonTrain] tribute room: stood {}'s room (rev {}) at slot {}, window {} — timings: {}",
+            job.playerName, job.blob.revision(), job.slot, job.window, job.timings(System.nanoTime()));
+        if (!job.beginRequested) return;
+        ServerPlayer player = server.getPlayerList().getPlayer(job.player);
+        if (player == null) {
+            discardPreparedById(server, job.player, job.playerName);
+            return;
+        }
+        if (begin(player) == BeginResult.REFUSED) DungeonTrainNet.sendTo(player, TributeRoomVisitStatePacket.none());
+    }
+
+    /**
+     * Give up on {@code job}: tickets let go and anything laid swept (the slot stays taken until it is),
+     * and a client that asked for the visit told none is coming.
+     */
+    private static void fail(MinecraftServer server, TributeRoomStandJob job, String why) {
+        if (!JOBS.remove(job.player, job)) return;
+        LOGGER.info("[DungeonTrain] tribute room: gave up standing {}'s room ({}) in phase {}, {}/{} chunk(s) in, after {} ms",
+            job.playerName, why, job.phase, TributeRoomVisitTickets.loaded(server.overworld(), job.window),
+            TributeRoomVisitTickets.waitedOn(job.window), TributeRoomStandJob.ms(System.nanoTime() - job.startedNs));
+        TributeRoomVisitTickets.releaseDeathSpot(server.getLevel(job.deathDim), job.deathPos, job.player);
+        if (job.laid) {
+            queueSweep(server, job.player, job.slot, job.window, job.playerName);
+        } else {
+            TributeRoomVisitTickets.releaseRoom(server.overworld(), job.window, job.player);
+        }
+        if (!job.beginRequested) return;
+        ServerPlayer player = server.getPlayerList().getPlayer(job.player);
+        if (player != null) DungeonTrainNet.sendTo(player, TributeRoomVisitStatePacket.none());
+    }
+
+    private static void discardPreparedById(MinecraftServer server, UUID id, String who) {
+        Prepared prepared = PREPARED.remove(id);
+        if (prepared == null) return;
+        TributeRoomVisitTickets.releaseDeathSpot(server.getLevel(prepared.deathDim()), prepared.deathPos(), id);
+        queueSweep(server, id, prepared.slot(), prepared.window(), who);
+    }
+
+    private static void queueSweep(MinecraftServer server, UUID player, int slot, BoundingBox window, String who) {
+        SWEEPS.add(new Sweep(player, slot, window, server.getTickCount() + 1L, who));
+    }
+
+    /** Clear each site whose visitor has gone, then let go of its chunks. A tick after they left, never inside it. */
+    private static void runDueSweeps(MinecraftServer server) {
+        List<Sweep> due = new ArrayList<>();
+        synchronized (SWEEPS) {
+            java.util.Iterator<Sweep> it = SWEEPS.iterator();
+            while (it.hasNext()) {
+                Sweep s = it.next();
+                if (s.dueTick() <= server.getTickCount()) {
+                    due.add(s);
+                    it.remove();
+                }
+            }
+        }
+        ServerLevel overworld = server.overworld();
+        for (Sweep s : due) {
+            long t0 = System.nanoTime();
+            int cleared = PortalClear.clearBox(overworld, s.window(), PortalCorridorMask.NONE);
+            int removed = PortalTestSweep.discardMobs(overworld, s.window());
+            TributeRoomVisitTickets.releaseRoom(overworld, s.window(), s.player());
+            LOGGER.info("[DungeonTrain] tribute room: swept {}'s site at slot {} — {} block(s), {} mob(s), {} ms",
+                s.who(), s.slot(), cleared, removed, TributeRoomStandJob.ms(System.nanoTime() - t0));
+        }
+    }
+
+    // ---- the visit -------------------------------------------------------------
+
+    /**
+     * Stand {@code dead} in their tribute room: at once when it stood ahead, else as soon as it does
+     * ({@link BeginResult#PENDING}; the server answers when it is in, or tells the client none is coming).
+     * {@link BeginResult#REFUSED} when the visit cannot start (hardcore, no template, the room does not
+     * fit this world), in which case the caller tells the client to fall back to the full-screen recap.
+     */
+    public static BeginResult begin(ServerPlayer dead) {
         MinecraftServer server = dead.getServer();
-        if (server == null || server.isHardcore()) return false;
+        if (server == null || server.isHardcore()) return BeginResult.REFUSED;
         if (!dead.isDeadOrDying()) {
             LOGGER.info("[DungeonTrain] tribute room: {} asked for a visit while alive — ignored", dead.getName().getString());
-            return false;
+            discardPrepared(dead);
+            return BeginResult.REFUSED;
         }
         Prepared p = PREPARED.remove(dead.getUUID());
-        if (p == null) {
+        if (p != null) {
+            moveIn(server, dead, p);
+            return BeginResult.STARTED;
+        }
+        TributeRoomStandJob job = JOBS.get(dead.getUUID());
+        if (job == null) {
             // Nothing stood ahead (an older client, or the prepare failed): stand it now.
             if (TributeRoomVisitSessions.isVisiting(dead.getUUID())) end(dead, false);
-            p = stand(server, dead);
-            if (p == null) return false;
+            job = startJob(server, dead);
+            if (job == null) return BeginResult.REFUSED;
         }
+        job.requestBegin(System.currentTimeMillis());
+        LOGGER.info("[DungeonTrain] tribute room: {} pressed Next while their room is still standing ({}) — moving them in when it is",
+            dead.getName().getString(), job.phase);
+        return BeginResult.PENDING;
+    }
+
+    private static void moveIn(MinecraftServer server, ServerPlayer dead, Prepared p) {
         ServerLevel overworld = server.overworld();
         DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
         CarriageDims dims = worldData.dims();
@@ -233,7 +475,6 @@ public final class TributeRoomVisitService {
             fresh.getName().getString(), p.blob().revision(), p.structure().origin(), p.slot(),
             String.format("%.1f", pose.x()), String.format("%.1f", pose.y()), String.format("%.1f", pose.z()),
             kit.size(), trainId);
-        return true;
     }
 
     /**
@@ -252,31 +493,42 @@ public final class TributeRoomVisitService {
         for (ItemStack stack : loose) inv.placeItemBackInInventory(stack);
     }
 
-    /** The client pressed Board anew. Saves, sweeps, and either places them on the train or hands the run's end back. */
+    /**
+     * The client pressed Board anew. Saves, sweeps, and either places them on the train or hands the
+     * run's end back. The client hears once the room is on disk: in singleplayer it leaves the world on that.
+     */
     public static void endFromClient(ServerPlayer player) {
         if (!TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
         MinecraftServer server = player.getServer();
         boolean newWorld = server != null && server.isSingleplayer() && server.isSingleplayerOwner(player.getGameProfile());
-        end(player, !newWorld);
-        DungeonTrainNet.sendTo(player, new TributeRoomSavedPacket(newWorld));
+        java.util.concurrent.CompletableFuture<TributeRoomBlob> saving = end(player, !newWorld);
+        if (server == null) return;
+        int myEpoch = epoch;
+        saving.whenComplete((saved, error) -> server.execute(() -> {
+            if (myEpoch != epoch || player.hasDisconnected()) return;
+            DungeonTrainNet.sendTo(player, new TributeRoomSavedPacket(newWorld));
+        }));
     }
 
     /**
-     * End {@code player}'s visit: capture and save the room, clear the kit, sweep the site, and
-     * ({@code placeOnTrain}) put them on the train. Safe when they are not visiting.
+     * End {@code player}'s visit: capture the room and queue its save, clear the kit, and
+     * ({@code placeOnTrain}) put them on the train. The site is swept a tick later, once they are out of
+     * it. Safe when they are not visiting. Completes, off the server thread, with the room saved, or null.
      */
-    public static void end(ServerPlayer player, boolean placeOnTrain) {
+    public static java.util.concurrent.CompletableFuture<TributeRoomBlob> end(ServerPlayer player, boolean placeOnTrain) {
         TributeRoomVisitSessions.Session session = TributeRoomVisitSessions.take(player.getUUID());
-        if (session == null) return;
+        if (session == null) return java.util.concurrent.CompletableFuture.completedFuture(null);
         MinecraftServer server = player.getServer();
-        if (server == null) return;
+        if (server == null) return java.util.concurrent.CompletableFuture.completedFuture(null);
         ServerLevel overworld = server.overworld();
         DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
         CarriageDims dims = worldData.dims();
 
-        TributeRoomBlob saved = captureAndSave(overworld, player, session);
+        long t0 = System.nanoTime();
+        java.util.concurrent.CompletableFuture<TributeRoomBlob> saving = captureAndSave(overworld, player, session);
+        long captureMs = TributeRoomStandJob.ms(System.nanoTime() - t0);
         if (session.kitGiven()) player.getInventory().clearContent();
-        TributeRoomVisitTickets.release(overworld, session.window(), server.getLevel(session.deathDim()), session.deathPos(), player.getUUID());
+        TributeRoomVisitTickets.releaseDeathSpot(server.getLevel(session.deathDim()), session.deathPos(), player.getUUID());
         if (player.gameMode.getGameModeForPlayer() != session.previousMode()
                 && session.previousMode() != GameType.ADVENTURE && session.previousMode() != GameType.SPECTATOR) {
             player.setGameMode(session.previousMode());
@@ -292,40 +544,46 @@ public final class TributeRoomVisitService {
                 BoardingProgressEvents.stampLifeOrigin(player);
             }
         }
-        int cleared = PortalClear.clearBox(overworld, session.window(), PortalCorridorMask.NONE);
-        int removed = PortalTestSweep.discardMobs(overworld, session.window());
+        // The room's ticket is let go by the sweep, after the clear, so its chunks are still in when it runs.
+        queueSweep(server, player.getUUID(), session.slot(), session.window(), player.getName().getString());
         // The clear pass of the ambience: with the player outside the box it lifts the room's fog and sky.
         PortalCarriageEvents.sendRoomAmbience(dims, PortalCarriageBuilder.layoutFor(dims, session.structure().kind()),
             session.structure(), worldData.getTrainY(), List.of(player));
-        LOGGER.info("[DungeonTrain] tribute room: {} left — saved rev={} ({}), cleared {} block(s) and {} mob(s), {}",
-            player.getName().getString(), saved == null ? session.blob().revision() : saved.revision(),
-            saved == null ? "not saved" : "saved", cleared, removed,
+        LOGGER.info("[DungeonTrain] tribute room: {} left — capture {} ms, save queued from rev {}, {}",
+            player.getName().getString(), captureMs, session.blob().revision(),
             placed ? "placed on the train" : placeOnTrain ? "no train to place on" : "run ends on the client");
+        return saving;
     }
 
-    /** Server stopping: save every standing visit's room; nothing is swept (the world is going). */
-    /** Server stopping: nothing stood ahead survives it. */
+    /** Server stopping: nothing stood ahead, or still standing, survives it, and nothing late lands after. */
     public static void clearPrepared() {
+        epoch++;
         PREPARED.clear();
+        JOBS.clear();
+        SWEEPS.clear();
     }
 
+    /** Server stopping: save every standing visit's room and wait for every save to land; nothing is swept (the world is going). */
     public static void saveAll(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
         for (Map.Entry<UUID, TributeRoomVisitSessions.Session> entry : TributeRoomVisitSessions.entries()) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player != null) captureAndSave(overworld, player, entry.getValue());
         }
+        TributeRoomStore.flush();
     }
 
-    /** Capture the room as it stands and save it; null when nothing was saved. The TV must still be there. */
-    @Nullable
-    static TributeRoomBlob captureAndSave(ServerLevel overworld, ServerPlayer player, TributeRoomVisitSessions.Session session) {
+    /**
+     * Capture the room as it stands (server thread: it reads the level) and queue its save (IO thread).
+     * Completes with the room saved, or null when nothing was. The TV must still be there.
+     */
+    static java.util.concurrent.CompletableFuture<TributeRoomBlob> captureAndSave(ServerLevel overworld, ServerPlayer player, TributeRoomVisitSessions.Session session) {
         BoundingBox room = session.room();
         List<BlockPos> screen = new ArrayList<>();
         screenBlocks(overworld, room, screen);
         if (screen.isEmpty()) {
             LOGGER.warn("[DungeonTrain] tribute room: {}'s room has lost its TV — keeping the last save", player.getName().getString());
-            return null;
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
         }
         CompoundTag snapshot;
         // The TV is saved with an empty slot: whoever stands the room tunes it (TvBlocks.tuneTributeTvs),
@@ -347,7 +605,7 @@ public final class TributeRoomVisitService {
             });
             LOGGER.warn("[DungeonTrain] tribute room: could not capture {}'s room — keeping the last save: {}",
                 player.getName().getString(), t.toString());
-            return null;
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
         }
         held.forEach((pos, stack) -> {
             if (overworld.getBlockEntity(pos) instanceof net.mehvahdjukaar.vista.common.tv.TVBlockEntity tv) tv.setItem(0, stack);
@@ -357,7 +615,8 @@ public final class TributeRoomVisitService {
         // The death this visit followed rides with the room, so a tribute TV on the train can replay it.
         LastDeathReports.Report report = LastDeathReports.peek(player.getUUID());
         if (report != null) next = next.withReport(report.bytes(), report.deathMessage(), report.atMs());
-        return TributeRoomStore.save(next) ? next : null;
+        TributeRoomBlob saving = next;
+        return TributeRoomStore.saveAsync(saving).thenApply(ok -> ok ? saving : null);
     }
 
     // ---- helpers ---------------------------------------------------------------

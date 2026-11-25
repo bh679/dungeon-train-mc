@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * The tribute room visit's lifecycle around the visit itself: the drops remembered at death
@@ -56,6 +57,23 @@ public final class TributeRoomEvents {
         TributeRoomDeathKit.rememberLayout(player.getUUID(), player.getInventory());
     }
 
+    /**
+     * Start standing the room the moment they die, so the death cinematic and the perks menu both cover
+     * the wait for its chunks. A tick later, so a handler that revives them after this one never starts a
+     * room; the perks menu's own prepare is then a no-op.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingDeathPrepare(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.isCanceled()) return;
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null || server.isHardcore() || !games.brennan.dungeontrain.perks.PerksGate.isOn()) return;
+        if (TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
+        server.execute(() -> {
+            if (player.hasDisconnected() || !player.isDeadOrDying()) return;
+            TributeRoomVisitService.prepare(player);
+        });
+    }
+
     /** After every other handler has had its say on the drops, so the kit is what really fell. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDrops(LivingDropsEvent event) {
@@ -81,10 +99,25 @@ public final class TributeRoomEvents {
         TributeRoomVisitService.discardPrepared(player);
     }
 
-    /** Ahead of the world's own save, so a Quit from inside the room still keeps the room. */
+    /** Rooms being stood a step a tick, and sites swept once their visitors are out. */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        TributeRoomVisitService.tick(event.getServer());
+        games.brennan.dungeontrain.portal.tribute.TributeSiteCache.tick(event.getServer());
+    }
+
+    /** A perks world gets the kept visit site written in, or starts keeping one ({@code TributeSiteCache}). */
+    @SubscribeEvent
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        games.brennan.dungeontrain.portal.tribute.TributeSiteCache.onServerStarted(event.getServer());
+    }
+
+    /**
+     * Ahead of the world's own save, so a Quit from inside the room still keeps the room. Always waits
+     * on the room files, since a visit that just ended may still have its save queued.
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
-        if (TributeRoomVisitSessions.isEmpty()) return;
         TributeRoomVisitService.saveAll(event.getServer());
     }
 
@@ -92,6 +125,7 @@ public final class TributeRoomEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         TributeRoomVisitSessions.clear();
         TributeRoomVisitService.clearPrepared();
+        games.brennan.dungeontrain.portal.tribute.TributeSiteCache.clear();
         TributeRoomDeathKit.clear();
         games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.clear();
         games.brennan.dungeontrain.portal.tribute.LastDeathReports.clear();

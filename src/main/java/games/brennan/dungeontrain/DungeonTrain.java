@@ -501,6 +501,10 @@ public class DungeonTrain {
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Dungeon Train common setup");
 
+        // A shutdown the player had to kill (frozen on "Saving world") leaves its trace behind: log it
+        // once, so the next bug report shows where the last one got stuck.
+        games.brennan.dungeontrain.event.ShutdownDiagnostics.reportUnfinishedPreviousShutdown();
+
         // Restrict Adventure Item Names' ambient mob naming (villagers, passive
         // animals and the 3% hostile roll, see HostileTrainNameEvents) to entities on the train: off-train / vanilla-world mobs are
         // no longer auto-named while DT is installed. PlayerMob naming is left
