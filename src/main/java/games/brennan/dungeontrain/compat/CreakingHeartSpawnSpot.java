@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  * Where a creaking heart's Creaking appears: somewhere in the heart's own space.
  *
- * <p>VanillaBackport's search ({@code SpawnExtras.trySpawnMob}) picks a column up to 16 blocks
+ * <p>VanillaBackport's search ({@code WorldUtilities.SpawnUtils.trySpawnMob}) picks a column up to 16 blocks
  * out, starts 8 blocks above the heart and scans down to the first solid top. In a forest that is
  * the ground; inside a carriage it is the <b>roof</b>, and 16 blocks out is the next carriage or the
  * test basement. So instead this floods out from the heart through open cells and the heart's own

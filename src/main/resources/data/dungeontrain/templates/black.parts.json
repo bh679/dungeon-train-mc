@@ -66,6 +66,11 @@
     {
       "name": "mudbricks_wood",
       "weight": 1,
+      "stage": "poplar"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
       "stage": "pale_oak"
     },
     {
@@ -348,6 +353,11 @@
     {
       "name": "mud_wood",
       "weight": 1,
+      "stage": "poplar"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
       "stage": "pale_oak"
     },
     {
@@ -626,6 +636,11 @@
       "name": "mud_wood",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "poplar"
     },
     {
       "name": "mud_wood",

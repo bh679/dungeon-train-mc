@@ -39,7 +39,7 @@ class PhotoSubjectTallyCollectionsTest {
 
     /** Entities not in vanilla 1.21.1's {@code EntityType} fields, by class name (loaded without init). */
     private static final Map<String, String> MODDED = Map.ofEntries(
-            Map.entry("minecraft:creaking", "com.blackgear.vanillabackport.common.level.entities.creaking.Creaking"),
+            Map.entry("minecraft:creaking", "com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking"),
             Map.entry("creeperoverhaul:badlands_creeper", "tech.thatgravyboat.creeperoverhaul.common.entity.base.BaseCreeper"),
             Map.entry("creeperoverhaul:bamboo_creeper", "tech.thatgravyboat.creeperoverhaul.common.entity.base.NeutralCreeper"),
             Map.entry("creeperoverhaul:beach_creeper", "tech.thatgravyboat.creeperoverhaul.common.entity.base.BaseCreeper"),

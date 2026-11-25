@@ -427,18 +427,18 @@
       "mod_ids": [
         "vanillabackport"
       ],
-      "sha1": "eb30efe569cbd5186abf9e5d1e64d4a84895b346",
+      "sha1": "12871e5330f8b33df7740a975047fc9a584d0387",
       "packages": [
         "com.blackgear"
       ],
       "project_id": 417430,
-      "file_id": 8229724,
+      "file_id": 9318571,
       "required": true,
       "dependency_type": "required",
       "gradle_property": "vanillabackport_min_version",
-      "version": "1.1.7.10",
+      "version": "1.2.2",
       "modrinth_project": "vanillabackport",
-      "modrinth_version": "rUSWdBok"
+      "modrinth_version": "mGS7BxD4"
     },
     {
       "name": "Platform",
@@ -446,18 +446,18 @@
       "mod_ids": [
         "platform"
       ],
-      "sha1": "4132ad6809008698b7f489a878e5a33a3879bbfd",
+      "sha1": "38947983b65b08bffdcbbc347949a7bc5c6426e1",
       "packages": [
         "com.blackgear"
       ],
       "project_id": 997634,
-      "file_id": 8075942,
+      "file_id": 9318519,
       "required": true,
       "dependency_type": "required",
       "gradle_property": "platform_min_version",
-      "version": "1.3.3",
+      "version": "1.4.2",
       "modrinth_project": "platform",
-      "modrinth_version": "v7P0nBi2"
+      "modrinth_version": "rh4p4ixM"
     },
     {
       "name": "Deeper Darker",

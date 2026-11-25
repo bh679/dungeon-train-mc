@@ -183,7 +183,9 @@ public record BlockVariantSyncPacket(
      * <p>{@code charges} is a respawn anchor row's packed {@link VariantCharges#toInt} and
      * {@code bedColours} a white bed row's {@link VariantBedColours#mask}; both carry their
      * defaults on every other row. {@code slime} is a slime-type mob row's
-     * {@link games.brennan.dungeontrain.editor.VariantSlime#mask} (0 elsewhere).</p>
+     * {@link games.brennan.dungeontrain.editor.VariantSlime#mask} (0 elsewhere), and
+     * {@code villagerMode} a villager row's {@link games.brennan.dungeontrain.editor.VariantVillager.Mode}
+     * ordinal (0, Job, elsewhere).</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
@@ -191,7 +193,21 @@ public record BlockVariantSyncPacket(
                         int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
                         int growth, String painting, String condition, boolean conditionLive,
                         String conditionGroupValues, String candles, String pot, int trapped,
-                        int charges, int bedColours, int slime, byte sign) {
+                        int charges, int bedColours, int slime, byte sign, byte villagerMode) {
+
+        /** Backward-compat constructor for call sites that don't carry a villager job mode (Job, 0). */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
+                     int growth, String painting, String condition, boolean conditionLive,
+                     String conditionGroupValues, String candles, String pot, int trapped,
+                     int charges, int bedColours, int slime, byte sign) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode, growth,
+                painting, condition, conditionLive, conditionGroupValues, candles, pot, trapped,
+                charges, bedColours, slime, sign, (byte) 0);
+        }
 
         /** {@link #sign} bit: the row picks its mount at spawn (Auto). */
         public static final byte SIGN_AUTO = 1;
@@ -494,6 +510,7 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.bedColours());
             buf.writeVarInt(e.slime());
             buf.writeByte(e.sign());
+            buf.writeByte(e.villagerMode());
         }
     }
 
@@ -554,10 +571,11 @@ public record BlockVariantSyncPacket(
             int bedColours = buf.readVarInt();
             int slime = buf.readVarInt();
             byte sign = buf.readByte();
+            byte villagerMode = buf.readByte();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
                 activeMode, connectMode, growth, painting, condition, conditionLive, conditionGroupValues,
-                candles, pot, trapped, charges, bedColours, slime, sign));
+                candles, pot, trapped, charges, bedColours, slime, sign, villagerMode));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported,

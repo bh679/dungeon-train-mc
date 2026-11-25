@@ -236,7 +236,7 @@ final class VaultLootTest {
         ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
         assertEquals(2, ominous.fillMin());
         assertEquals(4, ominous.fillMax());
-        assertEquals(2281, ominous.totalWeight()); // 2345 less the Mirror (weight 1, 2026-11-12), less 63 from the camera/backpack cut (2026-11-22)
+        assertEquals(2324, ominous.totalWeight()); // 2345 less the Mirror (weight 1, 2026-11-12), less 63 from the camera/backpack cut (2026-11-22), plus 43 for the diamond spear (2026-11-25)
         assertEquals(0.004, expectedPerUnlock(ominous, "heavy_core"), 0.0005);
 
         Set<ResourceLocation> removed = Set.of(
@@ -275,7 +275,7 @@ final class VaultLootTest {
     @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
     void greenVaultRaritiesKeepTheirOdds() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
-        assertEquals(13492, green.totalWeight()); // 13687 less 195 from the 2026-11-22 camera/backpack cut
+        assertEquals(14040, green.totalWeight()); // 13687 less 195 from the 2026-11-22 camera/backpack cut, plus 548 for spears beside its swords (2026-11-25)
         assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
         assertEquals(20, entry(green, "minecraft", "mace").weight());
         assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))

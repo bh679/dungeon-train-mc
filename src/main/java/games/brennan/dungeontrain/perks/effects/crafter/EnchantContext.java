@@ -17,28 +17,29 @@ import java.util.ArrayDeque;
  */
 public final class EnchantContext {
 
-    /** Stands in for "a non-player entity" on the owner stack: ArrayDeque rejects nulls. */
+    /** Stands in for "no menu" on the menu stack: ArrayDeque rejects nulls. */
     private static final Object NO_OWNER = new Object();
 
-    private static final ThreadLocal<ArrayDeque<Object>> OWNER = ThreadLocal.withInitial(ArrayDeque::new);
+    /** Gated: only a player with Enchant Bonus (or a mask over one) is ever pushed. See {@link OwnerStack}. */
+    private static final OwnerStack OWNERS = new OwnerStack();
     private static final ThreadLocal<ArrayDeque<Integer>> ENCHANT_MAX_RANK = ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<ArrayDeque<Object>> ENCHANT_MENU = ThreadLocal.withInitial(ArrayDeque::new);
 
     private EnchantContext() {}
 
+    /** Mobs and players without Enchant Bonus skip the stack (one volatile read) unless a bracket is already open on this thread. */
     public static void pushOwner(Entity entity) {
-        OWNER.get().push(entity instanceof Player ? entity : NO_OWNER);
+        OWNERS.enter(entity, entity instanceof Player player && CrafterRank.enchantBonus(player) > 0);
     }
 
+    /** Never re-reads the rank: pops only what this bracket pushed (see {@link OwnerStack}). */
     public static void popOwner() {
-        ArrayDeque<Object> stack = OWNER.get();
-        if (!stack.isEmpty()) stack.pop();
+        OWNERS.exit();
     }
 
     /** The player the current enchantment read is for, or null. */
     public static Player owner() {
-        Object top = OWNER.get().peek();
-        return top instanceof Player player ? player : null;
+        return OWNERS.top() instanceof Player player ? player : null;
     }
 
     /** The roller's Enchant Max rank for the table roll in progress; each enchantment's levels follow its group. */

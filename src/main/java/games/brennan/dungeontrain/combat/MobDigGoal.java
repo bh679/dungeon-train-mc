@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.combat;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.ToolTiers;
 import games.brennan.dungeontrain.ship.CarriageDeck;
@@ -10,7 +12,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.MobBreakContext;
 import games.brennan.dungeontrain.train.PlayerBlockBreakOff;
 import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
-import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.train.NearbyCarriages;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -42,7 +44,6 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.event.EventHooks;
 import org.joml.Vector3d;
-import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -88,8 +89,6 @@ public final class MobDigGoal extends Goal {
     static final int PRIORITY = 1;
     /** How long after last seeing its target a mob still digs toward it. */
     private static final int SEEN_MEMORY_TICKS = 200;
-    /** No closer to the target for this long counts as stuck. */
-    private static final int STUCK_TICKS = 40;
     /** Getting this much closer resets the stuck clock. */
     private static final double PROGRESS_EPS = 0.5;
     /** Within this, and in sight, the mob's own attack has it; no digging. */
@@ -165,6 +164,15 @@ public final class MobDigGoal extends Goal {
     private Vec3 windowStart = Vec3.ZERO;
     private int progressTicks;
     private int lastStage;
+    /** "No dig" answers in a row; each makes the next look wait longer ({@link DigRecheck#waitTicks}). */
+    private int calmStreak;
+    /**
+     * Where the target stood, and whether the mob saw it, at the last "no dig" answer. On a carriage the cell is in
+     * the carriage's own frame ({@code answerFrame}): its world cell changes every tick the train moves.
+     */
+    private BlockPos answerTargetPos = BlockPos.ZERO;
+    private SubLevel answerFrame;
+    private boolean answerSeen;
 
     private MobDigGoal(Mob mob, boolean bareHanded, boolean miner) {
         this.mob = mob;
@@ -217,6 +225,7 @@ public final class MobDigGoal extends Goal {
             bestDistance = Double.MAX_VALUE;
             restartWindow(now);
             failedApproaches = 0;
+            calmStreak = 0;
         }
         boolean seen = mob.getSensing().hasLineOfSight(target);
         if (seen) lastSeenTick = now;
@@ -230,8 +239,14 @@ public final class MobDigGoal extends Goal {
             bestDistance = distance;
             restartWindow(now);
             failedApproaches = 0;
+            calmStreak = 0;
         }
-        if (now >= chainUntilTick && now - bestDistanceTick < STUCK_TICKS) return false;
+        // Something that could change the last "no dig" answer (sight lost, target moved): back to the usual clock.
+        if (calmStreak > 0 && DigRecheck.resetsBackoff(answerSeen, seen,
+                movedSinceAnswer(target))) {
+            calmStreak = 0;
+        }
+        if (now >= chainUntilTick && now - bestDistanceTick < DigRecheck.waitTicks(calmStreak)) return false;
         if (!EventHooks.canEntityGrief(level, mob)) return false;
         // Knocked back or mid-jump, the navigator can't plan at all: decide once it lands.
         if (!mob.onGround() && !mob.isInLiquid() && !mob.isPassenger()) return false;
@@ -244,7 +259,8 @@ public final class MobDigGoal extends Goal {
         }
         if (hasWalkablePath(target)) {
             // A mob that has not moved at all all window is wedged, not fighting.
-            if (mob.position().distanceTo(windowStart) < WEDGED_DISTANCE) failedApproaches++;
+            boolean wedged = mob.position().distanceTo(windowStart) < WEDGED_DISTANCE;
+            if (wedged) failedApproaches++;
             if (failedApproaches >= FAILED_APPROACHES_BEFORE_CARPET) {
                 cell = carpetInFront(level, target);
                 if (cell != null) {
@@ -255,8 +271,7 @@ public final class MobDigGoal extends Goal {
             // Not stuck, just fighting (circling, holding range): there is a way round, so dig nothing.
             LOGGER.debug("[DungeonTrain] MobDigGoal walkable path, no dig: mob={} at={}",
                     mob.getUUID(), mob.blockPosition());
-            restartWindow(now);
-            chainUntilTick = Integer.MIN_VALUE;
+            noteNoDig(target, seen, wedged, now);
             return false;
         }
 
@@ -265,12 +280,38 @@ public final class MobDigGoal extends Goal {
         if (cell == null && failedApproaches >= FAILED_APPROACHES_BEFORE_CARPET) cell = carpetInFront(level, target);
         approaching = cell == null && canApproach(level, target);
         if (cell == null && !approaching) {
-            // Nothing breakable in the way: wait out another stuck window before looking again.
-            restartWindow(now);
-            chainUntilTick = Integer.MIN_VALUE;
+            // Nothing breakable in the way: wait out another stuck window (or longer) before looking again.
+            noteNoDig(target, seen, false, now);
             return false;
         }
         return true;
+    }
+
+    /**
+     * A "no dig" answer: start a new window, and make the next look wait longer unless the mob is wedged (the
+     * carpet fallback counts wedged windows at the usual length).
+     */
+    private void noteNoDig(LivingEntity target, boolean seen, boolean wedged, int now) {
+        calmStreak = wedged ? 0 : DigRecheck.grow(calmStreak);
+        answerFrame = Sable.HELPER.getTrackingSubLevel(target);
+        answerTargetPos = cellIn(answerFrame, target);
+        answerSeen = seen;
+        restartWindow(now);
+        chainUntilTick = Integer.MIN_VALUE;
+    }
+
+    /** Blocks the target has moved since the last "no dig" answer; boarding or leaving a carriage counts as far. */
+    private int movedSinceAnswer(LivingEntity target) {
+        SubLevel frame = Sable.HELPER.getTrackingSubLevel(target);
+        if (frame != answerFrame) return DigRecheck.MOVED_BLOCKS;
+        return DigRecheck.blocksApart(cellIn(frame, target), answerTargetPos);
+    }
+
+    /** {@code e}'s cell in {@code frame} (a carriage's plot), or its world cell with none. */
+    private static BlockPos cellIn(SubLevel frame, LivingEntity e) {
+        if (frame == null || frame.isRemoved()) return e.blockPosition();
+        Vector3d local = frame.logicalPose().transformPositionInverse(new Vector3d(e.getX(), e.getY(), e.getZ()));
+        return BlockPos.containing(local.x, local.y, local.z);
     }
 
     /** Start a new stuck window: the clock, and where the mob stood. */
@@ -405,14 +446,26 @@ public final class MobDigGoal extends Goal {
     /**
      * Whether the navigator can find a walkable path all the way to {@code target}: one that reaches it,
      * or ends in its column within a block of its feet (a carriage deck reads a hair off the block grid).
+     * A live path the navigator already holds answers yes with no search ({@link DigRecheck#heldPathWalkable}).
      */
     private boolean hasWalkablePath(LivingEntity target) {
+        BlockPos at = target.blockPosition();
+        Path held = mob.getNavigation().getPath();
+        if (held != null) {
+            var end = held.getEndNode();
+            BlockPos aim = held.getTarget();
+            if (end != null && aim != null && DigRecheck.heldPathWalkable(held.isDone(), held.canReach(),
+                    end.x, end.y, end.z, aim.getX(), aim.getY(), aim.getZ(), at.getX(), at.getY(), at.getZ())) {
+                LOGGER.debug("[DungeonTrain] MobDigGoal held path walkable: mob={}", mob.getUUID());
+                return true;
+            }
+        }
+        LOGGER.debug("[DungeonTrain] MobDigGoal path search: mob={} heldPath={}", mob.getUUID(), held != null);
         Path path = mob.getNavigation().createPath(target, 0);
         if (path == null) return false;
         if (path.canReach()) return true;
         var node = path.getEndNode();
         if (node == null) return false;
-        BlockPos at = target.blockPosition();
         return endsAtTarget(node.x, node.y, node.z, at.getX(), at.getY(), at.getZ());
     }
 
@@ -442,6 +495,7 @@ public final class MobDigGoal extends Goal {
             LOGGER.debug("[DungeonTrain] MobDigGoal open door: mob={} at={} carriage={}",
                     mob.getUUID(), target.worldPos, target.onCarriage());
             chainUntilTick = mob.tickCount + CHAIN_TICKS;
+            calmStreak = 0;
         }
         cell = null;
     }
@@ -465,6 +519,7 @@ public final class MobDigGoal extends Goal {
             if (used.getItem() instanceof DiggerItem) used.hurtAndBreak(1, mob, slot);
             chainUntilTick = mob.tickCount + CHAIN_TICKS;
             failedApproaches = 0;
+            calmStreak = 0;
         }
         cell = null;
     }
@@ -770,19 +825,22 @@ public final class MobDigGoal extends Goal {
         return level.getBlockState(c.worldPos);
     }
 
-    /** Carriages whose box (padded) holds the mob. */
+    /** {@link #shipsNear}'s answer for {@link #shipsTick}: one lookup per tick, however many callers. */
+    private List<ManagedShip> ships = List.of();
+    private int shipsTick = Integer.MIN_VALUE;
+
+    /**
+     * The nearest carriages (at most two, the one it stands on first) whose box, padded by
+     * {@link #CARRIAGE_PAD}, holds the mob. Every cell this goal reads is next to the mob, so two is
+     * all it can need. From the per-tick carriage index ({@link NearbyCarriages}), and asked once per
+     * tick: {@code canUse} reaches here up to four times.
+     */
     private List<ManagedShip> shipsNear(ServerLevel level) {
-        List<ManagedShip> out = new ArrayList<>();
-        double x = mob.getX(), y = mob.getY(), z = mob.getZ();
-        for (Trains.Carriage c : Trains.allCarriages(level)) {
-            if (!(c.ship() instanceof SableManagedShip sable) || sable.subLevel() == null) continue;
-            AABBdc bb = c.ship().worldAABB();
-            if (x < bb.minX() - CARRIAGE_PAD || x > bb.maxX() + CARRIAGE_PAD) continue;
-            if (y < bb.minY() - CARRIAGE_PAD || y > bb.maxY() + CARRIAGE_PAD) continue;
-            if (z < bb.minZ() - CARRIAGE_PAD || z > bb.maxZ() + CARRIAGE_PAD) continue;
-            out.add(c.ship());
+        if (shipsTick != mob.tickCount) {
+            ships = NearbyCarriages.nearestTwo(level, mob.getX(), mob.getY(), mob.getZ(), CARRIAGE_PAD);
+            shipsTick = mob.tickCount;
         }
-        return out;
+        return ships;
     }
 
     /**

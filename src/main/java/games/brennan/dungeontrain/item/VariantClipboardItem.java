@@ -158,6 +158,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_BED_COLOURS = "bc";
     /** Per-entry slime size / End slime type mask ({@code VariantSlime#mask}). Absent when any. */
     private static final String NBT_SLIME = "sl";
+    /** Per-entry villager job mode ordinal ({@code VariantVillager.Mode}). Absent when Job. */
+    private static final String NBT_VILLAGER = "vj";
     /** Per-entry sign options token ({@code VariantSign#id}). Absent when none. */
     private static final String NBT_SIGN = "sg";
     /** Per-entry trapped-chest chance, 1..100. Absent when 0. */
@@ -566,6 +568,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.slime().isDefault()) {
                 entry.putInt(NBT_SLIME, s.slime().mask());
             }
+            if (!s.villager().isDefault()) {
+                entry.putByte(NBT_VILLAGER, (byte) s.villager().ordinal());
+            }
             if (!s.sign().isDefault()) {
                 entry.putString(NBT_SIGN, s.sign().id());
             }
@@ -730,7 +735,9 @@ public final class VariantClipboardItem extends Item {
                     .withCondition(condition)
                     .withSlime(entry.contains(NBT_SLIME, Tag.TAG_INT)
                         ? new games.brennan.dungeontrain.editor.VariantSlime(entry.getInt(NBT_SLIME))
-                        : games.brennan.dungeontrain.editor.VariantSlime.NONE));
+                        : games.brennan.dungeontrain.editor.VariantSlime.NONE)
+                    .withVillager(games.brennan.dungeontrain.editor.VariantVillager.Mode.fromOrdinal(
+                        entry.contains(NBT_VILLAGER, Tag.TAG_BYTE) ? entry.getByte(NBT_VILLAGER) : 0)));
                 continue;
             }
             String stateStr = entry.getString(NBT_STATE);

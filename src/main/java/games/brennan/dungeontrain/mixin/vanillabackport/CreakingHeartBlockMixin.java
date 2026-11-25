@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class CreakingHeartBlockMixin {
 
     @org.spongepowered.asm.mixin.Unique
-    private static final String NIGHT = "Lcom/blackgear/vanillabackport/common/level/blocks/CreakingHeartBlock;isNaturalNight(Lnet/minecraft/world/level/Level;)Z";
+    private static final String NIGHT = "Lcom/blackgear/vanillabackport/core/util/WorldUtilities$EnvironmentUtils;isNaturalNight(Lnet/minecraft/world/level/Level;)Z";
     @org.spongepowered.asm.mixin.Unique
     private static final String CONFIG = "Lcom/blackgear/platform/core/util/config/ConfigBuilder$ConfigValue;get()Ljava/lang/Object;";
 
