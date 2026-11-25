@@ -103,6 +103,13 @@ public final class TributeRoomEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         TributeRoomVisitService.tick(event.getServer());
+        games.brennan.dungeontrain.portal.tribute.TributeSiteCache.tick(event.getServer());
+    }
+
+    /** A perks world gets the kept visit site written in, or starts keeping one ({@code TributeSiteCache}). */
+    @SubscribeEvent
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        games.brennan.dungeontrain.portal.tribute.TributeSiteCache.onServerStarted(event.getServer());
     }
 
     /**
@@ -118,6 +125,7 @@ public final class TributeRoomEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         TributeRoomVisitSessions.clear();
         TributeRoomVisitService.clearPrepared();
+        games.brennan.dungeontrain.portal.tribute.TributeSiteCache.clear();
         TributeRoomDeathKit.clear();
         games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.clear();
         games.brennan.dungeontrain.portal.tribute.LastDeathReports.clear();

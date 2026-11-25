@@ -181,6 +181,16 @@ public final class TributeRoomStore {
         }, IO);
     }
 
+    /** Run {@code task} on the room files' IO thread, in order with every read and write queued so far. */
+    static CompletableFuture<Void> runIo(Runnable task) {
+        return CompletableFuture.runAsync(task, IO);
+    }
+
+    /** {@code task}'s answer, computed on the room files' IO thread. */
+    static <T> CompletableFuture<T> supplyIo(java.util.function.Supplier<T> task) {
+        return CompletableFuture.supplyAsync(task, IO);
+    }
+
     /** Wait for every queued read and write to finish. For the server stopping only. */
     public static void flush() {
         try {

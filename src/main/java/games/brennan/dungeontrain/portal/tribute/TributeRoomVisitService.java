@@ -127,14 +127,12 @@ public final class TributeRoomVisitService {
         if (job != null) fail(server, job, "nobody came");
     }
 
-    /**
-     * Plan {@code dead}'s room and start it: slot, window and tickets now, the file on the IO thread, the
-     * stamp once the chunks are in ({@link #tick}). Nothing is written to the level here. Null when no
-     * room can stand in this world.
-     */
+    /** Where a visit in {@code slot} stands: its blob-less structure, layout, room box and sweep window. */
+    record Site(PortalStructure geometry, PortalCarriageLayout layout, BlockPos roomOrigin, Vec3i roomSize, BoundingBox window) {}
+
+    /** The site of a visit in {@code slot} in this world; null when the room does not fit its basement. No level write. */
     @Nullable
-    private static TributeRoomStandJob startJob(MinecraftServer server, ServerPlayer dead) {
-        ServerLevel overworld = server.overworld();
+    static Site planSite(ServerLevel overworld, int slot) {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         Vec3i size = TributeRooms.size(overworld, dims);
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
@@ -146,15 +144,37 @@ public final class TributeRoomVisitService {
                 size.getX(), size.getY(), size.getZ());
             return null;
         }
-
         PortalRoomSettings settings = PortalRoomSettings.of(TributeRooms.TEMPLATE);
         int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(dims, roomSize.getY(), settings.doorHeightOffset().value());
-        int slot = TributeRoomVisitSite.freeSlot(takenSlots());
         PortalStructure geometry = structureAt(TributeRoomVisitSite.originFor(slot, laneFloor, doorHeightOffset),
             roomSize, settings, null);
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, geometry.kind());
         BlockPos roomOrigin = geometry.roomOrigin(dims, layout);
         BoundingBox window = TributeRoomCorridors.windowFor(overworld, geometry, dims);
+        return new Site(geometry, layout, roomOrigin, roomSize, window);
+    }
+
+    /** Whether nothing (a visit, a room standing or stood, a sweep) is using {@code slot} right now. */
+    static boolean slotFree(int slot) {
+        return !takenSlots().contains(slot);
+    }
+
+    /**
+     * Plan {@code dead}'s room and start it: slot, window and tickets now, the file on the IO thread, the
+     * stamp once the chunks are in ({@link #tick}). Nothing is written to the level here. Null when no
+     * room can stand in this world.
+     */
+    @Nullable
+    private static TributeRoomStandJob startJob(MinecraftServer server, ServerPlayer dead) {
+        ServerLevel overworld = server.overworld();
+        int slot = TributeRoomVisitSite.freeSlot(takenSlots());
+        Site site = planSite(overworld, slot);
+        if (site == null) return null;
+        PortalStructure geometry = site.geometry();
+        PortalCarriageLayout layout = site.layout();
+        BlockPos roomOrigin = site.roomOrigin();
+        Vec3i roomSize = site.roomSize();
+        BoundingBox window = site.window();
         UUID id = dead.getUUID();
         String key = TributeRoomKeys.keyFor(overworld, dead);
 
