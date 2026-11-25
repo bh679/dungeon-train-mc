@@ -1,0 +1,17 @@
+{
+  "id": "backpack-at-workstations",
+  "version": "0.2007.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Backpack at your workstations",
+  "summary": "Your backpack now opens beside crafting tables, furnaces, anvils, smithing tables and hoppers. Shift-clicking moves things between them, and what you make can stack straight into your backpack.",
+  "highlights": [],
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "pr": 2869
+}
