@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -91,16 +92,56 @@ class PortalChunkPourTest {
     }
 
     @Test
-    @DisplayName("A rushed pour keeps its place and its hurry, and a second step in the same tick is not a new tick")
+    @DisplayName("A rushed pour keeps its place and its hurry, and a tick that got further counts all of it")
     void rushedPour() {
         PortalChunkPour pour = PortalChunkPour.of(slice(48)).advanced(HEIGHT, 1L).rushed();
         assertTrue(pour.rush());
         assertEquals(21, pour.nextStrip());
         assertTrue(pour.restartedWith(slice(48)).rush());
-        PortalChunkPour more = pour.continued(HEIGHT, 7L);
-        assertEquals(42, more.nextStrip());
-        assertEquals(pour.ticks(), more.ticks());
+        PortalChunkPour more = pour.stepped(90, 0, 7L);
+        assertEquals(90, more.nextStrip());
+        assertEquals(pour.ticks() + 1, more.ticks());
+        assertEquals(8L, more.totalNanos(), "a rushed tick's time counts toward rowsMs");
         assertEquals(7L, more.maxNanos());
         assertFalse(PortalChunkPour.of(slice(48)).rush());
+    }
+
+    @Test
+    @DisplayName("A tick stopped early by its time keeps its place, and never goes backwards")
+    void timeCappedTick() {
+        PortalChunkPour pour = PortalChunkPour.of(slice(48)).stepped(5, 0, 10L);
+        assertEquals(5, pour.nextStrip());
+        assertFalse(pour.done(HEIGHT));
+        assertEquals(5, pour.stepped(3, 0, 1L).nextStrip());
+    }
+
+    /** {@code ground}'s slice, decorated at {@code cells}. */
+    private static PortalChunkSlice decorated(PortalChunkSlice ground, int... cells) {
+        return slice(ground.width()).withChanges(ground, cells, false);
+    }
+
+    @Test
+    @DisplayName("Decoration after the pour is a patch of its changed cells: no strips, already dressed")
+    void patchOnly() {
+        PortalChunkSlice ground = slice(48);
+        PortalChunkPour pour = PortalChunkPour.patchOnly(decorated(ground, 3, 900, 5000), HEIGHT);
+        assertTrue(pour.stripsDone(HEIGHT));
+        assertFalse(pour.done(HEIGHT));
+        assertTrue(pour.dressed());
+        assertTrue(pour.stepped(pour.nextStrip(), 3, 1L).done(HEIGHT));
+        assertTrue(PortalChunkPour.patchOnly(decorated(ground), HEIGHT).done(HEIGHT), "nothing grew: done at once");
+    }
+
+    @Test
+    @DisplayName("Decoration mid-pour carries on from the same strip, patching only the cells already passed")
+    void swapMidPour() {
+        PortalChunkSlice ground = slice(48);
+        // Strip = index / 48: cells 10 and 47 are strip 0, 2000 is strip 41, 48*60 is strip 60.
+        PortalChunkPour pour = PortalChunkPour.of(ground).stepped(42, 0, 1L);
+        PortalChunkPour swapped = pour.swappedTo(decorated(ground, 10, 47, 2000, 48 * 60));
+        assertEquals(42, swapped.nextStrip(), "no restart");
+        assertArrayEquals(new int[] {10, 47, 2000}, swapped.patch());
+        assertFalse(swapped.dressed());
+        assertFalse(swapped.done(HEIGHT));
     }
 }
