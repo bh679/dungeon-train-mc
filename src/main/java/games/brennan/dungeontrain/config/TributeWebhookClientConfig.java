@@ -36,7 +36,7 @@ public final class TributeWebhookClientConfig {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         b.push("tributeWebhook");
         URLS = b
-            .comment("Discord webhook links (https://discord.com/api/webhooks/...), up to " + TributeWebhook.MAX_LINKS + ".",
+            .comment("Discord or Fluxer webhook links (https://discord.com/api/webhooks/... or https://api.fluxer.app/webhooks/...), up to " + TributeWebhook.MAX_LINKS + ".",
                      "Each gets what you pick for it in Options > Account > Discord webhooks.",
                      "Keep them private: anyone with a link can post to that channel.")
             .defineListAllowEmpty("urls", List.of(), () -> "", v -> v instanceof String s && TributeWebhook.isValid(s));

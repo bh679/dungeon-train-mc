@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The Tribute webhook only ever accepts a Discord webhook link: the server fetches it on a player's say-so. */
+/** The Tribute webhook only ever accepts a Discord or Fluxer webhook link: the server fetches it on a player's say-so. */
 class TributeWebhookTest {
 
     private static final String GOOD = "https://discord.com/api/webhooks/123456789012345678/AbC-def_GHI123";
@@ -29,6 +29,59 @@ class TributeWebhookTest {
     @DisplayName("Discord webhook links are accepted")
     void accepts(String url) {
         assertTrue(TributeWebhook.isValid(url), url);
+    }
+
+    private static final String FLUXER_TOKEN = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaB-c_9999999999999999999999999999";
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://fluxer.com/api/webhooks/1234567890123456789/" + FLUXER_TOKEN,
+            "https://fluxer.com/api/v1/webhooks/1234567890123456789/" + FLUXER_TOKEN,
+            "https://web.fluxer.app/api/webhooks/1/tok",
+            "https://web.fluxer.app/api/v1/webhooks/1/tok/",
+            "https://api.fluxer.app/webhooks/1/tok",
+            "https://api.fluxer.app/v1/webhooks/1/tok",
+            "https://API.Fluxer.app/v1/webhooks/1/tok",
+    })
+    @DisplayName("Fluxer webhook links are accepted")
+    void acceptsFluxer(String url) {
+        assertTrue(TributeWebhook.isValid(url), url);
+        assertEquals("Fluxer", TributeWebhook.platform(url));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://evil.fluxer.com/api/webhooks/1/tok",
+            "https://fluxer.app/api/webhooks/1/tok",
+            "https://fluxer.example.org/api/v1/webhooks/1/tok",
+            "https://fluxer.com.evil.io/api/webhooks/1/tok",
+            "http://api.fluxer.app/webhooks/1/tok",
+            "https://api.fluxer.app:8443/webhooks/1/tok",
+            "https://api.fluxer.app/webhooks/1/tok?wait=true",
+            "https://api.fluxer.app/api/webhooks/1/tok",
+            "https://fluxer.com/webhooks/1/tok",
+            "https://fluxer.com/api/v2/webhooks/1/tok",
+            "https://fluxer.com/api/webhooks/1/tok/github",
+            "https://discord.com/api/v1/webhooks/1/tok",
+            "https://discord.com/webhooks/1/tok",
+    })
+    @DisplayName("Fluxer look-alikes, self-hosted instances and wrong paths are refused")
+    void refusesFluxerLookAlikes(String url) {
+        assertFalse(TributeWebhook.isValid(url), url);
+    }
+
+    @Test
+    @DisplayName("Fluxer links mask, give their id, and match their other spellings")
+    void fluxerLinkParts() {
+        String url = "https://api.fluxer.app/v1/webhooks/1234567890123456789/" + FLUXER_TOKEN;
+        assertEquals("https://api.fluxer.app/v1/webhooks/1234567890123456789/••••", TributeWebhook.masked(url));
+        assertEquals("1234567890123456789", TributeWebhook.webhookId(url));
+        assertEquals("1", TributeWebhook.webhookId("https://fluxer.com/api/webhooks/1/tok"));
+        assertEquals("Discord", TributeWebhook.platform(GOOD));
+        assertEquals("", TributeWebhook.platform("https://evil.io/x"));
+        java.util.List<String> kept = TributeWebhook.cleanList(java.util.List.of(url, "https://API.fluxer.app/v1/webhooks/1234567890123456789/" + FLUXER_TOKEN + "/", GOOD));
+        assertEquals(java.util.List.of(url, GOOD), kept);
+        assertTrue(TributeWebhook.contains(kept, "https://Api.Fluxer.App/v1/webhooks/1234567890123456789/" + FLUXER_TOKEN));
     }
 
     @ParameterizedTest
