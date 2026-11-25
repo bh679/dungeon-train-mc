@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.compat.PlayerMobCarriageLocatorBridge;
 import games.brennan.dungeontrain.compat.PlayerMobNaturalGearBridge;
 import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
 import games.brennan.dungeontrain.compat.ZombifiedBackpackLockBridge;
@@ -783,6 +784,15 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but rig-surface seam unavailable ({}); "
                         + "PlayerMobs cannot rig End Crystals on carriages.", t.toString());
+            }
+            // Carriage lookups: PlayerMob's "which carriage is this mob on?" (several per echo per
+            // tick) answered from DT's per-tick carriage index instead of a walk over every carriage
+            // (installCarriageLocator seam, playermob 0.132.0+). An older build keeps its own walk.
+            try {
+                PlayerMobCarriageLocatorBridge.install();
+            } catch (Throwable t) {
+                LOGGER.info("PlayerMob predates the carriage-locator seam ({}); it walks the carriages itself.",
+                        t.toString());
             }
             // Wild-spawn items: standalone PlayerMob gives a natural spawn items at the nearest
             // player's gear tier (NaturalSpawnGear, playermob 0.123.0+). DT gears PlayerMobs by
