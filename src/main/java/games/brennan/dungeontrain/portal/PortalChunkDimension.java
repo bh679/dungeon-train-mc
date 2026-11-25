@@ -159,6 +159,7 @@ public final class PortalChunkDimension {
             if (slice == null) continue;
             WAITING.remove(pairKey);
             startPour(pairKey, slice);
+            AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} resampled; pouring", pairKey, structure.roomName());
         }
     }
 
@@ -218,6 +219,8 @@ public final class PortalChunkDimension {
         // site): wait for it and pour then, which dresses the room in its frame as any pour does.
         if (PortalChunkTerrain.failed(pairKey, structure.roomName())) return false;
         WAITING.add(pairKey);
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} cube not held; waiting for its resample",
+            pairKey, structure.roomName());
         return true;
     }
 
