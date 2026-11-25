@@ -1,0 +1,20 @@
+{
+  "id": "dimensional-carriage-relocation-cost",
+  "version": "0.2025.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "train"
+  ],
+  "title": "Smoother rides beside dimensional carriages",
+  "summary": "Less lag while you ride near a dimensional carriage without going in.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2891,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

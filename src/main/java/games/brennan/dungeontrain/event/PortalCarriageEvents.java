@@ -49,6 +49,7 @@ import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalArrivalHold;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
+import games.brennan.dungeontrain.portal.PortalTwinDrift;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalRoomOccupancy;
@@ -142,6 +143,8 @@ import java.util.UUID;
 public final class PortalCarriageEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Logger PERF_LOGGER =
+        org.slf4j.LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.PERF);
 
     /**
      * All five axes relative: the render interpolation baseline survives the move, so the camera
@@ -184,7 +187,19 @@ public final class PortalCarriageEvents {
      * one thing this whole approach exists to avoid. 24 blocks keeps it within a chunk or two of the
      * carriage even at the smallest render distances.
      */
-    private static final double TWIN_MAX_DRIFT = 24.0;
+    private static final double TWIN_MAX_DRIFT = PortalTwinDrift.MIN_ALLOWANCE;
+
+    /**
+     * Pair key → the last anchor X its {@code ensureStructure} saw, and the sign of the last move it
+     * made, which is the train's direction of travel: a re-stamp lays the twin ahead of it (see
+     * {@link PortalTwinDrift}). The sign survives a stop, so a parked train keeps its last lead
+     * rather than snapping the room back under the carriage.
+     */
+    private static final Map<Integer, Double> LAST_ANCHOR_X = new HashMap<>();
+    private static final Map<Integer, Integer> TRAVEL_SIGN = new HashMap<>();
+
+    /** Pair key → the drift allowance its last {@code ensureStructure} measured, for the status line. */
+    private static final Map<Integer, Double> DRIFT_ALLOWANCE = new HashMap<>();
 
     /**
      * Pair key → the game time its twin was last stamped, for the one number that says whether a
@@ -667,6 +682,9 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalRoomSaveHold.clear();
         games.brennan.dungeontrain.portal.PortalRoomVisits.clear();
         STAMPED_AT.clear();
+        LAST_ANCHOR_X.clear();
+        TRAVEL_SIGN.clear();
+        DRIFT_ALLOWANCE.clear();
         EVICTED.clear();
         games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
         OVERLAP_WARNED_AT.clear();
@@ -2718,6 +2736,7 @@ public final class PortalCarriageEvents {
                                                    double originX, double originY, double originZ,
                                                    int groupSize) {
         PortalStructure existing = STRUCTURES.get(pairKey);
+        int travelSign = noteTravel(pairKey, originX);
 
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but in the
         // sealed space outside the world rather than a fixed height above the train, and on a per-pair
@@ -2806,11 +2825,33 @@ public final class PortalCarriageEvents {
         // height. A carriage crossing into (or out of) the upside-down band changes regions without
         // moving an inch horizontally, and a structure left in the old region is a structure hanging
         // in the open — so a lane change is as good a reason to re-stamp as a drift.
+        // How far is far enough follows what the nearby players actually have loaded, and the room's
+        // own width — see PortalTwinDrift. Render distance 2 to 4 keeps the old 24.
+        double allowance = PortalTwinDrift.allowance(
+            nearbyViewDistance(level, players, originX, originZ),
+            Math.max(planned.roomSize().getX(), planned.roomSize().getZ()));
+        DRIFT_ALLOWANCE.put(pairKey, allowance);
         double drift = existing == null ? 0.0 : horizontalDistance(existing.origin(), originX, originZ);
         if (existing != null
             && existing.origin().getY() == wanted.getY()
-            && drift <= TWIN_MAX_DRIFT) {
+            && drift <= allowance) {
             return existing;
+        }
+
+        // Laid ahead of the carriage in its direction of travel, so the train rolls up to it, under
+        // it and past it before it drifts out again: twice the distance per stamp, never further than
+        // the allowance on either side. Not across a twin-region edge (the upside-down band): the
+        // room would stand in a sealed space the carriage is not over, so it is laid level instead.
+        // A relocation only: a first stamp is for somebody already walking up to the carriage, and
+        // laying it a few chunks ahead would only make it wait on chunks further from them.
+        double lead = existing == null ? 0.0 : PortalTwinDrift.lead(allowance, travelSign);
+        if (lead != 0.0) {
+            PortalTwinRegion ahead = PortalTwinSpace.regionFor(
+                level, Mth.floor(originX + lead), tallestWanted(dims));
+            if (ahead.equals(region)) {
+                wanted = wanted.offset(Mth.floor(originX + lead) - Mth.floor(originX), 0, 0);
+                planned = planned.movedTo(wanted);
+            }
         }
 
         // Not into a chunk whose mirror is still queued. The upside-down mirror defers its plan until
@@ -2858,15 +2899,25 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
-            // A whole room to capture and erase, not one still being written. Whatever could not be
-            // written now never will be: the erase is about to take the room.
-            games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, existing);
-            games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
             // A drifting room somebody has built in — or one lent by another world — is re-laid as
             // it stands, not re-rolled from the template. Captured while the old blocks are still
             // there, before the erase below; null means the template will do.
+            boolean regenerated = regeneratedSinceStamp(level, dims, pairKey, existing);
+            boolean captured = !regenerated && (SharedRoomEvents.capturesForRelocation(pairKey)
+                || PortalRoomMemory.isTouched(pairKey));
+            // A room about to be captured is finished first, so the capture is a whole room and not
+            // one still being written. One that is not is simply dropped: the erase takes whatever
+            // the pour wrote, and the next site pours the same cached sample afresh — finishing it
+            // here was up to a whole 3x3 pour and frame in one tick, for blocks deleted a few lines on.
+            if (captured) {
+                games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, existing);
+            }
+            games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
+            games.brennan.dungeontrain.util.AsyncPerfLog.debug(PERF_LOGGER,
+                "[portal.relocate] pair={} room={} drift={} allowance={} captured={} pourFlushed={}",
+                pairKey, existing.roomName(), fmt(drift), fmt(allowance), captured, captured);
             games.brennan.dungeontrain.portal.PortalRoomBlob carried;
-            if (regeneratedSinceStamp(level, dims, pairKey, existing)) {
+            if (regenerated) {
                 // Its chunks were dropped unsaved after it was stamped and came back as empty
                 // basement: a capture now would carry an empty room on and overwrite the good copy in
                 // memory. The last copy remembered is the room as it was left.
@@ -2902,7 +2953,7 @@ public final class PortalCarriageEvents {
         if (existing != null) {
             LOGGER.info("[DungeonTrain] Portal pair {} twin relocated: drift {} > {} after {} ticks "
                     + "standing — its blocks are written again, and any client building it starts over",
-                pairKey, fmt(drift), fmt(TWIN_MAX_DRIFT),
+                pairKey, fmt(drift), fmt(allowance),
                 stampedAt == null ? -1 : level.getGameTime() - stampedAt);
         }
 
@@ -3022,6 +3073,9 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalChunkTerrain.forget(pairKey);
         EVICTED.put(pairKey, structure.withBlob(null));
         STAMPED_AT.remove(pairKey);
+        LAST_ANCHOR_X.remove(pairKey);
+        TRAVEL_SIGN.remove(pairKey);
+        DRIFT_ALLOWANCE.remove(pairKey);
         PortalWalkThrough.forget(pairKey);
         PortalRoomRescue.forget(pairKey);
         PortalCarriageRevival.forget(pairKey);
@@ -3339,6 +3393,38 @@ public final class PortalCarriageEvents {
         }
     }
 
+    /**
+     * Note where {@code pairKey}'s anchor stands this tick and return the sign of the train's travel
+     * along X: the last real move it made, 0 before it has made one. Both corridors call this in a
+     * tick with the same anchor, so a zero step keeps the sign rather than clearing it.
+     */
+    private static int noteTravel(int pairKey, double anchorX) {
+        Double last = LAST_ANCHOR_X.put(pairKey, anchorX);
+        if (last != null) {
+            double step = anchorX - last;
+            if (Math.abs(step) > 0.01) TRAVEL_SIGN.put(pairKey, step > 0 ? 1 : -1);
+        }
+        return TRAVEL_SIGN.getOrDefault(pairKey, 0);
+    }
+
+    /**
+     * The smallest effective view distance, in chunks, of the players near a pair's anchor — the
+     * same clamp {@code ChunkMap} applies to what it sends each of them. 0 for nobody near.
+     */
+    private static int nearbyViewDistance(ServerLevel level, List<ServerPlayer> players,
+                                          double x, double z) {
+        int server = level.getServer().getPlayerList().getViewDistance();
+        int smallest = 0;
+        for (ServerPlayer player : players) {
+            double dx = player.getX() - x;
+            double dz = player.getZ() - z;
+            if (dx * dx + dz * dz > CONFIRM_RANGE * CONFIRM_RANGE) continue;
+            int effective = Mth.clamp(player.requestedViewDistance(), 2, Math.max(2, server));
+            if (smallest == 0 || effective < smallest) smallest = effective;
+        }
+        return smallest;
+    }
+
     private static double horizontalDistance(BlockPos twin, double x, double z) {
         double dx = twin.getX() - x;
         double dz = twin.getZ() - z;
@@ -3549,7 +3635,7 @@ public final class PortalCarriageEvents {
                         + PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED.explanation())
                     + ", drift from the pair's anchor "
                     + fmt(horizontalDistance(structure.origin(), anchorX, originZ))
-                    + " (restamps past " + fmt(TWIN_MAX_DRIFT) + ")");
+                    + " (restamps past " + fmt(DRIFT_ALLOWANCE.getOrDefault(pairKey, TWIN_MAX_DRIFT)) + ")");
             }
             // The walk-through episode is not reported per corridor: it belongs to the pair and is
             // said once, above, alongside the severed verdict it sits beside.

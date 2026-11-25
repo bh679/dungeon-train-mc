@@ -113,13 +113,20 @@ public final class PortalChunkDimension {
             }
             PortalChunkPour pour = POURS.get(pairKey);
             if (pour == null) {
-                POURS.put(pairKey, PortalChunkPour.of(slice));
+                // Standing from the very ground this was diffed against: write what grew, and only
+                // that, into the room as it is dressed. Anything else is poured whole, as before.
+                Standing standing = STANDING.get(pairKey);
+                POURS.put(pairKey, standing != null && slice.decorates(standing.slice())
+                    ? PortalChunkPour.patchOnly(slice, structure.roomSize().getY())
+                    : PortalChunkPour.of(slice));
             } else if (pour.slice() != slice) {
-                POURS.put(pairKey, pour.restartedWith(slice));
+                // Part way through: carry on with the decorated slice rather than start again.
+                POURS.put(pairKey, slice.decorates(pour.slice()) ? pour.swappedTo(slice) : pour.restartedWith(slice));
             }
         }
+        long tickStart = System.nanoTime();
         drainPours(level, dims, live);
-        drainFramings(level, dims, live);
+        drainFramings(level, dims, live, tickStart);
     }
 
     /**
@@ -133,6 +140,9 @@ public final class PortalChunkDimension {
      */
     public static boolean beginPour(ServerLevel level, PortalStructure structure, int pairKey) {
         PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
+        // A fresh stamp: whatever stood under this key before is gone, and a decoration diff is only
+        // good against the ground this pour writes.
+        STANDING.remove(pairKey);
         if (slice == null) return false;
         POURS.put(pairKey, PortalChunkPour.of(slice));
         return true;
@@ -177,9 +187,9 @@ public final class PortalChunkDimension {
         // not yet when someone arrives, and waiting on it left them in an unwritten room.
         boolean ready = chunksLoaded(level, origin.getX() + xs[0], origin.getX() + xs[1],
             origin.getZ() + zs[0], origin.getZ() + zs[1]);
-        if (ready && !pour.done(height)) {
+        if (ready && !pour.stripsDone(height)) {
             writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.totalStrips(height),
-                xs[0], xs[1], zs[0], zs[1]);
+                xs[0], xs[1], zs[0], zs[1], noDeadline());
         }
         POURS.put(pairKey, pour.rushed());
         AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} arrival x={}..{} z={}..{} ms={}",
@@ -218,7 +228,9 @@ public final class PortalChunkDimension {
         }
         long started = System.nanoTime();
         int height = structure.roomSize().getY();
-        if (!pour.done(height)) writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.totalStrips(height));
+        if (!pour.done(height)) {
+            pour = writeTick(level, dims, pairKey, structure, pour, pour.totalStrips(height), noDeadline(), started);
+        }
         completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ true);
         // A wide room's frame is queued by the dress; whatever costs it, it is wanted now too.
         stepFraming(level, dims, pairKey, structure, true);
@@ -228,6 +240,25 @@ public final class PortalChunkDimension {
     public static void cancelPour(int pairKey) {
         POURS.remove(pairKey);
         FRAMINGS.remove(pairKey);
+        STANDING.remove(pairKey);
+    }
+
+    /**
+     * The slice a room was last poured from, and the frame it was dressed in — what a decoration
+     * diff has to be against for its cells to be all that is left to write. Server thread only.
+     */
+    private record Standing(PortalChunkSlice slice, ChunkFramePlacer.Picked frame, int rollIndex) {}
+
+    /** Rooms standing from a slice, by pair. Server thread only. */
+    private static final java.util.Map<Integer, Standing> STANDING = new java.util.HashMap<>();
+
+    /** A deadline that is never reached, compared as {@link System#nanoTime} differences are. */
+    private static long noDeadline() {
+        return System.nanoTime() + (Long.MAX_VALUE >> 2);
+    }
+
+    private static boolean past(long deadline) {
+        return System.nanoTime() - deadline >= 0;
     }
 
     /** One room's next step, the oldest whose chunks are there, so several never share a tick's cost. */
@@ -237,6 +268,7 @@ public final class PortalChunkDimension {
             PortalStructure structure = live.apply(pairKey);
             if (structure == null) {
                 POURS.remove(pairKey);
+                STANDING.remove(pairKey);
                 continue;
             }
             if (!PortalCarriageBuilder.footprintReady(level, structure, dims)) continue;
@@ -254,35 +286,131 @@ public final class PortalChunkDimension {
             completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ false);
             return;
         }
-        writeStrips(level, structure, dims, pour.slice(), pour.nextStrip(), pour.stripsEnd(height));
-        PortalChunkPour next = pour.advanced(height, System.nanoTime() - started);
-        // In a hurry, keep going for as long as this tick's time allows — by time rather than by a
-        // multiple of the budget, because what a strip costs varies tenfold (a Nether room's lava and
-        // lighting made single ticks of 186 ms at the ordinary budget).
-        while (next.rush() && !next.done(height) && System.nanoTime() - started < PortalChunkPour.RUSH_NANOS) {
-            writeStrips(level, structure, dims, next.slice(), next.nextStrip(), next.stripsEnd(height));
-            next = next.continued(height, System.nanoTime() - started);
+        // By time as well as by cells, because what a strip costs varies tenfold (a Nether room's lava
+        // and lighting made single ticks of 186 ms at the cell budget). In a hurry, for as long as the
+        // tick's rush allows; otherwise the cell budget or a fifth of a tick, whichever ends first.
+        long deadline = started + (pour.rush() ? PortalChunkPour.RUSH_NANOS : PortalChunkPour.POUR_NANOS);
+        int stripLimit = pour.rush() ? pour.totalStrips(height) : pour.stripsEnd(height);
+        POURS.put(pairKey, writeTick(level, dims, pairKey, structure, pour, stripLimit, deadline, started));
+    }
+
+    /**
+     * One tick's writing of {@code pour}: its patch first, then its strips up to {@code stripLimit},
+     * stopping at {@code deadline} — after at least one cell or one strip, so a pour always moves.
+     */
+    private static PortalChunkPour writeTick(ServerLevel level, CarriageDims dims, int pairKey,
+                                             PortalStructure structure, PortalChunkPour pour, int stripLimit,
+                                             long deadline, long started) {
+        int height = structure.roomSize().getY();
+        int patchAt = pour.patchDone() ? pour.patchNext()
+            : writePatch(level, dims, pairKey, structure, pour, deadline);
+        int strip = pour.nextStrip();
+        boolean patchedThisTick = patchAt > pour.patchNext();
+        if (patchAt >= pour.patch().length && !pour.stripsDone(height) && (!patchedThisTick || !past(deadline))) {
+            strip = writeStrips(level, structure, dims, pour.slice(), strip, stripLimit,
+                0, Integer.MAX_VALUE, 0, Integer.MAX_VALUE, deadline);
         }
-        POURS.put(pairKey, next);
+        return pour.stepped(strip, patchAt, System.nanoTime() - started);
+    }
+
+    /**
+     * Write {@code pour}'s patch from where it got to, until {@code deadline}: each changed cell as
+     * a strip would write it and, in a room already in its frame, the frame back over any of them it
+     * owns — as the whole frame would have gone back over them when the room was dressed again.
+     *
+     * @return the next patch entry to write
+     */
+    private static int writePatch(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
+                                  PortalChunkPour pour, long deadline) {
+        TerrainWriter writer = new TerrainWriter(level, structure, dims, pour.slice());
+        Standing standing = pour.dressed() ? STANDING.get(pairKey) : null;
+        int[] next = {pour.patchNext()};
+        if (standing == null || standing.frame() == null) {
+            next[0] = writePatchCells(writer, pour, next[0], deadline, null);
+            return next[0];
+        }
+        // The frame's stage placeholders resolve as they did when it was first put down.
+        games.brennan.dungeontrain.train.StagePlacementScope.run(
+            PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> {
+                try (ChunkFramePlacer.CellPlacer frame = ChunkFramePlacer.cellPlacer(level, standing.frame(), writer.origin,
+                        PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), standing.rollIndex(),
+                        /*skipShell*/ !structure.mode().sealsRoomBox(), seaTopY(structure, dims, pairKey, writer.origin))) {
+                    next[0] = writePatchCells(writer, pour, next[0], deadline, frame);
+                }
+            });
+        return next[0];
+    }
+
+    /**
+     * Patch entries {@code from} on, until {@code deadline}: each terrain cell, then the frame's cell
+     * over it when {@code frame} is given — one clock for both. Returns the next entry.
+     */
+    private static int writePatchCells(TerrainWriter writer, PortalChunkPour pour, int from, long deadline,
+                                       ChunkFramePlacer.CellPlacer frame) {
+        int[] patch = pour.patch();
+        PortalChunkSlice slice = pour.slice();
+        int i = from;
+        while (i < patch.length) {
+            int index = patch[i++];
+            int x = slice.xOf(index);
+            int z = slice.zOf(index);
+            int roomY = slice.yOf(index) - writer.shift;
+            writer.cell(x, roomY, z);
+            // Frame-local: the frame stands one block out from the room on every side.
+            if (frame != null) {
+                frame.place(x - ChunkFrame.OFFSET.getX(), roomY - ChunkFrame.OFFSET.getY(), z - ChunkFrame.OFFSET.getZ());
+            }
+            if ((i & 15) == 0 && past(deadline)) break;
+        }
+        return i;
     }
 
     private static void completePour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
                                      PortalChunkPour pour, long rowNanos, boolean flushed) {
         POURS.remove(pairKey);
         long started = System.nanoTime();
-        // This runs from the level tick, outside the stamp's stage scope — open it again so the
-        // frame's stage placeholders resolve as they would have inside the stamp.
-        games.brennan.dungeontrain.train.StagePlacementScope.run(
-            PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
-            java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> dress(level, structure, dims, pour.slice(), pairKey));
+        if (pour.dressed()) {
+            // The room is in its frame already: only what the patch may have grown into is put right.
+            touchUp(level, structure, dims, pour.slice(), pairKey);
+        } else {
+            STANDING.put(pairKey, new Standing(pour.slice(), null, 0));
+            // This runs from the level tick, outside the stamp's stage scope — open it again so the
+            // frame's stage placeholders resolve as they would have inside the stamp.
+            games.brennan.dungeontrain.train.StagePlacementScope.run(
+                PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+                java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> dress(level, structure, dims, pour.slice(), pairKey));
+        }
         // A sample decorated before its room was stamped needs no second pass: this was it.
         if (PortalChunkTerrain.decorated().contains(pairKey) && PortalChunkTerrain.peek(pairKey) == pour.slice()) {
             spawnOccupants(level, structure, dims, pour.slice(), pairKey);
             PortalChunkTerrain.decorationApplied(pairKey);
         }
-        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={}",
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={} patched={} dress={} fluidTicks={}",
             pairKey, structure.roomName(), pour.ticks(), millis(pour.totalNanos()), millis(pour.maxNanos()),
-            millis(rowNanos), millis(System.nanoTime() - started), flushed);
+            millis(rowNanos), millis(System.nanoTime() - started), flushed, pour.patched(),
+            pour.dressed() ? "touchUp" : "full", level.getFluidTicks().count());
+    }
+
+    /**
+     * What a patch written into a dressed room leaves to do, short of dressing it again: the two
+     * doorways re-cut (a trunk may have grown in one), the biomes repainted only if the decoration
+     * changed them, and the room noted as standing from the decorated slice.
+     */
+    private static void touchUp(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                PortalChunkSlice slice, int pairKey) {
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos origin = structure.roomOrigin(dims, layout);
+        Vec3i size = structure.roomSize();
+        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
+        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
+        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
+        if (slice.biomesChanged() && slice.source().levelKey().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+            paintBiomes(level, origin, size, copyShift(structure, dims, size), slice);
+        }
+        Standing standing = STANDING.get(pairKey);
+        STANDING.put(pairKey, standing == null ? new Standing(slice, null, 0)
+            : new Standing(slice, standing.frame(), standing.rollIndex()));
     }
 
     private static String millis(long nanos) {
@@ -324,8 +452,11 @@ public final class PortalChunkDimension {
             if (after != null) after.run();
             return;
         }
+        // Remembered so a decoration patch can put the frame back over the cells it rewrites.
+        Standing standing = STANDING.get(pairKey);
+        if (standing != null) STANDING.put(pairKey, new Standing(standing.slice(), frame.get(), rollIndex));
         if (PortalChunkArea.span(structure.roomSize()) > 1) {
-            FRAMINGS.put(pairKey, new Framing(frame.get(), rollIndex, 0, after));
+            FRAMINGS.put(pairKey, new Framing(frame.get(), rollIndex, 0, after, false));
             return;
         }
         placeFrame(level, structure, dims, pairKey, frame.get(), rollIndex, 0, Integer.MAX_VALUE);
@@ -342,6 +473,16 @@ public final class PortalChunkDimension {
             PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex, yFrom, yTo,
             /*skipShell*/ !structure.mode().sealsRoomBox(),
             seaTopY(structure, dims, pairKey, structure.roomOrigin(dims, layout)));
+    }
+
+    /** {@link #placeFrame} by rows, from {@code rowFrom} until {@code deadline}; returns the next row. */
+    private static int placeFrameRows(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey,
+                                      ChunkFramePlacer.Picked frame, int rollIndex, int rowFrom, long deadline) {
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos origin = structure.roomOrigin(dims, layout);
+        return ChunkFramePlacer.placeRows(level, frame, origin,
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex, rowFrom, deadline,
+            /*skipShell*/ !structure.mode().sealsRoomBox(), seaTopY(structure, dims, pairKey, origin));
     }
 
     /**
@@ -375,17 +516,26 @@ public final class PortalChunkDimension {
         return -1;
     }
 
-    /** A wide frame part way through being written: the next layer, and what to do once it is down. */
-    private record Framing(ChunkFramePlacer.Picked frame, int rollIndex, int nextY, Runnable after) {}
+    /**
+     * A wide frame part way through being written: the next row ({@link ChunkFramePlacer#rows}), and
+     * what to do once it is down — which, once {@code afterPending}, is all that is left, and gets a
+     * tick of its own.
+     */
+    private record Framing(ChunkFramePlacer.Picked frame, int rollIndex, int nextRow, Runnable after,
+                           boolean afterPending) {}
 
     /** Wide frames still being written, oldest first. Server thread only. */
     private static final java.util.Map<Integer, Framing> FRAMINGS = new java.util.LinkedHashMap<>();
 
-    /** How long a tick spends on one wide frame's layers: well inside a 50 ms tick. */
+    /**
+     * How long a tick spends on the room writing here, counted from the tick's start: a pour step
+     * that ran first leaves the frame what remains of it (always at least one row).
+     */
     private static final long FRAMING_NANOS = 20_000_000L;
 
-    /** One wide frame's next layers, the oldest whose chunks are there. */
-    private static void drainFramings(ServerLevel level, CarriageDims dims, IntFunction<PortalStructure> live) {
+    /** One wide frame's next rows, the oldest whose chunks are there, inside the tick's budget. */
+    private static void drainFramings(ServerLevel level, CarriageDims dims, IntFunction<PortalStructure> live,
+                                      long tickStart) {
         if (FRAMINGS.isEmpty()) return;
         for (int pairKey : java.util.List.copyOf(FRAMINGS.keySet())) {
             PortalStructure structure = live.apply(pairKey);
@@ -394,92 +544,150 @@ public final class PortalChunkDimension {
                 continue;
             }
             if (!PortalCarriageBuilder.footprintReady(level, structure, dims)) continue;
-            stepFraming(level, dims, pairKey, structure, false);
+            stepFraming(level, dims, pairKey, structure, false, tickStart + FRAMING_NANOS);
             return;
         }
     }
 
-    /** Write {@code pairKey}'s frame for this tick's time — or all of it, when {@code all}. */
+    /** Write {@code pairKey}'s frame for this tick's time — or all of it, its after-work too, when {@code all}. */
     private static void stepFraming(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
                                     boolean all) {
+        stepFraming(level, dims, pairKey, structure, all, noDeadline());
+    }
+
+    private static void stepFraming(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
+                                    boolean all, long deadline) {
         Framing framing = FRAMINGS.get(pairKey);
         if (framing == null) return;
         long started = System.nanoTime();
-        int height = framing.frame().template().size().getY();
-        int[] y = {framing.nextY()};
+        int rows = ChunkFramePlacer.rows(framing.frame());
+        int depth = framing.frame().template().size().getZ();
+        int[] row = {framing.nextRow()};
+        boolean afterOnly = framing.afterPending();
         games.brennan.dungeontrain.train.StagePlacementScope.run(
             PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
             java.util.OptionalLong.of(games.brennan.dungeontrain.block.flag.FlagRoll.roomKey(level.getSeed(), pairKey)), () -> {
-                do {
-                    placeFrame(level, structure, dims, pairKey, framing.frame(), framing.rollIndex(), y[0], y[0] + 1);
-                    y[0]++;
-                } while (y[0] < height && (all || System.nanoTime() - started < FRAMING_NANOS));
-                if (y[0] >= height && framing.after() != null) framing.after().run();
+                if (!afterOnly) {
+                    row[0] = placeFrameRows(level, structure, dims, pairKey, framing.frame(), framing.rollIndex(),
+                        row[0], all ? noDeadline() : deadline);
+                }
+                // The doorways, the biomes and their resend: on a tick of their own, after the last row's,
+                // unless the whole frame is wanted now.
+                if (row[0] >= rows && (afterOnly || all) && framing.after() != null) framing.after().run();
             });
-        if (y[0] >= height) {
+        if (afterOnly || (row[0] >= rows && all)) {
             FRAMINGS.remove(pairKey);
         } else {
-            FRAMINGS.put(pairKey, new Framing(framing.frame(), framing.rollIndex(), y[0], framing.after()));
+            FRAMINGS.put(pairKey, new Framing(framing.frame(), framing.rollIndex(), row[0], framing.after(),
+                row[0] >= rows));
         }
-        AsyncPerfLog.debug(PERF_LOGGER, "[portal.frame] pair={} room={} layers={}..{} ms={}{}",
-            pairKey, structure.roomName(), framing.nextY(), y[0], millis(System.nanoTime() - started),
-            y[0] >= height ? " done" : "");
+        if (afterOnly) {
+            AsyncPerfLog.debug(PERF_LOGGER, "[portal.frame] pair={} room={} after ms={}",
+                pairKey, structure.roomName(), millis(System.nanoTime() - started));
+            return;
+        }
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.frame] pair={} room={} layers={}..{} ms={}{} rows={}..{}/{} growMs={}",
+            pairKey, structure.roomName(), framing.nextRow() / depth, (row[0] + depth - 1) / depth,
+            millis(System.nanoTime() - started), row[0] >= rows ? " done" : "", framing.nextRow(), row[0], rows,
+            millis(ChunkFramePlacer.lastGrowNanos()));
     }
 
     // ---- writing -------------------------------------------------------------
 
     /**
      * Write strips {@code fromStrip} up to {@code toStrip} of the room's box from {@code slice} — a
-     * strip being one row at one Z, {@code slice.width()} cells along X ({@link PortalChunkPour}).
+     * strip being one row at one Z, {@code slice.width()} cells along X ({@link PortalChunkPour}) —
+     * held to room-local columns {@code xFrom..xTo} by {@code zFrom..zTo}, inclusive, and stopping
+     * at the first strip past {@code deadline} ({@link System#nanoTime}), after at least one.
+     *
+     * @return the next strip to write
      */
-    private static void writeStrips(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                    PortalChunkSlice slice, int fromStrip, int toStrip) {
-        writeStrips(level, structure, dims, slice, fromStrip, toStrip, 0, Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
-    }
-
-    /** {@link #writeStrips} held to room-local columns {@code xFrom..xTo} by {@code zFrom..zTo}, inclusive. */
-    private static void writeStrips(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                    PortalChunkSlice slice, int fromStrip, int toStrip,
-                                    int xFrom, int xTo, int zFrom, int zTo) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
-        BlockPos origin = structure.roomOrigin(dims, layout);
+    private static int writeStrips(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                   PortalChunkSlice slice, int fromStrip, int toStrip,
+                                   int xFrom, int xTo, int zFrom, int zTo, long deadline) {
+        TerrainWriter writer = new TerrainWriter(level, structure, dims, slice);
         Vec3i size = structure.roomSize();
-        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
-
-        // Where the copy sits vertically is read off the DOOR, not off the box's own corner. The
-        // two are the same number in an ordinary room — the doorways were fitted to this column's
-        // ground before the structure was planned, so its ground row already is the door row — and
-        // they come apart exactly when a room cannot spend the offset the fit asked for: a world too
-        // shallow to stand a 32-tall box up holds it down (PortalCarriageBuilder#heldInRegion) and
-        // the offset clamps with it. Aligning on the corner there leaves the doorway hanging in the
-        // air above its own ground, or buried under it. Aligning on the door keeps a player's feet
-        // on the terrain and spends the shortfall at the top of the column, which is sky.
-        int shift = copyShift(structure, dims, size);
-
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         // The whole box, faces included: the room has no shell of its own — its skybox is the lock
         // skin one block outside it — so the chunk runs all 16 blocks to the sky. Where the end
         // column is open, the mouth's seal ring falls back to that same skin rather than to the
         // floor row (PortalCarriageBuilder#sealFillFor), so an open face still seals with sky.
         int stripWidth = slice.width();
-        for (int strip = fromStrip; strip < toStrip; strip++) {
+        int strip = fromStrip;
+        while (strip < toStrip) {
             int y = strip / stripWidth;
             int z = strip % stripWidth;
+            strip++;
             if (y >= size.getY() || z >= size.getZ() || z < zFrom || z > zTo) continue;
             for (int x = xFrom; x <= xTo && x < size.getX() && x < slice.width(); x++) {
-                // Null for a row the cube does not reach. Those rows keep whatever the template
-                // put there, which is a room rather than a hole.
-                BlockState state = slice.at(x, y + shift, z);
-                if (state == null) continue;
-                cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
-                if (mask.covers(cursor)) continue;
-                // Cheap, and it is what makes the decoration pass affordable: the second write
-                // of a room differs from the first only where something grew, so all but a
-                // handful of these cells are already the block being written.
-                if (level.getBlockState(cursor) == state) continue;
-                replaceQuietly(level, cursor, state);
-                applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
+                writer.cell(x, y, z);
             }
+            if (past(deadline)) break;
+        }
+        return strip;
+    }
+
+    /**
+     * How the sampled terrain is written: shape updates and neighbour notifications skipped, drops
+     * suppressed. The sample is already consistent with itself — a fence's arms, a plant's soil — so
+     * shape updates only cost time, and they could break what a half-written row had not reached
+     * yet. Lighting, block entities and the client still see every write. The doorway cut is not
+     * terrain and keeps {@link Block#UPDATE_ALL}, so water beside a door still reacts to it.
+     *
+     * <p>A dev build started with {@code -Ddungeontrain.pourFlags=all} writes with
+     * {@link Block#UPDATE_ALL} instead, to measure one against the other.</p>
+     */
+    static int terrainFlags() {
+        if (games.brennan.dungeontrain.DungeonTrain.isDevBuild()
+                && "all".equals(System.getProperty("dungeontrain.pourFlags"))) {
+            return Block.UPDATE_ALL;
+        }
+        return Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
+    }
+
+    /** One room's terrain write: where its cells go, and the one cell write the strips and patches share. */
+    private static final class TerrainWriter {
+        final ServerLevel level;
+        final PortalChunkSlice slice;
+        final BlockPos origin;
+        final Vec3i size;
+        final PortalCorridorMask mask;
+        /**
+         * Where the copy sits vertically is read off the DOOR, not off the box's own corner. The
+         * two are the same number in an ordinary room — the doorways were fitted to this column's
+         * ground before the structure was planned, so its ground row already is the door row — and
+         * they come apart exactly when a room cannot spend the offset the fit asked for: a world too
+         * shallow to stand a 32-tall box up holds it down (PortalCarriageBuilder#heldInRegion) and
+         * the offset clamps with it. Aligning on the corner there leaves the doorway hanging in the
+         * air above its own ground, or buried under it. Aligning on the door keeps a player's feet
+         * on the terrain and spends the shortfall at the top of the column, which is sky.
+         */
+        final int shift;
+        final int flags = terrainFlags();
+        final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+
+        TerrainWriter(ServerLevel level, PortalStructure structure, CarriageDims dims, PortalChunkSlice slice) {
+            this.level = level;
+            this.slice = slice;
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            this.origin = structure.roomOrigin(dims, layout);
+            this.size = structure.roomSize();
+            this.mask = PortalCarriageBuilder.corridorMask(structure, dims);
+            this.shift = copyShift(structure, dims, size);
+        }
+
+        /** Write room-local {@code (x, y, z)} from the slice, unless it is a corridor's or already that block. */
+        void cell(int x, int y, int z) {
+            if (x < 0 || y < 0 || z < 0 || x >= size.getX() || y >= size.getY() || z >= size.getZ()) return;
+            // Null for a row the cube does not reach. Those rows keep whatever the template
+            // put there, which is a room rather than a hole.
+            BlockState state = slice.at(x, y + shift, z);
+            if (state == null) return;
+            cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
+            if (mask.covers(cursor)) return;
+            // Cheap, and it is what keeps a rewrite affordable: only cells that differ are written.
+            if (level.getBlockState(cursor) == state) return;
+            replaceQuietly(level, cursor, state, flags);
+            applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
         }
     }
 
@@ -577,6 +785,8 @@ public final class PortalChunkDimension {
     public static void clear() {
         POPULATED.clear();
         POURS.clear();
+        FRAMINGS.clear();
+        STANDING.clear();
     }
 
     /**
@@ -698,8 +908,13 @@ public final class PortalChunkDimension {
      * chest held belongs to the chunk being replaced, not to the player.</p>
      */
     private static void replaceQuietly(ServerLevel level, BlockPos pos, BlockState state) {
+        replaceQuietly(level, pos, state, Block.UPDATE_ALL);
+    }
+
+    /** {@link #replaceQuietly}, with the block update flags given. */
+    private static void replaceQuietly(ServerLevel level, BlockPos pos, BlockState state, int flags) {
         if (level.getBlockState(pos).hasBlockEntity()) level.removeBlockEntity(pos);
-        level.setBlock(pos, state, Block.UPDATE_ALL);
+        level.setBlock(pos, state, flags);
     }
 
     /** Whether a player could already stand in the walkway at {@code cx}: its door cells are open. */
