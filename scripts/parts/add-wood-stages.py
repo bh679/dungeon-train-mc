@@ -42,6 +42,8 @@ BOP, BN, BE = "biomesoplenty", "betternether", "betterend"
 # style: "vanilla" | "bcl" | "bcl_stem". Colours are dyes (primary, secondary, background).
 WOODS = [
     ("pale_oak", "minecraft", "pale_oak", "vanilla", ("light_gray", "white", "gray"), ("white", "light_gray", "gray")),
+    # VanillaBackport 1.2+ (minecraft:), beside pale oak; every later wood moved 16 levels to make room.
+    ("poplar", "minecraft", "poplar", "vanilla", ("yellow", "orange", "white"), ("yellow", "orange", "white")),
     ("fir", BOP, "fir", "vanilla", ("green", "brown", "white"), ("green", "white", "brown")),
     ("pine", BOP, "pine", "vanilla", ("brown", "green", "black"), ("green", "brown", "black")),
     ("redwood", BOP, "redwood", "vanilla", ("red", "brown", "orange"), ("red", "brown", "black")),
@@ -76,8 +78,6 @@ WOODS = [
     ("jellyshroom", BE, "jellyshroom", "bcl", ("purple", "light_blue", "black"), ("purple", "light_blue", "black")),
     ("mossy_glowshroom", BE, "mossy_glowshroom", "bcl", ("light_blue", "green", "gray"), ("light_blue", "green", "gray")),
     ("umbrella_tree", BE, "umbrella_tree", "bcl", ("green", "light_blue", "black"), ("green", "light_blue", "gray")),
-    # VanillaBackport 1.2+ (minecraft:); appended last so only spruce's open-ended top band moves.
-    ("poplar", "minecraft", "poplar", "vanilla", ("yellow", "orange", "white"), ("yellow", "orange", "white")),
 ]
 
 
