@@ -280,9 +280,8 @@ public final class SharedRoomEvents {
      * re-stamp would roll a fresh set; a room somebody built in keeps their blocks instead.</p>
      */
     public static PortalRoomBlob captureForRelocation(int pairKey) {
+        if (!capturesForRelocation(pairKey)) return null;
         SharedRoomRegistry.Instance inst = SharedRoomRegistry.byPair(pairKey);
-        if (inst == null) return null;
-        if (!inst.leasedFromPool && !inst.isBlockEditedThisSession() && !inst.isOnRelay()) return null;
         try {
             CompoundTag snap = captureRoom(inst.level, inst.roomOrigin(), inst.size).tag();
             return PortalRoomBlob.live(snap);
@@ -291,6 +290,16 @@ public final class SharedRoomEvents {
                     + "is re-laid and the edits since the last upload are lost here: {}", inst.describe(), t.toString());
             return null;
         }
+    }
+
+    /**
+     * Whether {@link #captureForRelocation} would carry {@code pairKey}'s room — asked without
+     * capturing, so a relocation can finish a part-written room only when it is about to be read.
+     */
+    public static boolean capturesForRelocation(int pairKey) {
+        SharedRoomRegistry.Instance inst = SharedRoomRegistry.byPair(pairKey);
+        return inst != null
+            && (inst.leasedFromPool || inst.isBlockEditedThisSession() || inst.isOnRelay());
     }
 
     /** The pair's structure is gone (evicted). Final flush, hand the lease back, forget the room. */
