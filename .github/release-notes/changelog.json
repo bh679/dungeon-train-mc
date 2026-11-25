@@ -39550,6 +39550,100 @@
       "released": true,
       "released_in": "v0.2022.0",
       "released_at": "2026-11-25T08:28:12Z"
+    },
+    {
+      "id": "dimensional-carriage-relocation-cost",
+      "version": "0.2025.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother rides beside dimensional carriages",
+      "summary": "Less lag while you ride near a dimensional carriage without going in.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2891,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2026.0",
+      "released_at": "2026-11-25T13:48:53Z"
+    },
+    {
+      "id": "large-room-stamp-stutter",
+      "version": "0.2024.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Fewer stutters",
+      "summary": "Some larger places caused a short stutter as they loaded. They now load with far less of a hitch.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2893,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2026.0",
+      "released_at": "2026-11-25T13:48:53Z"
+    },
+    {
+      "id": "shutdown-freeze-reports",
+      "version": "0.2022.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Better reports when saving and quitting freezes",
+      "summary": "If the game ever freezes while saving and quitting, it now notes where it got stuck. A bug report sent after you restart includes that note, even if you had to close the game.",
+      "highlights": [],
+      "pr": 2889,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2026.0",
+      "released_at": "2026-11-25T13:48:53Z"
+    },
+    {
+      "id": "smoother-room-building",
+      "version": "0.2023.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Performance improvement",
+      "summary": "Some rooms you reach from the train now appear with less stutter.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2892,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2026.0",
+      "released_at": "2026-11-25T13:48:53Z"
+    },
+    {
+      "id": "tribute-visit-no-freeze",
+      "version": "0.2022.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "internal"
+      ],
+      "title": "Performance fix",
+      "summary": "A freeze of several seconds that could follow a death is gone.",
+      "highlights": [],
+      "pr": 2890,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2026.0",
+      "released_at": "2026-11-25T13:48:53Z"
     }
   ]
 }
