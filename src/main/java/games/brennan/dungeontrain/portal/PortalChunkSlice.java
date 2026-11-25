@@ -60,8 +60,108 @@ public final class PortalChunkSlice {
         this.states = states;
         this.blockEntities = Map.copyOf(blockEntities);
         this.occupants = List.copyOf(occupants);
+        this.ground = null;
+        this.changes = null;
+        this.biomesChanged = true;
         this.approxBytes = approxBytes(states == null ? 0 : states.length,
             biomes == null ? 0 : biomes.length, nbtBytes(this.blockEntities, this.occupants));
+    }
+
+    /** {@code decorated}, said to differ from {@code ground} at exactly {@code changes}. */
+    private PortalChunkSlice(PortalChunkSlice decorated, PortalChunkSlice ground, int[] changes,
+                             boolean biomesChanged) {
+        this.source = decorated.source;
+        this.width = decorated.width;
+        this.height = decorated.height;
+        this.states = decorated.states;
+        this.blockEntities = decorated.blockEntities;
+        this.occupants = decorated.occupants;
+        this.biomes = decorated.biomes;
+        this.ground = ground;
+        this.changes = changes;
+        this.biomesChanged = biomesChanged;
+        // A diffed slice keeps its ground alive too, so it costs both, plus the diff itself.
+        this.approxBytes = decorated.approxBytes + ground.approxBytes
+            + HEADER_BYTES + (long) changes.length * Integer.BYTES;
+    }
+
+    // ---- what a decorated slice changed (PortalChunkDecorationDiff) ----------
+
+    /**
+     * The ground slice this one was diffed against, or null for a slice that carries no diff — a
+     * ground slice itself, or a decorated one whose ground was not in hand.
+     */
+    private final PortalChunkSlice ground;
+
+    /** The cell indices that differ from {@link #ground}, ascending (so bottom-up); null without one. */
+    private final int[] changes;
+
+    /** Whether any quart's biome differs from {@link #ground}'s; true when unknown. */
+    private final boolean biomesChanged;
+
+    /** This slice, carrying the cells it differs from {@code ground} at. */
+    PortalChunkSlice withChanges(PortalChunkSlice ground, int[] changes, boolean biomesChanged) {
+        return new PortalChunkSlice(this, ground, changes, biomesChanged);
+    }
+
+    /** Whether this slice was diffed against exactly {@code slice} — by identity, not by content. */
+    boolean decorates(PortalChunkSlice slice) {
+        return slice != null && ground == slice && changes != null;
+    }
+
+    /** The changed cell indices, ascending; never null for a slice that {@link #decorates} something. */
+    int[] changes() {
+        return changes;
+    }
+
+    /** Whether the biomes differ from the ground's. */
+    boolean biomesChanged() {
+        return biomesChanged;
+    }
+
+    /** Cells in the column: {@code width * width * height}. */
+    int cellCount() {
+        return states.length;
+    }
+
+    /** The state at cell index {@code index}, as {@link #at} reads it. */
+    BlockState stateAtIndex(int index) {
+        return states[index];
+    }
+
+    /** The block entity at cell index {@code index}, or null. */
+    CompoundTag blockEntityAtIndex(int index) {
+        return blockEntities.get(index);
+    }
+
+    /** The cell indices holding a block entity. */
+    java.util.Set<Integer> blockEntityIndices() {
+        return blockEntities.keySet();
+    }
+
+    /** The sampled biome per quart, or null; shared, never written. */
+    Holder<Biome>[] biomesRaw() {
+        return biomes;
+    }
+
+    /** Row of cell index {@code index}. */
+    int yOf(int index) {
+        return index / (width * width);
+    }
+
+    /** Z of cell index {@code index}. */
+    int zOf(int index) {
+        return (index / width) % width;
+    }
+
+    /** X of cell index {@code index}. */
+    int xOf(int index) {
+        return index % width;
+    }
+
+    /** The pour's strip ({@link PortalChunkPour}) holding cell index {@code index}: its row, then its Z. */
+    int stripOf(int index) {
+        return index / width;
     }
 
     /** Bytes of one object header, and of one reference: a 64-bit JVM with compressed pointers. */

@@ -596,7 +596,7 @@ public final class PortalChunkTerrain {
     static void publishDecorated(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
         Cached current = READY.peek(pairKey);
         if (current == null || !sameRoom(current.roomName(), roomName) || current.roll() != roll) return;
-        publish(pairKey, new Cached(roomName, roll, slice, true));
+        publish(pairKey, new Cached(roomName, roll, PortalChunkDecorationDiff.attach(current.slice(), slice), true));
         DECORATED.add(pairKey);
     }
 
