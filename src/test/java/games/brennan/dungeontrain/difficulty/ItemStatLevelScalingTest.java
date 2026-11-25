@@ -58,9 +58,9 @@ final class ItemStatLevelScalingTest {
     //     cap (tiers ≤ cap stay a plain roll), then climbs one-for-one. ---
 
     @Test
-    @DisplayName("MATERIAL_CAP_LEVEL is the netherite full-weight level (50)")
-    void materialCapLevel_isFifty() {
-        assertEquals(50, ProceduralTiers.MATERIAL_CAP_LEVEL);
+    @DisplayName("MATERIAL_CAP_LEVEL is the netherite full-weight level (58)")
+    void materialCapLevel_isFiftyEight() {
+        assertEquals(58, ProceduralTiers.MATERIAL_CAP_LEVEL);
     }
 
     @Test

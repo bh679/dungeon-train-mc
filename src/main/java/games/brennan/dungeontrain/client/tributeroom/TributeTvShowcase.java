@@ -32,6 +32,11 @@ public final class TributeTvShowcase {
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Blocks from the TV past which its entry is let go. */
     private static final double KEEP_RANGE = 80.0;
+    /**
+     * Pixels per GUI unit a tribute TV's own picture keeps, at most. A TV a few blocks wide never shows
+     * more; the screen is still laid out and drawn at the window's scale, then scaled down.
+     */
+    private static final int MAX_PICTURE_SCALE = 2;
 
     /** One TV showing. */
     public record Entry(TvScreenBinding binding, NarrativeDeathScreen recap, String ownerName) {}
@@ -51,7 +56,7 @@ public final class TributeTvShowcase {
             return;
         }
         NarrativeDeathScreen recap = NarrativeDeathScreen.foreignReport(stats, packet.ownerName(), packet.deathMessage());
-        ScreenToTexture texture = new ScreenToTexture(0x000000);
+        ScreenToTexture texture = new ScreenToTexture(0x000000, MAX_PICTURE_SCALE);
         texture.attach(recap);
         ENTRIES.add(new Entry(new TvScreenBinding(texture, box, packet.facing()), recap, packet.ownerName()));
         LOGGER.info("[DungeonTrain] tribute TV at {} replays {}'s last death", box, packet.ownerName());
@@ -76,9 +81,15 @@ public final class TributeTvShowcase {
 
     public static void onFrameStart(float partialTick) {
         if (ENTRIES.isEmpty()) return;
+        net.minecraft.world.phys.Vec3 eye = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         for (Entry e : ENTRIES) {
-            int[] m = e.binding().zoomed() ? new int[] {TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN} : e.binding().mouse();
-            e.binding().texture().renderFrame(m[0], m[1], partialTick);
+            // Lifted onto the window, the window draws the page; the TV keeps its last picture.
+            if (e.binding().zoomed()) continue;
+            int[] m = e.binding().mouse();
+            BoundingBox b = e.binding().screen();
+            double distanceSq = eye.distanceToSqr((b.minX() + b.maxX() + 1) / 2.0, (b.minY() + b.maxY() + 1) / 2.0,
+                (b.minZ() + b.maxZ() + 1) / 2.0);
+            e.binding().texture().drawIfDue(m[0], m[1], partialTick, m[0] != TvPointer.OFF_SCREEN, distanceSq);
         }
     }
 
@@ -94,7 +105,10 @@ public final class TributeTvShowcase {
                 return far;
             });
         }
-        for (Entry e : ENTRIES) if (!e.binding().zoomed()) e.binding().texture().tick();
+        for (Entry e : ENTRIES) {
+            if (!e.binding().zoomed()) e.binding().texture().tick();
+            e.binding().texture().releaseIfIdle();
+        }
     }
 
     /** A click on a showing TV: its page's buttons take it; sneaking lifts the page onto the window. */
@@ -108,6 +122,7 @@ public final class TributeTvShowcase {
         }
         int[] m = e.binding().mouse();
         if (m[0] == TvPointer.OFF_SCREEN) return true;
+        e.binding().texture().markDirty();
         e.recap().mouseClicked(m[0], m[1], 0);
         e.recap().mouseReleased(m[0], m[1], 0);
         // A text field takes the keyboard, as chat does on T; Enter or Esc gives it back.
@@ -119,6 +134,7 @@ public final class TributeTvShowcase {
     public static boolean pressNext(BlockPos tv) {
         Entry e = at(tv);
         if (e == null) return false;
+        e.binding().texture().markDirty();
         // The last page loops back to the first.
         if (e.recap().tvOnLastPage()) e.recap().tvRestart();
         else e.recap().tvAdvance();
@@ -133,6 +149,7 @@ public final class TributeTvShowcase {
         int[] m = e.binding().mouse();
         if (m[0] == TvPointer.OFF_SCREEN) return false;
         e.recap().mouseScrolled(m[0], m[1], dx, dy);
+        e.binding().texture().markDirty();
         return true;
     }
 
@@ -168,6 +185,11 @@ public final class TributeTvShowcase {
             e.binding().texture().close();
             return true;
         });
+    }
+
+    /** TVs known to the client, for the {@code [tributetv]} perf line. */
+    static int entryCount() {
+        return ENTRIES.size();
     }
 
     /** Logging out: every texture freed. Render thread. */

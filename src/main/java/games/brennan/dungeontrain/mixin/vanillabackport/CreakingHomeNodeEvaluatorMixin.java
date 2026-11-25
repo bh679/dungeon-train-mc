@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.mixin.vanillabackport;
 
-import com.blackgear.vanillabackport.common.level.entities.creaking.Creaking;
+import com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontrain.compat.CreakingHeartPositions;
@@ -15,11 +15,11 @@ import org.spongepowered.asm.mixin.injection.At;
  * ({@link CreakingHeartPositions#worldBlock}). Only this pathing read is translated: the home position
  * itself stays the plot block, which is what the Creaking uses to look its heart up.
  */
-@Mixin(targets = "com.blackgear.vanillabackport.common.level.entities.creaking.Creaking$HomeNodeEvaluator", remap = false)
+@Mixin(targets = "com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking$HomeNodeEvaluator", remap = false)
 public abstract class CreakingHomeNodeEvaluatorMixin {
 
     @WrapOperation(method = "getPathType", at = @At(value = "INVOKE",
-            target = "Lcom/blackgear/vanillabackport/common/level/entities/creaking/Creaking;getHomePos()Lnet/minecraft/core/BlockPos;"))
+            target = "Lcom/blackgear/vanillabackport/common/level/entities/mob/monster/creaking/Creaking;getHomePos()Lnet/minecraft/core/BlockPos;"))
     private BlockPos dungeontrain$homeInWorld(Creaking creaking, Operation<BlockPos> original) {
         BlockPos home = original.call(creaking);
         return home == null ? null : CreakingHeartPositions.worldBlock(creaking.level(), home);

@@ -286,6 +286,8 @@ public final class SableManagedShip implements ManagedShip {
 
     @Override
     public void setKinematicDriver(KinematicDriver driver) {
+        // Mob AI's per-tick train index keys on drivers: a carriage gets its driver after assemble.
+        games.brennan.dungeontrain.ship.ResidentCarriageBoxes.noteDriverChanged();
         if (driver == null) {
             DRIVERS_BY_UUID.remove(uuid);
         } else {

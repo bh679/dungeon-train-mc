@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.ship;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.train.Trains;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,10 +21,16 @@ import org.joml.primitives.AABBdc;
  * the fluid-storm stalls in the 2026-10-28 lag-report sweep. This class does that walk once per
  * tick and hands out a {@link CarriageBoxIndex} of primitive bounds.</p>
  *
- * <p>The snapshot is rebuilt when the level's game time moves on, or when the shipyard's
+ * <p>The same walk also indexes the train carriages alone ({@link #trainsForTick}), for mob AI's
+ * "which carriage is here / near me" questions ({@code train/NearbyCarriages}), which were walking
+ * the shipyard per mob per call.</p>
+ *
+ * <p>The snapshot is rebuilt when the level's game time moves on, when the shipyard's
  * {@link Shipyard#generation() generation} shows a ship was assembled, deleted or reloaded since
- * (so a carriage stamped mid-tick is not missed for the rest of that tick). Ships Sable loads or
- * culls on its own appear next tick, which the margin covers.</p>
+ * (so a carriage stamped mid-tick is not missed for the rest of that tick), or when a train driver
+ * was attached or removed ({@link #noteDriverChanged}; a carriage is assembled before it gets its
+ * driver, so the train index would otherwise miss it for the rest of that tick). Ships Sable loads
+ * or culls on its own appear next tick, which the margin covers.</p>
  *
  * <p><b>Server thread only.</b> Every reader must check {@code level.getServer().isSameThread()}
  * first and take an uncached path otherwise; the map is unsynchronised on purpose, like the
@@ -43,7 +51,11 @@ public final class ResidentCarriageBoxes {
     private static final Map<ServerLevel, Snapshot> CACHE =
         Collections.synchronizedMap(new WeakHashMap<>());
 
-    private record Snapshot(long tick, long generation, CarriageBoxIndex<ManagedShip> index) {}
+    /** Moves whenever a kinematic driver is attached or removed. Server thread writes; volatile for safety. */
+    private static volatile long driverEpoch;
+
+    private record Snapshot(long tick, long generation, long drivers,
+                            CarriageBoxIndex<ManagedShip> index, CarriageBoxIndex<Trains.Carriage> trains) {}
 
     private ResidentCarriageBoxes() {}
 
@@ -53,16 +65,36 @@ public final class ResidentCarriageBoxes {
      * {@link ManagedShip#worldAABB()}; a miss is final.
      */
     public static CarriageBoxIndex<ManagedShip> forTick(ServerLevel level) {
+        return snapshot(level).index();
+    }
+
+    /**
+     * This tick's index of resident <b>train carriages</b> only (kinematic driver a
+     * {@link TrainTransformProvider}), in {@code findAll} order, grown by {@link #COARSE_MARGIN_BLOCKS}.
+     * Same rules as {@link #forTick}: a hit is a candidate to settle against the live box.
+     */
+    public static CarriageBoxIndex<Trains.Carriage> trainsForTick(ServerLevel level) {
+        return snapshot(level).trains();
+    }
+
+    /** A train driver was attached to or removed from a ship: the next read rebuilds. */
+    public static void noteDriverChanged() {
+        driverEpoch++;
+    }
+
+    private static Snapshot snapshot(ServerLevel level) {
         Shipyard shipyard = Shipyards.of(level);
         long tick = level.getGameTime();
         long generation = shipyard.generation();
+        long drivers = driverEpoch;
         Snapshot cached = CACHE.get(level);
-        if (cached != null && cached.tick() == tick && cached.generation() == generation) {
-            return cached.index();
+        if (cached != null && cached.tick() == tick && cached.generation() == generation
+            && cached.drivers() == drivers) {
+            return cached;
         }
-        CarriageBoxIndex<ManagedShip> index = build(shipyard);
-        CACHE.put(level, new Snapshot(tick, generation, index));
-        return index;
+        Snapshot built = build(shipyard, tick, generation, drivers);
+        CACHE.put(level, built);
+        return built;
     }
 
     /** Drop every snapshot. Server stop, beside {@link Shipyards#clear()}. */
@@ -70,16 +102,22 @@ public final class ResidentCarriageBoxes {
         CACHE.clear();
     }
 
-    private static CarriageBoxIndex<ManagedShip> build(Shipyard shipyard) {
+    private static Snapshot build(Shipyard shipyard, long tick, long generation, long drivers) {
         List<ManagedShip> resident = new ArrayList<>();
+        List<Trains.Carriage> carriages = new ArrayList<>();
         for (ManagedShip ship : shipyard.findAll()) {
             // A culled wrapper reports a frozen last-known box that would dam fluid where the
             // train no longer is (see project_stale_ghost_aabb_collision).
             if (ship.isResident()) {
                 resident.add(ship);
+                if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
+                    carriages.add(new Trains.Carriage(ship, provider));
+                }
             }
         }
-        return CarriageBoxIndex.of(resident, ResidentCarriageBoxes::readBox, COARSE_MARGIN_BLOCKS);
+        return new Snapshot(tick, generation, drivers,
+            CarriageBoxIndex.of(resident, ResidentCarriageBoxes::readBox, COARSE_MARGIN_BLOCKS),
+            CarriageBoxIndex.of(carriages, (c, out) -> readBox(c.ship(), out), COARSE_MARGIN_BLOCKS));
     }
 
     private static void readBox(ManagedShip ship, double[] out) {

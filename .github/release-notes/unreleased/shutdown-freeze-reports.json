@@ -1,0 +1,17 @@
+{
+  "id": "shutdown-freeze-reports",
+  "version": "0.2022.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "internal"
+  ],
+  "title": "Better reports when saving and quitting freezes",
+  "summary": "If the game ever freezes while saving and quitting, it now notes where it got stuck. A bug report sent after you restart includes that note, even if you had to close the game.",
+  "highlights": [],
+  "pr": 2889,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

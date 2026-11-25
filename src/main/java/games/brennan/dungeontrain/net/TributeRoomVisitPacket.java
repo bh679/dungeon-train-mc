@@ -42,7 +42,8 @@ public record TributeRoomVisitPacket(boolean prepareOnly) implements CustomPacke
                 TributeRoomVisitService.prepare(player);
                 return;
             }
-            if (!TributeRoomVisitService.begin(player)) {
+            // PENDING: the room is still standing; the server answers once it is in, or sends none.
+            if (TributeRoomVisitService.begin(player) == TributeRoomVisitService.BeginResult.REFUSED) {
                 DungeonTrainNet.sendTo(player, TributeRoomVisitStatePacket.none());
             }
         });

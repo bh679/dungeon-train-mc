@@ -293,9 +293,11 @@ public final class BlockVariantMenuRaycast {
         boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
             && GrowthShapes.canGrow(parsed))
             || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.usesGrowSlot(entry, parsed))
-            || BlockVariantMenu.isSlimeRow(entry);
+            || BlockVariantMenu.isSlimeRow(entry) || BlockVariantMenu.isVillagerRow(entry);
         double growthCellR = armsCellL;
-        double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
+        double growthCellL = !growable ? growthCellR
+            : growthCellR - (BlockVariantMenu.isVillagerRow(entry)
+                ? BlockVariantMenuRenderer.VILLAGER_MODE_CELL_WIDTH : BlockVariantMenuRenderer.GROWTH_CELL_WIDTH);
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
@@ -336,6 +338,9 @@ public final class BlockVariantMenuRaycast {
             return new BlockVariantMenu.Hit(BlockVariantMenu.ARM_SEGMENTS[seg], idx);
         }
         if (growable && hitX >= growthCellL && hitX <= growthCellR) {
+            if (BlockVariantMenu.isVillagerRow(entry)) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_VILLAGER_MODE, idx);
+            }
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_GROWTH, idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {

@@ -162,19 +162,29 @@ class PortalSliceCacheTest {
     }
 
     @Test
+    @DisplayName("remove(key) drops whatever is held and its bytes")
+    void removeByKey() {
+        PortalSliceCache<String> cache = new PortalSliceCache<>(1000);
+        cache.put(1, "x", 40);
+        assertEquals("x", cache.remove(1));
+        assertNull(cache.remove(1));
+        assertEquals(0, cache.bytes());
+    }
+
+    @Test
     @DisplayName("A budget must be positive")
     void rejectsNonPositiveBudget() {
         assertThrows(IllegalArgumentException.class, () -> new PortalSliceCache<String>(0));
     }
 
     @Test
-    @DisplayName("Budget override: property, then env, then the 64 MiB default; junk ignored")
+    @DisplayName("Budget override: property, then env, then the 20 MiB default; junk ignored")
     void budgetOverride() {
         assertEquals(400, PortalChunkTerrain.parseBudgetKb("400", "9"));
         assertEquals(9, PortalChunkTerrain.parseBudgetKb(null, "9"));
         assertEquals(9, PortalChunkTerrain.parseBudgetKb("nope", "9"));
         assertEquals(PortalChunkTerrain.DEFAULT_BUDGET_KB, PortalChunkTerrain.parseBudgetKb("-1", " "));
-        assertEquals(64L * 1024, PortalChunkTerrain.DEFAULT_BUDGET_KB);
+        assertEquals(20L * 1024, PortalChunkTerrain.DEFAULT_BUDGET_KB);
     }
 
     @SuppressWarnings("unchecked")

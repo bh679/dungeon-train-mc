@@ -79,7 +79,8 @@ final class StageColourPalettesTest {
         Map.entry("end_lotus", List.of("light_blue", "cyan", "white", "light_blue", "cyan", "white")),
         Map.entry("jellyshroom", List.of("purple", "light_blue", "black", "purple", "light_blue", "black")),
         Map.entry("mossy_glowshroom", List.of("light_blue", "green", "gray", "light_blue", "green", "gray")),
-        Map.entry("umbrella_tree", List.of("green", "light_blue", "black", "green", "light_blue", "gray")));
+        Map.entry("umbrella_tree", List.of("green", "light_blue", "black", "green", "light_blue", "gray")),
+        Map.entry("poplar", List.of("yellow", "orange", "white", "yellow", "orange", "white")));
 
     private static final Set<String> DYES = Set.of("white", "orange", "magenta", "light_blue", "yellow",
         "lime", "pink", "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black");

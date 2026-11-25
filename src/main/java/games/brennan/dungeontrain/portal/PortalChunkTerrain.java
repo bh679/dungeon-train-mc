@@ -38,8 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -134,11 +132,12 @@ public final class PortalChunkTerrain {
     private static final int PROBE_SPREAD = 8;
 
     /**
-     * How much the sampled cubes may hold, in KiB, before the least recently used is dropped: 64 MiB,
-     * about 210 three-by-three rooms (~300 KB each) or 1,800 one-chunk rooms (~35 KB each). A cube a
-     * room is still being built from is never dropped; see {@link PortalSliceCache}.
+     * How much the sampled cubes may hold, in KiB, before the least recently used is dropped: 20 MiB,
+     * about sixty-four 3x3 rooms (~290 KB each) or eight times as many one-chunk ones (~34 KB each),
+     * where the old 512-entry bound allowed about 150 MB. A cube a room is still being built from is
+     * never dropped, budget or not; see {@link PortalSliceCache}.
      */
-    static final long DEFAULT_BUDGET_KB = 64L * 1024;
+    static final long DEFAULT_BUDGET_KB = 20L * 1024;
 
     /** System property, then environment variable, that override {@link #DEFAULT_BUDGET_KB} (testing). */
     static final String BUDGET_PROPERTY = "dungeontrain.portalSliceCacheKb";
@@ -350,9 +349,11 @@ public final class PortalChunkTerrain {
      * so. On a thread of its own the sampler can wait on the pool without being part of it.</p>
      *
      * <p>One thread rather than several, so a train that plans a run of chunk dimensions at once
-     * samples them in turn instead of contending with the worldgen pool for every core.</p>
+     * samples them in turn instead of contending with the worldgen pool for every core. Ground runs
+     * ahead of decoration on it ({@link PortalChunkSamplerQueue}): a pair's corridor waits on its
+     * ground, and nobody waits on trees.</p>
      */
-    private static final ExecutorService SAMPLER = Executors.newSingleThreadExecutor(task -> {
+    private static final PortalChunkSamplerQueue SAMPLER = new PortalChunkSamplerQueue(task -> {
         Thread thread = new Thread(task, "DungeonTrain-chunk-dimension-sampler");
         thread.setDaemon(true);
         return thread;
@@ -369,13 +370,7 @@ public final class PortalChunkTerrain {
      * own template and asks again next tick; see {@code PortalChunkDimension}.</p>
      */
     public static PortalChunkSlice slice(ServerLevel level, int pairKey, String roomName) {
-        long seed = level.getSeed();
-        if (seed != cacheSeed) {
-            READY.clear();
-            IN_FLIGHT.clear();
-            FAILED.clear();
-            cacheSeed = seed;
-        }
+        dropIfSeedChanged(level.getSeed());
         Cached ready = READY.get(pairKey);
         if (ready != null) {
             if (sameRoom(ready.roomName(), roomName) && ready.roll() == rollOf(pairKey)) {
@@ -387,6 +382,20 @@ public final class PortalChunkTerrain {
         }
         request(level, pairKey, roomName);
         return null;
+    }
+
+    /**
+     * Forget every cube when the world's seed is not the one they were sampled under. Checked by
+     * {@link #request} as well as {@link #slice}: a prefetch requests long before anything slices,
+     * and a seed recorded only by the first slice made that slice drop every cube prefetched ahead
+     * of it.
+     */
+    private static void dropIfSeedChanged(long seed) {
+        if (seed == cacheSeed) return;
+        READY.clear();
+        IN_FLIGHT.clear();
+        FAILED.clear();
+        cacheSeed = seed;
     }
 
     /**
@@ -421,19 +430,21 @@ public final class PortalChunkTerrain {
     /**
      * Start sampling this pair's cube if nothing is holding it yet.
      *
-     * <p>Called from {@code planStructure} as well as from the stamp, so the work is usually already
-     * done by the time a player has walked far enough down the train to reach the carriage.</p>
+     * <p>Called from {@code planStructure} and the stamp, and ahead of both by
+     * {@link PortalChunkPrefetch} once a player is within confirm range of the pair, so the work is
+     * usually already done by the time they have walked far enough down the train to reach it.</p>
      */
     public static void request(ServerLevel level, int pairKey, String roomName) {
         long seed = level.getSeed();
         MinecraftServer server = level.getServer();
         if (server == null) return;
+        dropIfSeedChanged(seed);
         if (READY.contains(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
         FAILED.remove(pairKey);
         Source source = Source.of(roomName);
         int roll = rollOf(pairKey);
-        SAMPLER.execute(() -> {
+        SAMPLER.execute(PortalChunkSamplerQueue.Priority.GROUND, () -> {
             try {
                 // Ahead of the ground, which is what the pair's planning waits on, so the stamp that
                 // follows never parses a frame's sidecar inside its tick.
@@ -448,7 +459,8 @@ public final class PortalChunkTerrain {
                 // the ground — noise, surface rules and the carvers — which the pair cannot be
                 // planned without, because its doorways stand on it. The second is everything that
                 // grows on that ground, which costs seconds and moves nothing, so the room is built
-                // from the first and rewritten when the second lands.
+                // from the first and rewritten when the second lands. The second is its own task, so
+                // another pair's ground can run between them.
                 long startedAt = System.currentTimeMillis();
                 Sample sample = sampleTerrain(server, source, seed, pairKey, roll);
                 if (sample == null) {
@@ -458,29 +470,10 @@ public final class PortalChunkTerrain {
                         + "room stamps as its plain template", pairKey, roomName, source);
                     return;
                 }
-                publish(pairKey, new Cached(roomName, roll, sample.read(), false));
+                publishGround(pairKey, roomName, roll, sample.read());
                 long ground = System.currentTimeMillis() - startedAt;
-
-                long decoratingFrom = System.currentTimeMillis();
-                PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
-                    sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
-                    pairKey, sample.source());
-                publish(pairKey, new Cached(roomName, roll, sample.read(), true));
-                DECORATED.add(pairKey);
-                // The first number is what a portal carriage waits out before it can cross at all,
-                // so it is the one worth watching; the second is only how long the room takes to
-                // grow afterwards.
-                Cached decorated = READY.peek(pairKey);
-                // The biome too: it is what says whether a WWOO, BoP or Better room actually landed
-                // in its mod's world generation or quietly came back vanilla.
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}{}: "
-                        + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
-                    pairKey, source, source.levelKey().location(), sample.pos(), biomeAt(sample),
-                    sample.sea() == null ? "" : ", sea floor row " + sample.sea().floorRow()
-                        + ", water gap " + sample.sea().waterGap() + ", seabed y " + sample.anchor(),
-                    ground,
-                    System.currentTimeMillis() - decoratingFrom,
-                    decorated == null ? 0 : decorated.slice().occupants().size());
+                SAMPLER.execute(PortalChunkSamplerQueue.Priority.DECORATION,
+                    () -> decorateOne(sample, pairKey, roomName, roll, ground));
             } catch (Throwable t) {
                 FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
                 // A failed sample is a room that stamps as its plain template — never a crashed
@@ -491,6 +484,34 @@ public final class PortalChunkTerrain {
                 IN_FLIGHT.remove(pairKey);
             }
         });
+    }
+
+    /** A one-chunk sample's second pass: everything that grows on its ground. Sampler thread only. */
+    private static void decorateOne(Sample sample, int pairKey, String roomName, int roll, long groundMs) {
+        try {
+            long decoratingFrom = System.currentTimeMillis();
+            PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
+                sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
+                pairKey, sample.source());
+            PortalChunkSlice decorated = sample.read();
+            publishDecorated(pairKey, roomName, roll, decorated);
+            // The first number is what a portal carriage waits out before it can cross at all,
+            // so it is the one worth watching; the second is only how long the room takes to
+            // grow afterwards. The biome too: it is what says whether a WWOO, BoP or Better room
+            // actually landed in its mod's world generation or quietly came back vanilla.
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}{}: "
+                    + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
+                pairKey, sample.source(), sample.source().levelKey().location(), sample.pos(), biomeAt(sample),
+                sample.sea() == null ? "" : ", sea floor row " + sample.sea().floorRow()
+                    + ", water gap " + sample.sea().waterGap() + ", seabed y " + sample.anchor(),
+                groundMs,
+                System.currentTimeMillis() - decoratingFrom,
+                decorated.occupants().size());
+        } catch (Throwable t) {
+            // The ground already stands; a failed decoration leaves the room bare, not broken.
+            LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} ({})",
+                pairKey, sample.source(), t);
+        }
     }
 
     /** The biome at the middle of a sample's surface row, by id — for the log. */
@@ -505,6 +526,17 @@ public final class PortalChunkTerrain {
         }
     }
 
+    /**
+     * Drop {@code pairKey}'s cube: its room has been erased and is stamped afresh when next needed.
+     * Sampling is a pure function of the seed, the pair and its roll, so the cube that comes back
+     * then is the same ground.
+     */
+    public static void forget(int pairKey) {
+        READY.remove(pairKey);
+        DECORATED.remove(pairKey);
+        PortalChunkPrefetch.forget(pairKey);
+    }
+
     /** Drop every sampled cube — the next world's pair keys mean different rooms. */
     public static void clear() {
         SampleGenerators.clear();
@@ -515,6 +547,7 @@ public final class PortalChunkTerrain {
         ROLLS.clear();
         PortalChunkSources.clear();
         PortalChunkArea.clear();
+        PortalChunkPrefetch.clear();
         cacheSeed = Long.MIN_VALUE;
     }
 
@@ -542,12 +575,15 @@ public final class PortalChunkTerrain {
 
     // ---- hand-off for PortalChunkArea's multi-chunk samples --------------------
 
-    /** Queue {@code task} on the sampler thread, behind whatever is already waiting there. */
-    static void submit(Runnable task) {
-        SAMPLER.execute(task);
+    /**
+     * Queue a decoration step on the sampler thread: behind every ground task, waiting or yet to be
+     * queued, and behind the decoration already waiting.
+     */
+    static void submitDecoration(Runnable task) {
+        SAMPLER.execute(PortalChunkSamplerQueue.Priority.DECORATION, task);
     }
 
-    /** Publish a multi-chunk sample's ground: the pair can be planned and crossed from now. */
+    /** Publish a sample's ground: the pair can be planned and crossed from now. */
     static void publishGround(int pairKey, String roomName, int roll, PortalChunkSlice slice) {
         publish(pairKey, new Cached(roomName, roll, slice, false));
     }

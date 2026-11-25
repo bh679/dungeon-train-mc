@@ -90,6 +90,14 @@ final class PortalSliceCache<V> {
         return evicted;
     }
 
+    /** Drop {@code key}'s entry, whatever it holds. Its pin, if any, stays until the next retain. */
+    synchronized V remove(int key) {
+        Entry<V> entry = entries.remove(key);
+        if (entry == null) return null;
+        totalBytes -= entry.bytes();
+        return entry.value();
+    }
+
     /** Drop {@code key}'s entry only while it is still {@code expected}. */
     synchronized boolean remove(int key, V expected) {
         Entry<V> entry = entries.get(key);

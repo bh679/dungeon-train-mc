@@ -232,6 +232,18 @@
       "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
+      "stage": "poplar"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "poplar"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
       "stage": "pale_oak"
     },
     {
@@ -949,6 +961,16 @@
     {
       "name": "mud_wood",
       "weight": 1,
+      "stage": "poplar"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "poplar"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
       "stage": "pale_oak"
     },
     {
@@ -1444,6 +1466,13 @@
       "sideMode": "either",
       "endMode": "end",
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "poplar"
     },
     {
       "name": "mud_wood",

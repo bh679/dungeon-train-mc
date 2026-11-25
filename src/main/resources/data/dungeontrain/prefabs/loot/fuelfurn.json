@@ -11,6 +11,7 @@
     { "id": "minecraft:oak_planks", "count": 7, "weight": 13, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
     { "id": "minecraft:stick", "count": 38, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
     { "id": "minecraft:wooden_sword", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25, "slot": 1 },
+    { "id": "minecraft:wooden_spear", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25, "slot": 1 },
     { "id": "minecraft:wooden_axe", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25, "slot": 1 },
     { "id": "minecraft:wooden_pickaxe", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25, "slot": 1 }
   ]
