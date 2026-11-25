@@ -127,6 +127,13 @@ public final class BlockVariantMenuInputHandler {
         return true;
     }
 
+    /** A right-click on a row's name holding a water bucket — the waterlog toggle, which right-click is for. */
+    private static boolean isWaterBucketOnRowName(BlockVariantMenu.Hit hit) {
+        if (hit.kind() != BlockVariantMenu.CellKind.ENTRY_NAME) return false;
+        net.minecraft.client.player.LocalPlayer me = Minecraft.getInstance().player;
+        return me != null && me.getMainHandItem().is(net.minecraft.world.item.Items.WATER_BUCKET);
+    }
+
     /** The cells drawn on a variant row, whose {@code index} is that row. */
     private static boolean isRowCell(BlockVariantMenu.CellKind kind) {
         return switch (kind) {
@@ -165,7 +172,7 @@ public final class BlockVariantMenuInputHandler {
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !shift && openGroupPanel(hit)) return;
         // Otherwise right-click is a number cell's step-down and nothing else — on any other cell
         // it is swallowed (the press was already cancelled so nothing is placed).
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit)) return;
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit) && !isWaterBucketOnRowName(hit)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
             mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(

@@ -470,10 +470,6 @@ public final class BlockVariantMenuRenderer {
             } else {
                 drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY, icons);
             }
-            // A waterlogged row looks like its dry block in the icon, so it carries a blue dot.
-            if (!entry.isMob() && parsed != null && games.brennan.dungeontrain.editor.VariantWaterlog.isWaterlogged(parsed)) {
-                drawWaterloggedDot(ps, buffer, nameCellL, rowCY);
-            }
             // Linked rows show the loot-prefab id instead of the block path
             // so two rows backed by the same block (e.g. two barrels linked
             // to different templates) read distinctly. Dangling links — the
@@ -620,6 +616,13 @@ public final class BlockVariantMenuRenderer {
                     xCellR - 0.005, rowTop - 0.005, xTint);
                 drawCenteredText(ps, buffer, font, "X",
                     (xCellL + xCellR) / 2.0, rowCY, 0xFFFFFFFF);
+            }
+
+            // A waterlogged row looks like its dry block in the icon, so it carries a blue dot at the
+            // icon's top-left. Drawn last in the row: on a crowded row (a trapdoor's Off/half cells)
+            // the other cells overlap the icon, and the dot has to sit on top of them.
+            if (!entry.isMob() && parsed != null && games.brennan.dungeontrain.editor.VariantWaterlog.isWaterlogged(parsed)) {
+                drawWaterloggedDot(ps, buffer, nameCellL, rowCY);
             }
         }
 
