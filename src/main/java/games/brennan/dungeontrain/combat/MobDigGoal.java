@@ -88,8 +88,6 @@ public final class MobDigGoal extends Goal {
     static final int PRIORITY = 1;
     /** How long after last seeing its target a mob still digs toward it. */
     private static final int SEEN_MEMORY_TICKS = 200;
-    /** No closer to the target for this long counts as stuck. */
-    private static final int STUCK_TICKS = 40;
     /** Getting this much closer resets the stuck clock. */
     private static final double PROGRESS_EPS = 0.5;
     /** Within this, and in sight, the mob's own attack has it; no digging. */
@@ -165,6 +163,11 @@ public final class MobDigGoal extends Goal {
     private Vec3 windowStart = Vec3.ZERO;
     private int progressTicks;
     private int lastStage;
+    /** "No dig" answers in a row; each makes the next look wait longer ({@link DigRecheck#waitTicks}). */
+    private int calmStreak;
+    /** Where the target stood, and whether the mob saw it, at the last "no dig" answer. */
+    private BlockPos answerTargetPos = BlockPos.ZERO;
+    private boolean answerSeen;
 
     private MobDigGoal(Mob mob, boolean bareHanded, boolean miner) {
         this.mob = mob;
@@ -217,6 +220,7 @@ public final class MobDigGoal extends Goal {
             bestDistance = Double.MAX_VALUE;
             restartWindow(now);
             failedApproaches = 0;
+            calmStreak = 0;
         }
         boolean seen = mob.getSensing().hasLineOfSight(target);
         if (seen) lastSeenTick = now;
@@ -230,8 +234,14 @@ public final class MobDigGoal extends Goal {
             bestDistance = distance;
             restartWindow(now);
             failedApproaches = 0;
+            calmStreak = 0;
         }
-        if (now >= chainUntilTick && now - bestDistanceTick < STUCK_TICKS) return false;
+        // Something that could change the last "no dig" answer (sight lost, target moved): back to the usual clock.
+        if (calmStreak > 0 && DigRecheck.resetsBackoff(answerSeen, seen,
+                DigRecheck.blocksApart(target.blockPosition(), answerTargetPos))) {
+            calmStreak = 0;
+        }
+        if (now >= chainUntilTick && now - bestDistanceTick < DigRecheck.waitTicks(calmStreak)) return false;
         if (!EventHooks.canEntityGrief(level, mob)) return false;
         // Knocked back or mid-jump, the navigator can't plan at all: decide once it lands.
         if (!mob.onGround() && !mob.isInLiquid() && !mob.isPassenger()) return false;
@@ -244,7 +254,8 @@ public final class MobDigGoal extends Goal {
         }
         if (hasWalkablePath(target)) {
             // A mob that has not moved at all all window is wedged, not fighting.
-            if (mob.position().distanceTo(windowStart) < WEDGED_DISTANCE) failedApproaches++;
+            boolean wedged = mob.position().distanceTo(windowStart) < WEDGED_DISTANCE;
+            if (wedged) failedApproaches++;
             if (failedApproaches >= FAILED_APPROACHES_BEFORE_CARPET) {
                 cell = carpetInFront(level, target);
                 if (cell != null) {
@@ -255,8 +266,7 @@ public final class MobDigGoal extends Goal {
             // Not stuck, just fighting (circling, holding range): there is a way round, so dig nothing.
             LOGGER.debug("[DungeonTrain] MobDigGoal walkable path, no dig: mob={} at={}",
                     mob.getUUID(), mob.blockPosition());
-            restartWindow(now);
-            chainUntilTick = Integer.MIN_VALUE;
+            noteNoDig(target, seen, wedged, now);
             return false;
         }
 
@@ -265,12 +275,23 @@ public final class MobDigGoal extends Goal {
         if (cell == null && failedApproaches >= FAILED_APPROACHES_BEFORE_CARPET) cell = carpetInFront(level, target);
         approaching = cell == null && canApproach(level, target);
         if (cell == null && !approaching) {
-            // Nothing breakable in the way: wait out another stuck window before looking again.
-            restartWindow(now);
-            chainUntilTick = Integer.MIN_VALUE;
+            // Nothing breakable in the way: wait out another stuck window (or longer) before looking again.
+            noteNoDig(target, seen, false, now);
             return false;
         }
         return true;
+    }
+
+    /**
+     * A "no dig" answer: start a new window, and make the next look wait longer unless the mob is wedged (the
+     * carpet fallback counts wedged windows at the usual length).
+     */
+    private void noteNoDig(LivingEntity target, boolean seen, boolean wedged, int now) {
+        calmStreak = wedged ? 0 : DigRecheck.grow(calmStreak);
+        answerTargetPos = target.blockPosition();
+        answerSeen = seen;
+        restartWindow(now);
+        chainUntilTick = Integer.MIN_VALUE;
     }
 
     /** Start a new stuck window: the clock, and where the mob stood. */
@@ -405,14 +426,26 @@ public final class MobDigGoal extends Goal {
     /**
      * Whether the navigator can find a walkable path all the way to {@code target}: one that reaches it,
      * or ends in its column within a block of its feet (a carriage deck reads a hair off the block grid).
+     * A live path the navigator already holds answers yes with no search ({@link DigRecheck#heldPathWalkable}).
      */
     private boolean hasWalkablePath(LivingEntity target) {
+        BlockPos at = target.blockPosition();
+        Path held = mob.getNavigation().getPath();
+        if (held != null) {
+            var end = held.getEndNode();
+            BlockPos aim = held.getTarget();
+            if (end != null && aim != null && DigRecheck.heldPathWalkable(held.isDone(), held.canReach(),
+                    end.x, end.y, end.z, aim.getX(), aim.getY(), aim.getZ(), at.getX(), at.getY(), at.getZ())) {
+                LOGGER.debug("[DungeonTrain] MobDigGoal held path walkable: mob={}", mob.getUUID());
+                return true;
+            }
+        }
+        LOGGER.debug("[DungeonTrain] MobDigGoal path search: mob={} heldPath={}", mob.getUUID(), held != null);
         Path path = mob.getNavigation().createPath(target, 0);
         if (path == null) return false;
         if (path.canReach()) return true;
         var node = path.getEndNode();
         if (node == null) return false;
-        BlockPos at = target.blockPosition();
         return endsAtTarget(node.x, node.y, node.z, at.getX(), at.getY(), at.getZ());
     }
 
@@ -442,6 +475,7 @@ public final class MobDigGoal extends Goal {
             LOGGER.debug("[DungeonTrain] MobDigGoal open door: mob={} at={} carriage={}",
                     mob.getUUID(), target.worldPos, target.onCarriage());
             chainUntilTick = mob.tickCount + CHAIN_TICKS;
+            calmStreak = 0;
         }
         cell = null;
     }
@@ -465,6 +499,7 @@ public final class MobDigGoal extends Goal {
             if (used.getItem() instanceof DiggerItem) used.hurtAndBreak(1, mob, slot);
             chainUntilTick = mob.tickCount + CHAIN_TICKS;
             failedApproaches = 0;
+            calmStreak = 0;
         }
         cell = null;
     }
