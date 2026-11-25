@@ -203,6 +203,11 @@ final class VariantConditionTest {
         assertFalse(solid.matches(CarriageVariantBlocks.emptyPlaceholder()));
         assertFalse(solid.matches(Blocks.WATER.defaultBlockState()));
         assertFalse(solid.matches(Blocks.TORCH.defaultBlockState()));
+        assertFalse(solid.matches(Blocks.OAK_SLAB.defaultBlockState()), "a slab is not solid");
+        assertFalse(solid.matches(Blocks.STONE_STAIRS.defaultBlockState()), "a stair is not solid");
+        assertTrue(solid.matches(Blocks.OAK_SLAB.defaultBlockState()
+            .setValue(net.minecraft.world.level.block.SlabBlock.TYPE, net.minecraft.world.level.block.state.properties.SlabType.DOUBLE)),
+            "a double slab is a full block");
 
         VariantCondition any = VariantCondition.NONE.withValueAdded(VariantCondition.ANY_ID);
         assertEquals(any, VariantCondition.parse(any.id()));

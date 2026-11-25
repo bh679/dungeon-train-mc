@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.mixin.vanillabackport;
 
 import com.blackgear.platform.core.util.config.ConfigBuilder;
-import com.blackgear.vanillabackport.common.level.blockentities.CreakingHeartBlockEntity;
-import com.blackgear.vanillabackport.common.level.entities.creaking.Creaking;
+import com.blackgear.vanillabackport.common.level.block_entities.CreakingHeartBlockEntity;
+import com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -112,7 +112,7 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
     // ---- Day / Night ----
 
     @WrapOperation(method = {"serverTick", "updateCreakingState"}, at = @At(value = "INVOKE",
-            target = "Lcom/blackgear/vanillabackport/common/level/blocks/CreakingHeartBlock;isNaturalNight(Lnet/minecraft/world/level/Level;)Z"))
+            target = "Lcom/blackgear/vanillabackport/core/util/WorldUtilities$EnvironmentUtils;isNaturalNight(Lnet/minecraft/world/level/Level;)Z"))
     private static boolean dungeontrain$awakeNow(Level level, Operation<Boolean> original,
                                                  @Local(argsOnly = true) CreakingHeartBlockEntity heart) {
         return ((CreakingHeartSettingsHolder) heart).dungeontrain$settings().awake(original.call(level));

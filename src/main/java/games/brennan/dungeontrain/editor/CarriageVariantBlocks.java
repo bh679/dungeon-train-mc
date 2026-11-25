@@ -408,7 +408,8 @@ public final class CarriageVariantBlocks {
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
                 return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab)
                     .withCondition(parseCondition(obj.get("if"), contextId, contextPos))
-                    .withSlime(parseSlime(obj.get("slime"), contextId, contextPos));
+                    .withSlime(parseSlime(obj.get("slime"), contextId, contextPos))
+                    .withVillager(parseVillager(obj.get("villager"), contextId, contextPos));
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -920,6 +921,9 @@ public final class CarriageVariantBlocks {
             }
             appendConditionJson(sb, s.condition());
             appendSlimeJson(sb, s.slime());
+            if (!s.villager().isDefault()) {
+                sb.append(", \"villager\": \"").append(s.villager().id()).append("\"");
+            }
             sb.append("}");
             return;
         }
@@ -1210,6 +1214,19 @@ public final class CarriageVariantBlocks {
             sb.append("]");
         }
         sb.append("}");
+    }
+
+    /** Parse an optional {@code "villager"} job mode. Absent or unrecognised → Job. */
+    static VariantVillager.Mode parseVillager(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantVillager.Mode.JOB;
+        VariantVillager.Mode mode = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()
+            ? VariantVillager.Mode.parse(el.getAsString()) : null;
+        if (mode == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: bad villager mode '{}', using job.",
+                contextId, contextPos, el);
+            return VariantVillager.Mode.JOB;
+        }
+        return mode;
     }
 
     /** Parse an optional {@code "slime"} object. Absent or malformed → any size / type. */

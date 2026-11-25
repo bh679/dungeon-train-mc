@@ -2,8 +2,8 @@ package games.brennan.dungeontrain.compat;
 
 import com.blackgear.vanillabackport.client.registries.ModSoundEvents;
 import com.blackgear.vanillabackport.common.level.blocks.CreakingHeartBlock;
-import com.blackgear.vanillabackport.common.level.blocks.states.CreakingHeartState;
-import com.blackgear.vanillabackport.common.level.entities.creaking.Creaking;
+import com.blackgear.vanillabackport.common.level.blocks.CreakingHeartState;
+import com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;

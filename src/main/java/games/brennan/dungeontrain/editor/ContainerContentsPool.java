@@ -31,7 +31,8 @@ import java.util.List;
 public record ContainerContentsPool(List<ContainerContentsEntry> entries, int fillMin, int fillMax,
                                     String vaultKey) {
 
-    public static final int MAX_ENTRIES = 64;
+    /** The editor's add cap. Raised from 64 when spears and copper joined the bundled pools (largest: 75). */
+    public static final int MAX_ENTRIES = 96;
     /** Sentinel for {@code fillMax}: "fill up to the container's full slot count". */
     public static final int FILL_ALL = -1;
     public static final int MAX_FILL_BOUND = 64;

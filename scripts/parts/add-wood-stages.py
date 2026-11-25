@@ -42,6 +42,8 @@ BOP, BN, BE = "biomesoplenty", "betternether", "betterend"
 # style: "vanilla" | "bcl" | "bcl_stem". Colours are dyes (primary, secondary, background).
 WOODS = [
     ("pale_oak", "minecraft", "pale_oak", "vanilla", ("light_gray", "white", "gray"), ("white", "light_gray", "gray")),
+    # VanillaBackport 1.2+ (minecraft:), beside pale oak; every later wood moved 16 levels to make room.
+    ("poplar", "minecraft", "poplar", "vanilla", ("yellow", "orange", "white"), ("yellow", "orange", "white")),
     ("fir", BOP, "fir", "vanilla", ("green", "brown", "white"), ("green", "white", "brown")),
     ("pine", BOP, "pine", "vanilla", ("brown", "green", "black"), ("green", "brown", "black")),
     ("redwood", BOP, "redwood", "vanilla", ("red", "brown", "orange"), ("red", "brown", "black")),

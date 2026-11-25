@@ -21,7 +21,7 @@ import java.util.Locale;
  * are block ids, OR'd together, and match on block type alone: a rolled rotation, half or open flag
  * can never fail the condition. {@code minecraft:air} stands for "empty" and also matches the
  * variant placeholder. Three more values stand for a kind of block rather than one block —
- * {@link #SOLID_ID} (any {@link BlockState#isSolid solid} block), {@link #EMPTY_ID} (air or the
+ * {@link #SOLID_ID} (any solid full block; slabs and stairs don't count), {@link #EMPTY_ID} (air or the
  * placeholder) and {@link #ANY_ID} (anything not empty). A touching condition holding any of them is
  * in <b>Kind</b> mode ({@link #isKindMode}), the If popup's Solid / Empty / Any block checkboxes.</p>
  *
@@ -119,7 +119,16 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         boolean empty = id.equals(AIR_ID);
         if (empty) return blocks.contains(EMPTY_ID);
         if (blocks.contains(ANY_ID)) return true;
-        return blocks.contains(SOLID_ID) && state.isSolid();
+        return blocks.contains(SOLID_ID) && isSolidKind(state);
+    }
+
+    /**
+     * The Solid kind: a solid block that fills its whole cube. Slabs and stairs (solid but partial)
+     * do not count, so a row gated on a solid neighbour skips a slab or stair beside it.
+     */
+    static boolean isSolidKind(BlockState state) {
+        return state.isSolid()
+            && state.isCollisionShapeFullBlock(net.minecraft.world.level.EmptyBlockGetter.INSTANCE, net.minecraft.core.BlockPos.ZERO);
     }
 
     /** True for a touching condition that holds a kind value — the If popup's Kind mode. */
