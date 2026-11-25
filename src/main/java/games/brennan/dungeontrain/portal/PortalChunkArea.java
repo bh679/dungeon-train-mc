@@ -109,7 +109,12 @@ public final class PortalChunkArea {
     private record Grid(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
                         PortalChunkTerrain.Source source, ChunkPos centre, int span,
                         Map<Long, ProtoChunk> chunks, Map<Long, OfflineChunkSampler.Workspace> workspaces,
-                        int anchor, int minY, int maxY) {
+                        int anchor, int minY, int maxY, UnderwaterLayout sea) {
+
+        /** The room-local row the anchor lands on: the sea's floor row underwater, else the surface row. */
+        int surfaceRow() {
+            return sea != null ? sea.floorRow() : PortalChunkTerrain.SURFACE_ROW;
+        }
 
         int radius() {
             return span / 2;
@@ -133,7 +138,7 @@ public final class PortalChunkArea {
 
         /** The rows of the grid the room will show, in world coordinates. */
         BoundingBox window() {
-            int lo = anchor - PortalChunkTerrain.SURFACE_ROW;
+            int lo = anchor - surfaceRow();
             return new BoundingBox(minBlockX(), lo, minBlockZ(),
                 minBlockX() + width() - 1, lo + PortalChunkTerrain.HEIGHT - 1, minBlockZ() + width() - 1);
         }
@@ -252,7 +257,7 @@ public final class PortalChunkArea {
                 tried++;
                 ProtoChunk centre = groundOf(level, generator, random, site);
                 if (centre == null) continue;
-                int probes = probes(centre, minY, maxY);
+                int probes = probes(source, centre, minY, maxY);
                 if (probes > bestProbes) {
                     bestCentre = centre;
                     bestProbes = probes;
@@ -266,7 +271,8 @@ public final class PortalChunkArea {
                 pairKey, source, span, span, tried, turnedAway);
             return null;
         }
-        return grow(level, generator, random, source, bestCentre, span, minY, maxY, pairKey);
+        UnderwaterLayout sea = source.underwater() ? UnderwaterLayout.roll(seed, pairKey, roll) : null;
+        return grow(level, generator, random, source, bestCentre, span, minY, maxY, pairKey, sea);
     }
 
     /**
@@ -293,14 +299,14 @@ public final class PortalChunkArea {
     }
 
     /** How many of five columns of the middle chunk agree on about one ground height (0 = no ground). */
-    private static int probes(ProtoChunk chunk, int minY, int maxY) {
-        int anchor = PortalChunkTerrain.standableRow(chunk, CHUNK / 2, CHUNK / 2, minY, maxY);
+    private static int probes(PortalChunkTerrain.Source source, ProtoChunk chunk, int minY, int maxY) {
+        int anchor = PortalChunkTerrain.anchorRow(source, chunk, CHUNK / 2, CHUNK / 2, minY, maxY);
         if (anchor == PortalChunkTerrain.NO_GROUND) return 0;
         int agreeing = 1;
         int far = CHUNK - 1 - PROBE_INSET;
         int[][] corners = {{PROBE_INSET, PROBE_INSET}, {far, PROBE_INSET}, {PROBE_INSET, far}, {far, far}};
         for (int[] corner : corners) {
-            int row = PortalChunkTerrain.standableRow(chunk, corner[0], corner[1], minY, maxY);
+            int row = PortalChunkTerrain.anchorRow(source, chunk, corner[0], corner[1], minY, maxY);
             if (row != PortalChunkTerrain.NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
         }
         return agreeing;
@@ -312,7 +318,7 @@ public final class PortalChunkArea {
      */
     private static Grid grow(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
                              PortalChunkTerrain.Source source, ProtoChunk centre, int span, int minY, int maxY,
-                             int pairKey) {
+                             int pairKey, UnderwaterLayout sea) {
         int radius = span / 2;
         ChunkPos mid = centre.getPos();
         Map<Long, ProtoChunk> chunks = new HashMap<>();
@@ -336,9 +342,9 @@ public final class PortalChunkArea {
             PortalChunkFeatures.carve(generator, level, random, chunk, workspaces.get(chunk.getPos().toLong()),
                 level.getSeed(), pairKey);
         }
-        int anchor = anchorRow(chunks, mid, radius, minY, maxY);
+        int anchor = anchorRow(source, chunks, mid, radius, minY, maxY);
         return new Grid(level, generator, random, source, mid, span, Map.copyOf(chunks), Map.copyOf(workspaces),
-            anchor, minY, maxY);
+            anchor, minY, maxY, sea);
     }
 
     /**
@@ -346,10 +352,10 @@ public final class PortalChunkArea {
      * both mouths, so a 48-block room that climbs or falls keeps its doorways inside the window rather
      * than centring on one chunk's ground.
      */
-    private static int anchorRow(Map<Long, ProtoChunk> chunks, ChunkPos mid, int radius, int minY, int maxY) {
+    private static int anchorRow(PortalChunkTerrain.Source source, Map<Long, ProtoChunk> chunks, ChunkPos mid, int radius, int minY, int maxY) {
         List<Integer> rows = new ArrayList<>();
         for (ProtoChunk chunk : chunks.values()) {
-            int row = PortalChunkTerrain.standableRow(chunk, CHUNK / 2, CHUNK / 2, minY, maxY);
+            int row = PortalChunkTerrain.anchorRow(source, chunk, CHUNK / 2, CHUNK / 2, minY, maxY);
             if (row != PortalChunkTerrain.NO_GROUND) rows.add(row);
         }
         // The two mouths: the grid's first and last X column, along its middle Z.
@@ -358,7 +364,7 @@ public final class PortalChunkArea {
         for (int[] mouth : new int[][] {{0, MOUTH_INSET}, {1, CHUNK - 1 - MOUTH_INSET}}) {
             ProtoChunk chunk = mouth[0] == 0 ? west : east;
             if (chunk == null) continue;
-            int row = PortalChunkTerrain.standableRow(chunk, mouth[1], CHUNK / 2, minY, maxY);
+            int row = PortalChunkTerrain.anchorRow(source, chunk, mouth[1], CHUNK / 2, minY, maxY);
             if (row != PortalChunkTerrain.NO_GROUND) rows.add(row);
         }
         if (rows.isEmpty()) return minY + PortalChunkTerrain.SURFACE_ROW;
@@ -396,7 +402,7 @@ public final class PortalChunkArea {
         int height = PortalChunkTerrain.HEIGHT;
         int minX = grid.minBlockX();
         int minZ = grid.minBlockZ();
-        int lo = grid.anchor() - PortalChunkTerrain.SURFACE_ROW;
+        int lo = grid.anchor() - grid.surfaceRow();
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockState[] states = new BlockState[width * width * height];
         Arrays.fill(states, air);
@@ -437,6 +443,8 @@ public final class PortalChunkArea {
                 occupants.add(new PortalChunkSlice.Occupant(copy, x, y, z));
             }
         }
+        // The underwater room's sea, at the floor and water gap the pair rolled — as the one-chunk room.
+        if (grid.sea() != null) states = UnderwaterFlood.apply(states, width, height, grid.sea().topWaterRow(height));
         return new PortalChunkSlice(grid.source(), width, height, states, blockEntities, occupants,
             biomesIn(grid, width, lo));
     }

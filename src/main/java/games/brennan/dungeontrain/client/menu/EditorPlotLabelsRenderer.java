@@ -127,7 +127,27 @@ public final class EditorPlotLabelsRenderer {
         /** How often the base pair's exit is walled off — one number cell. */
         EXIT_MOVE_NUMBER,
         /** Top-right {@code ↻} on the name row — face the player; shift resets to the grid. */
-        FACE
+        FACE,
+        /** Chunk frame Dimension row — one of three cells, the frame's current dimension lit. */
+        FRAME_DIM_BEDROCK,
+        FRAME_DIM_VOID,
+        FRAME_DIM_WORLD_BORDER,
+        /** Chunk frame Min Lv | Max Lv row — two number cells. */
+        FRAME_MIN_LEVEL_NUMBER,
+        FRAME_MAX_LEVEL_NUMBER,
+        /** Chunk frame Phases… | Stage… row — two drill-in buttons. */
+        FRAME_PHASES,
+        FRAME_STAGE,
+        /** Chunk frame All | None row. */
+        FRAME_ROOMS_ALL,
+        FRAME_ROOMS_NONE,
+        /**
+         * One chunk room's on/off toggle. Repeated once per room, so which room it is comes from the
+         * row ({@link Hovered#row}), not the cell.
+         */
+        FRAME_ROOM_TOGGLE,
+        /** Chunk frame Save — full-width. */
+        FRAME_SAVE
     }
 
     /**
@@ -142,7 +162,14 @@ public final class EditorPlotLabelsRenderer {
         NAME, NOTE, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
         DOOR_WALL,
         DOOR_OFFSET, ENTRANCE, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
-        ACTION, CONTENTS
+        ACTION, CONTENTS,
+        /**
+         * The chunk frame panel's rows. {@link #FRAME_ROOM} repeats once per chunk-dimension room,
+         * so a frame panel's row count follows the frame's sync snapshot
+         * ({@link games.brennan.dungeontrain.client.ChunkFrameRoomsClient}); {@link #FRAME_LOADING}
+         * stands in for the snapshot-backed rows until it arrives.
+         */
+        FRAME_DIMENSION, FRAME_LEVELS, FRAME_GATE, FRAME_ROOMS_ALL, FRAME_ROOM, FRAME_LOADING, FRAME_SAVE
     }
 
     /**
@@ -154,6 +181,7 @@ public final class EditorPlotLabelsRenderer {
 
     /** The rows {@code entry} shows, top to bottom. */
     public static RowKind[] rows(EditorPlotLabelsPacket.Entry entry) {
+        if (isFramePanel(entry)) return frameRows(entry);
         RowKind[] buf = new RowKind[RowKind.values().length];
         int n = 0;
         buf[n++] = RowKind.NAME;
@@ -188,6 +216,110 @@ public final class EditorPlotLabelsRenderer {
         if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
         if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
         return java.util.Arrays.copyOf(buf, n);
+    }
+
+    // ---------- chunk frame panel ----------
+
+    /** Whether {@code entry} is a chunk frame's panel. */
+    public static boolean isFramePanel(EditorPlotLabelsPacket.Entry entry) {
+        return entry.plotCategory() == PlotCategory.CHUNK_FRAMES;
+    }
+
+    /** The frame's rooms snapshot, only while the player stands in its plot (the rows that use it are in-plot only). */
+    public static java.util.Optional<games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket> frameSnapshot(
+        EditorPlotLabelsPacket.Entry entry
+    ) {
+        if (!entry.inPlot() || !isFramePanel(entry)) return java.util.Optional.empty();
+        return games.brennan.dungeontrain.client.ChunkFrameRoomsClient.snapshot(entry.modelName());
+    }
+
+    /**
+     * A frame panel's rows: Name, Dimension, Weight, Min|Max, Phases|Stage, All|None, one row per
+     * chunk room, Save. Everything but the name and the weight display needs the player in the plot;
+     * the Dimension and room rows need the sync snapshot too, and a Loading row stands in for them
+     * until it arrives.
+     */
+    private static RowKind[] frameRows(EditorPlotLabelsPacket.Entry entry) {
+        java.util.List<RowKind> buf = new java.util.ArrayList<>();
+        buf.add(RowKind.NAME);
+        if (!entry.note().isEmpty()) buf.add(RowKind.NOTE);
+        var snap = frameSnapshot(entry);
+        if (snap.isPresent()) buf.add(RowKind.FRAME_DIMENSION);
+        if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) buf.add(RowKind.WEIGHT);
+        if (entry.inPlot()) {
+            buf.add(RowKind.FRAME_LEVELS);
+            buf.add(RowKind.FRAME_GATE);
+            if (snap.isPresent()) {
+                buf.add(RowKind.FRAME_ROOMS_ALL);
+                for (int i = 0; i < snap.get().rooms().size(); i++) buf.add(RowKind.FRAME_ROOM);
+            } else {
+                buf.add(RowKind.FRAME_LOADING);
+            }
+            buf.add(RowKind.FRAME_SAVE);
+        }
+        return buf.toArray(new RowKind[0]);
+    }
+
+    /**
+     * The chunk room behind row {@code rowIdx} of a frame panel, or null when that row is not a room
+     * toggle. Rooms are listed in snapshot order from the first {@link RowKind#FRAME_ROOM} row down.
+     */
+    public static String frameRoomAt(EditorPlotLabelsPacket.Entry entry, int rowIdx) {
+        RowKind[] rows = rows(entry);
+        if (rowIdx < 0 || rowIdx >= rows.length || rows[rowIdx] != RowKind.FRAME_ROOM) return null;
+        int first = 0;
+        while (rows[first] != RowKind.FRAME_ROOM) first++;
+        var snap = frameSnapshot(entry);
+        if (snap.isEmpty()) return null;
+        java.util.List<String> rooms = snap.get().rooms();
+        int i = rowIdx - first;
+        return i < rooms.size() ? rooms.get(i) : null;
+    }
+
+    /** The Dimension row's three cells: command token and label, in display order. */
+    public static final String[] FRAME_DIM_TOKENS = {"bedrock", "void", "world_border"};
+    public static final String[] FRAME_DIM_LABELS = {"Bedrock lock", "Void", "World border"};
+
+    /** The Dimension row's cell at {@code hitX}. */
+    static CellKind frameDimensionCell(double halfW, double hitX) {
+        double w = halfW * 2.0;
+        if (hitX < -halfW + w / 3.0) return CellKind.FRAME_DIM_BEDROCK;
+        if (hitX < -halfW + 2.0 * w / 3.0) return CellKind.FRAME_DIM_VOID;
+        return CellKind.FRAME_DIM_WORLD_BORDER;
+    }
+
+    /** The command token a Dimension cell sends, or null for any other cell. */
+    public static String frameDimensionToken(CellKind cell) {
+        return switch (cell) {
+            case FRAME_DIM_BEDROCK -> FRAME_DIM_TOKENS[0];
+            case FRAME_DIM_VOID -> FRAME_DIM_TOKENS[1];
+            case FRAME_DIM_WORLD_BORDER -> FRAME_DIM_TOKENS[2];
+            default -> null;
+        };
+    }
+
+    /** {@code left} on the left half of the row, {@code right} on the right. */
+    private static CellKind halfCell(double hitX, CellKind left, CellKind right) {
+        return hitX < 0 ? left : right;
+    }
+
+    /** What a frame room toggle reads, e.g. {@code "ocean [ON]"}. */
+    public static String frameRoomLabel(String room, boolean on) {
+        return room + (on ? " [ON]" : " [OFF]");
+    }
+
+    /** The Stage cell's label for stage id {@code stageId} ({@code ""} = the frame's own gate). */
+    public static String frameStageLabel(String stageId) {
+        return "Stage: " + (stageId == null || stageId.isEmpty() ? "Custom" : stageId);
+    }
+
+    /**
+     * Whether the status overlay is reporting this frame. It is pushed separately from the panel
+     * snapshot, so for a tick after stepping between plots it can still describe the last one.
+     */
+    public static boolean statusIsFor(EditorPlotLabelsPacket.Entry entry) {
+        return PlotCategory.CHUNK_FRAMES.id().equals(games.brennan.dungeontrain.client.EditorStatusHudOverlay.category())
+            && entry.modelName().equals(games.brennan.dungeontrain.client.EditorStatusHudOverlay.modelName());
     }
 
     /**
@@ -700,8 +832,13 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /** Where the player's crosshair is currently pointing. */
-    public record Hovered(int entryIndex, CellKind cell) {
-        public static final Hovered NONE = new Hovered(-1, CellKind.NONE);
+    public record Hovered(int entryIndex, CellKind cell, int row) {
+        public static final Hovered NONE = new Hovered(-1, CellKind.NONE, -1);
+
+        /** A hit whose row does not matter — every cell but a repeated one. */
+        public Hovered(int entryIndex, CellKind cell) {
+            this(entryIndex, cell, -1);
+        }
     }
 
     /** Same composite as PartPositionMenuRenderer.PANEL_QUAD. */
@@ -748,6 +885,10 @@ public final class EditorPlotLabelsRenderer {
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
     /** Soft tint behind the action / contents buttons so they look pressable. */
     private static final int BUTTON_BG = 0x40FFEEBB;
+    /** The selected cell of a pick-one row — the keyboard menu's amber "this is the one you're on". */
+    private static final int LIT_BG = 0x80FFAA33;
+    /** A toggle that is on — the keyboard menu's toggle green. */
+    private static final int ON_BG = 0x8040AA40;
     /** Green border drawn around the panel when the player is inside a bundled-template plot. */
     private static final int BORDER_COLOR_BUNDLED = 0xFF55FF55;
     /** Blue border drawn around the panel when the player is inside a user-authored plot. */
@@ -851,7 +992,13 @@ public final class EditorPlotLabelsRenderer {
             // ...and Auto also drops whatever is too far off to be what you're working on.
             if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) continue;
             CellKind hitCell = (hovered.entryIndex == i) ? hovered.cell : CellKind.NONE;
-            drawPanel(ps, buffer, font, cam, anchor, entry, hitCell);
+            int hitRow = (hovered.entryIndex == i) ? hovered.row : -1;
+            // A frame panel's settings rows draw from the frame's sync snapshot; keep it fresh
+            // while the player stands in the plot (throttled, and pushed after every edit anyway).
+            if (entry.inPlot() && isFramePanel(entry)) {
+                games.brennan.dungeontrain.client.ChunkFrameRoomsClient.requestThrottled(entry.modelName());
+            }
+            drawPanel(ps, buffer, font, cam, anchor, entry, hitCell, hitRow);
         }
 
         buffer.endBatch(PANEL_QUAD);
@@ -913,7 +1060,32 @@ public final class EditorPlotLabelsRenderer {
             w = Math.max(w, measure.applyAsInt(exitMoveLabel(entry.roomMode())) * 3 * TEXT_SCALE
                 + 2 * PAD_X);
         }
+        if (isFramePanel(entry) && entry.inPlot()) {
+            w = Math.max(w, frameWidth(entry, measure));
+        }
         return w / 2.0;
+    }
+
+    /**
+     * The full width a frame panel's own rows need: the widest of its three-cell row, its half-cell
+     * rows and its room toggles, each cell with padding on both sides.
+     */
+    private static double frameWidth(EditorPlotLabelsPacket.Entry entry,
+                                     java.util.function.ToIntFunction<String> measure) {
+        int third = 0;
+        for (String label : FRAME_DIM_LABELS) third = Math.max(third, measure.applyAsInt(label));
+        double w = 3 * (third * TEXT_SCALE + 2 * PAD_X);
+        int half = Math.max(measure.applyAsInt("Max Lv all"), measure.applyAsInt("Phases…"));
+        half = Math.max(half, measure.applyAsInt(frameStageLabel(
+            statusIsFor(entry) ? games.brennan.dungeontrain.client.EditorStatusHudOverlay.stageId() : "")));
+        w = Math.max(w, 2 * (half * TEXT_SCALE + 2 * PAD_X));
+        var snap = frameSnapshot(entry);
+        if (snap.isPresent()) {
+            for (String room : snap.get().rooms()) {
+                w = Math.max(w, measure.applyAsInt(frameRoomLabel(room, false)) * TEXT_SCALE + 2 * PAD_X);
+            }
+        }
+        return w;
     }
 
     /**
@@ -931,7 +1103,8 @@ public final class EditorPlotLabelsRenderer {
 
     /** "Enter" row — visible only when the player is already inside this plot. */
     public static boolean hasEnterRow(EditorPlotLabelsPacket.Entry entry) {
-        return entry.inPlot() && !entry.category().isEmpty();
+        // Not a frame: its Enter would go through the action packet, which frames have no handler for.
+        return entry.inPlot() && !entry.category().isEmpty() && !isFramePanel(entry);
     }
 
     public static double halfHeight(EditorPlotLabelsPacket.Entry entry) {
@@ -1004,6 +1177,14 @@ public final class EditorPlotLabelsRenderer {
      * {@link Font} — everything below it is pure arithmetic over the row list, which is exactly
      * the part worth testing.</p>
      */
+    /** The row index (0 = name) under panel-local {@code hitY}, or -1 off the panel. */
+    public static int rowIndexAt(EditorPlotLabelsPacket.Entry entry, double hitY) {
+        double halfH = halfHeight(entry);
+        if (hitY < -halfH || hitY > halfH) return -1;
+        int row = (int) Math.floor((halfH - hitY) / ROW_H);
+        return row < 0 || row >= rowCount(entry) ? -1 : row;
+    }
+
     public static CellKind cellAt(EditorPlotLabelsPacket.Entry entry, double halfW,
                                   double hitX, double hitY) {
         double halfH = halfHeight(entry);
@@ -1057,6 +1238,13 @@ public final class EditorPlotLabelsRenderer {
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
+            case FRAME_DIMENSION -> frameDimensionCell(halfW, hitX);
+            case FRAME_LEVELS -> halfCell(hitX, CellKind.FRAME_MIN_LEVEL_NUMBER, CellKind.FRAME_MAX_LEVEL_NUMBER);
+            case FRAME_GATE -> halfCell(hitX, CellKind.FRAME_PHASES, CellKind.FRAME_STAGE);
+            case FRAME_ROOMS_ALL -> halfCell(hitX, CellKind.FRAME_ROOMS_ALL, CellKind.FRAME_ROOMS_NONE);
+            case FRAME_ROOM -> CellKind.FRAME_ROOM_TOGGLE;
+            case FRAME_LOADING -> CellKind.NONE;
+            case FRAME_SAVE -> CellKind.FRAME_SAVE;
         };
     }
 
@@ -1099,7 +1287,7 @@ public final class EditorPlotLabelsRenderer {
     private static void drawPanel(
         PoseStack ps, MultiBufferSource buffer, Font font,
         Vec3 cam, Vec3 anchor,
-        EditorPlotLabelsPacket.Entry entry, CellKind hovered
+        EditorPlotLabelsPacket.Entry entry, CellKind hovered, int hoveredRow
     ) {
         Vec3[] b = EditorPanelFacing.basis(entry.worldPos(), anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
@@ -1370,10 +1558,89 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, MenuLang.t("editor.contents"), 0, rCY, BUTTON_TEXT_COLOR);
                 }
+                case FRAME_DIMENSION, FRAME_LEVELS, FRAME_GATE, FRAME_ROOMS_ALL, FRAME_ROOM, FRAME_LOADING, FRAME_SAVE ->
+                    drawFrameRow(ps, buffer, font, entry, rowKind, rowIdx, halfW, rTop, rBot, rCY,
+                        hovered, hoveredRow);
             }
         }
 
         ps.popPose();
+    }
+
+    /** One row of a chunk frame panel. */
+    private static void drawFrameRow(
+        PoseStack ps, MultiBufferSource buffer, Font font, EditorPlotLabelsPacket.Entry entry,
+        RowKind rowKind, int rowIdx, double halfW, double rTop, double rBot, double rCY,
+        CellKind hovered, int hoveredRow
+    ) {
+        var snap = frameSnapshot(entry);
+        boolean status = statusIsFor(entry);
+        switch (rowKind) {
+            case FRAME_DIMENSION -> {
+                drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                String current = snap.map(games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket::dimension).orElse("");
+                CellKind[] cells = {CellKind.FRAME_DIM_BEDROCK, CellKind.FRAME_DIM_VOID, CellKind.FRAME_DIM_WORLD_BORDER};
+                double w = halfW * 2.0;
+                for (int c = 0; c < 3; c++) {
+                    double l = -halfW + c * w / 3.0;
+                    double r = -halfW + (c + 1) * w / 3.0;
+                    boolean lit = FRAME_DIM_TOKENS[c].equals(current);
+                    drawFrameCell(ps, buffer, font, l, r, rTop, rBot, rCY, FRAME_DIM_LABELS[c],
+                        hovered == cells[c], lit ? LIT_BG : BUTTON_BG);
+                }
+            }
+            case FRAME_LEVELS -> {
+                drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                int min = games.brennan.dungeontrain.client.EditorStatusHudOverlay.minLevel();
+                int max = games.brennan.dungeontrain.client.EditorStatusHudOverlay.maxLevel();
+                String minText = "Min Lv " + (status ? Integer.toString(min) : "…");
+                String maxText = "Max Lv " + (status ? (max < 0 ? "all" : Integer.toString(max)) : "…");
+                drawFrameCell(ps, buffer, font, -halfW, 0, rTop, rBot, rCY, minText,
+                    hovered == CellKind.FRAME_MIN_LEVEL_NUMBER, BUTTON_BG);
+                drawFrameCell(ps, buffer, font, 0, halfW, rTop, rBot, rCY, maxText,
+                    hovered == CellKind.FRAME_MAX_LEVEL_NUMBER, BUTTON_BG);
+            }
+            case FRAME_GATE -> {
+                String stage = status ? games.brennan.dungeontrain.client.EditorStatusHudOverlay.stageId() : "";
+                drawFrameCell(ps, buffer, font, -halfW, 0, rTop, rBot, rCY, "Phases…",
+                    hovered == CellKind.FRAME_PHASES, BUTTON_BG);
+                drawFrameCell(ps, buffer, font, 0, halfW, rTop, rBot, rCY, frameStageLabel(stage),
+                    hovered == CellKind.FRAME_STAGE, stage.isEmpty() ? BUTTON_BG : LIT_BG);
+            }
+            case FRAME_ROOMS_ALL -> {
+                drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                boolean all = snap.map(games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket::all).orElse(false);
+                boolean none = snap.map(s -> s.selected().isEmpty()).orElse(false);
+                drawFrameCell(ps, buffer, font, -halfW, 0, rTop, rBot, rCY, "All",
+                    hovered == CellKind.FRAME_ROOMS_ALL, all ? LIT_BG : BUTTON_BG);
+                drawFrameCell(ps, buffer, font, 0, halfW, rTop, rBot, rCY, "None",
+                    hovered == CellKind.FRAME_ROOMS_NONE, none ? LIT_BG : BUTTON_BG);
+            }
+            case FRAME_ROOM -> {
+                String room = frameRoomAt(entry, rowIdx);
+                if (room == null) return;
+                boolean on = snap.map(s -> s.selected().contains(room)).orElse(false);
+                drawFrameCell(ps, buffer, font, -halfW, halfW, rTop, rBot, rCY, frameRoomLabel(room, on),
+                    hovered == CellKind.FRAME_ROOM_TOGGLE && hoveredRow == rowIdx, on ? ON_BG : BUTTON_BG);
+            }
+            case FRAME_LOADING -> drawCenteredText(ps, buffer, font, "Loading…", 0, rCY, LABEL_COLOR);
+            case FRAME_SAVE -> {
+                drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                drawFrameCell(ps, buffer, font, -halfW, halfW, rTop, rBot, rCY, MenuLang.t("common.save"),
+                    hovered == CellKind.FRAME_SAVE, BUTTON_BG);
+            }
+            default -> {}
+        }
+    }
+
+    /** One button spanning {@code [left, right]} of a row: its fill (hover wins over {@code bg}) and its label. */
+    private static void drawFrameCell(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        double left, double right, double rTop, double rBot, double rCY,
+        String label, boolean hovered, int bg
+    ) {
+        drawQuad(ps, buffer, left + 0.01, rBot + 0.005, right - 0.01, rTop - 0.005, hovered ? HOVER_COLOR : bg);
+        drawCenteredText(ps, buffer, font, label, (left + right) / 2.0, rCY, BUTTON_TEXT_COLOR);
     }
 
     /**

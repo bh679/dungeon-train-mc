@@ -180,7 +180,11 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 // Blank, or a copy of the frame being stood in. `enter` with a new name makes it;
                 // the optional trailing name is the frame it is copied from.
                 String prefix = "dungeontrain editor chunkframe enter";
-                out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank"), "name", prefix));
+                // A blank frame is one chunk (1x1) or a 3x3 room's — it can only dress rooms of its size.
+                out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank") + " 1x1", "name",
+                    "dungeontrain editor chunkframe new", "1x1"));
+                out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank") + " 3x3", "name",
+                    "dungeontrain editor chunkframe new", "3x3"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name", prefix, currentId));

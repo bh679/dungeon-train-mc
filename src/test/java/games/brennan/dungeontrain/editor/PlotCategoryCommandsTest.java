@@ -35,7 +35,8 @@ final class PlotCategoryCommandsTest {
         assertEquals("dungeontrain editor tracks weight pillar_top stone", cmd(PlotCategory.TRACKS, Verb.WEIGHT, "pillar_top", "stone"));
         assertEquals("dungeontrain editor portals weight portal_room library", cmd(PlotCategory.PORTALS, Verb.WEIGHT, "portal_room", "library"));
         assertEquals("dungeontrain editor buildings weight tower", cmd(PlotCategory.BUILDINGS, Verb.WEIGHT, "building", "tower"));
-        for (PlotCategory c : new PlotCategory[] {PlotCategory.PARTS, PlotCategory.CHUNK_FRAMES, PlotCategory.LOST_CITY,
+        assertEquals("dungeontrain editor chunkframe weight stone_frame", cmd(PlotCategory.CHUNK_FRAMES, Verb.WEIGHT, "chunk_frame", "stone_frame"));
+        for (PlotCategory c : new PlotCategory[] {PlotCategory.PARTS, PlotCategory.LOST_CITY,
                 PlotCategory.ARCHITECTURE, PlotCategory.WORKBENCH}) {
             assertEquals(Optional.empty(), c.command(Verb.WEIGHT, "x", "x"), c.name());
         }

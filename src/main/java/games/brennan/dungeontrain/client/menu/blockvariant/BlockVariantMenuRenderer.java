@@ -130,7 +130,11 @@ public final class BlockVariantMenuRenderer {
      * the single-letter T/R/B pill because "Off" is three glyphs: at the shared width the labels
      * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
      */
-    static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
+    /**
+     * One cell showing the row's On / R / Off and cycling on click — a three-segment pill used to
+     * crowd latching rows (trapdoors, doors, levers) until their name and icon had no room left.
+     */
+    static final double ACTIVE_MODE_CELL_WIDTH = 0.28;
     /** Def/Auto/Lock pill width — the fence / wall / pane connect-mode control (four-glyph-max labels). */
     static final double CONNECT_CELL_WIDTH = 0.96;
     /** Grow pill width — "Grow" or a column range such as "↓12-32". */
@@ -616,6 +620,13 @@ public final class BlockVariantMenuRenderer {
                     xCellR - 0.005, rowTop - 0.005, xTint);
                 drawCenteredText(ps, buffer, font, "X",
                     (xCellL + xCellR) / 2.0, rowCY, 0xFFFFFFFF);
+            }
+
+            // A waterlogged row looks like its dry block in the icon, so it carries a blue dot at the
+            // icon's top-left. Drawn last in the row: on a crowded row (a trapdoor's Off/half cells)
+            // the other cells overlap the icon, and the dot has to sit on top of them.
+            if (!entry.isMob() && parsed != null && games.brennan.dungeontrain.editor.VariantWaterlog.isWaterlogged(parsed)) {
+                drawWaterloggedDot(ps, buffer, nameCellL, rowCY);
             }
         }
 
@@ -1133,34 +1144,19 @@ public final class BlockVariantMenuRenderer {
                                            BlockVariantMenu.Hit hovered) {
         VariantActive.Mode mode = decodeActiveMode(entry.activeMode());
         boolean modeHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE && hovered.index() == rowIndex;
-
-        double pillBot = rowBottom + 0.02;
-        double pillTop = rowTop - 0.02;
-        double segW = (cellR - cellL - 0.02) / 3.0;
-        for (int seg = 0; seg < 3; seg++) {
-            double sL = cellL + 0.01 + seg * segW;
-            double sR = sL + segW - 0.005;
-            boolean selected = seg == mode.ordinal();
-            int tint;
-            if (selected) {
-                tint = switch (seg) {
-                    case 0 -> modeHover ? 0xC0FF6655 : 0x80CC3322; // ACTIVE red (powered)
-                    case 1 -> modeHover ? 0xC066AAFF : 0x8033679B; // RANDOM blue (shared)
-                    default -> modeHover ? 0xC099AAAA : 0x80557777; // INACTIVE slate
-                };
-            } else {
-                tint = modeHover ? 0x60AAAAAA : 0x30777777;
-            }
-            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
-            String label = switch (seg) {
-                case 0 -> MenuLang.t("block_variant.active_on");
-                case 1 -> MenuLang.t("block_variant.active_random");
-                default -> MenuLang.t("block_variant.active_off");
-            };
-            drawCenteredText(ps, buffer, font, label,
-                (sL + sR) / 2.0, rowCY,
-                selected ? 0xFFFFFFFF : 0xFF888888);
-        }
+        // One cell, the current setting in its colour; a click steps On → R → Off (the input handler).
+        int tint = switch (mode) {
+            case ACTIVE -> modeHover ? 0xC0FF6655 : 0x80CC3322;   // powered red
+            case RANDOM -> modeHover ? 0xC066AAFF : 0x8033679B;   // shared blue
+            case INACTIVE -> modeHover ? 0xC099AAAA : 0x80557777; // slate
+        };
+        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        String label = switch (mode) {
+            case ACTIVE -> MenuLang.t("block_variant.active_on");
+            case RANDOM -> MenuLang.t("block_variant.active_random");
+            case INACTIVE -> MenuLang.t("block_variant.active_off");
+        };
+        drawCenteredText(ps, buffer, font, label, (cellL + cellR) / 2.0, rowCY, 0xFFFFFFFF);
     }
 
     /**
@@ -1573,6 +1569,23 @@ public final class BlockVariantMenuRenderer {
         font.drawInBatch(text, 0, y, colour, false, mat, buffer,
             Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
         ps.popPose();
+    }
+
+    /** Water blue, opaque. */
+    private static final int WATERLOGGED_DOT = 0xFF3F76E4;
+
+    /** How wide the waterlogged dot is, in panel units. */
+    private static final double WATERLOGGED_DOT_SIZE = 0.06;
+
+    /**
+     * The waterlogged mark: a small blue square at the top-left corner of a row's icon. It sits
+     * mostly in the gap left of the icon, because the icons are drawn after the panel's quads and
+     * would cover anything placed inside them.
+     */
+    static void drawWaterloggedDot(PoseStack ps, MultiBufferSource buffer, double cellLeftX, double rowCY) {
+        double left = cellLeftX + ICON_LEFT_PAD - WATERLOGGED_DOT_SIZE * 0.6;
+        double top = rowCY + ICON_SIZE / 2.0;
+        drawQuad(ps, buffer, left, top - WATERLOGGED_DOT_SIZE, left + WATERLOGGED_DOT_SIZE, top, WATERLOGGED_DOT);
     }
 
     static void drawQuad(PoseStack ps, MultiBufferSource buffer,

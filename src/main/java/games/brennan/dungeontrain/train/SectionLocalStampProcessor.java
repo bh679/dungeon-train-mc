@@ -103,6 +103,10 @@ final class SectionLocalStampProcessor extends StructureProcessor {
         // placement. Guard defensively so a stray decode can't NPE.
         if (level == null || target == null) return;
         BlockState state = target.state();
+        if (games.brennan.dungeontrain.block.ForcedAir.writesAir(state)) {
+            SilentBlockOps.setBlockSectionLocal(level, target.pos(), Blocks.AIR.defaultBlockState());
+            return;
+        }
         if (state.isAir() || state.is(Blocks.STRUCTURE_VOID)) return;
         BlockPos pos = target.pos();
         CompoundTag nbt = target.nbt();

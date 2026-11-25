@@ -134,12 +134,12 @@ public enum PlotCategory {
 
     /** Whether templates here have a spawn-weight pool to bump. False for parts and architecture. */
     public boolean hasWeightPool() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != LOST_CITY && this != WORKBENCH;
+        return this != PARTS && this != ARCHITECTURE && this != LOST_CITY && this != WORKBENCH;
     }
 
     /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
     public boolean hasGate() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != BUILDINGS && this != LOST_CITY
+        return this != PARTS && this != ARCHITECTURE && this != BUILDINGS && this != LOST_CITY
             && this != WORKBENCH;
     }
 
@@ -254,7 +254,8 @@ public enum PlotCategory {
                     .word(Verb.ENTER, GOTO).word(Verb.REMOVE, DELETE).clearable();
             case LOST_CITY -> Commands.of(ROOT + " buildings lostcity", Address.NAME)
                     .word(Verb.ENTER, GOTO);
-            case CHUNK_FRAMES -> Commands.of(ROOT + " chunkframe", Address.NAME, Verb.ENTER)
+            case CHUNK_FRAMES -> Commands.of(ROOT + " chunkframe", Address.NAME,
+                    Verb.ENTER, Verb.WEIGHT, Verb.PHASE, Verb.PERIOD, Verb.LEVEL)
                     .word(Verb.REMOVE, DELETE).word(Verb.LABEL, "rename").clearable();
             case WORKBENCH -> Commands.of(ROOT + " workbench", Address.NAME)
                     .word(Verb.ENTER, GOTO).word(Verb.REMOVE, "remove").clearable();

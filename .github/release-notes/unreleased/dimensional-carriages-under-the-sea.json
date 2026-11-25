@@ -1,0 +1,20 @@
+{
+  "id": "dimensional-carriages-under-the-sea",
+  "version": "0.2010.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "Dimensional carriages under the sea",
+  "summary": "Some dimensional carriages now open under the sea.",
+  "highlights": [
+    "Builders get a Forced Air block and can waterlog block variants with a water bucket."
+  ],
+  "pr": 2873,
+  "date": "2026-11-25",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

@@ -43,6 +43,7 @@ public record ChunkFrameRoomsRequestPacket(String frame) implements CustomPacket
         ChunkFrameMeta meta = ChunkFrameMetaStore.get(frame);
         List<String> rooms = ChunkFrame.chunkRooms(frame);
         List<String> selected = rooms.stream().filter(meta::appliesTo).toList();
-        return new ChunkFrameRoomsSyncPacket(frame, rooms, selected, meta.allRooms(), meta.weight());
+        return new ChunkFrameRoomsSyncPacket(frame, rooms, selected, meta.allRooms(), meta.weight(),
+            meta.dimension().id());
     }
 }

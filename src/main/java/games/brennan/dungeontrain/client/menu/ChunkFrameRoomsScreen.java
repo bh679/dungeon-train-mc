@@ -39,6 +39,14 @@ public final class ChunkFrameRoomsScreen implements MenuScreen {
             return out;
         }
         ChunkFrameRoomsSyncPacket s = snap.get();
+        // How the rooms this frame dresses are enclosed — one of three, the chosen one lit.
+        String dim = COMMAND + " dimension " + frame + " ";
+        String current = s.dimension();
+        out.add(new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Stay("Bedrock lock", dim + "bedrock", "bedrock".equals(current)),
+            new CommandMenuEntry.Stay("Void", dim + "void", "void".equals(current)),
+            new CommandMenuEntry.Stay("World border", dim + "world_border", "world_border".equals(current)),
+            1.0 / 3.0, 2.0 / 3.0));
         out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Stay("All", COMMAND + " rooms " + frame + " all", s.all()),
             new CommandMenuEntry.Stay("None", COMMAND + " rooms " + frame + " none", s.selected().isEmpty()),

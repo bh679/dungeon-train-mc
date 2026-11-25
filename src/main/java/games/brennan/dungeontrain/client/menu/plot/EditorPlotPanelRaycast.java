@@ -95,7 +95,8 @@ public final class EditorPlotPanelRaycast {
             if (cell == CellKind.NONE) continue;
 
             closestT = t;
-            closest = new Hovered(i, cell);
+            // The row too: a frame panel repeats its room toggle row, so the cell alone can't say which.
+            closest = new Hovered(i, cell, EditorPlotLabelsRenderer.rowIndexAt(entry, hitY));
         }
 
         EditorPlotLabelsRenderer.setHovered(closest);

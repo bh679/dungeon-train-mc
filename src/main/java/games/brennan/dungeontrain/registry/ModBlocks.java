@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.ForcedAirBlock;
 import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
@@ -167,6 +168,31 @@ public final class ModBlocks {
         "variant_placeholder", () -> new BlockItem(VARIANT_PLACEHOLDER.get(), new Item.Properties()));
 
     /**
+     * Forced Air — air in the editor, and written as plain air over water or terrain in live runs.
+     * See {@link ForcedAirBlock} and {@link games.brennan.dungeontrain.block.ForcedAir}. Properties
+     * follow vanilla's light block: replaceable, unbreakable, no drops, no occlusion.
+     */
+    public static final DeferredBlock<ForcedAirBlock> FORCED_AIR = BLOCKS.register(
+        "forced_air",
+        () -> new ForcedAirBlock(
+            BlockBehaviour.Properties.of()
+                .mapColor(MapColor.NONE)
+                .replaceable()
+                .strength(-1.0F, 3600000.8F)
+                .noLootTable()
+                .noOcclusion()
+                .noTerrainParticles()
+                .isValidSpawn((state, level, pos, type) -> false)
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos) -> false)
+                .pushReaction(PushReaction.DESTROY)
+        )
+    );
+
+    public static final DeferredItem<BlockItem> FORCED_AIR_ITEM = BLOCK_ITEMS.register(
+        "forced_air", () -> new BlockItem(FORCED_AIR.get(), new Item.Properties()));
+
+    /**
      * Exposure's hanging photo frame as blocks, so it rides the train — see {@link PhotographFrameBlock}.
      * No {@link BlockItem}: players hang it with Exposure's own frame items. Breaks in one hit like
      * the entity; drops come from the block entity, not a loot table.
@@ -240,6 +266,7 @@ public final class ModBlocks {
             event.accept(SKYBOX_NIGHT_ITEM.get());
             event.accept(SKYBOX_SUNRISE_ITEM.get());
             event.accept(VARIANT_PLACEHOLDER_ITEM.get());
+            event.accept(FORCED_AIR_ITEM.get());
             event.accept(ENGINE_BLOCK_ITEM.get());
         }
     }

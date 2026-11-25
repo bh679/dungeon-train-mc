@@ -145,11 +145,31 @@ public final class ChunkFrameEditor {
      * Stamp {@code name}'s plot and put {@code player} on it. {@code copyOf} seeds a new frame from an
      * existing one; null stamps what is saved, or an empty plot for a new name.
      */
+    /**
+     * Make blank frame {@code name} at {@code frameSize} — a one-chunk frame's or a 3x3 room's — and
+     * put {@code player} on it. Written to disk straight away, as every new frame is ({@link #enter}).
+     */
+    public static void enterNew(ServerPlayer player, ServerLevel level, String name, Vec3i frameSize) {
+        if (ChunkFrameStore.readTag(name).isEmpty()) PENDING_SIZES.put(name, frameSize);
+        enter(player, level, name, null);
+    }
+
     public static void enter(ServerPlayer player, ServerLevel level, String name, String copyOf) {
         EditorSessions.rememberReturn(player);
         // A copy starts at the size of what it copies, until its first save gives it a file of its own.
         if (copyOf != null && ChunkFrameStore.readTag(name).isEmpty()) {
             PENDING_SIZES.put(name, ChunkFrameStore.sizeOf(copyOf));
+        }
+        if (copyOf != null && !copyOf.equals(name) && ChunkFrameStore.readTag(name).isEmpty()) {
+            // A copy is the frame's blocks AND its sidecars: without them the duplicate came up with
+            // none of its variants, room selection or chest links. Before the plot is stamped, so the
+            // plot loads the copied variants rather than an empty sidecar.
+            try {
+                copySidecars(copyOf, name, EditorDevMode.isEnabled());
+            } catch (java.io.IOException e) {
+                LOGGER.warn("[DungeonTrain] Chunk frame editor: could not copy {}'s sidecars to {}: {}",
+                    copyOf, name, e.toString());
+            }
         }
         ChunkFrameRegistry.register(name);
         SESSIONS.put(player.getUUID(), name);
@@ -158,6 +178,31 @@ public final class ChunkFrameEditor {
         EditorPlotArrival.land(player, level, origin, plotSize(name), true, EditorPlotArrival.Inside.CENTRE, null);
         LOGGER.info("[DungeonTrain] Chunk frame editor: {} entered {} at {}{}", player.getName().getString(),
             name, origin, copyOf != null ? " (copy of " + copyOf + ")" : "");
+        // A frame exists from the moment it is made: a new frame, or a copy, is written to disk now,
+        // as stamped. Until then it had only its settings and variants, no structure, so it vanished
+        // on the next restart — and with nothing changed in its blocks there was nothing to Save.
+        if (ChunkFrameStore.readTag(name).isEmpty()) {
+            try {
+                save(player, level, name);
+                LOGGER.info("[DungeonTrain] Chunk frame editor: wrote new frame {} on creation", name);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Chunk frame editor: could not write new frame {}: {}", name, e.toString());
+            }
+        }
+    }
+
+    /**
+     * Copy every sidecar of frame {@code from} onto {@code to}: its block variants, its meta (which
+     * rooms it dresses, its weight, its gate and its dimension) and its chest links. The {@code .nbt}
+     * is the caller's to write.
+     */
+    public static void copySidecars(String from, String to, boolean toSource) throws java.io.IOException {
+        var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(ChunkFrameVariants.loadFor(from));
+        ChunkFrameVariants.save(to, variants, toSource);
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.save(to,
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(from), toSource);
+        TemplateCopy.copy(new games.brennan.dungeontrain.template.Template.ChunkFrame(from),
+            new games.brennan.dungeontrain.template.Template.ChunkFrame(to));
     }
 
     /**

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the 3x3 room frames from stone_frame.
+"""Build the 3x3 room frames from the one-chunk frames.
 
 A frame is the room box plus a one-block shell: stone_frame is 18 x 34 x 18 for the one-chunk
 room, and a 3x3 room (48 x 32 x 48) takes a 50 x 34 x 50 frame. Each 3x3 frame here is stone_frame
@@ -10,6 +10,12 @@ rolls. Once generated they are ordinary frames: open, edit and save them in the 
     stone_frame_bays       stone_frame's inside tiled 3x3: nine bays marked by pillars and beams
     stone_frame_hall       corners kept, the 5-block post and beam rhythm carried on, mirrored at the middle
     stone_frame_courtyard  the hall's walls and corners only: floor and roof open past a 2-block rim
+    watertunnelframe_3x3       watertunnelframe as a hall, its glass-floored air tube run the whole
+                               length along the door line
+    underwatertunnelframe_3x3  underwatertunnelframe the same way, for the 3x3 underwater room
+
+A generated frame's .frame.json (rooms, weight, spawn gate) is only written when it is missing, so
+settings changed in the editor survive a re-run.
 
 Usage:
     python3 scripts/portal/make-3x3-frames.py [--check]
@@ -27,7 +33,6 @@ from nbt import COMPOUND, INT, LIST, STRING, Tag, clone, get, put, read, write
 
 FRAMES = (Path(__file__).resolve().parents[2]
           / "src/main/resources/data/dungeontrain/chunk_frames")
-SOURCE = "stone_frame"
 
 OLD = 18   # stone_frame's width and depth
 NEW = 50   # a 3x3 room's frame: 48 + a one-block shell each side
@@ -89,10 +94,48 @@ def courtyard_keeps(x, y, z):
     return min(x, NEW - 1 - x, z, NEW - 1 - z) <= RIM
 
 
+def plain(mapping, keeps=None):
+    """A cell map from a per-axis mapping, with an optional filter of the cells kept."""
+    def cell(x, y, z):
+        if keeps is not None and not keeps(x, y, z):
+            return None
+        return mapping(x), y, mapping(z)
+    return cell
+
+
+TUBE_Z = (6, 12)     # the water frames' tube across Z, in the one-chunk frame (the door line)
+TUBE_Y = (13, 19)    # its rows: the doors' middle height, the same in both sizes
+TUBE_SHIFT = (NEW - OLD) // 2   # the door line moves from the one-chunk frame's middle to the 3x3's
+EMPTY_Z = 4          # an inside column with no tube, for the tube rows off the door line
+
+
+def tube(x, y, z):
+    """The hall, but one tube along the door line: copied 1:1 across Z, carried the whole length in X.
+
+    The hall's Z rhythm would repeat the tube's columns across the room; on the tube rows, a cell off
+    the door line that the hall maps onto the tube takes the plain column beside it instead.
+    """
+    if TUBE_Z[0] + TUBE_SHIFT <= z <= TUBE_Z[1] + TUBE_SHIFT:
+        return hall(x), y, z - TUBE_SHIFT
+    old_z = hall(z)
+    if TUBE_Y[0] <= y <= TUBE_Y[1] and TUBE_Z[0] - 1 <= old_z <= TUBE_Z[1] + 1:
+        old_z = EMPTY_Z
+    return hall(x), y, old_z
+
+
+def water_meta(weight):
+    return {"schemaVersion": 1, "weight": weight, "rooms": ["chunk_3x3_underwater"]}
+
+
+STONE_META = {"schemaVersion": 1, "weight": 1}
+
+# frame -> (source frame, cell map, .frame.json for a new frame)
 DESIGNS = {
-    "stone_frame_bays": (bays, bays_keeps),
-    "stone_frame_hall": (hall, None),
-    "stone_frame_courtyard": (hall, courtyard_keeps),
+    "stone_frame_bays": ("stone_frame", plain(bays, bays_keeps), STONE_META),
+    "stone_frame_hall": ("stone_frame", plain(hall), STONE_META),
+    "stone_frame_courtyard": ("stone_frame", plain(hall, courtyard_keeps), STONE_META),
+    "watertunnelframe_3x3": ("watertunnelframe", tube, water_meta(2)),
+    "underwatertunnelframe_3x3": ("underwatertunnelframe", tube, water_meta(5)),
 }
 
 
@@ -115,7 +158,7 @@ def air_state(template):
     return len(palette) - 1
 
 
-def build_frame(template, mapping, keeps):
+def build_frame(template, cell):
     out = clone(template)
     height = get(template, "size").value[1][1].value
     source = cells(template)
@@ -125,9 +168,8 @@ def build_frame(template, mapping, keeps):
         for z in range(NEW):
             for x in range(NEW):
                 pos = Tag(LIST, (INT, [Tag(INT, x), Tag(INT, y), Tag(INT, z)]))
-                old = source.get((mapping(x), y, mapping(z)))
-                if keeps is not None and not keeps(x, y, z):
-                    old = None
+                at = cell(x, y, z)
+                old = source.get(at) if at is not None else None
                 if old is None:
                     blocks.append(Tag(COMPOUND, [("pos", pos), ("state", Tag(INT, air))]))
                     continue
@@ -139,16 +181,17 @@ def build_frame(template, mapping, keeps):
     return out
 
 
-def build_variants(sidecar, height, mapping, keeps):
+def build_variants(sidecar, height, cell):
     out = {k: v for k, v in sidecar.items() if k != "variants"}
     variants = {}
     old = sidecar.get("variants", {})
     for y in range(height):
         for z in range(NEW):
             for x in range(NEW):
-                if keeps is not None and not keeps(x, y, z):
+                at = cell(x, y, z)
+                if at is None:
                     continue
-                entry = old.get(f"{mapping(x)},{y},{mapping(z)}")
+                entry = old.get(f"{at[0]},{at[1]},{at[2]}")
                 if entry is not None:
                     variants[f"{x},{y},{z}"] = entry
     out["variants"] = variants
@@ -174,19 +217,21 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    name, template = read(gzip.decompress((FRAMES / f"{SOURCE}.nbt").read_bytes()))
-    height = get(template, "size").value[1][1].value
-    sidecar = json.loads((FRAMES / f"{SOURCE}.variants.json").read_text())
     stale = []
-    for frame, (mapping, keeps) in DESIGNS.items():
+    for frame, (source_name, cell, meta) in DESIGNS.items():
+        name, template = read(gzip.decompress((FRAMES / f"{source_name}.nbt").read_bytes()))
+        height = get(template, "size").value[1][1].value
+        sidecar = json.loads((FRAMES / f"{source_name}.variants.json").read_text())
         outputs = {
-            f"{frame}.nbt": gzip.compress(write(name, build_frame(template, mapping, keeps)), mtime=0),
-            f"{frame}.variants.json": sidecar_text(build_variants(sidecar, height, mapping, keeps)).encode(),
-            f"{frame}.frame.json": (json.dumps({"schemaVersion": 1, "weight": 1}, indent=2) + "\n").encode(),
+            f"{frame}.nbt": gzip.compress(write(name, build_frame(template, cell)), mtime=0),
+            f"{frame}.variants.json": sidecar_text(build_variants(sidecar, height, cell)).encode(),
+            f"{frame}.frame.json": (json.dumps(meta, indent=2) + "\n").encode(),
         }
         for file, data in outputs.items():
             path = FRAMES / file
             current = path.read_bytes() if path.exists() else None
+            if file.endswith(".frame.json") and current is not None:
+                continue  # the editor owns it once it exists
             if file.endswith(".nbt") and current is not None:
                 same = gzip.decompress(current) == gzip.decompress(data)
             else:

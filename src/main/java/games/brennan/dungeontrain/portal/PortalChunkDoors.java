@@ -71,9 +71,43 @@ public final class PortalChunkDoors {
         if (slice == null) return settings;
         int[] zSpan = doorwayColumns(dims, layout, size, settings.doorOffset().value());
         int max = PortalRoomLayout.maxDoorHeightOffset(dims, size.getY());
+        if (slice.source().underwater()) {
+            // An underwater room's doors are not stood on the seabed: both open at the middle of the
+            // box, so a player swims in mid-water whatever height the floor rolled.
+            int middle = middleDoorRow(max);
+            LOGGER.info("[DungeonTrain] Chunk dimension doors: underwater, both at middle row {} (of {} allowed)",
+                middle, max);
+            return settings
+                .withDoorHeightOffset(new PortalRoomDoorHeightOffset(middle))
+                .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(middle));
+        }
+
+        // A 3x3 room's mouth can open onto nothing — an island's edge, a cliff, open sea floor. Such a
+        // doorway is slid sideways along the end face (its lateral offset) until it meets ground, so a
+        // door always starts against a block. Each end on its own.
+        int[] exitSpan = zSpan;
+        if (PortalChunkArea.span(size) > 1) {
+            int entryOffset = groundedOffset(slice, dims, layout, size, 0, MOUTH_DEPTH - 1,
+                settings.doorOffset().value(), max);
+            int exitOffset = groundedOffset(slice, dims, layout, size, size.getX() - MOUTH_DEPTH, size.getX() - 1,
+                settings.exitDoorOffset().value(), max);
+            if (entryOffset != settings.doorOffset().value()) {
+                LOGGER.info("[DungeonTrain] Chunk dimension doors: entry slid sideways {} -> {} onto ground",
+                    settings.doorOffset().value(), entryOffset);
+            }
+            if (exitOffset != settings.exitDoorOffset().value()) {
+                LOGGER.info("[DungeonTrain] Chunk dimension doors: exit slid sideways {} -> {} onto ground",
+                    settings.exitDoorOffset().value(), exitOffset);
+            }
+            settings = settings
+                .withDoorOffset(new PortalRoomDoorOffset(entryOffset))
+                .withExitDoorOffset(new PortalRoomDoorOffset(exitOffset));
+            zSpan = doorwayColumns(dims, layout, size, entryOffset);
+            exitSpan = doorwayColumns(dims, layout, size, exitOffset);
+        }
 
         int entryGround = groundRow(slice, 0, MOUTH_DEPTH - 1, zSpan[0], zSpan[1], max);
-        int exitGround = groundRow(slice, size.getX() - MOUTH_DEPTH, size.getX() - 1, zSpan[0], zSpan[1], max);
+        int exitGround = groundRow(slice, size.getX() - MOUTH_DEPTH, size.getX() - 1, exitSpan[0], exitSpan[1], max);
         int entry = orAuthored(entryGround, settings.doorHeightOffset().value());
         int exit = orAuthored(exitGround, settings.exitDoorHeightOffset().value());
 
@@ -94,6 +128,42 @@ public final class PortalChunkDoors {
      * built on it. Standing that door on a row of terrain that is not under it hung it in the air
      * (the 64-wide courtyard's two doors, eight rows over its own floor).</p>
      */
+    /**
+     * The lateral door offset, nearest {@code preferred}, whose mouth (columns {@code xFrom..xTo}) has
+     * ground under it — {@code preferred} itself when it already has, or when no offset the box allows
+     * does (then nothing better exists and the door stays where the author put it).
+     */
+    static int groundedOffset(PortalChunkSlice slice, CarriageDims dims, PortalCarriageLayout layout, Vec3i size,
+                              int xFrom, int xTo, int preferred, int max) {
+        int limit = PortalRoomLayout.maxDoorOffset(dims, size.getZ());
+        int start = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), preferred);
+        for (int step = 0; step <= 2 * limit; step++) {
+            for (int sign : new int[] {1, -1}) {
+                if (step == 0 && sign < 0) continue;
+                int offset = start + sign * step;
+                if (offset < -limit || offset > limit) continue;
+                int[] span = doorwayColumns(dims, layout, size, offset);
+                if (mouthHasGround(slice, xFrom, xTo, span[0], span[1], max)) return offset;
+            }
+        }
+        return preferred;
+    }
+
+    /** True when any column of the mouth has real ground under the box's cap — not empty to the floor. */
+    static boolean mouthHasGround(PortalChunkSlice slice, int xFrom, int xTo, int zFrom, int zTo, int max) {
+        for (int x = Math.max(0, xFrom); x <= xTo && x < slice.width(); x++) {
+            for (int z = Math.max(0, zFrom); z <= zTo && z < slice.width(); z++) {
+                if (surfaceOf(slice, x, z, max) != 0) return true;
+            }
+        }
+        return false;
+    }
+
+    /** The door row that centres a doorway in the box: half the offset the box can spend. */
+    static int middleDoorRow(int maxOffset) {
+        return Math.max(0, maxOffset / 2);
+    }
+
     private static int orAuthored(int ground, int authored) {
         return ground == OUTSIDE_SAMPLE ? authored : ground;
     }
@@ -106,7 +176,7 @@ public final class PortalChunkDoors {
      * measured here are the columns a player walks through. Held inside the room's own interior,
      * since the ±Z walls are the template's and carry no ground.</p>
      */
-    private static int[] doorwayColumns(CarriageDims dims, PortalCarriageLayout layout, Vec3i size,
+    static int[] doorwayColumns(CarriageDims dims, PortalCarriageLayout layout, Vec3i size,
                                         int doorOffset) {
         BlockPos room = PortalRoomLayout.roomOrigin(BlockPos.ZERO, dims, layout, size.getZ(), doorOffset);
         int min = Math.max(1, -room.getZ());

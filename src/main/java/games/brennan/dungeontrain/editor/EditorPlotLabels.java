@@ -348,7 +348,27 @@ public final class EditorPlotLabels {
         for (int i = 0; i < out.size(); i++) {
             out.set(i, withRoomFacts(out.get(i), out.get(i).modelName(), dims));
         }
+        // After the room loop, so a frame never carries a room's size or settings tag: the frame
+        // panel draws its own rows from the frame's sync packet and the status packet instead.
+        addChunkFrameLabels(out);
         return out;
+    }
+
+    /**
+     * One panel per chunk frame, over its plot beside the Dimensions rooms. Category
+     * {@code CHUNK_FRAMES} and model id {@code chunk_frame}, so it can never be mistaken for a portal
+     * room of the same name.
+     */
+    private static void addChunkFrameLabels(List<Label> out) {
+        String category = PlotCategory.CHUNK_FRAMES.name();
+        for (String name : games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names()) {
+            BlockPos origin = ChunkFrameEditor.registeredPlotOrigin(name);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(name));
+            int weight = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(name).weight();
+            out.add(new Label(anchorAbove(origin, ChunkFrameEditor.plotSize(name)),
+                name, weight, category, ChunkFrameEditor.MODEL_ID, name, false, p.isUser, p.isImported));
+        }
     }
 
     /**

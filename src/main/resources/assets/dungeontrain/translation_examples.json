@@ -15191,6 +15191,24 @@
       ]
     }
   },
+  "chat.dungeontrain.editor_bar.variant_menu.waterlogged": {
+    "1": {
+      "label": "block name",
+      "examples": [
+        "Oak Stairs",
+        "Stone Brick Slab"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_menu.dried": {
+    "1": {
+      "label": "block name",
+      "examples": [
+        "Oak Stairs",
+        "Stone Brick Slab"
+      ]
+    }
+  },
   "chat.dungeontrain.editor_bar.variant_menu.replaced_block": {
     "1": {
       "label": "old block name",

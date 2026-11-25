@@ -36,7 +36,9 @@ class PortalChunkDimensionTest {
 
         // Nothing else generates, and Bedrock still seals exactly what it always did.
         for (PortalRoomMode other : PortalRoomMode.values()) {
-            if (other != mode) assertTrue(!other.generatesTerrain(), other + " must not generate terrain");
+            // The frame-enclosed chunk modes are the same terrain under Void or World Border.
+            boolean chunk = other == PortalRoomMode.CHUNK_VOID || other == PortalRoomMode.CHUNK_WORLD_BORDER;
+            if (other != mode && !chunk) assertTrue(!other.generatesTerrain(), other + " must not generate terrain");
         }
         assertTrue(PortalRoomMode.BEDROCK.sealsRoomBox());
         assertTrue(PortalRoomMode.BEDROCK.sealsCorridors());

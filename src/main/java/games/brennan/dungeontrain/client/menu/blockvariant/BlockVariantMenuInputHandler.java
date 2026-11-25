@@ -127,6 +127,14 @@ public final class BlockVariantMenuInputHandler {
         return true;
     }
 
+    /** A right-click on any of a row's cells but its number cells, holding a water bucket — the waterlog toggle. */
+    private static boolean isWaterBucketOnRow(BlockVariantMenu.Hit hit) {
+        if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT || !isRowCell(hit.kind()) || isNumberCell(hit)) return false;
+        if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return false;
+        net.minecraft.client.player.LocalPlayer me = Minecraft.getInstance().player;
+        return me != null && me.getMainHandItem().is(net.minecraft.world.item.Items.WATER_BUCKET);
+    }
+
     /** The cells drawn on a variant row, whose {@code index} is that row. */
     private static boolean isRowCell(BlockVariantMenu.CellKind kind) {
         return switch (kind) {
@@ -165,6 +173,16 @@ public final class BlockVariantMenuInputHandler {
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !shift && openGroupPanel(hit)) return;
         // Otherwise right-click is a number cell's step-down and nothing else — on any other cell
         // it is swallowed (the press was already cancelled so nothing is placed).
+        // Right-click anywhere on a row (name, On/R/Off, half, rotation…) holding a water bucket
+        // waterlogs that row's block, or dries it. Number cells keep right-click as their step-down.
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && isWaterBucketOnRow(hit)) {
+            net.minecraft.core.BlockPos waterAt = BlockVariantMenu.localPos();
+            if (waterAt != null) {
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.TOGGLE_WATERLOGGED, BlockVariantMenu.variantId(), waterAt, hit.index(), "", 0));
+            }
+            return;
+        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
@@ -381,6 +399,13 @@ public final class BlockVariantMenuInputHandler {
                 if (shift) {
                     DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                         BlockVariantEditPacket.Op.REPLACE_WITH_HELD, variantId, local, hit.index(), "", 0));
+                    return;
+                }
+                // Right-click holding a water bucket waterlogs the row's block (or dries it).
+                net.minecraft.client.player.LocalPlayer me = net.minecraft.client.Minecraft.getInstance().player;
+                if (button == 1 && me != null && me.getMainHandItem().is(net.minecraft.world.item.Items.WATER_BUCKET)) {
+                    DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.TOGGLE_WATERLOGGED, variantId, local, hit.index(), "", 0));
                     return;
                 }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());

@@ -876,6 +876,32 @@ public final class PortalCarriageBuilder {
      * the stronger case of the two: the kind decides how far apart the twins stand, so a pair that
      * re-drew it mid-visit would move the exit frame out from under a player walking back.</p>
      */
+    /**
+     * {@code settings} enclosed as the frame that will dress the room says: sealed, Void or World
+     * Border ({@link games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension}). Decided when
+     * the pair is planned, with the mode, so the skin or sweep, the lane claim, the fog and the border
+     * all follow from it as they do for any other room. One-chunk boxes only: that is all a frame
+     * dresses. Shared by play and Test the Carriage.
+     */
+    public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
+                                                     net.minecraft.core.Vec3i size, PortalRoomSettings settings) {
+        return framedEnclosure(level, roomName, pairKey, size, settings, null);
+    }
+
+    /** {@link #framedEnclosure} with the frame picked among those whose spawn gate admits {@code gateCtx}. */
+    public static PortalRoomSettings framedEnclosure(ServerLevel level, String roomName, int pairKey,
+                                                     net.minecraft.core.Vec3i size, PortalRoomSettings settings,
+                                                     games.brennan.dungeontrain.template.GateContext gateCtx) {
+        if (!settings.mode().generatesTerrain()
+                || !games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.validSize(
+                    games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.sizeFor(size))) {
+            return settings;
+        }
+        PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
+            .dimensionFor(level, roomName, pairKey, gateCtx).roomMode(settings.mode());
+        return framed == settings.mode() ? settings : settings.withMode(framed);
+    }
+
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
                                                 BlockPos entryOrigin, int pairKey,
                                                 PortalTwinRegion region,
@@ -926,6 +952,7 @@ public final class PortalCarriageBuilder {
             PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
             if (slice == null) return null;
             settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
+            settings = framedEnclosure(level, roomName, pairKey, size, settings, gateCtx);
         }
 
         // Where this pair stands its exit, decided here with everything else about the pair and then
@@ -1050,6 +1077,12 @@ public final class PortalCarriageBuilder {
             bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
+            // A chunk of terrain enclosed as Void or World Border has no skin, and its sea or lava
+            // runs right up to the box's faces. Fluid must never leave it — not even after a restart,
+            // when the fluid barrier no longer knows the room is there — so it gets a skin that only
+            // fluid notices: invisible, walk-through, and refusing every fluid (ForcedAirBlock).
+            BlockState guard = fluidGuardFor(structure.mode());
+            if (guard != null) bedrockSkin(level, roomOrigin, roomSize, guard);
         } else if (structure.mode().tiles()) {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
@@ -1238,7 +1271,11 @@ public final class PortalCarriageBuilder {
             // A chunk dimension has no floor row of its own to fall back on — its bottom row is
             // sampled terrain — so an open cell of its end column seals with its lock skin, the sky
             // the whole chunk stands in, rather than with a slab of stone across open air.
-            base.mode().generatesTerrain() ? lockStateFor(base) : null);
+            // Under a frame's Void or World Border there is no skin to match: those cells take the
+            // fluid guard, open to walk through but closed to the room's water.
+            base.mode().generatesTerrain()
+                ? (base.mode().sealsRoomBox() ? lockStateFor(base) : fluidGuardOrAir(base.mode()))
+                : null);
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -1352,6 +1389,22 @@ public final class PortalCarriageBuilder {
      * room. The corridor's own ring stops one column short of the same plane for the mirror-image
      * reason: bedrock there would frame the doorway.</p>
      */
+    /**
+     * The skin a room that generates terrain but is not sealed gets so its fluids stay in: Forced
+     * Air, which looks and walks like air but no fluid can enter. Null for every other mode — a sealed
+     * room has its lock, and an authored Void room is its author's to make watertight.
+     */
+    static BlockState fluidGuardFor(PortalRoomMode mode) {
+        if (mode == null || !mode.generatesTerrain() || mode.sealsRoomBox()) return null;
+        if (!games.brennan.dungeontrain.registry.ModBlocks.FORCED_AIR.isBound()) return null;
+        return games.brennan.dungeontrain.registry.ModBlocks.FORCED_AIR.get().defaultBlockState();
+    }
+
+    private static BlockState fluidGuardOrAir(PortalRoomMode mode) {
+        BlockState guard = fluidGuardFor(mode);
+        return guard != null ? guard : Blocks.AIR.defaultBlockState();
+    }
+
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                     BlockState lock) {
         int x0 = roomOrigin.getX() - 1;
