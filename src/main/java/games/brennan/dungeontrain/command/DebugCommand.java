@@ -702,9 +702,13 @@ public final class DebugCommand {
         long dropped = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.dropped();
         long kept = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.kept();
         int rooms = games.brennan.dungeontrain.portal.PortalRoomSaveHold.heldChunks();
+        long judged = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.judged();
+        long cacheHits = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.terrainCacheHits();
+        long cacheMisses = games.brennan.dungeontrain.worldgen.UntouchedChunkSaves.terrainCacheMisses();
         boolean off = !games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDropUntouchedWorldGen();
         source.sendSuccess(() -> Component.literal(
-            "[DungeonTrain] Chunk saves: dropped=" + dropped + " chunks, kept=" + kept + " saves, roomChunks=" + rooms + " held"
+            "[DungeonTrain] Chunk saves: dropped=" + dropped + " chunks, kept=" + kept + " saves, roomChunks=" + rooms + " held, judged="
+                + judged + " saves, terrain cached=" + cacheHits + " worked out=" + cacheMisses
                 + (off ? " (dropUntouchedWorldGen is off: nothing is dropped)" : "")
         ), false);
         return 1;
