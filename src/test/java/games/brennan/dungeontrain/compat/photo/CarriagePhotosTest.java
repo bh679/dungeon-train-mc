@@ -2,12 +2,29 @@ package games.brennan.dungeontrain.compat.photo;
 
 import com.google.gson.JsonArray;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.LeasePhoto;
+import io.github.mortuusars.exposure.Exposure;
+import io.github.mortuusars.exposure.world.camera.frame.Frame;
+import io.github.mortuusars.exposure.world.item.component.StackedPhotographs;
+import io.github.mortuusars.exposure.world.item.component.album.AlbumContent;
+import io.github.mortuusars.exposure.world.item.component.album.AlbumPage;
+import io.github.mortuusars.exposure.world.item.component.album.SignedAlbumContent;
+import io.github.mortuusars.exposure.world.item.component.album.SignedAlbumPage;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.Bootstrap;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.BundleContents;
+import net.minecraft.world.item.component.ItemContainerContents;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,6 +33,106 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** How a drifting build names the photos it holds, and how a leasing world adopts them. */
 final class CarriagePhotosTest {
+
+    @BeforeAll
+    static void boot() {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
+
+    /** A print the relay knows as {@code id}. Paper stands in for Exposure's item: only the component matters. */
+    private static ItemStack photo(int id) {
+        Frame frame = Frame.EMPTY.toMutable().updateExtraData(e -> e.putInt(SharedPhotos.SHARED_ID_KEY, id)).toImmutable();
+        ItemStack stack = new ItemStack(Items.PAPER);
+        stack.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+        return stack;
+    }
+
+    private static ItemStack holding(net.minecraft.world.item.Item item, ItemStack... inside) {
+        ItemStack stack = new ItemStack(item);
+        stack.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(List.of(inside)));
+        return stack;
+    }
+
+    /** Refs off a live stack with NO registries: any serialisation of the stack would throw. */
+    private static Set<CarriagePhotos.Ref> refs(ItemStack stack) {
+        return CarriagePhotos.refsIn(stack, null);
+    }
+
+    private static Set<CarriagePhotos.Ref> ids(int... ids) {
+        Set<CarriagePhotos.Ref> out = new java.util.LinkedHashSet<>();
+        for (int id : ids) out.add(new CarriagePhotos.Ref(id, ""));
+        return out;
+    }
+
+    @Test
+    @DisplayName("ordinary items hold no photos and are never serialised to find out")
+    void ordinaryItems() {
+        assertEquals(Set.of(), refs(new ItemStack(Items.STONE, 64)));
+        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+        sword.set(DataComponents.CUSTOM_NAME, Component.literal("Sting"));
+        sword.setDamageValue(12);
+        assertEquals(Set.of(), refs(sword));
+        assertEquals(Set.of(), refs(holding(Items.SHULKER_BOX, new ItemStack(Items.BREAD))));
+        assertEquals(Set.of(), refs(ItemStack.EMPTY));
+    }
+
+    @Test
+    @DisplayName("a loose print is listed, and a print without a relay name is not")
+    void loosePrint() {
+        assertEquals(ids(7), refs(photo(7)));
+        assertEquals(Set.of(), refs(photo(0)));
+    }
+
+    @Test
+    @DisplayName("prints inside a stack of prints, an album and a signed album are all listed")
+    void exposureHolders() {
+        ItemStack stacked = new ItemStack(Items.PAPER);
+        stacked.set(Exposure.DataComponents.STACKED_PHOTOGRAPHS, new StackedPhotographs(List.of(photo(1), photo(2))));
+        assertEquals(ids(1, 2), refs(stacked));
+
+        ItemStack album = new ItemStack(Items.BOOK);
+        album.set(Exposure.DataComponents.ALBUM_CONTENT, new AlbumContent(List.of(
+                new AlbumPage(photo(3), ""), new AlbumPage(ItemStack.EMPTY, "blank"), new AlbumPage(photo(4), "x"))));
+        assertEquals(ids(3, 4), refs(album));
+
+        ItemStack signed = new ItemStack(Items.BOOK);
+        signed.set(Exposure.DataComponents.SIGNED_ALBUM_CONTENT, new SignedAlbumContent("t", "a", List.of(
+                new SignedAlbumPage(photo(5), Component.empty()))));
+        assertEquals(ids(5), refs(signed));
+    }
+
+    @Test
+    @DisplayName("prints nested in boxes and bundles are listed, at any reasonable depth")
+    void nestedContainers() {
+        ItemStack bundle = new ItemStack(Items.BUNDLE);
+        bundle.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(List.of(photo(9), new ItemStack(Items.APPLE))));
+        ItemStack album = new ItemStack(Items.BOOK);
+        album.set(Exposure.DataComponents.ALBUM_CONTENT, new AlbumContent(List.of(new AlbumPage(photo(10), ""))));
+        ItemStack box = holding(Items.SHULKER_BOX, photo(8), bundle, album, new ItemStack(Items.STONE));
+        assertEquals(ids(8, 9, 10), refs(box));
+        ItemStack outer = new ItemStack(Items.BUNDLE);
+        outer.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(List.of(box)));
+        assertEquals(ids(8, 9, 10), refs(outer));
+    }
+
+    @Test
+    @DisplayName("only a saved item naming a photograph frame is worth parsing")
+    void photoTags() {
+        CompoundTag components = new CompoundTag();
+        components.put("minecraft:custom_name", new CompoundTag());
+        CompoundTag sword = new CompoundTag();
+        sword.putString("id", "minecraft:diamond_sword");
+        sword.putInt("count", 1);
+        sword.put("components", components);
+        assertFalse(CarriagePhotos.isPhotoTag(sword));
+        CompoundTag photoComponents = new CompoundTag();
+        photoComponents.put(CarriagePhotos.PHOTOGRAPH_FRAME_KEY, new CompoundTag());
+        CompoundTag photo = sword.copy();
+        photo.put("components", photoComponents);
+        assertTrue(CarriagePhotos.isPhotoTag(photo));
+        assertEquals("exposure:photograph_frame", CarriagePhotos.PHOTOGRAPH_FRAME_KEY);
+    }
 
     private static CompoundTag extra(int sharedId, String uploadKey) {
         CompoundTag tag = new CompoundTag();
