@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.worldgen;
 import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,5 +62,60 @@ class UntouchedChunkSavesTest {
         long[] spots = {ChunkPos.asLong(0, 0), ChunkPos.asLong(500, 3)};
         assertTrue(UntouchedChunkSaves.nearAnySpot(spots, new ChunkPos(510, 0), 14));
         assertFalse(UntouchedChunkSaves.nearAnySpot(spots, new ChunkPos(250, 0), 14));
+    }
+
+    @Test
+    void touchedAfterACachedDropIsKept() {
+        // The terrain says DROP and is cached; a player then changes the chunk.
+        assertEquals(UntouchedChunkSaves.Verdict.DROP,
+                UntouchedChunkSaves.liveVerdict(false, false, false, () -> UntouchedChunkSaves.Verdict.DROP));
+        assertEquals(UntouchedChunkSaves.Verdict.TOUCHED,
+                UntouchedChunkSaves.liveVerdict(true, false, false, () -> UntouchedChunkSaves.Verdict.DROP));
+    }
+
+    @Test
+    void heldOrNearAtStopAfterACachedDropIsKept() {
+        assertEquals(UntouchedChunkSaves.Verdict.PORTAL_ROOM,
+                UntouchedChunkSaves.liveVerdict(false, true, false, () -> UntouchedChunkSaves.Verdict.DROP));
+        assertEquals(UntouchedChunkSaves.Verdict.NEAR_PLAYER,
+                UntouchedChunkSaves.liveVerdict(false, false, true, () -> UntouchedChunkSaves.Verdict.DROP));
+    }
+
+    @Test
+    void liveFactsDoNotWorkOutTheTerrain() {
+        AtomicInteger asked = new AtomicInteger();
+        UntouchedChunkSaves.liveVerdict(true, false, false, () -> {
+            asked.incrementAndGet();
+            return UntouchedChunkSaves.Verdict.DROP;
+        });
+        assertEquals(0, asked.get());
+    }
+
+    @Test
+    void onlyASkipAsTheChunkUnloadsIsADrop() {
+        UntouchedChunkSaves.resetCounts();
+        long key = ChunkPos.asLong(800, 1);
+        // Periodic skips: the chunk is still in memory, unsaved, and will be judged again.
+        for (long tick = 0; tick < 100; tick++) {
+            assertTrue(UntouchedChunkSaves.settle(UntouchedChunkSaves.Verdict.DROP, false, key, tick));
+        }
+        assertFalse(UntouchedChunkSaves.wasDropped(key));
+        assertFalse(UntouchedChunkSaves.droppedSince(key, 0L));
+        // The unload save is skipped too: now it is really gone.
+        assertTrue(UntouchedChunkSaves.settle(UntouchedChunkSaves.Verdict.DROP, true, key, 150L));
+        assertTrue(UntouchedChunkSaves.wasDropped(key));
+        assertTrue(UntouchedChunkSaves.droppedSince(key, 120L));
+        assertEquals(1L, UntouchedChunkSaves.dropped());
+        UntouchedChunkSaves.resetCounts();
+    }
+
+    @Test
+    void aKeptChunkIsNeverADrop() {
+        UntouchedChunkSaves.resetCounts();
+        long key = ChunkPos.asLong(801, 1);
+        assertFalse(UntouchedChunkSaves.settle(UntouchedChunkSaves.Verdict.TOUCHED, true, key, 10L));
+        assertFalse(UntouchedChunkSaves.wasDropped(key));
+        assertEquals(1L, UntouchedChunkSaves.kept());
+        UntouchedChunkSaves.resetCounts();
     }
 }
