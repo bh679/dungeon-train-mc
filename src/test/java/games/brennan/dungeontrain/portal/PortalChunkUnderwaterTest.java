@@ -39,6 +39,13 @@ class PortalChunkUnderwaterTest {
         assertFalse(PortalChunkTerrain.Source.OVERWORLD.underwater());
     }
 
+    @Test
+    @DisplayName("the 3x3 underwater room samples the underwater source over a 3x3 grid")
+    void threeByThreeUnderwater() {
+        assertSame(PortalChunkTerrain.Source.UNDERWATER, PortalChunkTerrain.Source.of("chunk_3x3_underwater"));
+        assertEquals(3, PortalChunkArea.span(new net.minecraft.core.Vec3i(48, 32, 48)));
+    }
+
     /** Stone to {@code bed}, water to {@code surface}, air above. */
     private static IntFunction<BlockState> sea(int bed, int surface) {
         return y -> y <= bed ? Blocks.STONE.defaultBlockState()

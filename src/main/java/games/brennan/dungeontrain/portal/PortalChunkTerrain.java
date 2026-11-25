@@ -693,7 +693,7 @@ public final class PortalChunkTerrain {
     }
 
     /** The row a room is cut around: the seabed under water for the underwater room, else standable ground. */
-    private static int anchorRow(Source source, ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+    static int anchorRow(Source source, ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
         return source.underwater()
             ? seabedRow(chunk, localX, localZ, minY, maxY)
             : standableRow(chunk, localX, localZ, minY, maxY);

@@ -155,7 +155,8 @@ class PortalChunkAreaTest {
             "chunk_3x3_nether", new int[] {6, 5},
             "chunk_3x3_nether_better", new int[] {23, 11},
             "chunk_3x3_end", new int[] {2, 5},
-            "chunk_3x3_end_better", new int[] {6, 13});
+            "chunk_3x3_end_better", new int[] {6, 13},
+            "chunk_3x3_underwater", new int[] {16, 5});
         assertEquals(expected.keySet(), found.keySet());
         // A name the registry refuses is a room that silently never loads (a 33-character name did).
         for (String id : found.keySet()) {
