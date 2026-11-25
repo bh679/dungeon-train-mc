@@ -139,7 +139,7 @@ public final class BlockVariantMenuInputHandler {
     private static boolean isRowCell(BlockVariantMenu.CellKind kind) {
         return switch (kind) {
             case ENTRY_NAME, ENTRY_WEIGHT, ENTRY_REMOVE_X, ENTRY_ROT_MODE, ENTRY_ROT_DIRS,
-                 ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
+                 ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_VILLAGER_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
             default -> false;
         };
     }
@@ -451,6 +451,14 @@ public final class BlockVariantMenuInputHandler {
                 int nextOrd = (currentOrd + 1) % modeCount;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
+            }
+            case ENTRY_VILLAGER_MODE -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                games.brennan.dungeontrain.editor.VariantVillager.Mode next =
+                    games.brennan.dungeontrain.editor.VariantVillager.Mode.fromOrdinal(e.villagerMode() & 0xFF).next();
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_VILLAGER_MODE, variantId, local, hit.index(), "", next.ordinal()));
             }
             case ENTRY_ARM_NORTH, ENTRY_ARM_EAST, ENTRY_ARM_SOUTH, ENTRY_ARM_WEST -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;

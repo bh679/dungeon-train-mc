@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RedstoneToggle;
 import games.brennan.dungeontrain.editor.VariantConnect;
+import games.brennan.dungeontrain.editor.VariantVillager;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantActive;
 import games.brennan.dungeontrain.editor.VariantRotation;
@@ -433,8 +434,9 @@ public final class BlockVariantMenuRenderer {
             boolean slotRow = (concrete && BlockVariantMenu.growthSupported()
                 && BlockVariantMenu.usesGrowSlot(entry, parsed))
                 || BlockVariantMenu.isSlimeRow(entry);
+            boolean villagerRow = BlockVariantMenu.isVillagerRow(entry);
             boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
-                && GrowthShapes.canGrow(parsed)) || slotRow;
+                && GrowthShapes.canGrow(parsed)) || slotRow || villagerRow;
             double growthCellR = armsCellL;
             double growthCellL = growable ? growthCellR - GROWTH_CELL_WIDTH : growthCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
@@ -584,7 +586,10 @@ public final class BlockVariantMenuRenderer {
             }
 
             // Grow pill (vines / ladders / bamboo / dripstone …)
-            if (slotRow) {
+            if (villagerRow) {
+                drawVillagerModeCell(ps, buffer, font, i, entry,
+                    growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
+            } else if (slotRow) {
                 drawSlotCell(ps, buffer, font, i, entry, parsed,
                     growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
             } else if (growable) {
@@ -1155,6 +1160,33 @@ public final class BlockVariantMenuRenderer {
             case ACTIVE -> MenuLang.t("block_variant.active_on");
             case RANDOM -> MenuLang.t("block_variant.active_random");
             case INACTIVE -> MenuLang.t("block_variant.active_off");
+        };
+        drawCenteredText(ps, buffer, font, label, (cellL + cellR) / 2.0, rowCY, 0xFFFFFFFF);
+    }
+
+    /**
+     * Draw a villager row's job-mode pill — J / R / N (Job / Random / Nitwit) — in the Grow slot.
+     * Amber for Job (the default), the shared blue for Random, muted green for Nitwit. A click steps
+     * J → R → N (the input handler).
+     */
+    private static void drawVillagerModeCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                             int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                             double cellL, double cellR,
+                                             double rowBottom, double rowTop, double rowCY,
+                                             BlockVariantMenu.Hit hovered) {
+        VariantVillager.Mode mode = VariantVillager.Mode.fromOrdinal(entry.villagerMode() & 0xFF);
+        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_VILLAGER_MODE && hovered.index() == rowIndex;
+        int tint = switch (mode) {
+            case JOB -> hover ? 0xC0D0A040 : 0x808A6A2B;     // amber
+            case RANDOM -> hover ? 0xC066AAFF : 0x8033679B;  // shared blue
+            case NITWIT -> hover ? 0xC07FA07F : 0x804D6B4D;  // muted green
+        };
+        // No inset: the pill fills its whole cell.
+        drawQuad(ps, buffer, cellL, rowBottom, cellR, rowTop, tint);
+        String label = switch (mode) {
+            case JOB -> MenuLang.t("block_variant.villager_job");
+            case RANDOM -> MenuLang.t("block_variant.villager_random");
+            case NITWIT -> MenuLang.t("block_variant.villager_nitwit");
         };
         drawCenteredText(ps, buffer, font, label, (cellL + cellR) / 2.0, rowCY, 0xFFFFFFFF);
     }

@@ -74,6 +74,7 @@
     "ChunkMapMixin",
     "ChunkMapTwinSpaceSkipMixin",
     "ChunkMapUntouchedSaveSkipMixin",
+    "LevelChunkLoadedAccessor",
     "EntityStorageUntouchedSkipMixin",
     "PortalForcerTouchMixin",
     "MinecraftServerSaveMixin",

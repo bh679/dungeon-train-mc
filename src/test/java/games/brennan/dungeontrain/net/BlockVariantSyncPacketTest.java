@@ -239,6 +239,23 @@ final class BlockVariantSyncPacketTest {
         assertEquals(0, decoded.entries().get(1).slime());
     }
 
+    @Test
+    @DisplayName("round-trip preserves a villager row's job mode; the shorter ctor defaults it to Job")
+    void roundTrip_villagerMode() {
+        BlockVariantSyncPacket.Entry villager = new BlockVariantSyncPacket.Entry(
+            "dungeontrain:variant_placeholder", null, 1, (byte) 1, (byte) 0, null, "minecraft:villager",
+            (byte) 0, 0, -1, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, 0, 1, 0,
+            (byte) 0, (byte) games.brennan.dungeontrain.editor.VariantVillager.Mode.NITWIT.ordinal());
+        BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", "", true, "", "", "", 0, 0, 1);
+        BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 2, 3), List.of(villager, plain), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
+        assertEquals(2, decoded.entries().get(0).villagerMode());
+        assertEquals(0, decoded.entries().get(1).villagerMode());
+    }
+
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);

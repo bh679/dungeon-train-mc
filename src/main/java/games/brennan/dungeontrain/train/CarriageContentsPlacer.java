@@ -51,6 +51,8 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -1707,6 +1709,12 @@ public final class CarriageContentsPlacer {
         // Passengers, untagged and despawnable. So stamp the whole riding tree with the contents
         // identity and add it in one go. Only the mob and its riders: a vehicle it mounted (a baby
         // zombie's chicken) is already in the level and may be a world chicken that isn't ours.
+        // Villager rows: the Z menu's J / R / N job mode. Set after finalizeSpawn (which picks the
+        // biome type) and before the villager joins, so VillagerTrainSpawnEvents sees the profession:
+        // a Random job skips the job-block claim and gets its level and trades; a nitwit gets none.
+        if (entity instanceof Villager villager) {
+            applyVillagerMode(villager, picked.villager(), level);
+        }
         long spawnTick = level.getGameTime();
         entity.getSelfAndPassengers().forEach(e -> stampContentsEntity(e, pos, spawnTick, carriagePIdx));
         reidentifyUnadded(entity);
@@ -1737,6 +1745,32 @@ public final class CarriageContentsPlacer {
             }
         }
         return entity;
+    }
+
+    /**
+     * Apply a villager variant row's job mode: Job leaves the villager to claim the nearest job
+     * block on join, Random gives it one of the vanilla job professions, Nitwit makes it a nitwit.
+     * The brain is rebuilt for the new profession so it stops seeking job blocks it can't keep.
+     */
+    static void applyVillagerMode(Villager villager,
+                                  games.brennan.dungeontrain.editor.VariantVillager.Mode mode,
+                                  ServerLevel level) {
+        VillagerProfession profession = switch (mode) {
+            case JOB -> null;
+            case NITWIT -> VillagerProfession.NITWIT;
+            case RANDOM -> {
+                List<VillagerProfession> pool =
+                    games.brennan.dungeontrain.event.VillagerJobSiteAssigner.jobProfessions();
+                yield pool.get(level.getRandom().nextInt(pool.size()));
+            }
+        };
+        if (profession == null) return;
+        villager.setVillagerData(villager.getVillagerData().setProfession(profession));
+        // The brain was built at construction for a jobless villager, so it still hunts every job
+        // block, and vanilla's AssignProfessionFromJobSite then overwrites the profession (a nitwit
+        // turned farmer, green particles). Rebuild it for the new profession, as vanilla does
+        // whenever a profession changes.
+        villager.refreshBrain(level);
     }
 
     /**
