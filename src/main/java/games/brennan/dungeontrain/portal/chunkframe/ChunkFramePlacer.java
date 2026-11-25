@@ -299,6 +299,16 @@ public final class ChunkFramePlacer {
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
                             int yFrom, int yTo, boolean skipShell) {
+        return place(level, picked, roomOrigin, mask, rollIndex, yFrom, yTo, skipShell, FrameWaterlog.NO_SEA);
+    }
+
+    /**
+     * {@link #place}, with the room's sea: a block that can hold water and lands at or under world
+     * row {@code seaTopY} is written waterlogged, unless it touches the frame's Forced Air
+     * ({@link FrameWaterlog}). {@link FrameWaterlog#NO_SEA} for a room with no sea.
+     */
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex,
+                            int yFrom, int yTo, boolean skipShell, int seaTopY) {
         ChunkFrameTemplate frame = picked.template();
         VariantDoc variants = picked.variants();
         long seed = level.getSeed();
@@ -359,6 +369,11 @@ public final class ChunkFramePlacer {
                             roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
                             roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
                         if (mask.covers(cursor)) continue;
+                        if (seaTopY != FrameWaterlog.NO_SEA && cursor.getY() <= seaTopY
+                                && FrameWaterlog.canHoldWater(state)) {
+                            state = FrameWaterlog.apply(state, cursor.getY(), seaTopY,
+                                touchesForcedAir(frame, variants, x, y, z, seed, rollIndex));
+                        }
                         BlockState current = level.getBlockState(cursor);
                         if (current != state) {
                             if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
@@ -375,6 +390,25 @@ public final class ChunkFramePlacer {
             }
         }
         return changed;
+    }
+
+    /** The six cells around frame cell {@code (x, y, z)}: does any of them write Forced Air, as rolled? */
+    private static boolean touchesForcedAir(ChunkFrameTemplate frame, VariantDoc variants, int x, int y, int z,
+                                            long seed, int rollIndex) {
+        Vec3i size = frame.size();
+        int[][] sides = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+        for (int[] d : sides) {
+            int nx = x + d[0], ny = y + d[1], nz = z + d[2];
+            if (nx < 0 || ny < 0 || nz < 0 || nx >= size.getX() || ny >= size.getY() || nz >= size.getZ()) continue;
+            BlockPos at = new BlockPos(nx, ny, nz);
+            BlockState state = frame.at(nx, ny, nz);
+            if (variants.statesAt(at) != null) {
+                VariantState roll = variants.resolve(at, seed, rollIndex);
+                state = roll == null || roll.isMob() ? null : roll.state();
+            }
+            if (state != null && games.brennan.dungeontrain.block.ForcedAir.is(state)) return true;
+        }
+        return false;
     }
 
     private static void applyBlockEntity(ServerLevel level, BlockPos pos, CompoundTag nbt) {
