@@ -37,4 +37,26 @@ class TributeRoomVisitSiteTest {
     void originSpendsTheDoorHeightOffsetOnTheLane() {
         assertEquals(-60 + 3, TributeRoomVisitSite.originFor(0, -60, 3).getY());
     }
+
+    @Test
+    void keptSlotsCoverEveryKeptSitesWindow() {
+        for (int slot = 0; slot < TributeRoomVisitSite.KEPT_SLOTS; slot++) {
+            BlockPos o = TributeRoomVisitSite.originFor(slot, -60, 0);
+            // The structure reaches well past its origin along X; its window stays inside the slot stride.
+            for (int x = o.getX() - 16; x < o.getX() + TributeRoomVisitSite.SLOT_STRIDE; x += 8) {
+                for (int z = o.getZ() - 32; z <= o.getZ() + 32; z += 8) {
+                    assertTrue(TributeRoomVisitSite.isSiteChunk(x >> 4, z >> 4), "slot " + slot + " at " + x + "," + z);
+                }
+            }
+        }
+    }
+
+    @Test
+    void siteChunksStayOffTheTrackAndTheTestRig() {
+        assertFalse(TributeRoomVisitSite.isSiteChunk(0, 0), "track band");
+        assertFalse(TributeRoomVisitSite.isSiteChunk(0, 512 >> 4), "test rig band");
+        assertFalse(TributeRoomVisitSite.isSiteChunk(-100, TributeRoomVisitSite.Z_BAND >> 4), "behind slot 0");
+        int pastKept = (TributeRoomVisitSite.KEPT_SLOTS + 2) * TributeRoomVisitSite.SLOT_STRIDE;
+        assertFalse(TributeRoomVisitSite.isSiteChunk(pastKept >> 4, TributeRoomVisitSite.Z_BAND >> 4), "past the kept slots");
+    }
 }

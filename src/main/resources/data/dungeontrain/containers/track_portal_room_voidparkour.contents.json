@@ -5,6 +5,7 @@
       "fillMax": 16,
       "entries": [
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:diamond_spear", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_leggings", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_boots", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -47,6 +48,7 @@
       "fillMax": 16,
       "entries": [
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:diamond_spear", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_leggings", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_boots", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -89,6 +91,7 @@
       "fillMax": 16,
       "entries": [
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:diamond_spear", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_leggings", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "minecraft:diamond_boots", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },

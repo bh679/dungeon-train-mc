@@ -9,7 +9,8 @@
     "vanillabackport.CreakingHeartBlockEntityMixin",
     "vanillabackport.CreakingHeartBlockMixin",
     "vanillabackport.CreakingHeartSettingsMixin",
-    "vanillabackport.CreakingHomeNodeEvaluatorMixin"
+    "vanillabackport.CreakingHomeNodeEvaluatorMixin",
+    "vanillabackport.DtOverworldSulfurRuleMixin"
   ],
   "client": [],
   "server": [],

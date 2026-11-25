@@ -45,8 +45,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><b>Each chunk is generated with the real chunks around it.</b> Its workspace's ring is the
  *       rest of the grid ({@link OfflineChunkSampler#workspaceFor}), so a tree at a chunk's edge
  *       lands in its neighbour instead of being thrown away.</li>
- *   <li><b>Decoration is one task per chunk</b>, each queued behind whatever else is waiting on the
- *       sampler thread: another pair's ground pass never waits out a whole room's decoration.</li>
+ *   <li><b>Decoration is one task per chunk</b>, each queued behind every ground task waiting on the
+ *       sampler thread: another pair's ground pass never waits out a room's decoration.</li>
  * </ul>
  */
 public final class PortalChunkArea {
@@ -166,13 +166,17 @@ public final class PortalChunkArea {
         long ground = System.currentTimeMillis() - startedAt;
         LOGGER.info("[DungeonTrain] Chunk dimension pair {} ({}x{}) ground sampled from {} at {} in {}, in {} ms",
             pairKey, span, span, source, grid.centre(), biomeAt(grid), ground);
-        decorateInTurn(grid, roomName, pairKey, roll, 0, System.currentTimeMillis(), 0L);
+        // Even the first step is queued: planting the structure is decoration too, and another
+        // pair's ground waiting behind it should not.
+        long decorationQueuedAt = System.currentTimeMillis();
+        PortalChunkTerrain.submitDecoration(
+            () -> decorateInTurn(grid, roomName, pairKey, roll, 0, decorationQueuedAt, 0L));
     }
 
     /**
      * Step {@code step} of the decoration: 0 plants the structure, 1..n decorates the grid's chunks
      * one at a time, and the last puts in the mobs and publishes the result. Each step re-queues the
-     * next at the back of the sampler's queue.
+     * next behind every ground task and the decoration already waiting on the sampler.
      */
     private static void decorateInTurn(Grid grid, String roomName, int pairKey, int roll, int step,
                                        long startedAt, long workedMs) {
@@ -210,7 +214,7 @@ public final class PortalChunkArea {
             LOGGER.warn("[DungeonTrain] Chunk dimension pair {} decoration step {} failed", pairKey, step, t);
         }
         long worked = workedMs + System.currentTimeMillis() - stepStart;
-        PortalChunkTerrain.submit(() -> decorateInTurn(grid, roomName, pairKey, roll, step + 1, startedAt, worked));
+        PortalChunkTerrain.submitDecoration(() -> decorateInTurn(grid, roomName, pairKey, roll, step + 1, startedAt, worked));
     }
 
     /** The biome at the middle of the grid's surface row, by id — what says the look landed. */

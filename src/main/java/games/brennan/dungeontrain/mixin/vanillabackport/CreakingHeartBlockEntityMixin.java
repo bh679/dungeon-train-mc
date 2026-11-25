@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.mixin.vanillabackport;
 
-import com.blackgear.vanillabackport.common.level.blockentities.CreakingHeartBlockEntity;
-import com.blackgear.vanillabackport.common.level.entities.creaking.Creaking;
+import com.blackgear.vanillabackport.common.level.block_entities.CreakingHeartBlockEntity;
+import com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -74,7 +74,7 @@ public abstract class CreakingHeartBlockEntityMixin {
 
     /** Spawn in the heart's own space, not on the carriage roof — see {@link CreakingHeartSpawnSpot}. */
     @WrapOperation(method = "spawnProtector", at = @At(value = "INVOKE",
-            target = "Lcom/blackgear/vanillabackport/core/util/SpawnExtras;trySpawnMob(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;IIILnet/minecraft/util/SpawnUtil$Strategy;Z)Ljava/util/Optional;"))
+            target = "Lcom/blackgear/vanillabackport/core/util/WorldUtilities$SpawnUtils;trySpawnMob(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;IIILnet/minecraft/util/SpawnUtil$Strategy;Z)Ljava/util/Optional;"))
     private static <T extends net.minecraft.world.entity.Mob> Optional<T> dungeontrain$spawnInside(
             net.minecraft.world.entity.EntityType<T> type, net.minecraft.world.entity.MobSpawnType spawnType,
             net.minecraft.server.level.ServerLevel level, BlockPos pos, int attempts, int spread, int yOffset,

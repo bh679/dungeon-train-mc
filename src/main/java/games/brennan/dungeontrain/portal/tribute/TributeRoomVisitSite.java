@@ -18,7 +18,28 @@ public final class TributeRoomVisitSite {
     /** X between slots. A structure's span is the room plus two corridors and plugs: well under this. */
     public static final int SLOT_STRIDE = 64;
 
+    /**
+     * Slots whose chunks Smaller saves always writes ({@link #isSiteChunk}): enough for every visitor of
+     * a busy server at once. A slot past these still works; its chunks are simply generated again.
+     */
+    public static final int KEPT_SLOTS = 8;
+    /** Blocks either side of {@link #Z_BAND} a visit's room, tubes and sweep window can reach. */
+    static final int Z_REACH = 64;
+
     private TributeRoomVisitSite() {}
+
+    /**
+     * Whether chunk ({@code cx}, {@code cz}) is under one of the first {@link #KEPT_SLOTS} visit sites.
+     * Smaller saves writes these even though no player changed them: a visit's stamp is not a player
+     * change, and dropping a swept site meant generating its chunks again on every death.
+     */
+    public static boolean isSiteChunk(int cx, int cz) {
+        int minCx = -Z_REACH >> 4;
+        int maxCx = (KEPT_SLOTS * SLOT_STRIDE + Z_REACH) >> 4;
+        int minCz = (Z_BAND - Z_REACH) >> 4;
+        int maxCz = (Z_BAND + Z_REACH) >> 4;
+        return cx >= minCx && cx <= maxCx && cz >= minCz && cz <= maxCz;
+    }
 
     /** The lowest slot not in {@code taken}. */
     public static int freeSlot(Set<Integer> taken) {

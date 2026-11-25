@@ -10,11 +10,14 @@ import java.util.List;
  * replacing the prior 5-rung data-driven {@code tiers.json} ladder with a
  * smooth procedural curve.
  *
- * <p>Levels 1–50 ramp through five armor and five weapon material bands
- * (leather → chainmail → iron → diamond → netherite). Bands overlap so
- * transitions are gradual: at level 1 you see rare leather; by level 5
- * leather is common and chainmail starts appearing rarely; by level 50
- * everything is netherite. Golden gear sprinkles in at a constant low
+ * <p>Levels 1–58 ramp through six armor and six weapon material bands
+ * (leather → copper → chainmail → iron → diamond → netherite for armor;
+ * wood → stone → copper → iron → diamond → netherite for weapons and tools).
+ * Bands overlap so transitions are gradual: at level 1 you see rare leather;
+ * by level 5 leather is common and copper starts appearing rarely; by level 58
+ * everything is netherite. Copper (VanillaBackport) was inserted as its own band,
+ * not overlapped onto a neighbour: the bands before it kept their curves and every
+ * band after it moved 8 levels later. Golden gear sprinkles in at a constant low
  * weight as a flavor "rare drop" across all levels.</p>
  *
  * <p>Above level 50 the gear pools stay pinned to netherite. Additional
@@ -41,7 +44,7 @@ public final class ProceduralTiers {
      * hostile gear keep getting stronger past the plateau. Keep in sync with
      * {@code NETHERITE.fullStart} below.
      */
-    public static final int MATERIAL_CAP_LEVEL = 50;
+    public static final int MATERIAL_CAP_LEVEL = 58;
 
     /**
      * Trapezoidal weight curve for one armor or weapon material.
@@ -71,21 +74,25 @@ public final class ProceduralTiers {
     }
 
     // Armor material progression. Each material peaks for ~10 levels and
-    // overlaps with the next by ~5–8 levels. Halved from the original
-    // 100-level scale so netherite caps at level 50.
+    // overlaps with the next by ~5–8 levels. Copper sits between leather and
+    // chainmail (vanilla's order by armour points) in what was chainmail's band;
+    // chainmail and everything after it moved 8 levels later, so netherite caps at 58.
     private static final MaterialCurve LEATHER   = new MaterialCurve(1,   3,   8,  15);
-    private static final MaterialCurve CHAINMAIL = new MaterialCurve(5,  10,  18,  28);
-    private static final MaterialCurve IRON      = new MaterialCurve(13, 20,  30,  40);
-    private static final MaterialCurve DIAMOND   = new MaterialCurve(25, 35,  45, TOP);
-    private static final MaterialCurve NETHERITE = new MaterialCurve(38, 50, TOP, TOP);
+    private static final MaterialCurve COPPER    = new MaterialCurve(5,  10,  18,  28);
+    private static final MaterialCurve CHAINMAIL = new MaterialCurve(13, 18,  26,  36);
+    private static final MaterialCurve IRON      = new MaterialCurve(21, 28,  38,  48);
+    private static final MaterialCurve DIAMOND   = new MaterialCurve(33, 43,  53, TOP);
+    private static final MaterialCurve NETHERITE = new MaterialCurve(46, 58, TOP, TOP);
 
-    // Weapons. Same shape, slightly earlier ramps (you arm before you
-    // armor up in DT progression).
+    // Weapons and tools. Same shape, slightly earlier ramps (you arm before you
+    // armor up in DT progression). Copper sits between stone and iron in what was
+    // iron's band; iron and everything after it moved 8 levels later.
     private static final MaterialCurve WOOD_W       = new MaterialCurve(1,   3,   5,  10);
     private static final MaterialCurve STONE_W      = new MaterialCurve(5,  10,  15,  23);
-    private static final MaterialCurve IRON_W       = new MaterialCurve(13, 20,  28,  38);
-    private static final MaterialCurve DIAMOND_W    = new MaterialCurve(25, 35,  43, TOP);
-    private static final MaterialCurve NETHERITE_W  = new MaterialCurve(38, 50, TOP, TOP);
+    private static final MaterialCurve COPPER_W     = new MaterialCurve(13, 20,  28,  38);
+    private static final MaterialCurve IRON_W       = new MaterialCurve(21, 28,  36,  46);
+    private static final MaterialCurve DIAMOND_W    = new MaterialCurve(33, 43,  51, TOP);
+    private static final MaterialCurve NETHERITE_W  = new MaterialCurve(46, 58, TOP, TOP);
 
     /**
      * Difficulty level (after {@link MobEffectOffsets}) at which a buff's floor first rises
@@ -168,8 +175,9 @@ public final class ProceduralTiers {
 
     /**
      * Dominant mob weapon material at {@code level}, as a stage rank:
-     * 0 = none ({@code level <= 0}), 1 = wood, 2 = stone, 3 = iron, 4 = diamond,
-     * 5 = netherite. "Dominant" = the highest-weight material in the weapon pool at
+     * 0 = none ({@code level <= 0}), 1 = wood, 2 = stone or copper, 3 = iron, 4 = diamond,
+     * 5 = netherite. Copper shares stone's rank so its band does not add a step to the
+     * villager trade ladder; it only delays iron's. "Dominant" = the highest-weight material in the weapon pool at
      * that level — the band shown in the difficulty chart. Ties resolve to the lower
      * material (diamond over netherite at their shared cap), which is irrelevant to
      * callers that clamp at diamond.
@@ -182,7 +190,7 @@ public final class ProceduralTiers {
         if (level <= 0) return 0;
         int[] weights = {
             WOOD_W.weight(level),
-            STONE_W.weight(level),
+            Math.max(STONE_W.weight(level), COPPER_W.weight(level)),
             IRON_W.weight(level),
             DIAMOND_W.weight(level),
             NETHERITE_W.weight(level),
@@ -212,6 +220,7 @@ public final class ProceduralTiers {
     private static List<DifficultyTier.WeightedItem> armorPool(int level, String slotSuffix) {
         List<DifficultyTier.WeightedItem> out = new ArrayList<>();
         addIfPositive(out, "minecraft:leather_"   + slotSuffix, LEATHER.weight(level));
+        addIfPositive(out, "minecraft:copper_"    + slotSuffix, COPPER.weight(level));
         addIfPositive(out, "minecraft:chainmail_" + slotSuffix, CHAINMAIL.weight(level));
         addIfPositive(out, "minecraft:iron_"      + slotSuffix, IRON.weight(level));
         addIfPositive(out, "minecraft:diamond_"   + slotSuffix, DIAMOND.weight(level));
@@ -225,13 +234,24 @@ public final class ProceduralTiers {
         // Swords carry the full material weight.
         addIfPositive(pool, "minecraft:wooden_sword",    WOOD_W.weight(level));
         addIfPositive(pool, "minecraft:stone_sword",     STONE_W.weight(level));
+        addIfPositive(pool, "minecraft:copper_sword",    COPPER_W.weight(level));
         addIfPositive(pool, "minecraft:iron_sword",      IRON_W.weight(level));
         addIfPositive(pool, "minecraft:diamond_sword",   DIAMOND_W.weight(level));
         addIfPositive(pool, "minecraft:netherite_sword", NETHERITE_W.weight(level));
         addIfPositive(pool, "minecraft:golden_sword",    GOLDEN_WEIGHT);
+        // Spears (VanillaBackport, a hard dependency) sit beside each sword at the same weight —
+        // the same rule the bundled loot pools follow (scripts/loot/add-spears-and-copper.py).
+        addIfPositive(pool, "minecraft:wooden_spear",    WOOD_W.weight(level));
+        addIfPositive(pool, "minecraft:stone_spear",     STONE_W.weight(level));
+        addIfPositive(pool, "minecraft:copper_spear",    COPPER_W.weight(level));
+        addIfPositive(pool, "minecraft:iron_spear",      IRON_W.weight(level));
+        addIfPositive(pool, "minecraft:diamond_spear",   DIAMOND_W.weight(level));
+        addIfPositive(pool, "minecraft:netherite_spear", NETHERITE_W.weight(level));
+        addIfPositive(pool, "minecraft:golden_spear",    GOLDEN_WEIGHT);
         // Axes carry half weight — present but less common than swords.
         addIfPositive(pool, "minecraft:wooden_axe",    WOOD_W.weight(level)      / 2);
         addIfPositive(pool, "minecraft:stone_axe",     STONE_W.weight(level)     / 2);
+        addIfPositive(pool, "minecraft:copper_axe",    COPPER_W.weight(level)    / 2);
         addIfPositive(pool, "minecraft:iron_axe",      IRON_W.weight(level)      / 2);
         addIfPositive(pool, "minecraft:diamond_axe",   DIAMOND_W.weight(level)   / 2);
         addIfPositive(pool, "minecraft:netherite_axe", NETHERITE_W.weight(level) / 2);
@@ -252,10 +272,11 @@ public final class ProceduralTiers {
      */
     static List<DifficultyTier.WeightedItem> toolPool(int level) {
         List<DifficultyTier.WeightedItem> pool = new ArrayList<>();
-        String[] materials = {"wooden", "stone", "iron", "diamond", "netherite"};
+        String[] materials = {"wooden", "stone", "copper", "iron", "diamond", "netherite"};
         int[] weights = {
             WOOD_W.weight(level),
             STONE_W.weight(level),
+            COPPER_W.weight(level),
             IRON_W.weight(level),
             DIAMOND_W.weight(level),
             NETHERITE_W.weight(level),

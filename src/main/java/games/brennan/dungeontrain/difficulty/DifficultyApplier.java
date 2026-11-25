@@ -82,7 +82,7 @@ public final class DifficultyApplier {
         /**
          * Scale off the post-material-cap tier
          * ({@code max(0, tier - }{@link ProceduralTiers#MATERIAL_CAP_LEVEL}{@code )}) — the
-         * bonus is 0 until gear material ceilings at netherite (level 50), then climbs so
+         * bonus is 0 until gear material ceilings at netherite (level 58, {@link ProceduralTiers#MATERIAL_CAP_LEVEL}), then climbs so
          * hostile gear keeps getting stronger past the plateau. Regular carriage hostiles
          * use this; tiers ≤ 50 stay identical to a plain AIS roll.
          */
@@ -139,7 +139,7 @@ public final class DifficultyApplier {
      * sized per {@link StatScaling}. {@link StatScaling#FULL} scales off the current
      * tier (PlayerMobs); {@link StatScaling#PAST_MATERIAL_CAP} scales off the
      * post-netherite-cap tier so regular carriage hostiles keep gaining gear strength
-     * past level 50 while tiers ≤ 50 stay a plain AIS roll; {@link StatScaling#NONE}
+     * past level 58 while tiers ≤ 58 stay a plain AIS roll; {@link StatScaling#NONE}
      * adds no bonus.
      *
      * @return true if any modification was made, false if no-op (registry empty,
@@ -159,7 +159,7 @@ public final class DifficultyApplier {
 
         // The tier feeding the per-tier AIS stat bonus: 0 = none (baseline), full tier
         // (PlayerMobs), or the post-material-cap tier (regular hostiles keep scaling
-        // past the netherite plateau — 0 at/below level 50, then climbing).
+        // past the netherite plateau — 0 at/below level 58, then climbing).
         int statScalingTier = switch (statScaling) {
             case NONE -> 0;
             case FULL -> tierIndex;

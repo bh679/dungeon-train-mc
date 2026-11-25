@@ -59,8 +59,8 @@
   "anchor_tree": {
     "name": "anchor_tree",
     "group": "wood",
-    "minLevel": 660,
-    "maxLevel": 675,
+    "minLevel": 676,
+    "maxLevel": 691,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -518,8 +518,8 @@
   "dead": {
     "name": "dead",
     "group": "wood",
-    "minLevel": 564,
-    "maxLevel": 579,
+    "minLevel": 580,
+    "maxLevel": 595,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -737,8 +737,8 @@
   "dragon_tree": {
     "name": "dragon_tree",
     "group": "wood",
-    "minLevel": 836,
-    "maxLevel": 851,
+    "minLevel": 852,
+    "maxLevel": 867,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -794,8 +794,8 @@
   "empyreal": {
     "name": "empyreal",
     "group": "wood",
-    "minLevel": 644,
-    "maxLevel": 659,
+    "minLevel": 660,
+    "maxLevel": 675,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -851,8 +851,8 @@
   "end_lotus": {
     "name": "end_lotus",
     "group": "wood",
-    "minLevel": 932,
-    "maxLevel": 947,
+    "minLevel": 948,
+    "maxLevel": 963,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -908,8 +908,8 @@
   "fir": {
     "name": "fir",
     "group": "wood",
-    "minLevel": 452,
-    "maxLevel": 467,
+    "minLevel": 468,
+    "maxLevel": 483,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -965,8 +965,8 @@
   "gloomwood": {
     "name": "gloomwood",
     "group": "wood",
-    "minLevel": 676,
-    "maxLevel": 691,
+    "minLevel": 692,
+    "maxLevel": 707,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1022,8 +1022,8 @@
   "gloomwood_dark": {
     "name": "gloomwood_dark",
     "group": "wood",
-    "minLevel": 692,
-    "maxLevel": 707,
+    "minLevel": 708,
+    "maxLevel": 723,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1079,8 +1079,8 @@
   "helix_tree": {
     "name": "helix_tree",
     "group": "wood",
-    "minLevel": 852,
-    "maxLevel": 867,
+    "minLevel": 868,
+    "maxLevel": 883,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1136,8 +1136,8 @@
   "hellbark": {
     "name": "hellbark",
     "group": "wood",
-    "minLevel": 628,
-    "maxLevel": 643,
+    "minLevel": 644,
+    "maxLevel": 659,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1193,8 +1193,8 @@
   "jacaranda": {
     "name": "jacaranda",
     "group": "wood",
-    "minLevel": 516,
-    "maxLevel": 531,
+    "minLevel": 532,
+    "maxLevel": 547,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1250,8 +1250,8 @@
   "jellyshroom": {
     "name": "jellyshroom",
     "group": "wood",
-    "minLevel": 948,
-    "maxLevel": 963,
+    "minLevel": 964,
+    "maxLevel": 979,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1364,8 +1364,8 @@
   "lacugrove": {
     "name": "lacugrove",
     "group": "wood",
-    "minLevel": 868,
-    "maxLevel": 883,
+    "minLevel": 884,
+    "maxLevel": 899,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1421,8 +1421,8 @@
   "lucernia": {
     "name": "lucernia",
     "group": "wood",
-    "minLevel": 884,
-    "maxLevel": 899,
+    "minLevel": 900,
+    "maxLevel": 915,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1478,8 +1478,8 @@
   "magic": {
     "name": "magic",
     "group": "wood",
-    "minLevel": 580,
-    "maxLevel": 595,
+    "minLevel": 596,
+    "maxLevel": 611,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1535,8 +1535,8 @@
   "mahogany": {
     "name": "mahogany",
     "group": "wood",
-    "minLevel": 500,
-    "maxLevel": 515,
+    "minLevel": 516,
+    "maxLevel": 531,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1649,8 +1649,8 @@
   "maple": {
     "name": "maple",
     "group": "wood",
-    "minLevel": 596,
-    "maxLevel": 611,
+    "minLevel": 612,
+    "maxLevel": 627,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1706,8 +1706,8 @@
   "mossy_glowshroom": {
     "name": "mossy_glowshroom",
     "group": "wood",
-    "minLevel": 964,
-    "maxLevel": 979,
+    "minLevel": 980,
+    "maxLevel": 995,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1816,8 +1816,8 @@
   "mushroom_fir": {
     "name": "mushroom_fir",
     "group": "wood",
-    "minLevel": 708,
-    "maxLevel": 723,
+    "minLevel": 724,
+    "maxLevel": 739,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1916,8 +1916,8 @@
   "nether_mushroom": {
     "name": "nether_mushroom",
     "group": "wood",
-    "minLevel": 724,
-    "maxLevel": 739,
+    "minLevel": 740,
+    "maxLevel": 755,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -1973,8 +1973,8 @@
   "nether_reed": {
     "name": "nether_reed",
     "group": "wood",
-    "minLevel": 740,
-    "maxLevel": 755,
+    "minLevel": 756,
+    "maxLevel": 771,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2030,8 +2030,8 @@
   "nether_sakura": {
     "name": "nether_sakura",
     "group": "wood",
-    "minLevel": 756,
-    "maxLevel": 771,
+    "minLevel": 772,
+    "maxLevel": 787,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2087,8 +2087,8 @@
   "nether_willow": {
     "name": "nether_willow",
     "group": "wood",
-    "minLevel": 820,
-    "maxLevel": 835,
+    "minLevel": 836,
+    "maxLevel": 851,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2269,8 +2269,8 @@
   "palm": {
     "name": "palm",
     "group": "wood",
-    "minLevel": 532,
-    "maxLevel": 547,
+    "minLevel": 548,
+    "maxLevel": 563,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2326,8 +2326,8 @@
   "pine": {
     "name": "pine",
     "group": "wood",
-    "minLevel": 468,
-    "maxLevel": 483,
+    "minLevel": 484,
+    "maxLevel": 499,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2380,11 +2380,68 @@
       "woodLocked": true
     }
   },
+  "poplar": {
+    "name": "poplar",
+    "group": "wood",
+    "minLevel": 452,
+    "maxLevel": 467,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:poplar_planks",
+        "minecraft:poplar_wood",
+        "minecraft:stripped_poplar_wood",
+        "minecraft:poplar_log",
+        "minecraft:stripped_poplar_log"
+      ],
+      "stairs": [
+        "minecraft:poplar_stairs",
+        "minecraft:poplar_stairs"
+      ],
+      "slabs": [
+        "minecraft:poplar_slab",
+        "minecraft:poplar_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "poplar",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:yellow_terracotta",
+        "minecraft:orange_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:yellow_concrete",
+        "minecraft:orange_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "pythadendron": {
     "name": "pythadendron",
     "group": "wood",
-    "minLevel": 900,
-    "maxLevel": 915,
+    "minLevel": 916,
+    "maxLevel": 931,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2507,8 +2564,8 @@
   "redwood": {
     "name": "redwood",
     "group": "wood",
-    "minLevel": 484,
-    "maxLevel": 499,
+    "minLevel": 500,
+    "maxLevel": 515,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2564,8 +2621,8 @@
   "rubeus": {
     "name": "rubeus",
     "group": "wood",
-    "minLevel": 772,
-    "maxLevel": 787,
+    "minLevel": 788,
+    "maxLevel": 803,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2621,7 +2678,7 @@
   "spruce": {
     "name": "spruce",
     "group": "wood",
-    "minLevel": 996,
+    "minLevel": 1012,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2677,8 +2734,8 @@
   "stalagnate": {
     "name": "stalagnate",
     "group": "wood",
-    "minLevel": 788,
-    "maxLevel": 803,
+    "minLevel": 804,
+    "maxLevel": 819,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2792,8 +2849,8 @@
   "tenanea": {
     "name": "tenanea",
     "group": "wood",
-    "minLevel": 916,
-    "maxLevel": 931,
+    "minLevel": 932,
+    "maxLevel": 947,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2849,8 +2906,8 @@
   "umbran": {
     "name": "umbran",
     "group": "wood",
-    "minLevel": 612,
-    "maxLevel": 627,
+    "minLevel": 628,
+    "maxLevel": 643,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -2906,8 +2963,8 @@
   "umbrella_tree": {
     "name": "umbrella_tree",
     "group": "wood",
-    "minLevel": 980,
-    "maxLevel": 995,
+    "minLevel": 996,
+    "maxLevel": 1011,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -3020,8 +3077,8 @@
   "wart": {
     "name": "wart",
     "group": "wood",
-    "minLevel": 804,
-    "maxLevel": 819,
+    "minLevel": 820,
+    "maxLevel": 835,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -3077,8 +3134,8 @@
   "willow": {
     "name": "willow",
     "group": "wood",
-    "minLevel": 548,
-    "maxLevel": 563,
+    "minLevel": 564,
+    "maxLevel": 579,
     "phases": [
       "OVERWORLD",
       "VOID",

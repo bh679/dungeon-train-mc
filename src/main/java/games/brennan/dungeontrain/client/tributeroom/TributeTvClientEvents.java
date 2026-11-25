@@ -22,6 +22,11 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TributeTvClientEvents {
 
+    private static final org.slf4j.Logger PERF = org.slf4j.LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.PERF);
+    /** The {@code [tributetv]} line's cadence, the {@code [frame]} line's. */
+    private static final long PERF_WINDOW_MS = 10_000L;
+    private static long perfWindowStartMs;
+
     private TributeTvClientEvents() {}
 
     @SubscribeEvent
@@ -46,6 +51,33 @@ public final class TributeTvClientEvents {
     public static void onClientTick(ClientTickEvent.Post event) {
         TributeTvVisit.onClientTick();
         TributeTvShowcase.onClientTick();
+        logPerf();
+    }
+
+    /**
+     * Every 10 s while any TV picture is up: how many screens were drawn into TVs, and how many targets
+     * are alive. Zero draws with TVs in range means none of them was on screen.
+     */
+    private static void logPerf() {
+        int entries = TributeTvShowcase.entryCount() + (TributeTvVisit.texture() != null ? 1 : 0);
+        long now = net.minecraft.Util.getMillis();
+        if (entries == 0) {
+            perfWindowStartMs = 0;
+            ScreenToTexture.drainCounters();
+            return;
+        }
+        if (perfWindowStartMs == 0) {
+            perfWindowStartMs = now;
+            ScreenToTexture.drainCounters();
+            return;
+        }
+        long wall = now - perfWindowStartMs;
+        if (wall < PERF_WINDOW_MS) return;
+        perfWindowStartMs = now;
+        int[] c = ScreenToTexture.drainCounters();
+        games.brennan.dungeontrain.util.AsyncPerfLog.debug(PERF, String.format(java.util.Locale.ROOT,
+            "[tributetv] tvs=%d draws=%d drawsPerSec=%.1f targets=%d always=%s",
+            entries, c[0], c[0] * 1000.0 / wall, c[1], ScreenToTexture.alwaysDrawForDev));
     }
 
     /** The TV is the way on: a right-click on it is ours, and never reaches the server's channel cycle. */

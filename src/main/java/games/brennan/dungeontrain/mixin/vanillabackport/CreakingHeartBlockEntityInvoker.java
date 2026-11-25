@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.mixin.vanillabackport;
 
-import com.blackgear.vanillabackport.common.level.blockentities.CreakingHeartBlockEntity;
-import com.blackgear.vanillabackport.common.level.entities.creaking.Creaking;
+import com.blackgear.vanillabackport.common.level.block_entities.CreakingHeartBlockEntity;
+import com.blackgear.vanillabackport.common.level.entities.mob.monster.creaking.Creaking;
 import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
