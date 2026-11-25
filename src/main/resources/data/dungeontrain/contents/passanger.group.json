@@ -21,6 +21,10 @@
     {
       "id": "kitchenlong",
       "weight": 0
+    },
+    {
+      "id": "market",
+      "weight": 5
     }
   ]
 }

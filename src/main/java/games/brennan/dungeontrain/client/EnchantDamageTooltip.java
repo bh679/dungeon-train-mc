@@ -88,15 +88,25 @@ public final class EnchantDamageTooltip {
             return;
         }
 
+        // Every hovered item lands here every frame: skip the line walk when there is nothing to add.
+        Optional<Component> perk = perkLine(Perks.rank(event.getEntity(), TierOnePerks.DAMAGE));
+        boolean enchanted = stack.isEnchanted();
+        if (!needsLines(perk.isPresent(), enchanted)) return;
+
         Attribute attackDamage = Attributes.ATTACK_DAMAGE.value();
         List<Component> lines = event.getToolTip();
         int index = baseDamageLine(lines, attackDamage.getDescriptionId());
         if (index < 0) return;
 
         List<Component> extraLines = new ArrayList<>();
-        perkLine(Perks.rank(event.getEntity(), TierOnePerks.DAMAGE)).ifPresent(extraLines::add);
-        if (stack.isEnchanted()) addEnchantLines(event, stack, index, extraLines);
+        perk.ifPresent(extraLines::add);
+        if (enchanted) addEnchantLines(event, stack, index, extraLines);
         lines.addAll(index + 1, extraLines);
+    }
+
+    /** Whether a melee tooltip can get any line from here: a perk line, or enchant damage. Package-visible for unit testing. */
+    static boolean needsLines(boolean hasPerkLine, boolean enchanted) {
+        return hasPerkLine || enchanted;
     }
 
     /** The perk line for a Damage perk at {@code rank}, or none below rank 1. Package-visible for unit testing. */

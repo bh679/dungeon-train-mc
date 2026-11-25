@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.perks.tier1;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.perks.PerkEffect;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.PerksGate;
 import games.brennan.dungeontrain.perks.TierOnePerks;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +16,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 
 /**
  * Stackable Book and Quill (Archivist): blank book-and-quills in the player's inventory stack to
@@ -88,9 +92,20 @@ public final class BookQuillStacking implements PerkEffect {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (player.tickCount % SWEEP_PERIOD_TICKS != 0) return;
-        if (Perks.rank(player, TierOnePerks.STACKABLE_BOOK_QUILL) <= 0 && !holdsStamped(player)) return;
-        sweep(player);
+        if (sweepDue(PerksGate.isOn(), player.tickCount,
+                () -> Perks.rank(player, TierOnePerks.STACKABLE_BOOK_QUILL), () -> holdsStamped(player))) {
+            sweep(player);
+        }
+    }
+
+    /**
+     * Whether this tick's sweep runs. With perks off nothing stamps a book, so there is nothing to walk.
+     * With perks on, a player without the perk still has their inventory checked for a stamped book
+     * (one taken from a chest, say) so it gets stripped. Package-visible for unit testing.
+     */
+    static boolean sweepDue(boolean perksOn, int tickCount, IntSupplier rank, BooleanSupplier holdsStamped) {
+        if (!perksOn || tickCount % SWEEP_PERIOD_TICKS != 0) return false;
+        return rank.getAsInt() > 0 || holdsStamped.getAsBoolean();
     }
 
     @SubscribeEvent

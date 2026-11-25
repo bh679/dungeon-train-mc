@@ -355,7 +355,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 conditionValuesToken(plot, localPos, s.condition()),
                 s.candles().id(), s.pot().id(), s.trapped(),
                 s.charges().toInt(), s.bedColours().mask(), s.slime().mask(),
-                BlockVariantSyncPacket.Entry.signBits(s.sign())));
+                BlockVariantSyncPacket.Entry.signBits(s.sign()),
+                (byte) s.villager().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -957,6 +958,19 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantSlime next = new VariantSlime(packet.delta());
                 if (next.equals(entry.slime())) return;
                 mutated.set(idx, entry.withSlime(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_VILLAGER_MODE -> {
+                // delta = VariantVillager.Mode ordinal; only a villager mob row carries one.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob() || !VariantVillager.isVillager(entry.entityId())) return;
+                VariantVillager.Mode next = VariantVillager.Mode.fromOrdinal(packet.delta());
+                if (next == entry.villager()) return;
+                mutated.set(idx, entry.withVillager(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
