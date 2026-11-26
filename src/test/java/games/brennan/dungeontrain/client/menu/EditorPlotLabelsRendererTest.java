@@ -130,7 +130,8 @@ class EditorPlotLabelsRendererTest {
         // Copies: those cells roll from the variant sidecar like any others.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.GROUND, RowKind.DOOR_OFFSET, RowKind.ENTRANCE, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.GROUND, RowKind.DOOR_OFFSET, RowKind.DOOR_DISTANCE,
+                RowKind.ENTRANCE, RowKind.ROOM_CONTENTS,
                 RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
@@ -141,7 +142,7 @@ class EditorPlotLabelsRendererTest {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_FLOOR,
-                RowKind.COPIES_ROOF, RowKind.GROUND, RowKind.DOOR_OFFSET, RowKind.ENTRANCE,
+                RowKind.COPIES_ROOF, RowKind.GROUND, RowKind.DOOR_OFFSET, RowKind.DOOR_DISTANCE, RowKind.ENTRANCE,
                 RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.EXITS, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
@@ -904,9 +905,34 @@ class EditorPlotLabelsRendererTest {
     }
 
     private static void seedFrameSnapshot(java.util.List<String> rooms, java.util.List<String> selected) {
+        seedFrameSnapshot(rooms, selected, "void");
+    }
+
+    private static void seedFrameSnapshot(java.util.List<String> rooms, java.util.List<String> selected,
+                                          String dimension) {
         games.brennan.dungeontrain.client.ChunkFrameRoomsClient.accept(
             new games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket(
-                FRAME, rooms, selected, false, 3, "void"));
+                FRAME, rooms, selected, false, 3, dimension, 16, "minecraft:grass_block"));
+    }
+
+    @Test
+    @DisplayName("An Endless open frame shows Ground and Door distance under its Dimension row")
+    void frameInPlot_endlessOpenRows() {
+        seedFrameSnapshot(java.util.List.of("ocean"), java.util.List.of("ocean"), "endless_open");
+        EditorPlotLabelsPacket.Entry e = frame(true);
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.FRAME_DIMENSION, RowKind.WEIGHT, RowKind.FRAME_GROUND,
+                RowKind.FRAME_DOOR_DISTANCE, RowKind.FRAME_LEVELS, RowKind.FRAME_GATE,
+                RowKind.FRAME_ROOMS_ALL, RowKind.FRAME_ROOM, RowKind.FRAME_SAVE},
+            EditorPlotLabelsRenderer.rows(e));
+        double halfW = 1.5;
+        double y = rowCentreY(e, 3);
+        assertEquals(CellKind.FRAME_GROUND_HELD, EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.1, y));
+        assertEquals(CellKind.FRAME_GROUND_EDIT, EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+        assertEquals(CellKind.FRAME_DOOR_DISTANCE_NUMBER,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, 0, rowCentreY(e, 4)));
+        assertEquals(CellKind.FRAME_DIM_ENDLESS_OPEN,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.1, rowCentreY(e, 1)));
     }
 
     @org.junit.jupiter.api.AfterEach
@@ -947,17 +973,18 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A frame panel's cells: three dimensions, two levels, Phases/Stage, All/None, a toggle per room, Save")
+    @DisplayName("A frame panel's cells: four dimensions, two levels, Phases/Stage, All/None, a toggle per room, Save")
     void frameInPlot_cells() {
         seedFrameSnapshot(java.util.List.of("ocean", "desert"), java.util.List.of("desert"));
         EditorPlotLabelsPacket.Entry e = frame(true);
         double halfW = 1.5;
-        double third = 2 * halfW / 3.0;
-        // Dimension row: left, middle and right thirds.
+        double quarter = 2 * halfW / 4.0;
+        // Dimension row: four equal quarters, left to right.
         double y = rowCentreY(e, 1);
-        assertEquals(CellKind.FRAME_DIM_BEDROCK, EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + third / 2, y));
-        assertEquals(CellKind.FRAME_DIM_VOID, EditorPlotLabelsRenderer.cellAt(e, halfW, 0, y));
-        assertEquals(CellKind.FRAME_DIM_WORLD_BORDER, EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - third / 2, y));
+        assertEquals(CellKind.FRAME_DIM_BEDROCK, EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + quarter / 2, y));
+        assertEquals(CellKind.FRAME_DIM_VOID, EditorPlotLabelsRenderer.cellAt(e, halfW, -quarter / 2, y));
+        assertEquals(CellKind.FRAME_DIM_WORLD_BORDER, EditorPlotLabelsRenderer.cellAt(e, halfW, quarter / 2, y));
+        assertEquals(CellKind.FRAME_DIM_ENDLESS_OPEN, EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - quarter / 2, y));
         assertEquals("bedrock", EditorPlotLabelsRenderer.frameDimensionToken(CellKind.FRAME_DIM_BEDROCK));
         assertEquals("world_border", EditorPlotLabelsRenderer.frameDimensionToken(CellKind.FRAME_DIM_WORLD_BORDER));
         // Weight is a number cell in the plot.
