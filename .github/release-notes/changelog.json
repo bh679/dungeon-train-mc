@@ -39712,6 +39712,42 @@
       "released": true,
       "released_in": "v0.2031.0",
       "released_at": "2026-11-25T15:03:32Z"
+    },
+    {
+      "id": "large-room-shell-stutter",
+      "version": "0.2031.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Even fewer stutters",
+      "summary": "Larger places now load with even less of a hitch.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2899,
+      "date": "2026-11-25",
+      "released": true,
+      "released_in": "v0.2033.0",
+      "released_at": "2026-11-26T04:04:35Z"
+    },
+    {
+      "id": "sound-device-switch-crash",
+      "version": "0.2033.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sound device crash fix",
+      "summary": "Fixed a crash when changing the sound device after the game started without sound.",
+      "highlights": [],
+      "pr": 2900,
+      "date": "2026-11-26",
+      "released": true,
+      "released_in": "v0.2033.0",
+      "released_at": "2026-11-26T04:04:35Z"
     }
   ]
 }
