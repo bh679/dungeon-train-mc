@@ -5488,6 +5488,7 @@
   "advancements.dungeontrain.enchiridion.no_room_left.description": "Remplis chaque page de ton album.",
   "advancements.dungeontrain.enchiridion.no_room_left.hint": "Seize pages, seize souvenirs.",
   "gui.dungeontrain.earned_photos.count": "Photos : %s",
+  "gui.dungeontrain.totem_pole.count": "Sauvé par : %s",
   "advancements.dungeontrain.enchiridion.past_life.title": "Vie antérieure",
   "advancements.dungeontrain.enchiridion.past_life.description": "Prends en photo ton propre écho.",
   "advancements.dungeontrain.enchiridion.past_life.hint": "Tu es déjà venu ici.",
