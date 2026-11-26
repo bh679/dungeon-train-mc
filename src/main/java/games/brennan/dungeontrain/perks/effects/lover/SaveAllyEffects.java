@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.effects.tank.TankTotemPerk;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,6 +49,8 @@ public final class SaveAllyEffects {
         LivingEntity victim = event.getEntity();
         if (!(victim.level() instanceof ServerLevel level)) return;
         if (!canSave(event.getSource())) return;
+        // the friend's own Totem perk goes first (same priority, so whichever runs first, it wins)
+        if (victim instanceof ServerPlayer self && TankTotemPerk.wouldSave(self, event.getSource())) return;
         long now = level.getGameTime();
         ServerPlayer lover = nearestReadyLover(level, victim, now);
         if (lover == null) return;

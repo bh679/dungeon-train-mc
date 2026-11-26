@@ -65,6 +65,12 @@ public final class TankTotemPerk {
             rank, player.getName().getString(), event.getSource().getMsgId(), String.format(java.util.Locale.ROOT, "%.1f", TankPerks.totemCooldownMinutes(rank)));
     }
 
+    /** True when this player's own Totem perk would save them from {@code source} now (Save Ally defers to it). */
+    public static boolean wouldSave(ServerPlayer player, DamageSource source) {
+        return Perks.rank(player, TankPerks.TOTEM) > 0 && canSave(player, source)
+            && isReady(player.getPersistentData(), player.level().getGameTime());
+    }
+
     /** The perk never overrides Free Play, forced deaths, or anything a real totem would not stop. */
     static boolean canSave(ServerPlayer player, DamageSource source) {
         if (RunIntegrity.isCheated(player)) return false;
