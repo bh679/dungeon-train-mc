@@ -1,19 +1,14 @@
 package games.brennan.dungeontrain.mixin.client;
 
-import games.brennan.dungeontrain.client.ClientBandDimension;
 import games.brennan.dungeontrain.client.ClientPortalRoomDepth;
-import games.brennan.dungeontrain.client.ClientVoidBand;
+import games.brennan.dungeontrain.client.CoordinateDisguise;
 import games.brennan.dungeontrain.client.DebugScreenDepthLines;
 import games.brennan.dungeontrain.client.DebugScreenDimensionLine;
-import games.brennan.dungeontrain.client.FarLandsDebugX;
-import games.brennan.dungeontrain.worldgen.BandDimensionName;
-import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +25,8 @@ import java.util.List;
  * inside the upside-down band, over its lid). Left alone, F3 prints a Y a hundred and fifty blocks
  * down and gives the whole trick away, and its X and Z place the room somewhere along the track
  * when it is meant to be a space of its own. {@link ClientPortalRoomDepth} holds the box and the
- * shift; {@link DebugScreenDepthLines} does the rewriting, and says there why the printed text is
+ * shift, {@link CoordinateDisguise} the answer this and every approved map/HUD mod share;
+ * {@link DebugScreenDepthLines} does the rewriting, and says there why the printed text is
  * what is touched rather than the position the method reads.</p>
  *
  * <p>Both columns: the left carries the camera's position, the right the Targeted Block and Fluid
@@ -61,14 +57,9 @@ public abstract class DebugScreenOverlayDepthMixin {
             List<String> lines = cir.getReturnValue();
             if (lines == null || lines.isEmpty()) return;
 
-            Minecraft minecraft = Minecraft.getInstance();
-            ClientLevel level = minecraft.level;
-            Entity camera = minecraft.getCameraEntity();
-            if (level == null || camera == null || !level.dimension().equals(Level.OVERWORLD)) return;
-
-            boolean inCarriage =
-                !ClientPortalRoomDepth.shiftAt(camera.getX(), camera.getY(), camera.getZ()).isZero();
-            String shown = inCarriage ? BandDimensionName.DIMENSIONAL_CARRIAGE : ClientBandDimension.id();
+            String shown = CoordinateDisguise.shownDimensionId();
+            ClientLevel level = Minecraft.getInstance().level;
+            if (shown == null || level == null) return;
             cir.setReturnValue(DebugScreenDimensionLine.renamed(
                 lines, level.dimension().location().toString(), shown));
         } catch (Throwable ignored) {
@@ -85,9 +76,7 @@ public abstract class DebugScreenOverlayDepthMixin {
             Entity camera = Minecraft.getInstance().getCameraEntity();
             if (camera == null) return;
 
-            DebugScreenDepthLines.Shift shift =
-                ClientPortalRoomDepth.shiftAt(camera.getX(), camera.getY(), camera.getZ());
-            if (shift.isZero()) shift = dungeontrain$farLandsShift(camera);
+            DebugScreenDepthLines.Shift shift = CoordinateDisguise.shiftFor(camera);
             if (shift.isZero()) return;
 
             BlockPos block = camera.blockPosition();
@@ -97,18 +86,5 @@ public abstract class DebugScreenOverlayDepthMixin {
             // The debug screen is a readout. Anything unexpected here leaves vanilla's own lines
             // standing rather than taking the overlay, and with it the frame, down with it.
         }
-    }
-
-    /**
-     * The X the legacy run around the Far Lands prints ({@link FarLandsDebugX}). Read from the client's own
-     * cycle, as the clocks and compasses read theirs ({@code OtherworldBand}), so it needs no packet.
-     */
-    @Unique
-    private static DebugScreenDepthLines.Shift dungeontrain$farLandsShift(Entity camera) {
-        if (!camera.level().dimension().equals(Level.OVERWORLD) || !ClientVoidBand.startsWithTrain()) {
-            return DebugScreenDepthLines.Shift.NONE;
-        }
-        long dx = FarLandsDebugX.offsetAt(WorldGenCycle.fromConfig(), camera.getBlockX());
-        return dx == 0L ? DebugScreenDepthLines.Shift.NONE : new DebugScreenDepthLines.Shift(dx, 0, 0);
     }
 }
