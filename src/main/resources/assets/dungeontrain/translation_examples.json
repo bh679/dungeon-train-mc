@@ -19622,5 +19622,30 @@
     "3": { "label": "yes or no (English word)", "examples": ["yes", "no"] },
     "4": { "label": "a visit count, 0 for off", "examples": ["3", "0"] },
     "5": { "label": "a spawn weight number", "examples": ["4", "0"] }
+  },
+  "gui.dungeontrain.warlock.ready_in": {
+    "1": { "label": "a time left, in seconds", "examples": ["12s", "3s"] }
+  },
+  "gui.dungeontrain.warlock.convert.done": {
+    "1": { "label": "a mob's name", "examples": ["Zombie", "Skeleton"] }
+  },
+  "gui.dungeontrain.warlock.convert.immune": {
+    "1": { "label": "a mob's name", "examples": ["Wither", "Steve"] }
+  },
+  "gui.dungeontrain.warlock.call.playermob": {
+    "1": { "label": "a PlayerMob's name", "examples": ["Alex", "Notch"] }
+  },
+  "gui.dungeontrain.warlock.call.request": {
+    "1": { "label": "the calling player's name", "examples": ["Brennan", "Alex"] },
+    "2": { "label": "the clickable [Accept] button", "examples": ["[Accept]"] }
+  },
+  "gui.dungeontrain.warlock.call.sent": {
+    "1": { "label": "a player's name", "examples": ["Brennan", "Alex"] }
+  },
+  "gui.dungeontrain.warlock.call.arrived": {
+    "1": { "label": "a player's or PlayerMob's name", "examples": ["Brennan", "Alex"] }
+  },
+  "gui.dungeontrain.warlock.call.refused": {
+    "1": { "label": "a PlayerMob's name", "examples": ["Alex", "Notch"] }
   }
 }
