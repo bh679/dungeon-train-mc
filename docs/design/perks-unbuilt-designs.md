@@ -420,3 +420,106 @@ The Lover's Aura turned on enemies, with a range **per debuff**.
 - Door spot: scan deck floor cells outward from the door for a solid block with two air above
   (`CarriageDeck.chunkInPlot` for the Sable plot); place `Blocks.CHEST` and set a custom name
   component on the block entity. Fill via `ChestBlockEntity.setItem`.
+
+---
+
+## Warlock
+
+Settled 2026-11-26. Standless Brewing left Warlock for the new Alchemist class (`perks-alchemist.md`),
+so Warlock's path is Throwables → Summon Lightning, with Teleport Player and Convert Mob beside it.
+Code: `perks/effects/warlock/` (maths in `WarlockPerks`, tests in `WarlockPerksTest`).
+
+### Throwables (tier 1) — CONFIRMED 2026-11-26
+
+**How it works**
+- Snowballs, eggs and wind charges a player with the perk throws hurt mobs and players they hit.
+- Slimeballs and fire charges become throwable: use one in the air. A fire charge used on a block
+  still lights it as vanilla does.
+- Snowball: frostbite (frost overlay, Slowness I). Slimeball: Slowness II. Fire charge: sets the
+  target alight, never a block. Wind charge: its usual push plus the damage. Egg: damage only,
+  chicks still hatch.
+- **Damage:** ½♥ at 1 point, ½♥ more at 3, 6, 10, 15, 21 … (triangular numbers).
+- **Effect time:** 2·√r seconds, to one decimal (2.0, 2.8, 3.5, 4.0 … 6.3 at 10).
+
+**Details card**
+- Description: "Snowballs and other thrown things hurt or slow what they hit, and more things can
+  be thrown."
+- Chips: `Damage` (HEARTS, stepped: "→ 1♥ at 3 points") and `Duration` (SECONDS).
+
+**Build notes**
+- `ThrowablesEvents`: `ProjectileImpactEvent` adds the damage and effect. Slimeballs and fire
+  charges fly as a vanilla `Snowball` with `setItem`, so there is no new entity.
+
+### Teleport Player (tier 2) — CONFIRMED 2026-11-26
+
+**How it works**
+- **Call a player** button on the details card (in play, with points). It opens a list: online
+  players first, then the PlayerMobs met this life, newest first, scrolling. With no one to call
+  the button greys out: "No one to call."
+- **Players:** the target gets "X wants to bring you to them. [Accept]" for 60 s. The cooldown
+  starts when they accept. Called to someone on the train, they land on the deck the way `/dtp`
+  lands a player.
+- **PlayerMobs** answer at once. One whose reaction to you is a greeting (likes you) always comes;
+  any other comes with chance friendliness × 10%. A refusal still starts the cooldown.
+- **Met** = within 16 blocks of you, or hit by you, this life. The list rides the player's
+  persistent data, so it resets each life and travels through naps. Each entry keeps a snapshot
+  (name, skin, feelings, gear), refreshed while you are near. A loaded mob is moved; an unloaded one,
+  or one from an earlier run in another world, is rebuilt from its snapshot, and the copy left in
+  its chunk vanishes when that chunk loads. Dead ones drop off.
+- **Cooldown:** 300 × 0.9^(r−1) seconds, whole seconds: 300, 270, 243 … 197 at 5, 116 at 10, 41 at
+  20. Never 0.
+
+**Details card**
+- Description: "Bring another player, or a PlayerMob you met this life, to you."
+- Chips: `Cooldown` (SECONDS). The Call a player button sits at the right of the bar.
+
+**Build notes**
+- `TeleportCalls`, `MetPlayerMobs`, `WarlockCallData` (dead and called-away ids), packets
+  `TeleportCallPacket` (list, call, accept) and `TeleportListPacket`. Accept is a `ChatClick`
+  action, not a command. The client side is in `client/warlock/`.
+- The list keeps its newest 32 PlayerMobs. That is a storage bound, not a perk limit.
+
+### Summon Lightning (tier 3) — CONFIRMED 2026-11-26 (replaces the melee-proc version of the same day)
+
+**How it works**
+- Look at a mob (or player, where PvP is on) within 32 blocks and press attack with an empty hand.
+  A visual-only bolt strikes it, and the perk deals the damage and sets the target alight. It never
+  lights blocks or converts anything (no charged creepers, witches or piglins).
+- It costs the caster health. A cast that would kill them is refused ("Not enough hearts."). Health
+  is the only limit: there is no cooldown. Creative pays nothing.
+- **Ladder (Brennan's table, damage – cost in hearts):** 5–4, 5.5–4, 5.5–3.5, 6–3.5, 6–3, 6.5–3,
+  7–3, 7–2.5, 7.5–2.5, 8–2.5, 9–2.5, 10–2.5, 10–2, 10.5–2, 11.5–2, 12–2, 13–2, then +1♥ a point
+  to 20–2 at 24, and 20–1.5 at 25.
+- **Past 25:** the cost drops ½♥ at double the last gap each time (49 → 1♥, 97 → ½♥). After ½♥ it
+  becomes a 50% chance of losing ½♥ (193), and the chance halves at each further drop (385 → 25%,
+  769 → 12.5% …). Damage climbs 1♥ a point and holds on each point the cost drops, as the table
+  does (assumed from 18–24; confirm with Brennan).
+
+**Details card**
+- Description: "Look at a mob and attack with an empty hand to call down lightning. It costs you
+  hearts."
+- Chips: `Damage` (HEARTS), `Cost` (HEARTS, stepped), and `Cost chance` (PERCENT, shown only below
+  100%).
+
+**Build notes**
+- `client/warlock/SummonLightningInput` catches the empty-hand attack and the entity under the
+  crosshair (ray stops at blocks), then sends `SummonLightningPacket`. `SummonLightning.cast`
+  re-checks range, line of sight, PvP and health.
+
+### Convert Mob (tier 3) — CONFIRMED 2026-11-26
+
+**How it works**
+- Sneak and use an empty hand on a hostile mob. It fights hostile mobs within 16 blocks and never
+  targets a player, wearing purple sparks, then turns back. One at a time: a new one releases the last.
+- Not bosses (Wither, Ender Dragon, Warden, Elder Guardian, `c:bosses`), raid captains, PlayerMobs
+  (Echoes included) or tamed mobs: "X won't be turned."
+- **Duration:** 15·√r seconds, one decimal (15, 21.2, 26 … 33.5 at 5, 47.4 at 10).
+- **Cooldown:** 120 × 0.9^(r−1) seconds, one decimal (120, 108, 97.2 … 46.5 at 10). Never 0.
+
+**Details card**
+- Description: "Sneak and use an empty hand on a hostile mob to turn it to your side for a while."
+- Chips: `Duration` and `Cooldown` (SECONDS).
+
+**Build notes**
+- `ConvertMobEvents`: a persistent-data tag on the mob (owner, end time), a `LivingChangeTargetEvent`
+  veto on players and fellow converts, and a once-a-second retarget onto the nearest hostile.
