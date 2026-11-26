@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.SharedCarriageLookup;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.train.StorageContents;
+import games.brennan.dungeontrain.train.engine.EngineStamp;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -160,6 +161,14 @@ public final class SharedCarriageEnterEvents {
         if (ownByThisPlayer) {
             games.brennan.dungeontrain.advancement.ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                     .trigger(player, "drift_own_return");
+        }
+
+        // A carriage whose engines have all been carried off can't drift on: nothing to announce. Checked
+        // before the rate limit so the silent entry doesn't spend one of the player's announcements.
+        int engines = inst == null ? -1 : EngineStamp.engineCount(level, inst);
+        if (engines >= 0 && !SharedCarriageMessage.announces(engines, inst.fuel())) {
+            PENDING.remove(id);
+            return;
         }
 
         if (!admit(id, System.currentTimeMillis())) {
