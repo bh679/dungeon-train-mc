@@ -16420,6 +16420,15 @@
       ]
     }
   },
+  "gui.dungeontrain.totem_pole.count": {
+    "1": {
+      "label": "how many kinds of Dungeon Totem have saved the player, out of all of them",
+      "examples": [
+        "5/19",
+        "19/19"
+      ]
+    }
+  },
   "chat.dungeontrain.discord.code": {
     "1": {
       "label": "the 6-character link code, shown as a clickable code",

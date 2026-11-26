@@ -6281,6 +6281,7 @@
   "advancements.dungeontrain.enchiridion.no_room_left.description": "Заповни всі сторінки свого альбому.",
   "advancements.dungeontrain.enchiridion.no_room_left.hint": "Шістнадцять сторінок, шістнадцять спогадів.",
   "gui.dungeontrain.earned_photos.count": "Світлини: %s",
+  "gui.dungeontrain.totem_pole.count": "Врятували: %s",
   "advancements.dungeontrain.enchiridion.past_life.title": "Минуле життя",
   "advancements.dungeontrain.enchiridion.past_life.description": "Сфотографуй власне Відлуння.",
   "advancements.dungeontrain.enchiridion.past_life.hint": "Ти вже був тут раніше.",

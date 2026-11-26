@@ -46,6 +46,7 @@
     "WanderingTraderStockMixin",
     "TrainVillagerNoRestockMixin",
     "VillagerNewJobNoMendingMixin",
+    "MerchantNoStructureSearchMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
@@ -227,6 +228,7 @@
     "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.MinecraftEmergencyCrashMixin",
     "client.ExposureClientInitOnceMixin",
     "client.ExposurePolaroidClientInitOnceMixin",
     "client.EnchantmentScreenCrafterCostMixin",
