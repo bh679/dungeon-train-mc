@@ -46,12 +46,30 @@ public final class PerkStats {
     /** A value only words can say, like a Strength level. */
     public record Text(Component text) implements Value {}
 
-    /** One stat: its lang id ({@code gui.dungeontrain.perks.stat.<id>}) and its value by points. */
-    public record Stat(String id, IntFunction<Value> at) {
+    /**
+     * One stat: its lang id ({@code gui.dungeontrain.perks.stat.<id>}), its value by points, and the
+     * label's arguments by points ({@code labelArgs} may be null: a plain label). A null value hides the
+     * stat at those points, so an overflow perk can show "Luck I always" only from 100%.
+     */
+    public record Stat(String id, IntFunction<Value> at, IntFunction<Object[]> labelArgs) {
+        public Stat(String id, IntFunction<Value> at) {
+            this(id, at, null);
+        }
+
+        /** The value at {@code points}, or null when the stat is hidden there. */
         public Value valueAt(int points) {
             return at.apply(Math.max(0, points));
         }
+
+        /** The label's arguments at {@code points}; empty for a plain label. */
+        public Object[] labelArgsAt(int points) {
+            if (labelArgs == null) return NO_ARGS;
+            Object[] args = labelArgs.apply(Math.max(0, points));
+            return args == null ? NO_ARGS : args;
+        }
     }
+
+    private static final Object[] NO_ARGS = new Object[0];
 
     private static final Map<String, List<Stat>> STATS = Collections.synchronizedMap(new LinkedHashMap<>());
 
@@ -59,11 +77,19 @@ public final class PerkStats {
 
     /** Add a stat to a perk, after any it already has. Registering the same stat id twice replaces it. */
     public static void register(String perkId, String statId, IntFunction<Value> at) {
+        register(perkId, statId, null, at);
+    }
+
+    /**
+     * As {@link #register(String, String, IntFunction)}, with label arguments by points: the label's lang
+     * value takes them as {@code %s} (so "Luck %s chance" reads "Luck I chance" or "Luck II chance").
+     */
+    public static void register(String perkId, String statId, IntFunction<Object[]> labelArgs, IntFunction<Value> at) {
         if (!statId.matches("[a-z0-9_]+")) throw new IllegalArgumentException("bad stat id " + statId);
         synchronized (STATS) {
             List<Stat> list = new ArrayList<>(STATS.getOrDefault(perkId, List.of()));
             list.removeIf(s -> s.id().equals(statId));
-            list.add(new Stat(statId, at));
+            list.add(new Stat(statId, at, labelArgs));
             STATS.put(perkId, List.copyOf(list));
         }
     }
@@ -89,4 +115,11 @@ public final class PerkStats {
     public static Value plus(double value, Unit unit) {
         return new Num(value, unit, true);
     }
+
+    /** A chip that is its label alone, like "Luck I always". */
+    public static Value labelOnly() {
+        return LABEL_ONLY;
+    }
+
+    private static final Value LABEL_ONLY = new Text(Component.empty());
 }

@@ -55,6 +55,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
     private static final String TAG_REVERSE_ORIGIN_X = "reverseOriginX";
+    private static final String TAG_PLOT_READOUT_DX = "plotReadoutDx";
+    private static final String TAG_PLOT_READOUT_DZ = "plotReadoutDz";
     private static final String TAG_REVERSE_REACH_X = "reverseReachX";
     private static final String TAG_REVERSE_EARNED = "reverseEarned";
     private static final String TAG_REVERSE_SLIDE = "reverseSlide";
@@ -158,6 +160,12 @@ public final class DungeonTrainWorldData extends SavedData {
      * until someone boards.
      */
     private long reverseOriginX = Long.MAX_VALUE;
+    /**
+     * How far the train's Sable plot sat from its real X and Z when it last spawned
+     * ({@link #setPlotReadoutOffset}); {@link Long#MAX_VALUE} before any train spawned under this field.
+     */
+    private long plotReadoutDx = Long.MAX_VALUE;
+    private long plotReadoutDz = Long.MAX_VALUE;
     /**
      * Lowest world X any counted player has reached, on the train or off it ({@code worldgen.ReverseSlide}),
      * or {@link Long#MAX_VALUE} before anyone has gone behind the origin. World space, never train-relative.
@@ -583,6 +591,10 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         // Absent on worlds saved before the reverse slide existed → no frontier yet, no slide.
         if (tag.contains(TAG_REVERSE_ORIGIN_X)) data.reverseOriginX = tag.getLong(TAG_REVERSE_ORIGIN_X);
+        if (tag.contains(TAG_PLOT_READOUT_DX) && tag.contains(TAG_PLOT_READOUT_DZ)) {
+            data.plotReadoutDx = tag.getLong(TAG_PLOT_READOUT_DX);
+            data.plotReadoutDz = tag.getLong(TAG_PLOT_READOUT_DZ);
+        }
         if (tag.contains(TAG_REVERSE_REACH_X)) data.reverseReachX = tag.getLong(TAG_REVERSE_REACH_X);
         if (tag.contains(TAG_REVERSE_EARNED)) data.reverseEarned = Math.max(0L, tag.getLong(TAG_REVERSE_EARNED));
         if (tag.contains(TAG_REVERSE_SLIDE)) data.reverseSlide = Math.max(0L, tag.getLong(TAG_REVERSE_SLIDE));
@@ -740,6 +752,10 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
         if (reverseOriginX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_ORIGIN_X, reverseOriginX);
+        if (hasPlotReadoutOffset()) {
+            tag.putLong(TAG_PLOT_READOUT_DX, plotReadoutDx);
+            tag.putLong(TAG_PLOT_READOUT_DZ, plotReadoutDz);
+        }
         if (reverseReachX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_REACH_X, reverseReachX);
         if (reverseEarned > 0L) tag.putLong(TAG_REVERSE_EARNED, reverseEarned);
         if (reverseSlide > 0L) tag.putLong(TAG_REVERSE_SLIDE, reverseSlide);
@@ -895,6 +911,34 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorModeSettings(games.brennan.dungeontrain.editor.EditorModeSettings next) {
         if (editorModeSettings.equals(next)) return;
         editorModeSettings = next;
+        setDirty();
+    }
+
+    /** Whether a train has spawned since the plot readout offset was recorded. */
+    public boolean hasPlotReadoutOffset() {
+        return plotReadoutDx != Long.MAX_VALUE && plotReadoutDz != Long.MAX_VALUE;
+    }
+
+    /** Plot X minus real X of the train at its last spawn; meaningful only when {@link #hasPlotReadoutOffset}. */
+    public long getPlotReadoutDx() {
+        return plotReadoutDx;
+    }
+
+    /** Plot Z minus real Z of the train at its last spawn; meaningful only when {@link #hasPlotReadoutOffset}. */
+    public long getPlotReadoutDz() {
+        return plotReadoutDz;
+    }
+
+    /**
+     * Record how far the train's Sable plot sits from where it really is, at the moment it spawns. A
+     * readout of a block on a carriage takes this off its X and Z, so it reads near where the train
+     * started instead of some 20 million blocks out. Overwritten by every spawn. Saved when it changes.
+     */
+    public void setPlotReadoutOffset(long dx, long dz) {
+        if (dx == Long.MAX_VALUE || dz == Long.MAX_VALUE) return;
+        if (dx == plotReadoutDx && dz == plotReadoutDz) return;
+        plotReadoutDx = dx;
+        plotReadoutDz = dz;
         setDirty();
     }
 
