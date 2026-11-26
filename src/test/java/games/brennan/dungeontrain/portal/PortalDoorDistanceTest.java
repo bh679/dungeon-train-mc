@@ -126,6 +126,17 @@ class PortalDoorDistanceTest {
     }
 
     @Test
+    @DisplayName("Endless open chunk cuts no doorway into its tower; every other chunk room does")
+    void chunkEndlessOpenCutsNoDoorway() {
+        assertFalse(PortalChunkDimension.opensDoorways(PortalRoomMode.CHUNK_ENDLESS_OPEN));
+        for (PortalRoomMode m : PortalRoomMode.values()) {
+            if (m.generatesTerrain() && m != PortalRoomMode.CHUNK_ENDLESS_OPEN) {
+                assertTrue(PortalChunkDimension.opensDoorways(m), m.id());
+            }
+        }
+    }
+
+    @Test
     @DisplayName("the plain row is the halo's bottom row, cut into chunk columns that cover it exactly")
     void groundRow_columns() {
         BoundingBox halo = new BoundingBox(-37, -64, 5, 40, -10, 70);
