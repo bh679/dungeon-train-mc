@@ -133,11 +133,20 @@ public final class SpareEnemiesEffects {
         FLEEING.clear();
     }
 
-    /** Point the mob's path away from {@code from}. */
+    /**
+     * Point the mob away from {@code from}: a path to a random spot away when one exists, else (no
+     * spot found, or no path, as on a moving carriage) straight steering away.
+     */
     private static void run(Mob mob, Vec3 from) {
-        if (!(mob instanceof PathfinderMob walker)) return;
-        Vec3 away = DefaultRandomPos.getPosAway(walker, 16, 7, from);
-        if (away != null) walker.getNavigation().moveTo(away.x, away.y, away.z, 1.3);
+        if (mob instanceof PathfinderMob walker) {
+            Vec3 away = DefaultRandomPos.getPosAway(walker, 16, 7, from);
+            if (away != null && walker.getNavigation().moveTo(away.x, away.y, away.z, 1.3)) return;
+        }
+        Vec3 dir = mob.position().subtract(from).multiply(1, 0, 1);
+        if (dir.lengthSqr() < 1.0E-4) dir = new Vec3(mob.getRandom().nextDouble() - 0.5, 0, mob.getRandom().nextDouble() - 0.5);
+        Vec3 to = mob.position().add(dir.normalize().scale(6));
+        mob.getNavigation().stop();
+        mob.getMoveControl().setWantedPosition(to.x, mob.getY(), to.z, 1.3);
     }
 
     private static void vanish(Mob mob) {

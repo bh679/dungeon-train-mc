@@ -32,12 +32,19 @@ final class AuraChips {
     private static final String KEY = "gui.dungeontrain.perks.aura.";
     private static final String STAT = "gui.dungeontrain.perks.stat.";
     private static final int OFF = 0x7A7A86, SUB = 0x9AA0B8;
-    private static final float MIN_SCALE = 0.6F;
+    private static final float MIN_SCALE = 0.5F;
+    /** Shrinking below this first switches the chips to their short form. */
+    private static final float PREFER_SCALE = 0.85F;
 
     /** Where each chip was last drawn, for clicks. */
     private record Hit(float x0, float y0, float x1, float y1, ResourceLocation effect) {}
 
-    private record Chip(String name, String sub, String next, int colour, boolean off, ResourceLocation effect, boolean dashed) {}
+    private record Chip(String name, String sub, String next, int colour, boolean off, ResourceLocation effect, boolean dashed,
+                        String shortSub) {
+        Chip(String name, String sub, String next, int colour, boolean off, ResourceLocation effect, boolean dashed) {
+            this(name, sub, next, colour, off, effect, dashed, "");
+        }
+    }
 
     private static final List<Hit> HITS = new ArrayList<>();
     private static String hitsFor;
@@ -50,11 +57,22 @@ final class AuraChips {
         hitsFor = def.perkId();
         List<Chip> chips = chips(def, points, preview, thisLife);
         if (chips.isEmpty()) return;
-        int width = 0;
-        for (Chip c : chips) width += chipWidth(font, c, pad) + gap;
-        width -= gap;
         int room = right - x;
+        // crowded: drop the "· N blocks" words to just the number, then shrink, then cut with a "+N" chip
+        if (rowWidth(font, chips, pad, gap) * PREFER_SCALE > room) chips = compact(chips);
+        // still too wide at the smallest size: the dashed preview goes before any owned effect does
+        if (rowWidth(font, chips, pad, gap) * MIN_SCALE > room && !chips.isEmpty() && chips.get(chips.size() - 1).dashed()) {
+            chips = new ArrayList<>(chips.subList(0, chips.size() - 1));
+        }
+        int width = rowWidth(font, chips, pad, gap);
         float scale = width <= room ? 1F : Math.max(MIN_SCALE, room / (float) width);
+        int fit = fitting(font, chips, pad, gap, room / scale);
+        if (fit < chips.size()) {
+            int keep = Math.max(1, fit - 1);
+            int hidden = chips.size() - keep;
+            chips = new ArrayList<>(chips.subList(0, keep));
+            chips.add(new Chip("+" + hidden, "", "", SUB, false, null, false));
+        }
         g.pose().pushPose();
         g.pose().translate(x, y + chipH * (1F - scale), 0);
         g.pose().scale(scale, scale, 1F);
@@ -62,7 +80,6 @@ final class AuraChips {
         int ty = (chipH - font.lineHeight) / 2 + 1;
         for (Chip c : chips) {
             int w = chipWidth(font, c, pad);
-            if (cx + w > room / scale && cx > 0) break; // never past the bar
             int border = c.dashed() ? gold : c.off() ? OFF : c.colour();
             g.fill(cx, 0, cx + w, chipH, ((int) (a * 0.9) << 24) | (bg & 0xFFFFFF));
             outline(g, cx, w, chipH, (a << 24) | (border & 0xFFFFFF), c.dashed());
@@ -122,7 +139,8 @@ final class AuraChips {
             String sub = " · " + Component.translatable(STAT + "unit.blocks", StatChips.number(now.range(i))).getString();
             String next = change.kind() == AuraPreview.Kind.ONE_RANGE && change.index() == i
                 ? " → " + StatChips.number(then.range(i)) : "";
-            out.add(new Chip(name, sub, next, def.chipColour(), id != null && off.contains(id), id, false));
+            out.add(new Chip(name, sub, next, def.chipColour(), id != null && off.contains(id), id, false,
+                StatChips.number(now.range(i))));
         }
         String dashed = switch (change.kind()) {
             case NEW -> Component.translatable(KEY + def.langGroup() + ".new").getString();
@@ -152,6 +170,32 @@ final class AuraChips {
         String base = effect == null ? id.getPath() : Component.translatable(effect.getDescriptionId()).getString();
         if (level <= 1 || def.noLevels().contains(id)) return base;
         return base + " " + Component.translatable("enchantment.level." + level).getString();
+    }
+
+    private static int rowWidth(Font font, List<Chip> chips, int pad, int gap) {
+        int w = 0;
+        for (Chip c : chips) w += chipWidth(font, c, pad) + gap;
+        return Math.max(0, w - gap);
+    }
+
+    /** How many chips from the start fit in {@code room} (unscaled units). */
+    private static int fitting(Font font, List<Chip> chips, int pad, int gap, float room) {
+        int w = 0;
+        for (int i = 0; i < chips.size(); i++) {
+            w += chipWidth(font, chips.get(i), pad) + (i > 0 ? gap : 0);
+            if (w > room) return Math.max(1, i);
+        }
+        return chips.size();
+    }
+
+    /** The short form: "Resistance 6" in place of "Resistance · 6 blocks". */
+    private static List<Chip> compact(List<Chip> chips) {
+        List<Chip> out = new ArrayList<>();
+        for (Chip c : chips) {
+            String sub = c.sub().isEmpty() ? "" : " " + c.shortSub();
+            out.add(new Chip(c.name(), sub, c.next(), c.colour(), c.off(), c.effect(), c.dashed(), c.shortSub()));
+        }
+        return out;
     }
 
     private static int chipWidth(Font font, Chip c, int pad) {
