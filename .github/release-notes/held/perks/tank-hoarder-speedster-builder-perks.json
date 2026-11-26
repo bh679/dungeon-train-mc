@@ -1,0 +1,16 @@
+{
+  "id": "tank-hoarder-speedster-builder-perks",
+  "version": "0.2041.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "Tank, Speedster, Hoarder and Builder perks",
+  "summary": "Four more classes get working perks. Tank gives you more armour, slower hunger, healing over time, and once in a while a save from a killing blow. Speedster makes you mine faster, sprint faster and further for less hunger, and lets the wind push you around less. Hoarder gives some containers you open Luck, and lets your kills count as if your weapon had more Looting. Builder pays you back in emeralds for gifts you leave in other players' drifting carriages. None of them have a cap.",
+  "highlights": [],
+  "pr": 2910,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
