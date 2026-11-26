@@ -293,6 +293,9 @@ public final class PortalTestCommand {
                     .withStyle(ChatFormatting.YELLOW), false);
                 return 1;
             }
+            // Every test stamps pair 0, so without this only the first test of a server's life ever
+            // got its sample's mobs.
+            games.brennan.dungeontrain.portal.PortalChunkDimension.forgetOccupants(PortalTestSession.PAIR_KEY);
         }
 
         // Already inside one: stamping a second would leave the first standing and lose the way home

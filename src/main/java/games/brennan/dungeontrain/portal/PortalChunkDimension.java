@@ -492,6 +492,7 @@ public final class PortalChunkDimension {
             // Poured from a cube decorated and applied before (a re-stamp): nothing more is coming.
             UNDECORATED.remove(pairKey);
         }
+        settleLiving(level, structure, dims, pairKey);
         AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={} patched={} dress={} fluidTicks={}",
             pairKey, structure.roomName(), pour.ticks(), millis(pour.totalNanos()), millis(pour.maxNanos()),
             millis(rowNanos), millis(System.nanoTime() - started), flushed, pour.patched(),
@@ -979,6 +980,12 @@ public final class PortalChunkDimension {
      */
     private static final java.util.Map<Integer, PortalChunkSlice> PENDING_OCCUPANTS = new java.util.HashMap<>();
 
+    /** Let {@code pairKey}'s next pour spawn its sample's mobs again — a test stamp's fresh room. */
+    public static void forgetOccupants(int pairKey) {
+        POPULATED.remove(pairKey);
+        PENDING_OCCUPANTS.remove(pairKey);
+    }
+
     /** Spawn {@code slice}'s mobs now, or once the pair's frame is down if it is still being written. */
     private static void spawnOccupantsAfterFrame(ServerLevel level, PortalStructure structure,
                                                  CarriageDims dims, PortalChunkSlice slice, int pairKey) {
@@ -989,11 +996,45 @@ public final class PortalChunkDimension {
         spawnOccupants(level, structure, dims, slice, pairKey);
     }
 
-    /** The mobs a just-finished frame was holding back, if any. */
+    /** The mobs a just-finished frame was holding back, if any — and the room's living ones settled. */
     private static void releasePendingOccupants(ServerLevel level, PortalStructure structure,
                                                 CarriageDims dims, int pairKey) {
         PortalChunkSlice slice = PENDING_OCCUPANTS.remove(pairKey);
         if (slice != null) spawnOccupants(level, structure, dims, slice, pairKey);
+        settleLiving(level, structure, dims, pairKey);
+    }
+
+    /**
+     * Move every mob already living in the room out of the blocks it was just written over.
+     *
+     * <p>A room is rewritten while its mobs stay: a re-stamp lays the template's ground rows back
+     * through the box before the pour carves the sample out of it again, and a frame goes down over
+     * whatever is standing in its cells. Once the last of that writing is done, a mob whose box is in
+     * a block is moved to the nearest spot it fits ({@link PortalRoomMobFit}); one with nowhere to go
+     * is left as it is, rather than removed.</p>
+     */
+    private static void settleLiving(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
+        if (FRAMINGS.containsKey(pairKey)) return;   // the frame's end settles them
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos origin = structure.roomOrigin(dims, layout);
+        Vec3i size = structure.roomSize();
+        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
+        int moved = 0;
+        int stuck = 0;
+        for (net.minecraft.world.entity.Mob mob : level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, box)) {
+            // Only a mob actually in a block: one standing in a doorway's corridor is where it walked to.
+            if (!box.contains(mob.position()) || level.noCollision(mob)) continue;
+            PortalRoomMobFit.Outcome fit = PortalRoomMobFit.fit(level, mob, origin, size, mask);
+            if (fit == PortalRoomMobFit.Outcome.MOVED) moved++;
+            else if (fit == PortalRoomMobFit.Outcome.BLOCKED) stuck++;
+        }
+        if (moved > 0 || stuck > 0) {
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} settled its living mobs: {} moved out of "
+                + "blocks, {} with nowhere to go", pairKey, moved, stuck);
+        }
     }
 
     /**
