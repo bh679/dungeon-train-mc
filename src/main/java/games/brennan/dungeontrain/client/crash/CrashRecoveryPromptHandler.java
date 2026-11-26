@@ -71,6 +71,19 @@ public final class CrashRecoveryPromptHandler {
         Optional<CrashRunState.RunState> crashed = crashedRun(mc);
         if (crashed.isEmpty()) return;
         openedThisSession = true;
+        // A real crash comes back as a nap (Reboard carries on); anything else gets the Salvage card.
+        if (CrashNapRecovery.tryRecover(mc, crashed.get())) {
+            mc.setScreen(new CrashRecoveredScreen(parent, crashed.get().worldName()));
+            return;
+        }
+        // A Free Play run has nothing to salvage that a fresh Free Play world wouldn't hand
+        // straight back, and its Ender Chest is the Free Play one anyway. Skip the card.
+        if (wasFreePlay(mc, crashed.get())) {
+            LOGGER.info("[DungeonTrain] Crash recovery: '{}' was already Free Play; nothing to salvage, forgetting the run.",
+                    crashed.get().levelId());
+            CrashRunState.clear(PlayerDataPaths.root());
+            return;
+        }
         LOGGER.info("[DungeonTrain] Crash recovery: last session ended mid-run in '{}'; offering salvage.",
                 crashed.get().levelId());
         mc.setScreen(new CrashRecoveryScreen(parent, crashed.get()));
@@ -85,6 +98,16 @@ public final class CrashRecoveryPromptHandler {
         if (crashed.isEmpty()) return;
         openDelayRemaining = OPEN_DELAY_TICKS;
         pendingParent = titleScreen;
+    }
+
+    private static boolean wasFreePlay(Minecraft mc, CrashRunState.RunState run) {
+        try {
+            return SaveFreePlayProbe.wasFreePlay(mc.getLevelSource().getLevelPath(run.levelId()),
+                    mc.getUser().getProfileId());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Crash recovery: Free Play check failed: {}", e.toString());
+            return false;
+        }
     }
 
     /**
@@ -106,15 +129,6 @@ public final class CrashRecoveryPromptHandler {
             // offer it; the nap stays valid and the title-screen sweep removes the world.
             if (games.brennan.dungeontrain.nap.NapStore.local().pendingLevelIds().contains(state.get().levelId())) {
                 LOGGER.info("[DungeonTrain] Crash recovery: '{}' was napped; not offering it.",
-                        state.get().levelId());
-                CrashRunState.clear(PlayerDataPaths.root());
-                return Optional.empty();
-            }
-            // A Free Play run has nothing to salvage that a fresh Free Play world wouldn't hand
-            // straight back, and its Ender Chest is the Free Play one anyway. Skip the card.
-            if (SaveFreePlayProbe.wasFreePlay(mc.getLevelSource().getLevelPath(state.get().levelId()),
-                    mc.getUser().getProfileId())) {
-                LOGGER.info("[DungeonTrain] Crash recovery: '{}' was already Free Play; nothing to salvage, forgetting the run.",
                         state.get().levelId());
                 CrashRunState.clear(PlayerDataPaths.root());
                 return Optional.empty();

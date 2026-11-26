@@ -404,6 +404,25 @@
         "com.diontryban"
       ]
     },
+    "asynclocator": {
+      "platform": "modrinth",
+      "project": "LUIHK4LD",
+      "slug": "async-locator-refined",
+      "name": "Async Locator Refined",
+      "sha1": [
+        "1bb64def7d35e549e23f52cfa351c7ccf0030ec3",
+        "287ec5c76bf9f7f8493e789f70759ab993784f5e",
+        "2993e3efc6d211ad8d4db179851dea6fdfff4e07",
+        "3387e468352d7fab89af010d55d1edeebc6096e7",
+        "3a67f7a9a8ce5292753570d4600cfa7c21ec2c15",
+        "3e6e3d90259ab2c438d001cb62463cf059d59afa",
+        "a12d3276da3afc2429b361025dd3426f2bcd5b5e",
+        "bc32ee5aa103f2eb2026829000e02b8ec39c663f"
+      ],
+      "packages": [
+        "brightspark.asynclocator"
+      ]
+    },
     "badoptimizations": {
       "platform": "modrinth",
       "project": "g96Z4WVZ",

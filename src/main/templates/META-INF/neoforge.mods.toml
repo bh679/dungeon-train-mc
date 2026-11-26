@@ -114,6 +114,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Async Locator Refined — REQUIRED. Moves explorer-map, dolphin, Eye of Ender and /locate structure searches off the
+# server thread; in DT's world one search can freeze the server for minutes. Server logic, but singleplayer runs the
+# server inside the client, so BOTH.
+[[dependencies.${mod_id}]]
+    modId="asynclocator"
+    type="required"
+    versionRange="[${asynclocator_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 # Creeper Overhaul — REQUIRED. Its creepers stand in carriages and spawn naturally, so its entities have to exist on
 # both sides. AFTER also lets DT's data/creeperoverhaul/neoforge/biome_modifier overrides win over the mod's own
 # (remove_vanilla.json is emptied: event/NaturalSpawnLevelGate drops the vanilla creeper per biome instead).
@@ -552,6 +562,12 @@ logoFile="logo.png"
 # JourneyMapMixinPlugin, hides the same rows from its map as the renderer does. No-op when JM is absent.
 [[mixins]]
     config="${mod_id}.journeymap.mixins.json"
+
+# Approved map and HUD mods that print the player's position (Xaero's Minimap and World Map, BetterF3,
+# Jade, Sodium Extra) print the one the debug screen does. dungeontrain.positionreadout.mixins.json,
+# gated per mod by PositionReadoutMixinPlugin; each hook is a no-op when its mod is absent.
+[[mixins]]
+    config="${mod_id}.positionreadout.mixins.json"
 
 # TrashSlot (modpack companion, not a dependency) draws its bin tooltip in the background pass, under the
 # slots, so durability bars painted over it. dungeontrain.trashslot.mixins.json, gated by

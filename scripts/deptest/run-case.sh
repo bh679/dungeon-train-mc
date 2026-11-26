@@ -101,6 +101,8 @@ resolve() {
     vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
     dd)       cached "maven.modrinth/deeperdarker" "$(prop deeperdarker_version)" ;;
     lm)       cached "maven.modrinth/luminous-monsters" "$(prop luminous_monsters_version)" ;;
+    # Async Locator Refined — required; structure searches off the server thread.
+    al)       cached "maven.modrinth/async-locator-refined" "$(prop asynclocator_version)" ;;
     # Creeper Overhaul + its libraries — required; biome creepers in carriages.
     co)       cached "maven.modrinth/creeper-overhaul" "$(prop creeperoverhaul_version)" ;;
     gl)       cached "maven.modrinth/geckolib"         "$(prop geckolib_version)" ;;

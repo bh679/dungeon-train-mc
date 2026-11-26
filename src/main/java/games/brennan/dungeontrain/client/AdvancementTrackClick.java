@@ -1,8 +1,11 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.advancement.TerraOmnia;
+import games.brennan.dungeontrain.advancement.TotemPoleChecklist;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.advancements.CriterionProgress;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -10,6 +13,8 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+
+import java.util.List;
 
 /**
  * The click rule both advancements screens share: a left click while a trackable, unearned
@@ -19,7 +24,8 @@ import net.minecraft.sounds.SoundEvents;
  * (vanilla + Better Advancements) so they can't drift apart. A left click on an <em>earned</em> camera
  * advancement instead opens the photo that earned it ({@link EarnedPhotos}). A trackable capstone (All at Once,
  * The Challenge) does both: the click pins its "what you still need" halo ({@link CapstoneNeeds}) and toggles
- * tracking. Terra Omnia opens its biome checklist ({@link BiomeChecklistScreen}). The chat confirmation
+ * tracking. Terra Omnia opens its biome checklist ({@link BiomeChecklistScreen}), Totem Pole its totem checklist
+ * ({@link TotemPoleScreen}). The chat confirmation
  * comes once the screen closes — see {@link TrackedAdvancementsSummary}.
  */
 public final class AdvancementTrackClick {
@@ -56,6 +62,16 @@ public final class AdvancementTrackClick {
             playClick();
             return true;
         }
+        // Totem Pole opens its checklist: the totems that have saved you, in the order found, and ??? for the rest.
+        if (TotemPoleChecklist.ID.equals(id)) {
+            Minecraft mc = Minecraft.getInstance();
+            Screen parent = mc.screen;
+            List<TotemPoleChecklist.Slot> slots = totemPoleSlots(id, HoveredAdvancement.currentProgress());
+            if (slots.isEmpty()) return false;
+            mc.execute(() -> mc.setScreen(new TotemPoleScreen(parent, titleOf(id), slots)));
+            playClick();
+            return true;
+        }
         // A camera advancement opens what this computer kept: a collection's album as it fills, or the
         // photo that earned it once earned.
         if (id != null && EarnedPhotos.tryOpen(id, titleOf(id), HoveredAdvancement.currentProgress())) {
@@ -66,6 +82,18 @@ public final class AdvancementTrackClick {
         TrackedAdvancements.toggle(id);
         playClick();
         return true;
+    }
+
+    /** Totem Pole's slots from its requirements (in order) and the progress drawn with its tile. */
+    private static List<TotemPoleChecklist.Slot> totemPoleSlots(ResourceLocation id, AdvancementProgress progress) {
+        var connection = Minecraft.getInstance().getConnection();
+        AdvancementHolder holder = connection == null ? null : connection.getAdvancements().get(id);
+        if (holder == null) return List.of();
+        List<String> criteria = holder.value().requirements().requirements().stream().flatMap(List::stream).toList();
+        return TotemPoleChecklist.slots(criteria, name -> {
+            CriterionProgress criterion = progress == null ? null : progress.getCriterion(name);
+            return criterion == null ? null : criterion.getObtained();
+        });
     }
 
     /** A trackable advancement not yet earned (an earned one has nothing left to lose). */
