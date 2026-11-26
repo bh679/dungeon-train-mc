@@ -563,6 +563,12 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.journeymap.mixins.json"
 
+# Approved map and HUD mods that print the player's position (Xaero's Minimap and World Map, BetterF3,
+# Jade, Sodium Extra) print the one the debug screen does. dungeontrain.positionreadout.mixins.json,
+# gated per mod by PositionReadoutMixinPlugin; each hook is a no-op when its mod is absent.
+[[mixins]]
+    config="${mod_id}.positionreadout.mixins.json"
+
 # TrashSlot (modpack companion, not a dependency) draws its bin tooltip in the background pass, under the
 # slots, so durability bars painted over it. dungeontrain.trashslot.mixins.json, gated by
 # TrashSlotMixinPlugin, defers it to after the screen (client/DeferredTrashTooltip). No-op without TrashSlot.

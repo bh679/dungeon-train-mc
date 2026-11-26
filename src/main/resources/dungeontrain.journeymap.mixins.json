@@ -8,7 +8,8 @@
   "mixins": [],
   "client": [
     "client.journeymap.JmBlockMDSealMixin",
-    "client.journeymap.JmChunkHeightSealMixin"
+    "client.journeymap.JmChunkHeightSealMixin",
+    "client.journeymap.JmLocationFormatMixin"
   ],
   "server": [],
   "injectors": {

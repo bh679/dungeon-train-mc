@@ -5582,6 +5582,8 @@
   "gui.dungeontrain.crash_recovery.discard": "破棄",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "今後この提案を表示しません。ワールド自体はそのまま残ります。",
   "gui.dungeontrain.crash_recovery.open_failed": "そのワールドを開けませんでした。クラッシュでセーブが壊れた可能性があります。何も変更・削除されていません。",
+  "gui.dungeontrain.crash_recovery.recovered.body": "ゲームがクラッシュしましたが、インベントリと列車での位置は保存されています。再乗車して続きを遊びましょう。",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "回収の旅 — このワールドはクラッシュしており不安定です",
   "gui.dungeontrain.crash_recovery.hud.hint": "エンダーチェストに入れたら Esc → 新しい旅を始める",
   "gui.dungeontrain.crash_recovery.fresh_run": "新しい旅を始める",

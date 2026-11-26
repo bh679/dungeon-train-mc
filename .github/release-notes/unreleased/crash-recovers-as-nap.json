@@ -1,0 +1,17 @@
+{
+  "id": "crash-recovers-as-nap",
+  "version": "0.2036.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Crash recovery",
+  "summary": "If your game crashes mid-run, your inventory and your place on the train are now kept. Reboard from the title screen to carry on from where you were.",
+  "highlights": [],
+  "pr": 2904,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

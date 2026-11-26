@@ -5582,6 +5582,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Itapon",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Huwag na itong ialok. Hindi gagalawin ang mundo mismo.",
   "gui.dungeontrain.crash_recovery.open_failed": "Hindi mabuksan ang mundong iyon — baka nasira ng crash ang save. Walang binago o binura.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Nag-crash ang laro mo, pero na-save namin ang inventory mo at ang puwesto mo sa tren. Muling sumakay para magpatuloy.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Takbong pansalba — nag-crash ang mundong ito at magiging mabuggy",
   "gui.dungeontrain.crash_recovery.hud.hint": "Itago sa Ender Chest, saka pindutin ang Esc → Magsimula ng Bagong Takbo",
   "gui.dungeontrain.crash_recovery.fresh_run": "Magsimula ng Bagong Takbo",

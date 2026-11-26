@@ -5708,6 +5708,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Odrzuć",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Nie proponuj tego więcej. Sam świat pozostaje nietknięty.",
   "gui.dungeontrain.crash_recovery.open_failed": "Tego świata nie udało się otworzyć — awaria mogła uszkodzić zapis. Nic nie zostało zmienione ani usunięte.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Gra się wysypała, ale zapisaliśmy twój ekwipunek i twoje miejsce w pociągu. Wsiądź ponownie, aby grać dalej.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Rozgrywka ratunkowa — ten świat się wysypał i będzie zabugowany",
   "gui.dungeontrain.crash_recovery.hud.hint": "Schowaj do Skrzyni Kresu, potem Esc → Zacznij nową rozgrywkę",
   "gui.dungeontrain.crash_recovery.fresh_run": "Zacznij nową rozgrywkę",

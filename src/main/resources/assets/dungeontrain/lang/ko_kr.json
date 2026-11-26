@@ -5582,6 +5582,8 @@
   "gui.dungeontrain.crash_recovery.discard": "무시",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "더 이상 이 제안을 표시하지 않습니다. 세계 자체는 그대로 둡니다.",
   "gui.dungeontrain.crash_recovery.open_failed": "그 세계를 열 수 없습니다. 비정상 종료로 저장 파일이 손상되었을 수 있습니다. 변경되거나 삭제된 것은 없습니다.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "게임이 비정상 종료되었지만 인벤토리와 열차 위 위치는 저장했습니다. 다시 탑승해서 계속 플레이하세요.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "확인",
   "gui.dungeontrain.crash_recovery.hud": "회수 플레이 — 이 세계는 비정상 종료되어 버그가 있을 수 있습니다",
   "gui.dungeontrain.crash_recovery.hud.hint": "엔더 상자에 넣은 다음 Esc → 새 플레이 시작",
   "gui.dungeontrain.crash_recovery.fresh_run": "새 플레이 시작",
