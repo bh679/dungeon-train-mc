@@ -101,24 +101,21 @@ public final class RandomFramePhotos {
         if (!found.isEmpty()) frame.setPhoto(found);
     }
 
-    /** How far from a carriage a player may be and still be the one its frames draw for (Favourite Author). */
-    static final double NEAR_BLOCKS = 64;
-
     /**
-     * The player nearest the stamped box's centre within {@link #NEAR_BLOCKS}, or null. Measured from the
-     * carriage's current world position ({@link PlotWorldPositions}): its blocks live at Sable plot
-     * coordinates, far from any player.
+     * The player nearest the stamped box's centre (Favourite Author: whose follows its frames draw for),
+     * or null with nobody in the level. Measured from the carriage's world position
+     * ({@link PlotWorldPositions}). No distance cap: carriages are stamped well ahead of the train, and
+     * the nearest player is still the one riding toward them.
      */
     static ServerPlayer nearestPlayer(ServerLevel level, BlockPos origin, Vec3i size) {
         net.minecraft.world.phys.Vec3 c = PlotWorldPositions.worldPoint(level, origin,
             size.getX() / 2.0, size.getY() / 2.0, size.getZ() / 2.0);
-        double cx = c.x, cy = c.y, cz = c.z;
         ServerPlayer best = null;
-        double bestD = NEAR_BLOCKS * NEAR_BLOCKS;
+        double bestD = Double.MAX_VALUE;
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator()) continue;
-            double d = p.distanceToSqr(cx, cy, cz);
-            if (d <= bestD) {
+            double d = p.distanceToSqr(c.x, c.y, c.z);
+            if (d < bestD) {
                 bestD = d;
                 best = p;
             }

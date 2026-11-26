@@ -952,7 +952,10 @@ public final class SharedPhotos {
     private static PoolPhoto followedPick(long seed, ServerPlayer near) {
         double share = FollowService.share(near);
         if (share <= 0 || followRoll(seed) >= share) return null;
-        return FollowedPhotos.take(near, FollowService.findableTokens(near), spentIds());
+        PoolPhoto photo = FollowedPhotos.take(near, FollowService.findableTokens(near), spentIds());
+        LOGGER.debug("[DungeonTrain] Favourite Author: frame photo for {} -> {}", near.getScoreboardName(),
+            photo == null ? "none held yet" : "photo " + photo.id() + " from a followed author");
+        return photo;
     }
 
     /** A uniform [0, 1) from {@code seed}, independent of the pool index drawn from it. */

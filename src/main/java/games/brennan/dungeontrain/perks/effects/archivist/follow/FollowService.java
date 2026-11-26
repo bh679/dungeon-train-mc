@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.PerksGate;
 import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.MinecraftServer;
@@ -94,6 +95,8 @@ public final class FollowService {
     // ---------------- requests ----------------
 
     static void request(ServerPlayer player, FollowRequestPacket.Op op, String value) {
+        // Perks off (a normal world while perks are unlaunched): nothing here is reachable, so nothing is sent.
+        if (!PerksGate.isOn(player)) return;
         switch (op) {
             case REFRESH -> refresh(player);
             case DISMISS -> {
@@ -172,6 +175,8 @@ public final class FollowService {
      * (consent is usually not known yet then), again when the client's consent arrives, and every few minutes.
      */
     public static void refresh(ServerPlayer player) {
+        // Perks off: no relay call, nothing to show.
+        if (!PerksGate.isOn(player)) return;
         sync(player);
         if (!NetworkConsentMirror.isGranted(player)) return;
         MinecraftServer server = player.getServer();
@@ -203,7 +208,7 @@ public final class FollowService {
 
     @SubscribeEvent
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) sync(player);
+        if (event.getEntity() instanceof ServerPlayer player && PerksGate.isOn(player)) sync(player);
     }
 
     @SubscribeEvent
