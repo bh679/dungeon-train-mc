@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.NewJobMendingBlock;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;
+import games.brennan.dungeontrain.difficulty.StructureMapListings;
 import games.brennan.dungeontrain.difficulty.TradeGearScaler;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
@@ -28,7 +29,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -267,7 +267,9 @@ public final class VillagerTrainSpawnEvents {
         for (int lv = 1; lv <= targetLevel; lv++) {
             VillagerTrades.ItemListing[] listings = tradeMap.get(lv);
             if (listings == null || listings.length == 0) continue;
-            List<VillagerTrades.ItemListing> pool = new ArrayList<>(List.of(listings));
+            // Explorer maps search for a structure on the server thread: never roll them (StructureMapListings).
+            List<VillagerTrades.ItemListing> pool = StructureMapListings.withoutStructureSearch(List.of(listings));
+            if (pool.isEmpty()) continue;
             Collections.shuffle(pool, new Random(rng.nextLong()));
             int count = Math.min(OFFERS_PER_LEVEL, pool.size());
             for (int i = 0; i < count; i++) {

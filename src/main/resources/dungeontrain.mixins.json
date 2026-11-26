@@ -46,6 +46,7 @@
     "WanderingTraderStockMixin",
     "TrainVillagerNoRestockMixin",
     "VillagerNewJobNoMendingMixin",
+    "MerchantNoStructureSearchMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
