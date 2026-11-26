@@ -139,5 +139,6 @@ public final class DungeonTrainClient {
         event.register(ModMenuTypes.FREE_PLAY_ENDER_CHEST.get(), FreePlayEnderChestScreen::new);
         event.register(ModMenuTypes.ENGINE_BLOCK.get(), EngineScreen::new);
         event.register(ModMenuTypes.DRIFT_GIFT.get(), DriftGiftScreen::new);
+        event.register(ModMenuTypes.POCKET_BREWING.get(), games.brennan.dungeontrain.client.perks.PocketBrewingScreen::new);
     }
 }

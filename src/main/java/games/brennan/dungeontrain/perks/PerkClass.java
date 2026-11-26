@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.perks;
 
 /**
- * The ten perk classes arranged around The Engine in the perks tree. The order here is the
+ * The eleven perk classes arranged around The Engine in the perks tree. The order here is the
  * design's list order, not the on-screen lane order (the menu owns that).
  */
 public enum PerkClass {
@@ -14,7 +14,8 @@ public enum PerkClass {
     SPEEDSTER,
     BUILDER,
     HOARDER,
-    TRADER;
+    TRADER,
+    ALCHEMIST;
 
     /** Lower-case id used in command output and lang keys ({@code archivist}). */
     public String id() {

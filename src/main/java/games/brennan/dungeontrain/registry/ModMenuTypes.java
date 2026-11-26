@@ -38,6 +38,10 @@ public final class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<DriftGiftMenu>> DRIFT_GIFT =
         MENU_TYPES.register("drift_gift", () -> IMenuTypeExtension.create(DriftGiftMenu::fromNetwork));
 
+    /** Standless Brewing's pocket brewing stand; its bottle-slot count rides the open packet. */
+    public static final DeferredHolder<MenuType<?>, MenuType<games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewingMenu>> POCKET_BREWING =
+        MENU_TYPES.register("pocket_brewing", () -> IMenuTypeExtension.create(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewingMenu::fromNetwork));
+
     private ModMenuTypes() {}
 
     public static void register(IEventBus modBus) {

@@ -213,6 +213,10 @@ public final class DungeonTrainNet {
         registrar.playToServer(RestockVillagerRequestPacket.TYPE,
             RestockVillagerRequestPacket.STREAM_CODEC,
             RestockVillagerRequestPacket::handle);
+        // Standless Brewing: the inventory's Brew button asks the server to open the pocket brewing stand.
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket::handle);
         registrar.playToClient(games.brennan.dungeontrain.perks.aura.AuraSyncPacket.TYPE,
             games.brennan.dungeontrain.perks.aura.AuraSyncPacket.STREAM_CODEC,
             games.brennan.dungeontrain.perks.aura.AuraSyncPacket::handle);
