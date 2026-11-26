@@ -44,7 +44,24 @@ public abstract class DebugScreenOverlayDepthMixin {
 
     @Inject(method = "getSystemInformation", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$disguiseRight(CallbackInfoReturnable<List<String>> cir) {
+        dungeontrain$moveCarriageTargets(cir);
         dungeontrain$disguise(cir);
+    }
+
+    /**
+     * A Targeted Block or Fluid on a train carriage prints Sable's plot position, some 20.48 million
+     * blocks out; this brings it in by {@code MapReadoutText.PLOT_OFFSET}. Before the camera shift, so
+     * that lands on the moved figure.
+     */
+    @Unique
+    private static void dungeontrain$moveCarriageTargets(CallbackInfoReturnable<List<String>> cir) {
+        try {
+            List<String> lines = cir.getReturnValue();
+            List<String> moved = DebugScreenDepthLines.carriageTargetsMoved(lines, CoordinateDisguise::onCarriage);
+            if (moved != lines) cir.setReturnValue(moved);
+        } catch (Throwable ignored) {
+            // A readout: vanilla's own line stands if anything is off.
+        }
     }
 
     /**

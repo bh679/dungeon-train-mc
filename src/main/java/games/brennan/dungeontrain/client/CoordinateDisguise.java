@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import dev.ryanhcode.sable.Sable;
 import games.brennan.dungeontrain.worldgen.BandDimensionName;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.client.Minecraft;
@@ -53,6 +54,38 @@ public final class CoordinateDisguise {
         }
         long dx = FarLandsDebugX.offsetAt(WorldGenCycle.fromConfig(), entity.getBlockX());
         return dx == 0L ? DebugScreenDepthLines.Shift.NONE : new DebugScreenDepthLines.Shift(dx, 0, 0);
+    }
+
+    /**
+     * Whether {@code (x, y, z)} is on a train carriage: a block in a Sable sub-level's plot. False with
+     * no level, and on any fault, so a readout that cannot tell just prints what it was given.
+     */
+    public static boolean onCarriage(int x, int y, int z) {
+        try {
+            Level level = Minecraft.getInstance().level;
+            return level != null && Sable.HELPER.getContaining(level, new BlockPos(x, y, z)) != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * The position a readout prints for a targeted block: moved off Sable's plot when it is on a
+     * carriage ({@link MapReadoutText#fromPlot}), then by the camera's shift, as F3's Targeted Block line.
+     */
+    public static BlockPos targetedBlock(BlockPos target) {
+        if (target == null) return null;
+        BlockPos pos = onCarriage(target.getX(), target.getY(), target.getZ())
+            ? new BlockPos(MapReadoutText.fromPlot(target.getX()), target.getY(), MapReadoutText.fromPlot(target.getZ()))
+            : target;
+        return shifted(pos, cameraShift());
+    }
+
+    /** {@link #targetedBlock} for a plain {@link Vec3i}, as Jade hands it over. */
+    public static Vec3i targetedBlock(Vec3i target) {
+        if (target == null) return null;
+        BlockPos moved = targetedBlock(new BlockPos(target));
+        return new Vec3i(moved.getX(), moved.getY(), moved.getZ());
     }
 
     /** {@code pos} moved by {@code shift}, clamped to what an int holds ({@link MapReadoutText#add}). */

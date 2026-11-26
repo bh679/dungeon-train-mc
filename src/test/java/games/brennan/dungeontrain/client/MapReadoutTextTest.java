@@ -55,4 +55,12 @@ class MapReadoutTextTest {
         assertEquals(-1, MapReadoutText.section(-1));
         assertEquals(-7, MapReadoutText.section(-103));
     }
+
+    @Test
+    @DisplayName("a carriage plot X or Z comes in by 20.5 million")
+    void fromPlot() {
+        assertEquals(-18_973, MapReadoutText.fromPlot(20_481_027));
+        assertEquals(-4_632, MapReadoutText.fromPlot(20_495_368));
+        assertEquals(20_000_000 - 20_500_000, MapReadoutText.fromPlot(20_000_000));
+    }
 }

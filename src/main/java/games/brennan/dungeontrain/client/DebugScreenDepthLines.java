@@ -165,6 +165,51 @@ public final class DebugScreenDepthLines {
         return line;
     }
 
+    /** Whether a block position is on a train carriage (a Sable sub-level's plot). */
+    @FunctionalInterface
+    public interface CarriageTest {
+        boolean onCarriage(int x, int y, int z);
+    }
+
+    /**
+     * The Targeted Block and Fluid lines whose position is on a train carriage, moved off Sable's plot
+     * by {@link MapReadoutText#fromPlot}: X and Z come down by {@link MapReadoutText#PLOT_OFFSET}, Y
+     * stays. Every other line, and a target not on a carriage, is untouched. Returns {@code lines}
+     * itself when nothing changes, so the ordinary frame allocates nothing.
+     *
+     * <p>Run before {@link #shifted}, so the camera's shift lands on the moved figure, never on the
+     * raw plot position.</p>
+     */
+    public static List<String> carriageTargetsMoved(List<String> lines, CarriageTest test) {
+        if (lines == null || test == null) return lines;
+        List<String> out = null;
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            String moved = carriageTargetMoved(line, test);
+            if (moved != line && out == null) out = new ArrayList<>(lines.subList(0, i));
+            if (out != null) out.add(moved);
+        }
+        return out == null ? lines : out;
+    }
+
+    /** One line, moved if it is a Targeted line on a carriage; the same object otherwise. */
+    static String carriageTargetMoved(String line, CarriageTest test) {
+        if (line == null || line.isEmpty()) return line;
+        Matcher targeted = TARGETED.matcher(line);
+        if (!targeted.matches()) return line;
+        long x = parseLong(targeted.group(2));
+        long y = parseLong(targeted.group(3));
+        long z = parseLong(targeted.group(4));
+        if (!fitsInt(x) || !fitsInt(y) || !fitsInt(z)) return line;
+        if (!test.onCarriage((int) x, (int) y, (int) z)) return line;
+        return targeted.group(1) + MapReadoutText.fromPlot((int) x) + ", " + y + ", "
+            + MapReadoutText.fromPlot((int) z);
+    }
+
+    private static boolean fitsInt(long v) {
+        return v >= Integer.MIN_VALUE && v <= Integer.MAX_VALUE;
+    }
+
     /** {@link Long#MIN_VALUE} for "not a number", which is not a Y any world can hold. */
     private static long parseLong(String value) {
         try {
