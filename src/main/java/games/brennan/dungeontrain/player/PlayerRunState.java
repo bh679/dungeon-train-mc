@@ -557,6 +557,17 @@ public final class PlayerRunState {
         return out;
     }
 
+    /**
+     * Extras holding only a nap save count, for a nap built from a crashed save
+     * ({@code nap/CrashNapBuilder}): the other extras are never written to disk, so a crash loses them
+     * the way a relog does. Empty for a count of 0, which {@link #applyNapExtras} skips.
+     */
+    public static CompoundTag extrasWithNapSaves(int saves) {
+        CompoundTag out = new CompoundTag();
+        if (saves > 0) out.putInt(X_NAP_SAVES, saves);
+        return out;
+    }
+
     /** The nap save count {@code extras} carries ({@link #napExtras}), 0 when it has none. */
     public static int napSavesIn(CompoundTag extras) {
         return extras == null ? 0 : Math.max(0, extras.getInt(X_NAP_SAVES));

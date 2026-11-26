@@ -862,6 +862,15 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
+     * {@link #exportFor} from this data's saved tag rather than a live world: a crashed run turned into
+     * a nap at the title screen ({@code nap/CrashNapBuilder}). Empty when {@code saved} is null or empty.
+     */
+    public static CompoundTag exportFrom(CompoundTag saved, UUID player) {
+        if (saved == null || saved.isEmpty()) return new CompoundTag();
+        return load(saved).exportFor(player);
+    }
+
+    /**
      * Merges a nap's {@link #exportFor} tag into this world: read sets are unioned, so nothing this
      * world already holds is lost, and {@code player}'s letter series is taken from the nap. Entries for
      * any other player in {@code napped} are ignored.

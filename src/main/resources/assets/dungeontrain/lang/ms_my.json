@@ -5582,6 +5582,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Buang",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Berhenti menawarkan ini. Dunia itu sendiri tidak disentuh.",
   "gui.dungeontrain.crash_recovery.open_failed": "Dunia itu tidak dapat dibuka — ranap mungkin merosakkan simpanannya. Tiada apa yang diubah atau dipadam.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Permainan anda ranap, tetapi kami telah menyimpan inventori anda dan tempat anda di kereta api. Naik semula untuk terus bermain.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Larian penyelamatan — dunia ini ranap dan akan bermasalah",
   "gui.dungeontrain.crash_recovery.hud.hint": "Simpan dalam Peti Ender, kemudian tekan Esc → Mulakan Larian Baharu",
   "gui.dungeontrain.crash_recovery.fresh_run": "Mulakan Larian Baharu",

@@ -5645,6 +5645,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Descartar",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Deixar de propor isto. O mundo em si fica como está.",
   "gui.dungeontrain.crash_recovery.open_failed": "Esse mundo não abriu — o crash pode ter danificado a gravação. Nada foi alterado nem apagado.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "O teu jogo crashou, mas guardámos o teu inventário e o teu lugar no comboio. Volta a embarcar para continuares a jogar.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Partida de recuperação — este mundo crashou e vai ter erros",
   "gui.dungeontrain.crash_recovery.hud.hint": "Guarda num Baú de Ender e depois carrega em Esc → Começar Partida Nova",
   "gui.dungeontrain.crash_recovery.fresh_run": "Começar Partida Nova",
