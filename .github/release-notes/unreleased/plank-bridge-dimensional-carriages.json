@@ -1,0 +1,18 @@
+{
+  "id": "plank-bridge-dimensional-carriages",
+  "version": "0.2054.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "world"
+  ],
+  "title": "Plank-bridge dimensional carriages",
+  "summary": "Some dimensional carriages now leave their world floating out in the dark, with a narrow plank bridge running to it from each door.",
+  "highlights": [],
+  "pr": 2924,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
