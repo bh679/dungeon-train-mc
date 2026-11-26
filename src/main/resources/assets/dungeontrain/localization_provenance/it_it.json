@@ -22,7 +22,8 @@
       "item.dungeontrain.violet_core.tooltip",
       "chat.dungeontrain.perks.active_gained",
       "gui.dungeontrain.perks.refused.no_active",
-      "perk.dungeontrain.shared-aura.name"
+      "perk.dungeontrain.shared-aura.name",
+      "perk.dungeontrain.reroll-trades.name"
     ],
     "adventureitemnames": [],
     "playermob": [],

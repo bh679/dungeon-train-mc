@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.hoarder.ChestSensePacket;
+import games.brennan.dungeontrain.perks.effects.trader.RerollTradesRequestPacket;
+import games.brennan.dungeontrain.perks.effects.trader.RerollTradesStatusPacket;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerRequestPacket;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerStatusPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -30,7 +33,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "219";
+    public static final String PROTOCOL_VERSION = "220";
 
     private DungeonTrainNet() {}
 
@@ -213,6 +216,15 @@ public final class DungeonTrainNet {
         registrar.playToServer(RestockVillagerRequestPacket.TYPE,
             RestockVillagerRequestPacket.STREAM_CODEC,
             RestockVillagerRequestPacket::handle);
+        registrar.playToClient(ChestSensePacket.TYPE,
+            ChestSensePacket.STREAM_CODEC,
+            ChestSensePacket::handle);
+        registrar.playToClient(RerollTradesStatusPacket.TYPE,
+            RerollTradesStatusPacket.STREAM_CODEC,
+            RerollTradesStatusPacket::handle);
+        registrar.playToServer(RerollTradesRequestPacket.TYPE,
+            RerollTradesRequestPacket.STREAM_CODEC,
+            RerollTradesRequestPacket::handle);
 
         registrar.playToServer(BookVotePacket.TYPE, BookVotePacket.STREAM_CODEC, BookVotePacket::handle);
 

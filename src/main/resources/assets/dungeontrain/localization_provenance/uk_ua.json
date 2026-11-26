@@ -6424,6 +6424,7 @@
       "perk.dungeontrain.class.cbuilder",
       "perk.dungeontrain.class.cwarlock",
       "perk.dungeontrain.restock_villager.button",
+      "perk.dungeontrain.reroll_trades.button",
       "gui.dungeontrain.perks.rank_cost",
       "gui.dungeontrain.perks.raise_limit",
       "gui.dungeontrain.perks.points_of",
@@ -6502,6 +6503,10 @@
       "gui.dungeontrain.perks.stat.jump_distance",
       "gui.dungeontrain.perks.stat.wind_push",
       "gui.dungeontrain.perks.stat.repaid",
+      "gui.dungeontrain.perks.stat.range",
+      "gui.dungeontrain.perks.stat.weakness",
+      "gui.dungeontrain.perks.stat.slowness",
+      "gui.dungeontrain.perks.stat.rerolls",
       "gui.dungeontrain.drift_gift.slot",
       "message.dungeontrain.drift_gift.paid.one",
       "message.dungeontrain.drift_gift.paid.few",
@@ -6577,7 +6582,8 @@
       "item.dungeontrain.violet_core.tooltip",
       "chat.dungeontrain.perks.active_gained",
       "gui.dungeontrain.perks.refused.no_active",
-      "perk.dungeontrain.shared-aura.name"
+      "perk.dungeontrain.shared-aura.name",
+      "perk.dungeontrain.reroll-trades.name"
     ],
     "adventureitemnames": [],
     "playermob": [],
