@@ -6660,7 +6660,6 @@
   "gui.dungeontrain.perks.stat.next_at": "la %s puncte",
   "container.dungeontrain.pocket_brewing": "Stand de buzunar",
   "gui.dungeontrain.pocket_brewing.button": "Prepară",
-  "gui.dungeontrain.pocket_brewing.fuel": "Combustibil %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Combustibil gratuit în %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Loc pentru cadou. Lasă aici un obiect pentru următorul pasager al acestui vagon și primești înapoi %s%% din valoarea lui de schimb în smaralde.",

@@ -6590,7 +6590,6 @@
   "gui.dungeontrain.perks.stat.next_at": "aos %s pontos",
   "container.dungeontrain.pocket_brewing": "Posto de Bolso",
   "gui.dungeontrain.pocket_brewing.button": "Preparar",
-  "gui.dungeontrain.pocket_brewing.fuel": "Combustível %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Combustível grátis em %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Espaço de presente. Deixa aqui um item para quem viajar nesta carruagem a seguir e recebe %s%% do seu valor de troca em esmeraldas.",

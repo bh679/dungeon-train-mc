@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "ở %s điểm",
   "container.dungeontrain.pocket_brewing": "Giá pha chế bỏ túi",
   "gui.dungeontrain.pocket_brewing.button": "Pha chế",
-  "gui.dungeontrain.pocket_brewing.fuel": "Nhiên liệu %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Nhiên liệu miễn phí sau %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Ô quà tặng. Để lại một vật phẩm ở đây cho người đi toa này tiếp theo, và nhận lại %s%% giá trị trao đổi của nó bằng ngọc lục bảo.",

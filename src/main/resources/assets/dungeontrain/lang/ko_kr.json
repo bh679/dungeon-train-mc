@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "%s포인트에서",
   "container.dungeontrain.pocket_brewing": "주머니 양조기",
   "gui.dungeontrain.pocket_brewing.button": "양조",
-  "gui.dungeontrain.pocket_brewing.fuel": "연료 %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "다음 무료 연료까지 %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "선물 칸. 다음에 이 객차에 탈 사람을 위해 아이템을 두면, 거래 가치의 %s%%를 에메랄드로 돌려받습니다.",

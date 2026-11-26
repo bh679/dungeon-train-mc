@@ -6657,7 +6657,6 @@
   "gui.dungeontrain.perks.stat.next_at": "на %s балах",
   "container.dungeontrain.pocket_brewing": "Кишенькова варильна стійка",
   "gui.dungeontrain.pocket_brewing.button": "Варити",
-  "gui.dungeontrain.pocket_brewing.fuel": "Паливо %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Безплатне паливо через %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Слот подарунка. Залиште тут предмет для наступного пасажира цього вагона й отримайте %s%% його торгової вартості смарагдами.",

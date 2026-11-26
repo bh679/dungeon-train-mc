@@ -6590,7 +6590,6 @@
   "gui.dungeontrain.perks.stat.next_at": "a los %s puntos",
   "container.dungeontrain.pocket_brewing": "Soporte de bolsillo",
   "gui.dungeontrain.pocket_brewing.button": "Elaborar",
-  "gui.dungeontrain.pocket_brewing.fuel": "Combustible %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Combustible gratis en %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Hueco de regalo. Deja aquí un objeto para quien viaje en este vagón después y recupera el %s%% de su valor de intercambio en esmeraldas.",

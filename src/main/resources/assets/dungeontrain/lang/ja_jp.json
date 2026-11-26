@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "%sポイントで",
   "container.dungeontrain.pocket_brewing": "ポケット醸造台",
   "gui.dungeontrain.pocket_brewing.button": "醸造",
-  "gui.dungeontrain.pocket_brewing.fuel": "燃料 %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "次の無料燃料まで %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "ギフトスロット。次にこの車両に乗る人のためにアイテムを置くと、取引価値の%s%%がエメラルドで戻ってきます。",

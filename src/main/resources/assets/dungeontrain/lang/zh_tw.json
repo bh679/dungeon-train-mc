@@ -6534,7 +6534,6 @@
   "gui.dungeontrain.perks.stat.next_at": "%s 點時",
   "container.dungeontrain.pocket_brewing": "隨身釀造台",
   "gui.dungeontrain.pocket_brewing.button": "釀造",
-  "gui.dungeontrain.pocket_brewing.fuel": "燃料 %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "下次免費燃料 %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "禮物欄。在這裡留下一件物品給下一位搭乘這節車廂的人，並以綠寶石形式拿回其交易價值的%s%%。",

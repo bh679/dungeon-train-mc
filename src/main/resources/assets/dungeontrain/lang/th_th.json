@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "ที่ %s แต้ม",
   "container.dungeontrain.pocket_brewing": "แท่นต้มพกพา",
   "gui.dungeontrain.pocket_brewing.button": "ต้ม",
-  "gui.dungeontrain.pocket_brewing.fuel": "เชื้อเพลิง %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "เชื้อเพลิงฟรีในอีก %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "ช่องของขวัญ วางไอเทมไว้ที่นี่ให้ผู้ที่นั่งตู้นี้คนต่อไป แล้วรับคืน %s%% ของมูลค่าการค้าเป็นมรกต",

@@ -6660,7 +6660,6 @@
   "gui.dungeontrain.perks.stat.next_at": "на %s очках",
   "container.dungeontrain.pocket_brewing": "Карманная варочная стойка",
   "gui.dungeontrain.pocket_brewing.button": "Варить",
-  "gui.dungeontrain.pocket_brewing.fuel": "Топливо %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Бесплатное топливо через %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Ячейка подарка. Оставьте здесь предмет для следующего пассажира этого вагона и получите %s%% его торговой стоимости изумрудами.",

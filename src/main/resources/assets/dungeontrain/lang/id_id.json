@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "pada %s poin",
   "container.dungeontrain.pocket_brewing": "Alat Ramu Saku",
   "gui.dungeontrain.pocket_brewing.button": "Ramu",
-  "gui.dungeontrain.pocket_brewing.fuel": "Bahan bakar %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Bahan bakar gratis dalam %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Slot hadiah. Tinggalkan barang di sini untuk penumpang gerbong ini berikutnya, dan dapatkan kembali %s%% nilai tukarnya dalam zamrud.",

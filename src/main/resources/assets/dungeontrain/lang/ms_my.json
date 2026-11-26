@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "pada %s mata",
   "container.dungeontrain.pocket_brewing": "Dirian Bancuhan Poket",
   "gui.dungeontrain.pocket_brewing.button": "Bancuh",
-  "gui.dungeontrain.pocket_brewing.fuel": "Bahan api %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Bahan api percuma dalam %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Slot hadiah. Tinggalkan item di sini untuk penumpang gerabak ini seterusnya, dan dapatkan semula %s%% nilai dagangannya dalam zamrud.",

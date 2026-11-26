@@ -6590,7 +6590,6 @@
   "gui.dungeontrain.perks.stat.next_at": "à %s points",
   "container.dungeontrain.pocket_brewing": "Alambic de poche",
   "gui.dungeontrain.pocket_brewing.button": "Brasser",
-  "gui.dungeontrain.pocket_brewing.fuel": "Combustible %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Combustible gratuit dans %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Emplacement cadeau. Laisse ici un objet pour le prochain passager de ce wagon, et récupère %s%% de sa valeur d'échange en émeraudes.",

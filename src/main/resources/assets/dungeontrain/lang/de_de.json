@@ -6590,7 +6590,6 @@
   "gui.dungeontrain.perks.stat.next_at": "bei %s Punkten",
   "container.dungeontrain.pocket_brewing": "Taschen-Braustand",
   "gui.dungeontrain.pocket_brewing.button": "Brauen",
-  "gui.dungeontrain.pocket_brewing.fuel": "Brennstoff %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Gratis-Brennstoff in %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Geschenkplatz. Lege hier einen Gegenstand für den nächsten Fahrgast dieses Waggons ab und erhalte %s%% seines Handelswerts in Smaragden zurück.",

@@ -6590,7 +6590,6 @@
   "gui.dungeontrain.perks.stat.next_at": "bij %s punten",
   "container.dungeontrain.pocket_brewing": "Zakbrouwstandaard",
   "gui.dungeontrain.pocket_brewing.button": "Brouwen",
-  "gui.dungeontrain.pocket_brewing.fuel": "Brandstof %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Gratis brandstof over %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Cadeauvak. Laat hier een voorwerp achter voor wie hierna in deze wagon rijdt en krijg %s%% van de handelswaarde terug in smaragden.",

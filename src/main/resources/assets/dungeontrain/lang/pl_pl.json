@@ -6660,7 +6660,6 @@
   "gui.dungeontrain.perks.stat.next_at": "przy %s punktach",
   "container.dungeontrain.pocket_brewing": "Kieszonkowy statyw",
   "gui.dungeontrain.pocket_brewing.button": "Warz",
-  "gui.dungeontrain.pocket_brewing.fuel": "Paliwo %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Darmowe paliwo za %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Miejsce na prezent. Zostaw tu przedmiot dla następnego pasażera tego wagonu i odzyskaj %s%% jego wartości handlowej w szmaragdach.",

@@ -6534,7 +6534,6 @@
   "gui.dungeontrain.perks.stat.next_at": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "87303d45a63875a6"},
   "container.dungeontrain.pocket_brewing": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c93353d2db841245"},
   "gui.dungeontrain.pocket_brewing.button": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ab205b3f629484f1"},
-  "gui.dungeontrain.pocket_brewing.fuel": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c2f89fa58f69df09"},
   "gui.dungeontrain.pocket_brewing.free_fuel": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c296d85339efbf77"},
   "gui.dungeontrain.pocket_brewing.page": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0afb6c2f702590f4"},
   "gui.dungeontrain.drift_gift.slot": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8797bec5efe2791f"},

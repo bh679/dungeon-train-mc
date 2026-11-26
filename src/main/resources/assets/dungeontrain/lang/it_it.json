@@ -6590,7 +6590,6 @@
   "gui.dungeontrain.perks.stat.next_at": "a %s punti",
   "container.dungeontrain.pocket_brewing": "Alambicco tascabile",
   "gui.dungeontrain.pocket_brewing.button": "Distilla",
-  "gui.dungeontrain.pocket_brewing.fuel": "Combustibile %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Combustibile gratis tra %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Slot regalo. Lascia qui un oggetto per chi viaggerà su questo vagone dopo di te e riavrai il %s%% del suo valore di scambio in smeraldi.",

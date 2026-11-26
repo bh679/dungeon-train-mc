@@ -6569,7 +6569,6 @@
   "gui.dungeontrain.perks.stat.next_at": "at %s points",
   "container.dungeontrain.pocket_brewing": "Pocket Brewing Stand",
   "gui.dungeontrain.pocket_brewing.button": "Brew",
-  "gui.dungeontrain.pocket_brewing.fuel": "Fuel %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Free fuel in %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Gift slot. Leave an item here for whoever rides this carriage next, and get %s%% of its trade value back in emeralds.",

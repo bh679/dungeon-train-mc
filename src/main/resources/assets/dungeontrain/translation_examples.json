@@ -18843,21 +18843,6 @@
       ]
     }
   },
-  "gui.dungeontrain.pocket_brewing.fuel": {
-    "1": {
-      "label": "fuel left, a whole number",
-      "examples": [
-        "12",
-        "20"
-      ]
-    },
-    "2": {
-      "label": "a full fuel bar, a whole number",
-      "examples": [
-        "20"
-      ]
-    }
-  },
   "gui.dungeontrain.pocket_brewing.free_fuel": {
     "1": {
       "label": "a countdown in minutes and seconds",

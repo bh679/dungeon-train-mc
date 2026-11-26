@@ -6520,7 +6520,6 @@
   "gui.dungeontrain.perks.stat.next_at": "sa %s points",
   "container.dungeontrain.pocket_brewing": "Bulsang Brewing Stand",
   "gui.dungeontrain.pocket_brewing.button": "Magtimpla",
-  "gui.dungeontrain.pocket_brewing.fuel": "Gatong %s/%s",
   "gui.dungeontrain.pocket_brewing.free_fuel": "Libreng gatong sa %s",
   "gui.dungeontrain.pocket_brewing.page": "%s/%s",
   "gui.dungeontrain.drift_gift.slot": "Puwesto ng regalo. Mag-iwan dito ng item para sa susunod na sasakay sa karwaheng ito, at makuha pabalik ang %s%% ng trade value nito sa mga esmeralda.",

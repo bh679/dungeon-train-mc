@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.perks;
 
-import games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewingMath;
 import games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewingMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -14,8 +13,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * The pocket brewing stand (Standless Brewing): vanilla's brewing stand top (fuel, bubbles, ingredient,
- * progress arrow), then the stand's bottle slots in centred rows of nine, then the player inventory. The
- * fuel count sits right of the stand; the next free fuel shares the inventory label's line. Past six rows
+ * progress arrow, and its fuel bar), then the stand's bottle slots in centred rows of nine, then the player
+ * inventory. The next free fuel shares the inventory label's line. Past six rows
  * of bottles, arrows beside the title page through them.
  */
 @OnlyIn(Dist.CLIENT)
@@ -29,8 +28,9 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
 
     /** The texture's stand top, down to just under the fuel bar. */
     private static final int HEADER = 48;
-    /** Where vanilla's texture starts the inventory label, 12 above the inventory's first row. */
-    private static final int TEXTURE_INVENTORY_V = 72;
+    /** Vanilla's texture below its bottle slots, 8 above the inventory's first row (the label is drawn, not textured). */
+    private static final int TEXTURE_INVENTORY_V = 76;
+    private static final int INVENTORY_TOP_OFFSET = 8;
     private static final int INVENTORY_PART = 166 - TEXTURE_INVENTORY_V;
 
     private static final int FACE = 0xFFC6C6C6;
@@ -39,7 +39,6 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
     private static final int SLOT_BG = 0xFF8B8B8B;
     private static final int TEXT = 0xFF404040;
 
-    public static final String KEY_FUEL = "gui.dungeontrain.pocket_brewing.fuel";
     public static final String KEY_FREE_FUEL = "gui.dungeontrain.pocket_brewing.free_fuel";
     public static final String KEY_PAGE = "gui.dungeontrain.pocket_brewing.page";
 
@@ -72,7 +71,6 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         super.renderLabels(g, mouseX, mouseY);
-        g.drawString(font, Component.translatable(KEY_FUEL, menu.fuel(), PocketBrewingMath.FUEL_MAX), 114, 40, TEXT, false);
         int seconds = menu.freeFuelSeconds();
         if (seconds >= 0) {
             Component next = Component.translatable(KEY_FREE_FUEL, clock(seconds));
@@ -96,12 +94,13 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
         int y = topPos;
         int invTop = menu.inventoryTop();
         g.blit(TEXTURE, x, y, 0, 0, imageWidth, HEADER);
-        g.fill(x + 3, y + HEADER, x + imageWidth - 3, y + invTop - 12, FACE);
-        g.fill(x, y + HEADER, x + 1, y + invTop - 12, 0xFF000000);
-        g.fill(x + 1, y + HEADER, x + 3, y + invTop - 12, LIGHT);
-        g.fill(x + imageWidth - 1, y + HEADER, x + imageWidth, y + invTop - 12, 0xFF000000);
-        g.fill(x + imageWidth - 3, y + HEADER, x + imageWidth - 1, y + invTop - 12, 0xFF555555);
-        g.blit(TEXTURE, x, y + invTop - 12, 0, TEXTURE_INVENTORY_V, imageWidth, INVENTORY_PART);
+        int band = invTop - INVENTORY_TOP_OFFSET;
+        g.fill(x + 3, y + HEADER, x + imageWidth - 3, y + band, FACE);
+        g.fill(x, y + HEADER, x + 1, y + band, 0xFF000000);
+        g.fill(x + 1, y + HEADER, x + 3, y + band, LIGHT);
+        g.fill(x + imageWidth - 1, y + HEADER, x + imageWidth, y + band, 0xFF000000);
+        g.fill(x + imageWidth - 3, y + HEADER, x + imageWidth - 1, y + band, 0xFF555555);
+        g.blit(TEXTURE, x, y + band, 0, TEXTURE_INVENTORY_V, imageWidth, INVENTORY_PART);
 
         int bottles = menu.bottles();
         int first = menu.page() * PocketBrewingMenu.PAGE_SIZE;
