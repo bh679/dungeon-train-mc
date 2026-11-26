@@ -5645,6 +5645,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Descartar",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Parar de oferecer isto. O mundo em si fica como está.",
   "gui.dungeontrain.crash_recovery.open_failed": "Aquele mundo não abriu — o travamento pode ter danificado o save. Nada foi alterado ou apagado.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Seu jogo travou, mas salvamos seu inventário e seu lugar no trem. Reembarque para continuar jogando.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Jornada de resgate — este mundo travou e vai ter bugs",
   "gui.dungeontrain.crash_recovery.hud.hint": "Guarde num Baú do End, depois aperte Esc → Começar Jornada Nova",
   "gui.dungeontrain.crash_recovery.fresh_run": "Começar Jornada Nova",

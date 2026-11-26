@@ -1,0 +1,16 @@
+{
+  "id": "small-tweak-2026-11-26",
+  "version": "0.2036.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "Small tweak",
+  "summary": "A small tweak.",
+  "highlights": [],
+  "pr": 2905,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

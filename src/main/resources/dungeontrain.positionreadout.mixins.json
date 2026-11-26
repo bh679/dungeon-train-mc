@@ -1,0 +1,22 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.PositionReadoutMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [],
+  "client": [
+    "client.positionreadout.xaerominimap.XaeroMinimapInfoMixin",
+    "client.positionreadout.xaeroworldmap.XaeroWorldMapCursorMixin",
+    "client.positionreadout.betterf3.BetterF3CoordsMixin",
+    "client.positionreadout.betterf3.BetterF3TargetMixin",
+    "client.positionreadout.betterf3.BetterF3LocationMixin",
+    "client.positionreadout.jade.JadeCoordinatesMixin",
+    "client.positionreadout.sodiumextra.SodiumExtraCoordsMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

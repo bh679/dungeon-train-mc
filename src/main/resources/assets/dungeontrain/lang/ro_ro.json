@@ -354,6 +354,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Renunță",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Nu mai propune asta. Lumea în sine rămâne neatinsă.",
   "gui.dungeontrain.crash_recovery.open_failed": "Lumea aceea nu s-a deschis — blocarea poate a stricat salvarea. Nimic nu a fost schimbat sau șters.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Jocul tău s-a blocat, dar ți-am salvat inventarul și locul din tren. Urcă din nou ca să joci mai departe.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Cursă de recuperare — această lume s-a blocat și va avea erori",
   "gui.dungeontrain.crash_recovery.hud.hint": "Pune totul într-un Cufăr Ender, apoi Esc → Începe o cursă nouă",
   "gui.dungeontrain.crash_recovery.fresh_run": "Începe o cursă nouă",

@@ -5596,6 +5596,8 @@
   "gui.dungeontrain.crash_recovery.discard": "放棄",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "不再提示此項。世界本身不會被更動。",
   "gui.dungeontrain.crash_recovery.open_failed": "那個世界打不開，崩潰可能損壞了存檔。沒有任何更動或刪除。",
+  "gui.dungeontrain.crash_recovery.recovered.body": "遊戲崩潰了，但我們保存了你的物品欄和你在列車上的位置。重新登車即可繼續遊玩。",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "確定",
   "gui.dungeontrain.crash_recovery.hud": "搶救旅程：此世界已崩潰，會有問題",
   "gui.dungeontrain.crash_recovery.hud.hint": "裝進終界箱，然後按 Esc → 開始新旅程",
   "gui.dungeontrain.crash_recovery.fresh_run": "開始新旅程",
