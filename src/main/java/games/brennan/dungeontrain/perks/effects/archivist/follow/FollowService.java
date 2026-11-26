@@ -167,8 +167,11 @@ public final class FollowService {
         sync(player);
     }
 
-    /** Re-read the list from the relay, then sync. Without consent, sync what is held. */
-    static void refresh(ServerPlayer player) {
+    /**
+     * Re-read the list from the relay, then sync. Without consent, sync what is held. Called on login
+     * (consent is usually not known yet then), again when the client's consent arrives, and every few minutes.
+     */
+    public static void refresh(ServerPlayer player) {
         sync(player);
         if (!NetworkConsentMirror.isGranted(player)) return;
         MinecraftServer server = player.getServer();

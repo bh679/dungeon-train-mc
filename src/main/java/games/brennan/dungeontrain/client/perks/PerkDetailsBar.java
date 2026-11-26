@@ -487,8 +487,11 @@ final class PerkDetailsBar {
             : renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
         followingHit = null;
         if (FollowingChip.shows(p.id(), snap.unlockLevel(p.id()))) {
-            followingHit = FollowingChip.render(g, font, chipsEnd, chipY, chipRight, CHIP_H, CHIP_PAD, a,
-                mouseX, mouseY);
+            // on the free line under the description when there is one, else after the chips
+            boolean lineFree = shown < room;
+            int fy = lineFree ? dy + shown * LINE - 1 : chipY;
+            followingHit = FollowingChip.render(g, font, lineFree ? x : chipsEnd, fy, lineFree ? contentRight : chipRight,
+                CHIP_H, CHIP_PAD, a, mouseX, mouseY);
         }
         if (aura != null) {
             AuraChips.render(g, font, aura, statPoints, previewPoints(unlockPreview(p, snap)), x, chipY, chipRight,

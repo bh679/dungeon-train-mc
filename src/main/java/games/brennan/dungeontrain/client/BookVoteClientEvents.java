@@ -289,6 +289,7 @@ public final class BookVoteClientEvents {
             renderVoteCounts(gfx, font);
         }
         renderStar(gfx, font, mouseX, mouseY);
+        renderFollow(gfx, font, mouseX, mouseY);
 
         renderAction(gfx, font, centerX, mouseX, mouseY);
         BookBoostConfirm.render(gfx, font, screen.width, screen.height, event.getMouseX(), event.getMouseY());
@@ -303,11 +304,13 @@ public final class BookVoteClientEvents {
         if (!starShown()) return;
         BookBoostControl.render(gfx, font, moderation.isOwn(), starX(), buttonsY(), labelsY(), mouseX, mouseY);
         BookBoostControl.renderWallet(gfx, font, moderation.isOwn(), bookLeft() + WALLET_X, bookTop() + WALLET_Y, mouseX, mouseY);
-        // Favourite Author: Follow, under the star, on the report row.
-        if (BookFollowControl.shown(bookType, bookId, moderation.isOwn())) {
-            BookFollowControl.render(gfx, font, bookId, starX() + BUTTON_SIZE / 2,
-                reportY() + (BUTTON_SIZE - font.lineHeight) / 2, mouseX, mouseY);
-        }
+    }
+
+    /** Favourite Author's Follow, on the report row left of the report icon (under the star, when it shows). */
+    private static void renderFollow(GuiGraphics gfx, Font font, int mouseX, int mouseY) {
+        if (!BookFollowControl.shown(bookType, bookId, moderation.isOwn())) return;
+        BookFollowControl.render(gfx, font, bookId, starX() + BUTTON_SIZE / 2,
+            reportY() + (BUTTON_SIZE - font.lineHeight) / 2, mouseX, mouseY);
     }
 
     private static boolean starShown() {
@@ -515,7 +518,7 @@ public final class BookVoteClientEvents {
             reportArmed = false;
             return;
         }
-        if (starShown() && BookFollowControl.shown(bookType, bookId, moderation.isOwn())
+        if (BookFollowControl.shown(bookType, bookId, moderation.isOwn())
                 && BookFollowControl.click(mx, my, bookId)) {
             event.setCanceled(true);
             clickSound();

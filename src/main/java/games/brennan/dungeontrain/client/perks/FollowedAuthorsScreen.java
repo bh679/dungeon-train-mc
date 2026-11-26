@@ -49,7 +49,7 @@ public final class FollowedAuthorsScreen extends Screen {
     @Override
     protected void init() {
         left = (width - W) / 2;
-        int h = PAD + 12 + MAX_ROWS * ROW_H + 6 + 12 + 20 + ROW_H + PAD;
+        int h = PAD + 12 + MAX_ROWS * ROW_H + 6 + 12 + 20 + 2 * ROW_H + PAD;
         top = Math.max(4, (height - h) / 2);
         rowsTop = top + PAD + 14;
         boxY = rowsTop + MAX_ROWS * ROW_H + 18;
@@ -131,7 +131,7 @@ public final class FollowedAuthorsScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
         List<FollowsSyncPacket.Row> rows = rows();
         int active = FavouriteAuthor.activeCount(rows.size(), rank());
-        int bottom = boxY + 22 + ROW_H + PAD - 4;
+        int bottom = boxY + 22 + 2 * ROW_H + PAD - 4;
         g.fill(left, top, left + W, bottom, SkyPalette.PANEL);
         g.fill(left, top, left + W, top + 1, 0xFF3A3F6A);
         g.drawString(font, title, left + PAD, top + PAD, SkyPalette.GOLD, true);
@@ -182,12 +182,20 @@ public final class FollowedAuthorsScreen extends Screen {
         switch (sync.lookup()) {
             case PENDING -> g.drawString(font, Component.translatable(KEY + "looking", sync.lookupName()), x, y, SkyPalette.MUTED, false);
             case NOT_FOUND -> {
-                String line = "✗ " + sync.lookupName();
-                g.drawString(font, line, x, y, RED, false);
-                Component why = Component.translatable(KEY + "not_found");
-                g.drawString(font, why, left + W - PAD - BTN_W - 6 - font.width(why), y, RED, false);
+                // the name, then why on the line under it: both stop short of Remove
+                int room = W - 2 * PAD - BTN_W - 6;
+                g.drawString(font, font.plainSubstrByWidth("✗ " + sync.lookupName(), room), x, y, RED, false);
+                g.drawString(font, font.plainSubstrByWidth(Component.translatable(KEY + "not_found").getString(), room),
+                    x, y + font.lineHeight + 2, RED, false);
             }
-            case UNREACHABLE -> g.drawString(font, Component.translatable(KEY + "unreachable"), x, y, RED, false);
+            case UNREACHABLE -> {
+                // stops short of Remove, wrapping to the line above the box's label if it must
+                int room = W - 2 * PAD - BTN_W - 6;
+                List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.translatable(KEY + "unreachable"), room);
+                for (int i = 0; i < lines.size(); i++) {
+                    g.drawString(font, lines.get(i), x, y + i * (font.lineHeight + 1), RED, false);
+                }
+            }
             default -> { }
         }
     }

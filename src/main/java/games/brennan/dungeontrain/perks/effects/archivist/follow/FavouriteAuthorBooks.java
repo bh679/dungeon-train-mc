@@ -17,6 +17,8 @@ import java.util.Optional;
  */
 public final class FavouriteAuthorBooks {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     private FavouriteAuthorBooks() {}
 
     /** A followed author's unread book for this pickup, or empty for the normal pick. */
@@ -32,6 +34,9 @@ public final class FavouriteAuthorBooks {
             if (!AuthorBookPool.isFetched(token, false)) AuthorBookPool.refreshAsync(token, lang, kidSafe, null);
             books.addAll(AuthorBookPool.booksFor(token, false));
         }
-        return SharedBookSelector.selectFollowed(books, share, ctx, seed);
+        Optional<SharedBookPool.PoolBook> pick = SharedBookSelector.selectFollowed(books, share, ctx, seed);
+        pick.ifPresent(b -> LOGGER.debug("[DungeonTrain] Favourite Author: book {} from a followed author for {} (share {})",
+            b.id(), player.getScoreboardName(), share));
+        return pick;
     }
 }
