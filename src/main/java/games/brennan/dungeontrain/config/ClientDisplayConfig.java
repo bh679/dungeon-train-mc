@@ -215,6 +215,17 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
     /**
+     * Whether an Endless Repetition or Endless Open room carries its copies on past the ones the
+     * server stamped, drawn by Distant Horizons out to its own horizon (the surface terrain DH would
+     * otherwise show stays hidden). On by default; false keeps those rooms exactly as
+     * {@link #PORTAL_ROOM_HIDE_DISTANT_HORIZONS} has them. See {@code client/ClientPortalRoomFarCopies}.
+     */
+    public static final ModConfigSpec.BooleanValue PORTAL_ROOM_DISTANT_HORIZONS_COPIES;
+
+    /** Most boxes the far copies may hand Distant Horizons at once; the horizon shrinks to fit. */
+    public static final ModConfigSpec.IntValue PORTAL_ROOM_DISTANT_HORIZONS_MAX_BOXES;
+
+    /**
      * Whether Distant Horizons stops drawing while the camera is in (or approaching) each void band — the
      * chuncks, the spheres and the stacks. DT carves those out of normal overworld chunks, and DH's horizon
      * does not match the void around the train. On by default; set any false to let DH draw there anyway.
@@ -453,6 +464,8 @@ public final class ClientDisplayConfig {
         UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
         UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
+        PORTAL_ROOM_DISTANT_HORIZONS_COPIES = pair.getLeft().portalRoomDistantHorizonsCopies;
+        PORTAL_ROOM_DISTANT_HORIZONS_MAX_BOXES = pair.getLeft().portalRoomDistantHorizonsMaxBoxes;
         CHUNCKS_HIDE_DISTANT_HORIZONS = pair.getLeft().chuncksHideDistantHorizons;
         SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
         STACKS_HIDE_DISTANT_HORIZONS = pair.getLeft().stacksHideDistantHorizons;
@@ -626,6 +639,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
+        ModConfigSpec.BooleanValue portalRoomDistantHorizonsCopies = b
+                .comment("In an endlessly repeating dimensional carriage, let Distant Horizons carry the room's copies on out to its horizon instead of stopping them in fog a few rooms out. DH's own terrain stays hidden there either way. Set false to keep those rooms as they are without DH. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("endlessRoomCopies", true);
+        ModConfigSpec.IntValue portalRoomDistantHorizonsMaxBoxes = b
+                .comment("Most shapes those far copies may hand Distant Horizons at once. Lower it if a room's far copies cost too many frames; the copies then stop sooner.")
+                .defineInRange("endlessRoomMaxBoxes", 40000, 1000, 200000);
         ModConfigSpec.BooleanValue chuncksHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are in, or approaching, the section of the track where the world breaks into scattered chunks. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInChuncks", true);
@@ -1065,6 +1084,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
+                portalRoomDistantHorizonsCopies, portalRoomDistantHorizonsMaxBoxes,
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
                 sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
@@ -2524,6 +2544,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
             ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
+            ModConfigSpec.BooleanValue portalRoomDistantHorizonsCopies,
+            ModConfigSpec.IntValue portalRoomDistantHorizonsMaxBoxes,
             ModConfigSpec.BooleanValue chuncksHideDistantHorizons,
             ModConfigSpec.BooleanValue spheresHideDistantHorizons,
             ModConfigSpec.BooleanValue stacksHideDistantHorizons,

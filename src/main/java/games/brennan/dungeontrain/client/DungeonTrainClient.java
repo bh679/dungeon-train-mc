@@ -113,6 +113,7 @@ public final class DungeonTrainClient {
         // and must not be loaded when DH isn't installed.
         if (GraphicsCapabilities.distantHorizonsActive()) {
             DistantHorizonsSuppression.register();
+            DistantHorizonsFarCopies.register();
             // DH keeps generating LODs behind the pause menu; hold it while singleplayer is paused.
             DistantHorizonsPauseHold.register();
             // The sunk-zone attic filter is registered on the common side; the client supplies the

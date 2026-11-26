@@ -96,7 +96,10 @@ public final class DistantHorizonsSuppression {
         // which is a slab of world X and asks about that alone.
         if (ClientDisplayConfig.PORTAL_ROOM_HIDE_DISTANT_HORIZONS.get()
                 && ClientPortalRoomDepth.isInsideStructure(pos.x, pos.y, pos.z)) {
-            return true;
+            // An endless room whose copies DH is carrying on keeps DH drawing: those copies are
+            // drawn in this same pass, and DistantHorizonsFarCopies keeps the terrain out of it
+            // through the culling frustum instead.
+            return !ClientPortalRoomFarCopies.drawingAtCamera();
         }
 
         int x = (int) Math.floor(pos.x);

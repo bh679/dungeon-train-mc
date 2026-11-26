@@ -108,8 +108,11 @@ public final class ClientPortalRoomFog {
                                       float crossing) {
         if (vanillaFar <= 0.0f) return 0.0f;
 
-        boolean inside = contains(x, y, z);
-        float radius = inside ? radiusAt(x, z) : corridorRadius(crossing, vanillaFar);
+        // Far copies drawn by Distant Horizons carry the room on past this fog, so it stands back
+        // to vanilla's own distance rather than hiding them a few rooms out. Easing out as usual.
+        boolean lifted = ClientPortalRoomFarCopies.liftsRoomFog();
+        boolean inside = !lifted && contains(x, y, z);
+        float radius = lifted ? 0.0f : inside ? radiusAt(x, z) : corridorRadius(crossing, vanillaFar);
         // Standing in the room and walking toward it along a corridor are one case below: both have
         // a distance the room is asking for, and the difference is only where it came from.
         boolean engaged = inside || radius > 0.0f;

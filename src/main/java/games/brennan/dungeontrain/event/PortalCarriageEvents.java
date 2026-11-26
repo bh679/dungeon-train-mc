@@ -1231,6 +1231,7 @@ public final class PortalCarriageEvents {
         players = withoutSelfLitPlayers(players);
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
+            PortalRoomFarCopiesSync.clearFor(players, Set.of());
             clearBorderFor(players, Set.of());
             clearSkyFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
@@ -1256,6 +1257,7 @@ public final class PortalCarriageEvents {
         Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
         Set<UUID> depthed = new HashSet<>();
+        Set<UUID> farCopied = new HashSet<>();
         Set<Integer> occupiedPairs = new HashSet<>();
         // What PortalTwinChunkHold needs: how far each occupant's room reaches, and which rooms have
         // somebody in them (as they stand after this tick's tiling).
@@ -1312,6 +1314,8 @@ public final class PortalCarriageEvents {
             if (occupiedPairs.contains(pair.getKey())) occupiedStructures.add(next);
 
             sendFogFor(players, dims, layout, next, fogged);
+            PortalRoomFarCopiesSync.sendFor(level, players, dims, layout, next, others,
+                structureBox(dims, next), farCopied);
             sendBorderFor(players, dims, layout, next, bordered);
             sendSkyFor(players, dims, layout, next, skied);
             sendTrainAudioFor(players, dims, next, inStructure);
@@ -1319,6 +1323,7 @@ public final class PortalCarriageEvents {
         }
 
         clearFogFor(players, fogged);
+        PortalRoomFarCopiesSync.clearFor(players, farCopied);
         clearBorderFor(players, bordered);
         clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);
@@ -1459,14 +1464,20 @@ public final class PortalCarriageEvents {
         Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
         Set<UUID> depthed = new HashSet<>();
+        Set<UUID> farCopied = new HashSet<>();
 
         sendFogFor(players, dims, layout, structure, fogged);
+        if (!players.isEmpty()) {
+            PortalRoomFarCopiesSync.sendFor(players.get(0).serverLevel(), players, dims, layout,
+                structure, List.of(), structureBox(dims, structure), farCopied);
+        }
         sendBorderFor(players, dims, layout, structure, bordered);
         sendSkyFor(players, dims, layout, structure, skied);
         sendTrainAudioFor(players, dims, structure, inStructure);
         sendDepthFor(players, dims, structure, groundY, depthed);
 
         clearFogFor(players, fogged);
+        PortalRoomFarCopiesSync.clearFor(players, farCopied);
         clearBorderFor(players, bordered);
         clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);

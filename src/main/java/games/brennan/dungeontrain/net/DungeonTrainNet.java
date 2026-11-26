@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "219";
+    public static final String PROTOCOL_VERSION = "220";
 
     private DungeonTrainNet() {}
 
@@ -108,6 +108,9 @@ public final class DungeonTrainNet {
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
         registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        // An endless room's grid and which copies stand, so a Distant Horizons client can carry the
+        // copies on to its horizon. See client/ClientPortalRoomFarCopies.
+        registrar.playToClient(PortalRoomFarCopiesPacket.TYPE, PortalRoomFarCopiesPacket.STREAM_CODEC, PortalRoomFarCopiesPacket::handle);
         // A World Border room's walls, as a box: the client draws the border on them and decides
         // red or blue from the player each frame. See client/PortalRoomBorderRenderer.
         registrar.playToClient(PortalRoomBorderPacket.TYPE, PortalRoomBorderPacket.STREAM_CODEC, PortalRoomBorderPacket::handle);
