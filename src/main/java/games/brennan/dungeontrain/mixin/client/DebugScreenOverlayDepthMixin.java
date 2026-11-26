@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import games.brennan.dungeontrain.client.ClientPlotReadoutOffset;
 import games.brennan.dungeontrain.client.ClientPortalRoomDepth;
 import games.brennan.dungeontrain.client.CoordinateDisguise;
 import games.brennan.dungeontrain.client.DebugScreenDepthLines;
@@ -50,14 +51,15 @@ public abstract class DebugScreenOverlayDepthMixin {
 
     /**
      * A Targeted Block or Fluid on a train carriage prints Sable's plot position, some 20.48 million
-     * blocks out; this brings it in by {@code MapReadoutText.PLOT_OFFSET}. Before the camera shift, so
-     * that lands on the moved figure.
+     * blocks out; this brings it in by how far the plot sat from the train when it spawned
+     * ({@link ClientPlotReadoutOffset}). Before the camera shift, so that lands on the moved figure.
      */
     @Unique
     private static void dungeontrain$moveCarriageTargets(CallbackInfoReturnable<List<String>> cir) {
         try {
             List<String> lines = cir.getReturnValue();
-            List<String> moved = DebugScreenDepthLines.carriageTargetsMoved(lines, CoordinateDisguise::onCarriage);
+            List<String> moved = DebugScreenDepthLines.carriageTargetsMoved(lines, CoordinateDisguise::onCarriage,
+                ClientPlotReadoutOffset.dx(), ClientPlotReadoutOffset.dz());
             if (moved != lines) cir.setReturnValue(moved);
         } catch (Throwable ignored) {
             // A readout: vanilla's own line stands if anything is off.

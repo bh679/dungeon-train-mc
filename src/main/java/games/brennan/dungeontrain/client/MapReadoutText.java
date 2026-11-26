@@ -34,16 +34,16 @@ public final class MapReadoutText {
     }
 
     /**
-     * How far a train carriage's block positions are moved off Sable's plot before any readout prints
-     * them. Sable stores a carriage's blocks about 20.48 million blocks out on X and Z; a target there
-     * reads as a huge, meaningless number. Taking 20.5 million off brings it near the world the player
-     * sees. Y is never moved: the plot keeps the carriage's heights.
+     * The fallback for how far a carriage block's X and Z are moved off Sable's plot, for a world whose
+     * train spawned before the real offset was recorded ({@link ClientPlotReadoutOffset}). Sable stores a
+     * carriage's blocks about 20.48 million blocks out; 20.5 million brings them near the world. Y is
+     * never moved: the plot keeps the carriage's heights.
      */
     public static final long PLOT_OFFSET = 20_500_000L;
 
-    /** An X or Z on a carriage's plot, moved by {@link #PLOT_OFFSET}. */
-    public static int fromPlot(int value) {
-        return add(value, -PLOT_OFFSET);
+    /** An X or Z on a carriage's plot, moved by {@code offset} (plot minus real, at the train's spawn). */
+    public static int fromPlot(int value, long offset) {
+        return add(value, -offset);
     }
 
     /** The vertical chunk section JourneyMap prints in brackets after a Y: {@code y >> 4}. */

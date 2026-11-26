@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "218";
+    public static final String PROTOCOL_VERSION = "219";
 
     private DungeonTrainNet() {}
 
@@ -450,6 +450,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(TrainDebugBandPacket.TYPE, TrainDebugBandPacket.STREAM_CODEC, TrainDebugBandPacket::handle);
         // The band as the debug screen names it, for every player. See event/BandDimensionEvents.
         registrar.playToClient(BandDimensionPacket.TYPE, BandDimensionPacket.STREAM_CODEC, BandDimensionPacket::handle);
+        // How far the train's plot sat from its real X/Z at spawn, for targeted-block readouts. See event/PlotReadoutOffsetEvents.
+        registrar.playToClient(PlotReadoutOffsetPacket.TYPE, PlotReadoutOffsetPacket.STREAM_CODEC, PlotReadoutOffsetPacket::handle);
         // Where a save's relay upload has got to — drives the editor screen's "Uploading…" note and
         // its refresh once the build lands. See BuilderUploadStatusPacket.
         registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);

@@ -71,12 +71,14 @@ public final class CoordinateDisguise {
 
     /**
      * The position a readout prints for a targeted block: moved off Sable's plot when it is on a
-     * carriage ({@link MapReadoutText#fromPlot}), then by the camera's shift, as F3's Targeted Block line.
+     * carriage, by how far the plot sat from the train when it spawned ({@link ClientPlotReadoutOffset}),
+     * then by the camera's shift, as F3's Targeted Block line.
      */
     public static BlockPos targetedBlock(BlockPos target) {
         if (target == null) return null;
         BlockPos pos = onCarriage(target.getX(), target.getY(), target.getZ())
-            ? new BlockPos(MapReadoutText.fromPlot(target.getX()), target.getY(), MapReadoutText.fromPlot(target.getZ()))
+            ? new BlockPos(MapReadoutText.fromPlot(target.getX(), ClientPlotReadoutOffset.dx()), target.getY(),
+                MapReadoutText.fromPlot(target.getZ(), ClientPlotReadoutOffset.dz()))
             : target;
         return shifted(pos, cameraShift());
     }

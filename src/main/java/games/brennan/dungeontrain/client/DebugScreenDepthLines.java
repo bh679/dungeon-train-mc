@@ -173,19 +173,19 @@ public final class DebugScreenDepthLines {
 
     /**
      * The Targeted Block and Fluid lines whose position is on a train carriage, moved off Sable's plot
-     * by {@link MapReadoutText#fromPlot}: X and Z come down by {@link MapReadoutText#PLOT_OFFSET}, Y
-     * stays. Every other line, and a target not on a carriage, is untouched. Returns {@code lines}
+     * by {@link MapReadoutText#fromPlot}: X comes down by {@code dx} and Z by {@code dz} (the train's
+     * plot minus its real position at spawn, {@link ClientPlotReadoutOffset}), Y stays. Every other line, and a target not on a carriage, is untouched. Returns {@code lines}
      * itself when nothing changes, so the ordinary frame allocates nothing.
      *
      * <p>Run before {@link #shifted}, so the camera's shift lands on the moved figure, never on the
      * raw plot position.</p>
      */
-    public static List<String> carriageTargetsMoved(List<String> lines, CarriageTest test) {
+    public static List<String> carriageTargetsMoved(List<String> lines, CarriageTest test, long dx, long dz) {
         if (lines == null || test == null) return lines;
         List<String> out = null;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            String moved = carriageTargetMoved(line, test);
+            String moved = carriageTargetMoved(line, test, dx, dz);
             if (moved != line && out == null) out = new ArrayList<>(lines.subList(0, i));
             if (out != null) out.add(moved);
         }
@@ -193,7 +193,7 @@ public final class DebugScreenDepthLines {
     }
 
     /** One line, moved if it is a Targeted line on a carriage; the same object otherwise. */
-    static String carriageTargetMoved(String line, CarriageTest test) {
+    static String carriageTargetMoved(String line, CarriageTest test, long dx, long dz) {
         if (line == null || line.isEmpty()) return line;
         Matcher targeted = TARGETED.matcher(line);
         if (!targeted.matches()) return line;
@@ -202,8 +202,8 @@ public final class DebugScreenDepthLines {
         long z = parseLong(targeted.group(4));
         if (!fitsInt(x) || !fitsInt(y) || !fitsInt(z)) return line;
         if (!test.onCarriage((int) x, (int) y, (int) z)) return line;
-        return targeted.group(1) + MapReadoutText.fromPlot((int) x) + ", " + y + ", "
-            + MapReadoutText.fromPlot((int) z);
+        return targeted.group(1) + MapReadoutText.fromPlot((int) x, dx) + ", " + y + ", "
+            + MapReadoutText.fromPlot((int) z, dz);
     }
 
     private static boolean fitsInt(long v) {

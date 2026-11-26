@@ -57,10 +57,12 @@ class MapReadoutTextTest {
     }
 
     @Test
-    @DisplayName("a carriage plot X or Z comes in by 20.5 million")
+    @DisplayName("a carriage plot X or Z comes in by the offset recorded at spawn")
     void fromPlot() {
-        assertEquals(-18_973, MapReadoutText.fromPlot(20_481_027));
-        assertEquals(-4_632, MapReadoutText.fromPlot(20_495_368));
-        assertEquals(20_000_000 - 20_500_000, MapReadoutText.fromPlot(20_000_000));
+        // Plot origin 20,481,000 recorded against a real spawn X of 300: offset 20,480,700.
+        assertEquals(327, MapReadoutText.fromPlot(20_481_027, 20_480_700L));
+        // The fallback for worlds without a recorded offset.
+        assertEquals(-18_973, MapReadoutText.fromPlot(20_481_027, MapReadoutText.PLOT_OFFSET));
+        assertEquals(-4_632, MapReadoutText.fromPlot(20_495_368, MapReadoutText.PLOT_OFFSET));
     }
 }
