@@ -209,6 +209,20 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Standless Brewing's pocket brewing stand: its slots, fuel, brew progress and free-fuel timer, saved
+     * with the player. Not {@code copyOnDeath}: a death drops its contents with the player's other items
+     * ({@code perks/effects/alchemist/PocketBrewing}), which also copies it on a keepInventory respawn.
+     * A mutable container, as a placed stand's block entity is; empty stands are not saved.
+     */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand>> POCKET_BREWING =
+        TYPES.register("pocket_brewing",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand>builder(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand::new)
+                .serialize(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand.CODEC,
+                    stand -> !stand.isEmpty() || stand.fuel() > 0 || stand.freeFuelTicks() > 0)
+                .build()
+        );
+
     /** Aura perks' draws this life (perks/aura). Per life: not {@code copyOnDeath}, so a new life rolls again. */
     public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.aura.AuraState.Draws>> PERK_AURA_DRAWS =
         TYPES.register("perk_aura_draws",

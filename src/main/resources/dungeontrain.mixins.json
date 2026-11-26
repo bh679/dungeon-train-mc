@@ -225,6 +225,8 @@
     "EnchantmentHelperCrafterMixin",
     "AbstractFurnaceCookingTimeMixin",
     "BaseContainerBlockEntityCookingOwnerMixin",
+    "BrewingStandBrewmasterMixin",
+    "PotionContentsMergeMixin",
     "CampfireCookingTimeMixin",
     "LivingEntityEnchantOwnerMixin",
     "ItemStackEnchantOwnerMixin",

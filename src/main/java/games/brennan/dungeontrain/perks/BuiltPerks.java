@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.perks;
 
+import games.brennan.dungeontrain.perks.effects.alchemist.AlchemistPerks;
 import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
 import games.brennan.dungeontrain.perks.effects.builder.BuilderPerks;
 import games.brennan.dungeontrain.perks.effects.hoarder.HoarderPerks;
@@ -64,6 +65,7 @@ public final class BuiltPerks {
             SpeedsterPerks.declare();
             HoarderPerks.declare();
             BuilderPerks.declare();
+            AlchemistPerks.declare();
             declared = true;
         }
     }
