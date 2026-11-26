@@ -133,7 +133,9 @@ public final class PhotoTributeButtons {
         boolean following = followShown && (FOLLOWED_PHOTOS.contains(photoId) || FollowsClientState.followsName(photographer));
         Component followLabel = Component.translatable(following
             ? "gui.dungeontrain.follows.following" : "gui.dungeontrain.follows.follow");
-        int followWidth = followShown ? font.width(followLabel) + 2 * PADDING + GAP : 0;
+        // wide enough for either label, so it does not clip when the click turns it to "Following"
+        int followWidth = followShown ? Math.max(font.width(Component.translatable("gui.dungeontrain.follows.follow")),
+            font.width(Component.translatable("gui.dungeontrain.follows.following"))) + 2 * PADDING + GAP : 0;
         int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - followWidth - closeWidth
             - GAP - PhotoReportOverlay.FLAG_SIZE) / 2;
 
