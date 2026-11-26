@@ -41,12 +41,25 @@ public final class PerksHotkeyClient {
         event.register(KEY);
     }
 
+    /**
+     * Pre, not Post: vanilla's Social Interactions binding is also {@code P}, and in a world opened to
+     * LAN (how a perks test world gets cheats) vanilla's keybind pass would open that screen first and
+     * leave this one shut out. With perks on, the perks menu takes the press and the shared click is
+     * drained from the social binding.
+     */
     @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(ClientTickEvent.Pre event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
-        while (KEY.consumeClick()) {
-            if (mc.screen == null && games.brennan.dungeontrain.perks.PerksGate.isOnClient()) PerksScreen.open(false);
+        boolean pressed = false;
+        while (KEY.consumeClick()) pressed = true;
+        if (!pressed || mc.screen != null || !games.brennan.dungeontrain.perks.PerksGate.isOnClient()) return;
+        KeyMapping social = mc.options.keySocialInteractions;
+        if (social.same(KEY)) {
+            while (social.consumeClick()) {
+                // the same press, meant for the perks menu
+            }
         }
+        PerksScreen.open(false);
     }
 }
