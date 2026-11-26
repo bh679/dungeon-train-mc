@@ -1071,6 +1071,10 @@ public final class PortalChunkDimension {
     private static void openDoorway(ServerLevel level, PortalStructure structure, CarriageDims dims,
                                     PortalCarriageLayout layout, BlockPos origin, Vec3i size,
                                     PortalCorridorMask mask, PortalCarriageRole role) {
+        // An Endless open chunk's doors stand out on its plain, not in its faces: the player walks
+        // round the tower, so nothing is cut into it. Its doors are pinned to the bottom row, which
+        // is rock, so the inward dig below would otherwise bore a tunnel clean through the chunk.
+        if (!opensDoorways(structure.mode())) return;
         boolean entry = role == PortalCarriageRole.ENTRY;
         BlockPos corridor = entry ? structure.origin() : structure.exitOrigin(dims);
 
@@ -1100,6 +1104,11 @@ public final class PortalChunkDimension {
                 if (!level.getBlockState(cursor).isAir()) replaceQuietly(level, cursor, air);
             }
         }
+    }
+
+    /** Whether a chunk room of {@code mode} cuts its doorways into the sampled terrain. Pure. */
+    static boolean opensDoorways(PortalRoomMode mode) {
+        return !mode.laysGroundPlain();
     }
 
     /**

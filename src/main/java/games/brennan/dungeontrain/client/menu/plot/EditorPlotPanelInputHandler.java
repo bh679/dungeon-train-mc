@@ -124,7 +124,8 @@ public final class EditorPlotPanelInputHandler {
         return switch (cell) {
             case WEIGHT_NUMBER, LENGTH_NUMBER, WIDTH_NUMBER, HEIGHT_NUMBER,
                  EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER,
-                 FRAME_MIN_LEVEL_NUMBER, FRAME_MAX_LEVEL_NUMBER -> true;
+                 FRAME_MIN_LEVEL_NUMBER, FRAME_MAX_LEVEL_NUMBER,
+                 FRAME_DOOR_DISTANCE_NUMBER, DOOR_DISTANCE_NUMBER -> true;
             default -> false;
         };
     }
@@ -152,7 +153,8 @@ public final class EditorPlotPanelInputHandler {
             // Number rows: click steps up, shift- or right-click steps down, cmd-click types.
             case WEIGHT_NUMBER, LENGTH_NUMBER, WIDTH_NUMBER, HEIGHT_NUMBER,
                  EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER,
-                 FRAME_MIN_LEVEL_NUMBER, FRAME_MAX_LEVEL_NUMBER -> {
+                 FRAME_MIN_LEVEL_NUMBER, FRAME_MAX_LEVEL_NUMBER,
+                 FRAME_DOOR_DISTANCE_NUMBER, DOOR_DISTANCE_NUMBER -> {
                 NumberField field = rowNumber(hit.cell(), entry);
                 if (field != null) {
                     NumberStepper.click(field, button, shift, MenuClickModifiers.cmdDown(), NumberPad.returningTo(null));
@@ -185,7 +187,9 @@ public final class EditorPlotPanelInputHandler {
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
             case BUTTON_CONTENTS -> openContents(entry);
             case BUTTON_ENTER_INSIDE -> dispatchAction(entry, EditorPlotActionPacket.Action.ENTER_INSIDE);
-            case FRAME_DIM_BEDROCK, FRAME_DIM_VOID, FRAME_DIM_WORLD_BORDER -> runFrame(entry,
+            case FRAME_GROUND_HELD -> runFrame(entry, "ground", "held");
+            case FRAME_GROUND_EDIT -> runFrame(entry, "ground", "edit");
+            case FRAME_DIM_BEDROCK, FRAME_DIM_VOID, FRAME_DIM_WORLD_BORDER, FRAME_DIM_ENDLESS_OPEN -> runFrame(entry,
                 "dimension", EditorPlotLabelsRenderer.frameDimensionToken(hit.cell()));
             case FRAME_PHASES -> openDrillIn(new games.brennan.dungeontrain.client.menu.PhaseSelectScreen(
                 PlotCategory.CHUNK_FRAMES, entry.modelId(), entry.modelName()));
@@ -396,6 +400,11 @@ public final class EditorPlotPanelInputHandler {
                 entry.copiesFloorHeight(),
                 PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT, PortalRoomCopiesVariant.MAX_FLOOR_HEIGHT,
                 token -> EditorPlotTeleport.copiesFloorHeightCommandFor(category, token));
+            case DOOR_DISTANCE_NUMBER -> roomNumber(category, NumberTitle.of("door_distance"),
+                PortalRoomSettings.parse(entry.roomMode()).doorDistance().value(),
+                0, games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX,
+                token -> EditorPlotTeleport.doorDistanceCommandFor(category, token));
+            case FRAME_DOOR_DISTANCE_NUMBER -> frameDoorDistance(entry);
             case FRAME_MIN_LEVEL_NUMBER -> frameLevel(entry, "minlevel");
             case FRAME_MAX_LEVEL_NUMBER -> frameLevel(entry, "maxlevel");
             default -> null;
@@ -408,6 +417,15 @@ public final class EditorPlotPanelInputHandler {
      * blank value is "all" ({@code -1}). Null until the status overlay reports this frame, so a step
      * never starts from another plot's numbers.
      */
+    /** An Endless open frame's door distance, stepped or typed like the weight. */
+    private static NumberField frameDoorDistance(EditorPlotLabelsPacket.Entry entry) {
+        var snap = EditorPlotLabelsRenderer.frameSnapshot(entry);
+        if (snap.isEmpty() || entry.modelName().isEmpty()) return null;
+        String prefix = CHUNK_FRAME_COMMAND + " doordistance " + entry.modelName();
+        return NumberField.ofTokens(NumberTitle.of("door_distance"), snap.get().doorDistance(), 0,
+            games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX, false, token -> prefix + " " + token);
+    }
+
     private static NumberField frameLevel(EditorPlotLabelsPacket.Entry entry, String sub) {
         if (!EditorPlotLabelsRenderer.isFramePanel(entry) || !EditorPlotLabelsRenderer.statusIsFor(entry)) return null;
         String prefix = PlotCategory.CHUNK_FRAMES.levelCommand(sub, entry.modelId(), entry.modelName()).orElse(null);

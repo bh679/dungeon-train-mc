@@ -256,7 +256,9 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
             new BoundingBox(minX, corridorMinY, corridorMinZ, maxX, corridorMaxY, corridorMaxZ);
         BoundingBox plugBox = new BoundingBox(plugMinX, corridorMinY, corridorMinZ - 1,
             plugMaxX, corridorMaxY, corridorMaxZ + 1);
-        if (!withSeals) return new PortalCorridorMask(List.of(corridorBox, plugBox));
+        // A corridor standing a door gap out on an open plain has no room face at its mouth for a
+        // seal ring to close — nothing is written there (stampCorridorHalf), so nothing is masked.
+        if (!withSeals || structure.doorGap() > 0) return new PortalCorridorMask(List.of(corridorBox, plugBox));
         return new PortalCorridorMask(List.of(corridorBox, plugBox,
             seal(sealX, roomMinY, roomMinZ, roomMaxY, roomMaxZ)));
     }

@@ -275,6 +275,19 @@ public final class EditorMenuPortalRows {
     }
 
     /**
+     * The Door distance number row — how many blocks of plain stand between an Endless Open room and
+     * each corridor — or null under any mode whose walls are not open.
+     */
+    public static CommandMenuEntry doorDistanceRowFor(String currentMode, String prefix) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
+        if (!settings.doorDistanceApplies()) return null;
+        return CommandMenuEntry.Number.of(EditorPlotLabelsRenderer.doorDistanceLabel(currentMode),
+            NumberTitle.of("door_distance"), prefix + " doordistance", settings.doorDistance().value(),
+            0, games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX, false);
+    }
+
+    /**
      * The moved-exit number row, or null unless Exits is set to Random.
      *
      * <p>Random alone: walling off the way straight back out is only fair when there is something

@@ -1,0 +1,18 @@
+{
+  "id": "open-field-dimensional-carriages",
+  "version": "0.2046.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "world"
+  ],
+  "title": "Open-field dimensional carriages",
+  "summary": "Some dimensional carriages now open onto a wide field, with their world standing in the middle of it.",
+  "highlights": [],
+  "pr": 2915,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

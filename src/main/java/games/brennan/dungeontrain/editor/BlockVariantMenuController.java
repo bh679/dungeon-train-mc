@@ -221,7 +221,27 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot =
             copiesPlotFor(roomName, plane, room.origin());
+        openOneCell(player, plot, games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL);
+    }
 
+    /**
+     * Open the menu on an Endless open frame's ground — the frame panel's Ground Edit button. The
+     * frame twin of {@link #openForCopies}: a setting on the frame, presented as a one-cell plot
+     * ({@link ChunkFrameGroundPlot}), the panel hung in front of the player.
+     */
+    public static void openForFrameGround(ServerPlayer player, String frame) {
+        if (!INSTANCE.requireOp(player)) return;
+        BlockPos origin = ChunkFrameEditor.registeredPlotOrigin(frame);
+        if (origin == null) {
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.stand_in_dimensional_plot"), ChatFormatting.YELLOW);
+            return;
+        }
+        ChunkFrameGroundPlot plot = new ChunkFrameGroundPlot(frame, origin);
+        openOneCell(player, plot, ChunkFrameGroundPlot.CELL);
+    }
+
+    /** Hang the menu for {@code plot}'s one {@code cell} in front of the player, at eye level. */
+    private static void openOneCell(ServerPlayer player, BlockVariantPlot plot, BlockPos cell) {
         // In front of the player at eye level, not on a block. Every other opening of this menu
         // targets a cell in the world and hangs the panel off that cell's face, but a Copies variant
         // is not anywhere — anchoring it to whatever block the crosshair happened to be over put it
@@ -239,7 +259,6 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         up = up.normalize();
         Vec3 right = MenuPanelGeometry.right(up, normal);
 
-        BlockPos cell = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL;
         // The stored face is only used to re-anchor a later re-sync; UP keeps that stable rather
         // than tying it to a block face this panel never had.
         INSTANCE.put(player, new OpenMenu(plot.key(), cell, Direction.UP, up, anchor, right));
@@ -277,6 +296,11 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
     private static BlockVariantPlot resolvePlotFor(ServerPlayer player, CarriageDims dims,
                                                    String variantId) {
         ServerLevel level = player.serverLevel();
+        String groundFrame = ChunkFrameGroundPlot.frameOf(variantId);
+        if (groundFrame != null) {
+            BlockPos origin = ChunkFrameEditor.registeredPlotOrigin(groundFrame);
+            return origin == null ? null : new ChunkFrameGroundPlot(groundFrame, origin);
+        }
         String room = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.roomOf(variantId);
         if (room == null) {
             return BlockVariantPlot.resolveByKey(level, variantId, dims);

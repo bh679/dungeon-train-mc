@@ -89,7 +89,9 @@ final class PortalRoomModeTest {
         for (PortalRoomMode m : PortalRoomMode.values()) {
             boolean expected = m == PortalRoomMode.VOID || m == PortalRoomMode.WORLD_BORDER
                 // A chunk room a frame encloses as Void or World Border sweeps exactly as they do.
-                || m == PortalRoomMode.CHUNK_VOID || m == PortalRoomMode.CHUNK_WORLD_BORDER;
+                || m == PortalRoomMode.CHUNK_VOID || m == PortalRoomMode.CHUNK_WORLD_BORDER
+                // And as Endless open, which sweeps the same clearance to lay its plain in.
+                || m == PortalRoomMode.CHUNK_ENDLESS_OPEN;
             assertEquals(expected, m.clearsSurroundings(), m.id());
         }
     }
@@ -168,7 +170,9 @@ final class PortalRoomModeTest {
         // A chunk room enclosed as Void or World Border by its frame has the Void edge to hide.
         assertTrue(PortalRoomMode.CHUNK_VOID.fogs());
         assertTrue(PortalRoomMode.CHUNK_WORLD_BORDER.fogs());
-        assertEquals(8, PortalRoomMode.values().length,
+        // An Endless open plain runs out to the clearance's edge, which the fog hides.
+        assertTrue(PortalRoomMode.CHUNK_ENDLESS_OPEN.fogs());
+        assertEquals(9, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it fogs — add it to this test");
     }
 
@@ -191,7 +195,8 @@ final class PortalRoomModeTest {
         // One sample, sliced once, whatever encloses it.
         assertFalse(PortalRoomMode.CHUNK_VOID.copiesApply());
         assertFalse(PortalRoomMode.CHUNK_WORLD_BORDER.copiesApply());
-        assertEquals(8, PortalRoomMode.values().length,
+        assertFalse(PortalRoomMode.CHUNK_ENDLESS_OPEN.copiesApply());
+        assertEquals(9, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it takes a Copies setting — add it to this test");
     }
 
@@ -216,7 +221,9 @@ final class PortalRoomModeTest {
         // A frame's Void or World Border takes the skin away, so nothing is sealed there either.
         assertFalse(PortalRoomMode.CHUNK_VOID.sealsCorridors());
         assertFalse(PortalRoomMode.CHUNK_WORLD_BORDER.sealsCorridors());
-        assertEquals(8, PortalRoomMode.values().length,
+        // Its corridors stand out on the plain, open like the rest of it.
+        assertFalse(PortalRoomMode.CHUNK_ENDLESS_OPEN.sealsCorridors());
+        assertEquals(9, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it seals its corridors — add it to this test");
     }
 
@@ -235,6 +242,6 @@ final class PortalRoomModeTest {
         }
         assertSame(start, m);
         assertEquals(authored, visited.size());
-        assertEquals(PortalRoomMode.values().length - 2, authored, "only the two chunk enclosures are frame-only");
+        assertEquals(PortalRoomMode.values().length - 3, authored, "only the three chunk enclosures are frame-only");
     }
 }

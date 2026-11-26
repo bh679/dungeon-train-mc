@@ -128,10 +128,18 @@ public final class EditorPlotLabelsRenderer {
         EXIT_MOVE_NUMBER,
         /** Top-right {@code ↻} on the name row — face the player; shift resets to the grid. */
         FACE,
-        /** Chunk frame Dimension row — one of three cells, the frame's current dimension lit. */
+        /** Chunk frame Dimension row — one of four cells, the frame's current dimension lit. */
         FRAME_DIM_BEDROCK,
         FRAME_DIM_VOID,
         FRAME_DIM_WORLD_BORDER,
+        FRAME_DIM_ENDLESS_OPEN,
+        /** Endless open frame's Ground row — the held half sets it from the hand, Edit opens the menu. */
+        FRAME_GROUND_HELD,
+        FRAME_GROUND_EDIT,
+        /** Endless open frame's Door distance — one number cell. */
+        FRAME_DOOR_DISTANCE_NUMBER,
+        /** An Endless Open room's Door distance — one number cell. */
+        DOOR_DISTANCE_NUMBER,
         /** Chunk frame Min Lv | Max Lv row — two number cells. */
         FRAME_MIN_LEVEL_NUMBER,
         FRAME_MAX_LEVEL_NUMBER,
@@ -161,7 +169,7 @@ public final class EditorPlotLabelsRenderer {
     public enum RowKind {
         NAME, NOTE, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
         DOOR_WALL,
-        DOOR_OFFSET, ENTRANCE, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        DOOR_OFFSET, DOOR_DISTANCE, ENTRANCE, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS,
         /**
          * The chunk frame panel's rows. {@link #FRAME_ROOM} repeats once per chunk-dimension room,
@@ -169,7 +177,8 @@ public final class EditorPlotLabelsRenderer {
          * ({@link games.brennan.dungeontrain.client.ChunkFrameRoomsClient}); {@link #FRAME_LOADING}
          * stands in for the snapshot-backed rows until it arrives.
          */
-        FRAME_DIMENSION, FRAME_LEVELS, FRAME_GATE, FRAME_ROOMS_ALL, FRAME_ROOM, FRAME_LOADING, FRAME_SAVE
+        FRAME_DIMENSION, FRAME_GROUND, FRAME_DOOR_DISTANCE, FRAME_LEVELS, FRAME_GATE, FRAME_ROOMS_ALL,
+        FRAME_ROOM, FRAME_LOADING, FRAME_SAVE
     }
 
     /**
@@ -203,6 +212,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasGroundBelowRow(entry)) buf[n++] = RowKind.GROUND_BELOW;
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
         if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
+        if (hasDoorDistanceRow(entry)) buf[n++] = RowKind.DOOR_DISTANCE;
         if (hasEntranceRow(entry)) buf[n++] = RowKind.ENTRANCE;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
@@ -247,6 +257,10 @@ public final class EditorPlotLabelsRenderer {
         if (snap.isPresent()) buf.add(RowKind.FRAME_DIMENSION);
         if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) buf.add(RowKind.WEIGHT);
         if (entry.inPlot()) {
+            if (frameIsEndlessOpen(entry)) {
+                buf.add(RowKind.FRAME_GROUND);
+                buf.add(RowKind.FRAME_DOOR_DISTANCE);
+            }
             buf.add(RowKind.FRAME_LEVELS);
             buf.add(RowKind.FRAME_GATE);
             if (snap.isPresent()) {
@@ -276,16 +290,40 @@ public final class EditorPlotLabelsRenderer {
         return i < rooms.size() ? rooms.get(i) : null;
     }
 
-    /** The Dimension row's three cells: command token and label, in display order. */
-    public static final String[] FRAME_DIM_TOKENS = {"bedrock", "void", "world_border"};
-    public static final String[] FRAME_DIM_LABELS = {"Bedrock lock", "Void", "World border"};
+    /** The Dimension row's four cells: command token and label, in display order. */
+    public static final String[] FRAME_DIM_TOKENS = {"bedrock", "void", "world_border", "endless_open"};
+    public static final String[] FRAME_DIM_LABELS = {"Bedrock lock", "Void", "World border", "Endless open"};
+    private static final CellKind[] FRAME_DIM_CELLS = {CellKind.FRAME_DIM_BEDROCK, CellKind.FRAME_DIM_VOID,
+        CellKind.FRAME_DIM_WORLD_BORDER, CellKind.FRAME_DIM_ENDLESS_OPEN};
 
-    /** The Dimension row's cell at {@code hitX}. */
+    /** The Dimension row's cell at {@code hitX}: equal quarters, left to right. */
     static CellKind frameDimensionCell(double halfW, double hitX) {
         double w = halfW * 2.0;
-        if (hitX < -halfW + w / 3.0) return CellKind.FRAME_DIM_BEDROCK;
-        if (hitX < -halfW + 2.0 * w / 3.0) return CellKind.FRAME_DIM_VOID;
-        return CellKind.FRAME_DIM_WORLD_BORDER;
+        int n = FRAME_DIM_CELLS.length;
+        int i = (int) Math.floor((hitX + halfW) / w * n);
+        return FRAME_DIM_CELLS[Math.max(0, Math.min(n - 1, i))];
+    }
+
+    /** Whether the frame behind {@code entry} stands its chunk on an Endless open plain. */
+    public static boolean frameIsEndlessOpen(EditorPlotLabelsPacket.Entry entry) {
+        return frameSnapshot(entry).map(s -> "endless_open".equals(s.dimension())).orElse(false);
+    }
+
+    /** What the frame Door distance row reads, e.g. {@code "Door distance 16"}. */
+    public static String frameDoorDistanceLabel(int blocks) {
+        return "Door distance " + blocks;
+    }
+
+    /** Whether the room Door distance row shows: under Endless Open, the walls-open mode. */
+    public static boolean hasDoorDistanceRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && entry.roomMode() != null
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode()).doorDistanceApplies();
+    }
+
+    /** The room Door distance row's label. */
+    public static String doorDistanceLabel(String modeTag) {
+        return MenuLang.t("plot.door_distance",
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).doorDistance().value());
     }
 
     /** The command token a Dimension cell sends, or null for any other cell. */
@@ -294,6 +332,7 @@ public final class EditorPlotLabelsRenderer {
             case FRAME_DIM_BEDROCK -> FRAME_DIM_TOKENS[0];
             case FRAME_DIM_VOID -> FRAME_DIM_TOKENS[1];
             case FRAME_DIM_WORLD_BORDER -> FRAME_DIM_TOKENS[2];
+            case FRAME_DIM_ENDLESS_OPEN -> FRAME_DIM_TOKENS[3];
             default -> null;
         };
     }
@@ -1074,7 +1113,7 @@ public final class EditorPlotLabelsRenderer {
                                      java.util.function.ToIntFunction<String> measure) {
         int third = 0;
         for (String label : FRAME_DIM_LABELS) third = Math.max(third, measure.applyAsInt(label));
-        double w = 3 * (third * TEXT_SCALE + 2 * PAD_X);
+        double w = FRAME_DIM_LABELS.length * (third * TEXT_SCALE + 2 * PAD_X);
         int half = Math.max(measure.applyAsInt("Max Lv all"), measure.applyAsInt("Phases…"));
         half = Math.max(half, measure.applyAsInt(frameStageLabel(
             statusIsFor(entry) ? games.brennan.dungeontrain.client.EditorStatusHudOverlay.stageId() : "")));
@@ -1226,6 +1265,7 @@ public final class EditorPlotLabelsRenderer {
             // Read-only — there is nothing to click. The door offset is detected from a placed door,
             // not dialled in here; see PortalRoomDoorDetection.
             case DOOR_OFFSET -> CellKind.NONE;
+            case DOOR_DISTANCE -> CellKind.DOOR_DISTANCE_NUMBER;
             case ENTRANCE -> CellKind.ENTRANCE_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
@@ -1239,6 +1279,9 @@ public final class EditorPlotLabelsRenderer {
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
             case FRAME_DIMENSION -> frameDimensionCell(halfW, hitX);
+            case FRAME_GROUND -> copiesBlockHitIsEdit(halfW, hitX)
+                ? CellKind.FRAME_GROUND_EDIT : CellKind.FRAME_GROUND_HELD;
+            case FRAME_DOOR_DISTANCE -> CellKind.FRAME_DOOR_DISTANCE_NUMBER;
             case FRAME_LEVELS -> halfCell(hitX, CellKind.FRAME_MIN_LEVEL_NUMBER, CellKind.FRAME_MAX_LEVEL_NUMBER);
             case FRAME_GATE -> halfCell(hitX, CellKind.FRAME_PHASES, CellKind.FRAME_STAGE);
             case FRAME_ROOMS_ALL -> halfCell(hitX, CellKind.FRAME_ROOMS_ALL, CellKind.FRAME_ROOMS_NONE);
@@ -1558,7 +1601,13 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, MenuLang.t("editor.contents"), 0, rCY, BUTTON_TEXT_COLOR);
                 }
-                case FRAME_DIMENSION, FRAME_LEVELS, FRAME_GATE, FRAME_ROOMS_ALL, FRAME_ROOM, FRAME_LOADING, FRAME_SAVE ->
+                // How far out along the plain the corridors stand. One number cell.
+                case DOOR_DISTANCE -> {
+                    drawNumberCell(ps, buffer, halfW, rTop, rBot, hovered == CellKind.DOOR_DISTANCE_NUMBER);
+                    drawCenteredText(ps, buffer, font, doorDistanceLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                case FRAME_DIMENSION, FRAME_GROUND, FRAME_DOOR_DISTANCE, FRAME_LEVELS, FRAME_GATE,
+                     FRAME_ROOMS_ALL, FRAME_ROOM, FRAME_LOADING, FRAME_SAVE ->
                     drawFrameRow(ps, buffer, font, entry, rowKind, rowIdx, halfW, rTop, rBot, rCY,
                         hovered, hoveredRow);
             }
@@ -1579,15 +1628,26 @@ public final class EditorPlotLabelsRenderer {
             case FRAME_DIMENSION -> {
                 drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                 String current = snap.map(games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket::dimension).orElse("");
-                CellKind[] cells = {CellKind.FRAME_DIM_BEDROCK, CellKind.FRAME_DIM_VOID, CellKind.FRAME_DIM_WORLD_BORDER};
                 double w = halfW * 2.0;
-                for (int c = 0; c < 3; c++) {
-                    double l = -halfW + c * w / 3.0;
-                    double r = -halfW + (c + 1) * w / 3.0;
+                int n = FRAME_DIM_CELLS.length;
+                for (int c = 0; c < n; c++) {
+                    double l = -halfW + c * w / n;
+                    double r = -halfW + (c + 1) * w / n;
                     boolean lit = FRAME_DIM_TOKENS[c].equals(current);
                     drawFrameCell(ps, buffer, font, l, r, rTop, rBot, rCY, FRAME_DIM_LABELS[c],
-                        hovered == cells[c], lit ? LIT_BG : BUTTON_BG);
+                        hovered == FRAME_DIM_CELLS[c], lit ? LIT_BG : BUTTON_BG);
                 }
+            }
+            // The block the plain is laid in: the held half sets it from the hand, Edit opens the
+            // Block Variant menu — the same row an Endless Open room's Floor is.
+            case FRAME_GROUND -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY, hovered,
+                "Ground:", snap.map(games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket::groundBlock).orElse(""),
+                CellKind.FRAME_GROUND_HELD, CellKind.FRAME_GROUND_EDIT);
+            case FRAME_DOOR_DISTANCE -> {
+                drawNumberCell(ps, buffer, halfW, rTop, rBot, hovered == CellKind.FRAME_DOOR_DISTANCE_NUMBER);
+                drawCenteredText(ps, buffer, font, frameDoorDistanceLabel(snap.map(
+                    games.brennan.dungeontrain.net.ChunkFrameRoomsSyncPacket::doorDistance).orElse(0)),
+                    0, rCY, WEIGHT_COLOR);
             }
             case FRAME_LEVELS -> {
                 drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
