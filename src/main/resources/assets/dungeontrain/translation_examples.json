@@ -18601,6 +18601,31 @@
       ]
     }
   },
+  "perk.dungeontrain.reroll_trades.tooltip_paid": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "emeralds the next reroll costs (doubles with each reroll of the same villager)",
+      "examples": [
+        "1",
+        "16"
+      ]
+    }
+  },
+  "perk.dungeontrain.reroll_trades.tooltip_free": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "9"
+      ]
+    }
+  },
   "perk.dungeontrain.restock_villager.button": {
     "1": {
       "label": "restocks the player still has left with this villager this life",
@@ -18807,6 +18832,152 @@
       ]
     }
   },
+  "gui.dungeontrain.perks.stat.luck_always": {
+    "1": {
+      "label": "a Luck level, as Roman numerals",
+      "examples": [
+        "I",
+        "II"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.luck_chance": {
+    "1": {
+      "label": "a Luck level, as Roman numerals",
+      "examples": [
+        "I",
+        "II"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.level_always": {
+    "1": {
+      "label": "how many effect levels are added, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.level_chance": {
+    "1": {
+      "label": "how many effect levels are added, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.next_at": {
+    "1": {
+      "label": "a number of perk points",
+      "examples": [
+        "5",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.refuel": {
+    "1": {
+      "label": "a countdown in minutes and seconds",
+      "examples": [
+        "2:41",
+        "0:09"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.page": {
+    "1": {
+      "label": "the page shown, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "how many pages there are, a whole number",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.looting_always": {
+    "1": {
+      "label": "how many extra Looting levels, a number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.looting_chance": {
+    "1": {
+      "label": "how many extra Looting levels, a number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.drift_gift.slot": {
+    "1": {
+      "label": "a percentage number, without the % sign",
+      "examples": [
+        "35",
+        "40"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.paid.one": {
+    "1": {
+      "label": "how many emeralds (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.paid.other": {
+    "1": {
+      "label": "how many emeralds",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.banked": {
+    "1": {
+      "label": "sixteenths of an emerald saved so far",
+      "examples": [
+        "3",
+        "11"
+      ]
+    },
+    "2": {
+      "label": "sixteenths in one emerald (always 16)",
+      "examples": [
+        "16"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.charged.one": {
+    "1": {
+      "label": "how many emeralds (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.charged.other": {
+    "1": {
+      "label": "how many emeralds",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.stat.unit.seconds": {
     "1": {
       "label": "a number of seconds",
@@ -18869,6 +19040,40 @@
       "examples": [
         "3",
         "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.or": {
+    "1": {
+      "label": "the smaller of two possible values (heart icons in game)",
+      "examples": [
+        "1",
+        "1.5"
+      ]
+    },
+    "2": {
+      "label": "the larger of two possible values (heart icons in game)",
+      "examples": [
+        "1.5",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.buff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.debuff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
       ]
     }
   },
@@ -19417,5 +19622,30 @@
     "3": { "label": "yes or no (English word)", "examples": ["yes", "no"] },
     "4": { "label": "a visit count, 0 for off", "examples": ["3", "0"] },
     "5": { "label": "a spawn weight number", "examples": ["4", "0"] }
+  },
+  "gui.dungeontrain.warlock.ready_in": {
+    "1": { "label": "a time left, in seconds", "examples": ["12s", "3s"] }
+  },
+  "gui.dungeontrain.warlock.convert.done": {
+    "1": { "label": "a mob's name", "examples": ["Zombie", "Skeleton"] }
+  },
+  "gui.dungeontrain.warlock.convert.immune": {
+    "1": { "label": "a mob's name", "examples": ["Wither", "Steve"] }
+  },
+  "gui.dungeontrain.warlock.call.playermob": {
+    "1": { "label": "a PlayerMob's name", "examples": ["Alex", "Notch"] }
+  },
+  "gui.dungeontrain.warlock.call.request": {
+    "1": { "label": "the calling player's name", "examples": ["Brennan", "Alex"] },
+    "2": { "label": "the clickable [Accept] button", "examples": ["[Accept]"] }
+  },
+  "gui.dungeontrain.warlock.call.sent": {
+    "1": { "label": "a player's name", "examples": ["Brennan", "Alex"] }
+  },
+  "gui.dungeontrain.warlock.call.arrived": {
+    "1": { "label": "a player's or PlayerMob's name", "examples": ["Brennan", "Alex"] }
+  },
+  "gui.dungeontrain.warlock.call.refused": {
+    "1": { "label": "a PlayerMob's name", "examples": ["Alex", "Notch"] }
   }
 }

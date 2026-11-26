@@ -210,6 +210,37 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Standless Brewing's pocket brewing stand: its slots, fuel, brew progress and refuel timer, saved
+     * with the player. Not {@code copyOnDeath}: a death drops its contents with the player's other items
+     * ({@code perks/effects/alchemist/PocketBrewing}), which also copies it on a keepInventory respawn.
+     * A mutable container, as a placed stand's block entity is; empty stands are not saved.
+     */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand>> POCKET_BREWING =
+        TYPES.register("pocket_brewing",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand>builder(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand::new)
+                .serialize(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand.CODEC,
+                    stand -> !stand.isEmpty() || stand.fuel() > 0 || stand.refuelTicks() > 0)
+                .build()
+        );
+
+    /** Aura perks' draws this life (perks/aura). Per life: not {@code copyOnDeath}, so a new life rolls again. */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.aura.AuraState.Draws>> PERK_AURA_DRAWS =
+        TYPES.register("perk_aura_draws",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.aura.AuraState.Draws>builder(games.brennan.dungeontrain.perks.aura.AuraState.Draws::empty)
+                .serialize(games.brennan.dungeontrain.perks.aura.AuraState.Draws.CODEC, d -> !d.isEmpty())
+                .build()
+        );
+
+    /** Aura effects the player switched off; {@code copyOnDeath}, so the choice outlives the life. */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.aura.AuraState.Toggles>> PERK_AURA_TOGGLES =
+        TYPES.register("perk_aura_toggles",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.aura.AuraState.Toggles>builder(games.brennan.dungeontrain.perks.aura.AuraState.Toggles::empty)
+                .serialize(games.brennan.dungeontrain.perks.aura.AuraState.Toggles.CODEC, t -> !t.isEmpty())
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it
      * survives logout / world reload. {@code copyOnDeath} preserves it across

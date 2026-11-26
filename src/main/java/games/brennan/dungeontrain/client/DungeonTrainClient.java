@@ -61,6 +61,7 @@ public final class DungeonTrainClient {
         LagReportPrompt.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
+        games.brennan.dungeontrain.client.warlock.TeleportCallClient.registerClicks();
         FfmpegHint.registerClicks();
         KnownFeatureChatHint.registerClicks();
 
@@ -138,5 +139,7 @@ public final class DungeonTrainClient {
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.FREE_PLAY_ENDER_CHEST.get(), FreePlayEnderChestScreen::new);
         event.register(ModMenuTypes.ENGINE_BLOCK.get(), EngineScreen::new);
+        event.register(ModMenuTypes.DRIFT_GIFT.get(), DriftGiftScreen::new);
+        event.register(ModMenuTypes.POCKET_BREWING.get(), games.brennan.dungeontrain.client.perks.PocketBrewingScreen::new);
     }
 }

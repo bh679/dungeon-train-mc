@@ -1,14 +1,14 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.mixin.client.MerchantScreenSelectionAccessor;
+import games.brennan.dungeontrain.perks.effects.trader.RerollTradesClientState;
+import games.brennan.dungeontrain.perks.effects.trader.RerollTradesRequestPacket;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillager;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerClientState;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerRequestPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.MerchantMenu;
@@ -19,31 +19,27 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Restock Villager's button on the villager trade menu, a compact button just right of the
- * "Trades" heading: an enlarged restock symbol and a small count of the charges left on this
- * villager, with "Restock (N)" on hover (also its narration). Kept that small so it never reaches the villager's name, centred over the right pane. Draws nothing until the server says the perk is
- * active for this menu ({@link RestockVillagerClientState}), greyed out with no charges left or
- * nothing sold out. The server re-checks every press.
+ * The Trader perks' buttons on the villager trade menu, compact {@link TradeChargeButton}s just right
+ * of the "Trades" heading, or in its place when both show (the heading is then hidden): Restock Villager (a restock symbol) and then Reroll Trades (a die), each
+ * with the charges left on this villager, Reroll also with its next price in emeralds or FREE. Kept that small so they never reach the villager's name,
+ * centred over the right pane. Each draws nothing until the server says its perk is active for this
+ * menu.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class RestockVillagerButton {
 
-    private static final String LABEL_KEY = "perk.dungeontrain.restock_villager.button";
-    private static final String ICON = "\u21BB";
-    /** The restock glyph comes from the small fallback font, so it is drawn enlarged... */
-    private static final float ICON_SCALE = 2.0F;
-    /** ...and the count shrunk, so the symbol reads first. */
-    private static final float COUNT_SCALE = 0.75F;
-    private static final int ICON_COUNT_GAP = 1;
-    /** The fallback glyph sits low in its line and the shrunk count high; these centre both. */
-    private static final float ICON_Y_NUDGE = -2.0F;
-    private static final float COUNT_Y_NUDGE = 1.0F;
-    /** Vanilla draws "Trades" centred on x 53 of the menu; the button starts just past it. */
+    private static final String RESTOCK_LABEL_KEY = "perk.dungeontrain.restock_villager.button";
+    private static final String REROLL_PAID_KEY = "perk.dungeontrain.reroll_trades.tooltip_paid";
+    private static final String REROLL_FREE_KEY = "perk.dungeontrain.reroll_trades.tooltip_free";
+    private static final String REROLL_NONE_KEY = "perk.dungeontrain.reroll_trades.tooltip_none";
+    private static final String REROLL_FREE_LABEL_KEY = "perk.dungeontrain.reroll_trades.free";
+    private static final String RESTOCK_ICON = "↻";
+    private static final String REROLL_ICON = "⚄";
+    /** The die's glyph is a tall filled box, so it is drawn nearer its own size than Restock's arrow. */
+    private static final float REROLL_ICON_SCALE = 1.0F;
+    /** Vanilla draws "Trades" centred on x 53 of the menu; the buttons start just past it. */
     private static final int TRADES_LABEL_CENTRE_X = 53;
-    private static final int GAP = 3;
     private static final int Y = 4;
-    private static final int HEIGHT = 11;
-    private static final int PADDING_X = 3;
 
     private RestockVillagerButton() {}
 
@@ -53,69 +49,64 @@ public final class RestockVillagerButton {
         MerchantMenu menu = screen.getMenu();
         Font font = Minecraft.getInstance().font;
         int labelRight = TRADES_LABEL_CENTRE_X + font.width(Component.translatable("merchant.trades")) / 2;
-        int x = screen.getGuiLeft() + labelRight + GAP;
+        int afterTitle = screen.getGuiLeft() + labelRight + TradeChargeButton.GAP;
+        int titleCentre = screen.getGuiLeft() + TRADES_LABEL_CENTRE_X;
         int y = screen.getGuiTop() + Y;
-        event.addListener(new RestockButton(x, y, menu));
+        TradeChargeButton[] pair = new TradeChargeButton[2];
+        // Both showing: the pair takes the hidden "Trades" heading's place, centred where it was (widths from
+        // the last frame). One showing: it sits after the heading, as before.
+        java.util.function.IntSupplier home = () -> hidesTradesTitle() && pair[1] != null
+            ? titleCentre - (pair[0].getWidth() + TradeChargeButton.GAP + pair[1].getWidth()) / 2
+            : afterTitle;
+        TradeChargeButton restock = new TradeChargeButton(home, y, RESTOCK_ICON, TradeChargeButton.DEFAULT_ICON_SCALE,
+            (left, price) -> Component.translatable(RESTOCK_LABEL_KEY, left),
+            () -> RestockVillagerClientState.remainingFor(menu.containerId),
+            () -> -1, Component.empty(),
+            () -> RestockVillager.needsRestock(menu.getOffers()),
+            () -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
+            null);
+        TradeChargeButton reroll = new TradeChargeButton(() -> afterTitle, y, REROLL_ICON, REROLL_ICON_SCALE,
+            (left, price) -> left <= 0 ? Component.translatable(REROLL_NONE_KEY)
+                : price == 0 ? Component.translatable(REROLL_FREE_KEY, left)
+                : Component.translatable(REROLL_PAID_KEY, left, price),
+            () -> RerollTradesClientState.remainingFor(menu.containerId),
+            () -> RerollTradesClientState.priceFor(menu.containerId),
+            Component.translatable(REROLL_FREE_LABEL_KEY),
+            () -> canPay(RerollTradesClientState.priceFor(menu.containerId)),
+            () -> {
+                // The rerolled list may be shorter; the server also moves its selection to the first trade.
+                ((MerchantScreenSelectionAccessor) screen).dungeontrain$setShopItem(0);
+                ((MerchantScreenSelectionAccessor) screen).dungeontrain$setScrollOff(0);
+                PacketDistributor.sendToServer(new RerollTradesRequestPacket(menu.containerId));
+            },
+            restock);
+        pair[0] = restock;
+        pair[1] = reroll;
+        event.addListener(restock);
+        event.addListener(reroll);
     }
 
-    private static final class RestockButton extends Button {
+    /**
+     * True while the open trade menu shows both Restock and Reroll: the "Trades" heading is then left out
+     * ({@code MerchantScreenTradesTitleMixin}) and the two buttons sit where it was.
+     */
+    public static boolean hidesTradesTitle() {
+        if (!(Minecraft.getInstance().screen instanceof MerchantScreen screen)) return false;
+        int id = screen.getMenu().containerId;
+        return RestockVillagerClientState.remainingFor(id) >= 0 && RerollTradesClientState.remainingFor(id) >= 0;
+    }
 
-        private final MerchantMenu menu;
-        private int shownLeft = -1;
-
-        RestockButton(int x, int y, MerchantMenu menu) {
-            super(x, y, 0, HEIGHT, Component.empty(),
-                b -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
-                DEFAULT_NARRATION);
-            this.menu = menu;
-            this.active = false;
+    /** Whether the player's own inventory holds the emeralds for a reroll at {@code price}. */
+    private static boolean canPay(int price) {
+        if (price <= 0) return price == 0;
+        var player = Minecraft.getInstance().player;
+        if (player == null) return false;
+        int have = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            var stack = player.getInventory().getItem(i);
+            if (stack.is(net.minecraft.world.item.Items.EMERALD)) have += stack.getCount();
+            if (have >= price) return true;
         }
-
-        /**
-         * Refreshed every frame. The widget stays {@code visible} (vanilla would stop calling this
-         * otherwise) and simply draws nothing, inactive, until the server's status arrives.
-         */
-        @Override
-        public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            int left = RestockVillagerClientState.remainingFor(menu.containerId);
-            if (left < 0) {
-                active = false;
-                return;
-            }
-            active = left > 0 && RestockVillager.needsRestock(menu.getOffers());
-            if (left != shownLeft) {
-                shownLeft = left;
-                setMessage(Component.translatable(LABEL_KEY, left));
-                setTooltip(Tooltip.create(getMessage()));
-            }
-            Font font = Minecraft.getInstance().font;
-            setWidth(Math.round(iconWidth(font) + ICON_COUNT_GAP + countWidth(font)) + 2 * PADDING_X);
-            super.renderWidget(graphics, mouseX, mouseY, partialTick);
-        }
-
-        /** Draws the enlarged restock symbol then the smaller count in place of the label text. */
-        @Override
-        public void renderString(GuiGraphics graphics, Font font, int color) {
-            float iconX = getX() + PADDING_X;
-            drawScaled(graphics, font, ICON, iconX, ICON_Y_NUDGE, ICON_SCALE, color);
-            drawScaled(graphics, font, String.valueOf(shownLeft), iconX + iconWidth(font) + ICON_COUNT_GAP, COUNT_Y_NUDGE, COUNT_SCALE, color);
-        }
-
-        private void drawScaled(GuiGraphics graphics, Font font, String text, float x, float yNudge, float scale, int color) {
-            float y = getY() + (getHeight() - font.lineHeight * scale) / 2.0F + scale / 2.0F + yNudge;
-            graphics.pose().pushPose();
-            graphics.pose().translate(x, y, 0.0F);
-            graphics.pose().scale(scale, scale, 1.0F);
-            graphics.drawString(font, text, 0, 0, color);
-            graphics.pose().popPose();
-        }
-
-        private static float iconWidth(Font font) {
-            return font.width(ICON) * ICON_SCALE;
-        }
-
-        private float countWidth(Font font) {
-            return font.width(String.valueOf(shownLeft)) * COUNT_SCALE;
-        }
+        return false;
     }
 }

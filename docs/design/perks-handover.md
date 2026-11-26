@@ -16,6 +16,11 @@ holds every decision) and its follow-up PRs. All perk work merges into **dev/per
     go through Good Gifter; beef does.
 - Tier 2/3 built: Archivist, Crafter, Knight, Lover (Pet Health, Good Gifter), Trader
   (Reduced Reduction, Restock Villager).
+- **Alchemist** (`dev/perks-alchemist`, 2026-11-26): a new class (`calchemist`, `#5fc8e0`, between
+  Lover and Warlock; `PerkClass.ALCHEMIST`). Stack Potions (T1), Standless Brewing (T2, moved from
+  Warlock, now a pocket brewing stand behind the inventory's Brew button) and Brewmaster (T3), all
+  built. Designs: `perks-alchemist.md`. `PerkStats.registerStepped` gives a chip the "→ 2 at 5 points"
+  look-ahead.
 
 ## How a perk goes live
 

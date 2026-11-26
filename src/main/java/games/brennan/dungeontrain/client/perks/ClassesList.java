@@ -36,7 +36,9 @@ final class ClassesList {
     private static final double DARK_TEXT = 0.72, DARK_LOCKED = 0.4;
 
     private final PerkTree tree;
-    private final List<PerkTree.PerkClass> order;
+    private final List<PerkTree.PerkClass> all;
+    /** The classes listed this frame: {@link #all} less those not revealed yet ({@link #reveal}). */
+    private List<PerkTree.PerkClass> order;
     private final Font font;
     private int top;
     private int left;
@@ -44,8 +46,19 @@ final class ClassesList {
 
     ClassesList(PerkTree tree, Font font) {
         this.tree = tree;
-        this.order = ClassVisibility.circleOrder(tree);
+        this.all = ClassVisibility.circleOrder(tree);
+        this.order = all;
         this.font = font;
+    }
+
+    /** Drop the classes still hidden behind a neighbouring tier 1 ({@link PerkTree#classRevealed}). Call per frame. */
+    void reveal(java.util.Map<String, Integer> unlocks) {
+        order = all.stream().filter(c -> tree.classRevealed(c.id(), id -> unlocks.getOrDefault(id, 0) > 0)).toList();
+    }
+
+    /** Every listed class is hidden by the player. */
+    private boolean allOff(Set<String> off) {
+        return order.stream().allMatch(c -> off.contains(c.id()));
     }
 
     /** Lay out for this screen; returns the list's left edge (the card keeps clear of it). */
@@ -106,7 +119,7 @@ final class ClassesList {
 
     /** The heading's hide-all icon is under the mouse (and some class is shown to hide). */
     boolean headEyeAt(double mx, double my, Set<String> off) {
-        return headingAt(mx, my) && mx > nameRight() + 2 && off.size() < order.size();
+        return headingAt(mx, my) && mx > nameRight() + 2 && !allOff(off);
     }
 
     /** Every class id in the list. */
@@ -142,7 +155,7 @@ final class ClassesList {
         g.pose().scale(HEAD_SCALE, HEAD_SCALE, 1F);
         g.drawString(font, title, 0, 0, ((int) (a * 0.7) << 24) | (SkyPalette.MUTED & 0xFFFFFF), true);
         g.pose().popPose();
-        if (head > 0 && off.size() < order.size()) renderEye(g, eyeX(), top + 1, head == 2, SkyPalette.MUTED, fade);
+        if (head > 0 && !allOff(off)) renderEye(g, eyeX(), top + 1, head == 2, SkyPalette.MUTED, fade);
         int y = top + HEAD;
         for (PerkTree.PerkClass c : order) {
             renderRow(g, snap, c, y, !off.contains(c.id()), c.id().equals(hovered), c.id().equals(marked),

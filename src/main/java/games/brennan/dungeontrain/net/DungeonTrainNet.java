@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.hoarder.ChestSensePacket;
+import games.brennan.dungeontrain.perks.effects.trader.RerollTradesRequestPacket;
+import games.brennan.dungeontrain.perks.effects.trader.RerollTradesStatusPacket;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerRequestPacket;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerStatusPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -30,7 +33,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "219";
+    public static final String PROTOCOL_VERSION = "224";
 
     private DungeonTrainNet() {}
 
@@ -213,6 +216,38 @@ public final class DungeonTrainNet {
         registrar.playToServer(RestockVillagerRequestPacket.TYPE,
             RestockVillagerRequestPacket.STREAM_CODEC,
             RestockVillagerRequestPacket::handle);
+        registrar.playToClient(ChestSensePacket.TYPE,
+            ChestSensePacket.STREAM_CODEC,
+            ChestSensePacket::handle);
+        registrar.playToClient(RerollTradesStatusPacket.TYPE,
+            RerollTradesStatusPacket.STREAM_CODEC,
+            RerollTradesStatusPacket::handle);
+        registrar.playToServer(RerollTradesRequestPacket.TYPE,
+            RerollTradesRequestPacket.STREAM_CODEC,
+            RerollTradesRequestPacket::handle);
+        // Warlock: Summon Lightning's empty-hand attack, and Teleport Player's list/call/accept (server re-validates).
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.warlock.SummonLightningPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.SummonLightningPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.SummonLightningPacket::handle);
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket::handle);
+        // Standless Brewing: the inventory's Brew button asks the server to open the pocket brewing stand.
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.aura.AuraSyncPacket.TYPE,
+            games.brennan.dungeontrain.perks.aura.AuraSyncPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.aura.AuraSyncPacket::handle);
+        registrar.playToServer(games.brennan.dungeontrain.perks.aura.AuraTogglePacket.TYPE,
+            games.brennan.dungeontrain.perks.aura.AuraTogglePacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.aura.AuraTogglePacket::handle);
 
         registrar.playToServer(BookVotePacket.TYPE, BookVotePacket.STREAM_CODEC, BookVotePacket::handle);
 
@@ -450,6 +485,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(TrainDebugBandPacket.TYPE, TrainDebugBandPacket.STREAM_CODEC, TrainDebugBandPacket::handle);
         // The band as the debug screen names it, for every player. See event/BandDimensionEvents.
         registrar.playToClient(BandDimensionPacket.TYPE, BandDimensionPacket.STREAM_CODEC, BandDimensionPacket::handle);
+        // How far the train's plot sat from its real X/Z at spawn, for targeted-block readouts. See event/PlotReadoutOffsetEvents.
+        registrar.playToClient(PlotReadoutOffsetPacket.TYPE, PlotReadoutOffsetPacket.STREAM_CODEC, PlotReadoutOffsetPacket::handle);
         // Where a save's relay upload has got to — drives the editor screen's "Uploading…" note and
         // its refresh once the build lands. See BuilderUploadStatusPacket.
         registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);

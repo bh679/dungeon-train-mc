@@ -56,6 +56,38 @@ class PerkStatsTest {
     }
 
     @Test
+    @DisplayName("Tank, Speedster and Builder chips read their effects' numbers")
+    void lastFourClassChips() {
+        assertEquals(2.0, at("armour", "armour", 1), 1e-9);
+        assertEquals(-5.0, at("hunger", "hunger_drain", 1), 1e-9);
+        assertEquals(120.0, at("healing", "heals_every", 1), 1e-9);
+        assertEquals(102.0, at("healing", "heals_every", 2), 1e-9);
+        assertEquals(27.9, at("totem", "cooldown", 1), 1e-9);
+        assertEquals(1.2, at("haste", "mining", 1), 1e-9);
+        assertEquals(-10.0, at("sprint-hunger", "sprint_hunger", 1), 1e-9);
+        assertEquals(-19.0, at("sprint-hunger", "sprint_hunger", 2), 1e-9);
+        assertEquals(5.0, at("sprint-speed", "sprint_speed", 1), 1e-9);
+        assertEquals(0.1, at("sprint-jump", "jump_distance", 1), 1e-9);
+        assertEquals(-19.0, at("wind-resistance", "wind_push", 2), 1e-9);
+        assertEquals(35.0, at("drift-gift-repaid", "repaid", 1), 1e-9);
+        assertEquals(40.0, at("drift-gift-repaid", "repaid", 2), 1e-9);
+    }
+
+    @Test
+    @DisplayName("every stat id has an English label")
+    void everyStatHasALabel() throws Exception {
+        try (var in = PerkStatsTest.class.getResourceAsStream("/assets/dungeontrain/lang/en_us.json")) {
+            var lang = com.google.gson.JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+            for (String id : PerkStats.perkIds()) {
+                if (id.startsWith("test-")) continue;
+                for (PerkStats.Stat s : PerkStats.of(id)) {
+                    assertTrue(lang.has("gui.dungeontrain.perks.stat." + s.id()), "no label for stat " + s.id() + " of " + id);
+                }
+            }
+        }
+    }
+
+    @Test
     @DisplayName("heart stats are in hit points and drawn as icons")
     void heartsAreIcons() {
         Num n = (Num) PerkStats.of("pet-health").get(0).valueAt(1);

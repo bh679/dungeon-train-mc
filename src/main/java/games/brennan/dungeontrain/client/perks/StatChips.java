@@ -11,6 +11,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -58,25 +59,44 @@ final class StatChips {
     static void render(GuiGraphics g, Font font, List<PerkStats.Stat> stats, int points, int preview,
                        int x, int y, int right, int chipH, int pad, int gap, int bg, int fg, int gold, int a) {
         List<List<Piece>> now = new ArrayList<>(), then = new ArrayList<>();
+        List<Boolean> onlyThen = new ArrayList<>();
+        boolean previewing = preview >= 0 && preview != points;
         for (PerkStats.Stat s : stats) {
-            List<Piece> n = new ArrayList<>(label(s.id()));
-            n.add(Piece.of(" "));
-            n.addAll(value(s.valueAt(points)));
-            now.add(n);
+            PerkStats.Value v = s.valueAt(points);
+            PerkStats.Value p = previewing ? s.valueAt(preview) : null;
+            if (v == null) {
+                // hidden at these points: a chip the hovered point would add shows whole, in gold
+                if (p == null) continue;
+                now.add(List.of());
+                then.add(chip(s, preview, p));
+                onlyThen.add(true);
+                continue;
+            }
+            now.add(chip(s, points, v));
             List<Piece> t = new ArrayList<>();
-            if (preview >= 0 && preview != points) {
-                List<Piece> next = value(s.valueAt(preview));
-                // a stat the hovered point doesn't change (a Strength level within its band) shows no arrow
-                if (!next.equals(value(s.valueAt(points)))) {
+            // a stat the hovered point doesn't change (a Strength level within its band) shows no arrow,
+            // nor one the hovered point relabels or hides (another chip carries that change)
+            if (p != null && Arrays.equals(s.labelArgsAt(points), s.labelArgsAt(preview))) {
+                List<Piece> next = value(p);
+                if (!next.equals(value(v)) && !next.isEmpty()) {
                     t.add(Piece.of(" → "));
                     t.addAll(next);
+                } else if (s.stepped()) {
+                    t.addAll(nextStep(s, points));
                 }
             }
             then.add(t);
+            onlyThen.add(false);
         }
         int room = right - x;
         // the preview is what hovering is for: shrink a little to keep it before giving it up
         boolean previews = rowWidth(font, now, then, true, pad, gap) * PREVIEW_MIN_SCALE <= room;
+        if (!previews) {
+            // a chip that only the hovered point adds is a preview: it goes with the others
+            for (int i = onlyThen.size() - 1; i >= 0; i--) {
+                if (onlyThen.get(i)) { now.remove(i); then.remove(i); onlyThen.remove(i); }
+            }
+        }
         int width = rowWidth(font, now, then, previews, pad, gap);
         float scale = width <= room ? 1F : Math.max(MIN_SCALE, room / (float) width);
         g.pose().pushPose();
@@ -109,9 +129,34 @@ final class StatChips {
         return w + gap * Math.max(0, now.size() - 1);
     }
 
-    /** The stat's label, with any sprite tokens turned into sprites. */
-    private static List<Piece> label(String statId) {
-        String text = Component.translatable(KEY + statId).getString();
+    /**
+     * A stepped stat the hovered point leaves as it is: its next value and where it comes, "→ 2 at 5 points";
+     * nothing when no change comes within {@link PerkStats#LOOK_AHEAD} points.
+     */
+    private static List<Piece> nextStep(PerkStats.Stat s, int points) {
+        int at = s.nextChangeAfter(points);
+        if (at < 0) return List.of();
+        List<Piece> out = new ArrayList<>();
+        out.add(Piece.of(" → "));
+        out.addAll(value(s.valueAt(at)));
+        out.add(Piece.of(" " + Component.translatable(KEY + "next_at", at).getString()));
+        return out;
+    }
+
+    /** A chip's pieces: its label at {@code points}, then its value (none for a label-only chip). */
+    private static List<Piece> chip(PerkStats.Stat s, int points, PerkStats.Value v) {
+        List<Piece> out = new ArrayList<>(label(s.id(), s.labelArgsAt(points)));
+        List<Piece> value = value(v);
+        if (!value.isEmpty()) {
+            out.add(Piece.of(" "));
+            out.addAll(value);
+        }
+        return out;
+    }
+
+    /** The stat's label, with its arguments filled in and any sprite tokens turned into sprites. */
+    private static List<Piece> label(String statId, Object[] args) {
+        String text = Component.translatable(KEY + statId, args).getString();
         List<Piece> out = new ArrayList<>();
         int i = 0;
         while (i < text.length()) {
@@ -146,7 +191,11 @@ final class StatChips {
 
     /** A value as text and sprites. */
     private static List<Piece> value(PerkStats.Value v) {
-        if (v instanceof PerkStats.Text t) return List.of(Piece.of(t.text().getString()));
+        if (v instanceof PerkStats.Text t) {
+            String text = t.text().getString();
+            return text.isEmpty() ? List.of() : List.of(Piece.of(text));
+        }
+        if (v instanceof PerkStats.Or or) return either(value(or.first()), value(or.second()));
         PerkStats.Num n = (PerkStats.Num) v;
         String sign = n.signed() && n.value() > 0 ? "+" : "";
         return switch (n.unit()) {
@@ -156,6 +205,27 @@ final class StatChips {
             case MULTIPLIER -> List.of(Piece.of(sign + Component.translatable(KEY + "unit." + n.unit().key(), number(n.value(), 100.0)).getString()));
             default -> List.of(Piece.of(sign + Component.translatable(KEY + "unit." + n.unit().key(), number(n.value())).getString()));
         };
+    }
+
+    /** "a or b", the words from {@code gui.dungeontrain.perks.stat.or} ({@code %1$s or %2$s}) around each side's pieces. */
+    private static List<Piece> either(List<Piece> a, List<Piece> b) {
+        String pattern = Component.translatable(KEY + "or", "\u0000", "\u0001").getString();
+        int ia = pattern.indexOf('\u0000'), ib = pattern.indexOf('\u0001');
+        if (ia < 0 || ib < 0) {
+            List<Piece> out = new ArrayList<>(a);
+            out.add(Piece.of(" / "));
+            out.addAll(b);
+            return out;
+        }
+        boolean aFirst = ia < ib;
+        int first = Math.min(ia, ib), second = Math.max(ia, ib);
+        List<Piece> out = new ArrayList<>();
+        if (first > 0) out.add(Piece.of(pattern.substring(0, first)));
+        out.addAll(aFirst ? a : b);
+        if (second > first + 1) out.add(Piece.of(pattern.substring(first + 1, second)));
+        out.addAll(aFirst ? b : a);
+        if (second + 1 < pattern.length()) out.add(Piece.of(pattern.substring(second + 1)));
+        return out;
     }
 
     /** Points shown two to an icon (hearts, armour): full icons then a half, or a count and one icon when long. */

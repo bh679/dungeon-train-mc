@@ -388,11 +388,31 @@ public final class TrainAssembler {
         ManagedShip seedShip = spawnGroup(level, seedGroupOrigin, velocity, seedAnchor, groupSize, dims, trainId);
         TrainCarriageAppender.holdSpawnedSeed(level, trainId, seedShip);
         if (seedShip.getKinematicDriver() instanceof TrainTransformProvider seedProvider) {
+            recordPlotReadoutOffset(level, seedProvider, seedGroupOrigin);
             seedProvider.setTrackGeometry(geometry);
             TrackGenerator.bootstrapPendingChunks(level, seedShip, seedProvider);
         }
 
         return seedShip;
+    }
+
+    /**
+     * Remembers how far the seed group's Sable plot sits from its real X and Z right now, as the train
+     * spawns. Readouts of a targeted carriage block take this off, so they read near where the train
+     * started ({@code client/CoordinateDisguise#targetedBlock}). Display only: nothing reads it back on
+     * the server, so a fault here is logged and the spawn carries on.
+     */
+    private static void recordPlotReadoutOffset(ServerLevel level, TrainTransformProvider provider, BlockPos worldOrigin) {
+        try {
+            BlockPos plot = provider.getShipyardOrigin();
+            if (plot == null) return;
+            long dx = (long) plot.getX() - worldOrigin.getX();
+            long dz = (long) plot.getZ() - worldOrigin.getZ();
+            DungeonTrainWorldData.get(level.getServer().overworld()).setPlotReadoutOffset(dx, dz);
+            LOGGER.info("[DungeonTrain] Plot readout offset at train spawn: dx={} dz={}", dx, dz);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Could not record the plot readout offset at train spawn", e);
+        }
     }
 
     /**
