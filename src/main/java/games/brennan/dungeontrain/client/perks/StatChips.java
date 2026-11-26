@@ -81,6 +81,8 @@ final class StatChips {
                 if (!next.equals(value(v)) && !next.isEmpty()) {
                     t.add(Piece.of(" → "));
                     t.addAll(next);
+                } else if (s.stepped()) {
+                    t.addAll(nextStep(s, points));
                 }
             }
             then.add(t);
@@ -125,6 +127,20 @@ final class StatChips {
             w += pad * 2 + width(font, now.get(i)) + (previews ? width(font, then.get(i)) : 0);
         }
         return w + gap * Math.max(0, now.size() - 1);
+    }
+
+    /**
+     * A stepped stat the hovered point leaves as it is: its next value and where it comes, "→ 2 at 5 points";
+     * nothing when no change comes within {@link PerkStats#LOOK_AHEAD} points.
+     */
+    private static List<Piece> nextStep(PerkStats.Stat s, int points) {
+        int at = s.nextChangeAfter(points);
+        if (at < 0) return List.of();
+        List<Piece> out = new ArrayList<>();
+        out.add(Piece.of(" → "));
+        out.addAll(value(s.valueAt(at)));
+        out.add(Piece.of(" " + Component.translatable(KEY + "next_at", at).getString()));
+        return out;
     }
 
     /** A chip's pieces: its label at {@code points}, then its value (none for a label-only chip). */

@@ -54,9 +54,27 @@ public final class PerkStats {
      * label's arguments by points ({@code labelArgs} may be null: a plain label). A null value hides the
      * stat at those points, so an overflow perk can show "Luck I always" only from 100%.
      */
-    public record Stat(String id, IntFunction<Value> at, IntFunction<Object[]> labelArgs) {
+    public record Stat(String id, IntFunction<Value> at, IntFunction<Object[]> labelArgs, boolean stepped) {
         public Stat(String id, IntFunction<Value> at) {
-            this(id, at, null);
+            this(id, at, null, false);
+        }
+
+        public Stat(String id, IntFunction<Value> at, IntFunction<Object[]> labelArgs) {
+            this(id, at, labelArgs, false);
+        }
+
+        /**
+         * For a {@link #stepped} stat: the first points after {@code points}, at most {@link #LOOK_AHEAD}
+         * further, where the value differs from its value at {@code points}; -1 when there is none.
+         * The menu shows it as "→ 2 at 5 points" when the next point alone changes nothing.
+         */
+        public int nextChangeAfter(int points) {
+            Value now = valueAt(points);
+            for (int k = Math.max(0, points) + 1; k <= Math.max(0, points) + LOOK_AHEAD; k++) {
+                Value v = valueAt(k);
+                if (v != null && !v.equals(now)) return k;
+            }
+            return -1;
         }
 
         /** The value at {@code points}, or null when the stat is hidden there. */
@@ -74,6 +92,9 @@ public final class PerkStats {
 
     private static final Object[] NO_ARGS = new Object[0];
 
+    /** How far a stepped stat's preview looks for its next change. */
+    public static final int LOOK_AHEAD = 100;
+
     private static final Map<String, List<Stat>> STATS = Collections.synchronizedMap(new LinkedHashMap<>());
 
     private PerkStats() {}
@@ -88,11 +109,24 @@ public final class PerkStats {
      * value takes them as {@code %s} (so "Luck %s chance" reads "Luck I chance" or "Luck II chance").
      */
     public static void register(String perkId, String statId, IntFunction<Object[]> labelArgs, IntFunction<Value> at) {
+        add(perkId, new Stat(statId, at, labelArgs, false));
+    }
+
+    /**
+     * A stat that changes only every few points (Standless Brewing's bottle slots). When the next point
+     * leaves it as it is, its preview names the next value and where it comes: "→ 2 at 5 points".
+     */
+    public static void registerStepped(String perkId, String statId, IntFunction<Value> at) {
+        add(perkId, new Stat(statId, at, null, true));
+    }
+
+    private static void add(String perkId, Stat stat) {
+        String statId = stat.id();
         if (!statId.matches("[a-z0-9_]+")) throw new IllegalArgumentException("bad stat id " + statId);
         synchronized (STATS) {
             List<Stat> list = new ArrayList<>(STATS.getOrDefault(perkId, List.of()));
             list.removeIf(s -> s.id().equals(statId));
-            list.add(new Stat(statId, at, labelArgs));
+            list.add(stat);
             STATS.put(perkId, List.copyOf(list));
         }
     }
