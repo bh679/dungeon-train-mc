@@ -33,7 +33,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "223";
+    public static final String PROTOCOL_VERSION = "224";
 
     private DungeonTrainNet() {}
 
@@ -219,6 +219,12 @@ public final class DungeonTrainNet {
         registrar.playToClient(ChestSensePacket.TYPE,
             ChestSensePacket.STREAM_CODEC,
             ChestSensePacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.effects.archivist.follow.FollowsSyncPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.archivist.follow.FollowsSyncPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.archivist.follow.FollowsSyncPacket::handle);
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.archivist.follow.FollowRequestPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.archivist.follow.FollowRequestPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.archivist.follow.FollowRequestPacket::handle);
         registrar.playToClient(RerollTradesStatusPacket.TYPE,
             RerollTradesStatusPacket.STREAM_CODEC,
             RerollTradesStatusPacket::handle);

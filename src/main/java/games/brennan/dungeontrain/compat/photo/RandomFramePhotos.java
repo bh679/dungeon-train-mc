@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat.photo;
 
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.ship.PlotWorldPositions;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageTestSession;
 import games.brennan.dungeontrain.train.ContentsFlip;
@@ -9,6 +10,7 @@ import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -72,7 +74,8 @@ public final class RandomFramePhotos {
                     // mapLocal is its own inverse: the authored cell, so the pick follows the frame.
                     BlockPos authored = ContentsFlip.mapLocal(localPos, size, flip);
                     long cellSeed = seedFor(seed, carriageIndex, authored);
-                    ItemStack found = test ? SharedPhotos.previewFound(cellSeed) : SharedPhotos.rollFound(cellSeed);
+                    ItemStack found = test ? SharedPhotos.previewFound(cellSeed)
+                        : SharedPhotos.rollFound(cellSeed, nearestPlayer(level, origin, size));
                     if (found.isEmpty() && test) found = TestFramePhoto.create(level.registryAccess());
                     if (found.isEmpty()) {
                         frame.markPendingRandomPhoto();
@@ -92,8 +95,35 @@ public final class RandomFramePhotos {
     public static void tickPending(Level level, BlockPos pos, BlockState state, PhotographFrameBlockEntity frame) {
         if (!frame.pendingRandomPhoto() || frame.hasPhoto()) return;
         if (Math.floorMod(level.getGameTime() + pos.hashCode(), PENDING_RETRY_TICKS) != 0) return;
-        ItemStack found = SharedPhotos.rollFound(seedFor(level.getGameTime(), 0, pos));
+        ItemStack found = level instanceof ServerLevel server
+            ? SharedPhotos.rollFound(seedFor(level.getGameTime(), 0, pos), nearestPlayer(server, pos, Vec3i.ZERO))
+            : SharedPhotos.rollFound(seedFor(level.getGameTime(), 0, pos));
         if (!found.isEmpty()) frame.setPhoto(found);
+    }
+
+    /** How far from a carriage a player may be and still be the one its frames draw for (Favourite Author). */
+    static final double NEAR_BLOCKS = 64;
+
+    /**
+     * The player nearest the stamped box's centre within {@link #NEAR_BLOCKS}, or null. Measured from the
+     * carriage's current world position ({@link PlotWorldPositions}): its blocks live at Sable plot
+     * coordinates, far from any player.
+     */
+    static ServerPlayer nearestPlayer(ServerLevel level, BlockPos origin, Vec3i size) {
+        net.minecraft.world.phys.Vec3 c = PlotWorldPositions.worldPoint(level, origin,
+            size.getX() / 2.0, size.getY() / 2.0, size.getZ() / 2.0);
+        double cx = c.x, cy = c.y, cz = c.z;
+        ServerPlayer best = null;
+        double bestD = NEAR_BLOCKS * NEAR_BLOCKS;
+        for (ServerPlayer p : level.players()) {
+            if (p.isSpectator()) continue;
+            double d = p.distanceToSqr(cx, cy, cz);
+            if (d <= bestD) {
+                bestD = d;
+                best = p;
+            }
+        }
+        return best;
     }
 
     /** Deterministic per-cell seed for the photo a frame draws. */

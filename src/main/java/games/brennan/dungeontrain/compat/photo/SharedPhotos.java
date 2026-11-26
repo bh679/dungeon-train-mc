@@ -39,6 +39,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import games.brennan.dungeontrain.perks.effects.archivist.follow.FollowService;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
@@ -757,6 +758,7 @@ public final class SharedPhotos {
         greeted.clear();
         synchronized (spent) { spent.clear(); }
         ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
+        FollowedPhotos.clear();
     }
 
     private static void refreshPool(MinecraftServer server) {
@@ -917,13 +919,49 @@ public final class SharedPhotos {
     }
 
     private static ItemStack rollFound(long seed, boolean spend) {
-        List<PoolPhoto> photos = pool;
-        if (photos.isEmpty() || !SharedBookGate.canDiscover()) return ItemStack.EMPTY;
-        PoolPhoto photo = photos.stream().filter(p -> !p.tributedBy().isBlank()).findFirst()
-                .orElseGet(() -> photos.get((int) Math.floorMod(seed, (long) photos.size())));
+        return rollFoundFor(seed, spend, null);
+    }
+
+    /**
+     * A found photo for a frame resolved near {@code near} (null: nobody near). With Favourite Author, a
+     * share of them are unseen photos by the authors {@code near} follows ({@link FollowedPhotos}); the
+     * rest, and every miss, are the shared pool's pick. The find counts toward {@code near}'s life.
+     */
+    public static ItemStack rollFound(long seed, ServerPlayer near) {
+        return rollFoundFor(seed, true, near);
+    }
+
+    private static ItemStack rollFoundFor(long seed, boolean spend, ServerPlayer near) {
+        if (!SharedBookGate.canDiscover()) return ItemStack.EMPTY;
+        PoolPhoto photo = near == null ? null : followedPick(seed, near);
+        if (photo == null) {
+            List<PoolPhoto> photos = pool;
+            if (photos.isEmpty()) return ItemStack.EMPTY;
+            photo = photos.stream().filter(p -> !p.tributedBy().isBlank()).findFirst()
+                    .orElseGet(() -> photos.get((int) Math.floorMod(seed, (long) photos.size())));
+        }
         ItemStack stack = stackFor(photo, DungeonTrain.relayBaseUrl(), true);
-        if (spend && !stack.isEmpty()) markSpent(photo.id());
+        if (spend && !stack.isEmpty()) {
+            markSpent(photo.id());
+            if (near != null) FollowService.recordFound(near, photo.authorToken(), photo.author());
+        }
         return stack;
+    }
+
+    /** Favourite Author's roll for {@code near}: a followed author's unseen photo, or null for the normal pick. */
+    private static PoolPhoto followedPick(long seed, ServerPlayer near) {
+        double share = FollowService.share(near);
+        if (share <= 0 || followRoll(seed) >= share) return null;
+        return FollowedPhotos.take(near, FollowService.findableTokens(near), spentIds());
+    }
+
+    /** A uniform [0, 1) from {@code seed}, independent of the pool index drawn from it. */
+    static double followRoll(long seed) {
+        long z = seed ^ 0x464F4C4C4F57L; // "FOLLOW"
+        z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
+        z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
+        z = z ^ (z >>> 31);
+        return (z >>> 11) * 0x1.0p-53;
     }
 
     /**
