@@ -1,0 +1,25 @@
+{
+  "id": "cartographer-map-freeze",
+  "version": "0.2038.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "performance",
+    "compatibility",
+    "loot"
+  ],
+  "title": "Fixed long freezes when some villagers joined the train",
+  "summary": "The game could freeze for minutes when a cartographer appeared on the train or levelled up, while it worked out where its explorer maps lead. That search now runs in the background: the map trade shows \"Working...\" for a few seconds, then the map is ready to buy. Dungeon Train now needs Async Locator Refined installed, and the launchers add it for you.",
+  "highlights": [
+    "No more freezes from cartographers' explorer maps",
+    "New required mod: Async Locator Refined (installed automatically by the CurseForge and Modrinth apps)"
+  ],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2908,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
