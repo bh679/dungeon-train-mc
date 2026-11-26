@@ -180,6 +180,12 @@ public final class EditorPlotTeleport {
     }
 
     /** As {@link #dimensionCommandFor}, for the spacing those extra corridors are laid at. */
+    /** As {@link #exitEveryCommandFor}, for how far out an Endless Open room's doors stand. */
+    public static String doorDistanceCommandFor(PlotCategory category, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals doordistance " + dir;
+    }
+
     public static String exitEveryCommandFor(PlotCategory category, String dir) {
         if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals exitevery " + dir;

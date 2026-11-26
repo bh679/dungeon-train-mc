@@ -105,7 +105,7 @@ final class ChunkFrameCommand {
                     .then(Commands.argument("weight",
                             IntegerArgumentType.integer(ChunkFrameMeta.MIN_WEIGHT, ChunkFrameMeta.MAX_WEIGHT))
                         .executes(ctx -> editMeta(ctx, m -> m.withWeight(IntegerArgumentType.getInteger(ctx, "weight")))))))
-            // How the rooms this frame dresses are enclosed: bedrock (sealed), void, or world_border.
+            // How the rooms this frame dresses are enclosed: bedrock (sealed), void, world_border or endless_open.
             .then(Commands.literal("dimension")
                 .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
                     .then(Commands.literal("bedrock").executes(ctx -> editMeta(ctx,
@@ -113,7 +113,26 @@ final class ChunkFrameCommand {
                     .then(Commands.literal("void").executes(ctx -> editMeta(ctx,
                         m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.VOID))))
                     .then(Commands.literal("world_border").executes(ctx -> editMeta(ctx,
-                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.WORLD_BORDER))))))
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.WORLD_BORDER))))
+                    .then(Commands.literal("endless_open").executes(ctx -> editMeta(ctx,
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.ENDLESS_OPEN))))))
+            // An Endless open frame's doors: how many blocks out along the plain each stands from the chunk.
+            .then(Commands.literal("doordistance")
+                .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
+                    .then(Commands.literal("inc").executes(ctx -> editMeta(ctx, m -> m.withDoorDistance(m.doorDistance() + 1))))
+                    .then(Commands.literal("dec").executes(ctx -> editMeta(ctx, m -> m.withDoorDistance(m.doorDistance() - 1))))
+                    .then(Commands.argument("distance",
+                            IntegerArgumentType.integer(0, games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX))
+                        .executes(ctx -> editMeta(ctx, m -> m.withDoorDistance(IntegerArgumentType.getInteger(ctx, "distance")))))))
+            // An Endless open frame's ground: the held block (or variant clipboard), the Block Variant
+            // menu on it, or a typed block id.
+            .then(Commands.literal("ground")
+                .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
+                    .then(Commands.literal("held").executes(ChunkFrameCommand::groundHeld))
+                    .then(Commands.literal("edit").executes(ChunkFrameCommand::groundEdit))
+                    .then(Commands.literal("default").executes(ctx -> editMeta(ctx, m -> m.withGround(java.util.List.of()))))
+                    .then(Commands.argument("block", StringArgumentType.greedyString())
+                        .executes(ChunkFrameCommand::groundBlock))))
             // Spawn gate, the same subcommands every template's gate takes: where along the train the
             // frame may appear. The editor's gate rows send these (PlotCategory.CHUNK_FRAMES).
             .then(EditorCommand.minLevelSingle(FRAMES, ChunkFrameCommand::editGate))
@@ -245,6 +264,33 @@ final class ChunkFrameCommand {
             : meta.rooms().isEmpty() ? "no chunk dimension" : String.join(", ", meta.rooms());
         source.sendSuccess(() -> Component.literal("Frame '" + frame + "' (weight " + meta.weight() + ") dresses: " + rooms), false);
         return 1;
+    }
+
+    private static int groundHeld(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = ctx.getSource().getPlayer();
+        if (player == null) return fail(ctx.getSource(), "Only a player can set the ground from their hand.");
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states =
+            EditorCommand.statesFromHeld(ctx.getSource(), player.getMainHandItem());
+        if (states == null) return 0;
+        return editMeta(ctx, m -> m.withGround(states));
+    }
+
+    private static int groundEdit(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = ctx.getSource().getPlayer();
+        if (player == null) return fail(ctx.getSource(), "Only a player can open the Block Variant menu.");
+        String frame = StringArgumentType.getString(ctx, "frame");
+        if (!ChunkFrameRegistry.names().contains(frame)) return fail(ctx.getSource(), "No frame named " + frame + ".");
+        games.brennan.dungeontrain.editor.BlockVariantMenuController.openForFrameGround(player, frame);
+        return 1;
+    }
+
+    private static int groundBlock(CommandContext<CommandSourceStack> ctx) {
+        String raw = StringArgumentType.getString(ctx, "block");
+        java.util.Optional<net.minecraft.world.level.block.state.BlockState> state =
+            games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(raw);
+        if (state.isEmpty()) return fail(ctx.getSource(), raw + " is not a block this world knows.");
+        return editMeta(ctx, m -> m.withGround(java.util.List.of(
+            new games.brennan.dungeontrain.editor.VariantState(state.get(), null))));
     }
 
     private static int toggleRoom(CommandContext<CommandSourceStack> ctx, boolean on) {
