@@ -89,6 +89,58 @@ class PerkMenuRulesTest {
         assertTrue(v.ghost(tree().perk("haste").orElseThrow()));
     }
 
+    /** The fixture with Lover's Friend off a dashed Engine line, joined by a dashed line to Tank's Health. */
+    private static PerkTree gatedTree() {
+        String json = FIXTURE.replace("{\"a\":\"root\",\"b\":\"friend\",\"kind\":\"req\",\"oneWay\":false}",
+            "{\"a\":\"root\",\"b\":\"friend\",\"kind\":\"cross\",\"oneWay\":false},"
+                + "{\"a\":\"health\",\"b\":\"friend\",\"kind\":\"cross\",\"oneWay\":false}");
+        return PerkTreeLoader.parse(new StringReader(json));
+    }
+
+    @Test
+    @DisplayName("a class behind a dashed Engine line draws nothing, even previewed or with points, until a neighbouring T1 unlocks")
+    void gatedClassHiddenUntilNeighbour() {
+        PerkTree t = gatedTree();
+        PerkTree.Perk friend = t.perk("friend").orElseThrow();
+        ClassVisibility shownAll = new ClassVisibility(t, Set.of(), null, Map.of(), Map.of(), 5);
+        assertTrue(shownAll.hidden(friend), "shown by the player, still not revealed");
+        assertFalse(shownAll.onCircle("lover"));
+        assertFalse(shownAll.titleShown("lover"));
+        ClassVisibility previewed = new ClassVisibility(t, Set.of("lover"), "lover", Map.of(), Map.of(), 5);
+        assertTrue(previewed.hidden(friend), "a preview cannot show it");
+        assertEquals(java.util.List.of("speed", "tank"),
+            ClassVisibility.revealedCircleOrder(t, Map.of()).stream().map(PerkTree.PerkClass::id).toList());
+
+        ClassVisibility revealed = new ClassVisibility(t, Set.of(), null, Map.of("health", 1), Map.of(), 0);
+        assertFalse(revealed.hidden(friend));
+        assertTrue(revealed.onCircle("lover"));
+        assertTrue(t.reachableNow("friend", Set.of("health")::contains));
+        assertEquals(3, ClassVisibility.revealedCircleOrder(t, Map.of("health", 1)).size());
+    }
+
+    @Test
+    @DisplayName("with classes hidden, the bundled tree's visible tier 1 stars ring the Engine evenly")
+    void hiddenClassesCloseTheTierOneRing() {
+        PerkTree t = PerkTreeLoader.get();
+        Map<String, Integer> unlocks = Map.of("stackable-book-quill", 1);
+        ClassVisibility v = new ClassVisibility(t, Set.of(), null, unlocks, Map.of(), 0);
+        Map<String, double[]> pos = SkyLayout.target(t, v);
+        java.util.List<Double> angles = new java.util.ArrayList<>();
+        for (PerkTree.PerkClass c : ClassVisibility.revealedCircleOrder(t, unlocks)) {
+            PerkTree.Perk t1 = t.perksOf(c.id()).stream().filter(p -> p.tier() == 1).findFirst().orElseThrow();
+            double[] xy = pos.get(t1.id());
+            angles.add(Math.atan2(xy[1] - PerkTree.CENTRE, xy[0] - PerkTree.CENTRE));
+        }
+        assertEquals(7, angles.size(), "four classes hidden");
+        angles.sort(Double::compare);
+        double step = Math.PI * 2 / angles.size();
+        for (int i = 0; i < angles.size(); i++) {
+            double gap = SkyLayout.wrap(angles.get((i + 1) % angles.size()) - angles.get(i));
+            if (gap < 0) gap += Math.PI * 2;
+            assertEquals(step, gap, 1e-6, "gap " + i);
+        }
+    }
+
     @Test
     @DisplayName("classes sort anticlockwise from Lover round the Engine")
     void circleOrder() {

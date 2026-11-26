@@ -31,6 +31,12 @@ the older sections below disagree, this section wins.
   goes in only along a path of solid or dashed lines from the Engine through perks holding active points
   this life (`PerkTree#activeReachable`). Coming soon perks count as holding points on both. Lines
   count either way round; server and menu share the rule.
+- **Classes found through a neighbour (2026-11-26).** A class whose tier 1 perk hangs off the Engine by a
+  **dashed** line only (`PerkTree#gatedT1`; the dashed line in the editor is the whole marker) is not
+  there at all until a tier 1 perk joined to it by any line is unlocked (`PerkTree#classRevealed`): no
+  stars, lines, title or Classes-list row, and the other classes close up the circle. Once revealed, its
+  dashed Engine line carries unlock points like a solid one. Now: Crafter (by Tank or Speedster), Builder
+  (Hoarder or Speedster), Warlock (Knight or Alchemist), Alchemist (Lover or Warlock).
 - **Classes by progress, plus a list.** Every class starts hidden. Unlocking a tier 1 perk shows its
   class. A hidden class still draws its unlocked perks and, while Advancement Points are held, the
   perks any line joins to the Engine or an unlocked perk. A class title shows once a perk in it is

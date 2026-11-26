@@ -38,15 +38,19 @@
     2849,
     2910,
     2913,
-    2917
+    2917,
+    2919,
+    2920
   ],
   "entries": [
     "alchemist-perks",
+    "chest-sense-debuff-aura-reroll-trades",
     "cosmic-apple-every-level",
     "cosmic-apples",
     "crafter-enchanting-perks",
     "death-kit-arrives-equipped",
     "death-perks-next-after-last-point",
+    "hidden-perk-classes",
     "knight-combat-perks",
     "lover-perks",
     "nap-sky-past-life-perks",
