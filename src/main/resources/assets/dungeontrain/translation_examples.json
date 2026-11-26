@@ -18957,6 +18957,31 @@
       ]
     }
   },
+  "gui.dungeontrain.perks.stat.or": {
+    "1": {
+      "label": "the smaller of two possible values (heart icons in game)",
+      "examples": [
+        "1",
+        "1.5"
+      ]
+    },
+    "2": {
+      "label": "the larger of two possible values (heart icons in game)",
+      "examples": [
+        "1.5",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.buff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.death.question": {
     "1": {
       "label": "points put into perks this life",

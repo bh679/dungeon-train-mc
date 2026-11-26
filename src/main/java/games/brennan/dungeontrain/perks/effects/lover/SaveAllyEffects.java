@@ -80,7 +80,7 @@ public final class SaveAllyEffects {
             double dist = p.distanceToSqr(victim);
             if (dist > (double) range * range || dist >= bestDist) continue;
             if (!isReady(p.getPersistentData(), now) || RunIntegrity.isCheated(p)) continue;
-            if (!LoverFriends.isFriend(p, victim)) continue;
+            if (!LoverFriends.isFriendKind(p, victim)) continue;
             best = p;
             bestDist = dist;
         }

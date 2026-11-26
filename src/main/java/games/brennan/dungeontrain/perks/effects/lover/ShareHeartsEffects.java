@@ -64,6 +64,11 @@ public final class ShareHeartsEffects {
     }
 
     @SubscribeEvent
+    public static void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+        READY_AT.clear();
+    }
+
+    @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         READY_AT.remove(event.getEntity().getUUID());
     }

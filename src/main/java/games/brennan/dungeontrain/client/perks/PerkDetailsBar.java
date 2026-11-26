@@ -467,7 +467,7 @@ final class PerkDetailsBar {
                 g.drawString(font, l, x, dy + shown++ * LINE, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
             }
         }
-        if (aura != null && AuraChips.hasDraws(aura) && shown < room) {
+        if (aura != null && !unlockOnly && AuraChips.hasDraws(aura) && shown < room) {
             String hint = font.plainSubstrByWidth(AuraChips.hint(aura).getString(), mw);
             g.drawString(font, hint, x, dy + shown++ * LINE, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
         }
@@ -483,7 +483,7 @@ final class PerkDetailsBar {
         if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
         if (aura != null) {
             AuraChips.render(g, font, aura, statPoints, previewPoints(unlockPreview(p, snap)), x, chipY, chipRight,
-                CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG, SkyPalette.GOLD, a);
+                CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG, SkyPalette.GOLD, a, !unlockOnly);
         }
     }
 

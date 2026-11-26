@@ -16,11 +16,24 @@ public final class LoverFriends {
 
     private LoverFriends() {}
 
+    /** A living friend, for gifts and the aura. */
     public static boolean isFriend(Player lover, Entity entity) {
-        if (lover == null || !(entity instanceof LivingEntity living) || entity == lover) return false;
-        if (!living.isAlive() || living.isSpectator()) return false;
-        if (entity instanceof Player other) return !other.isSpectator();
-        if (entity instanceof OwnableEntity pet) return pet.getOwnerUUID() != null;
+        return entity instanceof LivingEntity living && living.isAlive() && isFriendKind(lover, entity);
+    }
+
+    /**
+     * The kind test alone, without the liveness check: Save Ally asks it from {@code LivingDeathEvent},
+     * where the victim's health is already 0. A pet counts when its owner is a player (or not loaded);
+     * a pet a PlayerMob or Echo owns does not.
+     */
+    public static boolean isFriendKind(Player lover, Entity entity) {
+        if (lover == null || !(entity instanceof LivingEntity) || entity == lover || entity.isSpectator()) return false;
+        if (entity instanceof Player) return true;
+        if (entity instanceof OwnableEntity pet) {
+            if (pet.getOwnerUUID() == null) return false;
+            LivingEntity owner = pet.getOwner();
+            return owner == null || owner instanceof Player;
+        }
         if (entity instanceof PlayerMobEntity mob) return likes(mob.feelingToward(lover));
         return false;
     }

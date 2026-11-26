@@ -15,6 +15,7 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.Vec3;
@@ -26,6 +27,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
@@ -86,8 +88,7 @@ public final class SpareEnemiesEffects {
 
         CompoundTag data = mob.getPersistentData();
         data.putUUID(SPARED_TAG, player.getUUID());
-        mob.setTarget(null);
-        mob.setAggressive(false);
+        calm(mob);
         mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, SpareEnemiesMath.FLEE_TICKS, 0));
         FLEEING.put(mob.getUUID(), new Flight(mob, player.getUUID(), level.getGameTime() + SpareEnemiesMath.FLEE_TICKS));
         run(mob, player.position());
@@ -114,9 +115,22 @@ public final class SpareEnemiesEffects {
                 it.remove();
                 continue;
             }
-            mob.setTarget(null);
+            calm(mob);
             if (mob.tickCount % 10 == 0 || mob.getNavigation().isDone()) run(mob, sparer.position());
         }
+    }
+
+    /** Drop every target it holds: the goal target, and the brain's for piglins, hoglins and the like. */
+    private static void calm(Mob mob) {
+        mob.setTarget(null);
+        mob.setAggressive(false);
+        mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        mob.getBrain().eraseMemory(MemoryModuleType.ANGRY_AT);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        FLEEING.clear();
     }
 
     /** Point the mob's path away from {@code from}. */

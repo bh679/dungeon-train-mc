@@ -45,10 +45,10 @@ final class AuraChips {
     private AuraChips() {}
 
     static void render(GuiGraphics g, Font font, AuraDef def, int points, int preview, int x, int y, int right,
-                       int chipH, int pad, int gap, int bg, int gold, int a) {
+                       int chipH, int pad, int gap, int bg, int gold, int a, boolean thisLife) {
         HITS.clear();
         hitsFor = def.perkId();
-        List<Chip> chips = chips(def, points, preview);
+        List<Chip> chips = chips(def, points, preview, thisLife);
         if (chips.isEmpty()) return;
         int width = 0;
         for (Chip c : chips) width += chipWidth(font, c, pad) + gap;
@@ -106,9 +106,10 @@ final class AuraChips {
         return Component.translatable(KEY + def.langGroup() + ".hint");
     }
 
-    private static List<Chip> chips(AuraDef def, int points, int preview) {
+    private static List<Chip> chips(AuraDef def, int points, int preview, boolean thisLife) {
         AuraLadder.Shape now = def.ladder().shape(points);
-        AuraDraws draws = AuraClientState.draws().of(def.perkId());
+        // on the death menu the life's draws are gone: the next life rolls its own, so name none
+        AuraDraws draws = thisLife ? AuraClientState.draws().of(def.perkId()) : AuraDraws.EMPTY;
         Set<ResourceLocation> off = AuraClientState.toggles().off(def.perkId());
         AuraPreview.Change change = preview > points
             ? AuraPreview.between(now, def.ladder().shape(preview)) : new AuraPreview.Change(AuraPreview.Kind.NONE, -1);
