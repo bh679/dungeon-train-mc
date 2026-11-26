@@ -3,6 +3,11 @@ package games.brennan.dungeontrain.portal.chunkframe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 
@@ -26,17 +31,35 @@ import java.util.Set;
  *
  * <p>{@link #dimension} is how the rooms it dresses are enclosed — see {@link ChunkFrameDimension}.</p>
  *
+ * <p>{@link #doorDistance} is how far out along the plain an {@link ChunkFrameDimension#ENDLESS_OPEN}
+ * frame stands each door from the chunk — {@link #DEFAULT_DOOR_DISTANCE}, one chunk, unless its
+ * author says otherwise. Read under that dimension only.</p>
+ *
+ * <p>{@link #ground} is the block variant that plain is laid in — one cell's candidates, authored in
+ * the Block Variant menu like any other cell. Empty means {@link #DEFAULT_GROUND_BLOCK}. Kept in this
+ * file rather than a sidecar of its own so save, rename, copy and delete carry it with the rest.</p>
+ *
  * <p>{@link #gate} and {@link #stageId} say where along the train the frame may appear, as every
  * other template's spawn gate does: a Diff-Level range, the bands (phases) and dates it is allowed
  * in, or a Stage preset that owns the levels and bands. The effective gate is
  * {@link games.brennan.dungeontrain.editor.StageStore#effectiveGate}.</p>
  */
 public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension,
-                             TemplateGate gate, String stageId) {
+                             TemplateGate gate, String stageId, int doorDistance,
+                             List<VariantState> ground) {
 
     public static final int SCHEMA_VERSION = 1;
     public static final int MIN_WEIGHT = 1;
     public static final int MAX_WEIGHT = 100;
+
+    /** One chunk of plain between the chunk and each door — what an Endless open frame says by default. */
+    public static final int DEFAULT_DOOR_DISTANCE = 16;
+
+    /** The most candidates the ground palette holds — the Block Variant menu's own per-cell cap. */
+    public static final int MAX_GROUND_ENTRIES = 32;
+
+    /** What an Endless open plain is laid in when its frame has not been given a ground. */
+    public static final String DEFAULT_GROUND_BLOCK = "minecraft:grass_block";
 
     /** Every chunk dimension, weight 1 — a frame with nothing said about it. */
     public static final ChunkFrameMeta DEFAULT = new ChunkFrameMeta(null, MIN_WEIGHT);
@@ -47,6 +70,21 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
         dimension = dimension == null ? ChunkFrameDimension.DEFAULT : dimension;
         gate = gate == null ? TemplateGate.DEFAULT : gate;
         stageId = stageId == null || stageId.isBlank() ? null : stageId.trim().toLowerCase(Locale.ROOT);
+        doorDistance = new games.brennan.dungeontrain.portal.PortalRoomDoorDistance(doorDistance).value();
+        ground = ground == null ? List.of() : List.copyOf(ground.size() > MAX_GROUND_ENTRIES
+            ? ground.subList(0, MAX_GROUND_ENTRIES) : ground);
+    }
+
+    /** Rooms, weight, dimension, gate, stage and door distance, on the default ground. */
+    public ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension,
+                          TemplateGate gate, String stageId, int doorDistance) {
+        this(rooms, weight, dimension, gate, stageId, doorDistance, List.of());
+    }
+
+    /** Rooms, weight, dimension, gate and stage, at the default door distance. */
+    public ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension dimension,
+                          TemplateGate gate, String stageId) {
+        this(rooms, weight, dimension, gate, stageId, DEFAULT_DOOR_DISTANCE);
     }
 
     /** Rooms and weight, enclosed in the default {@link ChunkFrameDimension#BEDROCK}, ungated. */
@@ -82,7 +120,7 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
     }
 
     private ChunkFrameMeta withRooms(Set<String> newRooms) {
-        return new ChunkFrameMeta(newRooms, weight, dimension, gate, stageId);
+        return new ChunkFrameMeta(newRooms, weight, dimension, gate, stageId, doorDistance, ground);
     }
 
     public ChunkFrameMeta withAllRooms() {
@@ -94,20 +132,30 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
     }
 
     public ChunkFrameMeta withWeight(int newWeight) {
-        return new ChunkFrameMeta(rooms, newWeight, dimension, gate, stageId);
+        return new ChunkFrameMeta(rooms, newWeight, dimension, gate, stageId, doorDistance, ground);
     }
 
     public ChunkFrameMeta withDimension(ChunkFrameDimension newDimension) {
-        return new ChunkFrameMeta(rooms, weight, newDimension, gate, stageId);
+        return new ChunkFrameMeta(rooms, weight, newDimension, gate, stageId, doorDistance, ground);
     }
 
     public ChunkFrameMeta withGate(TemplateGate newGate) {
-        return new ChunkFrameMeta(rooms, weight, dimension, newGate, stageId);
+        return new ChunkFrameMeta(rooms, weight, dimension, newGate, stageId, doorDistance, ground);
     }
 
     /** Linked to Stage {@code newStageId}, or back to Custom (its own gate) when null. */
     public ChunkFrameMeta withStage(String newStageId) {
-        return new ChunkFrameMeta(rooms, weight, dimension, gate, newStageId);
+        return new ChunkFrameMeta(rooms, weight, dimension, gate, newStageId, doorDistance, ground);
+    }
+
+    /** The same meta with each door {@code newDoorDistance} blocks out along an Endless open plain. */
+    public ChunkFrameMeta withDoorDistance(int newDoorDistance) {
+        return new ChunkFrameMeta(rooms, weight, dimension, gate, stageId, newDoorDistance, ground);
+    }
+
+    /** The same meta with its plain laid in {@code newGround} (empty: the default grass). */
+    public ChunkFrameMeta withGround(List<VariantState> newGround) {
+        return new ChunkFrameMeta(rooms, weight, dimension, gate, stageId, doorDistance, newGround);
     }
 
     /** {@code gate} with the min level changed; a max under it rises to meet it, as TemplateGate does. */
@@ -134,6 +182,13 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
         o.addProperty("schemaVersion", SCHEMA_VERSION);
         o.addProperty("weight", weight);
         if (dimension != ChunkFrameDimension.DEFAULT) o.addProperty("dimension", dimension.id());
+        if (doorDistance != DEFAULT_DOOR_DISTANCE) o.addProperty("doorDistance", doorDistance);
+        if (!ground.isEmpty()) {
+            // The bare-array cell form every other variant sidecar writes (lock id 0: one cell, no group).
+            StringBuilder sb = new StringBuilder();
+            CarriageVariantBlocks.appendCellJson(sb, ground, 0);
+            o.add("ground", JsonParser.parseString(sb.toString()));
+        }
         if (rooms != null) {
             JsonArray arr = new JsonArray();
             rooms.stream().sorted().forEach(arr::add);
@@ -180,7 +235,21 @@ public record ChunkFrameMeta(Set<String> rooms, int weight, ChunkFrameDimension 
         List<String> periods = o.has("periods") && o.get("periods").isJsonArray()
             ? strings(o.getAsJsonArray("periods")) : List.of();
         String stage = o.has("stage") && o.get("stage").isJsonPrimitive() ? o.get("stage").getAsString() : null;
-        return new ChunkFrameMeta(rooms, weight, dimension, new TemplateGate(min, max, phases, new LinkedHashSet<>(periods)), stage);
+        int doorDistance = intOr(o, "doorDistance", DEFAULT_DOOR_DISTANCE);
+        return new ChunkFrameMeta(rooms, weight, dimension, new TemplateGate(min, max, phases, new LinkedHashSet<>(periods)), stage,
+            doorDistance, groundOf(o));
+    }
+
+    /** The file's {@code ground} cell, or empty when absent or unreadable — a plain is never why a frame fails. */
+    private static List<VariantState> groundOf(JsonObject o) {
+        if (!o.has("ground")) return List.of();
+        try {
+            CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(o.get("ground"),
+                BuiltInRegistries.BLOCK.asLookup(), "chunk frame ground", BlockPos.ZERO);
+            return cell == null ? List.of() : cell.states();
+        } catch (RuntimeException e) {
+            return List.of();
+        }
     }
 
     private static int intOr(JsonObject o, String key, int fallback) {

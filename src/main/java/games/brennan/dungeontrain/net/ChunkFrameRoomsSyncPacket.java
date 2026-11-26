@@ -20,7 +20,8 @@ import java.util.List;
  * @param weight   how often it is picked against the other frames dressing the same room
  */
 public record ChunkFrameRoomsSyncPacket(String frame, List<String> rooms, List<String> selected, boolean all,
-                                        int weight, String dimension) implements CustomPacketPayload {
+                                        int weight, String dimension, int doorDistance,
+                                        String groundBlock) implements CustomPacketPayload {
 
     static final int NAME_MAX = 64;
     private static final int LIST_MAX = 256;
@@ -38,11 +39,13 @@ public record ChunkFrameRoomsSyncPacket(String frame, List<String> rooms, List<S
         buf.writeBoolean(p.all());
         buf.writeVarInt(p.weight());
         buf.writeUtf(p.dimension(), NAME_MAX);
+        buf.writeVarInt(p.doorDistance());
+        buf.writeUtf(p.groundBlock(), NAME_MAX);
     }
 
     private static ChunkFrameRoomsSyncPacket decode(FriendlyByteBuf buf) {
         return new ChunkFrameRoomsSyncPacket(buf.readUtf(NAME_MAX), readList(buf), readList(buf),
-            buf.readBoolean(), buf.readVarInt(), buf.readUtf(NAME_MAX));
+            buf.readBoolean(), buf.readVarInt(), buf.readUtf(NAME_MAX), buf.readVarInt(), buf.readUtf(NAME_MAX));
     }
 
     private static void writeList(FriendlyByteBuf buf, List<String> list) {

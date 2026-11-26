@@ -7239,6 +7239,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.door_distance": {
+    "1": {
+      "label": "how many blocks of open floor stand between the room and each door",
+      "examples": [
+        "16",
+        "0"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.moved_exit": {
     "1": {
       "label": "the chance out of 10 that an exit is moved",

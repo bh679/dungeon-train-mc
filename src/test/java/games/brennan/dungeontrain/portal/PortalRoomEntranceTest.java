@@ -132,4 +132,41 @@ class PortalRoomEntranceTest {
         assertTrue(longest.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
             "longest one-way tag '" + longest + "' is " + longest.length() + " chars, over the packet cap");
     }
+
+    @Test
+    @DisplayName("The longest tag with a door distance still fits the editor status packet")
+    void longestDoorDistanceTagFits() {
+        String longBlock = "minecraft:" + "a".repeat(PortalRoomCopies.BLOCK_ID_MAX - "minecraft:".length());
+        String longest = "";
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            for (PortalRoomBooks.Kind books : PortalRoomBooks.Kind.values()) {
+                for (PortalRoomSky sky : PortalRoomSky.values()) {
+                    PortalRoomSettings s = new PortalRoomSettings(mode,
+                        new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE, longBlock),
+                        PortalRoomContents.values()[PortalRoomContents.values().length - 1],
+                        new PortalRoomExits(PortalRoomExits.Kind.RANDOM, PortalRoomExits.MAX_EVERY,
+                            PortalRoomExits.MOVE_ALWAYS),
+                        new PortalRoomBooks(books, PortalRoomBooks.MAX_WEIGHT, PortalRoomBooks.MAX_WEIGHT,
+                            PortalRoomBooks.MAX_WEIGHT, PortalRoomBooks.MAX_BOOK_BOUND,
+                            PortalRoomBooks.MAX_BOOK_BOUND),
+                        sky)
+                        .withDoorWall(PortalRoomDoorWall.values()[PortalRoomDoorWall.values().length - 1])
+                        .withDoorOffset(new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH))
+                        .withDoorHeightOffset(new PortalRoomDoorHeightOffset(PortalRoomLayout.MAX_HEIGHT))
+                        .withExitDoorOffset(new PortalRoomDoorOffset(PortalRoomLayout.MAX_WIDTH - 1))
+                        .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(PortalRoomLayout.MAX_HEIGHT - 1))
+                        .withLock(new PortalRoomLock("a".repeat(PortalRoomLock.BLOCK_ID_MAX)))
+                        .withFog(PortalRoomFog.OFF)
+                        .withDrift(PortalRoomDrift.OFF)
+                        .withGround(new PortalRoomGround(PortalRoomGround.Level.DOOR, true))
+                        .withEntrance(PortalRoomEntrance.ONE_WAY)
+                        .withDoorDistance(new PortalRoomDoorDistance(PortalRoomDoorDistance.MAX));
+                    String tag = s.toTag();
+                    if (tag.length() > longest.length()) longest = tag;
+                }
+            }
+        }
+        assertTrue(longest.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "longest door-distance tag '" + longest + "' is " + longest.length() + " chars, over the packet cap");
+    }
 }

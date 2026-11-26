@@ -79,4 +79,19 @@ class ChunkFrameDimensionTest {
         }
         assertNotEquals(PortalRoomMode.CHUNK_VOID, PortalRoomMode.WORLD_BORDER.next());
     }
+
+    @Test
+    @DisplayName("Endless open maps a chunk dimension to its plain, and carries door distance + ground")
+    void endlessOpen() {
+        assertSame(PortalRoomMode.CHUNK_ENDLESS_OPEN,
+            ChunkFrameDimension.ENDLESS_OPEN.roomMode(PortalRoomMode.CHUNK_DIMENSION));
+        assertSame(ChunkFrameDimension.ENDLESS_OPEN, ChunkFrameDimension.parse("endless_open"));
+        ChunkFrameMeta meta = ChunkFrameMeta.DEFAULT.withDimension(ChunkFrameDimension.ENDLESS_OPEN);
+        assertEquals(ChunkFrameMeta.DEFAULT_DOOR_DISTANCE, meta.doorDistance());
+        assertFalse(meta.toJson().has("doorDistance"), "the default distance stays out of the file");
+        ChunkFrameMeta moved = meta.withDoorDistance(24);
+        assertEquals(moved, ChunkFrameMeta.fromJson(moved.toJson()));
+        assertEquals(24, moved.withWeight(4).withDimension(ChunkFrameDimension.VOID).doorDistance());
+        assertTrue(meta.ground().isEmpty(), "no ground means the default grass");
+    }
 }

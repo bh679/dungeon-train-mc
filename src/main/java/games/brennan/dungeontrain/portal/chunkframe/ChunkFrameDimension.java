@@ -12,6 +12,9 @@ import java.util.Locale;
  *   <li>{@link #BEDROCK} — the sealed skin every chunk room has always had.</li>
  *   <li>{@link #VOID} — no skin: the space around the room is swept and fogged, as a Void room's is.</li>
  *   <li>{@link #WORLD_BORDER} — Void, plus the drawn world border on the box's sides.</li>
+ *   <li>{@link #ENDLESS_OPEN} — Void, standing on an open plain of the frame's ground block
+ *       ({@link ChunkFrameGround}) level with the chunk's bottom row, its doors the frame's
+ *       {@link ChunkFrameMeta#doorDistance} out along it.</li>
  * </ul>
  *
  * <p>Applied at plan time by turning the room's {@link PortalRoomMode#CHUNK_DIMENSION} into the
@@ -21,7 +24,8 @@ import java.util.Locale;
 public enum ChunkFrameDimension {
     BEDROCK("bedrock", "Bedrock lock"),
     VOID("void", "Void"),
-    WORLD_BORDER("world_border", "World border");
+    WORLD_BORDER("world_border", "World border"),
+    ENDLESS_OPEN("endless_open", "Endless open");
 
     public static final ChunkFrameDimension DEFAULT = BEDROCK;
 
@@ -63,6 +67,7 @@ public enum ChunkFrameDimension {
             case BEDROCK -> planned;
             case VOID -> PortalRoomMode.CHUNK_VOID;
             case WORLD_BORDER -> PortalRoomMode.CHUNK_WORLD_BORDER;
+            case ENDLESS_OPEN -> PortalRoomMode.CHUNK_ENDLESS_OPEN;
         };
     }
 }
