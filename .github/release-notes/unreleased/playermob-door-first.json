@@ -1,0 +1,17 @@
+{
+  "id": "playermob-door-first",
+  "version": "0.2041.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "mobs"
+  ],
+  "title": "PlayerMobs use the door",
+  "summary": "PlayerMobs use the door instead of breaking through carriage walls.",
+  "highlights": [],
+  "pr": 2911,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
