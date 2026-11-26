@@ -26,23 +26,27 @@ import java.util.function.IntSupplier;
  */
 final class TradeChargeButton extends Button {
 
-    /** The symbols come from the small fallback font, so they are drawn enlarged... */
-    private static final float ICON_SCALE = 2.0F;
+    /**
+     * The symbols come from the small fallback font, so they are drawn enlarged (each button sets its
+     * own scale: the die's glyph is already tall)...
+     */
+    static final float DEFAULT_ICON_SCALE = 2.0F;
     /** ...and the count shrunk, so the symbol reads first. */
     private static final float COUNT_SCALE = 0.75F;
     private static final int ICON_COUNT_GAP = 1;
-    /** The fallback glyph sits low in its line and the shrunk count high; these centre both. */
-    private static final float ICON_Y_NUDGE = -2.0F;
+    /** The fallback glyph sits low in its line and the shrunk count high; these centre both (per unit of enlargement). */
+    private static final float ICON_Y_NUDGE_PER_SCALE = -2.0F;
     private static final float COUNT_Y_NUDGE = 1.0F;
     static final int HEIGHT = 11;
-    private static final int PADDING_X = 3;
+    private static final int PADDING_X = 2;
     static final int GAP = 3;
-    private static final String SEPARATOR = " \u00b7 ";
-    private static final float EMERALD_SCALE = 0.5F;
-    private static final int EMERALD_SIZE = 8;
+    private static final String SEPARATOR = "\u00b7";
+    private static final float EMERALD_SCALE = 0.4375F;
+    private static final int EMERALD_SIZE = 7;
     private static final ItemStack EMERALD = new ItemStack(Items.EMERALD);
 
     private final String icon;
+    private final float iconScale;
     private final BiFunction<Integer, Integer, Component> tooltip;
     private final IntSupplier remaining;
     private final IntSupplier price;
@@ -57,10 +61,11 @@ final class TradeChargeButton extends Button {
      * {@code price} returns the next use's emerald price (0 = free) or -1 for a button with no price;
      * {@code tooltip} gets the charges left and that price.
      */
-    TradeChargeButton(int x, int y, String icon, BiFunction<Integer, Integer, Component> tooltip, IntSupplier remaining,
+    TradeChargeButton(int x, int y, String icon, float iconScale, BiFunction<Integer, Integer, Component> tooltip, IntSupplier remaining,
                       IntSupplier price, Component freeLabel, BooleanSupplier usable, Runnable press, TradeChargeButton after) {
         super(x, y, 0, HEIGHT, Component.empty(), b -> press.run(), DEFAULT_NARRATION);
         this.icon = icon;
+        this.iconScale = iconScale;
         this.tooltip = tooltip;
         this.remaining = remaining;
         this.price = price;
@@ -106,7 +111,7 @@ final class TradeChargeButton extends Button {
     @Override
     public void renderString(GuiGraphics graphics, Font font, int color) {
         float iconX = getX() + PADDING_X;
-        drawScaled(graphics, font, icon, iconX, ICON_Y_NUDGE, ICON_SCALE, color);
+        drawScaled(graphics, font, icon, iconX, ICON_Y_NUDGE_PER_SCALE * (iconScale - 1.0F), iconScale, color);
         float countX = iconX + iconWidth(font) + ICON_COUNT_GAP;
         drawScaled(graphics, font, String.valueOf(shownLeft), countX, COUNT_Y_NUDGE, COUNT_SCALE, color);
         if (shownPrice < 0) return;
@@ -143,7 +148,7 @@ final class TradeChargeButton extends Button {
     }
 
     private float iconWidth(Font font) {
-        return font.width(icon) * ICON_SCALE;
+        return font.width(icon) * iconScale;
     }
 
     private float countWidth(Font font) {

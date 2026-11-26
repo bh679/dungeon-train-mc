@@ -35,6 +35,8 @@ public final class RestockVillagerButton {
     private static final String REROLL_FREE_LABEL_KEY = "perk.dungeontrain.reroll_trades.free";
     private static final String RESTOCK_ICON = "↻";
     private static final String REROLL_ICON = "⚄";
+    /** The die's glyph is a tall filled box, so it is drawn nearer its own size than Restock's arrow. */
+    private static final float REROLL_ICON_SCALE = 1.0F;
     /** Vanilla draws "Trades" centred on x 53 of the menu; the buttons start just past it. */
     private static final int TRADES_LABEL_CENTRE_X = 53;
     private static final int Y = 4;
@@ -49,14 +51,14 @@ public final class RestockVillagerButton {
         int labelRight = TRADES_LABEL_CENTRE_X + font.width(Component.translatable("merchant.trades")) / 2;
         int x = screen.getGuiLeft() + labelRight + TradeChargeButton.GAP;
         int y = screen.getGuiTop() + Y;
-        TradeChargeButton restock = new TradeChargeButton(x, y, RESTOCK_ICON,
+        TradeChargeButton restock = new TradeChargeButton(x, y, RESTOCK_ICON, TradeChargeButton.DEFAULT_ICON_SCALE,
             (left, price) -> Component.translatable(RESTOCK_LABEL_KEY, left),
             () -> RestockVillagerClientState.remainingFor(menu.containerId),
             () -> -1, Component.empty(),
             () -> RestockVillager.needsRestock(menu.getOffers()),
             () -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
             null);
-        TradeChargeButton reroll = new TradeChargeButton(x, y, REROLL_ICON,
+        TradeChargeButton reroll = new TradeChargeButton(x, y, REROLL_ICON, REROLL_ICON_SCALE,
             (left, price) -> left <= 0 ? Component.translatable(REROLL_NONE_KEY)
                 : price == 0 ? Component.translatable(REROLL_FREE_KEY, left)
                 : Component.translatable(REROLL_PAID_KEY, left, price),
