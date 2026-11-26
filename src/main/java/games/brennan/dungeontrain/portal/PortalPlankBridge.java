@@ -11,6 +11,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 /**
  * The two bridges a {@link PortalRoomMode#CHUNK_PLANK_BRIDGE Plank bridge} chunk is reached by: one
  * block wide, of the stage's planks, from each corridor mouth across the door gap to the chunk's face.
@@ -29,6 +32,8 @@ import java.util.List;
  * nothing is deferred and nothing needs erasing separately.</p>
  */
 public final class PortalPlankBridge {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** The stage placeholder the bridge is built from — the stage's planks. */
     static final String PLANKS_PLACEHOLDER = "stage_planks";
@@ -81,6 +86,9 @@ public final class PortalPlankBridge {
             // No neighbour updates: the doorway above is open to the chunk's water.
             level.setBlock(pos, planks, Block.UPDATE_CLIENTS);
         }
+        int half = cells.size() / 2;
+        LOGGER.info("[DungeonTrain] Plank bridges for pair {}: {} from {} to {}, and {} to {}", pairKey,
+            planks.getBlock(), cells.get(0), cells.get(half - 1), cells.get(half), cells.get(cells.size() - 1));
     }
 
     /** The stage's planks for {@code stageId}; oak planks if the placeholder cannot be found. */
