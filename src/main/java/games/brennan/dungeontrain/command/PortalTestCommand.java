@@ -428,7 +428,9 @@ public final class PortalTestCommand {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         BlockPos arrival = new BlockPos(
-            roomOrigin.getX() - 1,
+            // The corridor's mouth: one before the room's face, or before the plain an open room
+            // stands its doors out across.
+            roomOrigin.getX() - 1 - structure.doorGap(),
             // The CORRIDOR's floor, which is the room's own only while the door sits at it.
             roomOrigin.getY() + doorHeightOffset + 1,
             // roomOrigin already has the door offset baked into where it sits — the SAME offset has

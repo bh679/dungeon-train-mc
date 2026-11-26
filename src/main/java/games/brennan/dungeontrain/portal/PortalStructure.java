@@ -342,6 +342,9 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * Void is the mode with an outside, and the walk into it is the thing worth dramatising.</p>
      */
     public float fogMinRadius() {
+        // An Endless open plain is part of the room, not an outside to walk into: no ramp, so the
+        // tower stays in view from anywhere on the grass.
+        if (mode().laysGroundPlain()) return fogRadius();
         return mode().clearsSurroundings() ? PortalRoomLayout.VOID_FOG_MIN : fogRadius();
     }
 

@@ -262,7 +262,11 @@ final class ChunkFrameCommand {
         ChunkFrameMeta meta = ChunkFrameMetaStore.get(frame);
         String rooms = meta.allRooms() ? "every chunk dimension"
             : meta.rooms().isEmpty() ? "no chunk dimension" : String.join(", ", meta.rooms());
-        source.sendSuccess(() -> Component.literal("Frame '" + frame + "' (weight " + meta.weight() + ") dresses: " + rooms), false);
+        String enclosure = meta.dimension().label()
+            + (meta.dimension() == games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.ENDLESS_OPEN
+                ? ", doors " + meta.doorDistance() + " out" : "");
+        source.sendSuccess(() -> Component.literal("Frame '" + frame + "' (weight " + meta.weight() + ", "
+            + enclosure + ") dresses: " + rooms), false);
         return 1;
     }
 

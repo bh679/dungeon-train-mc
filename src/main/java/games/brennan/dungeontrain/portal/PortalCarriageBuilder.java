@@ -902,6 +902,8 @@ public final class PortalCarriageBuilder {
                 .planFor(level, roomName, pairKey, gateCtx).meta();
         PortalRoomMode framed = meta.dimension().roomMode(settings.mode());
         if (framed == settings.mode()) return settings;
+        LOGGER.info("[DungeonTrain] Chunk frame encloses pair {} ({}) as {}{}", pairKey, roomName, framed.id(),
+            framed.laysGroundPlain() ? ", doors " + meta.doorDistance() + " out on its plain" : "");
         PortalRoomSettings enclosed = settings.withMode(framed);
         if (!framed.laysGroundPlain()) return enclosed;
         // An Endless open chunk stands on its plain: both doorways open level with the plain — the

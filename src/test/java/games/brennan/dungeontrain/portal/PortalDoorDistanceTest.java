@@ -119,6 +119,10 @@ class PortalDoorDistanceTest {
         assertFalse(m.authored());
         assertSame(m, PortalRoomMode.parse(m.id()));
         assertFalse(PortalRoomMode.ENDLESS_OPEN.laysGroundPlain());
+        // The plain is part of the room: fogged at the clearance with no ramp in from the edge.
+        PortalStructure s = structure(m, 16);
+        assertEquals(PortalRoomLayout.VOID_CLEARANCE, s.fogRadius());
+        assertEquals(s.fogRadius(), s.fogMinRadius());
     }
 
     @Test
