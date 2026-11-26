@@ -6578,6 +6578,7 @@
   "perk.dungeontrain.restock_villager.button": "Пополнить (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Перебросить обмен (осталось: %s, цена: %s изумр.)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Перебросить обмен (осталось: %s, бесплатно)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Перебросить обмен (не осталось)",
   "perk.dungeontrain.reroll_trades.free": "БЕСПЛАТНО",
   "gui.dungeontrain.perks.rank_cost": "Следующее очко стоит %s.",
   "gui.dungeontrain.perks.raise_limit": "Поднять предел (%s)",

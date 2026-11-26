@@ -6440,6 +6440,7 @@
   "perk.dungeontrain.restock_villager.button": "補充 (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "取引を再抽選(残り%s回、エメラルド%s個)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "取引を再抽選(残り%s回、無料)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "取引を再抽選(残りなし)",
   "perk.dungeontrain.reroll_trades.free": "無料",
   "gui.dungeontrain.perks.rank_cost": "次のポイントのコストは%s。",
   "gui.dungeontrain.perks.raise_limit": "上限を上げる (%s)",

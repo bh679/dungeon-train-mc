@@ -6509,6 +6509,7 @@
   "perk.dungeontrain.restock_villager.button": "Rifornisci (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Rilancia scambi (ne restano %s, costa %s smeraldi)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Rilancia scambi (ne restano %s, gratis)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Rilancia scambi (esauriti)",
   "perk.dungeontrain.reroll_trades.free": "GRATIS",
   "gui.dungeontrain.perks.rank_cost": "Il prossimo punto costa %s.",
   "gui.dungeontrain.perks.raise_limit": "Alza limite (%s)",

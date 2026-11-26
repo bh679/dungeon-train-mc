@@ -6509,6 +6509,7 @@
   "perk.dungeontrain.restock_villager.button": "Auffüllen (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Angebote neu würfeln (%s übrig, kostet %s Smaragde)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Angebote neu würfeln (%s übrig, gratis)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Angebote neu würfeln (keine übrig)",
   "perk.dungeontrain.reroll_trades.free": "GRATIS",
   "gui.dungeontrain.perks.rank_cost": "Der nächste Punkt kostet %s.",
   "gui.dungeontrain.perks.raise_limit": "Limit erhöhen (%s)",

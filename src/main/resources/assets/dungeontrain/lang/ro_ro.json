@@ -6578,6 +6578,7 @@
   "perk.dungeontrain.restock_villager.button": "Reaprovizionează (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Reia schimburile (mai sunt %s, costă %s smaralde)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Reia schimburile (mai sunt %s, gratuit)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Reia schimburile (nu mai sunt)",
   "perk.dungeontrain.reroll_trades.free": "GRATUIT",
   "gui.dungeontrain.perks.rank_cost": "Următorul punct costă %s.",
   "gui.dungeontrain.perks.raise_limit": "Crește limita (%s)",

@@ -6440,6 +6440,7 @@
   "perk.dungeontrain.restock_villager.button": "Isi ulang (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Acak ulang dagangan (sisa %s, harga %s zamrud)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Acak ulang dagangan (sisa %s, gratis)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Acak ulang dagangan (habis)",
   "perk.dungeontrain.reroll_trades.free": "GRATIS",
   "gui.dungeontrain.perks.rank_cost": "Poin berikutnya butuh %s.",
   "gui.dungeontrain.perks.raise_limit": "Naikkan batas (%s)",

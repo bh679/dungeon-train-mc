@@ -6,7 +6,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -60,7 +62,17 @@ public final class ChestSenseEvents {
         if (event.getLevel().isClientSide()) return;
         if (event.getEntity().isSecondaryUseActive() && !event.getEntity().getMainHandItem().isEmpty()) return;
         BlockEntity be = event.getLevel().getBlockEntity(event.getPos());
-        if (be == null || be instanceof DecoratedPotBlockEntity || !ChestSense.isSensedKind(be)) return;
+        if (be == null || ChestSense.isVase(be) || !ChestSense.isSensedKind(be)) return;
+        markOpened(be);
+        // A double chest is two block entities: the half not clicked was opened too.
+        BlockState state = be.getBlockState();
+        if (state.getBlock() instanceof ChestBlock && state.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
+            BlockEntity other = event.getLevel().getBlockEntity(event.getPos().relative(ChestBlock.getConnectedDirection(state)));
+            if (other != null && ChestSense.isSensedKind(other)) markOpened(other);
+        }
+    }
+
+    private static void markOpened(BlockEntity be) {
         if (be.getPersistentData().getBoolean(ChestSense.OPENED_KEY)) return;
         be.getPersistentData().putBoolean(ChestSense.OPENED_KEY, true);
         be.setChanged();

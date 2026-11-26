@@ -6440,6 +6440,7 @@
   "perk.dungeontrain.restock_villager.button": "I-restock (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "I-reroll ang kalakal (%s natitira, %s emerald)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "I-reroll ang kalakal (%s natitira, libre)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "I-reroll ang kalakal (wala nang natitira)",
   "perk.dungeontrain.reroll_trades.free": "LIBRE",
   "gui.dungeontrain.perks.rank_cost": "Ang susunod na point ay nagkakahalaga ng %s.",
   "gui.dungeontrain.perks.raise_limit": "Itaas ang limit (%s)",

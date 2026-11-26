@@ -6440,6 +6440,7 @@
   "perk.dungeontrain.restock_villager.button": "Bổ sung (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Tung lại giao dịch (còn %s, giá %s ngọc lục bảo)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Tung lại giao dịch (còn %s, miễn phí)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Tung lại giao dịch (đã hết)",
   "perk.dungeontrain.reroll_trades.free": "MIỄN PHÍ",
   "gui.dungeontrain.perks.rank_cost": "Điểm tiếp theo tốn %s.",
   "gui.dungeontrain.perks.raise_limit": "Nâng giới hạn (%s)",

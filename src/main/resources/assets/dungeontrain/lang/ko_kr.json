@@ -6440,6 +6440,7 @@
   "perk.dungeontrain.restock_villager.button": "보충 (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "거래 다시 굴리기 (%s회 남음, 에메랄드 %s개)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "거래 다시 굴리기 (%s회 남음, 무료)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "거래 다시 굴리기 (남은 횟수 없음)",
   "perk.dungeontrain.reroll_trades.free": "무료",
   "gui.dungeontrain.perks.rank_cost": "다음 포인트 비용: %s.",
   "gui.dungeontrain.perks.raise_limit": "한도 올리기 (%s)",

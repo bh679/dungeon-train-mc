@@ -6578,6 +6578,7 @@
   "perk.dungeontrain.restock_villager.button": "Uzupełnij (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Przelosuj wymiany (zostało: %s, koszt: %s szmaragdów)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Przelosuj wymiany (zostało: %s, za darmo)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Przelosuj wymiany (nie zostało)",
   "perk.dungeontrain.reroll_trades.free": "ZA DARMO",
   "gui.dungeontrain.perks.rank_cost": "Następny punkt kosztuje %s.",
   "gui.dungeontrain.perks.raise_limit": "Podnieś limit (%s)",

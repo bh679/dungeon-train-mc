@@ -6414,6 +6414,7 @@
       "perk.dungeontrain.restock_villager.button",
       "perk.dungeontrain.reroll_trades.tooltip_paid",
       "perk.dungeontrain.reroll_trades.tooltip_free",
+      "perk.dungeontrain.reroll_trades.tooltip_none",
       "perk.dungeontrain.reroll_trades.free",
       "gui.dungeontrain.perks.rank_cost",
       "gui.dungeontrain.perks.raise_limit",

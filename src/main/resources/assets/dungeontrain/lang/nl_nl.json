@@ -6509,6 +6509,7 @@
   "perk.dungeontrain.restock_villager.button": "Aanvullen (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Ruilen opnieuw gooien (nog %s, kost %s smaragden)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Ruilen opnieuw gooien (nog %s, gratis)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Ruilen opnieuw gooien (geen meer over)",
   "perk.dungeontrain.reroll_trades.free": "GRATIS",
   "gui.dungeontrain.perks.rank_cost": "Het volgende punt kost %s.",
   "gui.dungeontrain.perks.raise_limit": "Limiet verhogen (%s)",

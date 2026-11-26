@@ -6454,6 +6454,7 @@
   "perk.dungeontrain.restock_villager.button": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "79c873f7f0fd50b2"},
   "perk.dungeontrain.reroll_trades.tooltip_paid": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5dc2bf2e41f51e51"},
   "perk.dungeontrain.reroll_trades.tooltip_free": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4dc6ae917f7def6d"},
+  "perk.dungeontrain.reroll_trades.tooltip_none": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e5f021cab6bdc5a9"},
   "perk.dungeontrain.reroll_trades.free": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "19f1fa5ec989d121"},
   "gui.dungeontrain.perks.rank_cost": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "bc60319b0a9a12ec"},
   "gui.dungeontrain.perks.raise_limit": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "887f5c7c037f593c"},

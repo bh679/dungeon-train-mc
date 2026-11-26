@@ -240,6 +240,7 @@
     "client.EnchantmentScreenCrafterCostMixin",
     "client.AnvilScreenCrafterCapMixin",
     "client.MerchantScreenExtraCostsMixin",
+    "client.MerchantScreenSelectionAccessor",
     "client.SlotPositionAccessor",
     "client.IntegratedServerPublishGameModeMixin",
     "client.LevelRendererWeatherSlantMixin",

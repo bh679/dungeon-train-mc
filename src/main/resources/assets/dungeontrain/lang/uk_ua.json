@@ -6575,6 +6575,7 @@
   "perk.dungeontrain.restock_villager.button": "Поповнити (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Перекинути обміни (залишилось: %s, ціна: %s смараг.)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Перекинути обміни (залишилось: %s, безкоштовно)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Перекинути обміни (не залишилось)",
   "perk.dungeontrain.reroll_trades.free": "БЕЗКОШТОВНО",
   "gui.dungeontrain.perks.rank_cost": "Наступне очко коштує %s.",
   "gui.dungeontrain.perks.raise_limit": "Підняти межу (%s)",

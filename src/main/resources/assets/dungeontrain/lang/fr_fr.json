@@ -6509,6 +6509,7 @@
   "perk.dungeontrain.restock_villager.button": "Réapprovisionner (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Relancer les échanges (%s restantes, coûte %s émeraudes)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Relancer les échanges (%s restantes, gratuit)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Relancer les échanges (plus aucune)",
   "perk.dungeontrain.reroll_trades.free": "GRATUIT",
   "gui.dungeontrain.perks.rank_cost": "Le prochain point coûte %s.",
   "gui.dungeontrain.perks.raise_limit": "Monter la limite (%s)",

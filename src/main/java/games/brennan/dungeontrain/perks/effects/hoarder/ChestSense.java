@@ -8,7 +8,9 @@ import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.perks.BuiltPerks;
 import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkStats.Unit;
+import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.Container;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -88,16 +90,24 @@ public final class ChestSense {
         return GLOW_SECONDS * 20;
     }
 
-    /** Chests (trapped too), barrels, shulker boxes and vases. Ender chests are not chests here. */
+    /**
+     * Chests (trapped too), barrels, shulker boxes and vases (vanilla's and Deeper Darker's gloomslate pot).
+     * Ender chests are not chests here.
+     */
     static boolean isSensedKind(BlockEntity be) {
         return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity
-            || be instanceof ShulkerBoxBlockEntity || be instanceof DecoratedPotBlockEntity;
+            || be instanceof ShulkerBoxBlockEntity || isVase(be);
+    }
+
+    static boolean isVase(BlockEntity be) {
+        return be instanceof DecoratedPotBlockEntity || ContainerContentsRoller.isGloomslatePot(be.getBlockState());
     }
 
     /** True for a container kind Chest Sense counts that no one has opened and that holds something. */
     static boolean isSensed(BlockEntity be) {
         if (!isSensedKind(be) || be.getPersistentData().getBoolean(OPENED_KEY)) return false;
         if (be instanceof DecoratedPotBlockEntity pot) return pot.getLootTable() != null || !pot.getTheItem().isEmpty();
+        if (isVase(be)) return be instanceof Container c && !c.isEmpty();
         if (be instanceof RandomizableContainerBlockEntity c) return c.getLootTable() != null || !c.isEmpty();
         return false;
     }

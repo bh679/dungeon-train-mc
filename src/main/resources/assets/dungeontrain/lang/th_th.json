@@ -6440,6 +6440,7 @@
   "perk.dungeontrain.restock_villager.button": "เติมสินค้า (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "สุ่มการค้าใหม่ (เหลือ %s ครั้ง, ราคา %s มรกต)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "สุ่มการค้าใหม่ (เหลือ %s ครั้ง, ฟรี)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "สุ่มการค้าใหม่ (หมดแล้ว)",
   "perk.dungeontrain.reroll_trades.free": "ฟรี",
   "gui.dungeontrain.perks.rank_cost": "แต้มถัดไปใช้ %s",
   "gui.dungeontrain.perks.raise_limit": "เพิ่มขีดจำกัด (%s)",

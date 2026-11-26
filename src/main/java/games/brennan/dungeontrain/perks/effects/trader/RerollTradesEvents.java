@@ -65,6 +65,9 @@ public final class RerollTradesEvents {
             if (rolled.isEmpty() || rolled.get().isEmpty()) return;
             if (price > 0) takeEmeralds(player, price);
             villager.setOffers(rolled.get());
+            // The old selection may be past the end of the new list: start again from the first trade.
+            menu.setSelectionHint(0);
+            menu.slotsChanged(menu.getSlot(0).container);
             RerollTrades.recordUse(player, villager.getUUID(), price > 0);
             player.sendMerchantOffers(containerId, villager.getOffers(), level, villager.getVillagerXp(),
                 villager.showProgressBar(), villager.canRestock());

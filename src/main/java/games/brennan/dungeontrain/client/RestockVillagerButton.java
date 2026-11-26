@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.mixin.client.MerchantScreenSelectionAccessor;
 import games.brennan.dungeontrain.perks.effects.trader.RerollTradesClientState;
 import games.brennan.dungeontrain.perks.effects.trader.RerollTradesRequestPacket;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillager;
@@ -30,6 +31,7 @@ public final class RestockVillagerButton {
     private static final String RESTOCK_LABEL_KEY = "perk.dungeontrain.restock_villager.button";
     private static final String REROLL_PAID_KEY = "perk.dungeontrain.reroll_trades.tooltip_paid";
     private static final String REROLL_FREE_KEY = "perk.dungeontrain.reroll_trades.tooltip_free";
+    private static final String REROLL_NONE_KEY = "perk.dungeontrain.reroll_trades.tooltip_none";
     private static final String REROLL_FREE_LABEL_KEY = "perk.dungeontrain.reroll_trades.free";
     private static final String RESTOCK_ICON = "↻";
     private static final String REROLL_ICON = "⚄";
@@ -55,13 +57,19 @@ public final class RestockVillagerButton {
             () -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
             null);
         TradeChargeButton reroll = new TradeChargeButton(x, y, REROLL_ICON,
-            (left, price) -> price <= 0 ? Component.translatable(REROLL_FREE_KEY, left)
+            (left, price) -> left <= 0 ? Component.translatable(REROLL_NONE_KEY)
+                : price == 0 ? Component.translatable(REROLL_FREE_KEY, left)
                 : Component.translatable(REROLL_PAID_KEY, left, price),
             () -> RerollTradesClientState.remainingFor(menu.containerId),
             () -> RerollTradesClientState.priceFor(menu.containerId),
             Component.translatable(REROLL_FREE_LABEL_KEY),
             () -> canPay(RerollTradesClientState.priceFor(menu.containerId)),
-            () -> PacketDistributor.sendToServer(new RerollTradesRequestPacket(menu.containerId)),
+            () -> {
+                // The rerolled list may be shorter; the server also moves its selection to the first trade.
+                ((MerchantScreenSelectionAccessor) screen).dungeontrain$setShopItem(0);
+                ((MerchantScreenSelectionAccessor) screen).dungeontrain$setScrollOff(0);
+                PacketDistributor.sendToServer(new RerollTradesRequestPacket(menu.containerId));
+            },
             restock);
         event.addListener(restock);
         event.addListener(reroll);

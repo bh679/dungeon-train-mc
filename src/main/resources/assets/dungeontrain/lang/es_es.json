@@ -6509,6 +6509,7 @@
   "perk.dungeontrain.restock_villager.button": "Reabastecer (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Resortear ofertas (quedan %s, cuesta %s esmeraldas)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Resortear ofertas (quedan %s, gratis)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Resortear ofertas (no quedan)",
   "perk.dungeontrain.reroll_trades.free": "GRATIS",
   "gui.dungeontrain.perks.rank_cost": "El siguiente punto cuesta %s.",
   "gui.dungeontrain.perks.raise_limit": "Subir límite (%s)",

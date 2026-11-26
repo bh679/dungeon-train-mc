@@ -6488,6 +6488,7 @@
   "perk.dungeontrain.restock_villager.button": "Restock (%s)",
   "perk.dungeontrain.reroll_trades.tooltip_paid": "Reroll trades (%s left, costs %s emeralds)",
   "perk.dungeontrain.reroll_trades.tooltip_free": "Reroll trades (%s left, free)",
+  "perk.dungeontrain.reroll_trades.tooltip_none": "Reroll trades (none left)",
   "perk.dungeontrain.reroll_trades.free": "FREE",
   "gui.dungeontrain.perks.rank_cost": "Next point costs %s.",
   "gui.dungeontrain.perks.raise_limit": "Raise limit (%s)",
