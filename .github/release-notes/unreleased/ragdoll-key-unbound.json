@@ -1,0 +1,17 @@
+{
+  "id": "ragdoll-key-unbound",
+  "version": "0.2036.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility",
+    "ui"
+  ],
+  "title": "Ragdoll key unbound by default",
+  "summary": "The Ragdoll key no longer starts bound to H, so you won't flop over by accident. You can bind it again in Controls if you want it.",
+  "highlights": [],
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
