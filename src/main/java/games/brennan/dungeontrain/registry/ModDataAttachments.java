@@ -219,7 +219,7 @@ public final class ModDataAttachments {
         TYPES.register("pocket_brewing",
             () -> AttachmentType.<games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand>builder(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand::new)
                 .serialize(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewStand.CODEC,
-                    stand -> !stand.isEmpty() || stand.fuel() > 0 || stand.refuelTicks() > 0)
+                    stand -> !stand.isEmpty() || stand.grantedSlots() > 0 || stand.brewTime() > 0)
                 .build()
         );
 

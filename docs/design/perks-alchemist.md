@@ -45,33 +45,34 @@ changes at least one chip; previews read `→ N at K points`.
 ### Standless Brewing (tier 2) — CONFIRMED 2026-11-26 (reworked from Warlock's design)
 
 **How it works**
-- A **Brew** button on the inventory screen opens the player's own brewing stand: fuel slot,
-  ingredient slot and `1 + floor(r / 5)` bottle slots (wider than vanilla's 3 once past 10 points).
+- A **Brew** button on the inventory screen opens the player's own brewing stand: an ingredient
+  slot and `1 + floor(r / 5)` bottle slots (wider than vanilla's 3 once past 10 points).
+- **No fuel** (changed 2026-11-26, after #2917): the stand has no blaze powder slot or fuel bar and
+  brews whenever it has an ingredient and a bottle it can brew.
+- **A bottle with each slot:** every bottle slot the stand gains comes with a glass bottle in it. Grow
+  only: a bottle taken out, a death, or a point lost and regained never brings another.
 - It keeps brewing on the server while the screen is closed. Its contents are saved with the player.
 - **Brew time** `20 s × 0.9^r` (vanilla 20 s; never 0, at least one tick).
-- **Refuel:** one fuel (one brew, whatever the number of bottles) is added every
-  `300 s × 0.9^(r − 1)` (5 min at 1 point), up to a full bar of 20. A blaze powder is still 20 fuel.
 
 **Ladder**
 
-| r | Bottle slots | Brew time | Refuel every |
-|---|---|---|---|
-| 1 | 1 | 18.0 s | 5.0 min |
-| 2 | 1 | 16.2 s | 4.5 min |
-| 4 | 1 | 13.1 s | 3.6 min |
-| 5 | 2 | 11.8 s | 3.3 min |
-| 10 | 3 | 7.0 s | 1.9 min |
-| 15 | 4 | 4.1 s | 69 s |
-| 20 | 5 | 2.4 s | 41 s |
-| 30 | 7 | 0.8 s | 14 s |
+| r | Bottle slots | Brew time |
+|---|---|---|
+| 1 | 1 | 18.0 s |
+| 2 | 1 | 16.2 s |
+| 4 | 1 | 13.1 s |
+| 5 | 2 | 11.8 s |
+| 10 | 3 | 7.0 s |
+| 15 | 4 | 4.1 s |
+| 20 | 5 | 2.4 s |
+| 30 | 7 | 0.8 s |
 
-**Tick floor.** Brew time reaches a single tick at about 57 points and the refuel wait counts
-whole ticks, so from 67 points some points change no chip (the game's own limit, as 99 is for a stack).
+**Tick floor.** Brew time counts whole ticks (a single tick at about 57 points), so from 39 points
+some points change no chip (the game's own limit, as 99 is for a stack).
 
 **Details card**
 - Description: "Your own brewing stand, opened from your inventory. It keeps brewing while you play."
-- Chips: `Bottle slots 1 → 2 at 5 points`, `Brew time 13.1s → 11.8s`,
-  `Refuel every 3.6 min → 3.3 min`.
+- Chips: `Bottle slots 1 → 2 at 5 points`, `Brew time 13.1s → 11.8s`.
 
 ---
 

@@ -24,7 +24,8 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import java.util.Optional;
 
 /**
- * The pocket brewing stand's menu: fuel and ingredient slots as vanilla's stand, then the stand's bottle
+ * The pocket brewing stand's menu: the ingredient slot where vanilla's stand has it (no fuel slot: the
+ * stand needs none), then the stand's bottle
  * slots in centred rows of {@value #COLUMNS}, then the player inventory. More than {@value #PAGE_ROWS} rows
  * pages: the screen shows one page of bottles at a time ({@link #setPage}).
  */
@@ -33,13 +34,12 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
     public static final int COLUMNS = 9;
     public static final int PAGE_ROWS = 6;
     public static final int PAGE_SIZE = COLUMNS * PAGE_ROWS;
-    public static final int FUEL_X = 17, FUEL_Y = 17;
     public static final int INGREDIENT_X = 79, INGREDIENT_Y = 17;
     public static final int BOTTLES_Y = 51;
     public static final int SLOT = 18;
     public static final int WIDTH = 176;
 
-    static final int DATA_FUEL = 0, DATA_BREW_TIME = 1, DATA_BREW_TOTAL = 2, DATA_REFUEL_SECONDS = 3, DATA_COUNT = 4;
+    static final int DATA_BREW_TIME = 0, DATA_BREW_TOTAL = 1, DATA_COUNT = 2;
 
     private final Container stand;
     private final ContainerData data;
@@ -57,12 +57,6 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
         this.player = inventory.player;
         this.brewing = inventory.player.level().potionBrewing();
 
-        addSlot(new Slot(stand, PocketBrewStand.FUEL_SLOT, FUEL_X, FUEL_Y) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.is(Items.BLAZE_POWDER);
-            }
-        });
         addSlot(new Slot(stand, PocketBrewStand.INGREDIENT_SLOT, INGREDIENT_X, INGREDIENT_Y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
@@ -93,21 +87,14 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
         return new PocketBrewingMenu(containerId, inventory, standIn, bottles, new SimpleContainerData(DATA_COUNT));
     }
 
-    /** The server's live numbers for the screen: fuel, brew progress, seconds to the next refuel. */
+    /** The server's live numbers for the screen: the brew's progress. */
     static ContainerData data(ServerPlayer player, PocketBrewStand stand) {
         return new ContainerData() {
             @Override
             public int get(int index) {
                 return switch (index) {
-                    case DATA_FUEL -> stand.fuel();
                     case DATA_BREW_TIME -> stand.brewTime();
                     case DATA_BREW_TOTAL -> stand.brewTotal();
-                    case DATA_REFUEL_SECONDS -> {
-                        if (stand.fuel() >= PocketBrewingMath.FUEL_MAX) yield -1;
-                        int rank = Perks.rank(player, AlchemistPerks.STANDLESS_BREWING);
-                        int left = PocketBrewingMath.refuelTicks(rank) - stand.refuelTicks();
-                        yield Math.max(0, (left + 19) / 20);
-                    }
                     default -> 0;
                 };
             }
@@ -169,21 +156,12 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
         this.page = Math.max(0, Math.min(pages(bottles) - 1, page));
     }
 
-    public int fuel() {
-        return data.get(DATA_FUEL);
-    }
-
     public int brewTime() {
         return data.get(DATA_BREW_TIME);
     }
 
     public int brewTotal() {
         return data.get(DATA_BREW_TOTAL);
-    }
-
-    /** Seconds to the next refuel; -1 with a full bar. */
-    public int refuelSeconds() {
-        return data.get(DATA_REFUEL_SECONDS);
     }
 
     // ---- behaviour ---------------------------------------------------------------------------------
@@ -204,19 +182,16 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
         if (slot == null || !slot.hasItem()) return ItemStack.EMPTY;
         ItemStack stack = slot.getItem();
         ItemStack copy = stack.copy();
-        int standEnd = 2 + bottles;
+        int standEnd = 1 + bottles;
         int invEnd = standEnd + 27;
         int hotbarEnd = invEnd + 9;
         if (index < standEnd) {
             if (!moveItemStackTo(stack, standEnd, hotbarEnd, true)) return ItemStack.EMPTY;
             slot.onQuickCraft(stack, copy);
-        } else if (stack.is(Items.BLAZE_POWDER)) {
-            if (!moveItemStackTo(stack, 0, 1, false)
-                && !(slots.get(1).mayPlace(stack) && moveItemStackTo(stack, 1, 2, false))) return ItemStack.EMPTY;
-        } else if (slots.get(1).mayPlace(stack)) {
-            if (!moveItemStackTo(stack, 1, 2, false)) return ItemStack.EMPTY;
+        } else if (slots.get(0).mayPlace(stack)) {
+            if (!moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
         } else if (isBottle(copy)) {
-            if (!moveItemStackTo(stack, 2, standEnd, false)) return ItemStack.EMPTY;
+            if (!moveItemStackTo(stack, 1, standEnd, false)) return ItemStack.EMPTY;
         } else if (index < invEnd) {
             if (!moveItemStackTo(stack, invEnd, hotbarEnd, false)) return ItemStack.EMPTY;
         } else if (!moveItemStackTo(stack, standEnd, invEnd, false)) {

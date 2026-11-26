@@ -18852,15 +18852,6 @@
       ]
     }
   },
-  "gui.dungeontrain.pocket_brewing.refuel": {
-    "1": {
-      "label": "a countdown in minutes and seconds",
-      "examples": [
-        "2:41",
-        "0:09"
-      ]
-    }
-  },
   "gui.dungeontrain.pocket_brewing.page": {
     "1": {
       "label": "the page shown, a whole number",

@@ -18,9 +18,6 @@ public final class AlchemistPerks {
     public static final String STANDLESS_BREWING = "standless-brewing";
     public static final String BREWMASTER = "brewmaster";
 
-    /** Refuel reads in minutes from this many seconds, in seconds below it. */
-    static final double MINUTES_FROM_SECONDS = 60.0;
-
     private AlchemistPerks() {}
 
     public static void declare() {
@@ -33,7 +30,6 @@ public final class AlchemistPerks {
             r -> PerkStats.num(PocketBrewingMath.bottleSlots(Math.max(1, r)), Unit.PLAIN));
         PerkStats.register(STANDLESS_BREWING, "brew_time",
             r -> PerkStats.num(PocketBrewingMath.brewSeconds(Math.max(1, r)), Unit.SECONDS));
-        PerkStats.register(STANDLESS_BREWING, "refuel_every", r -> refuelChip(Math.max(1, r)));
 
         PerkStats.register(BREWMASTER, "level_always",
             r -> new Object[] {PerkOverflow.guaranteed(BrewmasterMath.percent(r))},
@@ -45,13 +41,5 @@ public final class AlchemistPerks {
                 if (PerkOverflow.remainder(p) == 0) return null;
                 return PerkStats.num(PerkOverflow.remainder(p), Unit.PERCENT);
             });
-    }
-
-    /** Minutes from a minute up ("3.6 min"), seconds below ("41s"). */
-    static PerkStats.Value refuelChip(int rank) {
-        double seconds = PocketBrewingMath.refuelSeconds(rank);
-        return seconds >= MINUTES_FROM_SECONDS
-            ? PerkStats.num(seconds / 60.0, Unit.MINUTES)
-            : PerkStats.num(seconds, Unit.SECONDS);
     }
 }

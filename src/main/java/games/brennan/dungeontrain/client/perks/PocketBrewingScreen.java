@@ -8,7 +8,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -16,9 +15,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
- * The pocket brewing stand (Standless Brewing): vanilla's brewing stand top (fuel, bubbles, ingredient,
- * progress arrow, and its fuel bar), then the stand's bottle slots in centred rows of nine, then the player
- * inventory. The next refuel shares the inventory label's line, and a chest button right of the stand goes
+ * The pocket brewing stand (Standless Brewing): vanilla's brewing stand top without its fuel slot and bar
+ * (the stand needs no fuel: bubbles, ingredient and progress arrow), then the stand's bottle slots in centred
+ * rows of nine, then the player inventory. A chest button right of the stand goes
  * back to the inventory. Past six rows
  * of bottles, arrows beside the title page through them.
  */
@@ -26,25 +25,25 @@ import net.neoforged.api.distmarker.OnlyIn;
 public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBrewingMenu> {
 
     private static final ResourceLocation TEXTURE = ResourceLocation.withDefaultNamespace("textures/gui/container/brewing_stand.png");
-    private static final ResourceLocation FUEL_LENGTH_SPRITE = ResourceLocation.withDefaultNamespace("container/brewing_stand/fuel_length");
     private static final ResourceLocation BREW_PROGRESS_SPRITE = ResourceLocation.withDefaultNamespace("container/brewing_stand/brew_progress");
     private static final ResourceLocation BUBBLES_SPRITE = ResourceLocation.withDefaultNamespace("container/brewing_stand/bubbles");
     private static final int[] BUBBLE_LENGTHS = {29, 24, 20, 16, 11, 6, 0};
 
-    /** The texture's stand top, down to just under the fuel bar. */
+    /** The texture's stand top, down to just under where its fuel bar was. */
     private static final int HEADER = 48;
     /** Vanilla's texture below its bottle slots, 8 above the inventory's first row (the label is drawn, not textured). */
     private static final int TEXTURE_INVENTORY_V = 76;
     private static final int INVENTORY_TOP_OFFSET = 8;
     private static final int INVENTORY_PART = 166 - TEXTURE_INVENTORY_V;
 
+    /** Vanilla's blaze powder slot with its tube and coil, then its fuel bar under the bubbles. */
+    private static final int[][] FUEL_ART = {{16, 16, 55, 49}, {59, 43, 80, 49}};
     private static final int FACE = 0xFFC6C6C6;
     private static final int LIGHT = 0xFFFFFFFF;
     private static final int SHADE = 0xFF373737;
     private static final int SLOT_BG = 0xFF8B8B8B;
     private static final int TEXT = 0xFF404040;
 
-    public static final String KEY_REFUEL = "gui.dungeontrain.pocket_brewing.refuel";
     public static final String KEY_PAGE = "gui.dungeontrain.pocket_brewing.page";
 
     public PocketBrewingScreen(PocketBrewingMenu menu, Inventory inventory, Component title) {
@@ -101,21 +100,11 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         super.renderLabels(g, mouseX, mouseY);
-        int seconds = menu.refuelSeconds();
-        if (seconds >= 0) {
-            Component next = Component.translatable(KEY_REFUEL, clock(seconds));
-            g.drawString(font, next, imageWidth - 8 - font.width(next), inventoryLabelY, TEXT, false);
-        }
         int pages = PocketBrewingMenu.pages(menu.bottles());
         if (pages > 1) {
             Component page = Component.translatable(KEY_PAGE, menu.page() + 1, pages);
             g.drawString(font, page, imageWidth - 20 - font.width(page), titleLabelY, TEXT, false);
         }
-    }
-
-    /** "2:41" for 161 seconds. */
-    static String clock(int seconds) {
-        return (seconds / 60) + ":" + String.format(java.util.Locale.ROOT, "%02d", seconds % 60);
     }
 
     @Override
@@ -124,6 +113,8 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
         int y = topPos;
         int invTop = menu.inventoryTop();
         g.blit(TEXTURE, x, y, 0, 0, imageWidth, HEADER);
+        // the stand needs no fuel: paint out the texture's blaze powder slot, its tube and the fuel bar
+        for (int[] r : FUEL_ART) g.fill(x + r[0], y + r[1], x + r[2], y + Math.min(HEADER, r[3]), FACE);
         int band = invTop - INVENTORY_TOP_OFFSET;
         g.fill(x + 3, y + HEADER, x + imageWidth - 3, y + band, FACE);
         g.fill(x, y + HEADER, x + 1, y + band, 0xFF000000);
@@ -143,8 +134,6 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
             g.fill(sx + 1, sy + 1, sx + 17, sy + 17, SLOT_BG);
         }
 
-        int fuel = Mth.clamp((18 * menu.fuel() + 19) / 20, 0, 18);
-        if (fuel > 0) g.blitSprite(FUEL_LENGTH_SPRITE, 18, 4, 0, 0, x + 60, y + 44, fuel, 4);
         int left = menu.brewTime();
         int total = Math.max(1, menu.brewTotal());
         if (left > 0) {

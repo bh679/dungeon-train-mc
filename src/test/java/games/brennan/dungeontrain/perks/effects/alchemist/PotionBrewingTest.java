@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.perks.effects.alchemist;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.component.DataComponents;
@@ -54,21 +56,31 @@ class PotionBrewingTest {
     }
 
     @Test
-    void blazePowderBecomesAFullBarAndABrewCostsOne() {
+    void aBrewStartsWithNoFuel() {
         PocketBrewStand s = stand(1);
-        s.setItem(PocketBrewStand.FUEL_SLOT, new ItemStack(Items.BLAZE_POWDER, 2));
         s.setItem(PocketBrewStand.INGREDIENT_SLOT, new ItemStack(Items.REDSTONE, 3));
         s.setItem(PocketBrewStand.FIRST_BOTTLE, new ItemStack(Items.POTION));
         PocketBrewing.tick(s, 1, MIXER, b -> b);
-        assertEquals(1, s.getItem(PocketBrewStand.FUEL_SLOT).getCount());
-        assertEquals(PocketBrewingMath.FUEL_MAX - 1, s.fuel());
         assertEquals(PocketBrewingMath.brewTicks(1), s.brewTime());
+    }
+
+    @Test
+    void brewsKeepComingWithNoFuel() {
+        PocketBrewStand s = stand(1);
+        s.setItem(PocketBrewStand.INGREDIENT_SLOT, new ItemStack(Items.REDSTONE, 30));
+        int brews = 0;
+        for (int i = 0; i < 25; i++) {
+            s.setItem(PocketBrewStand.FIRST_BOTTLE, new ItemStack(Items.POTION));
+            for (int t = 0; t <= PocketBrewingMath.brewTicks(30); t++) {
+                if (PocketBrewing.tick(s, 30, MIXER, b -> b).brewed()) brews++;
+            }
+        }
+        assertEquals(25, brews);
     }
 
     @Test
     void aBrewFinishesAfterItsTimeAndStrengthensOnlyChangedBottles() {
         PocketBrewStand s = stand(2);
-        s.fuel = 5;
         s.setItem(PocketBrewStand.INGREDIENT_SLOT, new ItemStack(Items.REDSTONE, 3));
         s.setItem(PocketBrewStand.FIRST_BOTTLE, new ItemStack(Items.POTION));
         s.setItem(PocketBrewStand.FIRST_BOTTLE + 1, new ItemStack(Items.GLASS_BOTTLE));
@@ -82,13 +94,11 @@ class PotionBrewingTest {
         assertTrue(s.getItem(PocketBrewStand.FIRST_BOTTLE + 1).is(Items.GLASS_BOTTLE));
         assertEquals(1, strengthened[0]);
         assertEquals(2, s.getItem(PocketBrewStand.INGREDIENT_SLOT).getCount());
-        assertEquals(4, s.fuel());
     }
 
     @Test
     void swappingTheIngredientStopsTheBrew() {
         PocketBrewStand s = stand(1);
-        s.fuel = 5;
         s.setItem(PocketBrewStand.INGREDIENT_SLOT, new ItemStack(Items.REDSTONE));
         s.setItem(PocketBrewStand.FIRST_BOTTLE, new ItemStack(Items.POTION));
         PocketBrewing.tick(s, 1, MIXER, b -> b);
@@ -99,20 +109,12 @@ class PotionBrewingTest {
     }
 
     @Test
-    void refuelArrivesOnItsClockUpToAFullBar() {
-        PocketBrewStand s = stand(1);
-        for (int t = 0; t < PocketBrewingMath.refuelTicks(3); t++) PocketBrewing.tick(s, 3, MIXER, b -> b);
-        assertEquals(1, s.fuel());
-        s.fuel = PocketBrewingMath.FUEL_MAX;
-        for (int t = 0; t < PocketBrewingMath.refuelTicks(3) * 2; t++) PocketBrewing.tick(s, 3, MIXER, b -> b);
-        assertEquals(PocketBrewingMath.FUEL_MAX, s.fuel());
-    }
-
-    @Test
     void withoutThePerkNothingTicks() {
         PocketBrewStand s = stand(1);
+        s.setItem(PocketBrewStand.INGREDIENT_SLOT, new ItemStack(Items.REDSTONE));
+        s.setItem(PocketBrewStand.FIRST_BOTTLE, new ItemStack(Items.POTION));
         PocketBrewing.tick(s, 0, MIXER, b -> b);
-        assertEquals(0, s.refuelTicks());
+        assertEquals(0, s.brewTime());
     }
 
     @Test
@@ -127,14 +129,78 @@ class PotionBrewingTest {
     @Test
     void theStandSavesAndLoads() {
         PocketBrewStand s = stand(2);
-        s.fuel = 7;
-        s.setItem(PocketBrewStand.FUEL_SLOT, new ItemStack(Items.BLAZE_POWDER, 4));
-        s.setItem(PocketBrewStand.FIRST_BOTTLE + 1, new ItemStack(Items.GLASS_BOTTLE));
+        s.grantBottles(2);
+        s.setItem(PocketBrewStand.FIRST_BOTTLE + 1, new ItemStack(Items.POTION));
         var json = PocketBrewStand.CODEC.encodeStart(JsonOps.INSTANCE, s).getOrThrow();
+        assertFalse(json.getAsJsonObject().has("fuel"));
         PocketBrewStand back = PocketBrewStand.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow();
-        assertEquals(7, back.fuel());
-        assertEquals(4, back.getItem(PocketBrewStand.FUEL_SLOT).getCount());
-        assertTrue(back.getItem(PocketBrewStand.FIRST_BOTTLE + 1).is(Items.GLASS_BOTTLE));
+        assertEquals(2, back.grantedSlots());
+        assertTrue(back.getItem(PocketBrewStand.FIRST_BOTTLE).is(Items.GLASS_BOTTLE));
+        assertTrue(back.getItem(PocketBrewStand.FIRST_BOTTLE + 1).is(Items.POTION));
+    }
+
+    /** A stand saved while it still took fuel: the old fields are ignored, the powder waits to go back. */
+    @Test
+    void aStandSavedWithFuelStillLoads() {
+        JsonObject old = new JsonObject();
+        JsonArray items = new JsonArray();
+        items.add(ItemStack.OPTIONAL_CODEC.encodeStart(JsonOps.INSTANCE, new ItemStack(Items.BLAZE_POWDER, 4)).getOrThrow());
+        items.add(ItemStack.OPTIONAL_CODEC.encodeStart(JsonOps.INSTANCE, ItemStack.EMPTY).getOrThrow());
+        items.add(ItemStack.OPTIONAL_CODEC.encodeStart(JsonOps.INSTANCE, new ItemStack(Items.POTION)).getOrThrow());
+        old.add("items", items);
+        old.addProperty("fuel", 7);
+        old.addProperty("refuel_ticks", 120);
+        PocketBrewStand back = PocketBrewStand.CODEC.parse(JsonOps.INSTANCE, old).getOrThrow();
+        assertTrue(back.getItem(PocketBrewStand.FIRST_BOTTLE).is(Items.POTION));
+        assertEquals(0, back.grantedSlots());
+        ItemStack powder = back.takeRetired();
+        assertEquals(4, powder.getCount());
+        assertTrue(back.getItem(PocketBrewStand.RETIRED_FUEL_SLOT).isEmpty());
+    }
+
+    @Test
+    void eachNewSlotComesWithAnEmptyBottle() {
+        PocketBrewStand s = new PocketBrewStand();
+        assertTrue(s.grantBottles(PocketBrewingMath.bottleSlots(1)).isEmpty());
+        assertTrue(s.getItem(PocketBrewStand.FIRST_BOTTLE).is(Items.GLASS_BOTTLE));
+        assertTrue(s.getItem(PocketBrewStand.FIRST_BOTTLE + 1).isEmpty());
+        s.grantBottles(PocketBrewingMath.bottleSlots(5));
+        assertTrue(s.getItem(PocketBrewStand.FIRST_BOTTLE + 1).is(Items.GLASS_BOTTLE));
+        assertEquals(2, s.grantedSlots());
+    }
+
+    @Test
+    void aBottleTakenOutNeverComesBack() {
+        PocketBrewStand s = new PocketBrewStand();
+        s.grantBottles(2);
+        s.removeItemNoUpdate(PocketBrewStand.FIRST_BOTTLE);
+        s.grantBottles(2);
+        assertTrue(s.getItem(PocketBrewStand.FIRST_BOTTLE).isEmpty());
+    }
+
+    @Test
+    void deathAndLostPointsGrantNoNewBottles() {
+        PocketBrewStand s = new PocketBrewStand();
+        s.grantBottles(3);
+        assertEquals(3, s.takeAll().size());
+        s.grantBottles(3);
+        assertTrue(s.isEmpty());
+        s.takeBottlesPast(1);
+        s.grantBottles(2);
+        s.grantBottles(3);
+        assertTrue(s.isEmpty());
+        assertEquals(3, s.copy().grantedSlots());
+    }
+
+    @Test
+    void aTakenNewSlotHandsItsBottleBack() {
+        PocketBrewStand s = new PocketBrewStand();
+        s.grantBottles(1);
+        s.setItem(PocketBrewStand.FIRST_BOTTLE + 1, new ItemStack(Items.POTION));
+        List<ItemStack> back = s.grantBottles(2);
+        assertEquals(1, back.size());
+        assertTrue(back.get(0).is(Items.GLASS_BOTTLE));
+        assertTrue(s.getItem(PocketBrewStand.FIRST_BOTTLE + 1).is(Items.POTION));
     }
 
     @Test

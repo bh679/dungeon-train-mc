@@ -26,10 +26,9 @@ import java.util.function.UnaryOperator;
 /**
  * Standless Brewing (Alchemist tier 2): the player's own brewing stand ({@link PocketBrewStand}), opened
  * from the inventory's Brew button ({@link PocketBrewOpenPacket}). It brews on the server every tick the
- * player has the perk, screen open or not, following a placed stand's rules (blaze powder is 20 fuel, a
- * brew costs one fuel whatever the bottles, swapping the ingredient stops it) at
- * {@link PocketBrewingMath}'s brew time, and one refuel arrives every {@link PocketBrewingMath#refuelTicks}
- * up to a full bar.
+ * player has the perk, screen open or not, following a placed stand's rules (swapping the ingredient stops
+ * a brew) at {@link PocketBrewingMath}'s brew time. It needs no fuel. Each bottle slot it gains comes with a
+ * glass bottle in it ({@link PocketBrewStand#grantBottles}).
  *
  * <p>On death the contents drop with the player's other items (kept with keepInventory). Bottles in slots a
  * smaller rank no longer has go back to the inventory, or drop when it is full.</p>
@@ -81,18 +80,12 @@ public final class PocketBrewing {
 
     /**
      * One server tick of {@code stand} at {@code rank}, as vanilla's {@code BrewingStandBlockEntity.serverTick}
-     * plus the refuel. {@code strengthen} is Brewmaster's roll for a bottle the brew changed.
+     * with no fuel. {@code strengthen} is Brewmaster's roll for a bottle the brew changed.
      */
     public static Step tick(PocketBrewStand stand, int rank, Mixer mixer, UnaryOperator<ItemStack> strengthen) {
         if (rank <= 0) return Step.NONE;
         int bottles = PocketBrewingMath.bottleSlots(rank);
         stand.ensureBottles(bottles);
-
-        ItemStack fuelItem = stand.getItem(PocketBrewStand.FUEL_SLOT);
-        if (stand.fuel <= 0 && fuelItem.is(Items.BLAZE_POWDER)) {
-            stand.fuel = PocketBrewingMath.FUEL_MAX;
-            fuelItem.shrink(1);
-        }
 
         Step step = Step.NONE;
         ItemStack ingredient = stand.getItem(PocketBrewStand.INGREDIENT_SLOT);
@@ -104,8 +97,7 @@ public final class PocketBrewing {
             } else if (!brewable || !ingredient.is(stand.brewing)) {
                 stand.brewTime = 0;
             }
-        } else if (brewable && stand.fuel > 0) {
-            stand.fuel--;
+        } else if (brewable) {
             stand.brewTotal = PocketBrewingMath.brewTicks(rank);
             stand.brewTime = stand.brewTotal;
             stand.brewing = ingredient.getItem();
@@ -113,13 +105,6 @@ public final class PocketBrewing {
         if (stand.brewTime == 0) {
             stand.brewTotal = 0;
             stand.brewing = Items.AIR;
-        }
-
-        if (stand.fuel >= PocketBrewingMath.FUEL_MAX) {
-            stand.refuelTicks = 0;
-        } else if (++stand.refuelTicks >= PocketBrewingMath.refuelTicks(rank)) {
-            stand.fuel++;
-            stand.refuelTicks = 0;
         }
         return step;
     }
@@ -166,6 +151,7 @@ public final class PocketBrewing {
         int rank = Perks.rank(player, AlchemistPerks.STANDLESS_BREWING);
         if (rank <= 0) return;
         PocketBrewStand stand = stand(player);
+        stand.grantBottles(PocketBrewingMath.bottleSlots(rank)).forEach(b -> give(player, b));
         Step step = tick(stand, rank, Mixer.of(player.level().potionBrewing()), b -> Brewmaster.strengthen(player, b));
         if (step.brewed()) {
             player.playNotifySound(SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -173,6 +159,7 @@ public final class PocketBrewing {
         }
         if (player.tickCount % OVERFLOW_CHECK_TICKS == 0) {
             stand.takeBottlesPast(PocketBrewingMath.bottleSlots(rank)).forEach(b -> give(player, b));
+            give(player, stand.takeRetired());
         }
     }
 
@@ -183,6 +170,7 @@ public final class PocketBrewing {
         int bottles = PocketBrewingMath.bottleSlots(rank);
         PocketBrewStand stand = stand(player);
         stand.ensureBottles(bottles);
+        stand.grantBottles(bottles).forEach(b -> give(player, b));
         player.openMenu(new SimpleMenuProvider(
                 (id, inv, p) -> new PocketBrewingMenu(id, inv, stand, bottles, PocketBrewingMenu.data(player, stand)),
                 Component.translatable(KEY_TITLE)),

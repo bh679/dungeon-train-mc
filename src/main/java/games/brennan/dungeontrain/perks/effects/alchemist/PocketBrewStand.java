@@ -14,51 +14,53 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A player's pocket brewing stand (Standless Brewing): fuel slot, ingredient slot, then any number of
- * bottle slots, plus the stand's fuel, brew progress and refuel timer. It lives on the player as a data
- * attachment ({@code ModDataAttachments.POCKET_BREWING}), saved with them.
+ * A player's pocket brewing stand (Standless Brewing): an ingredient slot, then any number of bottle
+ * slots, plus the brew in progress. It needs no fuel. It lives on the player as a data attachment
+ * ({@code ModDataAttachments.POCKET_BREWING}), saved with them.
+ *
+ * <p>Slot {@value #RETIRED_FUEL_SLOT} held blaze powder before the stand stopped needing fuel; it stays
+ * reserved so saved bottles keep their slots, and anything left in it goes back to the player
+ * ({@link #takeRetired}).</p>
  *
  * <p>Mutable on purpose: it is the {@link Container} the menu's slots edit in place, as a placed stand's
  * block entity is. Everything outside the menu changes it only through {@link PocketBrewing}'s tick.</p>
  */
 public final class PocketBrewStand implements Container {
 
-    public static final int FUEL_SLOT = 0;
+    /** Held the blaze powder until the stand stopped needing fuel; never shown, emptied to the player. */
+    public static final int RETIRED_FUEL_SLOT = 0;
     public static final int INGREDIENT_SLOT = 1;
     public static final int FIRST_BOTTLE = 2;
 
     public static final Codec<PocketBrewStand> CODEC = RecordCodecBuilder.create(i -> i.group(
         ItemStack.OPTIONAL_CODEC.listOf().optionalFieldOf("items", List.of()).forGetter(PocketBrewStand::itemList),
-        Codec.INT.optionalFieldOf("fuel", 0).forGetter(s -> s.fuel),
         Codec.INT.optionalFieldOf("brew_time", 0).forGetter(s -> s.brewTime),
         Codec.INT.optionalFieldOf("brew_total", 0).forGetter(s -> s.brewTotal),
         BuiltInRegistries.ITEM.byNameCodec().optionalFieldOf("brewing", Items.AIR).forGetter(s -> s.brewing),
-        Codec.INT.optionalFieldOf("refuel_ticks", 0).forGetter(s -> s.refuelTicks)
+        Codec.INT.optionalFieldOf("granted_slots", 0).forGetter(s -> s.grantedSlots)
     ).apply(i, PocketBrewStand::new));
 
     private NonNullList<ItemStack> items;
-    int fuel;
     /** Ticks left on the brew in progress; 0 when idle. */
     int brewTime;
     /** The brew in progress's full length, for the screen's progress arrow. */
     int brewTotal;
     /** The ingredient the brew in progress started with (vanilla stops a brew when it is swapped). */
     Item brewing = Items.AIR;
-    /** Ticks since the last refuel. */
-    int refuelTicks;
+    /** Bottle slots that have come with their glass bottle; only ever goes up, death included. */
+    int grantedSlots;
 
     public PocketBrewStand() {
-        this(List.of(), 0, 0, 0, Items.AIR, 0);
+        this(List.of(), 0, 0, Items.AIR, 0);
     }
 
-    private PocketBrewStand(List<ItemStack> saved, int fuel, int brewTime, int brewTotal, Item brewing, int refuelTicks) {
+    private PocketBrewStand(List<ItemStack> saved, int brewTime, int brewTotal, Item brewing, int grantedSlots) {
         this.items = NonNullList.withSize(Math.max(FIRST_BOTTLE, saved.size()), ItemStack.EMPTY);
         for (int i = 0; i < saved.size(); i++) items.set(i, saved.get(i));
-        this.fuel = Math.max(0, fuel);
         this.brewTime = Math.max(0, brewTime);
         this.brewTotal = Math.max(0, brewTotal);
         this.brewing = brewing;
-        this.refuelTicks = Math.max(0, refuelTicks);
+        this.grantedSlots = Math.max(0, grantedSlots);
     }
 
     private List<ItemStack> itemList() {
@@ -86,17 +88,40 @@ public final class PocketBrewStand implements Container {
         return out;
     }
 
-    /** Take out everything, for a death drop; the stand is left empty and idle. */
+    /** Take out whatever is left in the retired fuel slot. */
+    public ItemStack takeRetired() {
+        return items.set(RETIRED_FUEL_SLOT, ItemStack.EMPTY);
+    }
+
+    /**
+     * Put a glass bottle in each bottle slot past the ones already granted, up to {@code bottles}; a slot
+     * that is somehow taken hands its bottle back instead. Returns those handed-back bottles.
+     */
+    public List<ItemStack> grantBottles(int bottles) {
+        List<ItemStack> out = new ArrayList<>();
+        if (bottles <= grantedSlots) return out;
+        ensureBottles(bottles);
+        for (int i = grantedSlots; i < bottles; i++) {
+            int slot = FIRST_BOTTLE + i;
+            if (items.get(slot).isEmpty()) {
+                items.set(slot, new ItemStack(Items.GLASS_BOTTLE));
+            } else {
+                out.add(new ItemStack(Items.GLASS_BOTTLE));
+            }
+        }
+        grantedSlots = bottles;
+        return out;
+    }
+
+    /** Take out everything, for a death drop; the stand is left empty and idle (its granted bottles stay granted). */
     public List<ItemStack> takeAll() {
         List<ItemStack> out = new ArrayList<>();
         for (int i = 0; i < items.size(); i++) {
             if (!items.get(i).isEmpty()) out.add(items.set(i, ItemStack.EMPTY));
         }
-        fuel = 0;
         brewTime = 0;
         brewTotal = 0;
         brewing = Items.AIR;
-        refuelTicks = 0;
         return out;
     }
 
@@ -104,11 +129,7 @@ public final class PocketBrewStand implements Container {
     public PocketBrewStand copy() {
         List<ItemStack> copied = new ArrayList<>();
         items.forEach(s -> copied.add(s.copy()));
-        return new PocketBrewStand(copied, fuel, brewTime, brewTotal, brewing, refuelTicks);
-    }
-
-    public int fuel() {
-        return fuel;
+        return new PocketBrewStand(copied, brewTime, brewTotal, brewing, grantedSlots);
     }
 
     public int brewTime() {
@@ -119,8 +140,8 @@ public final class PocketBrewStand implements Container {
         return brewTotal;
     }
 
-    public int refuelTicks() {
-        return refuelTicks;
+    public int grantedSlots() {
+        return grantedSlots;
     }
 
     // ---- Container ---------------------------------------------------------------------------------
