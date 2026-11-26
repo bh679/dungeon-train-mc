@@ -901,6 +901,11 @@ public final class PortalCarriageBuilder {
             games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
                 .planFor(level, roomName, pairKey, gateCtx).meta();
         PortalRoomMode framed = meta.dimension().roomMode(settings.mode());
+        // A plain is a one-chunk room's: a 3x3 room is a block of terrain too wide to read as a
+        // tower in a field, so its frame's Endless open encloses it as Void instead.
+        if (framed.laysGroundPlain() && (size.getX() != PortalChunkTerrain.SIZE || size.getZ() != PortalChunkTerrain.SIZE)) {
+            framed = PortalRoomMode.CHUNK_VOID;
+        }
         if (framed == settings.mode()) return settings;
         LOGGER.info("[DungeonTrain] Chunk frame encloses pair {} ({}) as {}{}", pairKey, roomName, framed.id(),
             framed.laysGroundPlain() ? ", doors " + meta.doorDistance() + " out on its plain" : "");
@@ -1007,8 +1012,11 @@ public final class PortalCarriageBuilder {
         if (settings.mode().generatesTerrain()) {
             PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
             if (slice == null) return null;
-            settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
             settings = framedEnclosure(level, roomName, pairKey, size, settings, gateCtx);
+            // An Endless open chunk's doors stand on its plain, not on the sampled ground.
+            if (!settings.mode().laysGroundPlain()) {
+                settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
+            }
         }
 
         // Where this pair stands its exit, decided here with everything else about the pair and then
@@ -1154,6 +1162,10 @@ public final class PortalCarriageBuilder {
             // fluid notices: invisible, walk-through, and refusing every fluid (ForcedAirBlock).
             BlockState guard = fluidGuardFor(structure.mode());
             if (guard != null) bedrockSkin(level, roomOrigin, roomSize, guard, quiet);
+            // The skin leaves its two X faces to the corridor mouths' seal rings, which close them
+            // when the corridors stand against the room. Corridors a door gap out leave those faces
+            // open onto the plain, so the guard closes them itself.
+            if (guard != null && structure.doorGap() > 0) guardEndFaces(level, roomOrigin, roomSize, guard, quiet);
         } else if (structure.mode().tiles()) {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
@@ -1493,6 +1505,19 @@ public final class PortalCarriageBuilder {
     private static BlockState fluidGuardOrAir(PortalRoomMode mode) {
         BlockState guard = fluidGuardFor(mode);
         return guard != null ? guard : Blocks.AIR.defaultBlockState();
+    }
+
+    /** {@code guard} across the room's whole cross-section one block past each X face. */
+    private static void guardEndFaces(ServerLevel level, BlockPos roomOrigin, Vec3i size, BlockState guard,
+                                      List<BoundingBox> quiet) {
+        int floorY = roomOrigin.getY();
+        int ceilingY = floorY + size.getY() - 1;
+        int z0 = roomOrigin.getZ();
+        int z1 = z0 + size.getZ() - 1;
+        for (int x : new int[] {roomOrigin.getX() - 1, roomOrigin.getX() + size.getX()}) {
+            PortalQuietFill.fill(level, new BoundingBox(x, floorY, z0, x, ceilingY, z1), guard,
+                quiet == null ? List.of() : quiet);
+        }
     }
 
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size,

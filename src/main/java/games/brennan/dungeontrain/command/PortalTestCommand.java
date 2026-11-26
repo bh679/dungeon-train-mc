@@ -365,11 +365,13 @@ public final class PortalTestCommand {
         // The doorways onto the sampled ground, fetched above.
         PortalRoomSettings settings = authored;
         if (slice != null) {
-            settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
-                PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
-            // Enclosed as its frame says, exactly as in play.
+            // Enclosed as its frame says, then the doors fitted, exactly as in play.
             settings = PortalCarriageBuilder.framedEnclosure(overworld, roomName, PortalTestSession.PAIR_KEY,
-                roomSize, settings);
+                roomSize, authored);
+            if (!settings.mode().laysGroundPlain()) {
+                settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(settings, slice, dims,
+                    PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
+            }
         }
 
         // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored
@@ -728,6 +730,8 @@ public final class PortalTestCommand {
             ? games.brennan.dungeontrain.portal.tribute.TributeRoomCorridors.windowFor(overworld, session.structure(), dims)
             : windowBox(overworld, session.structure(), dims);
         int cleared = PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
+        // An Endless open chunk's plain runs out past the window, to the fog.
+        games.brennan.dungeontrain.portal.PortalGroundPlain.erase(overworld, session.structure(), dims);
         // And the room's mobs. A live room's are carried to its next site, so the clear leaves them;
         // a test room has no next site, and the next test is stamped on this same spot — so a chunk
         // dimension's villagers used to turn up in the Nether room tested after it.
