@@ -3,18 +3,23 @@ package games.brennan.dungeontrain.client.perks;
 import games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewingMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * The pocket brewing stand (Standless Brewing): vanilla's brewing stand top (fuel, bubbles, ingredient,
  * progress arrow, and its fuel bar), then the stand's bottle slots in centred rows of nine, then the player
- * inventory. The next free fuel shares the inventory label's line. Past six rows
+ * inventory. The next refuel shares the inventory label's line, and a chest button right of the stand goes
+ * back to the inventory. Past six rows
  * of bottles, arrows beside the title page through them.
  */
 @OnlyIn(Dist.CLIENT)
@@ -39,7 +44,7 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
     private static final int SLOT_BG = 0xFF8B8B8B;
     private static final int TEXT = 0xFF404040;
 
-    public static final String KEY_FREE_FUEL = "gui.dungeontrain.pocket_brewing.free_fuel";
+    public static final String KEY_REFUEL = "gui.dungeontrain.pocket_brewing.refuel";
     public static final String KEY_PAGE = "gui.dungeontrain.pocket_brewing.page";
 
     public PocketBrewingScreen(PocketBrewingMenu menu, Inventory inventory, Component title) {
@@ -49,10 +54,28 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
         this.inventoryLabelY = menu.inventoryTop() - 11;
     }
 
+    /** The inventory button, the Brew button's way back: right of the stand, where vanilla's stand is empty. */
+    static final int BACK_X = 150, BACK_Y = 17, BACK_W = 20, BACK_H = 18;
+    private static final ItemStack BACK_ICON = new ItemStack(Items.CHEST);
+
     @Override
     protected void init() {
         super.init();
         titleLabelX = (imageWidth - font.width(title)) / 2;
+        Component inventory = Component.translatable("container.inventory");
+        Button back = new Button(leftPos + BACK_X, topPos + BACK_Y, BACK_W, BACK_H, inventory,
+                b -> backToInventory(), narration -> narration.get()) {
+            @Override
+            protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+                Component label = getMessage();
+                setMessage(Component.empty());
+                super.renderWidget(g, mouseX, mouseY, partialTick);
+                setMessage(label);
+                g.renderItem(BACK_ICON, getX() + (BACK_W - 16) / 2, getY() + (BACK_H - 16) / 2);
+            }
+        };
+        back.setTooltip(Tooltip.create(inventory));
+        addRenderableWidget(back);
         int pages = PocketBrewingMenu.pages(menu.bottles());
         if (pages > 1) {
             addRenderableWidget(Button.builder(Component.literal("<"), b -> menu.setPage(menu.page() - 1))
@@ -60,6 +83,13 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
             addRenderableWidget(Button.builder(Component.literal(">"), b -> menu.setPage(menu.page() + 1))
                 .bounds(leftPos + imageWidth - 16, topPos + 3, 12, 11).build());
         }
+    }
+
+    /** Close the stand and open the player's inventory, as the Brew button opened the stand from it. */
+    private void backToInventory() {
+        if (minecraft == null || minecraft.player == null) return;
+        minecraft.player.closeContainer();
+        minecraft.setScreen(new InventoryScreen(minecraft.player));
     }
 
     @Override
@@ -71,9 +101,9 @@ public final class PocketBrewingScreen extends AbstractContainerScreen<PocketBre
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         super.renderLabels(g, mouseX, mouseY);
-        int seconds = menu.freeFuelSeconds();
+        int seconds = menu.refuelSeconds();
         if (seconds >= 0) {
-            Component next = Component.translatable(KEY_FREE_FUEL, clock(seconds));
+            Component next = Component.translatable(KEY_REFUEL, clock(seconds));
             g.drawString(font, next, imageWidth - 8 - font.width(next), inventoryLabelY, TEXT, false);
         }
         int pages = PocketBrewingMenu.pages(menu.bottles());

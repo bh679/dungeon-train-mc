@@ -49,12 +49,12 @@ changes at least one chip; previews read `→ N at K points`.
   ingredient slot and `1 + floor(r / 5)` bottle slots (wider than vanilla's 3 once past 10 points).
 - It keeps brewing on the server while the screen is closed. Its contents are saved with the player.
 - **Brew time** `20 s × 0.9^r` (vanilla 20 s; never 0, at least one tick).
-- **Free fuel:** one fuel (one brew, whatever the number of bottles) is added every
+- **Refuel:** one fuel (one brew, whatever the number of bottles) is added every
   `300 s × 0.9^(r − 1)` (5 min at 1 point), up to a full bar of 20. A blaze powder is still 20 fuel.
 
 **Ladder**
 
-| r | Bottle slots | Brew time | Free fuel every |
+| r | Bottle slots | Brew time | Refuel every |
 |---|---|---|---|
 | 1 | 1 | 18.0 s | 5.0 min |
 | 2 | 1 | 16.2 s | 4.5 min |
@@ -65,13 +65,13 @@ changes at least one chip; previews read `→ N at K points`.
 | 20 | 5 | 2.4 s | 41 s |
 | 30 | 7 | 0.8 s | 14 s |
 
-**Tick floor.** Brew time reaches a single tick at about 57 points and the free-fuel wait counts
+**Tick floor.** Brew time reaches a single tick at about 57 points and the refuel wait counts
 whole ticks, so from 67 points some points change no chip (the game's own limit, as 99 is for a stack).
 
 **Details card**
 - Description: "Your own brewing stand, opened from your inventory. It keeps brewing while you play."
 - Chips: `Bottle slots 1 → 2 at 5 points`, `Brew time 13.1s → 11.8s`,
-  `Free fuel every 3.6 min → 3.3 min`.
+  `Refuel every 3.6 min → 3.3 min`.
 
 ---
 

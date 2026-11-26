@@ -1,0 +1,18 @@
+{
+  "id": "alchemist-perks",
+  "version": "0.2048.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "ui"
+  ],
+  "title": "Alchemist perks: Stack Potions, Standless Brewing and Brewmaster",
+  "summary": "A new perk class, the Alchemist. Stack Potions lets identical potions stack in your inventory. Standless Brewing gives you your own brewing stand, opened from a button in your inventory, that keeps brewing while you play and refuels itself over time. Brewmaster makes the potions you brew come out stronger.",
+  "highlights": [],
+  "pr": 2917,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

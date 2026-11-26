@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * A player's pocket brewing stand (Standless Brewing): fuel slot, ingredient slot, then any number of
- * bottle slots, plus the stand's fuel, brew progress and free-fuel timer. It lives on the player as a data
+ * bottle slots, plus the stand's fuel, brew progress and refuel timer. It lives on the player as a data
  * attachment ({@code ModDataAttachments.POCKET_BREWING}), saved with them.
  *
  * <p>Mutable on purpose: it is the {@link Container} the menu's slots edit in place, as a placed stand's
@@ -33,7 +33,7 @@ public final class PocketBrewStand implements Container {
         Codec.INT.optionalFieldOf("brew_time", 0).forGetter(s -> s.brewTime),
         Codec.INT.optionalFieldOf("brew_total", 0).forGetter(s -> s.brewTotal),
         BuiltInRegistries.ITEM.byNameCodec().optionalFieldOf("brewing", Items.AIR).forGetter(s -> s.brewing),
-        Codec.INT.optionalFieldOf("free_fuel_ticks", 0).forGetter(s -> s.freeFuelTicks)
+        Codec.INT.optionalFieldOf("refuel_ticks", 0).forGetter(s -> s.refuelTicks)
     ).apply(i, PocketBrewStand::new));
 
     private NonNullList<ItemStack> items;
@@ -44,21 +44,21 @@ public final class PocketBrewStand implements Container {
     int brewTotal;
     /** The ingredient the brew in progress started with (vanilla stops a brew when it is swapped). */
     Item brewing = Items.AIR;
-    /** Ticks since the last free fuel. */
-    int freeFuelTicks;
+    /** Ticks since the last refuel. */
+    int refuelTicks;
 
     public PocketBrewStand() {
         this(List.of(), 0, 0, 0, Items.AIR, 0);
     }
 
-    private PocketBrewStand(List<ItemStack> saved, int fuel, int brewTime, int brewTotal, Item brewing, int freeFuelTicks) {
+    private PocketBrewStand(List<ItemStack> saved, int fuel, int brewTime, int brewTotal, Item brewing, int refuelTicks) {
         this.items = NonNullList.withSize(Math.max(FIRST_BOTTLE, saved.size()), ItemStack.EMPTY);
         for (int i = 0; i < saved.size(); i++) items.set(i, saved.get(i));
         this.fuel = Math.max(0, fuel);
         this.brewTime = Math.max(0, brewTime);
         this.brewTotal = Math.max(0, brewTotal);
         this.brewing = brewing;
-        this.freeFuelTicks = Math.max(0, freeFuelTicks);
+        this.refuelTicks = Math.max(0, refuelTicks);
     }
 
     private List<ItemStack> itemList() {
@@ -96,7 +96,7 @@ public final class PocketBrewStand implements Container {
         brewTime = 0;
         brewTotal = 0;
         brewing = Items.AIR;
-        freeFuelTicks = 0;
+        refuelTicks = 0;
         return out;
     }
 
@@ -104,7 +104,7 @@ public final class PocketBrewStand implements Container {
     public PocketBrewStand copy() {
         List<ItemStack> copied = new ArrayList<>();
         items.forEach(s -> copied.add(s.copy()));
-        return new PocketBrewStand(copied, fuel, brewTime, brewTotal, brewing, freeFuelTicks);
+        return new PocketBrewStand(copied, fuel, brewTime, brewTotal, brewing, refuelTicks);
     }
 
     public int fuel() {
@@ -119,8 +119,8 @@ public final class PocketBrewStand implements Container {
         return brewTotal;
     }
 
-    public int freeFuelTicks() {
-        return freeFuelTicks;
+    public int refuelTicks() {
+        return refuelTicks;
     }
 
     // ---- Container ---------------------------------------------------------------------------------

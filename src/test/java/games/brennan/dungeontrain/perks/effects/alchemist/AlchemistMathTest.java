@@ -53,30 +53,30 @@ class AlchemistMathTest {
     }
 
     @Test
-    void freeFuelStartsAtFiveMinutes() {
-        assertEquals(300.0, PocketBrewingMath.freeFuelSeconds(1), 0.05);
-        assertEquals(270.0, PocketBrewingMath.freeFuelSeconds(2), 0.05);
-        assertEquals(218.7, PocketBrewingMath.freeFuelSeconds(4), 0.05);
-        assertEquals(116.2, PocketBrewingMath.freeFuelSeconds(10), 0.1);
-        assertEquals(40.5, PocketBrewingMath.freeFuelSeconds(20), 0.1);
-        assertEquals(1, PocketBrewingMath.freeFuelTicks(10_000));
+    void refuelStartsAtFiveMinutes() {
+        assertEquals(300.0, PocketBrewingMath.refuelSeconds(1), 0.05);
+        assertEquals(270.0, PocketBrewingMath.refuelSeconds(2), 0.05);
+        assertEquals(218.7, PocketBrewingMath.refuelSeconds(4), 0.05);
+        assertEquals(116.2, PocketBrewingMath.refuelSeconds(10), 0.1);
+        assertEquals(40.5, PocketBrewingMath.refuelSeconds(20), 0.1);
+        assertEquals(1, PocketBrewingMath.refuelTicks(10_000));
     }
 
-    /** Up to the game's tick floor: from 67 points brew time and the free-fuel wait are a few ticks long. */
+    /** Up to the game's tick floor: from 67 points brew time and the refuel wait are a few ticks long. */
     @Test
     void everyPointChangesAStandlessBrewingChip() {
         for (int r = 1; r < 66; r++) {
             assertTrue(PocketBrewingMath.brewTicks(r) != PocketBrewingMath.brewTicks(r + 1)
-                    || PocketBrewingMath.freeFuelTicks(r) != PocketBrewingMath.freeFuelTicks(r + 1)
+                    || PocketBrewingMath.refuelTicks(r) != PocketBrewingMath.refuelTicks(r + 1)
                     || PocketBrewingMath.bottleSlots(r) != PocketBrewingMath.bottleSlots(r + 1),
                 "point " + (r + 1) + " changes nothing");
         }
     }
 
     @Test
-    void freeFuelChipReadsMinutesThenSeconds() {
-        assertEquals(PerkStats.num(5.0, PerkStats.Unit.MINUTES), AlchemistPerks.freeFuelChip(1));
-        PerkStats.Num late = (PerkStats.Num) AlchemistPerks.freeFuelChip(20);
+    void refuelChipReadsMinutesThenSeconds() {
+        assertEquals(PerkStats.num(5.0, PerkStats.Unit.MINUTES), AlchemistPerks.refuelChip(1));
+        PerkStats.Num late = (PerkStats.Num) AlchemistPerks.refuelChip(20);
         assertEquals(PerkStats.Unit.SECONDS, late.unit());
         assertEquals(40.5, late.value(), 0.1);
     }

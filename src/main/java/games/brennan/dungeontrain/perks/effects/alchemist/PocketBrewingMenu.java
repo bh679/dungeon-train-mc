@@ -39,7 +39,7 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
     public static final int SLOT = 18;
     public static final int WIDTH = 176;
 
-    static final int DATA_FUEL = 0, DATA_BREW_TIME = 1, DATA_BREW_TOTAL = 2, DATA_FREE_FUEL_SECONDS = 3, DATA_COUNT = 4;
+    static final int DATA_FUEL = 0, DATA_BREW_TIME = 1, DATA_BREW_TOTAL = 2, DATA_REFUEL_SECONDS = 3, DATA_COUNT = 4;
 
     private final Container stand;
     private final ContainerData data;
@@ -93,7 +93,7 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
         return new PocketBrewingMenu(containerId, inventory, standIn, bottles, new SimpleContainerData(DATA_COUNT));
     }
 
-    /** The server's live numbers for the screen: fuel, brew progress, seconds to the next free fuel. */
+    /** The server's live numbers for the screen: fuel, brew progress, seconds to the next refuel. */
     static ContainerData data(ServerPlayer player, PocketBrewStand stand) {
         return new ContainerData() {
             @Override
@@ -102,10 +102,10 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
                     case DATA_FUEL -> stand.fuel();
                     case DATA_BREW_TIME -> stand.brewTime();
                     case DATA_BREW_TOTAL -> stand.brewTotal();
-                    case DATA_FREE_FUEL_SECONDS -> {
+                    case DATA_REFUEL_SECONDS -> {
                         if (stand.fuel() >= PocketBrewingMath.FUEL_MAX) yield -1;
                         int rank = Perks.rank(player, AlchemistPerks.STANDLESS_BREWING);
-                        int left = PocketBrewingMath.freeFuelTicks(rank) - stand.freeFuelTicks();
+                        int left = PocketBrewingMath.refuelTicks(rank) - stand.refuelTicks();
                         yield Math.max(0, (left + 19) / 20);
                     }
                     default -> 0;
@@ -181,9 +181,9 @@ public final class PocketBrewingMenu extends AbstractContainerMenu {
         return data.get(DATA_BREW_TOTAL);
     }
 
-    /** Seconds to the next free fuel; -1 with a full bar. */
-    public int freeFuelSeconds() {
-        return data.get(DATA_FREE_FUEL_SECONDS);
+    /** Seconds to the next refuel; -1 with a full bar. */
+    public int refuelSeconds() {
+        return data.get(DATA_REFUEL_SECONDS);
     }
 
     // ---- behaviour ---------------------------------------------------------------------------------

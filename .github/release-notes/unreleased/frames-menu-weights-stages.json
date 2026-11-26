@@ -1,0 +1,17 @@
+{
+  "id": "frames-menu-weights-stages",
+  "version": "0.2049.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor"
+  ],
+  "title": "Editor: more templates show spawn settings",
+  "summary": "In the editor, another template list now shows each template's weight, level range, bands, dates and Stage, and lets you change them right there like the other lists.",
+  "highlights": [],
+  "pr": 2918,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

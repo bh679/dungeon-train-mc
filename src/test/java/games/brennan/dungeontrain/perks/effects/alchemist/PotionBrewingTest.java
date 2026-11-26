@@ -99,12 +99,12 @@ class PotionBrewingTest {
     }
 
     @Test
-    void freeFuelArrivesOnItsClockUpToAFullBar() {
+    void refuelArrivesOnItsClockUpToAFullBar() {
         PocketBrewStand s = stand(1);
-        for (int t = 0; t < PocketBrewingMath.freeFuelTicks(3); t++) PocketBrewing.tick(s, 3, MIXER, b -> b);
+        for (int t = 0; t < PocketBrewingMath.refuelTicks(3); t++) PocketBrewing.tick(s, 3, MIXER, b -> b);
         assertEquals(1, s.fuel());
         s.fuel = PocketBrewingMath.FUEL_MAX;
-        for (int t = 0; t < PocketBrewingMath.freeFuelTicks(3) * 2; t++) PocketBrewing.tick(s, 3, MIXER, b -> b);
+        for (int t = 0; t < PocketBrewingMath.refuelTicks(3) * 2; t++) PocketBrewing.tick(s, 3, MIXER, b -> b);
         assertEquals(PocketBrewingMath.FUEL_MAX, s.fuel());
     }
 
@@ -112,7 +112,7 @@ class PotionBrewingTest {
     void withoutThePerkNothingTicks() {
         PocketBrewStand s = stand(1);
         PocketBrewing.tick(s, 0, MIXER, b -> b);
-        assertEquals(0, s.freeFuelTicks());
+        assertEquals(0, s.refuelTicks());
     }
 
     @Test
