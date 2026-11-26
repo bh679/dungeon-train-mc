@@ -1,0 +1,18 @@
+{
+  "id": "warlock-perks",
+  "version": "0.2053.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "multiplayer",
+    "mobs"
+  ],
+  "title": "Warlock perks: Throwables, Teleport Player, Sacrificial Lightning and Convert Mob",
+  "summary": "The Warlock class gets its perks. Throwables makes snowballs, eggs and wind charges hurt, and lets you throw slimeballs and fire charges too. Teleport Player calls a friend to you, or a PlayerMob you met this life if it is willing to come. Sacrificial Lightning strikes a mob you look at for a price paid in your own hearts, and the bolt grows with every point. Convert Mob turns a hostile mob to your side for a while. None of them have a cap.",
+  "highlights": [],
+  "pr": 2922,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
