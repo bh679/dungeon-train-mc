@@ -19,6 +19,10 @@
       "chat.dungeontrain.perks.active_gained",
       "gui.dungeontrain.perks.refused.no_active",
       "perk.dungeontrain.save-ally.desc",
+      "perk.dungeontrain.throwables.desc",
+      "perk.dungeontrain.teleport-player.desc",
+      "perk.dungeontrain.summon-lightning.desc",
+      "perk.dungeontrain.convert-mob.desc",
       "perk.dungeontrain.reroll-trades.name",
       "perk.dungeontrain.reroll-trades.desc"
     ],
