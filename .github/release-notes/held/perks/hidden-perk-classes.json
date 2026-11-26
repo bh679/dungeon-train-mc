@@ -1,0 +1,17 @@
+{
+  "id": "hidden-perk-classes",
+  "version": "0.2050.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Some perk classes start hidden",
+  "summary": "Not every perk class shows at first. Unlock a tier 1 perk beside a hidden class and it appears in the perks menu, ready to unlock. The classes you can see spread evenly round the Engine, with no gaps where the hidden ones would be.",
+  "highlights": [],
+  "pr": 2919,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

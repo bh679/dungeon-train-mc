@@ -13,7 +13,7 @@ import java.util.TreeSet;
  * Where the stars are drawn when only some classes are on the circle (the web page's {@code shown()}
  * and {@code drawn()}). Display only: the tree's own positions never change.
  *
- * <p>The classes on the circle share it: each gets an equal sector in their authored order round the
+ * <p>The classes on the circle share it: each gets an equal sector, centred on its tier 1 star, in their authored order round the
  * Engine (a class shown only because points are held gets {@link ClassVisibility#EXTRA_SHARE} of a
  * share), and its perks turn together about the Engine to the sector's centre, keeping their distances
  * and the class's shape, spread to {@link #FILL} of the share but never past {@link #MAX_SPREAD} of the
@@ -119,7 +119,15 @@ final class SkyLayout {
             double mean = Math.atan2(sy, sx), lo = Double.MAX_VALUE, hi = -Double.MAX_VALUE;
             for (PerkTree.Perk p : ps) { double o = wrap(angle(p) - mean); lo = Math.min(lo, o); hi = Math.max(hi, o); }
             double weight = vis.anchored(c.id()) ? 1 : ClassVisibility.EXTRA_SHARE;
-            groups.add(new Group(c.id(), wrap(mean + (lo + hi) / 2), (hi - lo) / 2, weight));
+            // centred on the tier 1 star, so the visible tier 1s ring the Engine evenly; else the spread's middle
+            PerkTree.Perk t1 = ps.stream().filter(p -> p.tier() == 1).findFirst().orElse(null);
+            if (t1 == null) {
+                groups.add(new Group(c.id(), wrap(mean + (lo + hi) / 2), (hi - lo) / 2, weight));
+            } else {
+                double anchor = angle(t1), half = 0;
+                for (PerkTree.Perk p : ps) half = Math.max(half, Math.abs(wrap(angle(p) - anchor)));
+                groups.add(new Group(c.id(), anchor, half, weight));
+            }
         }
         if (groups.isEmpty()) return Collections.emptyMap();
         groups.sort((a, b) -> Double.compare(a.mid(), b.mid()));
