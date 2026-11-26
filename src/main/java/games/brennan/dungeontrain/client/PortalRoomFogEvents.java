@@ -124,6 +124,8 @@ public final class PortalRoomFogEvents {
         ClientPortalRoomDepth.reset();
         // Its dimension line too, so one world's band never labels the next.
         ClientBandDimension.reset();
+        // And the train's plot readout offset, so one world's train never offsets the next one's readouts.
+        ClientPlotReadoutOffset.reset();
         // And the portal prewarm's destination, which is the same shape of live value as the
         // corridor hold: a client that logs out mid-corridor would otherwise spend the next world's
         // first seconds building chunks around a place that is not there any more.

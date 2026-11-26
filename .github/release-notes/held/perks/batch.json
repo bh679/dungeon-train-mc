@@ -35,7 +35,9 @@
     2811,
     2817,
     2845,
-    2849
+    2849,
+    2910,
+    2913
   ],
   "entries": [
     "cosmic-apple-every-level",
@@ -44,6 +46,7 @@
     "death-kit-arrives-equipped",
     "death-perks-next-after-last-point",
     "knight-combat-perks",
+    "lover-perks",
     "nap-sky-past-life-perks",
     "perk-apples-depth-curve",
     "perk-aura-apple-tooltips",
@@ -65,6 +68,7 @@
     "perks-tier-one",
     "perks-tree-v18",
     "perks-unlock-after-death",
+    "tank-hoarder-speedster-builder-perks",
     "trader-perks-reduced-reduction-restock",
     "tribute-room-bigger-tv",
     "tribute-room-pause-reboard",

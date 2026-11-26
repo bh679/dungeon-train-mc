@@ -209,6 +209,23 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /** Aura perks' draws this life (perks/aura). Per life: not {@code copyOnDeath}, so a new life rolls again. */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.aura.AuraState.Draws>> PERK_AURA_DRAWS =
+        TYPES.register("perk_aura_draws",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.aura.AuraState.Draws>builder(games.brennan.dungeontrain.perks.aura.AuraState.Draws::empty)
+                .serialize(games.brennan.dungeontrain.perks.aura.AuraState.Draws.CODEC, d -> !d.isEmpty())
+                .build()
+        );
+
+    /** Aura effects the player switched off; {@code copyOnDeath}, so the choice outlives the life. */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.aura.AuraState.Toggles>> PERK_AURA_TOGGLES =
+        TYPES.register("perk_aura_toggles",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.aura.AuraState.Toggles>builder(games.brennan.dungeontrain.perks.aura.AuraState.Toggles::empty)
+                .serialize(games.brennan.dungeontrain.perks.aura.AuraState.Toggles.CODEC, t -> !t.isEmpty())
+                .copyOnDeath()
+                .build()
+        );
+
     /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it

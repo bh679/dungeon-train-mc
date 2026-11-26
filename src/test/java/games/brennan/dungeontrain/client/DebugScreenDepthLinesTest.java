@@ -163,4 +163,39 @@ class DebugScreenDepthLinesTest {
         assertEquals("Block: 0 78 0 [0 14 0]",
             DebugScreenDepthLines.shift("Block: 136 -102 -70 [8 10 10]", 136, BLOCK_Y, -70, CENTRED));
     }
+
+    @Test
+    @DisplayName("a Targeted Block on a carriage comes in by the spawn offset on X and Z, Y kept")
+    void carriageTargetMoved() {
+        List<String> lines = List.of("Targeted Block: 20481027, 127, 20495368", "minecraft:oak_door");
+        List<String> out = DebugScreenDepthLines.carriageTargetsMoved(lines, (x, y, z) -> true, 20_480_700L, 20_495_365L);
+        assertEquals(List.of("Targeted Block: 327, 127, 3", "minecraft:oak_door"), out);
+    }
+
+    @Test
+    @DisplayName("the fluid line, with vanilla's underline code in front, moves the same way")
+    void carriageFluidMoved() {
+        List<String> out = DebugScreenDepthLines.carriageTargetsMoved(
+            List.of("\u00a7nTargeted Fluid: 20481027, 64, 20495368"), (x, y, z) -> true,
+            MapReadoutText.PLOT_OFFSET, MapReadoutText.PLOT_OFFSET);
+        assertEquals(List.of("\u00a7nTargeted Fluid: -18973, 64, -4632"), out);
+    }
+
+    @Test
+    @DisplayName("a target off any carriage, or any other line, is the same list back")
+    void offCarriageUntouched() {
+        List<String> lines = List.of("Targeted Block: 12, 64, -5", "XYZ: 1.000 / 2.00000 / 3.000");
+        assertSame(lines, DebugScreenDepthLines.carriageTargetsMoved(lines, (x, y, z) -> false, 1L, 1L));
+    }
+
+    @Test
+    @DisplayName("the carriage test is asked about the printed position")
+    void testSeesPlotPosition() {
+        int[] seen = new int[3];
+        DebugScreenDepthLines.carriageTargetsMoved(List.of("Targeted Block: 20481027, 127, 20495368"),
+            (x, y, z) -> { seen[0] = x; seen[1] = y; seen[2] = z; return false; }, 0L, 0L);
+        assertEquals(20_481_027, seen[0]);
+        assertEquals(127, seen[1]);
+        assertEquals(20_495_368, seen[2]);
+    }
 }
