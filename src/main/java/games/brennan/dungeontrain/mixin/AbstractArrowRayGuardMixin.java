@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.ship.sable.ArrowRayGuardHooks;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.phys.BlockHitResult;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,20 +24,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AbstractArrow.class)
 public abstract class AbstractArrowRayGuardMixin {
 
+    @Shadow
+    protected boolean inGround;
+
+    /** One log line per arrow per kind, so a re-homed arrow still logs a later absurd ray. */
     @Unique
-    private boolean dungeontrain$rayGuardLogged;
+    private boolean dungeontrain$tickGuardLogged;
+
+    @Unique
+    private boolean dungeontrain$rehomeLogged;
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void dungeontrain$guardRay(CallbackInfo ci) {
-        if (ArrowRayGuardHooks.guardTick((AbstractArrow) (Object) this, this.dungeontrain$rayGuardLogged)) {
-            this.dungeontrain$rayGuardLogged = true;
+        if (ArrowRayGuardHooks.guardTick((AbstractArrow) (Object) this, this.inGround, this.dungeontrain$tickGuardLogged)) {
+            this.dungeontrain$tickGuardLogged = true;
         }
     }
 
     @Inject(method = "onHitBlock", at = @At("HEAD"))
     private void dungeontrain$rehomeBeforeHit(BlockHitResult result, CallbackInfo ci) {
-        if (ArrowRayGuardHooks.rehomeBeforeHitBlock((AbstractArrow) (Object) this, this.dungeontrain$rayGuardLogged)) {
-            this.dungeontrain$rayGuardLogged = true;
+        if (ArrowRayGuardHooks.rehomeBeforeHitBlock((AbstractArrow) (Object) this, this.inGround, this.dungeontrain$rehomeLogged)) {
+            this.dungeontrain$rehomeLogged = true;
         }
     }
 }

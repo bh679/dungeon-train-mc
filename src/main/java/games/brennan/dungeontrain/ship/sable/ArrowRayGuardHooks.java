@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.ship.sable;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.util.DtLogging;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -39,7 +40,7 @@ public final class ArrowRayGuardHooks {
     private ArrowRayGuardHooks() {}
 
     /** @return true when the guard changed the arrow (its delta was zeroed). */
-    public static boolean guardTick(AbstractArrow arrow, boolean alreadyLogged) {
+    public static boolean guardTick(AbstractArrow arrow, boolean inGround, boolean alreadyLogged) {
         if (arrow.isNoPhysics()) return false;
         Level level = arrow.level();
         Vec3 from = arrow.position();
@@ -47,7 +48,7 @@ public final class ArrowRayGuardHooks {
         ArrowRayGuard.Verdict verdict = ArrowRayGuard.verdict(from, delta, pos -> toWorld(level, pos));
         if (verdict == ArrowRayGuard.Verdict.OK) return false;
         if (!alreadyLogged) {
-            log(verdict.name(), arrow, from, delta);
+            log(verdict.name(), arrow, inGround, from, delta);
         }
         if (!LOG_ONLY) {
             arrow.setDeltaMovement(Vec3.ZERO);
@@ -56,13 +57,13 @@ public final class ArrowRayGuardHooks {
     }
 
     /** @return true when the arrow was moved from plot space to world space. */
-    public static boolean rehomeBeforeHitBlock(AbstractArrow arrow, boolean alreadyLogged) {
+    public static boolean rehomeBeforeHitBlock(AbstractArrow arrow, boolean inGround, boolean alreadyLogged) {
         Level level = arrow.level();
         Vec3 pos = arrow.position();
         SubLevel sub = containing(level, pos);
         if (sub == null) return false;
         if (!alreadyLogged) {
-            log("REHOME", arrow, pos, arrow.getDeltaMovement());
+            log("REHOME", arrow, inGround, pos, arrow.getDeltaMovement());
         }
         if (!LOG_ONLY) {
             Vec3 world = sub.logicalPose().transformPosition(pos);
@@ -82,15 +83,17 @@ public final class ArrowRayGuardHooks {
         return Sable.HELPER.getContaining(level, pos);
     }
 
-    private static void log(String what, AbstractArrow arrow, Vec3 from, Vec3 delta) {
+    private static void log(String what, AbstractArrow arrow, boolean inGround, Vec3 from, Vec3 delta) {
         if (!takeLogSlot(System.currentTimeMillis())) return;
         Level level = arrow.level();
         Vec3 to = from.add(delta);
         SubLevel fromSub = containing(level, from);
         SubLevel toSub = containing(level, to);
-        LOGGER.info("[arrow-ray-guard] {}{} side={} type={} id={} pos={} delta={} projFrom={} projTo={} fromSub={} toSub={}",
+        Entity owner = arrow.getOwner();
+        LOGGER.info("[arrow-ray-guard] {}{} side={} type={} id={} owner={} inGround={} pos={} delta={} projFrom={} projTo={} fromSub={} toSub={}",
                 what, LOG_ONLY ? "(log-only)" : "", level.isClientSide ? "client" : "server",
                 arrow.getType().builtInRegistryHolder().key().location(), arrow.getId(),
+                owner == null ? "none" : owner.getType().builtInRegistryHolder().key().location(), inGround,
                 fmt(from), fmt(delta), fmt(toWorld(level, from)), fmt(toWorld(level, to)),
                 fromSub == null ? "none" : fromSub.getUniqueId(),
                 toSub == null ? "none" : toSub.getUniqueId());
