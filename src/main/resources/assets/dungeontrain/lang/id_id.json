@@ -5583,6 +5583,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Buang",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Berhenti menawarkan ini. Dunianya sendiri tidak disentuh.",
   "gui.dungeontrain.crash_recovery.open_failed": "Dunia itu tidak bisa dibuka — crash mungkin merusak save-nya. Tidak ada yang diubah atau dihapus.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Game-mu crash, tapi kami menyimpan inventarismu dan tempatmu di kereta. Naik kembali untuk lanjut bermain.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Perjalanan penyelamatan — dunia ini crash dan akan bermasalah",
   "gui.dungeontrain.crash_recovery.hud.hint": "Simpan di Peti Ender, lalu tekan Esc → Mulai Perjalanan Baru",
   "gui.dungeontrain.crash_recovery.fresh_run": "Mulai Perjalanan Baru",

@@ -5646,6 +5646,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Verwerfen",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Das nicht mehr anbieten. Die Welt selbst bleibt unangetastet.",
   "gui.dungeontrain.crash_recovery.open_failed": "Diese Welt ließ sich nicht öffnen — der Absturz hat den Spielstand vielleicht beschädigt. Nichts wurde geändert oder gelöscht.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Dein Spiel ist abgestürzt, aber wir haben dein Inventar und deinen Platz im Zug gesichert. Steig wieder ein, um weiterzuspielen.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Bergungspartie — diese Welt ist abgestürzt und wird fehlerhaft sein",
   "gui.dungeontrain.crash_recovery.hud.hint": "In eine Endertruhe einlagern, dann Esc → Neue Partie starten",
   "gui.dungeontrain.crash_recovery.fresh_run": "Neue Partie starten",

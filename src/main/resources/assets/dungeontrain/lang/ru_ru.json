@@ -5709,6 +5709,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Отклонить",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Больше не предлагать. Сам мир остаётся нетронутым.",
   "gui.dungeontrain.crash_recovery.open_failed": "Тот мир не открылся — сбой мог повредить сохранение. Ничего не изменено и не удалено.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Игра вылетела, но мы сохранили ваш инвентарь и ваше место в поезде. Снова в путь, чтобы продолжить игру.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "ОК",
   "gui.dungeontrain.crash_recovery.hud": "Спасательный забег — этот мир оборвался и будет глючить",
   "gui.dungeontrain.crash_recovery.hud.hint": "Сложите вещи в эндер-сундук, затем Esc → Начать новый забег",
   "gui.dungeontrain.crash_recovery.fresh_run": "Начать новый забег",

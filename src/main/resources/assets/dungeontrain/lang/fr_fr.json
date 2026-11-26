@@ -5646,6 +5646,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Ignorer",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Ne plus proposer ceci. Le monde lui-même n'est pas touché.",
   "gui.dungeontrain.crash_recovery.open_failed": "Ce monde n'a pas pu s'ouvrir — le plantage a peut-être abîmé la sauvegarde. Rien n'a été modifié ni supprimé.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Ton jeu a planté, mais on a sauvegardé ton inventaire et ta place dans le train. Remonte à bord pour continuer à jouer.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Partie de récupération — ce monde a planté et sera bogué",
   "gui.dungeontrain.crash_recovery.hud.hint": "Range tes affaires dans un coffre de l'Ender, puis Échap → Nouvelle partie",
   "gui.dungeontrain.crash_recovery.fresh_run": "Nouvelle partie",

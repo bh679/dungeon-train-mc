@@ -68,6 +68,6 @@ public final class JourneyMapMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        LOGGER.info("[DungeonTrain] JourneyMap portal-seal map filter applied to {}", targetClassName);
+        LOGGER.info("[DungeonTrain] JourneyMap hook {} applied to {}", mixinClassName, targetClassName);
     }
 }

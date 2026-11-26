@@ -354,6 +354,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Відкинути",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Більше не пропонувати цього. Сам світ залишиться як є.",
   "gui.dungeontrain.crash_recovery.open_failed": "Цей світ не відкрився — збій міг пошкодити збереження. Нічого не змінено й не видалено.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Гра аварійно закрилася, але ми зберегли твій інвентар і твоє місце в поїзді. Сядь знову, щоб грати далі.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "Гаразд",
   "gui.dungeontrain.crash_recovery.hud": "Рятувальний забіг — цей світ зазнав збою й буде глючити",
   "gui.dungeontrain.crash_recovery.hud.hint": "Сховай речі в скриню Краю, а тоді натисни Esc → Почати новий забіг",
   "gui.dungeontrain.crash_recovery.fresh_run": "Почати новий забіг",

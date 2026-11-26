@@ -5646,6 +5646,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Scarta",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Smetti di proporlo. Il mondo in sé resta com'è.",
   "gui.dungeontrain.crash_recovery.open_failed": "Quel mondo non si è aperto: il crash potrebbe aver danneggiato il salvataggio. Non è stato cambiato né cancellato nulla.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Il gioco è andato in crash, ma abbiamo salvato il tuo inventario e il tuo posto sul treno. Risali a bordo per continuare a giocare.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "OK",
   "gui.dungeontrain.crash_recovery.hud": "Partita di recupero — questo mondo è andato in crash e avrà dei bug",
   "gui.dungeontrain.crash_recovery.hud.hint": "Metti tutto in un baule dell'End, poi premi Esc → Nuova partita",
   "gui.dungeontrain.crash_recovery.fresh_run": "Nuova partita",

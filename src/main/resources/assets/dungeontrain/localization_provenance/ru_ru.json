@@ -4915,6 +4915,8 @@
       "gui.dungeontrain.crash_recovery.discard",
       "gui.dungeontrain.crash_recovery.discard.tooltip",
       "gui.dungeontrain.crash_recovery.open_failed",
+      "gui.dungeontrain.crash_recovery.recovered.body",
+      "gui.dungeontrain.crash_recovery.recovered.ok",
       "gui.dungeontrain.crash_recovery.hud",
       "gui.dungeontrain.crash_recovery.hud.hint",
       "gui.dungeontrain.crash_recovery.fresh_run",

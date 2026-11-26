@@ -5646,6 +5646,8 @@
   "gui.dungeontrain.crash_recovery.discard": "Descartar",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "Dejar de ofrecer esto. El mundo en sí no se toca.",
   "gui.dungeontrain.crash_recovery.open_failed": "Ese mundo no se pudo abrir: puede que el cierre haya dañado la partida guardada. No se cambió ni se borró nada.",
+  "gui.dungeontrain.crash_recovery.recovered.body": "Tu juego se cerró de golpe, pero guardamos tu inventario y tu lugar en el tren. Vuelve a subir para seguir jugando.",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "Aceptar",
   "gui.dungeontrain.crash_recovery.hud": "Partida de rescate: este mundo se cerró de golpe y tendrá fallas",
   "gui.dungeontrain.crash_recovery.hud.hint": "Guarda en un cofre de ender y presiona Esc → Empezar partida nueva",
   "gui.dungeontrain.crash_recovery.fresh_run": "Empezar partida nueva",

@@ -5597,6 +5597,8 @@
   "gui.dungeontrain.crash_recovery.discard": "放弃",
   "gui.dungeontrain.crash_recovery.discard.tooltip": "不再提示此项。世界本身不会被改动。",
   "gui.dungeontrain.crash_recovery.open_failed": "那个世界打不开，崩溃可能损坏了存档。没有任何改动或删除。",
+  "gui.dungeontrain.crash_recovery.recovered.body": "游戏崩溃了，但我们保存了你的物品栏和你在列车上的位置。重新登车即可继续游玩。",
+  "gui.dungeontrain.crash_recovery.recovered.ok": "确定",
   "gui.dungeontrain.crash_recovery.hud": "物品抢救中：此世界曾发生崩溃，会存在异常",
   "gui.dungeontrain.crash_recovery.hud.hint": "将物品存入末影箱，然后按 Esc → 开始新旅程",
   "gui.dungeontrain.crash_recovery.fresh_run": "开始新旅程",
