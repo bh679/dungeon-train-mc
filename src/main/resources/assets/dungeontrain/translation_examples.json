@@ -18816,6 +18816,73 @@
       ]
     }
   },
+  "gui.dungeontrain.perks.stat.level_always": {
+    "1": {
+      "label": "how many effect levels are added, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.level_chance": {
+    "1": {
+      "label": "how many effect levels are added, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.next_at": {
+    "1": {
+      "label": "a number of perk points",
+      "examples": [
+        "5",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.fuel": {
+    "1": {
+      "label": "fuel left, a whole number",
+      "examples": [
+        "12",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a full fuel bar, a whole number",
+      "examples": [
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.free_fuel": {
+    "1": {
+      "label": "a countdown in minutes and seconds",
+      "examples": [
+        "2:41",
+        "0:09"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.page": {
+    "1": {
+      "label": "the page shown, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "how many pages there are, a whole number",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.stat.looting_always": {
     "1": {
       "label": "how many extra Looting levels, a number",
