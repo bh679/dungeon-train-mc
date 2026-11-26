@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.perks.effects.knight;
 
 import games.brennan.dungeontrain.perks.BuiltPerks;
+import games.brennan.dungeontrain.perks.PerkOverflow;
 import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkStats.Unit;
 import net.minecraft.network.chat.Component;
@@ -48,16 +49,9 @@ public final class KnightPerks {
         PerkStats.register(VAMPIRISM, "heal_chance", r -> PerkStats.num(vampirismPercent(r), Unit.PERCENT));
     }
 
-    /**
-     * Rolls an overflow percentage: {@code percent / 100} guaranteed steps plus a
-     * {@code percent % 100} chance of one more.
-     */
+    /** One overflow roll ({@link PerkOverflow#rollSteps}); kept for the Knight tests. */
     static int rollSteps(int percent, RandomSource random) {
-        if (percent <= 0) return 0;
-        int steps = percent / 100;
-        int remainder = percent % 100;
-        if (remainder > 0 && random.nextInt(100) < remainder) steps++;
-        return steps;
+        return PerkOverflow.rollSteps(percent, random);
     }
 
     /** Crit percentage at {@code rank}: 1% per rank, uncapped. */
