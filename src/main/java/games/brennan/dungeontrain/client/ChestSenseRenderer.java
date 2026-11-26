@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Chest Sense's outlines: a gold box around every container in the last pulse
+ * Chest Sense's outlines and ring: a gold box around every container in the last pulse
  * ({@link ChestSenseClientState}), drawn without a depth test so it shows through walls, fading as
  * the glow ends. Containers on a carriage are plot-local and placed through their sub-level's
  * {@link ClientSubLevel#renderPose(float)}, the pose Sable draws the carriage with, so the boxes ride
@@ -53,7 +53,28 @@ public final class ChestSenseRenderer {
         {0, 4}, {1, 5}, {2, 6}, {3, 7},
     };
 
+    /** Particles in the ring, spread evenly around the player. */
+    private static final int RING_POINTS = 40;
+
     private ChestSenseRenderer() {}
+
+    /**
+     * The pulse's ring: each client tick for the first second after a pulse, a circle of particles at
+     * the player's feet whose radius grows from 0 to the range ({@link ChestSenseClientState#ringRadius}).
+     */
+    @SubscribeEvent
+    public static void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
+        float radius = ChestSenseClientState.ringRadius();
+        if (radius <= 0F) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.player == null || mc.isPaused()) return;
+        Vec3 at = mc.player.position();
+        for (int i = 0; i < RING_POINTS; i++) {
+            double angle = Math.PI * 2.0 * i / RING_POINTS;
+            mc.level.addParticle(net.minecraft.core.particles.ParticleTypes.WAX_ON,
+                at.x + Math.cos(angle) * radius, at.y + 0.2, at.z + Math.sin(angle) * radius, 0.0, 0.0, 0.0);
+        }
+    }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {

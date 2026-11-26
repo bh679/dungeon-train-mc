@@ -1,0 +1,17 @@
+{
+  "id": "lover-perks",
+  "version": "0.2044.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "multiplayer"
+  ],
+  "title": "Lover perks: Share Hearts, Aura, Spare Enemies and Save Ally",
+  "summary": "The Lover class gets its last four perks. Share Hearts lets you give some of your own health to a friend or a pet. Aura gives friends and pets near you buffs, and you can switch any of them off in the perks menu. Spare Enemies makes hostile mobs you leave at low health run away, and you still get their XP. Save Ally saves a friend who dies near you, like a totem would, once in a while. None of them have a cap.",
+  "highlights": [],
+  "pr": 2913,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

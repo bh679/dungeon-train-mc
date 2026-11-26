@@ -43,7 +43,11 @@ public record ChunkFrameRoomsRequestPacket(String frame) implements CustomPacket
         ChunkFrameMeta meta = ChunkFrameMetaStore.get(frame);
         List<String> rooms = ChunkFrame.chunkRooms(frame);
         List<String> selected = rooms.stream().filter(meta::appliesTo).toList();
+        // The ground row shows one block: the palette's first candidate, or the grass it defaults to.
+        String ground = meta.ground().isEmpty() ? ChunkFrameMeta.DEFAULT_GROUND_BLOCK
+            : net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                .getKey(meta.ground().get(0).state().getBlock()).toString();
         return new ChunkFrameRoomsSyncPacket(frame, rooms, selected, meta.allRooms(), meta.weight(),
-            meta.dimension().id());
+            meta.dimension().id(), meta.doorDistance(), ground);
     }
 }

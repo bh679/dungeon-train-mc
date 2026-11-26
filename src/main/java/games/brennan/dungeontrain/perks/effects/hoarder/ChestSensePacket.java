@@ -11,11 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Server to client: one Chest Sense pulse, the containers found and how many ticks to outline them
- * ({@link ChestSenseClientState}). At most {@value #MAX_ENTRIES} entries; a pulse that finds more
+ * Server to client: one Chest Sense pulse: the containers found, how many ticks to outline them
+ * and the range the particle ring spreads to ({@link ChestSenseClientState}). At most {@value #MAX_ENTRIES} entries; a pulse that finds more
  * shows the first ones found.
  */
-public record ChestSensePacket(int durationTicks, List<ChestSense.Sensed> sensed) implements CustomPacketPayload {
+public record ChestSensePacket(int durationTicks, float range, List<ChestSense.Sensed> sensed) implements CustomPacketPayload {
 
     static final int MAX_ENTRIES = 512;
 
@@ -31,6 +31,7 @@ public record ChestSensePacket(int durationTicks, List<ChestSense.Sensed> sensed
 
     private static void write(FriendlyByteBuf buf, ChestSensePacket p) {
         buf.writeVarInt(p.durationTicks);
+        buf.writeFloat(p.range);
         buf.writeVarInt(p.sensed.size());
         for (ChestSense.Sensed s : p.sensed) {
             buf.writeBoolean(s.subLevel() != null);
@@ -41,13 +42,14 @@ public record ChestSensePacket(int durationTicks, List<ChestSense.Sensed> sensed
 
     private static ChestSensePacket read(FriendlyByteBuf buf) {
         int duration = buf.readVarInt();
+        float range = buf.readFloat();
         int count = Math.min(buf.readVarInt(), MAX_ENTRIES);
         List<ChestSense.Sensed> list = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             java.util.UUID sub = buf.readBoolean() ? buf.readUUID() : null;
             list.add(new ChestSense.Sensed(sub, buf.readBlockPos()));
         }
-        return new ChestSensePacket(duration, list);
+        return new ChestSensePacket(duration, range, list);
     }
 
     @Override
@@ -56,6 +58,6 @@ public record ChestSensePacket(int durationTicks, List<ChestSense.Sensed> sensed
     }
 
     public static void handle(ChestSensePacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> ChestSenseClientState.set(packet.sensed(), packet.durationTicks()));
+        ctx.enqueueWork(() -> ChestSenseClientState.set(packet.sensed(), packet.durationTicks(), packet.range()));
     }
 }

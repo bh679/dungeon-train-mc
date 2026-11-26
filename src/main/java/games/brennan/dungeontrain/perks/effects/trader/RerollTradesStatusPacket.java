@@ -9,10 +9,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server to client: how many Reroll Trades charges the player has left on the villager behind
- * trade menu {@code containerId}. Sent when the menu opens (only with the perk active) and after
+ * trade menu {@code containerId}, what the next one costs in emeralds (0 = free). The
+ * client judges whether the player can pay from its own copy of the inventory. Sent when the menu opens (only with the perk active) and after
  * each reroll; the menu's Reroll button shows it ({@link RerollTradesClientState}).
  */
-public record RerollTradesStatusPacket(int containerId, int remaining) implements CustomPacketPayload {
+public record RerollTradesStatusPacket(int containerId, int remaining, int price) implements CustomPacketPayload {
 
     public static final Type<RerollTradesStatusPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "reroll_trades_status"));
@@ -21,8 +22,9 @@ public record RerollTradesStatusPacket(int containerId, int remaining) implement
         (buf, p) -> {
             buf.writeVarInt(p.containerId);
             buf.writeVarInt(p.remaining);
+            buf.writeVarInt(p.price);
         },
-        buf -> new RerollTradesStatusPacket(buf.readVarInt(), buf.readVarInt()));
+        buf -> new RerollTradesStatusPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -30,6 +32,6 @@ public record RerollTradesStatusPacket(int containerId, int remaining) implement
     }
 
     public static void handle(RerollTradesStatusPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> RerollTradesClientState.set(packet.containerId(), packet.remaining()));
+        ctx.enqueueWork(() -> RerollTradesClientState.set(packet.containerId(), packet.remaining(), packet.price()));
     }
 }

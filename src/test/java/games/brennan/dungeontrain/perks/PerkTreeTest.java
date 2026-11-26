@@ -107,12 +107,73 @@ class PerkTreeTest {
     }
 
     @Test
-    @DisplayName("Drift Gift Repaid is reachable through locked Drift Chance in the bundled tree")
+    @DisplayName("Drift Gift Repaid is reachable through locked Drift Chance once Builder is revealed")
     void bundledLockedBuilderEntry() {
         PerkTree t = PerkTreeLoader.get();
         assertFalse(PerkRegistry.isBuilt("drift-chance"), "Drift Chance is locked");
         assertFalse(t.reachable("drift-gift-repaid", Set.of()::contains));
-        assertTrue(t.reachableNow("drift-gift-repaid", Set.of()::contains));
+        assertFalse(t.reachableNow("drift-gift-repaid", Set.of()::contains), "Builder is hidden until revealed");
+        assertTrue(t.reachableNow("drift-gift-repaid", Set.of("speed")::contains));
+    }
+
+    private static final String GATED = """
+        {"v":1,
+         "classes":[{"id":"ct","name":"Tank","color":"#e8956a"},{"id":"cw","name":"Warlock","color":"#7f7fe0"},
+                    {"id":"ca","name":"Alchemist","color":"#5fc8e0"},{"id":"ck","name":"Knight","color":"#d9534f"}],
+         "perks":[
+          {"id":"root","cls":null,"name":"The Engine","desc":"","x":400,"y":400},
+          {"id":"health","cls":"ct","name":"Health","desc":"","tier":1,"x":460,"y":486},
+          {"id":"damage","cls":"ck","name":"Damage","desc":"","tier":1,"x":500,"y":420},
+          {"id":"throw","cls":"cw","name":"Throwables","desc":"","tier":1,"x":500,"y":380},
+          {"id":"pot","cls":"ca","name":"Stack Potions","desc":"","tier":1,"x":480,"y":340},
+          {"id":"kill","cls":"cw","name":"Kill Buff","desc":"","tier":2,"x":580,"y":380}],
+         "links":[
+          {"a":"root","b":"health","kind":"req","oneWay":false},
+          {"a":"root","b":"damage","kind":"req","oneWay":false},
+          {"a":"root","b":"throw","kind":"cross","oneWay":false},
+          {"a":"root","b":"pot","kind":"cross","oneWay":false},
+          {"a":"damage","b":"throw","kind":"cross","oneWay":false},
+          {"a":"throw","b":"pot","kind":"cross","oneWay":false},
+          {"a":"throw","b":"kill","kind":"req","oneWay":false}]}
+        """;
+
+    @Test
+    @DisplayName("a dashed Engine line hides a class until a tier 1 joined to it is unlocked, then carries unlocks")
+    void gatedClassRevealedByNeighbour() {
+        PerkTree t = PerkTreeLoader.parse(new StringReader(GATED));
+        assertTrue(t.gatedT1(t.perk("throw").orElseThrow()));
+        assertTrue(t.gatedT1(t.perk("pot").orElseThrow()));
+        assertFalse(t.gatedT1(t.perk("health").orElseThrow()));
+        assertFalse(t.gatedT1(t.perk("kill").orElseThrow()), "only tier 1 perks are gated");
+
+        Predicate<String> none = Set.<String>of()::contains;
+        assertFalse(t.classRevealed("cw", none));
+        assertTrue(t.classRevealed("ct", none), "a class off a solid line always shows");
+        assertFalse(t.reachableNow("throw", none));
+        assertFalse(t.reachableNow("kill", none));
+
+        assertFalse(t.classRevealed("cw", Set.of("health")::contains), "Tank is not joined to Warlock");
+        Predicate<String> knight = Set.of("damage")::contains;
+        assertTrue(t.classRevealed("cw", knight));
+        assertTrue(t.reachableNow("throw", knight), "the dashed Engine line carries once revealed");
+        assertFalse(t.classRevealed("ca", knight), "Alchemist waits for Warlock");
+
+        Predicate<String> chain = Set.of("damage", "throw")::contains;
+        assertTrue(t.classRevealed("ca", chain));
+        assertTrue(t.reachableNow("pot", chain));
+        assertTrue(t.reachableNow("kill", chain));
+    }
+
+    @Test
+    @DisplayName("the bundled tree hides Crafter, Builder, Warlock and Alchemist behind their neighbours")
+    void bundledGatedClasses() {
+        PerkTree t = PerkTreeLoader.get();
+        Set<String> gated = new java.util.TreeSet<>();
+        for (PerkTree.Perk p : t.perks()) if (t.gatedT1(p)) gated.add(p.id());
+        assertEquals(Set.of("craft-level-stats", "drift-chance", "throwables", "stack-potions"), gated);
+        assertFalse(t.reachableNow("craft-level-stats", Set.<String>of()::contains));
+        assertTrue(t.reachableNow("craft-level-stats", Set.of("health")::contains), "Tank reveals Crafter");
+        assertTrue(t.reachableNow("stack-potions", Set.of("friendliness")::contains), "Lover reveals Alchemist");
     }
 
     @Test

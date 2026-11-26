@@ -1684,13 +1684,16 @@ public final class PortalCarriageEvents {
         // Y off the ROOM rather than the corridor lane, for the reason sendFogFor gives: a room with
         // a door-height offset stands its floor below the lane, and the rows below it are the room.
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        // An Endless open chunk is daylit across its whole plain, not only inside the chunk: the
+        // grass a player walks out onto stands under the same sky as the tower in the middle of it.
+        int plain = structure.mode().laysGroundPlain() ? PortalRoomLayout.VOID_CLEARANCE : 0;
         PortalRoomSkyPacket region = PortalRoomSkyPacket.inWorld(
-            structure.tiledMinX(dims, layout),
+            structure.tiledMinX(dims, layout) - plain,
             roomOrigin.getY(),
-            structure.tiledMinZ(dims, layout),
-            structure.tiledMaxX(dims, layout),
+            structure.tiledMinZ(dims, layout) - plain,
+            structure.tiledMaxX(dims, layout) + plain,
             roomOrigin.getY() + structure.roomSize().getY() - 1,
-            structure.tiledMaxZ(dims, layout),
+            structure.tiledMaxZ(dims, layout) + plain,
             sky.ordinal());
 
         AABB box = structureBox(dims, structure);
@@ -3352,6 +3355,16 @@ public final class PortalCarriageEvents {
             maxZ = Math.max(maxZ, corridors.maxZ() + 2);
             minY = Math.min(minY, corridors.minY() - 1);
             maxY = Math.max(maxY, corridors.maxY() + 2);
+        }
+        if (structure.mode().laysGroundPlain()) {
+            // An Endless open chunk's plain runs out to the swept clearance, and a player walking
+            // across it is still in the structure — the fog, the sky and "is anyone here" have to
+            // follow them out onto the grass, not stop at the chunk and its corridors.
+            int c = PortalRoomLayout.VOID_CLEARANCE;
+            minX = Math.min(minX, roomOrigin.getX() - c);
+            maxX = Math.max(maxX, roomOrigin.getX() + room.getX() + c);
+            minZ = Math.min(minZ, roomOrigin.getZ() - c);
+            maxZ = Math.max(maxZ, roomOrigin.getZ() + room.getZ() + c);
         }
 
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);

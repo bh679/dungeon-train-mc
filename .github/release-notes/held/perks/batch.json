@@ -36,15 +36,21 @@
     2817,
     2845,
     2849,
-    2910
+    2910,
+    2913,
+    2917,
+    2919
   ],
   "entries": [
+    "alchemist-perks",
     "cosmic-apple-every-level",
     "cosmic-apples",
     "crafter-enchanting-perks",
     "death-kit-arrives-equipped",
     "death-perks-next-after-last-point",
+    "hidden-perk-classes",
     "knight-combat-perks",
+    "lover-perks",
     "nap-sky-past-life-perks",
     "perk-apples-depth-curve",
     "perk-aura-apple-tooltips",

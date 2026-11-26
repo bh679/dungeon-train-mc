@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.perks.Perks;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.inventory.MerchantMenu;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -18,8 +19,8 @@ import java.util.Optional;
 
 /**
  * Reroll Trades, server side. Opening a villager's trade menu with the perk active sends the charges
- * left on that villager ({@link RerollTradesStatusPacket}); the menu's Reroll button asks for one
- * ({@link RerollTradesRequestPacket}) and {@link #tryReroll} spends it on a fresh
+ * left on that villager and the next price ({@link RerollTradesStatusPacket}); the menu's Reroll button asks for one
+ * ({@link RerollTradesRequestPacket}) and {@link #tryReroll} takes the price in emeralds (none for a free one) and spends a reroll on a fresh
  * {@link VillagerOfferRoll} at the villager's current level, then refreshes the open menu.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -36,8 +37,7 @@ public final class RerollTradesEvents {
         try {
             int rank = Perks.rank(player, RerollTrades.ID);
             if (rank <= 0) return;
-            TraderPerkEvents.tradingVillager(player).ifPresent(villager -> sendStatus(player, menu.containerId,
-                RerollTrades.remaining(rank, RerollTrades.used(player, villager.getUUID()))));
+            TraderPerkEvents.tradingVillager(player).ifPresent(villager -> sendStatus(player, menu.containerId, rank, villager));
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Reroll Trades status failed for {}", player.getName().getString(), e);
         }
@@ -52,25 +52,47 @@ public final class RerollTradesEvents {
             Optional<Villager> found = TraderPerkEvents.tradingVillager(player);
             if (found.isEmpty()) return;
             Villager villager = found.get();
-            if (RerollTrades.remaining(rank, RerollTrades.used(player, villager.getUUID())) <= 0) return;
+            int used = RerollTrades.used(player, villager.getUUID());
+            if (RerollTrades.remaining(rank, used) <= 0) return;
+            int price = RerollTrades.nextPrice(rank, used, RerollTrades.paid(player, villager.getUUID()));
+            if (emeralds(player) < price) {
+                sendStatus(player, containerId, rank, villager);
+                return;
+            }
 
             int level = villager.getVillagerData().getLevel();
             Optional<MerchantOffers> rolled = VillagerOfferRoll.roll(villager, player.serverLevel(), level, true);
             if (rolled.isEmpty() || rolled.get().isEmpty()) return;
+            if (price > 0) takeEmeralds(player, price);
             villager.setOffers(rolled.get());
-            int left = RerollTrades.remaining(rank, RerollTrades.recordUse(player, villager.getUUID()));
+            RerollTrades.recordUse(player, villager.getUUID(), price > 0);
             player.sendMerchantOffers(containerId, villager.getOffers(), level, villager.getVillagerXp(),
                 villager.showProgressBar(), villager.canRestock());
-            sendStatus(player, containerId, left);
-            LOGGER.debug("[DungeonTrain] Reroll Trades: {} rerolled {} ({} left this life)",
-                player.getName().getString(), villager.getUUID(), left);
+            sendStatus(player, containerId, rank, villager);
+            LOGGER.debug("[DungeonTrain] Reroll Trades: {} rerolled {} for {} emeralds",
+                player.getName().getString(), villager.getUUID(), price);
         } catch (RuntimeException e) {
             // Never let a perk break the trade screen; vanilla trading carries on.
             LOGGER.warn("[DungeonTrain] Reroll Trades failed for {}", player.getName().getString(), e);
         }
     }
 
-    private static void sendStatus(ServerPlayer player, int containerId, int remaining) {
-        PacketDistributor.sendToPlayer(player, new RerollTradesStatusPacket(containerId, remaining));
+    private static void sendStatus(ServerPlayer player, int containerId, int rank, Villager villager) {
+        int used = RerollTrades.used(player, villager.getUUID());
+        int left = RerollTrades.remaining(rank, used);
+        int price = RerollTrades.nextPrice(rank, used, RerollTrades.paid(player, villager.getUUID()));
+        PacketDistributor.sendToPlayer(player, new RerollTradesStatusPacket(containerId, left, price));
+    }
+
+    /** Emeralds in the player's inventory. */
+    private static int emeralds(ServerPlayer player) {
+        return player.getInventory().clearOrCountMatchingItems(s -> s.is(Items.EMERALD), 0,
+            player.inventoryMenu.getCraftSlots());
+    }
+
+    private static void takeEmeralds(ServerPlayer player, int count) {
+        player.getInventory().clearOrCountMatchingItems(s -> s.is(Items.EMERALD), count,
+            player.inventoryMenu.getCraftSlots());
+        player.getInventory().setChanged();
     }
 }

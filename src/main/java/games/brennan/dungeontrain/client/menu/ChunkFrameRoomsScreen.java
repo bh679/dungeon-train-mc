@@ -39,14 +39,31 @@ public final class ChunkFrameRoomsScreen implements MenuScreen {
             return out;
         }
         ChunkFrameRoomsSyncPacket s = snap.get();
-        // How the rooms this frame dresses are enclosed — one of three, the chosen one lit.
+        // How the rooms this frame dresses are enclosed — one of four, the chosen one lit.
         String dim = COMMAND + " dimension " + frame + " ";
         String current = s.dimension();
-        out.add(new CommandMenuEntry.Triple(
+        out.add(new CommandMenuEntry.Quad(
             new CommandMenuEntry.Stay("Bedrock lock", dim + "bedrock", "bedrock".equals(current)),
             new CommandMenuEntry.Stay("Void", dim + "void", "void".equals(current)),
             new CommandMenuEntry.Stay("World border", dim + "world_border", "world_border".equals(current)),
-            1.0 / 3.0, 2.0 / 3.0));
+            new CommandMenuEntry.Stay("Endless open", dim + "endless_open", "endless_open".equals(current)),
+            0.25, 0.50, 0.75));
+        if ("endless_open".equals(current)) {
+            // The plain's block — the held block, or the Block Variant menu on it — and how far out
+            // along it the doors stand.
+            String ground = COMMAND + " ground " + frame + " ";
+            out.add(new CommandMenuEntry.Split(
+                new CommandMenuEntry.Stay("Ground: " + s.groundBlock(), ground + "held", false),
+                new CommandMenuEntry.Run("Edit", ground + "edit", false),
+                0.70));
+            String distance = COMMAND + " doordistance " + frame;
+            out.add(new CommandMenuEntry.Number(
+                EditorPlotLabelsRenderer.frameDoorDistanceLabel(s.doorDistance()),
+                games.brennan.dungeontrain.client.menu.number.NumberTitle.of("door_distance"), distance,
+                s.doorDistance(), 0, games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX, false,
+                distance + " " + Math.min(games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX, s.doorDistance() + 1),
+                distance + " " + Math.max(0, s.doorDistance() - 1)));
+        }
         out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Stay("All", COMMAND + " rooms " + frame + " all", s.all()),
             new CommandMenuEntry.Stay("None", COMMAND + " rooms " + frame + " none", s.selected().isEmpty()),

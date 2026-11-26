@@ -18,6 +18,8 @@ import java.util.Set;
  *   <li>A hidden class draws only its unlocked perks and, while Advancement Points are held, the perks a
  *       line (solid or dashed) joins to the Engine or an unlocked perk.</li>
  *   <li>Previewing a class (hovering it in the Classes list) draws all of it.</li>
+ *   <li>A class not yet revealed ({@link PerkTree#classRevealed}: its tier 1 hangs off a dashed Engine line
+ *       and no tier 1 joined to it is unlocked) draws nothing, whatever else holds, and leaves the circle.</li>
  * </ul>
  *
  * @param off          classes the player has hidden
@@ -51,10 +53,16 @@ public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Ma
         return false;
     }
 
+    /** The class shows at all: not still waiting on a neighbouring tier 1 unlock. */
+    public boolean revealed(String classId) {
+        return tree.classRevealed(classId, this::unlocked);
+    }
+
     /** Hidden from the drawing. The Engine always shows. */
     public boolean hidden(PerkTree.Perk p) {
         if (p.isRoot() || p.cls() == null) return false;
         if (only != null) return !only.contains(p.id());
+        if (!revealed(p.cls())) return true;
         if (!off.contains(p.cls()) || p.cls().equals(preview)) return false;
         if (unlocks.getOrDefault(p.id(), 0) > 0) return false;
         return !(unlockPoints > 0 && nextToUnlocked(p));
@@ -62,6 +70,7 @@ public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Ma
 
     /** A class still on the circle: shown, previewed, or with a perk drawn. */
     public boolean onCircle(String classId) {
+        if (!revealed(classId)) return false;
         if (!off.contains(classId) || classId.equals(preview)) return true;
         for (PerkTree.Perk p : tree.perksOf(classId)) if (!hidden(p)) return true;
         return false;
@@ -69,6 +78,7 @@ public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Ma
 
     /** On the circle for its own sake (shown, previewed, or holding an unlock), not only because points are held. */
     public boolean anchored(String classId) {
+        if (!revealed(classId)) return false;
         if (!off.contains(classId) || classId.equals(preview)) return true;
         for (PerkTree.Perk p : tree.perksOf(classId)) if (unlocks.getOrDefault(p.id(), 0) > 0) return true;
         return false;
@@ -76,6 +86,7 @@ public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Ma
 
     /** The class's title is drawn: it has a drawn perk, and a hidden class only once one of its perks is unlocked. */
     public boolean titleShown(String classId) {
+        if (only == null && !revealed(classId)) return false;
         boolean anyDrawn = tree.perksOf(classId).stream().anyMatch(p -> !hidden(p));
         if (!anyDrawn) return false;
         if (off.contains(classId) && !classId.equals(preview)) {
@@ -98,6 +109,12 @@ public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Ma
     /** Classes that hold at least one perk. */
     public static List<PerkTree.PerkClass> liveClasses(PerkTree tree) {
         return tree.classes().stream().filter(c -> !tree.perksOf(c.id()).isEmpty()).toList();
+    }
+
+    /** Live classes that show for these unlock levels ({@link PerkTree#classRevealed}), in circle order. */
+    public static List<PerkTree.PerkClass> revealedCircleOrder(PerkTree tree, Map<String, Integer> unlocks) {
+        return circleOrder(tree).stream()
+            .filter(c -> tree.classRevealed(c.id(), id -> unlocks.getOrDefault(id, 0) > 0)).toList();
     }
 
     /**

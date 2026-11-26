@@ -20,7 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * The Trader perks' buttons on the villager trade menu, compact {@link TradeChargeButton}s just right
  * of the "Trades" heading: Restock Villager (a restock symbol) and then Reroll Trades (a die), each
- * with the charges left on this villager. Kept that small so they never reach the villager's name,
+ * with the charges left on this villager, Reroll also with its next price in emeralds or FREE. Kept that small so they never reach the villager's name,
  * centred over the right pane. Each draws nothing until the server says its perk is active for this
  * menu.
  */
@@ -28,7 +28,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class RestockVillagerButton {
 
     private static final String RESTOCK_LABEL_KEY = "perk.dungeontrain.restock_villager.button";
-    private static final String REROLL_LABEL_KEY = "perk.dungeontrain.reroll_trades.button";
+    private static final String REROLL_PAID_KEY = "perk.dungeontrain.reroll_trades.tooltip_paid";
+    private static final String REROLL_FREE_KEY = "perk.dungeontrain.reroll_trades.tooltip_free";
+    private static final String REROLL_FREE_LABEL_KEY = "perk.dungeontrain.reroll_trades.free";
     private static final String RESTOCK_ICON = "↻";
     private static final String REROLL_ICON = "⚄";
     /** Vanilla draws "Trades" centred on x 53 of the menu; the buttons start just past it. */
@@ -45,17 +47,37 @@ public final class RestockVillagerButton {
         int labelRight = TRADES_LABEL_CENTRE_X + font.width(Component.translatable("merchant.trades")) / 2;
         int x = screen.getGuiLeft() + labelRight + TradeChargeButton.GAP;
         int y = screen.getGuiTop() + Y;
-        TradeChargeButton restock = new TradeChargeButton(x, y, RESTOCK_ICON, RESTOCK_LABEL_KEY,
+        TradeChargeButton restock = new TradeChargeButton(x, y, RESTOCK_ICON,
+            (left, price) -> Component.translatable(RESTOCK_LABEL_KEY, left),
             () -> RestockVillagerClientState.remainingFor(menu.containerId),
+            () -> -1, Component.empty(),
             () -> RestockVillager.needsRestock(menu.getOffers()),
             () -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
             null);
-        TradeChargeButton reroll = new TradeChargeButton(x, y, REROLL_ICON, REROLL_LABEL_KEY,
+        TradeChargeButton reroll = new TradeChargeButton(x, y, REROLL_ICON,
+            (left, price) -> price <= 0 ? Component.translatable(REROLL_FREE_KEY, left)
+                : Component.translatable(REROLL_PAID_KEY, left, price),
             () -> RerollTradesClientState.remainingFor(menu.containerId),
-            () -> true,
+            () -> RerollTradesClientState.priceFor(menu.containerId),
+            Component.translatable(REROLL_FREE_LABEL_KEY),
+            () -> canPay(RerollTradesClientState.priceFor(menu.containerId)),
             () -> PacketDistributor.sendToServer(new RerollTradesRequestPacket(menu.containerId)),
             restock);
         event.addListener(restock);
         event.addListener(reroll);
+    }
+
+    /** Whether the player's own inventory holds the emeralds for a reroll at {@code price}. */
+    private static boolean canPay(int price) {
+        if (price <= 0) return price == 0;
+        var player = Minecraft.getInstance().player;
+        if (player == null) return false;
+        int have = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            var stack = player.getInventory().getItem(i);
+            if (stack.is(net.minecraft.world.item.Items.EMERALD)) have += stack.getCount();
+            if (have >= price) return true;
+        }
+        return false;
     }
 }

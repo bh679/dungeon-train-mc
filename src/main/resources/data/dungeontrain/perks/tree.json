@@ -47,6 +47,11 @@
    "color": "#b0b8c8"
   },
   {
+   "id": "calchemist",
+   "name": "Alchemist",
+   "color": "#5fc8e0"
+  },
+  {
    "id": "cwarlock",
    "name": "Warlock",
    "color": "#a07cff"
@@ -66,8 +71,8 @@
    "cls": "c0",
    "name": "Stackable Book and Quill",
    "desc": "+1 to stack per teir",
-   "x": 398.0,
-   "y": 294.5,
+   "x": 390.1,
+   "y": 295.5,
    "tier": 1
   },
   {
@@ -129,14 +134,14 @@
    "cls": "c3",
    "name": "Friendliness",
    "desc": "Playermobs like you more, and animals are easier to tame",
-   "x": 463.4,
-   "y": 316.3,
+   "x": 448.2,
+   "y": 306.7,
    "tier": 1
   },
   {
-   "id": "heal-friends",
+   "id": "share-hearts",
    "cls": "c3",
-   "name": "Heal Friends",
+   "name": "Share Hearts",
    "desc": "Right-click a player or tame with food to feed and heal them; rank 2 also gives Regeneration I for 5 s",
    "x": 529.5,
    "y": 290.5,
@@ -165,8 +170,8 @@
    "cls": "c4",
    "name": "See Trade Values",
    "desc": "Hovering any item shows what it trades for; rank 2 also shows the best nearby buyer",
-   "x": 340.0,
-   "y": 313.9,
+   "x": 335.1,
+   "y": 317.4,
    "tier": 1
   },
   {
@@ -219,8 +224,8 @@
    "cls": "c6",
    "name": "Craft Level Stats",
    "desc": "Items you craft get the stats of the level you are in, as if looted there. (Randomized - but higher teirs get higher chance of max for that level).",
-   "x": 397.9,
-   "y": 505.0,
+   "x": 380.1,
+   "y": 503.1,
    "tier": 1
   },
   {
@@ -264,8 +269,8 @@
    "cls": "c7",
    "name": "Health",
    "desc": "+1 hearts per rank",
-   "x": 460.0,
-   "y": 486.1,
+   "x": 439.0,
+   "y": 497.5,
    "tier": 1
   },
   {
@@ -300,8 +305,8 @@
    "cls": "c8",
    "name": "Speed",
    "desc": "+1% base speed per rank",
-   "x": 336.6,
-   "y": 483.7,
+   "x": 327.5,
+   "y": 475.9,
    "tier": 1
   },
   {
@@ -354,8 +359,8 @@
    "cls": "c9",
    "name": "Damage",
    "desc": "+0.5 attack damage per rank",
-   "x": 499.2,
-   "y": 434.4,
+   "x": 485.5,
+   "y": 461.0,
    "tier": 1
   },
   {
@@ -399,8 +404,8 @@
    "cls": "cbuilder",
    "name": "Drift Chance",
    "desc": "More drifting carriages roll into your train each band",
-   "x": 299.5,
-   "y": 430.5,
+   "x": 297.9,
+   "y": 424.7,
    "tier": 1
   },
   {
@@ -476,9 +481,9 @@
    "tier": 2
   },
   {
-   "id": "shared-aura",
+   "id": "aura",
    "cls": "c3",
-   "name": "Shared Aura",
+   "name": "Aura",
    "desc": "Allies get buffs",
    "x": 584.1,
    "y": 262.9,
@@ -489,8 +494,8 @@
    "cls": "cwarlock",
    "name": "Throwables",
    "desc": "Any throwable does damage or an effect: slimeballs slow and hurt, snowballs frostbite and hurt, fire charges work, wind charges hurt too",
-   "x": 500.5,
-   "y": 369.5,
+   "x": 504.9,
+   "y": 405.1,
    "tier": 1
   },
   {
@@ -498,18 +503,36 @@
    "cls": "cwarlock",
    "name": "Teleport Player",
    "desc": "Teleport a player to you",
-   "x": 595.0,
-   "y": 326.5,
+   "x": 581.1,
+   "y": 365.0,
    "tier": 2
   },
   {
+   "id": "stack-potions",
+   "cls": "calchemist",
+   "name": "Stack Potions",
+   "desc": "Identical potions stack together",
+   "x": 491.0,
+   "y": 347.6,
+   "tier": 1
+  },
+  {
    "id": "standless-brewing",
-   "cls": "cwarlock",
+   "cls": "calchemist",
    "name": "Standless Brewing",
-   "desc": "Brew potions without a brewing stand",
-   "x": 601.5,
-   "y": 375.4,
+   "desc": "Your own brewing stand, opened from your inventory",
+   "x": 559.2,
+   "y": 318.1,
    "tier": 2
+  },
+  {
+   "id": "brewmaster",
+   "cls": "calchemist",
+   "name": "Brewmaster",
+   "desc": "Potions you brew come out stronger",
+   "x": 657.2,
+   "y": 245.5,
+   "tier": 3
   },
   {
    "id": "summon-lightning",
@@ -585,7 +608,7 @@
   {
    "a": "root",
    "b": "craft-level-stats",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": false
   },
   {
@@ -619,7 +642,7 @@
    "oneWay": false
   },
   {
-   "a": "heal-friends",
+   "a": "share-hearts",
    "b": "friendliness",
    "kind": "req",
    "oneWay": false
@@ -776,7 +799,7 @@
   },
   {
    "a": "pet-health",
-   "b": "heal-friends",
+   "b": "share-hearts",
    "kind": "req",
    "oneWay": true
   },
@@ -861,7 +884,7 @@
   {
    "a": "drift-chance",
    "b": "root",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": true
   },
   {
@@ -943,19 +966,19 @@
    "oneWay": true
   },
   {
-   "a": "shared-aura",
-   "b": "heal-friends",
+   "a": "aura",
+   "b": "share-hearts",
    "kind": "req",
    "oneWay": true
   },
   {
-   "a": "shared-aura",
+   "a": "aura",
    "b": "debuff-aura",
    "kind": "cross",
    "oneWay": false
   },
   {
-   "a": "shared-aura",
+   "a": "aura",
    "b": "save-ally",
    "kind": "req",
    "oneWay": true
@@ -1015,7 +1038,7 @@
    "oneWay": false
   },
   {
-   "a": "shared-aura",
+   "a": "aura",
    "b": "healing",
    "kind": "cross",
    "oneWay": false
@@ -1029,7 +1052,7 @@
   {
    "a": "root",
    "b": "throwables",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": false
   },
   {
@@ -1042,7 +1065,7 @@
    "a": "throwables",
    "b": "standless-brewing",
    "kind": "req",
-   "oneWay": false
+   "oneWay": true
   },
   {
    "a": "teleport-player",
@@ -1075,7 +1098,7 @@
    "oneWay": true
   },
   {
-   "a": "heal-friends",
+   "a": "share-hearts",
    "b": "convert-mob",
    "kind": "cross",
    "oneWay": false
@@ -1095,12 +1118,6 @@
   {
    "a": "damage",
    "b": "throwables",
-   "kind": "cross",
-   "oneWay": false
-  },
-  {
-   "a": "throwables",
-   "b": "friendliness",
    "kind": "cross",
    "oneWay": false
   },
@@ -1139,6 +1156,36 @@
    "b": "extra-journal",
    "kind": "req",
    "oneWay": true
+  },
+  {
+   "a": "root",
+   "b": "stack-potions",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "stack-potions",
+   "b": "standless-brewing",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "standless-brewing",
+   "b": "brewmaster",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "friendliness",
+   "b": "stack-potions",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "stack-potions",
+   "b": "throwables",
+   "kind": "cross",
+   "oneWay": false
   }
  ]
 }

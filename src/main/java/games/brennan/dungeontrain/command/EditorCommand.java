@@ -6571,6 +6571,27 @@ public final class EditorCommand {
     }
 
     /** Nudge the Exits spacing of the room plot the player is standing in by {@code delta}. */
+    private static int runPortalRoomDoorDistanceStep(CommandContext<CommandSourceStack> ctx, int delta) {
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        return runPortalRoomDoorDistance(ctx,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).doorDistance().value() + delta);
+    }
+
+    /**
+     * {@code /dt editor portals doordistance <blocks>} — stand both corridors this far out from an
+     * Endless Open room, on its plain. Clamped like the other numeric portal settings.
+     */
+    private static int runPortalRoomDoorDistance(CommandContext<CommandSourceStack> ctx, int blocks) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name,
+            current.withDoorDistance(new games.brennan.dungeontrain.portal.PortalRoomDoorDistance(blocks)));
+    }
+
     private static int runPortalRoomExitEveryStep(CommandContext<CommandSourceStack> ctx, int delta) {
         CommandSourceStack source = ctx.getSource();
         String name = portalRoomOf(ctx);
@@ -6843,6 +6864,16 @@ public final class EditorCommand {
                     .executes(ctx -> runPortalRoomExits(ctx,
                         StringArgumentType.getString(ctx, "exits")))))
             // The X both readings of Exits are measured in — every X tiles, or one tile in X.
+            // How many blocks of open floor stand between an Endless Open room and each corridor.
+            .then(Commands.literal("doordistance")
+                .then(Commands.literal("inc")
+                    .executes(ctx -> runPortalRoomDoorDistanceStep(ctx, +1)))
+                .then(Commands.literal("dec")
+                    .executes(ctx -> runPortalRoomDoorDistanceStep(ctx, -1)))
+                .then(Commands.argument("blocks", IntegerArgumentType.integer(
+                        0, games.brennan.dungeontrain.portal.PortalRoomDoorDistance.MAX))
+                    .executes(ctx -> runPortalRoomDoorDistance(ctx,
+                        IntegerArgumentType.getInteger(ctx, "blocks")))))
             .then(Commands.literal("exitevery")
                 .then(Commands.literal("inc")
                     .executes(ctx -> runPortalRoomExitEveryStep(ctx, +1)))
@@ -6936,17 +6967,29 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.only_player_can_pick"));
             return 0;
         }
-        ItemStack held = player.getMainHandItem();
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states =
+            statesFromHeld(source, player.getMainHandItem());
+        if (states == null) return 0;
+        return savePortalRoomCopiesVariant(source, name, plane, states);
+    }
 
+    /**
+     * What a held item authors a one-cell palette as — a Copies plane, or a frame's ground: a block,
+     * a variant clipboard's whole candidate list, a bucket's liquid source, or (empty hand) air.
+     * Null, with the failure already sent, for anything else.
+     */
+    public static java.util.List<games.brennan.dungeontrain.editor.VariantState> statesFromHeld(
+        CommandSourceStack source, ItemStack held
+    ) {
         if (held.isEmpty()) {
             // The empty-placeholder sentinel, stored verbatim: PortalRoomSinglePlanes translates it
             // to a no-cascade air write at stamp time, exactly as applyRoomVariants does for a cell.
             // Air is a candidate like any other here, so this is authoring the plane rather than
             // clearing it — the row keeps showing a value, and the plane is deliberately empty
             // rather than merely unset.
-            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+            return java.util.List.of(
                 new games.brennan.dungeontrain.editor.VariantState(
-                    games.brennan.dungeontrain.editor.CarriageVariantBlocks.emptyPlaceholder(), null)));
+                    games.brennan.dungeontrain.editor.CarriageVariantBlocks.emptyPlaceholder(), null));
         }
 
         if (held.getItem() instanceof games.brennan.dungeontrain.item.VariantClipboardItem) {
@@ -6955,9 +6998,9 @@ public final class EditorCommand {
                     games.brennan.dungeontrain.item.VariantClipboardItem.readClipboardTag(held));
             if (states.isEmpty()) {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.that_clipboard_empty"));
-                return 0;
+                return null;
             }
-            return savePortalRoomCopiesVariant(source, name, plane, states);
+            return states;
         }
         // A bucket is a BucketItem, not a BlockItem, so it has to be asked about before the block
         // branch or it falls through to the rejection below — the same gap VariantLiquids closed for
@@ -6965,16 +7008,16 @@ public final class EditorCommand {
         net.minecraft.world.level.block.state.BlockState bucketSource =
             games.brennan.dungeontrain.editor.VariantLiquids.sourceStateFrom(held);
         if (bucketSource != null) {
-            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
-                new games.brennan.dungeontrain.editor.VariantState(bucketSource, null)));
+            return java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(bucketSource, null));
         }
         if (held.getItem() instanceof BlockItem blockItem) {
-            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+            return java.util.List.of(
                 new games.brennan.dungeontrain.editor.VariantState(
-                    blockItem.getBlock().defaultBlockState(), null)));
+                    blockItem.getBlock().defaultBlockState(), null));
         }
         source.sendFailure(Component.translatable("chat.dungeontrain.editor.hold_block_or_variant"));
-        return 0;
+        return null;
     }
 
     /**

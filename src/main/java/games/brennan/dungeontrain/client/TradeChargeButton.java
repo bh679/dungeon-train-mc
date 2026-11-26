@@ -6,13 +6,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
 /**
  * A compact perk button for the villager trade menu: an enlarged symbol and a small count of the
- * charges left, with "{label} (N)" on hover (also its narration). Draws nothing, inactive, while
+ * charges left, then (when it has a {@code price}) " · M" and an emerald, or "FREE", with a tooltip
+ * built from the charges left and the price (also its narration). Draws nothing, inactive, while
  * {@code remaining} is negative (the server sent no status: perk inactive); greyed out with no
  * charges left or when {@code usable} says a press would change nothing. The server re-checks every
  * press.
@@ -33,21 +37,34 @@ final class TradeChargeButton extends Button {
     static final int HEIGHT = 11;
     private static final int PADDING_X = 3;
     static final int GAP = 3;
+    private static final String SEPARATOR = " \u00b7 ";
+    private static final float EMERALD_SCALE = 0.5F;
+    private static final int EMERALD_SIZE = 8;
+    private static final ItemStack EMERALD = new ItemStack(Items.EMERALD);
 
     private final String icon;
-    private final String labelKey;
+    private final BiFunction<Integer, Integer, Component> tooltip;
     private final IntSupplier remaining;
+    private final IntSupplier price;
+    private final Component freeLabel;
     private final BooleanSupplier usable;
     private final TradeChargeButton after;
     private final int homeX;
     private int shownLeft = -1;
+    private int shownPrice = -1;
 
-    TradeChargeButton(int x, int y, String icon, String labelKey, IntSupplier remaining, BooleanSupplier usable,
-                      Runnable press, TradeChargeButton after) {
+    /**
+     * {@code price} returns the next use's emerald price (0 = free) or -1 for a button with no price;
+     * {@code tooltip} gets the charges left and that price.
+     */
+    TradeChargeButton(int x, int y, String icon, BiFunction<Integer, Integer, Component> tooltip, IntSupplier remaining,
+                      IntSupplier price, Component freeLabel, BooleanSupplier usable, Runnable press, TradeChargeButton after) {
         super(x, y, 0, HEIGHT, Component.empty(), b -> press.run(), DEFAULT_NARRATION);
         this.icon = icon;
-        this.labelKey = labelKey;
+        this.tooltip = tooltip;
         this.remaining = remaining;
+        this.price = price;
+        this.freeLabel = freeLabel;
         this.usable = usable;
         this.after = after;
         this.homeX = x;
@@ -73,13 +90,15 @@ final class TradeChargeButton extends Button {
             return;
         }
         active = left > 0 && usable.getAsBoolean();
-        if (left != shownLeft) {
+        int cost = left > 0 ? price.getAsInt() : -1;
+        if (left != shownLeft || cost != shownPrice) {
             shownLeft = left;
-            setMessage(Component.translatable(labelKey, left));
+            shownPrice = cost;
+            setMessage(tooltip.apply(left, cost));
             setTooltip(Tooltip.create(getMessage()));
         }
         Font font = Minecraft.getInstance().font;
-        setWidth(Math.round(iconWidth(font) + ICON_COUNT_GAP + countWidth(font)) + 2 * PADDING_X);
+        setWidth(Math.round(iconWidth(font) + ICON_COUNT_GAP + countWidth(font) + priceWidth(font)) + 2 * PADDING_X);
         super.renderWidget(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -88,7 +107,30 @@ final class TradeChargeButton extends Button {
     public void renderString(GuiGraphics graphics, Font font, int color) {
         float iconX = getX() + PADDING_X;
         drawScaled(graphics, font, icon, iconX, ICON_Y_NUDGE, ICON_SCALE, color);
-        drawScaled(graphics, font, String.valueOf(shownLeft), iconX + iconWidth(font) + ICON_COUNT_GAP, COUNT_Y_NUDGE, COUNT_SCALE, color);
+        float countX = iconX + iconWidth(font) + ICON_COUNT_GAP;
+        drawScaled(graphics, font, String.valueOf(shownLeft), countX, COUNT_Y_NUDGE, COUNT_SCALE, color);
+        if (shownPrice < 0) return;
+        float priceX = countX + countWidth(font);
+        String text = priceText();
+        drawScaled(graphics, font, text, priceX, COUNT_Y_NUDGE, COUNT_SCALE, color);
+        if (shownPrice == 0) return;
+        float emeraldX = priceX + font.width(text) * COUNT_SCALE;
+        float emeraldY = getY() + (getHeight() - EMERALD_SIZE) / 2.0F;
+        graphics.pose().pushPose();
+        graphics.pose().translate(emeraldX, emeraldY, 0.0F);
+        graphics.pose().scale(EMERALD_SCALE, EMERALD_SCALE, 1.0F);
+        graphics.renderFakeItem(EMERALD, 0, 0);
+        graphics.pose().popPose();
+    }
+
+    /** " · 8" for a paid use, " · FREE" for a free one. */
+    private String priceText() {
+        return SEPARATOR + (shownPrice == 0 ? freeLabel.getString() : String.valueOf(shownPrice));
+    }
+
+    private float priceWidth(Font font) {
+        if (shownPrice < 0) return 0.0F;
+        return font.width(priceText()) * COUNT_SCALE + (shownPrice > 0 ? EMERALD_SIZE : 0);
     }
 
     private void drawScaled(GuiGraphics graphics, Font font, String text, float x, float yNudge, float scale, int color) {

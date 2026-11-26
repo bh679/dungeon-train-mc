@@ -5,8 +5,11 @@ import games.brennan.dungeontrain.perks.Perks;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
@@ -16,10 +19,13 @@ import java.util.List;
 
 /**
  * Chest Sense, server side. Once a second, for players with the perk: when the pulse is due, scan
- * ({@link ChestSense#scan}), send what was found ({@link ChestSensePacket}) with a soft chime, and set
- * the next pulse {@value ChestSense#COOLDOWN_MINUTES} minutes on. The first pulse comes as soon as
- * the perk is active. The next-pulse time is a top-level persistent-data key, so it resets each life
- * and survives logout.
+ * ({@link ChestSense#scan}), send what was found and the range ({@link ChestSensePacket}, which also
+ * starts the client's particle ring) with a soft chime, and set the next pulse
+ * {@link ChestSense#everyMinutes} on. The first pulse comes as soon as the perk is active. The
+ * next-pulse time is a top-level persistent-data key, so it resets each life and survives logout.
+ *
+ * <p>It also stamps {@link ChestSense#OPENED_KEY} on any container a player right-clicks, for anyone,
+ * perk or not, so an opened container stops glowing for everyone.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ChestSenseEvents {
@@ -41,19 +47,31 @@ public final class ChestSenseEvents {
             long now = player.serverLevel().getGameTime();
             long next = player.getPersistentData().getLong(NEXT_KEY);
             // A next time far past now means the world's clock went back (a different world): pulse.
-            if (now < next && next - now <= ChestSense.cooldownTicks()) return;
+            if (now < next && next - now <= ChestSense.intervalTicks(1)) return;
             pulse(player, rank, now);
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Chest Sense failed for {}", player.getName().getString(), e);
         }
     }
 
+    /** A right-clicked container counts as opened from then on, so Chest Sense stops showing it. */
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getLevel().isClientSide()) return;
+        if (event.getEntity().isSecondaryUseActive() && !event.getEntity().getMainHandItem().isEmpty()) return;
+        BlockEntity be = event.getLevel().getBlockEntity(event.getPos());
+        if (be == null || be instanceof DecoratedPotBlockEntity || !ChestSense.isSensedKind(be)) return;
+        if (be.getPersistentData().getBoolean(ChestSense.OPENED_KEY)) return;
+        be.getPersistentData().putBoolean(ChestSense.OPENED_KEY, true);
+        be.setChanged();
+    }
+
     /** Senses now and sets the next pulse. Package-private for the dev harness and tests. */
     static void pulse(ServerPlayer player, int rank, long now) {
-        player.getPersistentData().putLong(NEXT_KEY, now + ChestSense.cooldownTicks());
-        List<ChestSense.Sensed> found = ChestSense.scan(player.serverLevel(), player.getEyePosition(), ChestSense.range(rank));
-        if (found.isEmpty()) return;
-        PacketDistributor.sendToPlayer(player, new ChestSensePacket(ChestSense.glowSeconds(rank) * 20, found));
+        player.getPersistentData().putLong(NEXT_KEY, now + ChestSense.intervalTicks(rank));
+        double range = ChestSense.range(rank);
+        List<ChestSense.Sensed> found = ChestSense.scan(player.serverLevel(), player.getEyePosition(), range);
+        PacketDistributor.sendToPlayer(player, new ChestSensePacket(ChestSense.glowTicks(), (float) range, found));
         player.playNotifySound(SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6F, 1.4F);
     }
 }

@@ -981,7 +981,8 @@ public final class VariantOverlayRenderer {
         keyBuf.append(v.name()).append('~').append(v.displayName()).append('=').append(v.weight())
             .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
             .append('p').append(v.phaseMask())
-            .append('s').append(String.join("|", v.stageIds())).append(',');
+            .append('s').append(String.join("|", v.stageIds()))
+            .append('d').append(String.join("|", v.periods())).append(',');
     }
 
     private static void clearTypeMenusIfStale(ServerPlayer player) {

@@ -7239,6 +7239,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.door_distance": {
+    "1": {
+      "label": "how many blocks of open floor stand between the room and each door",
+      "examples": [
+        "16",
+        "0"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.moved_exit": {
     "1": {
       "label": "the chance out of 10 that an exit is moved",
@@ -18592,12 +18601,28 @@
       ]
     }
   },
-  "perk.dungeontrain.reroll_trades.button": {
+  "perk.dungeontrain.reroll_trades.tooltip_paid": {
     "1": {
       "label": "rerolls the player still has left with this villager this life",
       "examples": [
-        "0",
-        "2"
+        "1",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "emeralds the next reroll costs (doubles with each reroll of the same villager)",
+      "examples": [
+        "1",
+        "16"
+      ]
+    }
+  },
+  "perk.dungeontrain.reroll_trades.tooltip_free": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "9"
       ]
     }
   },
@@ -18825,6 +18850,58 @@
       ]
     }
   },
+  "gui.dungeontrain.perks.stat.level_always": {
+    "1": {
+      "label": "how many effect levels are added, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.level_chance": {
+    "1": {
+      "label": "how many effect levels are added, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.next_at": {
+    "1": {
+      "label": "a number of perk points",
+      "examples": [
+        "5",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.refuel": {
+    "1": {
+      "label": "a countdown in minutes and seconds",
+      "examples": [
+        "2:41",
+        "0:09"
+      ]
+    }
+  },
+  "gui.dungeontrain.pocket_brewing.page": {
+    "1": {
+      "label": "the page shown, a whole number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "how many pages there are, a whole number",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.stat.looting_always": {
     "1": {
       "label": "how many extra Looting levels, a number",
@@ -18963,6 +19040,40 @@
       "examples": [
         "3",
         "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.or": {
+    "1": {
+      "label": "the smaller of two possible values (heart icons in game)",
+      "examples": [
+        "1",
+        "1.5"
+      ]
+    },
+    "2": {
+      "label": "the larger of two possible values (heart icons in game)",
+      "examples": [
+        "1.5",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.buff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.debuff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
       ]
     }
   },

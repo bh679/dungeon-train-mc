@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
@@ -23,11 +25,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Hoarder tier 2 perk "Chest Sense": every {@value #COOLDOWN_MINUTES} minutes the player senses the
- * chests, barrels and vases around them through walls for a few seconds. The pulse timing lives in
- * {@link ChestSenseEvents}; the outline is client side ({@code client/ChestSenseRenderer}).
+ * Hoarder tier 2 perk "Chest Sense" (Brennan, 2026-10-29): on a timer, the player senses every
+ * <b>unopened, non-empty</b> container within range through walls for {@value #GLOW_SECONDS} s, with a
+ * sound and a ring of particles out to the range. Containers: chests, trapped chests, barrels, shulker
+ * boxes and vases, on the ground and on carriages. Containers anyone has opened ({@link #OPENED_KEY},
+ * stamped by {@link ChestSenseEvents}) and empty ones do not glow. The pulse timing lives in
+ * {@link ChestSenseEvents}; the outline and ring are client side ({@code client/ChestSenseRenderer}).
  *
- * <p>No caps: range grows two blocks a point and the glow a second a point.</p>
+ * <p>Ladder: range 5 blocks at 1 point, +1 a point, uncapped. Interval 6, 5, 4.8, 4.6, 4.5, 4.3, 4.2,
+ * 4.1, 4 minutes over points 1 to 9, then 0.1 minute less a point down to a floor of 1 minute (point
+ * 39).</p>
  *
  * <p>Carriage containers live in a Sable plot, not at their world position, so {@link #scan} also
  * walks each sub-level near the player and reports those positions plot-local with the sub-level's
@@ -37,11 +44,13 @@ public final class ChestSense {
 
     public static final String ID = "chest-sense";
 
-    static final double BASE_RANGE = 4.0;
-    static final double RANGE_PER_RANK = 2.0;
-    static final int BASE_SECONDS = 5;
-    static final int SECONDS_PER_RANK = 1;
-    static final int COOLDOWN_MINUTES = 5;
+    static final int GLOW_SECONDS = 15;
+    private static final double[] EVERY_MINUTES = {6, 5, 4.8, 4.6, 4.5, 4.3, 4.2, 4.1, 4};
+    private static final double MINUTES_OFF_PER_POINT = 0.1;
+    private static final double FLOOR_MINUTES = 1.0;
+
+    /** Stamped on a container block entity's persistent data the first time a player opens it. */
+    public static final String OPENED_KEY = "dungeontrain:opened";
 
     /** A sensed container: {@code subLevel} null for one in the world, else {@code pos} is plot-local. */
     public record Sensed(UUID subLevel, BlockPos pos) {}
@@ -52,29 +61,45 @@ public final class ChestSense {
     static void declare() {
         BuiltPerks.markBuilt(ID);
         PerkStats.register(ID, "range", r -> PerkStats.num(range(Math.max(1, r)), Unit.BLOCKS));
-        PerkStats.register(ID, "duration", r -> PerkStats.num(glowSeconds(Math.max(1, r)), Unit.SECONDS));
-        PerkStats.register(ID, "cooldown", r -> PerkStats.num(COOLDOWN_MINUTES, Unit.MINUTES));
+        PerkStats.register(ID, "every", r -> PerkStats.num(everyMinutes(Math.max(1, r)), Unit.MINUTES));
     }
 
-    /** Sense radius in blocks; 0 when inactive. */
+    /** Sense radius in blocks: 5 at 1 point, +1 a point; 0 when inactive. */
     public static double range(int rank) {
         if (rank <= 0) return 0.0;
-        return BASE_RANGE + RANGE_PER_RANK * rank;
+        return 4.0 + rank;
     }
 
-    /** Seconds the outlines last; 0 when inactive. */
-    public static int glowSeconds(int rank) {
-        if (rank <= 0) return 0;
-        return BASE_SECONDS + SECONDS_PER_RANK * rank;
+    /** Minutes between pulses; 0 when inactive. */
+    public static double everyMinutes(int rank) {
+        if (rank <= 0) return 0.0;
+        if (rank <= EVERY_MINUTES.length) return EVERY_MINUTES[rank - 1];
+        double last = EVERY_MINUTES[EVERY_MINUTES.length - 1];
+        // Tenths kept as whole numbers so 4 - 0.1 * n lands exactly on one decimal.
+        double tenths = Math.round(last * 10) - (rank - EVERY_MINUTES.length) * Math.round(MINUTES_OFF_PER_POINT * 10);
+        return Math.max(FLOOR_MINUTES, tenths / 10.0);
     }
 
-    static long cooldownTicks() {
-        return COOLDOWN_MINUTES * 60L * 20L;
+    static long intervalTicks(int rank) {
+        return Math.round(everyMinutes(rank) * 60.0 * 20.0);
     }
 
-    /** Chests, trapped chests, barrels and vases. Ender chests are not chests here. */
+    static int glowTicks() {
+        return GLOW_SECONDS * 20;
+    }
+
+    /** Chests (trapped too), barrels, shulker boxes and vases. Ender chests are not chests here. */
+    static boolean isSensedKind(BlockEntity be) {
+        return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity
+            || be instanceof ShulkerBoxBlockEntity || be instanceof DecoratedPotBlockEntity;
+    }
+
+    /** True for a container kind Chest Sense counts that no one has opened and that holds something. */
     static boolean isSensed(BlockEntity be) {
-        return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity || be instanceof DecoratedPotBlockEntity;
+        if (!isSensedKind(be) || be.getPersistentData().getBoolean(OPENED_KEY)) return false;
+        if (be instanceof DecoratedPotBlockEntity pot) return pot.getLootTable() != null || !pot.getTheItem().isEmpty();
+        if (be instanceof RandomizableContainerBlockEntity c) return c.getLootTable() != null || !c.isEmpty();
+        return false;
     }
 
     /** Every sensed container within {@code range} of {@code centre}, in the world and on carriages. */
