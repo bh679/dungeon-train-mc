@@ -39,23 +39,30 @@ public final class ChunkFrameRoomsScreen implements MenuScreen {
             return out;
         }
         ChunkFrameRoomsSyncPacket s = snap.get();
-        // How the rooms this frame dresses are enclosed — one of four, the chosen one lit.
+        // How the rooms this frame dresses are enclosed — one of five, the chosen one lit.
         String dim = COMMAND + " dimension " + frame + " ";
         String current = s.dimension();
-        out.add(new CommandMenuEntry.Quad(
+        // Two rows rather than one Cells row: this menu is also drawn in world space, which splits
+        // no more than four cells.
+        out.add(new CommandMenuEntry.Triple(
             new CommandMenuEntry.Stay("Bedrock lock", dim + "bedrock", "bedrock".equals(current)),
             new CommandMenuEntry.Stay("Void", dim + "void", "void".equals(current)),
             new CommandMenuEntry.Stay("World border", dim + "world_border", "world_border".equals(current)),
+            1.0 / 3, 2.0 / 3));
+        out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Stay("Endless open", dim + "endless_open", "endless_open".equals(current)),
-            0.25, 0.50, 0.75));
+            new CommandMenuEntry.Stay("Plank bridge", dim + "plank_bridge", "plank_bridge".equals(current)),
+            0.50));
         if ("endless_open".equals(current)) {
-            // The plain's block — the held block, or the Block Variant menu on it — and how far out
-            // along it the doors stand.
+            // The plain's block — the held block, or the Block Variant menu on it.
             String ground = COMMAND + " ground " + frame + " ";
             out.add(new CommandMenuEntry.Split(
                 new CommandMenuEntry.Stay("Ground: " + s.groundBlock(), ground + "held", false),
                 new CommandMenuEntry.Run("Edit", ground + "edit", false),
                 0.70));
+        }
+        if ("endless_open".equals(current) || "plank_bridge".equals(current)) {
+            // How far out from the chunk the doors stand.
             String distance = COMMAND + " doordistance " + frame;
             out.add(new CommandMenuEntry.Number(
                 EditorPlotLabelsRenderer.frameDoorDistanceLabel(s.doorDistance()),

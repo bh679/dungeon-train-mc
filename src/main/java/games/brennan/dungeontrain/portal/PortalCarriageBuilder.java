@@ -903,8 +903,12 @@ public final class PortalCarriageBuilder {
         PortalRoomMode framed = meta.dimension().roomMode(settings.mode());
         if (framed == settings.mode()) return settings;
         LOGGER.info("[DungeonTrain] Chunk frame encloses pair {} ({}) as {}{}", pairKey, roomName, framed.id(),
-            framed.laysGroundPlain() ? ", doors " + meta.doorDistance() + " out on its plain" : "");
+            framed.laysGroundPlain() ? ", doors " + meta.doorDistance() + " out on its plain"
+                : framed.laysPlankBridge() ? ", doors " + meta.doorDistance() + " out over plank bridges" : "");
         PortalRoomSettings enclosed = settings.withMode(framed);
+        // A Plank bridge chunk keeps the door heights the fit will give it, on the sampled ground as
+        // in any chunk room; only the distance out to its doors comes from the frame.
+        if (framed.laysPlankBridge()) return enclosed.withDoorDistance(new PortalRoomDoorDistance(meta.doorDistance()));
         if (!framed.laysGroundPlain()) return enclosed;
         // An Endless open chunk stands on its plain: both doorways open level with the plain — the
         // box's bottom row, which a door height of zero is — rather than on the sampled surface the
@@ -1169,6 +1173,9 @@ public final class PortalCarriageBuilder {
         stampCorridors(level, structure, dims, pairKey);
         // After the corridors, so the plain is laid around them rather than under a twin's floor.
         PortalGroundPlain.lay(level, structure, dims, pairKey);
+        // After the skin's fluid guard too, whose face cell under each doorway the bridge's last
+        // plank replaces.
+        PortalPlankBridge.lay(level, structure, dims, pairKey);
 
         // After the corridors, unlike the room's own skin, and necessarily so: this shell sits one
         // block outside a corridor rather than around the room, and stampCorridors clears and

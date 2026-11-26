@@ -81,6 +81,18 @@ class ChunkFrameDimensionTest {
     }
 
     @Test
+    @DisplayName("Plank bridge maps a chunk dimension to its bridged mode, and only a plain chunk dimension")
+    void plankBridge() {
+        assertSame(PortalRoomMode.CHUNK_PLANK_BRIDGE,
+            ChunkFrameDimension.PLANK_BRIDGE.roomMode(PortalRoomMode.CHUNK_DIMENSION));
+        assertSame(PortalRoomMode.BEDROCK, ChunkFrameDimension.PLANK_BRIDGE.roomMode(PortalRoomMode.BEDROCK));
+        assertSame(ChunkFrameDimension.PLANK_BRIDGE, ChunkFrameDimension.parse("plank_bridge"));
+        ChunkFrameMeta meta = ChunkFrameMeta.DEFAULT.withDimension(ChunkFrameDimension.PLANK_BRIDGE).withDoorDistance(20);
+        assertEquals(meta, ChunkFrameMeta.fromJson(meta.toJson()));
+        assertEquals(ChunkFrameDimension.PLANK_BRIDGE, ChunkFrameMeta.fromJson(meta.toJson()).dimension());
+    }
+
+    @Test
     @DisplayName("Endless open maps a chunk dimension to its plain, and carries door distance + ground")
     void endlessOpen() {
         assertSame(PortalRoomMode.CHUNK_ENDLESS_OPEN,

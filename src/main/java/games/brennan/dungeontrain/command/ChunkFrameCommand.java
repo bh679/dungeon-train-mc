@@ -105,7 +105,8 @@ final class ChunkFrameCommand {
                     .then(Commands.argument("weight",
                             IntegerArgumentType.integer(ChunkFrameMeta.MIN_WEIGHT, ChunkFrameMeta.MAX_WEIGHT))
                         .executes(ctx -> editMeta(ctx, m -> m.withWeight(IntegerArgumentType.getInteger(ctx, "weight")))))))
-            // How the rooms this frame dresses are enclosed: bedrock (sealed), void, world_border or endless_open.
+            // How the rooms this frame dresses are enclosed: bedrock (sealed), void, world_border, endless_open
+            // or plank_bridge.
             .then(Commands.literal("dimension")
                 .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
                     .then(Commands.literal("bedrock").executes(ctx -> editMeta(ctx,
@@ -115,7 +116,9 @@ final class ChunkFrameCommand {
                     .then(Commands.literal("world_border").executes(ctx -> editMeta(ctx,
                         m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.WORLD_BORDER))))
                     .then(Commands.literal("endless_open").executes(ctx -> editMeta(ctx,
-                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.ENDLESS_OPEN))))))
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.ENDLESS_OPEN))))
+                    .then(Commands.literal("plank_bridge").executes(ctx -> editMeta(ctx,
+                        m -> m.withDimension(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.PLANK_BRIDGE))))))
             // An Endless open frame's doors: how many blocks out along the plain each stands from the chunk.
             .then(Commands.literal("doordistance")
                 .then(Commands.argument("frame", StringArgumentType.word()).suggests(FRAMES)
@@ -264,6 +267,7 @@ final class ChunkFrameCommand {
             : meta.rooms().isEmpty() ? "no chunk dimension" : String.join(", ", meta.rooms());
         String enclosure = meta.dimension().label()
             + (meta.dimension() == games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.ENDLESS_OPEN
+                || meta.dimension() == games.brennan.dungeontrain.portal.chunkframe.ChunkFrameDimension.PLANK_BRIDGE
                 ? ", doors " + meta.doorDistance() + " out" : "");
         source.sendSuccess(() -> Component.literal("Frame '" + frame + "' (weight " + meta.weight() + ", "
             + enclosure + ") dresses: " + rooms), false);

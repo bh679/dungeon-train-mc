@@ -48,7 +48,8 @@ class PortalDoorDistanceTest {
     @DisplayName("a gap moves the room out by it and the exit twin by twice it — the same on both sides")
     void gap_movesBothCorridorsSymmetrically() {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
-        for (PortalRoomMode mode : new PortalRoomMode[] {PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.CHUNK_ENDLESS_OPEN}) {
+        for (PortalRoomMode mode : new PortalRoomMode[] {PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.CHUNK_ENDLESS_OPEN,
+                PortalRoomMode.CHUNK_PLANK_BRIDGE}) {
             PortalStructure s = structure(mode, 16);
             assertEquals(16, s.doorGap(), mode.name());
             int entryEnd = s.origin().getX() + CORRIDOR - 1;
@@ -134,6 +135,70 @@ class PortalDoorDistanceTest {
                 assertTrue(PortalChunkDimension.opensDoorways(m), m.id());
             }
         }
+    }
+
+    @Test
+    @DisplayName("Plank bridge chunk: generates terrain, sweeps, fogs with Void's ramp, no plain, cuts its doorways")
+    void chunkPlankBridgeMode() {
+        PortalRoomMode m = PortalRoomMode.CHUNK_PLANK_BRIDGE;
+        assertTrue(m.generatesTerrain());
+        assertTrue(m.clearsSurroundings());
+        assertTrue(m.fogs());
+        assertTrue(m.opensDoorDistance());
+        assertTrue(m.laysPlankBridge());
+        assertFalse(m.laysGroundPlain());
+        assertFalse(m.sealsRoomBox());
+        assertFalse(m.drawsBorder());
+        assertFalse(m.authored());
+        assertSame(m, PortalRoomMode.parse(m.id()));
+        assertTrue(PortalChunkDimension.opensDoorways(m), "the bridge leads into a cut doorway");
+        for (PortalRoomMode other : PortalRoomMode.values()) {
+            if (other != m) assertFalse(other.laysPlankBridge(), other.id());
+        }
+        PortalStructure s = structure(m, 16);
+        assertEquals(PortalRoomLayout.VOID_FOG_MIN, s.fogMinRadius());
+    }
+
+    @Test
+    @DisplayName("each bridge is one block wide and gap long, from the corridor mouth to the chunk face, on its floor row")
+    void plankBridge_cells() {
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
+        PortalStructure s = structure(PortalRoomMode.CHUNK_PLANK_BRIDGE, 16);
+        List<BlockPos> cells = PortalPlankBridge.cells(s, DIMS);
+        assertEquals(32, cells.size());
+        int roomStart = s.roomOrigin(DIMS, layout).getX();
+        int roomEnd = roomStart + s.roomLength() - 1;
+        int entryEnd = s.origin().getX() + CORRIDOR - 1;
+        int exitStart = s.exitOrigin(DIMS).getX();
+        int entryZ = s.origin().getZ() + layout.doorZ();
+        int exitZ = s.exitOrigin(DIMS).getZ() + layout.doorZ();
+        List<BlockPos> entry = cells.subList(0, 16);
+        List<BlockPos> exit = cells.subList(16, 32);
+        for (BlockPos p : entry) {
+            assertTrue(p.getX() > entryEnd && p.getX() < roomStart, p.toString());
+            assertEquals(entryZ, p.getZ());
+            assertEquals(s.origin().getY(), p.getY());
+        }
+        for (BlockPos p : exit) {
+            assertTrue(p.getX() > roomEnd && p.getX() < exitStart, p.toString());
+            assertEquals(exitZ, p.getZ());
+            assertEquals(s.exitOrigin(DIMS).getY(), p.getY());
+        }
+        // Contiguous: every column of the gap, none twice.
+        assertEquals(16, entry.stream().mapToInt(BlockPos::getX).distinct().count());
+        assertEquals(16, exit.stream().mapToInt(BlockPos::getX).distinct().count());
+    }
+
+    @Test
+    @DisplayName("no bridge without a gap, and none for a room of another mode")
+    void plankBridge_none() {
+        assertTrue(PortalPlankBridge.cells(structure(PortalRoomMode.CHUNK_PLANK_BRIDGE, 0), DIMS).isEmpty());
+        assertTrue(PortalPlankBridge.cells(structure(PortalRoomMode.CHUNK_ENDLESS_OPEN, 16), DIMS).isEmpty());
+        assertTrue(PortalPlankBridge.cells(structure(PortalRoomMode.CHUNK_VOID, 16), DIMS).isEmpty());
+        assertEquals(List.of(new BlockPos(9, 5, 3), new BlockPos(8, 5, 3)),
+            PortalPlankBridge.bridge(10, 5, 3, 2, true));
+        assertEquals(List.of(new BlockPos(11, 5, 3), new BlockPos(12, 5, 3)),
+            PortalPlankBridge.bridge(10, 5, 3, 2, false));
     }
 
     @Test

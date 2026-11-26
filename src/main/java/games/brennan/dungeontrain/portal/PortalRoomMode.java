@@ -115,7 +115,16 @@ public enum PortalRoomMode {
      * on the plain rather than fitted to the sampled surface. Never authored: a chunk room takes it
      * at plan time when its frame says Endless open ({@code ChunkFrameDimension}).
      */
-    CHUNK_ENDLESS_OPEN("chunk_endless_open", "Chunk Dimension (Endless Open)");
+    CHUNK_ENDLESS_OPEN("chunk_endless_open", "Chunk Dimension (Endless Open)"),
+
+    /**
+     * {@link #CHUNK_VOID}'s terrain, swept and fogged, with its corridors standing
+     * {@link PortalRoomDoorDistance} out in the void at the height the door fit gives them, and a
+     * one-wide bridge of the stage's planks from each corridor mouth to the chunk's doorway
+     * ({@link PortalPlankBridge}). Never authored: a chunk room takes it at plan time when its frame
+     * says Plank bridge ({@code ChunkFrameDimension}).
+     */
+    CHUNK_PLANK_BRIDGE("chunk_plank_bridge", "Chunk Dimension (Plank Bridge)");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
     public static final PortalRoomMode DEFAULT = BEDROCK;
@@ -187,7 +196,7 @@ public enum PortalRoomMode {
      */
     public boolean clearsSurroundings() {
         return this == VOID || this == WORLD_BORDER || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER
-            || this == CHUNK_ENDLESS_OPEN;
+            || this == CHUNK_ENDLESS_OPEN || this == CHUNK_PLANK_BRIDGE;
     }
 
     /**
@@ -238,7 +247,7 @@ public enum PortalRoomMode {
      */
     public boolean generatesTerrain() {
         return this == CHUNK_DIMENSION || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER
-            || this == CHUNK_ENDLESS_OPEN;
+            || this == CHUNK_ENDLESS_OPEN || this == CHUNK_PLANK_BRIDGE;
     }
 
     /**
@@ -353,16 +362,17 @@ public enum PortalRoomMode {
      * by the editor's mode cycle.
      */
     public boolean authored() {
-        return this != CHUNK_VOID && this != CHUNK_WORLD_BORDER && this != CHUNK_ENDLESS_OPEN;
+        return this != CHUNK_VOID && this != CHUNK_WORLD_BORDER && this != CHUNK_ENDLESS_OPEN
+            && this != CHUNK_PLANK_BRIDGE;
     }
 
     /**
      * True when the room's corridors may stand out in the open, a {@link PortalRoomDoorDistance} off
      * its faces — the two modes whose walls are open: {@link #ENDLESS_OPEN}, and the chunk dimension
-     * a frame stands on an Endless open plain.
+     * a frame stands on an Endless open plain or reaches by a Plank bridge.
      */
     public boolean opensDoorDistance() {
-        return this == ENDLESS_OPEN || this == CHUNK_ENDLESS_OPEN;
+        return this == ENDLESS_OPEN || this == CHUNK_ENDLESS_OPEN || this == CHUNK_PLANK_BRIDGE;
     }
 
     /**
@@ -371,5 +381,13 @@ public enum PortalRoomMode {
      */
     public boolean laysGroundPlain() {
         return this == CHUNK_ENDLESS_OPEN;
+    }
+
+    /**
+     * True when a one-wide bridge of the stage's planks runs from each corridor mouth across the
+     * door gap to the chunk's doorway — {@link #CHUNK_PLANK_BRIDGE} alone. See {@link PortalPlankBridge}.
+     */
+    public boolean laysPlankBridge() {
+        return this == CHUNK_PLANK_BRIDGE;
     }
 }

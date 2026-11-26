@@ -15,6 +15,9 @@ import java.util.Locale;
  *   <li>{@link #ENDLESS_OPEN} — Void, standing on an open plain of the frame's ground block
  *       ({@link ChunkFrameGround}) level with the chunk's bottom row, its doors the frame's
  *       {@link ChunkFrameMeta#doorDistance} out along it.</li>
+ *   <li>{@link #PLANK_BRIDGE} — Void, its doors fitted to the sampled ground as an ordinary chunk's
+ *       are but standing the frame's {@link ChunkFrameMeta#doorDistance} out in the void, each
+ *       joined to the chunk by a one-wide bridge of the stage's planks.</li>
  * </ul>
  *
  * <p>Applied at plan time by turning the room's {@link PortalRoomMode#CHUNK_DIMENSION} into the
@@ -25,7 +28,8 @@ public enum ChunkFrameDimension {
     BEDROCK("bedrock", "Bedrock lock"),
     VOID("void", "Void"),
     WORLD_BORDER("world_border", "World border"),
-    ENDLESS_OPEN("endless_open", "Endless open");
+    ENDLESS_OPEN("endless_open", "Endless open"),
+    PLANK_BRIDGE("plank_bridge", "Plank bridge");
 
     public static final ChunkFrameDimension DEFAULT = BEDROCK;
 
@@ -68,6 +72,7 @@ public enum ChunkFrameDimension {
             case VOID -> PortalRoomMode.CHUNK_VOID;
             case WORLD_BORDER -> PortalRoomMode.CHUNK_WORLD_BORDER;
             case ENDLESS_OPEN -> PortalRoomMode.CHUNK_ENDLESS_OPEN;
+            case PLANK_BRIDGE -> PortalRoomMode.CHUNK_PLANK_BRIDGE;
         };
     }
 }
