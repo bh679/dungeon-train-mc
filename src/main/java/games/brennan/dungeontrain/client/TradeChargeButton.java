@@ -21,8 +21,8 @@ import java.util.function.IntSupplier;
  * charges left or when {@code usable} says a press would change nothing. The server re-checks every
  * press.
  *
- * <p>With an {@code after} button it sits just right of that one whenever that one is drawn, and in
- * its place when it is not, so Restock and Reroll line up whichever perks are active.</p>
+ * <p>With an {@code after} button it sits just right of that one whenever that one is drawn, and at
+ * its own {@code homeX} when it is not, so Restock and Reroll line up whichever perks are active.</p>
  */
 final class TradeChargeButton extends Button {
 
@@ -53,17 +53,18 @@ final class TradeChargeButton extends Button {
     private final Component freeLabel;
     private final BooleanSupplier usable;
     private final TradeChargeButton after;
-    private final int homeX;
+    private final IntSupplier homeX;
     private int shownLeft = -1;
     private int shownPrice = -1;
 
     /**
      * {@code price} returns the next use's emerald price (0 = free) or -1 for a button with no price;
-     * {@code tooltip} gets the charges left and that price.
+     * {@code tooltip} gets the charges left and that price. {@code homeX} is where it sits when there is
+     * no {@code after} button showing; read every frame, so it can move.
      */
-    TradeChargeButton(int x, int y, String icon, float iconScale, BiFunction<Integer, Integer, Component> tooltip, IntSupplier remaining,
+    TradeChargeButton(IntSupplier homeX, int y, String icon, float iconScale, BiFunction<Integer, Integer, Component> tooltip, IntSupplier remaining,
                       IntSupplier price, Component freeLabel, BooleanSupplier usable, Runnable press, TradeChargeButton after) {
-        super(x, y, 0, HEIGHT, Component.empty(), b -> press.run(), DEFAULT_NARRATION);
+        super(homeX.getAsInt(), y, 0, HEIGHT, Component.empty(), b -> press.run(), DEFAULT_NARRATION);
         this.icon = icon;
         this.iconScale = iconScale;
         this.tooltip = tooltip;
@@ -72,7 +73,7 @@ final class TradeChargeButton extends Button {
         this.freeLabel = freeLabel;
         this.usable = usable;
         this.after = after;
-        this.homeX = x;
+        this.homeX = homeX;
         this.active = false;
     }
 
@@ -88,7 +89,7 @@ final class TradeChargeButton extends Button {
     @Override
     public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         int left = remaining.getAsInt();
-        if (after != null) setX(after.shown() ? after.getX() + after.getWidth() + GAP : homeX);
+        setX(after != null && after.shown() ? after.getX() + after.getWidth() + GAP : homeX.getAsInt());
         if (left < 0) {
             active = false;
             shownLeft = -1;

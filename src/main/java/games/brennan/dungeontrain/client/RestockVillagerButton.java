@@ -20,7 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * The Trader perks' buttons on the villager trade menu, compact {@link TradeChargeButton}s just right
- * of the "Trades" heading: Restock Villager (a restock symbol) and then Reroll Trades (a die), each
+ * of the "Trades" heading, or in its place when both show (the heading is then hidden): Restock Villager (a restock symbol) and then Reroll Trades (a die), each
  * with the charges left on this villager, Reroll also with its next price in emeralds or FREE. Kept that small so they never reach the villager's name,
  * centred over the right pane. Each draws nothing until the server says its perk is active for this
  * menu.
@@ -49,16 +49,23 @@ public final class RestockVillagerButton {
         MerchantMenu menu = screen.getMenu();
         Font font = Minecraft.getInstance().font;
         int labelRight = TRADES_LABEL_CENTRE_X + font.width(Component.translatable("merchant.trades")) / 2;
-        int x = screen.getGuiLeft() + labelRight + TradeChargeButton.GAP;
+        int afterTitle = screen.getGuiLeft() + labelRight + TradeChargeButton.GAP;
+        int titleCentre = screen.getGuiLeft() + TRADES_LABEL_CENTRE_X;
         int y = screen.getGuiTop() + Y;
-        TradeChargeButton restock = new TradeChargeButton(x, y, RESTOCK_ICON, TradeChargeButton.DEFAULT_ICON_SCALE,
+        TradeChargeButton[] pair = new TradeChargeButton[2];
+        // Both showing: the pair takes the hidden "Trades" heading's place, centred where it was (widths from
+        // the last frame). One showing: it sits after the heading, as before.
+        java.util.function.IntSupplier home = () -> hidesTradesTitle() && pair[1] != null
+            ? titleCentre - (pair[0].getWidth() + TradeChargeButton.GAP + pair[1].getWidth()) / 2
+            : afterTitle;
+        TradeChargeButton restock = new TradeChargeButton(home, y, RESTOCK_ICON, TradeChargeButton.DEFAULT_ICON_SCALE,
             (left, price) -> Component.translatable(RESTOCK_LABEL_KEY, left),
             () -> RestockVillagerClientState.remainingFor(menu.containerId),
             () -> -1, Component.empty(),
             () -> RestockVillager.needsRestock(menu.getOffers()),
             () -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
             null);
-        TradeChargeButton reroll = new TradeChargeButton(x, y, REROLL_ICON, REROLL_ICON_SCALE,
+        TradeChargeButton reroll = new TradeChargeButton(() -> afterTitle, y, REROLL_ICON, REROLL_ICON_SCALE,
             (left, price) -> left <= 0 ? Component.translatable(REROLL_NONE_KEY)
                 : price == 0 ? Component.translatable(REROLL_FREE_KEY, left)
                 : Component.translatable(REROLL_PAID_KEY, left, price),
@@ -73,8 +80,20 @@ public final class RestockVillagerButton {
                 PacketDistributor.sendToServer(new RerollTradesRequestPacket(menu.containerId));
             },
             restock);
+        pair[0] = restock;
+        pair[1] = reroll;
         event.addListener(restock);
         event.addListener(reroll);
+    }
+
+    /**
+     * True while the open trade menu shows both Restock and Reroll: the "Trades" heading is then left out
+     * ({@code MerchantScreenTradesTitleMixin}) and the two buttons sit where it was.
+     */
+    public static boolean hidesTradesTitle() {
+        if (!(Minecraft.getInstance().screen instanceof MerchantScreen screen)) return false;
+        int id = screen.getMenu().containerId;
+        return RestockVillagerClientState.remainingFor(id) >= 0 && RerollTradesClientState.remainingFor(id) >= 0;
     }
 
     /** Whether the player's own inventory holds the emeralds for a reroll at {@code price}. */
