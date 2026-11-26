@@ -1,0 +1,16 @@
+{
+  "id": "chest-sense-debuff-aura-reroll-trades",
+  "version": "0.2051.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "Chest Sense, Debuff Aura and Reroll Trades perks",
+  "summary": "Three more perks. Chest Sense lets you sense nearby chests, barrels, shulker boxes and vases that nobody has opened yet, through walls, every few minutes. Debuff Aura weakens hostile mobs near you, each debuff reaching its own distance, and you can switch any of them off in the perks menu. Reroll Trades rolls a villager's trades again from the trade screen: some rerolls are free, the rest cost emeralds and get pricier each time. None of them have a cap.",
+  "highlights": [],
+  "pr": 2920,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

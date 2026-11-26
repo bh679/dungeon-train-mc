@@ -21,6 +21,7 @@ public final class HoarderPerks {
         BuiltPerks.markBuilt(HoarderLuck.PERK_ID, HoarderLooting.PERK_ID);
         overflowChips(HoarderLuck.PERK_ID, "luck", HoarderLuck::percent, HoarderPerks::roman);
         overflowChips(HoarderLooting.PERK_ID, "looting", HoarderLooting::percent, level -> level);
+        ChestSense.declare();
     }
 
     /**
