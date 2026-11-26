@@ -130,10 +130,16 @@ public final class AudioMirror {
     /** Opens the mirror for a new stream. False (logged) when this OpenAL cannot; nothing changes then. */
     private static boolean start() {
         stop();
-        MirrorDevice device = MirrorDevice.open();
-        if (device == null) return false;
         SoundEngineAccessor engine = (SoundEngineAccessor)
             ((SoundManagerAccessor) Minecraft.getInstance().getSoundManager()).dungeontrain$soundEngine();
+        // With the game's sound off, LWJGL has no AL capabilities: our first AL call would break AL's
+        // one-shot static init for the whole JVM, and the next sound restart (a device switch) crashes.
+        if (!engine.dungeontrain$loaded()) {
+            LOGGER.warn("[DungeonTrain] stream audio off: game sound is off");
+            return false;
+        }
+        MirrorDevice device = MirrorDevice.open();
+        if (device == null) return false;
         SoundBufferLibraryAccessor library = (SoundBufferLibraryAccessor) engine.dungeontrain$soundBuffers();
         Map<SoundBuffer, ResourceLocation> known = new IdentityHashMap<>();
         for (Map.Entry<ResourceLocation, CompletableFuture<SoundBuffer>> e : library.dungeontrain$cache().entrySet()) {
