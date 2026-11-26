@@ -5596,6 +5596,8 @@
   "gui.dungeontrain.crash_recovery.discard": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "eb1a70e39274bb76"},
   "gui.dungeontrain.crash_recovery.discard.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "cd9db6b3cd7ed664"},
   "gui.dungeontrain.crash_recovery.open_failed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3aae37df89489075"},
+  "gui.dungeontrain.crash_recovery.recovered.body": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ca41b21e6d3bd86a"},
+  "gui.dungeontrain.crash_recovery.recovered.ok": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "565339bc4d33d728"},
   "gui.dungeontrain.crash_recovery.hud": {"author": "老本願", "reviewer": "老本願", "source_hash": "04ed0b1c558931d0"},
   "gui.dungeontrain.crash_recovery.hud.hint": {"author": "老本願", "reviewer": "老本願", "source_hash": "d53d03b4ee728074"},
   "gui.dungeontrain.crash_recovery.fresh_run": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7d95607021286846"},

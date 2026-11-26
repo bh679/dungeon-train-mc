@@ -48,7 +48,7 @@ public final class NapService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** {@code TrainRelocation}'s calibrated carriage length, for the carriage number only. */
-    private static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
+    static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
 
     private record Offer(BlockPos bedPos, boolean night) {}
 
@@ -264,7 +264,7 @@ public final class NapService {
         }
     }
 
-    private static String modVersion() {
+    public static String modVersion() {
         return net.neoforged.fml.ModList.get().getModContainerById(DungeonTrain.MOD_ID)
             .map(c -> c.getModInfo().getVersion().toString()).orElse("?");
     }
