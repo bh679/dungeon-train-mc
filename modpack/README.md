@@ -243,6 +243,8 @@ produce that:
    wholesale and would reset every player's controls, video and audio on each pack update. The
    one-shot above exists precisely to avoid that.
 
+**Sable: Ragdolls' "Ragdoll" key (H) ships unbound the same way:** `RagdollKeybindDefault` clears it once at the first title screen through the shared `OneShotKeybindUnbind` (marker `ragdoll_keybind_defaulted.marker`). A player who binds it in Controls can still ragdoll themself; DT's death bodies don't use the key.
+
 ## Declared dependencies (CurseForge "Relations")
 
 Mods jarJar'd inside DT must **not** be separate `files` entries (that would double-load them

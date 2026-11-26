@@ -1,10 +1,7 @@
 package games.brennan.dungeontrain.client;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,10 +10,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * One-shot: the first time the modpack's bundled <b>TrashSlot</b> is present, clear <b>all</b> of
@@ -36,7 +30,7 @@ import java.util.List;
  *
  * <p>TrashSlot is found by keybinding <i>name</i>, never by class: DT has no compile-time or
  * {@code neoforge.mods.toml} dependency on it, and behaves identically when it is absent. Balm's
- * Kuma layer builds the vanilla {@link KeyMapping} name as {@code String.format("key.%s.%s",
+ * Kuma layer builds the vanilla {@link net.minecraft.client.KeyMapping} name as {@code String.format("key.%s.%s",
  * namespace, path)}, so every one of them starts {@value #TRASHSLOT_KEY_PREFIX}. If no such mapping exists (standalone
  * mod, dev, or a player who removed TrashSlot) nothing happens and <b>no marker is written</b>, so
  * a later install is still defaulted on its first launch.</p>
@@ -47,7 +41,7 @@ public final class TrashSlotKeybindDefault {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Prefix of every vanilla {@link KeyMapping} name Kuma generates for TrashSlot — {@code toggle},
+     * Prefix of every vanilla {@link net.minecraft.client.KeyMapping} name Kuma generates for TrashSlot — {@code toggle},
      * {@code toggle_lock}, {@code delete} and {@code delete_all}. All of them are cleared: the pack
      * ships TrashSlot with no key of its own, including the Delete / Shift+Delete deletion keys,
      * which vanilla otherwise flags as conflicting.
@@ -75,36 +69,6 @@ public final class TrashSlotKeybindDefault {
     }
 
     private static void maybeUnbind() throws Exception {
-        if (Files.exists(MARKER)) return; // already handled once — never fight the user afterwards
-
-        Minecraft mc = Minecraft.getInstance();
-        List<KeyMapping> trashSlotKeys = new ArrayList<>();
-        for (KeyMapping mapping : mc.options.keyMappings) {
-            if (mapping.getName().startsWith(TRASHSLOT_KEY_PREFIX)) {
-                trashSlotKeys.add(mapping);
-            }
-        }
-        if (trashSlotKeys.isEmpty()) {
-            return; // TrashSlot not installed (standalone mod / dev) — retry on a future launch, no marker yet
-        }
-
-        int cleared = 0;
-        for (KeyMapping mapping : trashSlotKeys) {
-            if (mapping.isUnbound()) continue;
-            mapping.setKey(InputConstants.UNKNOWN);
-            cleared++;
-            LOGGER.info("[DungeonTrain] Cleared TrashSlot keybinding '{}'", mapping.getName());
-        }
-        if (cleared > 0) {
-            KeyMapping.resetMapping();
-        }
-
-        // Mark handled BEFORE saving so we only ever default these once, even across restarts.
-        Files.createDirectories(MARKER.getParent());
-        Files.writeString(MARKER, "TrashSlot keybindings defaulted to unbound once. Delete to re-arm.\n");
-
-        if (cleared > 0) {
-            mc.options.save();
-        }
+        OneShotKeybindUnbind.unbindOnce(OneShotKeybindUnbind.prefix(TRASHSLOT_KEY_PREFIX), MARKER, "TrashSlot");
     }
 }
