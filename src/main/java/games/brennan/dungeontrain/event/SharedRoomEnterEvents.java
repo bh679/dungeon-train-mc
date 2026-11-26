@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
 import games.brennan.dungeontrain.train.SharedRoomRegistry;
+import games.brennan.dungeontrain.train.engine.EngineStamp;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -72,6 +73,14 @@ public final class SharedRoomEnterEvents {
         OFF_POLLS.remove(id);
         Integer last = LAST_PAIR.put(id, inst.pairKey);
         if (last != null && last == inst.pairKey) return; // still in the same room
+
+        // A room whose engines have all been carried off can't drift on: nothing to announce, and no
+        // rate-limit slot spent on it.
+        int engines = EngineStamp.engineCount(level, inst);
+        if (engines >= 0 && !SharedCarriageMessage.announces(engines, inst.fuel())) {
+            PENDING.remove(id);
+            return;
+        }
 
         if (!admit(id, System.currentTimeMillis())) {
             PENDING.remove(id);

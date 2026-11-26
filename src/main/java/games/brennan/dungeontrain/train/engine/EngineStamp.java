@@ -86,6 +86,16 @@ public final class EngineStamp {
     }
 
     /**
+     * How many engines {@code build}'s box holds; -1 when the build has no box to look in. Tells a build
+     * whose engine was carried off (none) from a fresh one waiting to be fed, which its fuel count alone
+     * cannot: both read 0.
+     */
+    public static int engineCount(ServerLevel level, SharedBuild build) {
+        Box box = box(build);
+        return box == null ? -1 : findAll(level, box.origin(), box.size(), null).size();
+    }
+
+    /**
      * Make sure the box has engines holding {@code coal} between them: those already there, shared out as
      * {@link DriftEngine#share} does, or else a new one in place of a block facing the room, else on a
      * free floor cell ({@link EngineSpot}). Returns the coal the box's engines hold afterwards, or -1 when
