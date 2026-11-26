@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.engine.EngineMenu;
+import games.brennan.dungeontrain.perks.effects.builder.DriftGiftMenu;
 import games.brennan.dungeontrain.player.FreePlayEnderChestMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
@@ -29,6 +30,13 @@ public final class ModMenuTypes {
     /** The Drifting Engine Block's coal screen — see {@link EngineMenu}. */
     public static final DeferredHolder<MenuType<?>, MenuType<EngineMenu>> ENGINE_BLOCK =
         MENU_TYPES.register("drifting_engine_block", () -> IMenuTypeExtension.create(EngineMenu::fromNetwork));
+
+    /**
+     * Drift Gift Repaid's chest-plus-gift-slot menu over a drifting carriage's storage. Its own type
+     * because the extra slot sits outside vanilla's window; rows and payout rank ride the open packet.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<DriftGiftMenu>> DRIFT_GIFT =
+        MENU_TYPES.register("drift_gift", () -> IMenuTypeExtension.create(DriftGiftMenu::fromNetwork));
 
     private ModMenuTypes() {}
 

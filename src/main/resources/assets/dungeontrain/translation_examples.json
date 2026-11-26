@@ -18789,6 +18789,100 @@
       ]
     }
   },
+  "gui.dungeontrain.perks.stat.luck_always": {
+    "1": {
+      "label": "a Luck level, as Roman numerals",
+      "examples": [
+        "I",
+        "II"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.luck_chance": {
+    "1": {
+      "label": "a Luck level, as Roman numerals",
+      "examples": [
+        "I",
+        "II"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.looting_always": {
+    "1": {
+      "label": "how many extra Looting levels, a number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.looting_chance": {
+    "1": {
+      "label": "how many extra Looting levels, a number",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.drift_gift.slot": {
+    "1": {
+      "label": "a percentage number, without the % sign",
+      "examples": [
+        "35",
+        "40"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.paid.one": {
+    "1": {
+      "label": "how many emeralds (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.paid.other": {
+    "1": {
+      "label": "how many emeralds",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.banked": {
+    "1": {
+      "label": "sixteenths of an emerald saved so far",
+      "examples": [
+        "3",
+        "11"
+      ]
+    },
+    "2": {
+      "label": "sixteenths in one emerald (always 16)",
+      "examples": [
+        "16"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.charged.one": {
+    "1": {
+      "label": "how many emeralds (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.charged.other": {
+    "1": {
+      "label": "how many emeralds",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.stat.unit.seconds": {
     "1": {
       "label": "a number of seconds",
