@@ -1,0 +1,16 @@
+{
+  "id": "java-crash-keeps-record",
+  "version": "0.2038.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Crash recovery fix",
+  "summary": "Some crashes left nothing to recover. They now come back the same way: your inventory and your place on the train are kept for you to reboard.",
+  "highlights": [],
+  "pr": 2907,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
