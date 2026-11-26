@@ -99,6 +99,15 @@ public final class SharedCarriageMessage {
         return line("own", OWN_LINES, rng, roomNoun());
     }
 
+    /**
+     * Whether stepping aboard a drifting build should be announced at all. Not once every engine has been
+     * carried off: it can't drift on, so it reads as an ordinary carriage. A build that never had an engine
+     * (an old one with nowhere to put one) still has its fuel count, and keeps its message while that lasts.
+     */
+    public static boolean announces(int engines, int fuel) {
+        return engines > 0 || fuel > 0;
+    }
+
     /** Ways to name the original builder, keyed {@code ….credit.creator.1..CREDIT_CREATOR_LINES}. */
     private static final int CREDIT_CREATOR_LINES = 4;
     /** Ways to name later editors AFTER a creator clause, keyed {@code ….credit.editors.1..N}. */
