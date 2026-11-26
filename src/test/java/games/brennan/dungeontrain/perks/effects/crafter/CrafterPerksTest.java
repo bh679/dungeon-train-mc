@@ -96,12 +96,42 @@ class CrafterPerksTest {
     }
 
     @Test
-    @DisplayName("Re-enchant: on hold, so off at every rank")
-    void reenchantOnHold() {
-        assertTrue(CrafterPerks.REENCHANT_ON_HOLD);
-        assertFalse(CrafterPerks.allowsReenchant(0));
-        assertFalse(CrafterPerks.allowsReenchant(1));
-        assertFalse(CrafterPerks.allowsReenchant(3));
+    @DisplayName("Re-enchant: 1 + rank / 5 re-enchants per item, none at rank 0")
+    void reenchantsPerItem() {
+        int[] expected = {0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4};
+        for (int rank = 0; rank < expected.length; rank++) {
+            assertEquals(expected[rank], CrafterPerks.reenchantsAllowed(rank), "rank " + rank);
+        }
+        assertFalse(CrafterPerks.allowsReenchant(0, 0));
+        assertTrue(CrafterPerks.allowsReenchant(1, 0));
+        assertFalse(CrafterPerks.allowsReenchant(4, 1));
+        assertTrue(CrafterPerks.allowsReenchant(5, 1));
+        assertFalse(CrafterPerks.allowsReenchant(5, 2));
+    }
+
+    @Test
+    @DisplayName("Re-enchant: extra cost +100%, x0.9 on every point that adds no re-enchant")
+    void reenchantExtraCost() {
+        long[] expected = {0, 100, 90, 81, 73, 73, 66, 59, 53, 48, 48, 43};
+        for (int rank = 0; rank < expected.length; rank++) {
+            assertEquals(expected[rank], Math.round(CrafterPerks.reenchantExtra(rank) * 100.0), "rank " + rank);
+        }
+        for (int rank = 2; rank < 60; rank++) {
+            double now = CrafterPerks.reenchantExtra(rank);
+            assertTrue(now > 0.0, "never reaches 0");
+            assertTrue(now <= CrafterPerks.reenchantExtra(rank - 1), "never rises");
+        }
+    }
+
+    @Test
+    @DisplayName("Re-enchant cost: rounds up, 0 stays 0, rank 0 is the fresh price")
+    void reenchantCost() {
+        assertEquals(16, CrafterPerks.reenchantCost(8, 1));
+        assertEquals(60, CrafterPerks.reenchantCost(30, 1));
+        assertEquals(19, CrafterPerks.reenchantCost(10, 2));
+        assertEquals(0, CrafterPerks.reenchantCost(0, 3));
+        assertEquals(7, CrafterPerks.reenchantCost(7, 0));
+        assertEquals(2, CrafterPerks.reenchantCost(1, 40));
     }
 
     @Test

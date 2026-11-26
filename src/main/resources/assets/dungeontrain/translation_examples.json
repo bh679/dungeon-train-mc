@@ -19034,6 +19034,22 @@
       ]
     }
   },
+  "item.dungeontrain.reenchanted": {
+    "1": {
+      "label": "times this item has been re-enchanted",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "re-enchants allowed per item at the viewer's rank",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.stat.works_on.groups": {
     "1": {
       "label": "how many enchantment groups (3 to 9)",
