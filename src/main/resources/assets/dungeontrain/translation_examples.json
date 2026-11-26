@@ -18601,6 +18601,31 @@
       ]
     }
   },
+  "perk.dungeontrain.reroll_trades.tooltip_paid": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "emeralds the next reroll costs (doubles with each reroll of the same villager)",
+      "examples": [
+        "1",
+        "16"
+      ]
+    }
+  },
+  "perk.dungeontrain.reroll_trades.tooltip_free": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "9"
+      ]
+    }
+  },
   "perk.dungeontrain.restock_villager.button": {
     "1": {
       "label": "restocks the player still has left with this villager this life",
@@ -19035,6 +19060,15 @@
     }
   },
   "gui.dungeontrain.perks.aura.buff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.debuff.level": {
     "1": {
       "label": "an effect level as a Roman numeral",
       "examples": [
