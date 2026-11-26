@@ -1,0 +1,18 @@
+{
+  "id": "chunk-room-mobs-in-blocks",
+  "version": "0.2044.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train",
+    "mobs"
+  ],
+  "title": "Mobs no longer get stuck inside blocks in some carriages",
+  "summary": "Creatures that live in some carriages could appear sunk into walls or the ground. They now always start out in open space.",
+  "highlights": [],
+  "pr": 2914,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
