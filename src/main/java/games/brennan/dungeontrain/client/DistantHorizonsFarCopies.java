@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.methods.events.DhApiEventRegister;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeGenericObjectRenderEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
@@ -53,6 +54,29 @@ public final class DistantHorizonsFarCopies {
     private static long appliedVersion = -1;
     private static boolean warned = false;
 
+    /**
+     * How long DH gets, in a new room, to show that it draws box groups at all. Until it has, the
+     * room keeps its fog: nothing is drawn past it yet.
+     */
+    private static final long PROBE_MILLIS = 3000;
+    /** How recently DH must have drawn the copies for the fog to stay lifted. */
+    private static final long DRAWN_FRESH_MILLIS = 1000;
+    /** How recently DH must have asked the frustum for terrain to count as culled by it. */
+    private static final long CULL_FRESH_MILLIS = 250;
+
+    private static volatile long lastCullUpdateMillis = 0;
+    private static volatile long lastDrawnMillis = 0;
+    private static volatile long probeStartMillis = 0;
+    private static long keepingSinceMillis = 0;
+    private static Object probeRoom = null;
+    /**
+     * Set once DH has been given a room's copies and not drawn them within {@link #PROBE_MILLIS}.
+     * DH 3.3.3 draws no box groups at all on macOS, and none anywhere with its generic rendering
+     * switched off; from then on rooms are left exactly as they were before this class, until the
+     * player next joins a world.
+     */
+    private static volatile boolean unsupported = false;
+
     private DistantHorizonsFarCopies() {}
 
     /** Bind to DH. Call once, on the client, only when DH is loaded. */
@@ -61,7 +85,9 @@ public final class DistantHorizonsFarCopies {
             DhApi.overrides.bind(IDhApiCullingFrustum.class, new TerrainCull(IDhApiCullingFrustum.class));
             DhApi.overrides.bind(IDhApiShadowCullingFrustum.class, new ShadowTerrainCull());
             DhApiEventRegister.on(DhApiBeforeRenderEvent.class, new GroupSync());
-            ClientPortalRoomFarCopies.bindDistantHorizons(DistantHorizonsFarCopies::horizonBlocks);
+            DhApiEventRegister.on(DhApiBeforeGenericObjectRenderEvent.class, new DrawProbe());
+            ClientPortalRoomFarCopies.bindDistantHorizons(DistantHorizonsFarCopies::horizonBlocks,
+                DistantHorizonsFarCopies::drawnRecently, DistantHorizonsFarCopies::reset);
             LOGGER.info("[DungeonTrain] Distant Horizons will carry endless dimensional rooms on to its horizon");
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not bind the Distant Horizons far-copies hooks; "
@@ -80,6 +106,69 @@ public final class DistantHorizonsFarCopies {
         }
     }
 
+    /**
+     * Whether DH should be left drawing this frame inside a dimensional room — and so not cancelled
+     * by {@link DistantHorizonsSuppression}. Only while there are copies to draw, DH is known (or,
+     * for a moment after entering a room, still being tested) to draw them, and DH is consulting
+     * the frustum that keeps its terrain out. Anything else falls back to the cancelled frame.
+     */
+    public static boolean keepsDhDrawing() {
+        if (unsupported || !ClientPortalRoomFarCopies.drawingAtCamera()) {
+            keepingSinceMillis = 0;
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        if (keepingSinceMillis == 0) keepingSinceMillis = now;
+        // DH skips the frustum entirely when its own frustum culling is switched off, and drawing
+        // then would show the surface world in the room. Only a frame DH was let draw can ask it, so
+        // this is judged once DH has had a moment of uncancelled frames.
+        if (now - keepingSinceMillis > CULL_FRESH_MILLIS && now - lastCullUpdateMillis > CULL_FRESH_MILLIS) {
+            return giveUp("its frustum culling is off");
+        }
+        if (now - lastDrawnMillis <= DRAWN_FRESH_MILLIS) return true;
+        if (probeStartMillis == 0 || now - probeStartMillis <= PROBE_MILLIS) return true;
+        return giveUp("it draws no custom objects on this system, or its generic rendering is off");
+    }
+
+    private static boolean giveUp(String why) {
+        unsupported = true;
+        keepingSinceMillis = 0;
+        LOGGER.info("[DungeonTrain] Distant Horizons cannot carry endless room copies here ({}); those rooms stay as they are", why);
+        return false;
+    }
+
+    /** Whether DH has drawn the copies recently enough that the room's fog may stand back. */
+    public static boolean drawnRecently() {
+        return !unsupported && System.currentTimeMillis() - lastDrawnMillis <= DRAWN_FRESH_MILLIS;
+    }
+
+    /** Forget a failed probe: a new world is a fresh chance (DH's settings may have changed). */
+    public static void reset() {
+        unsupported = false;
+        keepingSinceMillis = 0;
+        probeRoom = null;
+        probeStartMillis = 0;
+        lastDrawnMillis = 0;
+    }
+
+    private static void startProbe(ClientPortalRoomFarCopies.Snapshot snapshot) {
+        Object room = java.util.List.of(snapshot.roomX(), snapshot.roomY(), snapshot.roomZ());
+        if (room.equals(probeRoom)) return;
+        probeRoom = room;
+        probeStartMillis = System.currentTimeMillis();
+    }
+
+    /** Notes each frame DH actually draws one of our groups — the evidence everything else waits on. */
+    private static final class DrawProbe extends DhApiBeforeGenericObjectRenderEvent {
+        @Override
+        public void beforeRender(DhApiCancelableEventParam<EventParam> event) {
+            EventParam p = event.value;
+            if (p != null && RESOURCE.equals(p.resourceLocationNamespace + ":" + p.resourceLocationPath)) {
+                lastDrawnMillis = System.currentTimeMillis();
+            }
+        }
+    }
+
     // ---------- box groups ----------
 
     /** Bring DH's box groups in line with the current layout, on the render thread, before DH draws. */
@@ -89,7 +178,7 @@ public final class DistantHorizonsFarCopies {
         IDhApiLevelWrapper level = param == null ? null : param.clientLevelWrapper;
         IDhApiCustomRenderRegister target = level == null ? null : level.getRenderRegister();
 
-        if (snapshot == null || target == null) {
+        if (unsupported || snapshot == null || target == null) {
             clearGroups();
             return;
         }
@@ -102,6 +191,7 @@ public final class DistantHorizonsFarCopies {
         DhApiVec3d origin = new DhApiVec3d(snapshot.roomX(), snapshot.roomY(), snapshot.roomZ());
         addGroup(origin, snapshot.layout().near());
         addGroup(origin, snapshot.layout().outer());
+        startProbe(snapshot);
     }
 
     private static void addGroup(DhApiVec3d origin, List<FarBox> boxes) {
@@ -174,6 +264,7 @@ public final class DistantHorizonsFarCopies {
 
         @Override
         public void update(int worldMinBlockY, int worldMaxBlockY, DhApiMat4f worldViewProjection) {
+            lastCullUpdateMillis = System.currentTimeMillis();
             hideTerrain = ClientPortalRoomFarCopies.drawingAtCamera();
             IDhApiCullingFrustum core = core();
             if (core != null) core.update(worldMinBlockY, worldMaxBlockY, worldViewProjection);

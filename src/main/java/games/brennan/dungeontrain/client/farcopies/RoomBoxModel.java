@@ -19,6 +19,8 @@ public final class RoomBoxModel {
 
     /** Detail-ring box cap per tile before it coarsens. */
     public static final int DEFAULT_DETAIL_CAP = 256;
+    /** A detail model this small is used as the coarse one as it is. */
+    public static final int COARSE_TARGET = 48;
     /** Cell size of the coarse model, in blocks. */
     public static final int COARSE_CELL = 4;
     /** Share of a line or layer that must be solid for it to count as running the whole tile. */
@@ -52,8 +54,14 @@ public final class RoomBoxModel {
         for (int factor = 2; detail.size() > detailCap && factor <= 8; factor *= 2) {
             detail = greedy(voxels.downsample(factor), factor, voxels);
         }
-        List<FarBox> coarse = greedy(voxels.downsample(COARSE_CELL), COARSE_CELL, voxels);
-        if (coarse.size() > detail.size()) coarse = detail;
+        // A room already cheap enough keeps its detail in the middle ring too; and a coarsening that
+        // folds away a one-block floor (it is never half of a 4-block cube) would leave that ring
+        // empty, which is a hole in the floor rather than a cheaper one.
+        List<FarBox> coarse = detail;
+        if (detail.size() > COARSE_TARGET) {
+            List<FarBox> folded = greedy(voxels.downsample(COARSE_CELL), COARSE_CELL, voxels);
+            if (!folded.isEmpty() && folded.size() < detail.size()) coarse = folded;
+        }
         return new RoomBoxModel(voxels.sizeX(), voxels.sizeY(), voxels.sizeZ(),
             detail, coarse, strips(voxels));
     }

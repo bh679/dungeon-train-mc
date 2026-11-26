@@ -99,7 +99,7 @@ public final class DistantHorizonsSuppression {
             // An endless room whose copies DH is carrying on keeps DH drawing: those copies are
             // drawn in this same pass, and DistantHorizonsFarCopies keeps the terrain out of it
             // through the culling frustum instead.
-            return !ClientPortalRoomFarCopies.drawingAtCamera();
+            return !DistantHorizonsFarCopies.keepsDhDrawing();
         }
 
         int x = (int) Math.floor(pos.x);

@@ -61,6 +61,8 @@ public final class ClientPortalRoomFarCopies {
     static final int CENTRE_HYSTERESIS = 2;
     /** Fewest ticks between two layouts while the stamped copies are still changing. */
     static final int REBUILD_INTERVAL_TICKS = 10;
+    /** Ticks between samples of the room while its blocks are still arriving. */
+    static final int RESAMPLE_TICKS = 20;
 
     /** A layout ready to draw, numbered so the DH side can tell a new one from the last. */
     public record Snapshot(long version, int roomX, int roomY, int roomZ, FarCopiesLayout.Result layout) {}
@@ -69,10 +71,15 @@ public final class ClientPortalRoomFarCopies {
     private static volatile Snapshot snapshot = null;
     private static volatile boolean dhBound = false;
     private static volatile IntSupplier horizonBlocks = () -> 0;
+    private static volatile java.util.function.BooleanSupplier drawnRecently = () -> false;
+    private static volatile Runnable dhReset = () -> {};
 
     // Client-thread state.
     private static RoomBoxModel model = null;
     private static Object modelKey = null;
+    private static boolean modelSettled = false;
+    private static int modelSolid = -1;
+    private static long lastSampleTick = Long.MIN_VALUE;
     private static Object layoutKey = null;
     private static int centreX = Integer.MIN_VALUE;
     private static int centreZ = Integer.MIN_VALUE;
@@ -90,14 +97,21 @@ public final class ClientPortalRoomFarCopies {
         snapshot = null;
         model = null;
         modelKey = null;
+        modelSettled = false;
+        modelSolid = -1;
+        lastSampleTick = Long.MIN_VALUE;
         layoutKey = null;
         centreX = Integer.MIN_VALUE;
         centreZ = Integer.MIN_VALUE;
     }
 
     /** Called once by the DH binding, after it has hooked into DH successfully. */
-    public static void bindDistantHorizons(IntSupplier horizonBlocksSupplier) {
+    public static void bindDistantHorizons(IntSupplier horizonBlocksSupplier,
+                                           java.util.function.BooleanSupplier drawnRecentlySupplier,
+                                           Runnable resetHook) {
         horizonBlocks = Objects.requireNonNull(horizonBlocksSupplier);
+        drawnRecently = Objects.requireNonNull(drawnRecentlySupplier);
+        dhReset = Objects.requireNonNull(resetHook);
         dhBound = true;
     }
 
@@ -128,7 +142,10 @@ public final class ClientPortalRoomFarCopies {
      * so fogging them out a few rooms away would hide the very thing being drawn.
      */
     public static boolean liftsRoomFog() {
-        return drawingAtCamera();
+        // Only on evidence: DH has to have drawn the copies, not merely been handed them. Where it
+        // draws none (macOS, or its generic rendering off) the room keeps its fog and looks as it
+        // always did.
+        return drawingAtCamera() && drawnRecently.getAsBoolean();
     }
 
     /** The current layout, or {@code null} when there is nothing to draw. */
@@ -152,6 +169,7 @@ public final class ClientPortalRoomFarCopies {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         reset();
+        dhReset.run();
     }
 
     private static void tick() {
@@ -182,7 +200,7 @@ public final class ClientPortalRoomFarCopies {
 
         int farRadius = farRadius(p);
         int maxBoxes = ClientDisplayConfig.PORTAL_ROOM_DISTANT_HORIZONS_MAX_BOXES.get();
-        Object key = List.of(modelKey, centreX, centreZ, p.stamped(), p.blocked(), farRadius, maxBoxes);
+        Object key = List.of(modelKey, modelSolid, centreX, centreZ, p.stamped(), p.blocked(), farRadius, maxBoxes);
         if (key.equals(layoutKey)) return;
         long now = level.getGameTime();
         // Throttled only once something is drawn: the first layout of a room goes out at once.
@@ -191,8 +209,16 @@ public final class ClientPortalRoomFarCopies {
         FarCopiesLayout.Result result = FarCopiesLayout.build(new FarCopiesLayout.Input(
             m, centreX, centreZ, stampedKeys(p), blockedRects(p),
             NEAR_RADIUS, MID_RADIUS, farRadius, maxBoxes));
+        boolean firstForRoom = snapshot == null;
         layoutKey = key;
         lastBuildTick = now;
+        if (firstForRoom) {
+            LOGGER.info("[DungeonTrain] Endless room far copies: centre {},{} -> {} near + {} outer boxes, far radius {} tiles (DH {} blocks)",
+                centreX, centreZ, result.near().size(), result.outer().size(), result.farRadius(), horizonBlocks.getAsInt());
+        } else {
+            LOGGER.debug("[DungeonTrain] Endless room far copies: centre {},{} -> {} near + {} outer boxes, far radius {}",
+                centreX, centreZ, result.near().size(), result.outer().size(), result.farRadius());
+        }
         snapshot = new Snapshot(++version, p.roomX(), p.roomY(), p.roomZ(), result);
     }
 
@@ -221,16 +247,41 @@ public final class ClientPortalRoomFarCopies {
 
     // ---------- sampling the room ----------
 
-    /** The room's box model, sampled once per room from a stamped copy whose chunks are loaded. */
+    /**
+     * The room's box model, sampled from a stamped copy whose chunks are loaded.
+     *
+     * <p><b>Sampled until it settles, not once.</b> A tile is in the server's stamped list the tick
+     * it is written, but its blocks reach this client a moment later, and a chunk can be "loaded"
+     * here while still all air. So an empty sample is never kept, and the room is sampled again every
+     * {@link #RESAMPLE_TICKS} until two samples in a row hold the same number of blocks.</p>
+     */
     private static RoomBoxModel modelFor(ClientLevel level, PortalRoomFarCopiesPacket p) {
         Object key = List.of(p.mode(), p.roomX(), p.roomY(), p.roomZ(), p.sizeX(), p.sizeY(), p.sizeZ());
-        if (key.equals(modelKey) && model != null) return model;
+        if (!key.equals(modelKey)) {
+            model = null;
+            modelKey = key;
+            modelSettled = false;
+            modelSolid = -1;
+            lastSampleTick = Long.MIN_VALUE;
+        }
+        long now = level.getGameTime();
+        if (modelSettled || (lastSampleTick != Long.MIN_VALUE && now - lastSampleTick < RESAMPLE_TICKS)) {
+            return model;
+        }
         PortalRoomFarCopiesPacket.TileRef sample = sampleTile(level, p);
-        if (sample == null) return null;
-        model = RoomBoxModel.of(sampleVoxels(level, p, sample));
-        modelKey = key;
-        LOGGER.info("[DungeonTrain] Endless room far copies: sampled tile {},{} of a {}x{}x{} room -> {} detail / {} coarse / {} strip boxes",
-            sample.x(), sample.z(), p.sizeX(), p.sizeY(), p.sizeZ(),
+        if (sample == null) return model;
+        lastSampleTick = now;
+        TileVoxels voxels = sampleVoxels(level, p, sample);
+        int solid = voxels.solidCount();
+        if (solid == 0) return model;
+        if (solid == modelSolid) {
+            modelSettled = true;
+            return model;
+        }
+        modelSolid = solid;
+        model = RoomBoxModel.of(voxels);
+        LOGGER.info("[DungeonTrain] Endless room far copies: sampled tile {},{} of a {}x{}x{} room ({} blocks) -> {} detail / {} coarse / {} strip boxes",
+            sample.x(), sample.z(), p.sizeX(), p.sizeY(), p.sizeZ(), solid,
             model.detail().size(), model.coarse().size(), model.strips().size());
         return model;
     }
