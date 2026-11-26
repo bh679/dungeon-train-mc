@@ -165,8 +165,8 @@ public final class SharedCarriageEnterEvents {
 
         // A carriage whose engines have all been carried off can't drift on: nothing to announce. Checked
         // before the rate limit so the silent entry doesn't spend one of the player's announcements.
-        EngineStamp.EngineState engines = inst == null ? null : EngineStamp.engineState(level, inst);
-        if (engines != null && !SharedCarriageMessage.announces(engines.engines(), inst.fuel())) {
+        int engines = inst == null ? -1 : EngineStamp.engineCount(level, inst);
+        if (engines >= 0 && !SharedCarriageMessage.announces(engines, inst.fuel())) {
             PENDING.remove(id);
             return;
         }
@@ -192,7 +192,7 @@ public final class SharedCarriageEnterEvents {
         // theirs, so naming them again reads as a bug. What is genuinely news there is who has changed it
         // while it was away — which is exactly the credit's stand-alone editor phrasing.
         Credits shown = own ? new Credits("", credits.editors(), credits.editorCount()) : credits;
-        List<PendingLine> queue = new ArrayList<>(3);
+        List<PendingLine> queue = new ArrayList<>(2);
         int due = player.tickCount + CREDIT_DELAY_TICKS;
         String locale = WorldInfoReporter.clientLanguage(player);
         Component credit = SharedCarriageMessage.creditLine(locale, shown, level.getRandom());
@@ -202,26 +202,10 @@ public final class SharedCarriageEnterEvents {
         // so the two never land together when both are present.
         Component died = SharedCarriageMessage.deathLine(locale, deaths, level.getRandom());
         if (died != null) queue.add(new PendingLine(died, due + DEATH_DELAY_TICKS));
-        if (engines != null) addFuelLine(queue, engines, due, level);
         // Replaced, never appended: whatever the last carriage was still holding has been overtaken and
         // must not trail into this one.
         if (queue.isEmpty()) PENDING.remove(id);
         else PENDING.put(id, List.copyOf(queue));
-    }
-
-    /**
-     * Queue the "its engine waits for fuel" line, last: on the credit beat when nothing else is held, else
-     * a beat behind the last held line, so no two lines land together. Shared with the room announcer.
-     */
-    static void addFuelLine(List<PendingLine> queue, EngineStamp.EngineState engines, int creditDue, ServerLevel level) {
-        Component fuel = SharedCarriageMessage.fuelLine(engines.engines(), engines.coal(), level.getRandom());
-        if (fuel == null) return;
-        queue.add(new PendingLine(fuel, fuelDue(queue, creditDue)));
-    }
-
-    /** When the fuel line is due behind {@code queue}: the credit beat, or a beat after the last held line. Pure. */
-    static int fuelDue(List<PendingLine> queue, int creditDue) {
-        return queue.isEmpty() ? creditDue : queue.get(queue.size() - 1).dueTick() + DEATH_DELAY_TICKS;
     }
 
     /**

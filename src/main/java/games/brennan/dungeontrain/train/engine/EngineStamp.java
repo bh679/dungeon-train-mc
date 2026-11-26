@@ -85,21 +85,14 @@ public final class EngineStamp {
         return DriftEngine.clampCoal(total);
     }
 
-    /** How many engines a build holds and the coal in them together. */
-    public record EngineState(int engines, int coal) {}
-
     /**
-     * The engines in {@code build}'s box and their total coal, from one pass over the box; null when the
-     * build has no box to look in. Tells a build whose engine was carried off (no engines) from a fresh one
-     * waiting to be fed (engines, no coal), which its fuel count alone cannot: both read 0.
+     * How many engines {@code build}'s box holds; -1 when the build has no box to look in. Tells a build
+     * whose engine was carried off (none) from a fresh one waiting to be fed, which its fuel count alone
+     * cannot: both read 0.
      */
-    public static EngineState engineState(ServerLevel level, SharedBuild build) {
+    public static int engineCount(ServerLevel level, SharedBuild build) {
         Box box = box(build);
-        if (box == null) return null;
-        List<EngineBlockEntity> engines = findAll(level, box.origin(), box.size(), null);
-        int total = 0;
-        for (EngineBlockEntity engine : engines) total += engine.coal();
-        return new EngineState(engines.size(), DriftEngine.clampCoal(total));
+        return box == null ? -1 : findAll(level, box.origin(), box.size(), null).size();
     }
 
     /**
