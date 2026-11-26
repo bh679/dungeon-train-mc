@@ -179,6 +179,7 @@ final class StatChips {
             String text = t.text().getString();
             return text.isEmpty() ? List.of() : List.of(Piece.of(text));
         }
+        if (v instanceof PerkStats.Or or) return either(value(or.first()), value(or.second()));
         PerkStats.Num n = (PerkStats.Num) v;
         String sign = n.signed() && n.value() > 0 ? "+" : "";
         return switch (n.unit()) {
@@ -188,6 +189,27 @@ final class StatChips {
             case MULTIPLIER -> List.of(Piece.of(sign + Component.translatable(KEY + "unit." + n.unit().key(), number(n.value(), 100.0)).getString()));
             default -> List.of(Piece.of(sign + Component.translatable(KEY + "unit." + n.unit().key(), number(n.value())).getString()));
         };
+    }
+
+    /** "a or b", the words from {@code gui.dungeontrain.perks.stat.or} ({@code %1$s or %2$s}) around each side's pieces. */
+    private static List<Piece> either(List<Piece> a, List<Piece> b) {
+        String pattern = Component.translatable(KEY + "or", "\u0000", "\u0001").getString();
+        int ia = pattern.indexOf('\u0000'), ib = pattern.indexOf('\u0001');
+        if (ia < 0 || ib < 0) {
+            List<Piece> out = new ArrayList<>(a);
+            out.add(Piece.of(" / "));
+            out.addAll(b);
+            return out;
+        }
+        boolean aFirst = ia < ib;
+        int first = Math.min(ia, ib), second = Math.max(ia, ib);
+        List<Piece> out = new ArrayList<>();
+        if (first > 0) out.add(Piece.of(pattern.substring(0, first)));
+        out.addAll(aFirst ? a : b);
+        if (second > first + 1) out.add(Piece.of(pattern.substring(first + 1, second)));
+        out.addAll(aFirst ? b : a);
+        if (second + 1 < pattern.length()) out.add(Piece.of(pattern.substring(second + 1)));
+        return out;
     }
 
     /** Points shown two to an icon (hearts, armour): full icons then a half, or a count and one icon when long. */

@@ -134,9 +134,9 @@
    "tier": 1
   },
   {
-   "id": "heal-friends",
+   "id": "share-hearts",
    "cls": "c3",
-   "name": "Heal Friends",
+   "name": "Share Hearts",
    "desc": "Right-click a player or tame with food to feed and heal them; rank 2 also gives Regeneration I for 5 s",
    "x": 529.5,
    "y": 290.5,
@@ -476,9 +476,9 @@
    "tier": 2
   },
   {
-   "id": "shared-aura",
+   "id": "aura",
    "cls": "c3",
-   "name": "Shared Aura",
+   "name": "Aura",
    "desc": "Allies get buffs",
    "x": 584.1,
    "y": 262.9,
@@ -619,7 +619,7 @@
    "oneWay": false
   },
   {
-   "a": "heal-friends",
+   "a": "share-hearts",
    "b": "friendliness",
    "kind": "req",
    "oneWay": false
@@ -776,7 +776,7 @@
   },
   {
    "a": "pet-health",
-   "b": "heal-friends",
+   "b": "share-hearts",
    "kind": "req",
    "oneWay": true
   },
@@ -943,19 +943,19 @@
    "oneWay": true
   },
   {
-   "a": "shared-aura",
-   "b": "heal-friends",
+   "a": "aura",
+   "b": "share-hearts",
    "kind": "req",
    "oneWay": true
   },
   {
-   "a": "shared-aura",
+   "a": "aura",
    "b": "debuff-aura",
    "kind": "cross",
    "oneWay": false
   },
   {
-   "a": "shared-aura",
+   "a": "aura",
    "b": "save-ally",
    "kind": "req",
    "oneWay": true
@@ -1015,7 +1015,7 @@
    "oneWay": false
   },
   {
-   "a": "shared-aura",
+   "a": "aura",
    "b": "healing",
    "kind": "cross",
    "oneWay": false
@@ -1075,7 +1075,7 @@
    "oneWay": true
   },
   {
-   "a": "heal-friends",
+   "a": "share-hearts",
    "b": "convert-mob",
    "kind": "cross",
    "oneWay": false

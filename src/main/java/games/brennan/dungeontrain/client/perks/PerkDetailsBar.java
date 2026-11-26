@@ -451,8 +451,9 @@ final class PerkDetailsBar {
         // the perk's key stats as chips along the bottom
         int dy = y + LINE + 2, mw = contentRight - x;
         List<PerkStats.Stat> stats = PerkStats.of(p.id());
+        games.brennan.dungeontrain.perks.aura.AuraDef aura = comingSoon ? null : games.brennan.dungeontrain.perks.aura.Auras.of(p.id());
         int chipY = top + HEIGHT - 4 - CHIP_H;
-        int max = ((stats.isEmpty() ? top + HEIGHT : chipY) - 1 - dy) / LINE;
+        int max = ((stats.isEmpty() && aura == null ? top + HEIGHT : chipY) - 1 - dy) / LINE;
         boolean refused = refusalKey != null && p.id().equals(refusedFor) && net.minecraft.Util.getMillis() - refusedAt < REFUSAL_MS;
         int room = refused ? max - 1 : max;
         int shown = 0;
@@ -466,6 +467,10 @@ final class PerkDetailsBar {
                 g.drawString(font, l, x, dy + shown++ * LINE, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
             }
         }
+        if (aura != null && !unlockOnly && AuraChips.hasDraws(aura) && shown < room) {
+            String hint = font.plainSubstrByWidth(AuraChips.hint(aura).getString(), mw);
+            g.drawString(font, hint, x, dy + shown++ * LINE, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+        }
         if (refused) {
             String why = font.plainSubstrByWidth(Component.translatable(refusalKey).getString(), mw);
             g.drawString(font, why, x, dy + (max - 1) * LINE, (a << 24) | 0xFFC9C9, false);
@@ -476,6 +481,10 @@ final class PerkDetailsBar {
         int chipRight = unlockReason == null ? contentRight
             : Math.min(contentRight, (width - font.width(unlockReason)) / 2 - CHIP_GAP);
         if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
+        if (aura != null) {
+            AuraChips.render(g, font, aura, statPoints, previewPoints(unlockPreview(p, snap)), x, chipY, chipRight,
+                CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG, SkyPalette.GOLD, a, !unlockOnly);
+        }
     }
 
     /**
@@ -493,10 +502,15 @@ final class PerkDetailsBar {
      */
     private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int unlockPreview, int x, int y, int right,
                              int a) {
-        int preview = unlockPreview >= 0 ? unlockPreview
-            : graphHover >= 0 && graph != null && graphHover < graph.layout(graphW).segments() ? graphHover + 1 : -1;
+        int preview = previewPoints(unlockPreview);
         StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
             SkyPalette.FG, SkyPalette.GOLD, a);
+    }
+
+    /** The points a hovered Unlock tab or graph block would give, or -1. */
+    private int previewPoints(int unlockPreview) {
+        return unlockPreview >= 0 ? unlockPreview
+            : graphHover >= 0 && graph != null && graphHover < graph.layout(graphW).segments() ? graphHover + 1 : -1;
     }
 
     /** A perk's points, its empty room, and one dark block for the next unlock. */
@@ -524,6 +538,7 @@ final class PerkDetailsBar {
      * only). Unlocking is the Unlock tab's alone: a dark block does nothing. Returns true when it acted.
      */
     boolean click(double mx, double my) {
+        if (perk != null && AuraChips.click(perk.id(), mx, my)) return true;
         if (unlockOnly || !overGraph(mx, my)) return false;
         PointsGraph.Kind k = graph.at(graphW, mx - graphX);
         if (k == PointsGraph.Kind.LOCKED || k == null && (!graph.layout(graphW).bar() || graph.open == 0)) return false;

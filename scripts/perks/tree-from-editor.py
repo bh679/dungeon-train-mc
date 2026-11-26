@@ -24,14 +24,17 @@ from pathlib import Path
 OVERRIDES = {
     "Stackable BookQill": "stackable-book-quill",
     "Gift liveEye": "gift-live-eye",
-    "Shared Arua": "shared-aura",
+    "Shared Arua": "aura",
+    "Shared Aura": "aura",
+    "Heal Friends": "share-hearts",
 }
 # Perks taken out of the game: dropped with their links even while the editor still has them.
 REMOVED = {"gift-live-eye"}
 # Names the game shows differently from the editor (the editor keeps its own spelling).
 NAMES = {
     "stackable-book-quill": "Stackable Book and Quill",
-    "shared-aura": "Shared Aura",
+    "aura": "Aura",
+    "share-hearts": "Share Hearts",
 }
 ROOT = "root"
 CENTRE = 400.0
