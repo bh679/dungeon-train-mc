@@ -38,7 +38,17 @@ public final class PocketBrewButton {
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
         if (!(event.getScreen() instanceof InventoryScreen screen)) return;
-        event.addListener(new BrewButton(screen));
+        BrewButton button = new BrewButton(screen);
+        button.refresh();
+        event.addListener(button);
+    }
+
+    @SubscribeEvent
+    public static void onScreenRender(ScreenEvent.Render.Pre event) {
+        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+        for (var child : screen.children()) {
+            if (child instanceof BrewButton button) button.refresh();
+        }
     }
 
     private static final class BrewButton extends Button {
@@ -53,12 +63,10 @@ public final class PocketBrewButton {
         }
 
         /** Shown only with the perk; placed every frame, since the recipe book moves the window. */
-        @Override
-        public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        void refresh() {
             Minecraft mc = Minecraft.getInstance();
             visible = mc.player != null && Perks.rank(mc.player, AlchemistPerks.STANDLESS_BREWING) > 0;
             setPosition(screen.getGuiLeft() + X, screen.getGuiTop() + Y);
-            super.render(g, mouseX, mouseY, partialTick);
         }
 
         /** The button's frame without its label, then the brewing stand icon. */

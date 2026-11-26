@@ -47,6 +47,13 @@ public final class PotionStacking implements PerkEffect {
             && (stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION));
     }
 
+    /** Two potions of the same item whose components differ at most by the stack-size stamp. */
+    public static boolean sameIgnoringStamp(ItemStack a, ItemStack b) {
+        if (!isPotion(a) || !a.is(b.getItem())) return false;
+        return a.getComponentsPatch().forget(t -> t == DataComponents.MAX_STACK_SIZE)
+            .equals(b.getComponentsPatch().forget(t -> t == DataComponents.MAX_STACK_SIZE));
+    }
+
     /** Stamp or strip one stack to match {@code rank}. Returns true when it changed. */
     public static boolean conform(ItemStack stack, int rank) {
         if (!isPotion(stack)) return false;

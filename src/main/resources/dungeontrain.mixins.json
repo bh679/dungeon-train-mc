@@ -227,6 +227,7 @@
     "BaseContainerBlockEntityCookingOwnerMixin",
     "BrewingStandBrewmasterMixin",
     "PotionContentsMergeMixin",
+    "ItemStackPotionStackingMixin",
     "CampfireCookingTimeMixin",
     "LivingEntityEnchantOwnerMixin",
     "ItemStackEnchantOwnerMixin",

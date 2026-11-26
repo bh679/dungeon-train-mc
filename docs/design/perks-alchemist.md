@@ -65,6 +65,9 @@ changes at least one chip; previews read `→ N at K points`.
 | 20 | 5 | 2.4 s | 41 s |
 | 30 | 7 | 0.8 s | 14 s |
 
+**Tick floor.** Brew time reaches a single tick at about 57 points and the free-fuel wait counts
+whole ticks, so from 67 points some points change no chip (the game's own limit, as 99 is for a stack).
+
 **Details card**
 - Description: "Your own brewing stand, opened from your inventory. It keeps brewing while you play."
 - Chips: `Bottle slots 1 → 2 at 5 points`, `Brew time 13.1s → 11.8s`,
