@@ -426,7 +426,7 @@ The Lover's Aura turned on enemies, with a range **per debuff**.
 ## Warlock
 
 Settled 2026-11-26. Standless Brewing left Warlock for the new Alchemist class (`perks-alchemist.md`),
-so Warlock's path is Throwables → Summon Lightning, with Teleport Player and Convert Mob beside it.
+so Warlock's path is Throwables → Sacrificial Lightning, with Teleport Player and Convert Mob beside it.
 Code: `perks/effects/warlock/` (maths in `WarlockPerks`, tests in `WarlockPerksTest`).
 
 ### Throwables (tier 1) — CONFIRMED 2026-11-26
@@ -479,23 +479,36 @@ Code: `perks/effects/warlock/` (maths in `WarlockPerks`, tests in `WarlockPerksT
   action, not a command. The client side is in `client/warlock/`.
 - The list keeps its newest 32 PlayerMobs. That is a storage bound, not a perk limit.
 
-### Summon Lightning (tier 3) — CONFIRMED 2026-11-26 (replaces the melee-proc version of the same day)
+### Sacrificial Lightning (tier 3, id `summon-lightning`) — CONFIRMED 2026-11-26 (replaces the melee-proc version of the same day)
+
+Renamed from Summon Lightning (Brennan, 2026-11-26); the perk id stays `summon-lightning`.
 
 **How it works**
-- Look at a mob (or player, where PvP is on) within 32 blocks and press attack with an empty hand.
-  A visual-only bolt strikes it, and the perk deals the damage and sets the target alight. It never
-  lights blocks or converts anything (no charged creepers, witches or piglins).
-- It costs the caster health. A cast that would kill them is refused ("Not enough hearts."). Health
-  is the only limit: there is no cooldown. Creative pays nothing.
+- Look at a mob (or a player, where PvP is on) within 32 blocks and press attack with an empty hand. The
+  perk deals the damage, credited to the caster, and sets the target alight. The bolt is only a picture
+  drawn on each nearby client (`SacrificialBoltPacket`), so it never lights blocks or converts anything
+  (no charged creepers, witches or piglins).
+- It costs the caster health. Too weak to pay (the cost would kill), the attack is just a punch: no
+  message. Health is the only limit, with no cooldown (casts under 0.5 s apart count once). A hit that
+  doesn't land (the target's hurt immunity) costs nothing. Creative pays nothing.
 - **Ladder (Brennan's table, damage – cost in hearts):** 5–4, 5.5–4, 5.5–3.5, 6–3.5, 6–3, 6.5–3,
   7–3, 7–2.5, 7.5–2.5, 8–2.5, 9–2.5, 10–2.5, 10–2, 10.5–2, 11.5–2, 12–2, 13–2, then +1♥ a point
   to 20–2 at 24, and 20–1.5 at 25.
 - **Past 25:** the cost drops ½♥ at double the last gap each time (49 → 1♥, 97 → ½♥). After ½♥ it
   becomes a 50% chance of losing ½♥ (193), and the chance halves at each further drop (385 → 25%,
   769 → 12.5% …). Damage climbs 1♥ a point and holds on each point the cost drops, as the table
-  does (assumed from 18–24; confirm with Brennan).
+  does (assumed from 18–24; Brennan to confirm).
+
+**Looks (Brennan, 2026-11-26): it grows with the damage**
+- **Thickness:** 1 + ½·log₂(damage♥ ÷ 10) times a vanilla bolt: half at 5♥, vanilla at 10♥, double at
+  40♥, still growing, more slowly, past that (2.5× at 80♥).
+- **Bolts:** one per 5♥ of damage up to 20♥ (4), then one more per 10♥ (5 at 30♥, 6 at 40♥). Extras land
+  1.25 to 2.5 blocks around the target, a little thinner.
+- **Thunder and flash:** thunder volume is twice the thickness (heard further), its pitch deeper as it
+  thickens; the sky flashes for 1 + bolts ticks, up to 10.
 
 **Details card**
+- Name: "Sacrificial Lightning".
 - Description: "Look at a mob and attack with an empty hand to call down lightning. It costs you
   hearts."
 - Chips: `Damage` (HEARTS), `Cost` (HEARTS, stepped), and `Cost chance` (PERCENT, shown only below
@@ -503,8 +516,10 @@ Code: `perks/effects/warlock/` (maths in `WarlockPerks`, tests in `WarlockPerksT
 
 **Build notes**
 - `client/warlock/SummonLightningInput` catches the empty-hand attack and the entity under the
-  crosshair (ray stops at blocks), then sends `SummonLightningPacket`. `SummonLightning.cast`
-  re-checks range, line of sight, PvP and health.
+  crosshair, then sends `SummonLightningPacket`. On a Sable train the client's block ray reports ship hits
+  in plot coordinates, so the entity is found along the full ray first and line of sight is a second ray.
+  `SummonLightning.cast` re-checks range, line of sight, PvP and health; `client/warlock/SacrificialBoltClient`
+  draws the bolts (vanilla's bolt shape, width scaled) and plays the thunder.
 
 ### Convert Mob (tier 3) — CONFIRMED 2026-11-26
 

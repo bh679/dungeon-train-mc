@@ -116,4 +116,32 @@ class WarlockPerksTest {
             assertTrue(WarlockPerks.convertTicks(r + 1) > WarlockPerks.convertTicks(r), "rank " + r);
         }
     }
+
+    @Test
+    void boltThicknessIsHalfAtFiveVanillaAtTenDoubleAtFortyHearts() {
+        assertEquals(0.5f, WarlockPerks.boltThickness(10f), 1e-5);   // 5♥
+        assertEquals(1.0f, WarlockPerks.boltThickness(20f), 1e-5);   // 10♥
+        assertEquals(2.0f, WarlockPerks.boltThickness(80f), 1e-5);   // 40♥
+        assertEquals(2.5f, WarlockPerks.boltThickness(160f), 1e-5);  // 80♥: still growing, slower
+        assertTrue(WarlockPerks.boltThickness(1f) >= 0.25f);
+    }
+
+    @Test
+    void oneBoltPerFiveHeartsToTwentyThenOnePerTen() {
+        assertEquals(1, WarlockPerks.boltCount(10f));   // 5♥
+        assertEquals(2, WarlockPerks.boltCount(20f));   // 10♥
+        assertEquals(4, WarlockPerks.boltCount(40f));   // 20♥
+        assertEquals(4, WarlockPerks.boltCount(58f));   // 29♥
+        assertEquals(5, WarlockPerks.boltCount(60f));   // 30♥
+        assertEquals(6, WarlockPerks.boltCount(80f));   // 40♥
+        assertEquals(1, WarlockPerks.boltCount(2f));
+    }
+
+    @Test
+    void tooWeakOnlyWhileTheCostIsCertainAndWouldKill() {
+        assertTrue(WarlockPerks.tooWeakToCast(1, 8f));    // costs 4♥, has 4♥
+        assertTrue(WarlockPerks.tooWeakToCast(1, 3f));
+        assertTrue(!WarlockPerks.tooWeakToCast(1, 9f));
+        assertTrue(!WarlockPerks.tooWeakToCast(193, 0.5f)); // a 50% chance never refuses
+    }
 }

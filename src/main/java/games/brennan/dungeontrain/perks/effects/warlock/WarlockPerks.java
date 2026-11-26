@@ -15,7 +15,7 @@ public final class WarlockPerks {
     public static final String THROWABLES = "throwables";
     /** Tier 2: call a player or a PlayerMob met this life to you. */
     public static final String TELEPORT_PLAYER = "teleport-player";
-    /** Tier 3: look at a mob and attack with an empty hand to strike it with lightning, paid in health. */
+    /** Tier 3, "Sacrificial Lightning": look at a mob and attack with an empty hand to strike it with lightning, paid in health. */
     public static final String SUMMON_LIGHTNING = "summon-lightning";
     /** Tier 3: sneak and right-click a hostile mob with an empty hand to turn it to your side for a while. */
     public static final String CONVERT_MOB = "convert-mob";
@@ -25,6 +25,8 @@ public final class WarlockPerks {
     static final double COOLDOWN_FALLOFF = 0.9;
     static final double CONVERT_SECONDS = 15.0;
     static final double CONVERT_COOLDOWN_SECONDS = 120.0;
+    /** The thinnest a bolt is drawn, against a vanilla one. */
+    static final double MIN_BOLT_THICKNESS = 0.25;
     /** How far Summon Lightning reaches, in blocks. */
     public static final double LIGHTNING_RANGE = 32.0;
     /** How far a converted mob looks for hostiles to fight, in blocks. */
@@ -134,6 +136,32 @@ public final class WarlockPerks {
         if (rank <= LIGHTNING_COST.length) return 100.0;
         int pastHalf = costDropsPast(rank) - (LIGHTNING_COST[LIGHTNING_COST.length - 1] - 1);
         return pastHalf <= 0 ? 100.0 : 100.0 / Math.pow(2, pastHalf);
+    }
+
+    /**
+     * How thick a Sacrificial Lightning bolt is against a vanilla one, by its damage in hit points: half at
+     * 5♥, vanilla at 10♥, double at 40♥, and on, ever more slowly (1 + ½·log₂(hearts ÷ 10)).
+     */
+    public static float boltThickness(float damageHp) {
+        double hearts = Math.max(1.0, damageHp / 2.0);
+        return (float) Math.max(MIN_BOLT_THICKNESS, 1.0 + 0.5 * Math.log(hearts / 10.0) / Math.log(2.0));
+    }
+
+    /** How many bolts strike: one per 5♥ of damage up to 20♥ (4), then one more per 10♥; never fewer than 1. */
+    public static int boltCount(float damageHp) {
+        double hearts = damageHp / 2.0;
+        if (hearts <= 20.0) return (int) Math.max(1, Math.floor(hearts / 5.0));
+        return 4 + (int) Math.floor((hearts - 20.0) / 10.0);
+    }
+
+    /** How loud the thunder is: twice the bolt's thickness (a vanilla-thick bolt is heard 32 blocks off). */
+    public static float thunderVolume(float damageHp) {
+        return 2.0f * boltThickness(damageHp);
+    }
+
+    /** Whether a cast at {@code healthHp} could kill the caster: then it is just a punch. A chance cost never kills. */
+    public static boolean tooWeakToCast(int rank, float healthHp) {
+        return lightningCostPercent(rank) >= 100.0 && healthHp <= lightningCost(rank);
     }
 
     // ---- Convert Mob ----------------------------------------------------------------------------

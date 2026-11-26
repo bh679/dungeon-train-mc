@@ -23,10 +23,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 
 /**
- * Summon Lightning's trigger: attack pressed with an empty hand while looking at a living entity within
+ * Sacrificial Lightning's trigger ({@link WarlockPerks#SUMMON_LIGHTNING}): attack pressed with an empty hand while looking at a living entity within
  * {@link WarlockPerks#LIGHTNING_RANGE}, with no block in the way (torches and plants count, as vanilla
  * aims). The press becomes the cast (no punch) and goes to the server, which checks it again. A press
- * at a block in reach, at an armour stand, or at nothing, is left to vanilla.
+ * at a block in reach, at an armour stand, or at nothing, is left to vanilla, and so is any press while
+ * the cast would cost more health than the player has.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SummonLightningInput {
@@ -39,7 +40,10 @@ public final class SummonLightningInput {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || player.isSpectator() || !player.getMainHandItem().isEmpty()) return;
-        if (Perks.rank(player, WarlockPerks.SUMMON_LIGHTNING) <= 0) return;
+        int rank = Perks.rank(player, WarlockPerks.SUMMON_LIGHTNING);
+        if (rank <= 0) return;
+        // too weak to pay for it: just a punch, no message
+        if (!player.getAbilities().instabuild && WarlockPerks.tooWeakToCast(rank, player.getHealth())) return;
         // a block in reach is for breaking, as vanilla has it
         if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) return;
         Entity target = lookedAt(player);

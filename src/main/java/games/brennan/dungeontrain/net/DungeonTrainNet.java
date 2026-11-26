@@ -220,6 +220,9 @@ public final class DungeonTrainNet {
         registrar.playToServer(games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket.TYPE,
             games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket.STREAM_CODEC,
             games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket::handle);
         registrar.playToClient(games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket.TYPE,
             games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket.STREAM_CODEC,
             games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket::handle);

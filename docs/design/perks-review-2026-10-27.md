@@ -441,7 +441,7 @@ place of the word:
 
 ## 10. Warlock
 
-Designed with Brennan and built on 2026-11-26: Throwables, Teleport Player, Summon Lightning and
+Designed with Brennan and built on 2026-11-26: Throwables, Teleport Player, Sacrificial Lightning (id `summon-lightning`) and
 Convert Mob. Their full designs (how each works, ladders, details cards, build notes) are in
 `perks-unbuilt-designs.md` § Warlock. Standless Brewing moved to the new Alchemist class
 (`perks-alchemist.md`). The old Throwables placeholder in `stats.json` is gone; the stats now come
