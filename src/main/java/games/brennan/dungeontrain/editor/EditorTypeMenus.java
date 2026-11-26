@@ -337,11 +337,28 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {
             EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(ChunkFrameStore.fileFor(name));
-            rows.add(new EditorTypeMenusPacket.Variant(
-                name, EditorPlotLabelsPacket.NO_WEIGHT, PlotCategory.CHUNK_FRAMES.name(),
-                ChunkFrameEditor.MODEL_ID, name, p.isUser(), p.isImported()));
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta =
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(name);
+            TemplateGate gate = meta.stageId() == null ? meta.gate()
+                : StageStore.effectiveGate(meta.gate(), meta.stageId());
+            rows.add(chunkFrameRow(name, meta, gate, p.isUser(), p.isImported()));
         }
         return rows;
+    }
+
+    /**
+     * One Frames row: the frame's weight, its effective spawn gate (its Stage's while linked) and the
+     * Stage it is linked to — the same cells a carriage or track row carries, routed to
+     * {@code editor chunkframe …} by {@link PlotCategory#CHUNK_FRAMES}.
+     */
+    static EditorTypeMenusPacket.Variant chunkFrameRow(String name,
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta, TemplateGate gate,
+            boolean isUser, boolean isImported) {
+        return new EditorTypeMenusPacket.Variant(
+            name, meta.weight(), gate.minLevel(), gate.maxLevel(), TrainPhase.toMask(gate.phases()),
+            PlotCategory.CHUNK_FRAMES.name(), ChunkFrameEditor.MODEL_ID, name, isUser, isImported,
+            meta.stageId() == null ? "" : meta.stageId())
+            .withPeriods(gate.periods());
     }
 
     /**
