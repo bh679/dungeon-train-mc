@@ -28,7 +28,7 @@ import java.util.function.UnaryOperator;
  * from the inventory's Brew button ({@link PocketBrewOpenPacket}). It brews on the server every tick the
  * player has the perk, screen open or not, following a placed stand's rules (blaze powder is 20 fuel, a
  * brew costs one fuel whatever the bottles, swapping the ingredient stops it) at
- * {@link PocketBrewingMath}'s brew time, and one free fuel arrives every {@link PocketBrewingMath#freeFuelTicks}
+ * {@link PocketBrewingMath}'s brew time, and one refuel arrives every {@link PocketBrewingMath#refuelTicks}
  * up to a full bar.
  *
  * <p>On death the contents drop with the player's other items (kept with keepInventory). Bottles in slots a
@@ -81,7 +81,7 @@ public final class PocketBrewing {
 
     /**
      * One server tick of {@code stand} at {@code rank}, as vanilla's {@code BrewingStandBlockEntity.serverTick}
-     * plus the free fuel. {@code strengthen} is Brewmaster's roll for a bottle the brew changed.
+     * plus the refuel. {@code strengthen} is Brewmaster's roll for a bottle the brew changed.
      */
     public static Step tick(PocketBrewStand stand, int rank, Mixer mixer, UnaryOperator<ItemStack> strengthen) {
         if (rank <= 0) return Step.NONE;
@@ -116,10 +116,10 @@ public final class PocketBrewing {
         }
 
         if (stand.fuel >= PocketBrewingMath.FUEL_MAX) {
-            stand.freeFuelTicks = 0;
-        } else if (++stand.freeFuelTicks >= PocketBrewingMath.freeFuelTicks(rank)) {
+            stand.refuelTicks = 0;
+        } else if (++stand.refuelTicks >= PocketBrewingMath.refuelTicks(rank)) {
             stand.fuel++;
-            stand.freeFuelTicks = 0;
+            stand.refuelTicks = 0;
         }
         return step;
     }

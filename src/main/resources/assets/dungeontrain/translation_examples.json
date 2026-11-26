@@ -18843,7 +18843,7 @@
       ]
     }
   },
-  "gui.dungeontrain.pocket_brewing.free_fuel": {
+  "gui.dungeontrain.pocket_brewing.refuel": {
     "1": {
       "label": "a countdown in minutes and seconds",
       "examples": [
