@@ -1,0 +1,68 @@
+package games.brennan.dungeontrain.perks.effects.speedster;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** The Speedster perk maths: rank 0 is vanilla, the tree's numbers hold at low ranks, and nothing goes negative. */
+final class SpeedsterPerksTest {
+
+    private static final double EPS = 1e-9;
+
+    @Test
+    @DisplayName("rank 0 (and negative ranks) leave everything at vanilla")
+    void rankZeroIsVanilla() {
+        for (int r : new int[] {0, -1, -7}) {
+            assertEquals(1.0, SpeedsterPerks.hasteMultiplier(r), EPS);
+            assertEquals(1.0, SpeedsterPerks.sprintHungerFactor(r), EPS);
+            assertEquals(0.0, SpeedsterPerks.sprintSpeedBonus(r), EPS);
+            assertEquals(0.0, SpeedsterPerks.sprintJumpImpulse(r), EPS);
+            assertEquals(1.0, SpeedsterPerks.windFactor(r), EPS);
+        }
+    }
+
+    @Test
+    @DisplayName("Haste: +20% mining speed per rank")
+    void haste() {
+        assertEquals(1.2, SpeedsterPerks.hasteMultiplier(1), EPS);
+        assertEquals(1.6, SpeedsterPerks.hasteMultiplier(3), EPS);
+    }
+
+    @Test
+    @DisplayName("Sprint Hunger: x0.9 per rank, never free")
+    void sprintHunger() {
+        assertEquals(0.90, SpeedsterPerks.sprintHungerFactor(1), EPS);
+        assertEquals(0.81, SpeedsterPerks.sprintHungerFactor(2), EPS);
+        assertEquals(0.729, SpeedsterPerks.sprintHungerFactor(3), EPS);
+        assertTrue(SpeedsterPerks.sprintHungerFactor(50) > 0.0);
+    }
+
+    @Test
+    @DisplayName("Sprint Speed: +5% per rank as a total multiplier")
+    void sprintSpeed() {
+        assertEquals(0.05, SpeedsterPerks.sprintSpeedBonus(1), EPS);
+        assertEquals(0.15, SpeedsterPerks.sprintSpeedBonus(3), EPS);
+    }
+
+    @Test
+    @DisplayName("Sprint Jump: the impulse carries 0.1 block further per rank at the measured carry rate")
+    void sprintJump() {
+        double impulse = SpeedsterPerks.sprintJumpImpulse(1);
+        assertTrue(impulse > 0.0);
+        assertEquals(0.1, impulse * SpeedsterPerks.BLOCKS_PER_IMPULSE, EPS);
+        assertEquals(3 * impulse, SpeedsterPerks.sprintJumpImpulse(3), EPS);
+        // Rank 10 roughly doubles vanilla's own 0.2 b/t sprint impulse (a full extra block of carry).
+        assertEquals(1.0 / SpeedsterPerks.BLOCKS_PER_IMPULSE, SpeedsterPerks.sprintJumpImpulse(10), EPS);
+    }
+
+    @Test
+    @DisplayName("Wind Resistance: x0.9 push per rank, never immune")
+    void windResistance() {
+        assertEquals(0.9, SpeedsterPerks.windFactor(1), EPS);
+        assertEquals(0.81, SpeedsterPerks.windFactor(2), EPS);
+        assertEquals(Math.pow(0.9, 10), SpeedsterPerks.windFactor(10), EPS);
+        assertTrue(SpeedsterPerks.windFactor(40) > 0.0);
+    }
+}

@@ -35,7 +35,8 @@
     2811,
     2817,
     2845,
-    2849
+    2849,
+    2910
   ],
   "entries": [
     "cosmic-apple-every-level",
@@ -65,6 +66,7 @@
     "perks-tier-one",
     "perks-tree-v18",
     "perks-unlock-after-death",
+    "tank-hoarder-speedster-builder-perks",
     "trader-perks-reduced-reduction-restock",
     "tribute-room-bigger-tv",
     "tribute-room-pause-reboard",

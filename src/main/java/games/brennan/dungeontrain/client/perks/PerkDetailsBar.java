@@ -472,7 +472,10 @@ final class PerkDetailsBar {
         }
         // unlocking only (points are gone at death): what you've unlocked, filled; in play, the points in it now
         int statPoints = unlockOnly ? snap.unlockLevel(p.id()) : snap.points(p.id());
-        if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, contentRight, a);
+        // the chips stop short of the centred "why not" line at the foot of the bar, shrinking to fit
+        int chipRight = unlockReason == null ? contentRight
+            : Math.min(contentRight, (width - font.width(unlockReason)) / 2 - CHIP_GAP);
+        if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
     }
 
     /**

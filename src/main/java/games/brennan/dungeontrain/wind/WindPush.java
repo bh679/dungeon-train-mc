@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.wind;
 
+import games.brennan.dungeontrain.perks.effects.speedster.SpeedsterPerks;
 import games.brennan.dungeontrain.util.ProjectilePush;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -67,6 +68,7 @@ public final class WindPush {
         if (e.onGround()) wind -= profile.weight().threshold(mass);
         if (wind <= 0.0) return 0.0;
         double a = wind * multiplier(profile.multipliers(), e) * profile.weight().boost(mass);
+        if (e instanceof Player player) a *= SpeedsterPerks.windFactor(player); // Wind Resistance perk
         if (e instanceof LivingEntity living) {
             a *= 1.0 - Math.min(1.0, Math.max(0.0, living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
         }
