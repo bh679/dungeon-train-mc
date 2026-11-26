@@ -6214,6 +6214,7 @@
   "advancements.dungeontrain.enchiridion.no_room_left.description": "Fill every page of your album.",
   "advancements.dungeontrain.enchiridion.no_room_left.hint": "Sixteen pages, sixteen memories.",
   "gui.dungeontrain.earned_photos.count": "Photos: %s",
+  "gui.dungeontrain.totem_pole.count": "Saved by: %s",
   "advancements.dungeontrain.enchiridion.past_life.title": "Past Life",
   "advancements.dungeontrain.enchiridion.past_life.description": "Take a photo of your own Echo.",
   "advancements.dungeontrain.enchiridion.past_life.hint": "You've been here before.",

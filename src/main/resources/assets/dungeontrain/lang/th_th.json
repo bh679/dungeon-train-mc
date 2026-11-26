@@ -5425,6 +5425,7 @@
   "advancements.dungeontrain.enchiridion.no_room_left.description": "ใส่รูปให้เต็มทุกหน้าในอัลบั้มของคุณ",
   "advancements.dungeontrain.enchiridion.no_room_left.hint": "สิบหกหน้า สิบหกความทรงจำ",
   "gui.dungeontrain.earned_photos.count": "รูปถ่าย: %s",
+  "gui.dungeontrain.totem_pole.count": "ช่วยชีวิตแล้ว: %s",
   "advancements.dungeontrain.enchiridion.past_life.title": "ชาติที่แล้ว",
   "advancements.dungeontrain.enchiridion.past_life.description": "ถ่ายภาพเสียงสะท้อนของตัวเอง",
   "advancements.dungeontrain.enchiridion.past_life.hint": "คุณเคยมาที่นี่แล้ว",
