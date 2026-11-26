@@ -54,10 +54,11 @@ final class StatChips {
     /**
      * One chip per stat from {@code x} along {@code y}, within {@code right}. {@code preview} is the points
      * a hovered block would give, or -1. Every chip is always shown: when the row is too wide the previews
-     * go first, then the row shrinks to fit (never below {@value #MIN_SCALE}).
+     * go first, then the row shrinks to fit (never below {@value #MIN_SCALE}). Returns the x the row
+     * ends at (past its last gap).
      */
-    static void render(GuiGraphics g, Font font, List<PerkStats.Stat> stats, int points, int preview,
-                       int x, int y, int right, int chipH, int pad, int gap, int bg, int fg, int gold, int a) {
+    static int render(GuiGraphics g, Font font, List<PerkStats.Stat> stats, int points, int preview,
+                      int x, int y, int right, int chipH, int pad, int gap, int bg, int fg, int gold, int a) {
         List<List<Piece>> now = new ArrayList<>(), then = new ArrayList<>();
         List<Boolean> onlyThen = new ArrayList<>();
         boolean previewing = preview >= 0 && preview != points;
@@ -114,6 +115,8 @@ final class StatChips {
             cx += w + gap;
         }
         g.pose().popPose();
+        // where the row ends on screen, for anything drawn after it
+        return x + Math.round(cx * scale);
     }
 
     /** Smallest the chip row shrinks to before chips may overrun. */

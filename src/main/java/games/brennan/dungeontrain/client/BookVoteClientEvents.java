@@ -197,6 +197,7 @@ public final class BookVoteClientEvents {
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
         BookBoostControl.open(stack);
+        BookFollowControl.open(stack);
         boolean hasVotes = BookVoteCountsTag.has(stack);
         votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
         votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
@@ -302,6 +303,11 @@ public final class BookVoteClientEvents {
         if (!starShown()) return;
         BookBoostControl.render(gfx, font, moderation.isOwn(), starX(), buttonsY(), labelsY(), mouseX, mouseY);
         BookBoostControl.renderWallet(gfx, font, moderation.isOwn(), bookLeft() + WALLET_X, bookTop() + WALLET_Y, mouseX, mouseY);
+        // Favourite Author: Follow, under the star, on the report row.
+        if (BookFollowControl.shown(bookType, bookId, moderation.isOwn())) {
+            BookFollowControl.render(gfx, font, bookId, starX() + BUTTON_SIZE / 2,
+                reportY() + (BUTTON_SIZE - font.lineHeight) / 2, mouseX, mouseY);
+        }
     }
 
     private static boolean starShown() {
@@ -507,6 +513,12 @@ public final class BookVoteClientEvents {
             event.setCanceled(true);
             clickSound();
             reportArmed = false;
+            return;
+        }
+        if (starShown() && BookFollowControl.shown(bookType, bookId, moderation.isOwn())
+                && BookFollowControl.click(mx, my, bookId)) {
+            event.setCanceled(true);
+            clickSound();
             return;
         }
         // The thumbs are not drawn on your own book, so they must not be clickable either — an
@@ -809,6 +821,7 @@ public final class BookVoteClientEvents {
         isPrivate = false;
         protested = false;
         BookBoostControl.reset();
+        BookFollowControl.reset();
         votesUp = -1;
         votesDown = -1;
     }

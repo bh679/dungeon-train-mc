@@ -30,6 +30,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
+import games.brennan.dungeontrain.perks.effects.archivist.follow.FollowRequestPacket;
+import games.brennan.dungeontrain.perks.effects.archivist.follow.FollowsClientState;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.components.Tooltip;
@@ -81,6 +85,15 @@ public final class PhotoTributeButtons {
 
     private PhotoTributeButtons() {}
 
+    /** Photos whose photographer was followed from here this session, so the button stays "Following". */
+    private static final java.util.Set<Integer> FOLLOWED_PHOTOS = new java.util.HashSet<>();
+
+    /** Favourite Author's Follow: with the perk unlocked, on somebody else's photo. */
+    private static boolean showsFollow(LocalPlayer player, String photographer) {
+        return Perks.isUnlocked(player, ArchivistPerks.FAV_AUTHOR)
+            && !photographer.isBlank() && !photographer.equalsIgnoreCase(player.getGameProfile().getName());
+    }
+
     /** The found photo the player is holding, or an empty stack. */
     private static ItemStack heldFoundPhoto(LocalPlayer player) {
         if (SharedPhotos.sharedId(player.getMainHandItem()) > 0) return player.getMainHandItem();
@@ -113,7 +126,15 @@ public final class PhotoTributeButtons {
         ViewCounter views = new ViewCounter(font, seen + 1, seen + viewsLeft);
         int viewsWidth = views.getWidth();
         int tributeWidth = TributeButton.widthFor(font, cost);
-        int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth
+        // Favourite Author: Follow the photographer, beside Tribute (once the perk is unlocked).
+        int photoId = SharedPhotos.sharedId(photo);
+        String photographer = SharedPhotos.authorOf(photo);
+        boolean followShown = showsFollow(player, photographer);
+        boolean following = followShown && (FOLLOWED_PHOTOS.contains(photoId) || FollowsClientState.followsName(photographer));
+        Component followLabel = Component.translatable(following
+            ? "gui.dungeontrain.follows.following" : "gui.dungeontrain.follows.follow");
+        int followWidth = followShown ? font.width(followLabel) + 2 * PADDING + GAP : 0;
+        int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - followWidth - closeWidth
             - GAP - PhotoReportOverlay.FLAG_SIZE) / 2;
 
         views.setPosition(left, y);
@@ -124,17 +145,30 @@ public final class PhotoTributeButtons {
             screen.onClose();
         }, emeralds -> Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.offer")
             .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", emeralds))));
+        Button follow = null;
+        if (followShown) {
+            follow = Button.builder(followLabel, button -> {
+                    FOLLOWED_PHOTOS.add(photoId);
+                    DungeonTrainNet.sendToServer(new FollowRequestPacket(FollowRequestPacket.Op.FOLLOW_PHOTO,
+                        Integer.toString(photoId)));
+                    button.setMessage(Component.translatable("gui.dungeontrain.follows.following"));
+                    button.active = false;
+                })
+                .bounds(left + tributeWidth + GAP, y, followWidth - GAP, HEIGHT).build();
+            follow.active = !following;
+        }
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
-            .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
+            .bounds(left + tributeWidth + GAP + followWidth, y, closeWidth, HEIGHT)
             .tooltip(Tooltip.create(closeLabel))
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(views);
         event.addListener(tribute);
+        if (follow != null) event.addListener(follow);
         event.addListener(close);
         // The report flag, faded, after X (PhotoReportOverlay draws it and its reason picker).
-        PhotoReportOverlay.attach(event, screen, left + tributeWidth + GAP + closeWidth + GAP, y);
+        PhotoReportOverlay.attach(event, screen, left + tributeWidth + GAP + followWidth + closeWidth + GAP, y);
         shownOn = screen;
-        shown = List.of(tribute, close);
+        shown = follow != null ? List.of(tribute, follow, close) : List.of(tribute, close);
         viewsShown = views;
     }
 
