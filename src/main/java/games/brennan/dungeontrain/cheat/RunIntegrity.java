@@ -222,6 +222,8 @@ public final class RunIntegrity {
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
+        // Free Play opens /dungeontrain perks in tab completion, for everyone the world now covers.
+        games.brennan.dungeontrain.command.PerksCommandVisibility.refreshAll(player.getServer());
         if (wasVisible) {
             // Already visibly in Free Play this session (the AIS, DT-config or custom-content
             // notice on join) — record the permanent taint quietly, no second chat line /
