@@ -1117,11 +1117,6 @@ public final class PortalChunkDimension {
         return !mode.laysGroundPlain();
     }
 
-    /** Whether a chunk room of {@code mode} cuts its doorways into the sampled terrain. Pure. */
-    static boolean opensDoorways(PortalRoomMode mode) {
-        return !mode.laysGroundPlain();
-    }
-
     /**
      * Overwrite one cell of the room without spilling what was in it.
      *
