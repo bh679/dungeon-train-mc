@@ -340,6 +340,7 @@ public final class PortalChunkDimension {
     public static void cancelPour(int pairKey) {
         POURS.remove(pairKey);
         FRAMINGS.remove(pairKey);
+        PENDING_OCCUPANTS.remove(pairKey);
         WAITING.remove(pairKey);
         UNDECORATED.remove(pairKey);
         STANDING.remove(pairKey);
@@ -485,7 +486,7 @@ public final class PortalChunkDimension {
         }
         // A sample decorated before its room was stamped needs no second pass: this was it.
         if (PortalChunkTerrain.decorated().contains(pairKey) && PortalChunkTerrain.peek(pairKey) == pour.slice()) {
-            spawnOccupants(level, structure, dims, pour.slice(), pairKey);
+            spawnOccupantsAfterFrame(level, structure, dims, pour.slice(), pairKey);
             decorationDone(pairKey);
         } else if (PortalChunkTerrain.isDecorated(pairKey, pour.slice())) {
             // Poured from a cube decorated and applied before (a re-stamp): nothing more is coming.
@@ -659,6 +660,7 @@ public final class PortalChunkDimension {
             PortalStructure structure = live.apply(pairKey);
             if (structure == null) {
                 FRAMINGS.remove(pairKey);
+                PENDING_OCCUPANTS.remove(pairKey);
                 continue;
             }
             if (!PortalCarriageBuilder.footprintReady(level, structure, dims)) continue;
@@ -695,6 +697,7 @@ public final class PortalChunkDimension {
             });
         if (afterOnly || (row[0] >= rows && all)) {
             FRAMINGS.remove(pairKey);
+            releasePendingOccupants(level, structure, dims, pairKey);
         } else {
             FRAMINGS.put(pairKey, new Framing(framing.frame(), framing.rollIndex(), row[0], framing.after(),
                 row[0] >= rows));
@@ -907,6 +910,7 @@ public final class PortalChunkDimension {
         UNDECORATED.clear();
         TOP_WATER_ROWS.clear();
         FRAMINGS.clear();
+        PENDING_OCCUPANTS.clear();
         STANDING.clear();
     }
 
@@ -926,7 +930,10 @@ public final class PortalChunkDimension {
         Vec3i size = structure.roomSize();
         int shift = copyShift(structure, dims, size);
 
+        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
         int spawned = 0;
+        int moved = 0;
+        int blocked = 0;
         for (PortalChunkSlice.Occupant occupant : slice.occupants()) {
             double x = origin.getX() + occupant.x();
             double y = origin.getY() + occupant.y() - shift;
@@ -946,12 +953,47 @@ public final class PortalChunkDimension {
                 return spawning;
             });
             if (entity == null) continue;
+            // The room is not quite the sample — its frame, its corridors and the rows the cube does
+            // not reach have blocks of their own — so a mob is fitted to what is actually there.
+            // Mobs only: a structure's item frames and armour stands keep their sampled spots.
+            if (entity instanceof net.minecraft.world.entity.Mob mob) {
+                PortalRoomMobFit.Outcome fit = PortalRoomMobFit.fit(level, mob, origin, size, mask);
+                if (fit == PortalRoomMobFit.Outcome.BLOCKED) {
+                    blocked++;
+                    continue;
+                }
+                if (fit == PortalRoomMobFit.Outcome.MOVED) moved++;
+            }
             if (level.addFreshEntity(entity)) spawned++;
         }
-        if (spawned > 0) {
-            LOGGER.info("[DungeonTrain] Chunk dimension pair {} spawned {} of its sample's {} mobs",
-                pairKey, spawned, slice.occupants().size());
+        if (spawned > 0 || blocked > 0) {
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} spawned {} of its sample's {} mobs "
+                    + "({} moved out of blocks, {} left out with nowhere to stand)",
+                pairKey, spawned, slice.occupants().size(), moved, blocked);
         }
+    }
+
+    /**
+     * Sampled mobs waiting on a wide room's frame, by pair: spawned once its last row is down, so
+     * the frame is never built around them. Server thread only.
+     */
+    private static final java.util.Map<Integer, PortalChunkSlice> PENDING_OCCUPANTS = new java.util.HashMap<>();
+
+    /** Spawn {@code slice}'s mobs now, or once the pair's frame is down if it is still being written. */
+    private static void spawnOccupantsAfterFrame(ServerLevel level, PortalStructure structure,
+                                                 CarriageDims dims, PortalChunkSlice slice, int pairKey) {
+        if (FRAMINGS.containsKey(pairKey)) {
+            PENDING_OCCUPANTS.put(pairKey, slice);
+            return;
+        }
+        spawnOccupants(level, structure, dims, slice, pairKey);
+    }
+
+    /** The mobs a just-finished frame was holding back, if any. */
+    private static void releasePendingOccupants(ServerLevel level, PortalStructure structure,
+                                                CarriageDims dims, int pairKey) {
+        PortalChunkSlice slice = PENDING_OCCUPANTS.remove(pairKey);
+        if (slice != null) spawnOccupants(level, structure, dims, slice, pairKey);
     }
 
     /**

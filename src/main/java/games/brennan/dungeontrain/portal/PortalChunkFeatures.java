@@ -252,6 +252,12 @@ final class PortalChunkFeatures {
                 noMobs++;
                 continue;
             }
+            // standingRoom only knows two cells of air: a ghast or an enderman wants its own box clear,
+            // as vanilla's own pass asks of every mob it places.
+            if (!region.noCollision(pick.get().type.getSpawnAABB(x + 0.5, y, z + 0.5))) {
+                noRoom++;
+                continue;
+            }
             if (!(pick.get().type.create(level) instanceof Mob mob)) continue;
 
             cursor.set(x, y, z);
