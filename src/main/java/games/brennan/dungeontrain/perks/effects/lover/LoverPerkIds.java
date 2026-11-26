@@ -11,6 +11,10 @@ public final class LoverPerkIds {
 
     public static final String PET_HEALTH = "pet-health";
     public static final String GOOD_GIFTER = "good-gifter";
+    public static final String SHARE_HEARTS = "share-hearts";
+    public static final String AURA = "aura";
+    public static final String SPARE_ENEMIES = "spare-enemies";
+    public static final String SAVE_ALLY = "save-ally";
 
     private LoverPerkIds() {}
 

@@ -38,13 +38,16 @@ public final class PerkStats {
     }
 
     /** A stat's value at some number of points. */
-    public sealed interface Value permits Num, Text {}
+    public sealed interface Value permits Num, Text, Or {}
 
     /** A number in a unit; {@code signed} shows a leading + on positive values. */
     public record Num(double value, Unit unit, boolean signed) implements Value {}
 
     /** A value only words can say, like a Strength level. */
     public record Text(Component text) implements Value {}
+
+    /** One of two values by chance, shown "a or b" (Share Hearts' gift on a point that rolls for more). */
+    public record Or(Value first, Value second) implements Value {}
 
     /** One stat: its lang id ({@code gui.dungeontrain.perks.stat.<id>}) and its value by points. */
     public record Stat(String id, IntFunction<Value> at) {
