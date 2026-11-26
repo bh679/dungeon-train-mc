@@ -498,6 +498,25 @@
       "modrinth_version": "eRQ6VuD1"
     },
     {
+      "name": "Async Locator Refined",
+      "slug": "async-locator-refined",
+      "mod_ids": [
+        "asynclocator"
+      ],
+      "sha1": "287ec5c76bf9f7f8493e789f70759ab993784f5e",
+      "packages": [
+        "brightspark.asynclocator"
+      ],
+      "project_id": 1331921,
+      "file_id": 8501111,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "asynclocator_min_version",
+      "version": "1.6.0",
+      "modrinth_project": "async-locator-refined",
+      "modrinth_version": "zHBIpxJZ"
+    },
+    {
       "name": "Creeper Overhaul",
       "slug": "creeper-overhaul",
       "mod_ids": [

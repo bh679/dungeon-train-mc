@@ -67,6 +67,15 @@ class StructureMapListingsTest {
     }
 
     @Test
+    void mapsRollOnlyWithAsyncLocator() {
+        VillagerTrades.ItemListing[] l2 = cartographer(VillagerTrades.TRADES, 2);
+        assertSame(l2, StructureMapListings.rollable(l2, true));
+        assertEquals(List.of(l2), StructureMapListings.rollable(List.of(l2), true));
+        assertEquals(1, StructureMapListings.rollable(l2, false).length);
+        assertEquals(1, StructureMapListings.rollable(List.of(l2), false).size());
+    }
+
+    @Test
     void edgeCases() {
         assertNull(StructureMapListings.withoutStructureSearch((VillagerTrades.ItemListing[]) null));
         VillagerTrades.ItemListing[] empty = new VillagerTrades.ItemListing[0];

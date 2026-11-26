@@ -19,6 +19,6 @@ public abstract class MerchantNoStructureSearchMixin {
 
     @ModifyVariable(method = "addOffersFromItemListings", at = @At("HEAD"), argsOnly = true)
     private VillagerTrades.ItemListing[] dungeontrain$noStructureSearch(VillagerTrades.ItemListing[] newTrades) {
-        return StructureMapListings.withoutStructureSearch(newTrades);
+        return StructureMapListings.rollable(newTrades);
     }
 }

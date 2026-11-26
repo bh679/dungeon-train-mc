@@ -74,6 +74,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **V** | minus Luminous Monsters (the only case without it) | Fails — names `luminous_monsters` with its `[x,)` floor |
 | **W** | minus Creeper Overhaul (the only case without it; its libraries stay) | Fails — names `creeperoverhaul` with its `[x,)` floor |
 | **X** | minus Sable: Ragdolls and its Patch (the only case without them) | Fails — names `sable_player_ragdoll` with its `[x,)` floor |
+| **Y** | minus Async Locator Refined (the only case without it) | Fails — names `asynclocator` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.
