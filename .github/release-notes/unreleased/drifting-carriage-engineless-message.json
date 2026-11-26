@@ -1,0 +1,17 @@
+{
+  "id": "drifting-carriage-engineless-message",
+  "version": "0.2034.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "community"
+  ],
+  "title": "Drifting carriage message fix",
+  "summary": "A drifting carriage that has lost its engine no longer greets you as if it were still drifting.",
+  "highlights": [],
+  "pr": 2901,
+  "date": "2026-11-26",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
