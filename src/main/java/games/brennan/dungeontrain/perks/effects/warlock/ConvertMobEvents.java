@@ -111,12 +111,12 @@ public final class ConvertMobEvents {
         return !(mob instanceof OwnableEntity owned && owned.getOwnerUUID() != null);
     }
 
-    /** Ticks left before the player may convert again; a stale time from another world is capped. */
+    /** Ticks left before the player may convert again; a time from another world's clock counts as run out. */
     static long cooldownLeft(ServerPlayer player, int rank, long now) {
         long readyAt = player.getPersistentData().getLong(COOLDOWN_KEY);
         long left = readyAt - now;
-        if (left <= 0) return 0;
-        return Math.min(left, WarlockPerks.convertCooldownTicks(Math.max(1, rank)));
+        // further off than a full cooldown can only be another world's clock (a nap): it has run out
+        return left <= 0 || left > WarlockPerks.convertCooldownTicks(Math.max(1, rank)) ? 0 : left;
     }
 
     private static void convert(ServerPlayer player, Mob mob, int rank, long now) {

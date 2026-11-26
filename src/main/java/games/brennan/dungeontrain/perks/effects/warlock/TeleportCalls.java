@@ -49,7 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Arrival is the caller's spot. A player called to someone standing on the train lands on its deck
  * the way {@code /dtp} lands them ({@link DtpPlacementService}), so the Sable sub-level is ready on
  * their client first. The cooldown is a top-level key of the caller's persistent data (one per life);
- * a time carried from another world through a nap is capped at the full cooldown.</p>
+ * a time from another world's clock (carried through a nap) counts as run out.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TeleportCalls {
@@ -76,7 +76,8 @@ public final class TeleportCalls {
     static long cooldownLeft(ServerPlayer player) {
         int rank = Math.max(1, Perks.rank(player, WarlockPerks.TELEPORT_PLAYER));
         long left = player.getPersistentData().getLong(COOLDOWN_KEY) - now(player.server);
-        return left <= 0 ? 0 : Math.min(left, WarlockPerks.teleportCooldownTicks(rank));
+        // further off than a full cooldown can only be another world's clock (a nap): it has run out
+        return left <= 0 || left > WarlockPerks.teleportCooldownTicks(rank) ? 0 : left;
     }
 
     private static void startCooldown(ServerPlayer player) {

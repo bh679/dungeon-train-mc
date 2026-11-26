@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
@@ -48,17 +49,23 @@ public final class SummonLightningInput {
         event.setCanceled(true);
     }
 
-    /** The living entity under the crosshair within range, stopping at the first block hit. */
+    /**
+     * The living entity under the crosshair within range, if no block stands between it and the eye.
+     * Found along the full ray first, then a second ray from the eye to the hit decides whether a block is
+     * in the way: on a Sable train a block hit comes back in the ship's plot coordinates, not the world's,
+     * so its location can't be used to shorten the first ray, but whether there is one at all still holds.
+     */
     private static Entity lookedAt(LocalPlayer player) {
         double range = WarlockPerks.LIGHTNING_RANGE;
         Vec3 eye = player.getEyePosition();
         Vec3 end = eye.add(player.getViewVector(1.0f).scale(range));
-        BlockHitResult block = player.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE,
-            ClipContext.Fluid.NONE, player));
-        if (block.getType() != HitResult.Type.MISS) end = block.getLocation();
         AABB sweep = player.getBoundingBox().expandTowards(end.subtract(eye)).inflate(1.0);
         EntityHitResult hit = ProjectileUtil.getEntityHitResult(player, eye, end, sweep,
-            e -> e instanceof LivingEntity && !(e instanceof net.minecraft.world.entity.decoration.ArmorStand) && e.isAlive() && !e.isSpectator() && e.isPickable(), eye.distanceToSqr(end));
-        return hit == null ? null : hit.getEntity();
+            e -> e instanceof LivingEntity && !(e instanceof ArmorStand) && e.isAlive() && !e.isSpectator() && e.isPickable(),
+            range * range);
+        if (hit == null) return null;
+        BlockHitResult block = player.level().clip(new ClipContext(eye, hit.getLocation(), ClipContext.Block.OUTLINE,
+            ClipContext.Fluid.NONE, player));
+        return block.getType() == HitResult.Type.MISS ? hit.getEntity() : null;
     }
 }
