@@ -508,8 +508,8 @@ public final class PortalChunkDimension {
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
         PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
-        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
-        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
+        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY, pairKey);
+        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT, pairKey);
         if (slice.biomesChanged() && slice.source().levelKey().equals(net.minecraft.world.level.Level.OVERWORLD)) {
             paintBiomes(level, origin, size, copyShift(structure, dims, size), slice);
         }
@@ -819,8 +819,8 @@ public final class PortalChunkDimension {
         int shift = copyShift(structure, dims, size);
 
         Runnable doorways = () -> {
-            openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
-            openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
+            openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY, pairKey);
+            openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT, pairKey);
         };
         Runnable afterFrame = () -> {
             // After the frame: its inner layer is written over the terrain's edge row, and the
@@ -987,7 +987,7 @@ public final class PortalChunkDimension {
      */
     private static void openDoorway(ServerLevel level, PortalStructure structure, CarriageDims dims,
                                     PortalCarriageLayout layout, BlockPos origin, Vec3i size,
-                                    PortalCorridorMask mask, PortalCarriageRole role) {
+                                    PortalCorridorMask mask, PortalCarriageRole role, int pairKey) {
         // An Endless open chunk's doors stand out on its plain, not in its faces: the player walks
         // round the tower, so nothing is cut into it. Its doors are pinned to the bottom row, which
         // is rock, so the inward dig below would otherwise bore a tunnel clean through the chunk.
@@ -1020,6 +1020,12 @@ public final class PortalChunkDimension {
                 if (mask.covers(cursor)) continue;
                 if (!level.getBlockState(cursor).isAir()) replaceQuietly(level, cursor, air);
             }
+        }
+        // A Plank bridge ends at this doorway: where the sample left no footing under it, one more
+        // plank carries the bridge onto the face, rather than leaving a hole at its end.
+        if (PortalPlankBridge.needsFootPlank(structure.mode(), level.getBlockState(cursor.set(x, floorY, z)))) {
+            replaceQuietly(level, cursor.immutable(),
+                PortalPlankBridge.planksFor(PortalCarriageBuilder.stageIdFor(level, pairKey, dims)));
         }
     }
 

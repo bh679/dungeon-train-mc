@@ -190,6 +190,19 @@ class PortalDoorDistanceTest {
     }
 
     @Test
+    @DisplayName("a bridge takes a foot plank where its doorway has no footing, and only a bridge")
+    void plankBridge_footPlank() {
+        net.minecraft.world.level.block.state.BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState grass = net.minecraft.world.level.block.Blocks.SHORT_GRASS.defaultBlockState();
+        assertTrue(PortalPlankBridge.needsFootPlank(PortalRoomMode.CHUNK_PLANK_BRIDGE, air));
+        assertTrue(PortalPlankBridge.needsFootPlank(PortalRoomMode.CHUNK_PLANK_BRIDGE, grass));
+        assertFalse(PortalPlankBridge.needsFootPlank(PortalRoomMode.CHUNK_PLANK_BRIDGE, stone));
+        assertFalse(PortalPlankBridge.needsFootPlank(PortalRoomMode.CHUNK_VOID, air));
+        assertFalse(PortalPlankBridge.needsFootPlank(PortalRoomMode.CHUNK_DIMENSION, air));
+    }
+
+    @Test
     @DisplayName("no bridge without a gap, and none for a room of another mode")
     void plankBridge_none() {
         assertTrue(PortalPlankBridge.cells(structure(PortalRoomMode.CHUNK_PLANK_BRIDGE, 0), DIMS).isEmpty());

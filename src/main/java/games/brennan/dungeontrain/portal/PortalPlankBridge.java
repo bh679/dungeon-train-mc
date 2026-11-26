@@ -91,6 +91,15 @@ public final class PortalPlankBridge {
             planks.getBlock(), cells.get(0), cells.get(half - 1), cells.get(half), cells.get(cells.size() - 1));
     }
 
+    /**
+     * Whether the doorway cell at the end of a bridge, on its floor row inside the chunk face, takes
+     * one more plank: under {@link PortalRoomMode#laysPlankBridge} only, and only where the sample left
+     * no footing there (air, or something a block replaces, such as grass or water). Pure.
+     */
+    static boolean needsFootPlank(PortalRoomMode mode, BlockState floor) {
+        return mode.laysPlankBridge() && (floor.isAir() || floor.canBeReplaced());
+    }
+
     /** The stage's planks for {@code stageId}; oak planks if the placeholder cannot be found. */
     static BlockState planksFor(String stageId) {
         BlockState placeholder = StagePlaceholderBlocks.defaultState(PLANKS_PLACEHOLDER);
