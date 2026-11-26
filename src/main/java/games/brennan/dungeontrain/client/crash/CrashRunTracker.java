@@ -50,6 +50,12 @@ public final class CrashRunTracker {
     /** Save folder of the world the player is salvaging, or null when this isn't a salvage session. */
     @Nullable private static String salvagingLevelId = null;
 
+    /**
+     * The game is crashing ({@code MinecraftEmergencyCrashMixin}): vanilla's emergency save disconnects
+     * before the crash report is written, and that disconnect must not read as a clean exit.
+     */
+    private static volatile boolean crashing = false;
+
     private CrashRunTracker() {}
 
     @SubscribeEvent
@@ -64,6 +70,7 @@ public final class CrashRunTracker {
         // A world reopened through the offer keeps its SALVAGING record rather than being
         // re-marked ACTIVE — a second crash during salvage should offer the same one-shot again,
         // not pretend this was a fresh run.
+        crashing = false;
         Optional<CrashRunState.RunState> existing = CrashRunState.read(PlayerDataPaths.root());
         boolean salvage = existing.isPresent()
                 && existing.get().status() == CrashRunState.Status.SALVAGING
@@ -96,7 +103,21 @@ public final class CrashRunTracker {
      */
     public static void runEnded() {
         salvagingLevelId = null;
+        if (!shouldClearOnExit(crashing)) {
+            LOGGER.info("[DungeonTrain] Crash recovery: the game is crashing; keeping the run record for the next launch.");
+            return;
+        }
         CrashRunState.clear(PlayerDataPaths.root());
+    }
+
+    /** Vanilla is crashing: the logout its emergency save causes is not a clean exit. */
+    public static void markCrashing() {
+        crashing = true;
+    }
+
+    /** Whether an exit clears the run record: every clean one does, a crash never does. */
+    static boolean shouldClearOnExit(boolean crashing) {
+        return !crashing;
     }
 
     /** True while the open world is one the player came back to through the crash offer. */
