@@ -217,7 +217,18 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * assuming either shape.</p>
      */
     public int exitTwinOffsetX(CarriageDims dims) {
-        return PortalCorridorSize.corridorLength(dims, kind) + roomLength();
+        return PortalCorridorSize.corridorLength(dims, kind) + roomLength() + 2 * doorGap();
+    }
+
+    /**
+     * Blocks of open floor between the room's box and each corridor mouth — this pair's
+     * {@link PortalRoomDoorDistance}, zero for every room whose walls are not open. Added once on
+     * each side: the room's box starts this far past the entry corridor ({@link #roomOrigin}) and
+     * the exit twin stands twice this further on ({@link #exitTwinOffsetX}). Zero gives exactly the
+     * geometry every pair had before the setting existed.
+     */
+    public int doorGap() {
+        return settings.effectiveDoorDistance().value();
     }
 
     /**
@@ -282,7 +293,8 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         // the corridor's own fixed floor line the author has spent the room's height instead.
         return PortalRoomLayout.roomOrigin(
             origin, dims, layout, roomSize.getZ(), roomSize.getY(),
-            settings.doorOffset().value(), settings.doorHeightOffset().value());
+            settings.doorOffset().value(), settings.doorHeightOffset().value())
+            .offset(doorGap(), 0, 0);
     }
 
     /**

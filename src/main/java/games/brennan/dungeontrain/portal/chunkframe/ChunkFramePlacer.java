@@ -164,15 +164,42 @@ public final class ChunkFramePlacer {
      */
     public static ChunkFrameDimension dimensionFor(ServerLevel level, String roomName, int pairKey,
                                                    games.brennan.dungeontrain.template.GateContext gateCtx) {
+        return planFor(level, roomName, pairKey, gateCtx).meta().dimension();
+    }
+
+    /**
+     * The frame a pair planned in {@code gateCtx} is dressed in — its name ({@code null} for none) and
+     * its meta ({@link ChunkFrameMeta#DEFAULT} for none, or one that could not be read). The pick
+     * {@link #dimensionFor} makes, with everything else plan time needs from the frame alongside it:
+     * an Endless open frame's door distance and the ground its plain is laid in.
+     */
+    public static FramePlan planFor(ServerLevel level, String roomName, int pairKey,
+                                    games.brennan.dungeontrain.template.GateContext gateCtx) {
         try {
             String name = FORCED.get(pairKey);
             if (name == null) name = plannedFrame(level, roomName, pairKey, gateCtx);
-            return name == null || name.isEmpty() ? ChunkFrameDimension.DEFAULT
-                : ChunkFrameMetaStore.get(name).dimension();
+            if (name == null || name.isEmpty()) return FramePlan.NONE;
+            return new FramePlan(name, ChunkFrameMetaStore.get(name));
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Could not read the frame dimension for room {}: {}", roomName, e.toString());
-            return ChunkFrameDimension.DEFAULT;
+            return FramePlan.NONE;
         }
+    }
+
+    /**
+     * The frame {@code pairKey} was planned (or forced) with this session, or null when none is known.
+     * What a stamp reads the planned frame's ground from — the pick is already made by then.
+     */
+    public static String plannedName(int pairKey) {
+        String forced = FORCED.get(pairKey);
+        if (forced != null) return forced.isEmpty() ? null : forced;
+        Planned planned = PLANNED.get(pairKey);
+        return planned == null || planned.frame().isEmpty() ? null : planned.frame();
+    }
+
+    /** See {@link #planFor}. {@code name} is null when no frame dresses the room. */
+    public record FramePlan(String name, ChunkFrameMeta meta) {
+        public static final FramePlan NONE = new FramePlan(null, ChunkFrameMeta.DEFAULT);
     }
 
     /** A frame chosen for a pair at plan time: the room and roll it was chosen for, and the frame ("" for none). */

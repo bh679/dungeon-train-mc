@@ -897,9 +897,20 @@ public final class PortalCarriageBuilder {
                     games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.sizeFor(size))) {
             return settings;
         }
-        PortalRoomMode framed = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
-            .dimensionFor(level, roomName, pairKey, gateCtx).roomMode(settings.mode());
-        return framed == settings.mode() ? settings : settings.withMode(framed);
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta =
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
+                .planFor(level, roomName, pairKey, gateCtx).meta();
+        PortalRoomMode framed = meta.dimension().roomMode(settings.mode());
+        if (framed == settings.mode()) return settings;
+        PortalRoomSettings enclosed = settings.withMode(framed);
+        if (!framed.laysGroundPlain()) return enclosed;
+        // An Endless open chunk stands on its plain: both doorways open level with the plain — the
+        // box's bottom row, which a door height of zero is — rather than on the sampled surface the
+        // door fit found, and each stands the frame's distance out along it.
+        return enclosed
+            .withDoorHeightOffset(PortalRoomDoorHeightOffset.DEFAULT)
+            .withExitDoorHeightOffset(PortalRoomDoorHeightOffset.DEFAULT)
+            .withDoorDistance(new PortalRoomDoorDistance(meta.doorDistance()));
     }
 
     /**
@@ -1147,6 +1158,8 @@ public final class PortalCarriageBuilder {
 
         long skinAt = System.nanoTime();
         stampCorridors(level, structure, dims, pairKey);
+        // After the corridors, so the plain is laid around them rather than under a twin's floor.
+        PortalGroundPlain.lay(level, structure, dims, pairKey);
 
         // After the corridors, unlike the room's own skin, and necessarily so: this shell sits one
         // block outside a corridor rather than around the room, and stampCorridors clears and
@@ -1335,7 +1348,9 @@ public final class PortalCarriageBuilder {
         // leaving that plane — and the door hanging in it — untouched. The mouth is the far end of an
         // entry corridor and the near end of an exit one.
         int sealX = PortalCorridorMask.sealPlaneX(corridorOrigin, layout, role);
-        sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
+        // A corridor a door gap out stands alone on an open plain: its mouth faces open floor, not
+        // the room's face, so there is no cross-section around it to wall off.
+        if (structure.doorGap() == 0) sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
             sealSource.roomOrigin(dims, layout), role,
             /*wallOnly*/ base.settings().effectiveDoorWall().repeats(),
             // A chunk dimension has no floor row of its own to fall back on — its bottom row is
@@ -1839,8 +1854,13 @@ public final class PortalCarriageBuilder {
                                         CarriageDims dims) {
         BoundingBox halo = voidHaloOf(level, structure, dims);
         BoundingBox footprint = footprintOf(level, structure, dims);
+        // An Endless open plain's row is spared: PortalGroundPlain lays every cell of it, and a clear
+        // deferred to a column that loads later must not take its grass back out.
+        BoundingBox plainRow = PortalGroundPlain.rowFor(level, structure, dims);
+        PortalCorridorMask spare = plainRow == null ? PortalCorridorMask.NONE
+            : PortalCorridorMask.NONE.plus(plainRow);
         for (BoundingBox slab : voidSlabs(halo, footprint)) {
-            PortalClear.clearBoxDeferring(level, slab, PortalCorridorMask.NONE);
+            PortalClear.clearBoxDeferring(level, slab, spare);
         }
     }
 
@@ -1880,6 +1900,8 @@ public final class PortalCarriageBuilder {
      */
     public static void eraseTwin(ServerLevel level, PortalStructure structure, CarriageDims dims) {
         PortalClear.clearBox(level, footprintOf(level, structure, dims), PortalCorridorMask.NONE);
+        // An Endless open plain runs out to the fog, well past the footprint.
+        PortalGroundPlain.erase(level, structure, dims);
     }
 
     /**

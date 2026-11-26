@@ -106,7 +106,16 @@ public enum PortalRoomMode {
     CHUNK_VOID("chunk_void", "Chunk Dimension (Void)"),
 
     /** {@link #CHUNK_VOID} with the drawn border of {@link #WORLD_BORDER}. Never authored either. */
-    CHUNK_WORLD_BORDER("chunk_world_border", "Chunk Dimension (World Border)");
+    CHUNK_WORLD_BORDER("chunk_world_border", "Chunk Dimension (World Border)"),
+
+    /**
+     * {@link #CHUNK_VOID}'s terrain, swept and fogged, standing on an open plain of its frame's
+     * ground block laid level with the chunk's bottom row — so it reads as a towering chunk in a
+     * field. Its corridors stand {@link PortalRoomDoorDistance} out along the plain, and its doors are
+     * on the plain rather than fitted to the sampled surface. Never authored: a chunk room takes it
+     * at plan time when its frame says Endless open ({@code ChunkFrameDimension}).
+     */
+    CHUNK_ENDLESS_OPEN("chunk_endless_open", "Chunk Dimension (Endless Open)");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
     public static final PortalRoomMode DEFAULT = BEDROCK;
@@ -177,7 +186,8 @@ public enum PortalRoomMode {
      * neither, because their boundary is the next copy of the room.</p>
      */
     public boolean clearsSurroundings() {
-        return this == VOID || this == WORLD_BORDER || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER;
+        return this == VOID || this == WORLD_BORDER || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER
+            || this == CHUNK_ENDLESS_OPEN;
     }
 
     /**
@@ -227,7 +237,8 @@ public enum PortalRoomMode {
      * once the template is down.
      */
     public boolean generatesTerrain() {
-        return this == CHUNK_DIMENSION || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER;
+        return this == CHUNK_DIMENSION || this == CHUNK_VOID || this == CHUNK_WORLD_BORDER
+            || this == CHUNK_ENDLESS_OPEN;
     }
 
     /**
@@ -342,6 +353,23 @@ public enum PortalRoomMode {
      * by the editor's mode cycle.
      */
     public boolean authored() {
-        return this != CHUNK_VOID && this != CHUNK_WORLD_BORDER;
+        return this != CHUNK_VOID && this != CHUNK_WORLD_BORDER && this != CHUNK_ENDLESS_OPEN;
+    }
+
+    /**
+     * True when the room's corridors may stand out in the open, a {@link PortalRoomDoorDistance} off
+     * its faces — the two modes whose walls are open: {@link #ENDLESS_OPEN}, and the chunk dimension
+     * a frame stands on an Endless open plain.
+     */
+    public boolean opensDoorDistance() {
+        return this == ENDLESS_OPEN || this == CHUNK_ENDLESS_OPEN;
+    }
+
+    /**
+     * True when the room stands on a plain of its frame's ground block, laid across the swept
+     * clearance level with the box's bottom row — {@link #CHUNK_ENDLESS_OPEN} alone.
+     */
+    public boolean laysGroundPlain() {
+        return this == CHUNK_ENDLESS_OPEN;
     }
 }
