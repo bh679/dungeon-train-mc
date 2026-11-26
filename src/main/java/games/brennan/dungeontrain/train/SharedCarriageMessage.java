@@ -99,6 +99,30 @@ public final class SharedCarriageMessage {
         return line("own", OWN_LINES, rng, roomNoun());
     }
 
+    /** Distinct "its engine needs feeding" lines keyed {@code chat.dungeontrain.shared_carriage.fuel.1..FUEL_LINES}. */
+    private static final int FUEL_LINES = 3;
+
+    /**
+     * Whether stepping aboard a drifting build should be announced at all. Not once every engine has been
+     * carried off: it can't drift on, so it reads as an ordinary carriage. A build that never had an engine
+     * (an old one with nowhere to put one) still has its fuel count, and keeps its message while that lasts.
+     */
+    public static boolean announces(int engines, int fuel) {
+        return engines > 0 || fuel > 0;
+    }
+
+    /**
+     * The "its engine waits for fuel" line, or {@code null} when there is nothing to hint at: no engine
+     * aboard, or one with coal in it already. Sent as a later line, like {@link #creditLine}, so a fed
+     * carriage reads exactly as it always has.
+     */
+    @Nullable
+    public static Component fuelLine(int engines, int coal, RandomSource rng) {
+        if (engines <= 0 || coal > 0) return null;
+        return Component.translatable("chat.dungeontrain.shared_carriage.fuel." + (rng.nextInt(FUEL_LINES) + 1))
+                .withStyle(ChatFormatting.GRAY);
+    }
+
     /** Ways to name the original builder, keyed {@code ….credit.creator.1..CREDIT_CREATOR_LINES}. */
     private static final int CREDIT_CREATOR_LINES = 4;
     /** Ways to name later editors AFTER a creator clause, keyed {@code ….credit.editors.1..N}. */

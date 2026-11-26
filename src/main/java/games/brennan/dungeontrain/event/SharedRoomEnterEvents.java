@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
 import games.brennan.dungeontrain.train.SharedRoomRegistry;
+import games.brennan.dungeontrain.train.engine.EngineStamp;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -73,6 +74,14 @@ public final class SharedRoomEnterEvents {
         Integer last = LAST_PAIR.put(id, inst.pairKey);
         if (last != null && last == inst.pairKey) return; // still in the same room
 
+        // A room whose engines have all been carried off can't drift on: nothing to announce, and no
+        // rate-limit slot spent on it.
+        EngineStamp.EngineState engines = EngineStamp.engineState(level, inst);
+        if (engines != null && !SharedCarriageMessage.announces(engines.engines(), inst.fuel())) {
+            PENDING.remove(id);
+            return;
+        }
+
         if (!admit(id, System.currentTimeMillis())) {
             PENDING.remove(id);
             return;
@@ -85,13 +94,14 @@ public final class SharedRoomEnterEvents {
                         : SharedCarriageMessage.newRoom(level.getRandom()));
         Credits credits = inst.credits;
         Credits shown = own ? new Credits("", credits.editors(), credits.editorCount()) : credits;
-        List<SharedCarriageEnterEvents.PendingLine> queue = new ArrayList<>(2);
+        List<SharedCarriageEnterEvents.PendingLine> queue = new ArrayList<>(3);
         int due = player.tickCount + CREDIT_DELAY_TICKS;
         String locale = WorldInfoReporter.clientLanguage(player);
         Component credit = SharedCarriageMessage.creditLine(locale, shown, level.getRandom());
         if (credit != null) queue.add(new SharedCarriageEnterEvents.PendingLine(credit, due));
         Component died = SharedCarriageMessage.deathLine(locale, inst.deaths(), level.getRandom());
         if (died != null) queue.add(new SharedCarriageEnterEvents.PendingLine(died, due + DEATH_DELAY_TICKS));
+        if (engines != null) SharedCarriageEnterEvents.addFuelLine(queue, engines, due, level);
         if (queue.isEmpty()) PENDING.remove(id);
         else PENDING.put(id, List.copyOf(queue));
     }
