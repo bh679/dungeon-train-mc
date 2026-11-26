@@ -64,7 +64,7 @@ public final class MetPlayerMobs {
         List<Met> out = new ArrayList<>();
         for (Tag t : player.getPersistentData().getList(KEY, Tag.TAG_COMPOUND)) {
             Met m = Met.of((CompoundTag) t);
-            if (!data.isDead(m.id())) out.add(m);
+            if (!data.isDead(m.id()) && !data.isDead(data.current(m.id()))) out.add(m);
         }
         return out;
     }

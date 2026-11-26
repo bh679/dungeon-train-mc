@@ -41,6 +41,8 @@ public final class ThrowablesEvents {
 
     private static final float THROW_VELOCITY = 1.5f;
     private static final float THROW_INACCURACY = 1.0f;
+    /** Vanilla's damage for a player's wind charge. */
+    private static final float WIND_CHARGE_DAMAGE = 1.0f;
 
     private ThrowablesEvents() {}
 
@@ -81,6 +83,8 @@ public final class ThrowablesEvents {
         if (!(target instanceof LivingEntity living) || target == thrower) return;
 
         float damage = WarlockPerks.throwDamage(rank);
+        // this hit lands first and its hurt immunity would swallow the wind charge's own ½♥: carry it
+        if (kind == Kind.WIND) damage += WIND_CHARGE_DAMAGE;
         if (damage > 0f) living.hurt(thrower.damageSources().thrown(projectile, thrower), damage);
         int ticks = WarlockPerks.throwEffectTicks(rank);
         switch (kind) {

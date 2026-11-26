@@ -7,7 +7,9 @@ import games.brennan.dungeontrain.event.DtpPlacementService;
 import games.brennan.dungeontrain.nap.NapGateData;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.perks.Perks;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.ship.CarriageDeck;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.entity.DispositionResolver;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import games.brennan.playermob.entity.Reaction;
@@ -55,8 +57,6 @@ public final class TeleportCalls {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String COOLDOWN_KEY = "dungeontrain:teleport_player_ready_at";
     static final int REQUEST_TICKS = 60 * 20;
-    /** How near the train's deck height the caller must stand for a called player to land on the deck. */
-    private static final double DECK_SLACK = 6.0;
     public static final String CLICK_ACTION = "warlock-call";
     private static final String KEY = "gui.dungeontrain.warlock.call.";
 
@@ -153,15 +153,30 @@ public final class TeleportCalls {
     private static void movePlayer(ServerPlayer target, ServerPlayer caller) {
         target.stopRiding();
         ServerLevel level = caller.serverLevel();
-        if (level.dimension() == Level.OVERWORLD && NapGateData.onTrainLevel(caller)) {
-            DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-            if (Math.abs(caller.getY() - (data.getTrainY() + 1.0)) <= DECK_SLACK) {
-                DtpPlacementService.enqueue(target, level, caller.getX());
-                return;
-            }
-        }
         target.teleportTo(level, caller.getX(), caller.getY(), caller.getZ(), caller.getYRot(), caller.getXRot());
         target.fallDistance = 0f;
+        // on the train the deck is a Sable sub-level their client may not have yet: land them as /dtp does
+        if (onTrain(caller)) DtpPlacementService.enqueue(target, level, caller.getX());
+    }
+
+    /** True when {@code player} stands on a train's carriages, the test boarding progress uses. */
+    static boolean onTrain(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        if (level.dimension() != Level.OVERWORLD || !NapGateData.onTrainLevel(player)) return false;
+        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) {
+            if (CarriageDeck.isOnTrainFootprint(train, player)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * A called PlayerMob is nobody's carriage contents any more: without this, the carriage it spawned
+     * in would sweep it back into its snapshot when the train leaves that carriage behind.
+     */
+    static void stripTrainTags(Entity mob) {
+        for (String tag : List.copyOf(mob.getTags())) {
+            if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) mob.removeTag(tag);
+        }
     }
 
     private static void callPlayerMob(ServerPlayer caller, UUID id) {
@@ -170,7 +185,10 @@ public final class TeleportCalls {
             caller.displayClientMessage(Component.translatable(KEY + "gone"), true);
             return;
         }
-        PlayerMobEntity loaded = findLoaded(caller.server, id);
+        // a mob another player called away lives on under a new id: follow it there
+        WarlockCallData data = WarlockCallData.get(caller.serverLevel());
+        UUID current = data.current(id);
+        PlayerMobEntity loaded = findLoaded(caller.server, current);
         PlayerMobEntity mob = loaded != null ? loaded : rebuild(caller, met);
         if (mob == null) {
             MetPlayerMobs.forget(caller, id);
@@ -185,10 +203,16 @@ public final class TeleportCalls {
             return;
         }
         if (loaded != null) {
+            stripTrainTags(loaded);
             Entity moved = moveMob(loaded, caller);
-            if (moved instanceof PlayerMobEntity m) MetPlayerMobs.record(caller, m, true);
+            if (moved instanceof PlayerMobEntity m) {
+                if (!m.getUUID().equals(id)) MetPlayerMobs.rename(caller, id, m);
+                else MetPlayerMobs.record(caller, m, true);
+            }
         } else {
-            WarlockCallData.get(caller.serverLevel()).markCalledAway(id);
+            stripTrainTags(mob);
+            data.markCalledAway(current);
+            data.replace(current, mob.getUUID());
             caller.serverLevel().addFreshEntity(mob);
             MetPlayerMobs.rename(caller, id, mob);
         }
