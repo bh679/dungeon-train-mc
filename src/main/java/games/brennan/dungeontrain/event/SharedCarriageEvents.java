@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageEntitySnapshot;
+import games.brennan.dungeontrain.train.CarriagePets;
 import games.brennan.dungeontrain.train.SharedCarriagePool;
 import games.brennan.dungeontrain.train.SharedGroupPool;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
@@ -450,13 +451,32 @@ public final class SharedCarriageEvents {
         // anything that doesn't land.
         for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
             try {
-                finalFlushAndReturn(inst, true); // shutdown is one-time → always allow the final capture
+                // A pet sat down since the last upload changes no block, so nothing is queued for it:
+                // ask the pet rule first, or the carriage drifts off without it (the cull path does this
+                // too, in TrainCarriageAppender.tearDownShip).
+                SableManagedShip ship = liveShip(inst.level, inst);
+                List<net.minecraft.world.entity.Entity> drifters = ship == null ? List.of()
+                        : CarriagePets.sittingDrifters(inst.level, ship, inst);
+                // shutdown is one-time → always allow the final capture
+                if (finalFlushAndReturn(inst, true)) leaveWithCarriage(drifters);
             } catch (Throwable th) {
                 LOGGER.debug("[DungeonTrain] shared-carriage final return error for pIdx={}: {}", inst.pIdx, th.toString());
             }
         }
         SharedCarriagePool.returnAllBuffered();
         SharedGroupPool.returnAllBuffered();
+    }
+
+    /**
+     * Sitting pets that just uploaded with their carriage are gone from this world: a copy left here would
+     * be a second one of the same pet. Only these — a standing pet stays where it is, as before.
+     */
+    private static void leaveWithCarriage(List<net.minecraft.world.entity.Entity> drifters) {
+        for (net.minecraft.world.entity.Entity pet : drifters) {
+            pet.discard();
+            LOGGER.info("[DungeonTrain] Sitting pet {} left with its drifting carriage on shutdown",
+                    pet.getType().toShortString());
+        }
     }
 
     @SubscribeEvent
