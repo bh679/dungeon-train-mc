@@ -901,11 +901,6 @@ public final class PortalCarriageBuilder {
             games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer
                 .planFor(level, roomName, pairKey, gateCtx).meta();
         PortalRoomMode framed = meta.dimension().roomMode(settings.mode());
-        // A plain is a one-chunk room's: a 3x3 room is a block of terrain too wide to read as a
-        // tower in a field, so its frame's Endless open encloses it as Void instead.
-        if (framed.laysGroundPlain() && (size.getX() != PortalChunkTerrain.SIZE || size.getZ() != PortalChunkTerrain.SIZE)) {
-            framed = PortalRoomMode.CHUNK_VOID;
-        }
         if (framed == settings.mode()) return settings;
         LOGGER.info("[DungeonTrain] Chunk frame encloses pair {} ({}) as {}{}", pairKey, roomName, framed.id(),
             framed.laysGroundPlain() ? ", doors " + meta.doorDistance() + " out on its plain" : "");
