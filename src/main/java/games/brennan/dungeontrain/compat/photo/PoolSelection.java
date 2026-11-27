@@ -38,15 +38,22 @@ final class PoolSelection {
 
     /** One photo as the relay's pool lists it, before its image is fetched. */
     record Row(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
-               List<String> advancements, String image) {
+               List<String> advancements, String image, String authorToken) {
         /** A row with no CDN URL (an older relay, or a picture not mirrored yet). */
         Row(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
             List<String> advancements) {
-            this(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements, "");
+            this(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements, "", "");
+        }
+
+        /** A row with no author token (an older relay). */
+        Row(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
+            List<String> advancements, String image) {
+            this(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements, image, "");
         }
 
         Row {
             if (image == null) image = "";
+            if (authorToken == null) authorToken = "";
         }
 
         /** A photographer's own tributed photo, returned to them. */
@@ -67,6 +74,7 @@ final class PoolSelection {
 
         int id() { return row.id(); }
         String author() { return row.author(); }
+        String authorToken() { return row.authorToken(); }
         String tributedBy() { return row.tributedBy(); }
         int tributes() { return row.tributes(); }
         int viewsLeft() { return row.viewsLeft(); }
@@ -115,7 +123,7 @@ final class PoolSelection {
     static List<Row> parseRows(String body, IntConsumer onTotal) {
         JsonObject json = JsonParser.parseString(body).getAsJsonObject();
         if (json.has("total")) onTotal.accept(json.get("total").getAsInt());
-        JsonArray photos = json.getAsJsonArray("photos");
+        JsonArray photos = json.has("photos") && json.get("photos").isJsonArray() ? json.getAsJsonArray("photos") : null;
         List<Row> rows = new ArrayList<>();
         for (int i = 0; photos != null && i < photos.size(); i++) {
             JsonObject row = photos.get(i).getAsJsonObject();
@@ -131,7 +139,9 @@ final class PoolSelection {
                     PhotoAdvancementBadges.idsFrom(row.has("advancements") && row.get("advancements").isJsonArray()
                             ? row.getAsJsonArray("advancements") : null),
                     // The relay's CDN copy of the image, or "" (older relays send none).
-                    PhotoCdn.urlOf(row, "image")));
+                    PhotoCdn.urlOf(row, "image"),
+                    // Favourite Author: the photographer's opaque account token, or "" (older relays).
+                    string(row, "authorToken")));
         }
         return List.copyOf(rows);
     }

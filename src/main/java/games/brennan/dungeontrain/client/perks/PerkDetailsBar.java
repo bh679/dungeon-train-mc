@@ -427,6 +427,9 @@ final class PerkDetailsBar {
         g.drawString(font, Component.translatable(KEY + "engine.apples"), tx, y3, ((int) (a * 0.85) << 24) | (SkyPalette.FG & 0xFFFFFF), false);
     }
 
+    /** Favourite Author's "Following N (M active)" button, where it was last drawn; null when not shown. */
+    private FollowingChip.Hit followingHit;
+
     void render(GuiGraphics g, PerkMenuSnapshot snap, double fade) {
         int a = (int) (fade * 255);
         for (Button b : buttons()) b.setAlpha((float) fade);
@@ -524,7 +527,16 @@ final class PerkDetailsBar {
         // the chips stop short of the centred "why not" line at the foot of the bar, shrinking to fit
         int chipRight = unlockReason == null ? contentRight
             : Math.min(contentRight, (width - font.width(unlockReason)) / 2 - CHIP_GAP);
-        if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
+        int chipsEnd = stats.isEmpty() ? x
+            : renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
+        followingHit = null;
+        if (FollowingChip.shows(p.id(), snap.unlockLevel(p.id()))) {
+            // on the free line under the description when there is one, else after the chips
+            boolean lineFree = shown < room;
+            int fy = lineFree ? dy + shown * LINE - 1 : chipY;
+            followingHit = FollowingChip.render(g, font, lineFree ? x : chipsEnd, fy, lineFree ? contentRight : chipRight,
+                CHIP_H, CHIP_PAD, a, mouseX, mouseY);
+        }
         if (aura != null) {
             AuraChips.render(g, font, aura, statPoints, previewPoints(unlockPreview(p, snap)), x, chipY, chipRight,
                 CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG, SkyPalette.GOLD, a, !unlockOnly);
@@ -544,10 +556,10 @@ final class PerkDetailsBar {
      * The stat chips at the perk's points now; with a graph block or the Unlock tab hovered, each previews
      * that value in gold ({@link StatChips}).
      */
-    private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int unlockPreview, int x, int y, int right,
-                             int a) {
+    private int renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int unlockPreview, int x, int y, int right,
+                            int a) {
         int preview = previewPoints(unlockPreview);
-        StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
+        return StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
             SkyPalette.FG, SkyPalette.GOLD, a);
     }
 
@@ -583,6 +595,10 @@ final class PerkDetailsBar {
      */
     boolean click(double mx, double my) {
         if (perk != null && AuraChips.click(perk.id(), mx, my)) return true;
+        if (followingHit != null && followingHit.contains(mx, my)) {
+            FollowingChip.open();
+            return true;
+        }
         if (unlockOnly || !overGraph(mx, my)) return false;
         PointsGraph.Kind k = graph.at(graphW, mx - graphX);
         if (k == PointsGraph.Kind.LOCKED || k == null && (!graph.layout(graphW).bar() || graph.open == 0)) return false;

@@ -36,6 +36,7 @@ NAMES = {
     "stackable-book-quill": "Stackable Book and Quill",
     "aura": "Aura",
     "share-hearts": "Share Hearts",
+    "fav-author": "Favourite Author",
 }
 ROOT = "root"
 CENTRE = 400.0

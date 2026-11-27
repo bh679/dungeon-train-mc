@@ -1,0 +1,19 @@
+{
+  "id": "favourite-author-perk",
+  "version": "0.2054.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "books",
+    "ui"
+  ],
+  "title": "Favourite Author perk",
+  "summary": "The Archivist's Favourite Author perk is here. Follow players from one of their books, one of their photos, or by name, and more of their books and photos turn up as you travel. Each point lets you follow one more player at a time. The Followed Authors menu shows who you follow and how many of their books and photos you have found this life.",
+  "highlights": [],
+  "pr": 2926,
+  "date": "2026-11-27",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

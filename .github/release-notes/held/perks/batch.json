@@ -42,7 +42,8 @@
     2919,
     2920,
     2922,
-    2925
+    2925,
+    2926
   ],
   "entries": [
     "alchemist-perks",
@@ -52,6 +53,7 @@
     "crafter-enchanting-perks",
     "death-kit-arrives-equipped",
     "death-perks-next-after-last-point",
+    "favourite-author-perk",
     "hidden-perk-classes",
     "knight-combat-perks",
     "lover-perks",

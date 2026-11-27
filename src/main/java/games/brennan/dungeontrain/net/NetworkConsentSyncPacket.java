@@ -53,6 +53,8 @@ public record NetworkConsentSyncPacket(boolean granted) implements CustomPacketP
             if (packet.granted()) {
                 games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.prefetchSelf(player, false);
                 games.brennan.dungeontrain.compat.photo.album.PlayerAlbums.onConsentSynced(player);
+                // Favourite Author: login came before consent, so the follows are read from the relay now.
+                games.brennan.dungeontrain.perks.effects.archivist.follow.FollowService.refresh(player);
             }
         });
     }

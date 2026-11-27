@@ -114,7 +114,23 @@ public final class SharedBookPool {
 
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
                            boolean kidSafe, boolean political, String status, boolean isPrivate,
-                           int votesUp, int votesDown, boolean priority) {
+                           int votesUp, int votesDown, boolean priority, String authorToken) {
+
+        /**
+         * The pre-Favourite-Author shape: no author token. {@code authorToken} is the relay's opaque
+         * handle for the writer's account ({@code /books/authors}' {@code p…} token); "" when the relay
+         * sent none (an older relay, or a book with no player behind it).
+         */
+        public PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
+                        boolean kidSafe, boolean political, String status, boolean isPrivate,
+                        int votesUp, int votesDown, boolean priority) {
+            this(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate,
+                    votesUp, votesDown, priority, "");
+        }
+
+        public PoolBook {
+            if (authorToken == null) authorToken = "";
+        }
 
         /** The pre-Priority-Book shape: {@code priority} false. */
         public PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
@@ -496,8 +512,11 @@ public final class SharedBookPool {
         // `priority` — the writer spent a Priority Book on it. Own shelf only, omitted when false.
         boolean priority = o.has("priority") && !o.get("priority").isJsonNull()
                 && o.get("priority").isJsonPrimitive() && o.get("priority").getAsBoolean();
+        // Favourite Author: the writer's opaque account token (older relays send none).
+        String authorToken = o.has("authorToken") && o.get("authorToken").isJsonPrimitive()
+                ? o.get("authorToken").getAsString() : "";
         return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate,
-            votesUp, votesDown, priority);
+            votesUp, votesDown, priority, authorToken);
     }
 
     /**

@@ -449,6 +449,23 @@ public final class SharedBookSelector {
         return out;
     }
 
+    /**
+     * Favourite Author's tier, asked before {@link #select}: with probability {@code share} (rolled from
+     * {@code seed}), an unread book from {@code followed} (active followed authors' catalogues). The
+     * kid / political filters, the per-life eligibility and the player's own books still apply, and only
+     * UNREAD books count: with none left the answer is empty and the normal pick runs.
+     */
+    public static Optional<PoolBook> selectFollowed(List<PoolBook> followed, double share, PlayerContext ctx, long seed) {
+        if (followed.isEmpty() || share <= 0 || unitRoll(seed ^ FOLLOW_SALT) >= share) return Optional.empty();
+        List<PoolBook> left = filter(contentFiltered(followed, ctx),
+            b -> !b.isWithheld() && isEligible(b, ctx) && !ctx.isOwn().test(b) && !ctx.hasRead().test(b.id()));
+        if (left.isEmpty()) return Optional.empty();
+        return Optional.of(left.get((int) Long.remainderUnsigned(mix(seed), left.size())));
+    }
+
+    /** Keeps the follow roll independent of the pick index drawn from the same seed. */
+    private static final long FOLLOW_SALT = 0x464F4C4C4F57L; // "FOLLOW"
+
     /** Splittable-mix so a raw seed spreads uniformly across the surviving group index (matches SharedBookPool). */
     private static long mix(long seed) {
         long state = seed ^ 0x53454c454354L; // "SELECT"

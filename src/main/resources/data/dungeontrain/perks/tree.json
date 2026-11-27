@@ -555,8 +555,8 @@
   {
    "id": "fav-author",
    "cls": "c0",
-   "name": "Fav Author",
-   "desc": "Subscribe to an author to get more of their books / photos. More points, more authors",
+   "name": "Favourite Author",
+   "desc": "Follow players to find more of their books and photos.",
    "x": 431.3,
    "y": 194.2,
    "tier": 2

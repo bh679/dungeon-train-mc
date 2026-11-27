@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
  * (see {@link #request}) (async: the default face shows until it lands, and stays for a name with no account).
  * Like {@code live/deathpages/WatcherFaces}, keyed by name instead of uuid.
  */
-final class RecipientFaces {
+public final class RecipientFaces {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final Map<String, PlayerSkin> LOADED = new ConcurrentHashMap<>();
@@ -48,7 +48,7 @@ final class RecipientFaces {
      * {@code name}'s skin, or the default face while it loads or when {@code lookup} is false (the
      * name is still being typed: no request per keystroke).
      */
-    static PlayerSkin of(String name, boolean lookup) {
+    public static PlayerSkin of(String name, boolean lookup) {
         if (!DonationRecipient.isValidName(name)) return DEFAULT;
         String key = name.toLowerCase(Locale.ROOT);
         ClientPacketListener conn = Minecraft.getInstance().getConnection();
