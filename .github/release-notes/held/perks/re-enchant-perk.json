@@ -1,0 +1,17 @@
+{
+  "id": "re-enchant-perk",
+  "version": "0.2054.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot"
+  ],
+  "title": "Re-enchant perk",
+  "summary": "A new Crafter perk. Enchanted items and books can go back on the enchanting table and keep what they already have. Each item can be re-enchanted a limited number of times, shown in its tooltip, and more points raise the limit. Re-enchanting costs more levels than a fresh enchant, and the table shows both prices. A row with nothing new to add says so and can't be picked.",
+  "highlights": [],
+  "pr": 2925,
+  "date": "2026-11-27",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
