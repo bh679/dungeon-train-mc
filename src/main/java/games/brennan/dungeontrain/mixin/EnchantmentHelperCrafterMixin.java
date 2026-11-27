@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.perks.effects.crafter.CrafterEnchantMenu;
+import games.brennan.dungeontrain.perks.effects.crafter.Reenchant;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import games.brennan.dungeontrain.perks.effects.crafter.CrafterPerks;
 import games.brennan.dungeontrain.perks.effects.crafter.EnchantContext;
 import games.brennan.dungeontrain.perks.effects.crafter.EnchantGroups;
@@ -30,10 +33,17 @@ import java.util.stream.Stream;
  *   <li><b>Enchant Bonus</b>: the paths that read a known entity's gear (attack damage, knockback,
  *       fall damage, post-attack effects, equipment iteration, the per-entity level lookup) push that
  *       entity as the owner for their duration, so {@code CrafterEnchantBonus} can raise the levels.</li>
+ *   <li><b>Re-enchant</b>: while an enchanting table lays out its rows, an enchanted book is priced
+ *       as a plain book ({@link Reenchant#rollStack}); vanilla gives it no enchantability.</li>
  * </ul>
  */
 @Mixin(EnchantmentHelper.class)
 public abstract class EnchantmentHelperCrafterMixin {
+
+    @ModifyVariable(method = "getEnchantmentCost", at = @At("HEAD"), argsOnly = true)
+    private static ItemStack dungeontrain$priceBookAsBook(ItemStack stack) {
+        return EnchantContext.enchantMenu() instanceof CrafterEnchantMenu ? Reenchant.rollStack(stack) : stack;
+    }
 
     @Inject(method = "getAvailableEnchantmentResults", at = @At("RETURN"))
     private static void dungeontrain$rollPastMax(int level, ItemStack stack, Stream<Holder<Enchantment>> possible,
