@@ -140,7 +140,8 @@ public final class VariantEditorPreviewTicker {
             if (!existing.equals(toShow)) {
                 if (joins) {
                     SilentBlockOps.setBlockSilent(level, worldPos, toShow);
-                } else if (VariantLiquids.isLiquid(toShow)) {
+                } else if (VariantLiquids.writesSectionLocal(toShow)) {
+                    // (Fire too: a ticking previewed fire would spread over the build and burn it.)
                     // Liquids go in section-local, which is the whole reason a previewed source
                     // sits still: a section write never reaches LevelChunk.setBlockState, so
                     // LiquidBlock.onPlace never runs and no fluid tick is ever scheduled. That

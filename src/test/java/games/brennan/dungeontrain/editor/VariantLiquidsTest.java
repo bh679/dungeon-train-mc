@@ -119,6 +119,25 @@ final class VariantLiquidsTest {
     }
 
     @Test
+    @DisplayName("Flint and steel stands for fire: resolves to it, is its icon, writes section-local")
+    void flintAndSteelIsFire() {
+        BlockState fire = VariantLiquids.sourceStateFrom(new ItemStack(Items.FLINT_AND_STEEL));
+        assertNotNull(fire, "flint and steel should resolve");
+        assertSame(Blocks.FIRE, fire.getBlock());
+
+        assertSame(Items.AIR, Blocks.FIRE.asItem());
+        assertSame(Items.FLINT_AND_STEEL, VariantLiquids.bucketIcon(Blocks.FIRE.defaultBlockState()));
+        assertSame(Items.FLINT_AND_STEEL, VariantLiquids.bucketIcon(Blocks.SOUL_FIRE.defaultBlockState()));
+
+        assertTrue(VariantLiquids.writesSectionLocal(fire));
+        assertTrue(VariantLiquids.writesSectionLocal(Blocks.WATER.defaultBlockState()));
+        assertTrue(!VariantLiquids.writesSectionLocal(Blocks.STONE.defaultBlockState()));
+        // Fire is not a liquid: portal-room copy rules stay liquid-only.
+        assertTrue(!VariantLiquids.isLiquid(fire));
+        assertNull(VariantLiquids.sourceStateFrom(new ItemStack(Items.FIRE_CHARGE)));
+    }
+
+    @Test
     @DisplayName("A liquid candidate round-trips through the sidecar JSON as a source")
     void liquidRoundTripsThroughSidecarJson() {
         BlockState water = VariantLiquids.sourceStateFrom(new ItemStack(Items.WATER_BUCKET));
