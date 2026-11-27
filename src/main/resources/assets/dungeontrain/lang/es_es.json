@@ -830,6 +830,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Abrir carpeta]",
   "chat.dungeontrain.live.viewer_died": "%s mientras veía la emisión",
   "chat.dungeontrain.live.sound_off_unapproved": "El sonido del directo está desactivado: hay mods no aprobados cargados.",
+  "chat.dungeontrain.live.sound_off_failed": "El sonido del directo está desactivado: FFmpeg no pudo añadir el sonido del juego a tu directo.",
   "chat.dungeontrain.live.unreachable": "Sin emisión: no se pudo contactar con la señal.",
   "chat.dungeontrain.live.disabled": "La retransmisión en directo está desactivada; actívala en %s",
   "chat.dungeontrain.live.disabled.path": "Opciones / Dungeon Train / Directo / Retransmisión en directo",

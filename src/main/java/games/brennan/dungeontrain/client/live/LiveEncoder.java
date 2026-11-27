@@ -110,7 +110,7 @@ public final class LiveEncoder implements AutoCloseable {
         this.saveBandwidth = saveBandwidth;
         this.videoKbps = videoKbps;
         this.process = ffmpeg.runFFmpeg(encodeArgs(grabber.width(), grabber.height(), fps, videoKbps, cadence, dir,
-            audioPort, micTrack, saveBandwidth, resume));
+            audioPort, micTrack, saveBandwidth, resume, FfmpegSupport.inputQueueOption()));
         FfmpegSupport.drain(process.getErrorStream(), "encoder");
         FfmpegSupport.drain(process.getInputStream(), "encoder-out");
         this.writer = new Thread(this::writeLoop, "dt-live-encoder");
@@ -195,14 +195,24 @@ public final class LiveEncoder implements AutoCloseable {
      */
     static String[] encodeArgs(int w, int h, int fps, int kbps, Cadence cadence, Path dir, int audioPort,
                                boolean micTrack, boolean saveBandwidth, @Nullable Resume resume) {
+        return encodeArgs(w, h, fps, kbps, cadence, dir, audioPort, micTrack, saveBandwidth, resume, true);
+    }
+
+    /**
+     * {@code inputQueue}: give each input {@code -thread_queue_size} (only with sound). Off where this
+     * ffmpeg rejects it as an input option ({@link FfmpegSupport#inputQueueOption}, FFmpeg 9+).
+     */
+    static String[] encodeArgs(int w, int h, int fps, int kbps, Cadence cadence, Path dir, int audioPort,
+                               boolean micTrack, boolean saveBandwidth, @Nullable Resume resume, boolean inputQueue) {
         int gop = fps * cadence.keyframeSeconds();
         boolean audio = audioPort > 0;
         boolean mic = audio && micTrack;
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin"));
-        if (audio) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
+        boolean queue = audio && inputQueue;
+        if (queue) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
         a.addAll(List.of("-f", "rawvideo", "-pix_fmt", "rgba", "-s", w + "x" + h, "-r", String.valueOf(fps), "-i", "-"));
         if (audio) {
-            a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
+            if (queue) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
             a.addAll(List.of("-f", "s16le", "-ar", "48000", "-ac", mic ? String.valueOf(MIC_INPUT_CHANNELS) : "2",
                 "-i", "tcp://127.0.0.1:" + audioPort, "-map", "0:v:0", "-map", "1:a:0"));
             if (mic) a.addAll(List.of("-map", "1:a:0"));

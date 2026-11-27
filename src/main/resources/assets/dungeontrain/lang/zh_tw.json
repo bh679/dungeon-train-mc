@@ -796,6 +796,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[開啟資料夾]",
   "chat.dungeontrain.live.viewer_died": "%s（正在觀看直播）",
   "chat.dungeontrain.live.sound_off_unapproved": "直播聲音已關閉：已載入未經核准的模組。",
+  "chat.dungeontrain.live.sound_off_failed": "直播聲音已關閉：FFmpeg 無法將遊戲聲音加入你的直播。",
   "chat.dungeontrain.live.unreachable": "無法直播：無法連線到訊號源。",
   "chat.dungeontrain.live.disabled": "直播已關閉，請在 %s 中開啟",
   "chat.dungeontrain.live.disabled.path": "選項 / Dungeon Train / 直播 / 直播",

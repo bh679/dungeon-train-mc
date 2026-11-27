@@ -32,6 +32,8 @@ public final class FfmpegSupport {
     private static final long PROBE_TIMEOUT_S = 5;
     @Nullable private static CompletableFuture<Boolean> aac;
     @Nullable private static volatile Boolean readrateCatchup;
+    /** Whether {@code -thread_queue_size} works as an input option; null until {@link #probeAac} has asked. */
+    @Nullable private static volatile Boolean inputQueue;
     /** How often {@link #logProgress} writes a line while the download runs. */
     static final long PROGRESS_LOG_MS = 15_000;
     /** The Vista future whose outcome is already being logged; Vista hands out one per launch. */
@@ -140,6 +142,7 @@ public final class FfmpegSupport {
      * process is bounded by {@link #PROBE_TIMEOUT_S} rather than by its pipe closing.
      */
     private static boolean probeAac(FFmpeg ffmpeg) {
+        inputQueue = probeInputQueue(ffmpeg);
         try {
             Process p = ffmpeg.runFFmpeg("-hide_banner", "-encoders");
             drain(p.getErrorStream(), "encoders-err");
@@ -156,6 +159,39 @@ public final class FfmpegSupport {
             Thread.currentThread().interrupt();
         }
         return false;
+    }
+
+    /**
+     * Whether the encoders may give each input {@code -thread_queue_size}. FFmpeg up to 8 takes it as
+     * an input option; FFmpeg 9 made it output-only, and an encoder given it on an input exits at once
+     * (stream sound lost since gyan.dev's "latest release" became 9.1 on 2026-11-20). Known once the
+     * AAC probe has run; false before then, or when the probe failed, which is safe on every version.
+     */
+    public static boolean inputQueueOption() {
+        return Boolean.TRUE.equals(inputQueue);
+    }
+
+    /** Blocking: a tiny run with the option on an input; exit 0 means this ffmpeg accepts it. */
+    private static boolean probeInputQueue(FFmpeg ffmpeg) {
+        boolean ok = false;
+        try {
+            Process p = ffmpeg.runFFmpeg(inputQueueProbeArgs());
+            drain(p.getErrorStream(), "queue-probe-err");
+            drain(p.getInputStream(), "queue-probe-out");
+            if (p.waitFor(PROBE_TIMEOUT_S, TimeUnit.SECONDS)) ok = p.exitValue() == 0; else p.destroyForcibly();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] could not ask ffmpeg about -thread_queue_size: {}", e.toString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        LOGGER.info("[DungeonTrain] ffmpeg {} -thread_queue_size on inputs", ok ? "accepts" : "rejects");
+        return ok;
+    }
+
+    /** The probe's arguments: a twentieth of a second of silence, read with an input queue, thrown away. */
+    static String[] inputQueueProbeArgs() {
+        return new String[] {"-hide_banner", "-loglevel", "error", "-nostdin",
+            "-thread_queue_size", "8", "-f", "lavfi", "-i", "anullsrc", "-t", "0.05", "-f", "null", "-"};
     }
 
     /** Reads a process stream to its end on a daemon thread. */

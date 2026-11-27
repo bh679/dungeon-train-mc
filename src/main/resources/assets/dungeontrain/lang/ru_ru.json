@@ -869,6 +869,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Открыть папку]",
   "chat.dungeontrain.live.viewer_died": "%s во время просмотра трансляции",
   "chat.dungeontrain.live.sound_off_unapproved": "Звук трансляции выключен: загружены неодобренные моды.",
+  "chat.dungeontrain.live.sound_off_failed": "Звук трансляции выключен: FFmpeg не смог добавить звук игры в вашу трансляцию.",
   "chat.dungeontrain.live.unreachable": "Нет трансляции: не удалось связаться с потоком.",
   "chat.dungeontrain.live.disabled": "Прямая трансляция выключена, включи её в %s",
   "chat.dungeontrain.live.disabled.path": "Настройки / Dungeon Train / Трансляция / Прямая трансляция",

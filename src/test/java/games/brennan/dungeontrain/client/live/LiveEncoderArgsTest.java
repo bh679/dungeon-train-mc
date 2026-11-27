@@ -169,4 +169,37 @@ class LiveEncoderArgsTest {
         assertEquals(192, LiveEncoder.audioKbps(true));
         assertEquals(96, LiveEncoder.audioKbps(false));
     }
+
+    @Test
+    void ffmpegNineGetsNoInputQueueButKeepsItsSound() {
+        Path dir = Path.of("/tmp/live/abc");
+        LiveEncoder.Cadence c = LiveEncoder.Cadence.of(3);
+        List<String> queued = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, c, dir, 4242, true, false, null, true));
+        List<String> bare = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, c, dir, 4242, true, false, null, false));
+        assertEquals(queued, Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, c, dir, 4242, true, false, null)),
+            "the old overload keeps the old arguments: FFmpeg up to 8 sees no change");
+        assertEquals(2, queued.stream().filter("-thread_queue_size"::equals).count(), "one queue per input where FFmpeg takes it");
+        assertFalse(bare.contains("-thread_queue_size"), "FFmpeg 9 makes it output-only and exits on it as an input option");
+        assertTrue(bare.contains("tcp://127.0.0.1:4242"), "the sound input stays");
+        assertTrue(bare.contains("-c:a"), "and it is still encoded as AAC");
+        assertEquals(2, bare.stream().filter("1:a:0"::equals).count(), "mic track layout unchanged");
+        List<String> expected = queued.stream().toList();
+        List<String> stripped = new java.util.ArrayList<>(expected);
+        for (int k = stripped.indexOf("-thread_queue_size"); k >= 0; k = stripped.indexOf("-thread_queue_size")) {
+            stripped.remove(k + 1);
+            stripped.remove(k);
+        }
+        assertEquals(stripped, bare, "the queue pairs are the only difference");
+        List<String> silent = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 2500, c, dir, 0, false, false, null, true));
+        assertFalse(silent.contains("-thread_queue_size"), "no sound, one input: never a queue");
+    }
+
+    @Test
+    void theInputQueueProbeIsOneQuietThrowawayRun() {
+        List<String> a = Arrays.asList(FfmpegSupport.inputQueueProbeArgs());
+        assertTrue(a.indexOf("-thread_queue_size") < a.indexOf("-i"), "asks about the option exactly where the encoders use it");
+        assertEquals("null", a.get(a.size() - 2));
+        assertEquals("-", a.get(a.size() - 1));
+        assertTrue(a.contains("-nostdin"));
+    }
 }
