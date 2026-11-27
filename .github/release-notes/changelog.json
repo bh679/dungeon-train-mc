@@ -39957,6 +39957,98 @@
       "released": true,
       "released_in": "v0.2045.0",
       "released_at": "2026-11-26T12:21:21Z"
+    },
+    {
+      "id": "drifted-pet-retame",
+      "version": "0.2052.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "mobs"
+      ],
+      "title": "Pets that drift in can find a new home",
+      "summary": "A pet left sitting in a drifting carriage now travels with it when you Save & Quit, not only when the train leaves it behind. And a pet that drifts into a world its owner has never played in can be tamed again by anyone, with the usual item.",
+      "highlights": [],
+      "pr": 2921,
+      "date": "2026-11-26",
+      "released": true,
+      "released_in": "v0.2056.0",
+      "released_at": "2026-11-27T05:02:18Z"
+    },
+    {
+      "id": "frames-menu-weights-stages",
+      "version": "0.2049.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor: more templates show spawn settings",
+      "summary": "In the editor, another template list now shows each template's weight, level range, bands, dates and Stage, and lets you change them right there like the other lists.",
+      "highlights": [],
+      "pr": 2918,
+      "date": "2026-11-26",
+      "released": true,
+      "released_in": "v0.2056.0",
+      "released_at": "2026-11-27T05:02:18Z"
+    },
+    {
+      "id": "open-field-dimensional-carriages",
+      "version": "0.2046.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Open-field dimensional carriages",
+      "summary": "Some dimensional carriages now open onto a wide field, with their world standing in the middle of it.",
+      "highlights": [],
+      "pr": 2915,
+      "date": "2026-11-26",
+      "released": true,
+      "released_in": "v0.2056.0",
+      "released_at": "2026-11-27T05:02:18Z"
+    },
+    {
+      "id": "plank-bridge-dimensional-carriages",
+      "version": "0.2054.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Plank-bridge dimensional carriages",
+      "summary": "Some dimensional carriages now leave their world floating out in the dark, with a narrow plank bridge running to it from each door.",
+      "highlights": [],
+      "pr": 2924,
+      "date": "2026-11-26",
+      "released": true,
+      "released_in": "v0.2056.0",
+      "released_at": "2026-11-27T05:02:18Z"
+    },
+    {
+      "id": "arrow-raycast-freeze",
+      "version": "0.2052.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "train"
+      ],
+      "title": "Arrow freeze fix",
+      "summary": "Fixed the game freezing for a few seconds when an arrow stuck in the train fell out.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2923,
+      "date": "2026-11-27",
+      "released": true,
+      "released_in": "v0.2056.0",
+      "released_at": "2026-11-27T05:02:18Z"
     }
   ]
 }
