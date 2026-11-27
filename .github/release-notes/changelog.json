@@ -40049,6 +40049,23 @@
       "released": true,
       "released_in": "v0.2056.0",
       "released_at": "2026-11-27T05:02:18Z"
+    },
+    {
+      "id": "zombie-weakness-items-reachable",
+      "version": "0.2057.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Zombie inventory tweak",
+      "summary": "While Zombified, potions of Weakness and the Totem of Weakness can still be taken out of your locked inventory and backpack.",
+      "highlights": [],
+      "pr": 2927,
+      "date": "2026-11-27",
+      "released": true,
+      "released_in": "v0.2057.0",
+      "released_at": "2026-11-27T11:14:32Z"
     }
   ]
 }
