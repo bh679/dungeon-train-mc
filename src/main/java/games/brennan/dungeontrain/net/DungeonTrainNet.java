@@ -33,7 +33,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "224";
+    public static final String PROTOCOL_VERSION = "225";
 
     private DungeonTrainNet() {}
 
@@ -225,6 +225,19 @@ public final class DungeonTrainNet {
         registrar.playToServer(RerollTradesRequestPacket.TYPE,
             RerollTradesRequestPacket.STREAM_CODEC,
             RerollTradesRequestPacket::handle);
+        // Warlock: Summon Lightning's empty-hand attack, and Teleport Player's list/call/accept (server re-validates).
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.warlock.SummonLightningPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.SummonLightningPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.SummonLightningPacket::handle);
+        registrar.playToServer(games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportCallPacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.SacrificialBoltPacket::handle);
+        registrar.playToClient(games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket.TYPE,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket.STREAM_CODEC,
+            games.brennan.dungeontrain.perks.effects.warlock.TeleportListPacket::handle);
         // Standless Brewing: the inventory's Brew button asks the server to open the pocket brewing stand.
         registrar.playToServer(games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket.TYPE,
             games.brennan.dungeontrain.perks.effects.alchemist.PocketBrewOpenPacket.STREAM_CODEC,

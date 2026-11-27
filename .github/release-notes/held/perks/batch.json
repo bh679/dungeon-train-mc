@@ -40,7 +40,8 @@
     2913,
     2917,
     2919,
-    2920
+    2920,
+    2922
   ],
   "entries": [
     "alchemist-perks",
@@ -80,6 +81,7 @@
     "tribute-room-pause-reboard",
     "tribute-rooms",
     "tribute-tv-button",
-    "unlock-tab-before-perk-full"
+    "unlock-tab-before-perk-full",
+    "warlock-perks"
   ]
 }

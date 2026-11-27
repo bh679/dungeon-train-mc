@@ -61,6 +61,7 @@ public final class DungeonTrainClient {
         LagReportPrompt.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
+        games.brennan.dungeontrain.client.warlock.TeleportCallClient.registerClicks();
         FfmpegHint.registerClicks();
         KnownFeatureChatHint.registerClicks();
 

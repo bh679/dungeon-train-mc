@@ -2,8 +2,15 @@
   "locale": "zh_tw",
   "name": "AI 未經人工審閱",
   "human_reviewed": false,
+<<<<<<< HEAD
   "total_keys": 6618,
   "ai_authored": 6607,
   "ai_unreviewed": 6604,
   "counted_keys": 4565
+=======
+  "total_keys": 6630,
+  "ai_authored": 6619,
+  "ai_unreviewed": 6616,
+  "counted_keys": 4577
+>>>>>>> origin/main
 }

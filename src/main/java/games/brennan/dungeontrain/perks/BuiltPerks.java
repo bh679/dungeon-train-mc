@@ -66,6 +66,7 @@ public final class BuiltPerks {
             HoarderPerks.declare();
             BuilderPerks.declare();
             AlchemistPerks.declare();
+            games.brennan.dungeontrain.perks.effects.warlock.WarlockPerks.declare();
             declared = true;
         }
     }
