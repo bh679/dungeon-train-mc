@@ -796,6 +796,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[打开文件夹]",
   "chat.dungeontrain.live.viewer_died": "%s（正在观看直播）",
   "chat.dungeontrain.live.sound_off_unapproved": "直播声音已关闭：已加载未经批准的模组。",
+  "chat.dungeontrain.live.sound_off_failed": "直播声音已关闭：FFmpeg 无法将游戏声音加入你的直播。",
   "chat.dungeontrain.live.unreachable": "无法直播：无法连接到信号源。",
   "chat.dungeontrain.live.disabled": "直播已关闭，请在 %s 中开启",
   "chat.dungeontrain.live.disabled.path": "选项 / 地牢列车 / 通用 / 直播",

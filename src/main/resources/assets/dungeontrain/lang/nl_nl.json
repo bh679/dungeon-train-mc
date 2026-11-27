@@ -830,6 +830,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Map openen]",
   "chat.dungeontrain.live.viewer_died": "%s tijdens het kijken naar de stream",
   "chat.dungeontrain.live.sound_off_unapproved": "Streamgeluid staat uit: er zijn niet-goedgekeurde mods geladen.",
+  "chat.dungeontrain.live.sound_off_failed": "Streamgeluid staat uit: FFmpeg kon het spelgeluid niet aan je stream toevoegen.",
   "chat.dungeontrain.live.unreachable": "Geen uitzending: de feed was niet bereikbaar.",
   "chat.dungeontrain.live.disabled": "Livestreamen staat uit, zet het aan in %s",
   "chat.dungeontrain.live.disabled.path": "Opties / Dungeon Train / Stream / Livestreamen",

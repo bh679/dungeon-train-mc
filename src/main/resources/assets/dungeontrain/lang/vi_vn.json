@@ -796,6 +796,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Mở thư mục]",
   "chat.dungeontrain.live.viewer_died": "%s khi đang xem buổi phát trực tiếp",
   "chat.dungeontrain.live.sound_off_unapproved": "Âm thanh buổi phát đang tắt: có mod chưa được phê duyệt đang chạy.",
+  "chat.dungeontrain.live.sound_off_failed": "Âm thanh buổi phát đang tắt: FFmpeg không thể thêm âm thanh trò chơi vào buổi phát của bạn.",
   "chat.dungeontrain.live.unreachable": "Không phát sóng: không thể kết nối tới nguồn phát.",
   "chat.dungeontrain.live.disabled": "Phát trực tiếp đang tắt, hãy bật trong %s",
   "chat.dungeontrain.live.disabled.path": "Tùy chọn / Dungeon Train / Phát sóng / Phát trực tiếp",

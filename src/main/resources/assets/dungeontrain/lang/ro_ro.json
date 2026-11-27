@@ -945,6 +945,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Deschide folderul]",
   "chat.dungeontrain.live.viewer_died": "%s în timp ce urmărea transmisiunea",
   "chat.dungeontrain.live.sound_off_unapproved": "Sunetul transmisiei este oprit: sunt încărcate moduri neaprobate.",
+  "chat.dungeontrain.live.sound_off_failed": "Sunetul transmisiei este oprit: FFmpeg nu a putut adăuga sunetul jocului în transmisia ta.",
   "chat.dungeontrain.live.unreachable": "Fără transmisie: fluxul nu a putut fi contactat.",
   "chat.dungeontrain.live.disabled": "Transmisia live este oprită, pornește-o în %s",
   "chat.dungeontrain.live.disabled.path": "Opțiuni / Dungeon Train / Transmisiune / Transmisie live",

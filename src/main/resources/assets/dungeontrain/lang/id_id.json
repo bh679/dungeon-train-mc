@@ -796,6 +796,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Buka folder]",
   "chat.dungeontrain.live.viewer_died": "%s saat menonton siaran",
   "chat.dungeontrain.live.sound_off_unapproved": "Suara siaran mati: ada mod yang belum disetujui dimuat.",
+  "chat.dungeontrain.live.sound_off_failed": "Suara siaran mati: FFmpeg tidak bisa menambahkan suara game ke siaranmu.",
   "chat.dungeontrain.live.unreachable": "Tidak ada siaran: feed tidak dapat dijangkau.",
   "chat.dungeontrain.live.disabled": "Siaran langsung dimatikan, nyalakan di %s",
   "chat.dungeontrain.live.disabled.path": "Opsi / Dungeon Train / Siaran / Siaran langsung",

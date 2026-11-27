@@ -800,6 +800,7 @@
       "chat.dungeontrain.live.ffmpeg.button.folder",
       "chat.dungeontrain.live.viewer_died",
       "chat.dungeontrain.live.sound_off_unapproved",
+      "chat.dungeontrain.live.sound_off_failed",
       "chat.dungeontrain.live.unreachable",
       "chat.dungeontrain.live.disabled",
       "chat.dungeontrain.live.disabled.path",

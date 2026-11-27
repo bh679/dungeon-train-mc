@@ -830,6 +830,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[Abrir carpeta]",
   "chat.dungeontrain.live.viewer_died": "%s mientras veía la transmisión",
   "chat.dungeontrain.live.sound_off_unapproved": "El sonido de la transmisión está desactivado: hay mods no aprobados cargados.",
+  "chat.dungeontrain.live.sound_off_failed": "El sonido de la transmisión está desactivado: FFmpeg no pudo agregar el sonido del juego a tu transmisión.",
   "chat.dungeontrain.live.unreachable": "Sin transmisión: no se pudo alcanzar la señal.",
   "chat.dungeontrain.live.disabled": "La transmisión en vivo está desactivada; actívala en %s",
   "chat.dungeontrain.live.disabled.path": "Opciones / Dungeon Train / Transmisión / Transmisión en vivo",
