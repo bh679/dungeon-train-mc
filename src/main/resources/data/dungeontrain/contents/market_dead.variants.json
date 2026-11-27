@@ -178,6 +178,9 @@
     "20,0,1": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}],
     "19,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}],
     "17,0,3": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}],
-    "15,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}]
+    "15,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}],
+    "9,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}],
+    "5,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}],
+    "2,0,3": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "dungeontrain:variant_placeholder", "weight": 4}]
   }
 }

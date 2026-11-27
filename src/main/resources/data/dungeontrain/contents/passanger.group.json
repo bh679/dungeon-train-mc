@@ -28,7 +28,8 @@
     },
     {
       "id": "market_dead",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 2
     }
   ]
 }
