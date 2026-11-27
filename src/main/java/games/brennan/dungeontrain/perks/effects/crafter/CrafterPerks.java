@@ -49,9 +49,18 @@ public final class CrafterPerks {
 
     private CrafterPerks() {}
 
-    /** Marks the built Crafter perks (Re-enchant is on hold) and registers their menu stats. */
+    /** Re-enchant: a first point's extra level cost on a re-enchant row (+100%). Balancing knob. */
+    public static final double REENCHANT_FIRST_EXTRA = 1.0;
+    /** Re-enchant: each point that adds no re-enchant keeps this share of the extra cost. Balancing knob. */
+    public static final double REENCHANT_EXTRA_KEEP = 0.9;
+    /** Re-enchant: points per extra re-enchant on an item. Balancing knob. */
+    public static final int REENCHANT_STEP = 5;
+
+    /** Marks the built Crafter perks and registers their menu stats. */
     public static void declare() {
-        BuiltPerks.markBuilt(ENCHANT_COST, COOKING_TIME, ENCHANT_MAX, ENCHANT_BONUS);
+        BuiltPerks.markBuilt(ENCHANT_COST, COOKING_TIME, RE_ENCHANT, ENCHANT_MAX, ENCHANT_BONUS);
+        PerkStats.registerStepped(RE_ENCHANT, "reenchants", r -> PerkStats.num(reenchantsAllowed(Math.max(1, r)), Unit.PLAIN));
+        PerkStats.register(RE_ENCHANT, "extra_cost", r -> PerkStats.plus(Math.round(reenchantExtra(Math.max(1, r)) * 100.0), Unit.PERCENT));
         PerkStats.register(ENCHANT_COST, "level_cost", r -> PerkStats.num(-Math.max(0, r), Unit.PLAIN));
         PerkStats.register(COOKING_TIME, "cook_time", r -> PerkStats.num(cookShare(r) * 100.0, Unit.PERCENT));
         PerkStats.register(ENCHANT_MAX, "past_max", r -> PerkStats.plus(topLevel(r), Unit.PLAIN));
@@ -143,22 +152,32 @@ public final class CrafterPerks {
         return Math.max(vanillaMax + Math.max(0, bonus), highestOnInputs);
     }
 
-    /**
-     * Re-enchant switch. While {@code true}, {@link #allowsReenchant} is false at every rank and the
-     * perk does nothing; the wiring and {@link #compatibleWithExisting} stay in place for when it
-     * comes back.
-     */
-    public static final boolean REENCHANT_ON_HOLD = true;
+    /** Re-enchant: how many times one item may be re-enchanted at {@code rank}: {@code 1 + rank / 5}, 0 at rank 0. */
+    public static int reenchantsAllowed(int rank) {
+        return rank <= 0 ? 0 : 1 + rank / REENCHANT_STEP;
+    }
+
+    /** Re-enchant: whether an item re-enchanted {@code used} times already may go back on the table at {@code rank}. */
+    public static boolean allowsReenchant(int rank, int used) {
+        return Math.max(0, used) < reenchantsAllowed(rank);
+    }
 
     /**
-     * Re-enchant: whether an already enchanted item may go back on the table at {@code rank}.
-     *
-     * <p><b>On hold (incomplete):</b> switched off by {@link #REENCHANT_ON_HOLD}. Unfinished: a table
-     * row whose rolls are all filtered out by {@link #compatibleWithExisting} still shows and costs
-     * levels while adding nothing, and rank beyond 1 does nothing (there is no per-rank effect yet).
+     * Re-enchant: the extra share of levels a re-enchant row costs at {@code rank} (1.0 = +100%). Starts
+     * at {@value #REENCHANT_FIRST_EXTRA} and keeps {@value #REENCHANT_EXTRA_KEEP} of itself on every point
+     * past the first that does not add a re-enchant, so each point moves exactly one of the two chips.
+     * 0 at rank 0.
      */
-    public static boolean allowsReenchant(int rank) {
-        return !REENCHANT_ON_HOLD && rank > 0;
+    public static double reenchantExtra(int rank) {
+        if (rank <= 0) return 0.0;
+        int shrinkingPoints = (rank - 1) - rank / REENCHANT_STEP;
+        return REENCHANT_FIRST_EXTRA * Math.pow(REENCHANT_EXTRA_KEEP, shrinkingPoints);
+    }
+
+    /** Re-enchant: a re-enchant row's level requirement from its fresh price; 0 (row disabled) stays 0. */
+    public static int reenchantCost(int cost, int rank) {
+        if (cost <= 0 || rank <= 0) return cost;
+        return (int) Math.ceil(cost * (1.0 + reenchantExtra(rank)) - 1e-9);
     }
 
     /**
