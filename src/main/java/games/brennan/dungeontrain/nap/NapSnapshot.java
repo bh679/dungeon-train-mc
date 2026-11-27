@@ -34,13 +34,15 @@ import java.util.UUID;
  *                   ({@link NapBinding}); empty while unbound, and for naps saved before it existed
  * @param place      where the train stood in the band layout, and the napped world's reverse-slide state;
  *                   null for naps saved before it existed (and in worlds with no layout), which wake by X alone
+ * @param pIdx       the real number of the carriage the bed stood in, which the woken train continues from
+ *                   ({@link NapWake#pIdxBase}); null when unknown (naps saved before it existed, crash naps)
  */
 public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
                           CompoundTag player, double x, int carriage, String band, int direction,
                           int worldDepth, boolean cheated, String difficulty,
                           String advancementsJson, String statsJson, CompoundTag narrative,
                           CompoundTag runExtras, int difficultyOffset, String wakeLevelId,
-                          Place place) {
+                          Place place, Integer pIdx) {
 
     /**
      * The train's place in the band layout when the nap was taken ({@link WorldGenCycle#bandPosition}),
@@ -68,6 +70,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     private static final String TAG_DIFFICULTY_OFFSET = "difficultyOffset";
     private static final String TAG_WAKE_LEVEL = "wakeLevelId";
     private static final String TAG_PLACE = "place";
+    private static final String TAG_PIDX = "pIdx";
 
     public NapSnapshot {
         direction = direction < 0 ? -1 : 1;
@@ -78,6 +81,17 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         narrative = narrative == null ? new CompoundTag() : narrative;
         runExtras = runExtras == null ? new CompoundTag() : runExtras;
         wakeLevelId = wakeLevelId == null ? "" : wakeLevelId;
+    }
+
+    /** A nap with no carriage number (the form naps had before {@link #pIdx}). */
+    public NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, String levelId,
+                       CompoundTag player, double x, int carriage, String band, int direction,
+                       int worldDepth, boolean cheated, String difficulty,
+                       String advancementsJson, String statsJson, CompoundTag narrative,
+                       CompoundTag runExtras, int difficultyOffset, String wakeLevelId, Place place) {
+        this(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction, worldDepth,
+            cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset, wakeLevelId,
+            place, null);
     }
 
     /** A nap with no band place (the form naps had before {@link Place}). */
@@ -109,28 +123,35 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
     public NapSnapshot boundTo(String levelId) {
         return new NapSnapshot(napId, savedAtEpochMs, modVersion, this.levelId, player, x, carriage, band, direction,
             worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
-            levelId, place);
+            levelId, place, pIdx);
     }
 
     /** This nap with its X replaced (the X it wakes at, once resolved from {@link #place}). */
     public NapSnapshot withX(double newX) {
         return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, newX, carriage, band, direction,
             worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
-            wakeLevelId, place);
+            wakeLevelId, place, pIdx);
     }
 
     /** This nap as a Free Play run (its file couldn't be vouched for: {@link NapStore.Loaded#tampered}). */
     public NapSnapshot asFreePlay() {
         return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction,
             worldDepth, true, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
-            wakeLevelId, place);
+            wakeLevelId, place, pIdx);
     }
 
     /** This nap with the train's band place {@code place}. */
     public NapSnapshot withPlace(Place place) {
         return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction,
             worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
-            wakeLevelId, place);
+            wakeLevelId, place, pIdx);
+    }
+
+    /** This nap with the bed carriage's real number {@code pIdx} (null: unknown). */
+    public NapSnapshot withPIdx(Integer pIdx) {
+        return new NapSnapshot(napId, savedAtEpochMs, modVersion, levelId, player, x, carriage, band, direction,
+            worldDepth, cheated, difficulty, advancementsJson, statsJson, narrative, runExtras, difficultyOffset,
+            wakeLevelId, place, pIdx);
     }
 
     /** A nap without the run-state extras or a difficulty offset. */
@@ -172,6 +193,7 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
         if (difficultyOffset != 0) tag.putInt(TAG_DIFFICULTY_OFFSET, difficultyOffset);
         if (!wakeLevelId.isEmpty()) tag.putString(TAG_WAKE_LEVEL, wakeLevelId);
         if (place != null && place.position() != null) tag.put(TAG_PLACE, placeTag(place));
+        if (pIdx != null) tag.putInt(TAG_PIDX, pIdx);
         return tag;
     }
 
@@ -183,7 +205,8 @@ public record NapSnapshot(UUID napId, long savedAtEpochMs, String modVersion, St
             tag.getString(TAG_BAND), tag.getInt(TAG_DIRECTION), tag.getInt(TAG_DEPTH), tag.getBoolean(TAG_CHEATED),
             tag.getString(TAG_DIFFICULTY), text(tag, TAG_ADVANCEMENTS), text(tag, TAG_STATS),
             tag.getCompound(TAG_NARRATIVE), tag.getCompound(TAG_RUN_EXTRAS), tag.getInt(TAG_DIFFICULTY_OFFSET),
-            tag.getString(TAG_WAKE_LEVEL), tag.contains(TAG_PLACE) ? placeOf(tag.getCompound(TAG_PLACE)) : null);
+            tag.getString(TAG_WAKE_LEVEL), tag.contains(TAG_PLACE) ? placeOf(tag.getCompound(TAG_PLACE)) : null,
+            tag.contains(TAG_PIDX, net.minecraft.nbt.Tag.TAG_INT) ? tag.getInt(TAG_PIDX) : null);
     }
 
     private static CompoundTag placeTag(Place p) {

@@ -169,8 +169,8 @@ public final class NapWake {
         RunRestore.raiseWorldProgress(server.overworld(), nap.worldDepth());
         carryDifficultyOffset(server, nap);
         carryPreviousLife(server, owner, nap);
-        LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} band={}", nap.napId(), slot,
-            Math.round(nap.x()), nap.carriage(), nap.band());
+        LOGGER.info("[DungeonTrain] Nap {} ({}) will wake here at x={} carriage={} pIdx={} band={}", nap.napId(),
+            slot, Math.round(nap.x()), nap.carriage(), pIdxBaseOf(nap), nap.band());
     }
 
     /**
@@ -218,6 +218,22 @@ public final class NapWake {
     public static int bootstrapOriginX(ServerLevel level) {
         if (planned == null || level.dimension() != Level.OVERWORLD) return 0;
         return Mth.floor(planned.nap().x());
+    }
+
+    /**
+     * The carriage number the seed train in {@code level} starts from: the planned nap's bed carriage,
+     * so a woken run's carriages number on from where it slept rather than from 0 (echo depth, carriage
+     * difficulty, loot and carriage ids all read that number as how deep the run is). A nap saved before
+     * it kept the number, or rebuilt after a crash, uses {@code carriage}, its X over the calibrated
+     * carriage length. 0 with no planned nap, and outside the overworld.
+     */
+    public static int pIdxBase(ServerLevel level) {
+        if (planned == null || level.dimension() != Level.OVERWORLD) return 0;
+        return pIdxBaseOf(planned.nap());
+    }
+
+    static int pIdxBaseOf(NapSnapshot nap) {
+        return nap.pIdx() != null ? nap.pIdx() : nap.carriage();
     }
 
     /** The tag to load {@code player} from, when this login wakes the planned nap. */

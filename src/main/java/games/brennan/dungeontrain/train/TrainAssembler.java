@@ -301,11 +301,22 @@ public final class TrainAssembler {
      *     via {@link Trains#findById(ServerLevel, UUID)}.
      */
     public static ManagedShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
+        return spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims, 0);
+    }
+
+    /**
+     * {@link #spawnTrain(ServerLevel, BlockPos, Vector3dc, int, Vector3dc, CarriageDims)} with the
+     * carriage numbering started at {@code pIdxBase} instead of 0: the carriage at {@code origin}
+     * is numbered {@code pIdxBase} (rounded down to its group), and the train is laid out exactly
+     * where it would be with base 0. A run woken from a nap passes the bed carriage's number, so
+     * everything that reads a carriage number as depth sees the run's real depth.
+     */
+    public static ManagedShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int pIdxBase) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Deleted {} existing carriage(s) before spawn", deleted);
         }
-        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims);
+        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims, pIdxBase);
     }
 
     /**
@@ -319,10 +330,10 @@ public final class TrainAssembler {
      */
     @SuppressWarnings("unused")
     public static ManagedShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int legacyGlobalPIdxBase) {
-        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims);
+        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims, 0);
     }
 
-    private static ManagedShip spawnCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
+    private static ManagedShip spawnCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int pIdxBase) {
         if (count <= 0) {
             throw new IllegalArgumentException("Cannot spawn a train with count <= 0 (got " + count + ")");
         }
@@ -332,7 +343,7 @@ public final class TrainAssembler {
         // pIdx-to-world convention: origin.x is the world X of pIdx 0's
         // ENCLOSED CARRIAGE start (NOT the sub-level's back pad — the
         // back pad sits at origin.x − halfPadLen).
-        int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) dims.length());
+        int localPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) dims.length());
 
         // Each Sable sub-level packs `groupSize` enclosed carriages PLUS
         // a half-flatbed pad on each side, sitting OUTSIDE the integer
@@ -367,9 +378,12 @@ public final class TrainAssembler {
         // tricked into stacking duplicates at the same anchor. Spawning
         // one per tick gives Sable's plot-loader a full tick to register
         // each new sub-level before the next is requested.
-        int seedAnchor = Math.floorDiv(initialPIdx, groupSize) * groupSize;
-        int seedGroupIdx = Math.floorDiv(seedAnchor, groupSize);
-        int seedGroupOriginX = origin.getX() + seedGroupIdx * subLevelStride - halfPadLen;
+        // Geometry is laid out from the LOCAL index (origin.x = local pIdx 0), so the base never moves
+        // the train; only its numbering shifts, by whole groups so slots keep their place in a group.
+        SeedNumbering seed = seedNumbering(localPIdx, pIdxBase, groupSize);
+        int initialPIdx = seed.initialPIdx();
+        int seedAnchor = seed.seedAnchor();
+        int seedGroupOriginX = origin.getX() + seed.localGroupIdx() * subLevelStride - halfPadLen;
         BlockPos seedGroupOrigin = new BlockPos(seedGroupOriginX, origin.getY(), origin.getZ());
 
         UUID trainId = UUID.randomUUID();
@@ -394,6 +408,21 @@ public final class TrainAssembler {
         }
 
         return seedShip;
+    }
+
+    /** The seed group's numbering: {@code initialPIdx}/{@code seedAnchor} numbered, {@code localGroupIdx} for placement. */
+    record SeedNumbering(int initialPIdx, int seedAnchor, int localGroupIdx) {}
+
+    /**
+     * Number the seed group. {@code localPIdx} is the spawner's carriage counted from the origin;
+     * {@code pIdxBase} is added after rounding it down to a whole group, so a group's anchor stays a
+     * multiple of {@code groupSize} and base 0 gives exactly the old numbering.
+     */
+    static SeedNumbering seedNumbering(int localPIdx, int pIdxBase, int groupSize) {
+        int g = Math.max(1, groupSize);
+        int localAnchor = Math.floorDiv(localPIdx, g) * g;
+        int shift = Math.floorDiv(pIdxBase, g) * g;
+        return new SeedNumbering(localPIdx + shift, localAnchor + shift, Math.floorDiv(localAnchor, g));
     }
 
     /**

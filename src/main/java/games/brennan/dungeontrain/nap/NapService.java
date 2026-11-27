@@ -235,7 +235,9 @@ public final class NapService {
             // a test nap to a live slot.
             games.brennan.dungeontrain.perks.PerksGate.isTestWorld() ? games.brennan.dungeontrain.perks.PerksGate.TEST_PROFILE : server.getWorldData().getDifficulty().getKey(),
             advancements, stats, narrative,
-            runExtras, difficultyOffset).withPlace(placeAt(server, x));
+            runExtras, difficultyOffset).withPlace(placeAt(server, x))
+            // The bed's carriage number, so the woken train numbers on from here instead of from 0.
+            .withPIdx(games.brennan.dungeontrain.train.TrainCarriageAppender.lastCarriageIndex(player.getUUID()));
     }
 
     /** The train's band place at {@code x} plus the world's reverse-slide state, or null with no layout. */
