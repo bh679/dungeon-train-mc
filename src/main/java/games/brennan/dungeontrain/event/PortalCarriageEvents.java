@@ -1617,6 +1617,11 @@ public final class PortalCarriageEvents {
      * {@link #isInsidePortalStructure}, and horizontal for the same reason: the clearance has no
      * vertical term.</p>
      */
+    /** How far along X a Plank bridge chunk's bridges reach past its box; zero for any other room. */
+    static int bridgeReach(games.brennan.dungeontrain.portal.PortalStructure structure) {
+        return structure.mode().laysPlankBridge() ? structure.doorGap() : 0;
+    }
+
     private static void sendFogFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
                                    Set<UUID> fogged) {
@@ -1636,11 +1641,14 @@ public final class PortalCarriageEvents {
         // ceiling. The room's own box still covers both corridors' full height: the offset can never
         // exceed the room's slack over PortalRoomLayout.minHeight, which is the corridor's height.
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        // A Plank bridge chunk's bridges are part of the room: the fog holds at the room's own
+        // distance out along them to the doors, and only thickens past the gap.
+        int bridge = bridgeReach(structure);
         PortalRoomFogPacket region = new PortalRoomFogPacket(
-            structure.tiledMinX(dims, layout) - pad,
+            structure.tiledMinX(dims, layout) - bridge - pad,
             roomOrigin.getY(),
             structure.tiledMinZ(dims, layout) - pad,
-            structure.tiledMaxX(dims, layout) + pad,
+            structure.tiledMaxX(dims, layout) + bridge + pad,
             roomOrigin.getY() + structure.roomSize().getY(),
             structure.tiledMaxZ(dims, layout) + pad,
             structure.fogRadius(),
@@ -1687,11 +1695,13 @@ public final class PortalCarriageEvents {
         // An Endless open chunk is daylit across its whole plain, not only inside the chunk: the
         // grass a player walks out onto stands under the same sky as the tower in the middle of it.
         int plain = structure.mode().laysGroundPlain() ? PortalRoomLayout.VOID_CLEARANCE : 0;
+        // A Plank bridge chunk is daylit out along its bridges to the doors.
+        int bridge = bridgeReach(structure);
         PortalRoomSkyPacket region = PortalRoomSkyPacket.inWorld(
-            structure.tiledMinX(dims, layout) - plain,
+            structure.tiledMinX(dims, layout) - plain - bridge,
             roomOrigin.getY(),
             structure.tiledMinZ(dims, layout) - plain,
-            structure.tiledMaxX(dims, layout) + plain,
+            structure.tiledMaxX(dims, layout) + plain + bridge,
             roomOrigin.getY() + structure.roomSize().getY() - 1,
             structure.tiledMaxZ(dims, layout) + plain,
             sky.ordinal());

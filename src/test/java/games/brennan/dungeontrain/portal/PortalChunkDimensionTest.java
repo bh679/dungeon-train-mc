@@ -38,7 +38,7 @@ class PortalChunkDimensionTest {
         for (PortalRoomMode other : PortalRoomMode.values()) {
             // The frame-enclosed chunk modes are the same terrain under Void, World Border or Endless open.
             boolean chunk = other == PortalRoomMode.CHUNK_VOID || other == PortalRoomMode.CHUNK_WORLD_BORDER
-                || other == PortalRoomMode.CHUNK_ENDLESS_OPEN;
+                || other == PortalRoomMode.CHUNK_ENDLESS_OPEN || other == PortalRoomMode.CHUNK_PLANK_BRIDGE;
             if (other != mode && !chunk) assertTrue(!other.generatesTerrain(), other + " must not generate terrain");
         }
         assertTrue(PortalRoomMode.BEDROCK.sealsRoomBox());

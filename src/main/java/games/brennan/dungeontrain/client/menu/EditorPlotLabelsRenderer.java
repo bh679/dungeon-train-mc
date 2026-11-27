@@ -133,6 +133,7 @@ public final class EditorPlotLabelsRenderer {
         FRAME_DIM_VOID,
         FRAME_DIM_WORLD_BORDER,
         FRAME_DIM_ENDLESS_OPEN,
+        FRAME_DIM_PLANK_BRIDGE,
         /** Endless open frame's Ground row — the held half sets it from the hand, Edit opens the menu. */
         FRAME_GROUND_HELD,
         FRAME_GROUND_EDIT,
@@ -257,10 +258,8 @@ public final class EditorPlotLabelsRenderer {
         if (snap.isPresent()) buf.add(RowKind.FRAME_DIMENSION);
         if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) buf.add(RowKind.WEIGHT);
         if (entry.inPlot()) {
-            if (frameIsEndlessOpen(entry)) {
-                buf.add(RowKind.FRAME_GROUND);
-                buf.add(RowKind.FRAME_DOOR_DISTANCE);
-            }
+            if (frameIsEndlessOpen(entry)) buf.add(RowKind.FRAME_GROUND);
+            if (frameOpensDoorDistance(entry)) buf.add(RowKind.FRAME_DOOR_DISTANCE);
             buf.add(RowKind.FRAME_LEVELS);
             buf.add(RowKind.FRAME_GATE);
             if (snap.isPresent()) {
@@ -291,12 +290,12 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /** The Dimension row's four cells: command token and label, in display order. */
-    public static final String[] FRAME_DIM_TOKENS = {"bedrock", "void", "world_border", "endless_open"};
-    public static final String[] FRAME_DIM_LABELS = {"Bedrock lock", "Void", "World border", "Endless open"};
+    public static final String[] FRAME_DIM_TOKENS = {"bedrock", "void", "world_border", "endless_open", "plank_bridge"};
+    public static final String[] FRAME_DIM_LABELS = {"Bedrock lock", "Void", "World border", "Endless open", "Plank bridge"};
     private static final CellKind[] FRAME_DIM_CELLS = {CellKind.FRAME_DIM_BEDROCK, CellKind.FRAME_DIM_VOID,
-        CellKind.FRAME_DIM_WORLD_BORDER, CellKind.FRAME_DIM_ENDLESS_OPEN};
+        CellKind.FRAME_DIM_WORLD_BORDER, CellKind.FRAME_DIM_ENDLESS_OPEN, CellKind.FRAME_DIM_PLANK_BRIDGE};
 
-    /** The Dimension row's cell at {@code hitX}: equal quarters, left to right. */
+    /** The Dimension row's cell at {@code hitX}: one equal cell per dimension, left to right. */
     static CellKind frameDimensionCell(double halfW, double hitX) {
         double w = halfW * 2.0;
         int n = FRAME_DIM_CELLS.length;
@@ -307,6 +306,12 @@ public final class EditorPlotLabelsRenderer {
     /** Whether the frame behind {@code entry} stands its chunk on an Endless open plain. */
     public static boolean frameIsEndlessOpen(EditorPlotLabelsPacket.Entry entry) {
         return frameSnapshot(entry).map(s -> "endless_open".equals(s.dimension())).orElse(false);
+    }
+
+    /** True when the frame stands its doors out from the chunk: Endless open and Plank bridge. */
+    public static boolean frameOpensDoorDistance(EditorPlotLabelsPacket.Entry entry) {
+        return frameSnapshot(entry).map(s -> "endless_open".equals(s.dimension())
+            || "plank_bridge".equals(s.dimension())).orElse(false);
     }
 
     /** What the frame Door distance row reads, e.g. {@code "Door distance 16"}. */
@@ -333,6 +338,7 @@ public final class EditorPlotLabelsRenderer {
             case FRAME_DIM_VOID -> FRAME_DIM_TOKENS[1];
             case FRAME_DIM_WORLD_BORDER -> FRAME_DIM_TOKENS[2];
             case FRAME_DIM_ENDLESS_OPEN -> FRAME_DIM_TOKENS[3];
+            case FRAME_DIM_PLANK_BRIDGE -> FRAME_DIM_TOKENS[4];
             default -> null;
         };
     }
