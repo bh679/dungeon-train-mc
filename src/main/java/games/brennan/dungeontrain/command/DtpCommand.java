@@ -36,7 +36,7 @@ import java.util.concurrent.CompletableFuture;
  * F3+4 debug panel names it ({@link BandLabel#bandAt}), so Void gaps and styled occurrences count.
  *
  * <p>The move itself — holding spot, fresh train at {@code x}, placement on the flatbed — is
- * {@link TrainRelocation#relocate}, shared with the admin inventory restore.</p>
+ * {@link TrainRelocation#dtp}, shared with the admin inventory restore ({@link TrainRelocation#restore}).</p>
  */
 public final class DtpCommand {
 
@@ -174,7 +174,7 @@ public final class DtpCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
-        TrainRelocation.Result result = TrainRelocation.relocate(player, x, true);
+        TrainRelocation.Result result = TrainRelocation.dtp(player, x);
         if (!result.ok()) {
             source.sendFailure(result.failure());
             return 0;

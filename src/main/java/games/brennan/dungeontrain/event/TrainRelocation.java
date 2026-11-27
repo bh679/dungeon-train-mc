@@ -5,6 +5,9 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.difficulty.DifficultyOffset;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.player.RunRestore;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
@@ -33,7 +36,10 @@ import org.slf4j.Logger;
  *       clear of the assembly footprint, since {@link TrainAssembler} converts world blocks in that
  *       volume into ship blocks and drags along anything caught inside it (issue #22).</li>
  *   <li>Spawns a fresh train seeded at {@code x} via {@link TrainAssembler#spawnTrain}, replacing
- *       whatever train currently exists — this mod runs a single persistent train.</li>
+ *       whatever train currently exists — this mod runs a single persistent train. Its carriages
+ *       number on from the depth the player is moved to (the {@code pIdxBase} seam a nap wake also
+ *       uses), so echoes, carriage difficulty, loot, carriage ids and the HUD read that depth
+ *       rather than the start of a run.</li>
  *   <li>Queues the player in {@link DtpPlacementService}, which drops them onto the flatbed pad
  *       nearest {@code x} once the new seed group's physics settle.</li>
  * </ol>
@@ -54,13 +60,13 @@ public final class TrainRelocation {
 
     /**
      * Calibrated blocks-per-carriage estimate for converting a destination world-X into an
-     * implied travelled-carriage count for difficulty purposes. Diff-Car
+     * implied travelled-carriage count ({@link #impliedCarriage}). Also the nap's X estimate. Diff-Car
      * ({@link DifficultyProgression#rawMaxTravelledCarriageIndex}) is a path-dependent counter of
      * actual carriage-boundary crossings during play — there's no exact formula linking it to
      * world-X — so this is a best-effort approximation calibrated from a live observation
      * (world-X 35676 &harr; Diff-Car 1041), not a physical law.
      */
-    private static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
+    public static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
 
     private TrainRelocation() {}
 
@@ -76,13 +82,50 @@ public final class TrainRelocation {
     }
 
     /**
-     * Relocate {@code player} to world-X {@code x} on a fresh train in their current dimension.
-     *
-     * @param setDifficultyOffset {@code true} (the {@code /dtp} behaviour) shifts difficulty "as if
-     *        you'd travelled this far, everywhere"; {@code false} leaves it to the player's own run
-     *        state, which the restore sets before calling this
+     * The carriage number a train at world-X {@code x} implies for a run that rode there: signed, so
+     * a destination behind spawn numbers backwards, floored like the nap's estimate. Pure.
      */
-    public static Result relocate(ServerPlayer player, double x, boolean setDifficultyOffset) {
+    public static int impliedCarriage(double x) {
+        return (int) Math.floor(x / BLOCKS_PER_CARRIAGE);
+    }
+
+    /**
+     * The carriage number a restored run's train continues from: the run's own travelled count,
+     * which is the sum of its carriage-number steps and so the number of the carriage it reached
+     * from spawn. A run that never booked any travel (0) falls back to the X estimate. Pure.
+     */
+    public static int restoreBase(int travelled, double x) {
+        return travelled != 0 ? travelled : impliedCarriage(x);
+    }
+
+    /**
+     * {@code /dtp}: move {@code player} to {@code x} "as if they'd ridden there". The new train numbers
+     * on from {@link #impliedCarriage}, the player's own travelled count becomes that number, and the
+     * global difficulty offset is cleared, since the depth now lives in the carriage numbers and the
+     * offset would count it twice ({@link DifficultyProgression#positionTier} adds it to
+     * {@code |pIdx|}). The world's carriage counter is raised to match.
+     */
+    public static Result dtp(ServerPlayer player, double x) {
+        return relocate(player, x, impliedCarriage(x), true);
+    }
+
+    /**
+     * Run restore: move {@code player} to {@code x} with the train numbered on from {@code pIdxBase}
+     * ({@link #restoreBase}), leaving difficulty and run state to the restore, which set them first.
+     */
+    public static Result restore(ServerPlayer player, double x, int pIdxBase) {
+        return relocate(player, x, pIdxBase, false);
+    }
+
+    /**
+     * Relocate {@code player} to world-X {@code x} on a fresh train in their current dimension, its
+     * carriages numbered from {@code pIdxBase} (rounded down to a group by
+     * {@link TrainAssembler#spawnTrain}).
+     *
+     * @param asTravelled {@code true} (the {@code /dtp} behaviour) makes {@code pIdxBase} the player's
+     *        travelled count too; {@code false} leaves it to the player's own run state
+     */
+    private static Result relocate(ServerPlayer player, double x, int pIdxBase, boolean asTravelled) {
         // A dead client never reports the teleport, so the player's chunk tickets stay behind, Sable culls
         // the new seed at once and the wait times out, with the old train already deleted.
         if (player.isDeadOrDying()) {
@@ -119,7 +162,8 @@ public final class TrainRelocation {
         player.setInvulnerable(true);
         player.teleportTo(trainLevel, x, holdY, holdZ, player.getYRot(), player.getXRot());
 
-        int tier = setDifficultyOffset ? shiftDifficulty(server, trainLevel, x) : -1;
+        // Before spawnTrain: positionTier reads the offset as the seed's carriages generate.
+        int tier = asTravelled ? travelTo(server, player, trainLevel, pIdxBase) : -1;
 
         BlockPos origin = new BlockPos((int) Math.floor(x), trainY, 0);
         Vector3d spawnerWorldPos = new Vector3d(x, trainY, 0);
@@ -133,11 +177,11 @@ public final class TrainRelocation {
         // TrainBootstrapEvents.ensureTrainSpawned.
         int count = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
 
-        LOGGER.info("[DungeonTrain] Relocating {} to x={} — spawning train at origin {} speed {} (configCount={}), difficulty tier {}",
-            player.getName().getString(), x, origin, speed, configCount, setDifficultyOffset ? tier : "unchanged");
+        LOGGER.info("[DungeonTrain] Relocating {} to x={} — spawning train at origin {} speed {} (configCount={}) pIdxBase={}, difficulty tier {}",
+            player.getName().getString(), x, origin, speed, configCount, pIdxBase, asTravelled ? tier : "unchanged");
 
         try {
-            TrainAssembler.spawnTrain(trainLevel, origin, velocity, count, spawnerWorldPos, dims);
+            TrainAssembler.spawnTrain(trainLevel, origin, velocity, count, spawnerWorldPos, dims, pIdxBase);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Relocation spawnTrain failed", t);
             player.setInvulnerable(false);
@@ -145,30 +189,34 @@ public final class TrainRelocation {
                 t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
         }
 
-        // The new train numbers its carriages afresh, so the boarding leader's last carriage now
-        // points into a train that no longer exists: left in place, the first scan on the new train
-        // books the gap between the two numberings as carriages travelled (it took a restored run
-        // from 237 to 219). Dropping the leader makes the next scan re-anchor with no delta.
+        // The new train numbers its carriages from pIdxBase, so the boarding leader's last carriage
+        // now points into a train that no longer exists: left in place, the first scan on the new
+        // train books the gap between the two numberings as carriages travelled (it took a restored
+        // run from 237 to 219). Dropping the leader makes the next scan re-anchor with no delta.
         BoardingProgressData.get(trainLevel).clearLeader();
+        BoardingProgressEvents.sendPlayerHudPacket(player);   // the HUD shows the new depth at once
 
         DtpPlacementService.enqueue(player, trainLevel, x, holdY, holdZ);
         return new Result(true, tier, null);
     }
 
     /**
-     * Shift difficulty to match the destination — "as if you'd travelled this far, everywhere"
-     * (same mechanism {@code /dungeontrain difficulty <tier>} uses). Runs BEFORE spawnTrain:
-     * positionTier reads this same offset to gate carriage template/content variants as they
-     * generate, so the freshly-spawned train's content already matches the destination's difficulty.
+     * {@code /dtp}'s "as if you'd ridden this far": the player's own travelled count becomes
+     * {@code carriage} (a plain {@code advanceTravelled}, so no cart stats or milestones are awarded
+     * for a teleport), the world's carriage counter is raised to it, and the global difficulty offset
+     * is cleared (a world that used {@code /dtp} before still carries one, which on top of the new
+     * carriage numbers would count the depth twice). Returns the tier that depth reads as.
      */
-    private static int shiftDifficulty(MinecraftServer server, ServerLevel trainLevel, double x) {
-        int impliedTravelled = (int) Math.round(Math.abs(x) / BLOCKS_PER_CARRIAGE);
-        int requestedTier = Math.min(DungeonTrainConfig.MAX_REQUESTED_DIFFICULTY_TIER,
-            DifficultyProgression.tierForTravelled(impliedTravelled));
-        int rawTravelled = DifficultyProgression.rawMaxTravelledCarriageIndex(trainLevel);
-        int difficultyOffset = DifficultyProgression.travelledOffsetForRequestedTier(
-            requestedTier, rawTravelled, DungeonTrainConfig.getCarriagesPerTier(), DungeonTrainConfig.getProgressionLevelDelay());
-        DifficultyOffset.set(server, difficultyOffset);
-        return requestedTier;
+    private static int travelTo(MinecraftServer server, ServerPlayer player, ServerLevel trainLevel, int carriage) {
+        DifficultyOffset.clear(server);
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        run.advanceTravelled(travelDelta(run.travelledCarriageIndex(), carriage));
+        RunRestore.raiseWorldProgress(trainLevel, carriage);
+        return Math.min(DungeonTrainConfig.MAX_REQUESTED_DIFFICULTY_TIER, DifficultyProgression.tierForTravelled(carriage));
+    }
+
+    /** The signed step that takes a travelled count from {@code current} to {@code target}. Pure. */
+    static int travelDelta(int current, int target) {
+        return target - current;
     }
 }

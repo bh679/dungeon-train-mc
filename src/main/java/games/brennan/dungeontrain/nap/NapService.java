@@ -48,7 +48,7 @@ public final class NapService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** {@code TrainRelocation}'s calibrated carriage length, for the carriage number only. */
-    static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
+    static final double BLOCKS_PER_CARRIAGE = games.brennan.dungeontrain.event.TrainRelocation.BLOCKS_PER_CARRIAGE;
 
     private record Offer(BlockPos bedPos, boolean night) {}
 

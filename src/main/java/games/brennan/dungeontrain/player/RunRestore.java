@@ -19,9 +19,11 @@ import org.slf4j.Logger;
  * bug) back at the depth they had reached, with that run's stats, in a fresh world.
  *
  * <p>No command runs and no permission is asked for, so nothing here can make the run Free Play,
- * and {@code RUN_CHEATED} is never read or written. The move is {@link TrainRelocation} with the
- * difficulty offset left alone: difficulty follows from the restored run state, the same way it
- * does for a player who rode there.</p>
+ * and {@code RUN_CHEATED} is never read or written. The move is {@link TrainRelocation#restore} with
+ * the difficulty offset left alone: difficulty follows from the restored run state, the same way it
+ * does for a player who rode there, and the new train numbers its carriages on from the run's own
+ * travelled count ({@link TrainRelocation#restoreBase}), so the carriage the player lands on reads
+ * as deep as the run was.</p>
  */
 public final class RunRestore {
 
@@ -76,7 +78,7 @@ public final class RunRestore {
             Math.max(run.longWayBackMaxCarriage(), travelled));
         raiseWorldProgress(player.serverLevel(), travelled);
 
-        TrainRelocation.Result result = TrainRelocation.relocate(player, run.x(), false);
+        TrainRelocation.Result result = TrainRelocation.restore(player, run.x(), TrainRelocation.restoreBase(travelled, run.x()));
         if (!result.ok()) {
             LOGGER.warn("[DungeonTrain] Run restore for {}: relocation to x={} failed: {}",
                 player.getName().getString(), run.x(), result.failure().getString());
