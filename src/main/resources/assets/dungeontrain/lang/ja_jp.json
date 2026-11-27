@@ -796,6 +796,7 @@
   "chat.dungeontrain.live.ffmpeg.button.folder": "[フォルダーを開く]",
   "chat.dungeontrain.live.viewer_died": "%s（配信を視聴中）",
   "chat.dungeontrain.live.sound_off_unapproved": "配信音声はオフです：未承認のMODが読み込まれています。",
+  "chat.dungeontrain.live.sound_off_failed": "配信音声はオフです：FFmpegがゲームの音声を配信に追加できませんでした。",
   "chat.dungeontrain.live.unreachable": "放送できない：配信先に接続できなかった。",
   "chat.dungeontrain.live.disabled": "ライブ配信はオフになっています。%s でオンにしてください",
   "chat.dungeontrain.live.disabled.path": "設定 / Dungeon Train / 配信 / ライブ配信",

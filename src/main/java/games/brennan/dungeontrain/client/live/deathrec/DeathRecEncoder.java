@@ -50,7 +50,8 @@ final class DeathRecEncoder implements AutoCloseable {
     DeathRecEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, int fps, int audioPort, DeathRecRing ring) throws IOException {
         this.grabber = grabber;
         this.fps = fps;
-        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, audioPort));
+        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, audioPort,
+            FfmpegSupport.inputQueueOption()));
         FfmpegSupport.drain(process.getErrorStream(), "death-rec");
         this.reader = new Thread(() -> readLoop(ring), "dt-death-rec-read");
         this.reader.setDaemon(true);
@@ -61,12 +62,19 @@ final class DeathRecEncoder implements AutoCloseable {
     }
 
     static String[] args(int w, int h, int fps, int audioPort) {
+        return args(w, h, fps, audioPort, true);
+    }
+
+    /** {@code inputQueue}: give each input {@code -thread_queue_size}; off where ffmpeg rejects it (FFmpeg 9+). */
+    static String[] args(int w, int h, int fps, int audioPort, boolean inputQueue) {
         boolean audio = audioPort > 0;
+        boolean queue = audio && inputQueue;
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin"));
-        if (audio) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
+        if (queue) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
         a.addAll(List.of("-f", "rawvideo", "-pix_fmt", "rgba", "-s", w + "x" + h, "-r", String.valueOf(fps), "-i", "-"));
         if (audio) {
-            a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE),
+            if (queue) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
+            a.addAll(List.of(
                 "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "tcp://127.0.0.1:" + audioPort,
                 "-map", "0:v:0", "-map", "1:a:0"));
         }

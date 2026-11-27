@@ -1,0 +1,17 @@
+{
+  "id": "live-eye-stream-sound-ffmpeg9",
+  "version": "0.2060.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Live Eye streams have sound again",
+  "summary": "Many Live Eye streams had been going out without any sound. They carry the game's sound again, and if a stream ever has to go without sound, the streamer now gets a message saying so.",
+  "highlights": [],
+  "pr": 2930,
+  "date": "2026-11-27",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

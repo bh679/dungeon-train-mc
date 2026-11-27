@@ -787,6 +787,8 @@ public final class LiveStreamController {
         if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grab == null || d == null
             || old == null || snd == null) return false;
         LOGGER.warn("[DungeonTrain] live encoder failed with stream sound on; carrying on without sound");
+        // Said, not just logged: a silent fallback hid FFmpeg 9 dropping every stream's sound for a week.
+        say(Component.translatable("chat.dungeontrain.live.sound_off_failed").withStyle(ChatFormatting.GRAY));
         audio = null;
         LiveMic.endStream(); // no sound input, so no mic track either
         encoder = null;
