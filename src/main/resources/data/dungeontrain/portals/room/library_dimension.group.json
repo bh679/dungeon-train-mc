@@ -19,6 +19,10 @@
       "id": "openlibflat",
       "weight": 2,
       "minLevel": 4
+    },
+    {
+      "id": "parkslibrary",
+      "weight": 1
     }
   ]
 }
