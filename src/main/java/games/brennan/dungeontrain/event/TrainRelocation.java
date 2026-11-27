@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.difficulty.DifficultyOffset;
@@ -90,9 +91,12 @@ public final class TrainRelocation {
     }
 
     /**
-     * The carriage number a restored run's train continues from: the run's own travelled count,
-     * which is the sum of its carriage-number steps and so the number of the carriage it reached
-     * from spawn. A run that never booked any travel (0) falls back to the X estimate. Pure.
+     * The carriage number a restored run's train continues from: the run's own travelled count, the
+     * sum of its carriage-number steps. That is the carriage it reached counted from the one it first
+     * boarded; a run does not always board carriage 0 (the first player boards whichever carriage is
+     * passing spawn, about 20 on a dedicated server), so this can read that many carriages shallow,
+     * about one tier, since the snapshot keeps no carriage number. A run that never booked any travel
+     * (0) falls back to the X estimate. Pure.
      */
     public static int restoreBase(int travelled, double x) {
         return travelled != 0 ? travelled : impliedCarriage(x);
@@ -205,9 +209,12 @@ public final class TrainRelocation {
      * {@code carriage} (a plain {@code advanceTravelled}, so no cart stats or milestones are awarded
      * for a teleport), the world's carriage counter is raised to it, and the global difficulty offset
      * is cleared (a world that used {@code /dtp} before still carries one, which on top of the new
-     * carriage numbers would count the depth twice). Returns the tier that depth reads as.
+     * carriage numbers would count the depth twice). The run becomes Free Play: its travelled count is
+     * now made up, and a console {@code execute as <player> run dtp} moves a player who is not an
+     * operator, whom nothing else would flag. Returns the tier that depth reads as.
      */
     private static int travelTo(MinecraftServer server, ServerPlayer player, ServerLevel trainLevel, int carriage) {
+        RunIntegrity.markCheated(player, Component.translatable("chat.dungeontrain.free_play.cause.command", "/dtp"));
         DifficultyOffset.clear(server);
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.advanceTravelled(travelDelta(run.travelledCarriageIndex(), carriage));

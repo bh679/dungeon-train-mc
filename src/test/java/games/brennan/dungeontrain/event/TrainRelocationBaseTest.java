@@ -40,7 +40,8 @@ final class TrainRelocationBaseTest {
     @Test
     @DisplayName("the carriage the player lands on reads the base, rounded down to a whole group")
     void landingNumber() {
-        // The player lands at local pIdx 0 (the train is seeded at the destination X).
+        // The carriage at the destination X (local index 0). The flatbed the player is set on can
+        // stand a carriage or two along from it (a /dtp to 35676 lands on 1043).
         assertEquals(1041, TrainSeedNumberingProbe.landingPIdx(0, TrainRelocation.impliedCarriage(35_676), 3));
         assertEquals(1040, TrainSeedNumberingProbe.landingPIdx(0, 1041, 4));
         assertEquals(900, TrainSeedNumberingProbe.landingPIdx(0, TrainRelocation.restoreBase(900, 30_000), 3));
