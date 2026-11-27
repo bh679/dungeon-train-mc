@@ -41,6 +41,7 @@
     "TamableAnimalTameMixin",
     "TamableAnimalFollowTeleportMixin",
     "AbstractHorseTameMixin",
+    "AbstractArrowRayGuardMixin",
     "WolfTameRollMixin",
     "CatTameRollMixin",
     "OcelotTameRollMixin",
