@@ -6620,6 +6620,7 @@
       "item.dungeontrain.tribute_cassette.tooltip",
       "chat.dungeontrain.tribute_room.tv_stays",
       "chat.dungeontrain.tribute_room.view_only",
+      "chat.dungeontrain.tribute_room.own_placed_only",
       "chat.dungeontrain.tribute_room.banner"
     ],
     "adventureitemnames": "*",

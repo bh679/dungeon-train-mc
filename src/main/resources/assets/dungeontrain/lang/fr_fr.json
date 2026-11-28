@@ -6720,5 +6720,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Réglée sur votre salle d'hommage. Sa télé diffuse votre propre histoire.",
   "chat.dungeontrain.tribute_room.tv_stays": "La télé reste. Construisez autour.",
   "chat.dungeontrain.tribute_room.view_only": "La salle d'hommage de quelqu'un. Regardez, mais laissez tout comme vous l'avez trouvé.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Ta salle. Ajoute des blocs, mais seuls ceux que tu as posés peuvent être retirés.",
   "chat.dungeontrain.tribute_room.banner": "Cette salle est un hommage à %s, et de sa main"
 }

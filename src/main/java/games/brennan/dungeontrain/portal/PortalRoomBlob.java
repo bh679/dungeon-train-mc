@@ -69,7 +69,12 @@ public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token
 
     /** A live capture of this world's own room, carried across a relocation. */
     public static PortalRoomBlob live(CompoundTag snapshot) {
-        return new PortalRoomBlob(snapshot, null, null, "", Credits.EMPTY, Deaths.EMPTY, 0, false);
+        return live(snapshot, "");
+    }
+
+    /** {@link #live(CompoundTag)} still credited to {@code owner}: a player's tribute room moving on with the train. */
+    public static PortalRoomBlob live(CompoundTag snapshot, String owner) {
+        return new PortalRoomBlob(snapshot, null, null, owner, Credits.EMPTY, Deaths.EMPTY, 0, false);
     }
 
     /** True when this blob came from the relay and carries a lease to write back through. */

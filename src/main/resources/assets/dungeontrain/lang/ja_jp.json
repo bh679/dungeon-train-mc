@@ -6646,5 +6646,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "自分のトリビュートルームに合わせたカセット。そのテレビはあなた自身の物語を映す。",
   "chat.dungeontrain.tribute_room.tv_stays": "テレビはそのまま。周りに建てよう。",
   "chat.dungeontrain.tribute_room.view_only": "ここは誰かのトリビュートルーム。見るだけにして、元のままにしておこう。",
+  "chat.dungeontrain.tribute_room.own_placed_only": "あなたの部屋です。ブロックを置けますが、取り除けるのは自分で置いたものだけです。",
   "chat.dungeontrain.tribute_room.banner": "この部屋は %s への、本人によるトリビュートです"
 }

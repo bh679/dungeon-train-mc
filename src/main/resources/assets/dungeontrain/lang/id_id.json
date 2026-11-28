@@ -6646,5 +6646,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Disetel ke ruang tributmu. TV-nya memutar kisahmu sendiri.",
   "chat.dungeontrain.tribute_room.tv_stays": "TV-nya tetap di sini. Bangunlah di sekitarnya.",
   "chat.dungeontrain.tribute_room.view_only": "Ruang tribut milik orang lain. Lihat saja, tapi tinggalkan seperti saat kamu menemukannya.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Ruanganmu. Tambahkan balok, tapi hanya balok yang kamu pasang yang bisa diambil lagi.",
   "chat.dungeontrain.tribute_room.banner": "Ruangan ini adalah tribut untuk dan oleh %s"
 }

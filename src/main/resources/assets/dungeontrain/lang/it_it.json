@@ -6720,5 +6720,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Sintonizzata sulla tua stanza tributo. La sua TV trasmette la tua storia.",
   "chat.dungeontrain.tribute_room.tv_stays": "La TV resta. Costruisci intorno.",
   "chat.dungeontrain.tribute_room.view_only": "La stanza tributo di qualcuno. Guarda, ma lasciala come l'hai trovata.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "La tua stanza. Aggiungi blocchi, ma puoi togliere solo quelli che hai piazzato tu.",
   "chat.dungeontrain.tribute_room.banner": "Questa stanza è un tributo a e di %s"
 }
