@@ -111,6 +111,11 @@ public final class TributeTvShowcase {
         }
     }
 
+    /** Whether a click on {@code pos} is a showcase TV's: exactly when {@link #onTvClicked} would take it. Reads only. */
+    public static boolean ownsClick(BlockPos pos) {
+        return at(pos) != null;
+    }
+
     /** A click on a showing TV: its page's buttons take it; sneaking lifts the page onto the window. */
     public static boolean onTvClicked(BlockPos pos, boolean sneaking) {
         Entry e = at(pos);

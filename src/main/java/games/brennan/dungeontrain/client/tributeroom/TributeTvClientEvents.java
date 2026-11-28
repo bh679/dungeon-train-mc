@@ -85,8 +85,23 @@ public final class TributeTvClientEvents {
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!event.getLevel().isClientSide()) return;
         if (pressedTvButton(event)) return;
+        claimTvClick(event);
+    }
+
+    /**
+     * Takes a click on a showing TV: the event is cancelled now, and the page gets the click on the next
+     * tick. A page's button can leave the world (Leave, Quit, Board anew), and vanilla goes on reading the
+     * level and the player after this event, cancelled or not: leaving from inside it crashed on a null
+     * level. {@code tell} always queues, where {@code execute} would run it here on the render thread.
+     */
+    private static void claimTvClick(PlayerInteractEvent event) {
+        net.minecraft.core.BlockPos pos = event.getPos().immutable();
+        if (!TributeTvVisit.ownsClick(pos) && !TributeTvShowcase.ownsClick(pos)) return;
         boolean sneak = event.getEntity().isShiftKeyDown();
-        if (TributeTvVisit.onTvClicked(event.getPos(), sneak) || TributeTvShowcase.onTvClicked(event.getPos(), sneak)) event.setCanceled(true);
+        if (event instanceof net.neoforged.bus.api.ICancellableEvent c) c.setCanceled(true);
+        Minecraft.getInstance().tell(() -> {
+            if (!TributeTvVisit.onTvClicked(pos, sneak)) TributeTvShowcase.onTvClicked(pos, sneak);
+        });
     }
 
     /**
@@ -119,8 +134,7 @@ public final class TributeTvClientEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (!event.getLevel().isClientSide()) return;
-        boolean sneak = event.getEntity().isShiftKeyDown();
-        if (TributeTvVisit.onTvClicked(event.getPos(), sneak) || TributeTvShowcase.onTvClicked(event.getPos(), sneak)) event.setCanceled(true);
+        claimTvClick(event);
     }
 
     @SubscribeEvent

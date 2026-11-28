@@ -329,6 +329,12 @@ public final class TributeTvVisit {
 
     // ---- the way out ------------------------------------------------------------------------
 
+    /** Whether a click on {@code pos} is this visit's: exactly when {@link #onTvClicked} would take it. Reads only. */
+    public static boolean ownsClick(BlockPos pos) {
+        if (phase != Phase.WATCHING || !showsOn(pos) || texture == null) return false;
+        return recapShowing() || texture.screen() != null;
+    }
+
     /**
      * Right-clicked the TV. The first click switches it from the perks to the recap; every click
      * after that is the next page, sneaking the previous one. A page that needs the player's hands
