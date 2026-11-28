@@ -105,8 +105,11 @@ public final class ConstellationSky {
 
     /** Stencil bit the blocks in front of a star are stamped into, just for the draw. */
     static final int HIDE_BIT = 0x20;
-    /** How far past the disc the hidden-block pass reaches, in radii: a hidden block is hidden whole. */
-    private static final float HIDDEN_REACH = 3f;
+    /**
+     * How far out the hidden-block pass reaches, in radii (about 80 degrees off the patch's centre): the
+     * patch is solid all the way over a hidden block, so it is hidden whole and never crossfaded.
+     */
+    private static final float HIDDEN_REACH = 10f;
 
     /**
      * Directions from the eye to every drawn star of the picture: its centre and four points round its
@@ -136,8 +139,8 @@ public final class ConstellationSky {
      *   <li>The real sky (depth still at the far plane) gets the rim ({@link ConstellationEdge}).</li>
      *   <li>Clouds ({@link ConstellationClouds}) count as sky and get the same rim.</li>
      *   <li>Blocks in front of a star ({@link ConstellationOcclusion}) are hidden whole: every pixel of
-     *       them is painted as sky ({@code skyRgb}) and then gets the patch with the same rim, so they
-     *       look exactly like the sky around them. Every other block draws as normal.</li>
+     *       them gets the patch at full strength, with no rim fade: the crossfade happens over open sky
+     *       only. Every other block draws as normal.</li>
      * </ol>
      *
      * @param view the level's camera-rotation matrix ({@code RenderLevelStageEvent#getModelViewMatrix})
@@ -187,8 +190,9 @@ public final class ConstellationSky {
                 RenderSystem.stencilMask(0x00);
                 RenderSystem.stencilFunc(GL11.GL_EQUAL, HIDE_BIT, HIDE_BIT);
                 RenderSystem.depthFunc(GL11.GL_GREATER);
+                // Solid over every hidden block: the rim's fade belongs to open sky only.
                 fillDisc(view, alpha, skyRgb, HIDDEN_REACH);
-                drawDisc(view, alpha, edge.soft());
+                drawDisc(view, alpha, false, HIDDEN_REACH);
             }
         } finally {
             RenderSystem.stencilMask(0xFF);
@@ -318,9 +322,13 @@ public final class ConstellationSky {
      * instead of smearing the picture's last row of pixels outward.
      */
     private static void drawDisc(Matrix4f view, float alpha, boolean soft) {
+        drawDisc(view, alpha, soft, core);
+    }
+
+    /** {@link #drawDisc(Matrix4f, float, boolean)} with the solid core out to {@code c} radii. */
+    private static void drawDisc(Matrix4f view, float alpha, boolean soft, float c) {
         float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
         float gw = texture.guiWidth(), gh = texture.guiHeight();
-        float c = core;
         float[] radii = ringRadii(soft, c);
 
         RenderSystem.enableBlend();
