@@ -272,7 +272,7 @@ final class AnchorBedVariantsTest {
     // ---- bundled End rest stop ----
 
     @Test
-    @DisplayName("The End rest stop's obelisk rolls its gems 0..6, so it doesn't always spawn empty")
+    @DisplayName("The End rest stop's obelisk spawns full about 90% of the time, otherwise partly charged")
     void bundledObeliskRoomRollsGems() throws java.io.IOException {
         String path = "/data/dungeontrain/contents/respawnoblisk.variants.json";
         try (java.io.InputStream in = AnchorBedVariantsTest.class.getResourceAsStream(path)) {
@@ -284,12 +284,27 @@ final class AnchorBedVariantsTest {
             com.google.gson.JsonArray row = variants.getAsJsonArray("3,0,2");
             assertNotNull(row, "the obelisk's bottom cell needs a row, or its gems never roll");
             assertTrue(row.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY);
-            for (com.google.gson.JsonElement el : row) {
-                com.google.gson.JsonObject s = el.getAsJsonObject();
+            int[] weights = new int[row.size()];
+            VariantCharges[] charges = new VariantCharges[row.size()];
+            for (int i = 0; i < row.size(); i++) {
+                com.google.gson.JsonObject s = row.get(i).getAsJsonObject();
                 assertEquals("betterend:respawn_obelisk[shape=bottom]", s.get("state").getAsString());
-                assertEquals(VariantCharges.range(0, VariantCharges.MAX_GEMS),
-                    VariantCharges.parse(s.get("charges").getAsString()));
+                weights[i] = s.has("weight") ? s.get("weight").getAsInt() : 1;
+                charges[i] = VariantCharges.parse(s.get("charges").getAsString());
+                assertNotNull(charges[i]);
             }
+            // Same pick + roll the stamp pass makes (CarriageContentsPlacer → stampObeliskGems).
+            BlockPos cell = new BlockPos(3, 0, 2);
+            int trials = 10_000;
+            int full = 0;
+            for (long seed = 0; seed < trials; seed++) {
+                int pick = CarriageVariantBlocks.pickIndexFromWeights(cell, seed, 1, weights);
+                int gems = charges[pick].rollCount(RotationApplier.posOrLockKey(cell, 0), seed, 1,
+                    VariantCharges.MAX_GEMS);
+                if (gems == VariantCharges.MAX_GEMS) full++;
+            }
+            double rate = full / (double) trials;
+            assertTrue(rate > 0.85 && rate < 0.95, "full rate " + rate);
         }
     }
 }
