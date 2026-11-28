@@ -1,0 +1,16 @@
+{
+  "id": "cosmic-apple-drop-rework",
+  "version": "0.2082.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "Something secret",
+  "summary": "The developer added something secret.",
+  "highlights": [],
+  "pr": 2953,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

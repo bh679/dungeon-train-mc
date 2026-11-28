@@ -160,6 +160,24 @@ public final class PerkProfiles {
         return PerkProfileStore.pastLives(player.getUUID(), livesPartition());
     }
 
+    /**
+     * True when {@code player}'s profile says they have taken a Cosmic Apple in some past life
+     * ({@link FirstAppleBoost}). A test world never reads the profile: its finds live in the world.
+     */
+    static boolean firstAppleFound(ServerPlayer player) {
+        if (!PerksGate.isOn() || PerksGate.isTestWorld()) return false;
+        return PerkProfileStore.firstAppleFound(player.getUUID());
+    }
+
+    /**
+     * Remember for good that the player {@code uuid} has taken a Cosmic Apple. Free Play saves it too: the
+     * find was real. A test world keeps its finds in the world instead.
+     */
+    static void markFirstAppleFound(java.util.UUID uuid) {
+        if (!PerksGate.isOn() || PerksGate.isTestWorld()) return;
+        PerkProfileStore.markFirstAppleFound(uuid);
+    }
+
     /** Dev reset: forget the current difficulty's save too, or the next login would bring it all back. */
     static void onCleared(ServerPlayer player) {
         if (!PerksGate.isOn()) return;
