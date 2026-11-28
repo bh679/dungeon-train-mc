@@ -170,7 +170,7 @@ public final class ConstellationSky {
             // 1. The real sky: depth still at the far plane.
             GL11.glDisable(GL11.GL_STENCIL_TEST);
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
-            drawDisc(view, alpha, edge.soft(), 1f);
+            drawDisc(view, alpha, edge.soft());
 
             // 2. Clouds are sky to the patch: wherever they stamped their bit, the same rim.
             if (clouds) {
@@ -178,7 +178,7 @@ public final class ConstellationSky {
                 RenderSystem.stencilMask(0x00);
                 RenderSystem.stencilFunc(GL11.GL_EQUAL, ConstellationClouds.BIT, ConstellationClouds.BIT);
                 RenderSystem.depthFunc(GL11.GL_ALWAYS);
-                drawDisc(view, alpha, edge.soft(), 1f);
+                drawDisc(view, alpha, edge.soft());
             }
 
             // 3. Blocks in a star's way: hidden whole, as sky, with the patch over them.
@@ -188,7 +188,7 @@ public final class ConstellationSky {
                 RenderSystem.stencilFunc(GL11.GL_EQUAL, HIDE_BIT, HIDE_BIT);
                 RenderSystem.depthFunc(GL11.GL_GREATER);
                 fillDisc(view, alpha, skyRgb, HIDDEN_REACH);
-                drawDisc(view, alpha, edge.soft(), 1f);
+                drawDisc(view, alpha, edge.soft());
             }
         } finally {
             RenderSystem.stencilMask(0xFF);
@@ -308,65 +308,130 @@ public final class ConstellationSky {
             return;
         }
         RenderSystem.disableDepthTest();
-        drawDisc(view, 1f, true, 1f);
+        drawDisc(view, 1f, true);
     }
 
     /**
-     * One disc out to {@code outer} radii: a fan of rings, the texture's sky square on it. Soft: alpha
-     * falls off at the rim ({@link ConstellationEdge#alphaAt}). Hard: full strength to {@code outer}.
+     * One disc: solid out to the current {@link #core}, then the rim ({@link ConstellationEdge#alphaAt}).
+     * A night-coloured disc goes down first, and the menu's picture over it as far as the picture
+     * reaches: once the core grows past the picture's edge, the patch carries on as plain night sky
+     * instead of smearing the picture's last row of pixels outward.
      */
-    private static void drawDisc(Matrix4f view, float alpha, boolean soft, float outer) {
+    private static void drawDisc(Matrix4f view, float alpha, boolean soft) {
         float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
         float gw = texture.guiWidth(), gh = texture.guiHeight();
+        float c = core;
+        float[] radii = ringRadii(soft, c);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderTexture(0, texture.location());
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        float[] radii = soft ? ringRadii(true) : new float[] {0f, outer};
-        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_TEX_COLOR);
-        for (int ring = 0; ring < radii.length - 1; ring++) {
-            float r0 = radii[ring], r1 = radii[ring + 1];
-            float a0 = soft ? alpha * ConstellationEdge.alphaAt(r0, true) : alpha;
-            float a1 = soft ? alpha * ConstellationEdge.alphaAt(r1, true) : alpha;
-            for (int s = 0; s < SEGMENTS; s++) {
-                double t0 = 2 * Math.PI * s / SEGMENTS, t1 = 2 * Math.PI * (s + 1) / SEGMENTS;
-                float c0 = (float) Math.cos(t0), s0 = (float) Math.sin(t0);
-                float c1 = (float) Math.cos(t1), s1 = (float) Math.sin(t1);
-                if (r0 == 0f) {
-                    vertex(bb, view, 0f, 0f, sq, gw, gh, a0);
-                } else {
-                    vertex(bb, view, r0 * c0, r0 * s0, sq, gw, gh, a0);
-                    vertex(bb, view, r1 * c0, r1 * s0, sq, gw, gh, a1);
-                    vertex(bb, view, r1 * c1, r1 * s1, sq, gw, gh, a1);
-                    vertex(bb, view, r0 * c0, r0 * s0, sq, gw, gh, a0);
-                    vertex(bb, view, r1 * c1, r1 * s1, sq, gw, gh, a1);
-                    vertex(bb, view, r0 * c1, r0 * s1, sq, gw, gh, a0);
-                    continue;
-                }
-                vertex(bb, view, r1 * c0, r1 * s0, sq, gw, gh, a1);
-                vertex(bb, view, r1 * c1, r1 * s1, sq, gw, gh, a1);
-            }
+        // night under everything
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        BufferBuilder fill = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        rings(radii, soft, c, alpha, (x, y, a) -> {
+            Vector3f p = ConstellationGeometry.point(x, y);
+            fill.addVertex(view, p.x, p.y, p.z).setColor(SkyDomeDraw.argb(a, PerksScreen.SKY_BG & 0xFFFFFF));
+        });
+        BufferUploader.drawWithShader(fill.buildOrThrow());
+
+        // the picture, as far as it goes
+        float limit = Math.min(Math.min(sq[0], gw - sq[0]), Math.min(sq[1], gh - sq[1])) / sq[2];
+        float[] texRadii = clipRadii(radii, limit);
+        if (texRadii.length >= 2) {
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShaderTexture(0, texture.location());
+            BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_TEX_COLOR);
+            rings(texRadii, soft, c, alpha, (x, y, a) -> vertex(bb, view, x, y, sq, gw, gh, a));
+            BufferUploader.drawWithShader(bb.buildOrThrow());
         }
-        BufferUploader.drawWithShader(bb.buildOrThrow());
 
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
-    /** Centre, the start of the feather, rings through it, the rim. Hard: centre and rim only. */
-    static float[] ringRadii(boolean soft) {
-        if (!soft) return new float[] {0f, 1f};
+    private interface Emit {
+        void at(float x, float y, float alpha);
+    }
+
+    /** Triangles for the rings between consecutive {@code radii}, each vertex at its falloff alpha. */
+    private static void rings(float[] radii, boolean soft, float core, float alpha, Emit emit) {
+        for (int ring = 0; ring < radii.length - 1; ring++) {
+            float r0 = radii[ring], r1 = radii[ring + 1];
+            float a0 = alpha * ConstellationEdge.alphaAt(r0, soft, core);
+            float a1 = alpha * ConstellationEdge.alphaAt(Math.min(r1, ConstellationEdge.rim(soft, core) - 1.0e-4f), soft, core);
+            for (int s = 0; s < SEGMENTS; s++) {
+                double t0 = 2 * Math.PI * s / SEGMENTS, t1 = 2 * Math.PI * (s + 1) / SEGMENTS;
+                float c0 = (float) Math.cos(t0), s0 = (float) Math.sin(t0);
+                float c1 = (float) Math.cos(t1), s1 = (float) Math.sin(t1);
+                if (r0 == 0f) {
+                    emit.at(0f, 0f, a0);
+                    emit.at(r1 * c0, r1 * s0, a1);
+                    emit.at(r1 * c1, r1 * s1, a1);
+                } else {
+                    emit.at(r0 * c0, r0 * s0, a0);
+                    emit.at(r1 * c0, r1 * s0, a1);
+                    emit.at(r1 * c1, r1 * s1, a1);
+                    emit.at(r0 * c0, r0 * s0, a0);
+                    emit.at(r1 * c1, r1 * s1, a1);
+                    emit.at(r0 * c1, r0 * s1, a0);
+                }
+            }
+        }
+    }
+
+    /** Centre, the core's edge, rings across the feather to the rim. Hard: centre and rim only. */
+    static float[] ringRadii(boolean soft, float core) {
+        if (!soft) return new float[] {0f, ConstellationEdge.rim(false, core)};
         float[] r = new float[FEATHER_RINGS + 2];
         r[0] = 0f;
-        for (int i = 0; i <= FEATHER_RINGS; i++) {
-            r[i + 1] = ConstellationEdge.FEATHER_START + (1f - ConstellationEdge.FEATHER_START) * i / FEATHER_RINGS;
-        }
+        for (int i = 0; i <= FEATHER_RINGS; i++) r[i + 1] = core + ConstellationEdge.FEATHER_WIDTH * i / FEATHER_RINGS;
         return r;
+    }
+
+    /** {@code radii} cut off at {@code limit}, with the limit itself as the last ring. */
+    static float[] clipRadii(float[] radii, float limit) {
+        java.util.List<Float> out = new java.util.ArrayList<>();
+        for (float r : radii) {
+            if (r >= limit) {
+                out.add(limit);
+                break;
+            }
+            out.add(r);
+        }
+        float[] a = new float[out.size()];
+        for (int i = 0; i < a.length; i++) a[i] = out.get(i);
+        return a;
+    }
+
+    // ---- the solid core, grown to cover the hidden blocks ----------------------------------------------
+
+    /** How far out the patch is solid, in radii; eased toward {@link #coreTarget}. */
+    private static float core = ConstellationEdge.FEATHER_START;
+    /** How fast the core follows its target, per second (exponential). */
+    private static final float CORE_RATE = 6f;
+
+    /**
+     * Ease the core toward covering the hidden blocks: at least {@link ConstellationEdge#FEATHER_START},
+     * else just past the farthest hidden block ({@code reach}), so every hidden block sits inside the
+     * solid part before the rim starts to fade.
+     */
+    static void easeCore(float reach, float dtSeconds) {
+        float target = coreTarget(reach);
+        float k = 1f - (float) Math.exp(-CORE_RATE * Math.max(0f, dtSeconds));
+        core += (target - core) * k;
+    }
+
+    static float coreTarget(float reach) {
+        return Math.max(ConstellationEdge.FEATHER_START, Math.min(reach, ConstellationOcclusion.MAX_REACH));
+    }
+
+    /** Back to the smallest core: the patch has closed. */
+    static void resetCore() {
+        core = ConstellationEdge.FEATHER_START;
     }
 
     private static void vertex(BufferBuilder bb, Matrix4f view, float x, float y, float[] sq, float gw, float gh, float a) {

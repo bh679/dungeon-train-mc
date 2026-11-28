@@ -46,7 +46,12 @@ final class ConstellationOcclusion {
     /** One hidden block: {@code subLevel} null for the main world, else that carriage's plot. */
     record Hidden(UUID subLevel, long pos) {}
 
+    /** The widest a hidden block may push the patch's solid core, in radii. */
+    static final float MAX_REACH = 2.4f;
+
     private static volatile List<Hidden> hidden = List.of();
+    /** How far from the patch's centre, in radii, the hidden blocks reach: 0 with none. */
+    private static volatile float reach;
     private static int tick;
 
     private ConstellationOcclusion() {}
@@ -55,8 +60,13 @@ final class ConstellationOcclusion {
         return hidden;
     }
 
+    static float reach() {
+        return reach;
+    }
+
     static void clear() {
         hidden = List.of();
+        reach = 0f;
     }
 
     /** Once a client tick while the patch is open. */
@@ -73,6 +83,44 @@ final class ConstellationOcclusion {
         }
         carriages(level, eye, directions, out, cursor);
         hidden = List.copyOf(out);
+        reach = reachOf(level, eye, hidden);
+    }
+
+    /**
+     * The farthest any corner of a hidden block lands from the patch's centre, in radii, seen from the
+     * eye: the patch's solid core grows to this so every hidden block is covered before the rim fades.
+     */
+    private static float reachOf(ClientLevel level, Vec3 eye, List<Hidden> blocks) {
+        if (blocks.isEmpty()) return 0f;
+        Map<UUID, Pose3dc> poses = new HashMap<>();
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container != null) {
+            for (ClientSubLevel sub : container.getAllSubLevels()) {
+                Pose3dc pose = sub.logicalPose();
+                if (pose != null) poses.put(sub.getUniqueId(), pose);
+            }
+        }
+        float max = 0f;
+        Vector3d corner = new Vector3d();
+        Vector3d world = new Vector3d();
+        Vector3f dir = new Vector3f();
+        for (Hidden h : blocks) {
+            Pose3dc pose = h.subLevel() == null ? null : poses.get(h.subLevel());
+            if (h.subLevel() != null && pose == null) continue;
+            int bx = BlockPos.getX(h.pos()), by = BlockPos.getY(h.pos()), bz = BlockPos.getZ(h.pos());
+            for (int c = 0; c < 8; c++) {
+                corner.set(bx + (c & 1), by + ((c >> 1) & 1), bz + ((c >> 2) & 1));
+                if (pose != null) pose.transformPosition(corner, world);
+                else world.set(corner);
+                dir.set((float) (world.x - eye.x), (float) (world.y - eye.y), (float) (world.z - eye.z));
+                if (dir.lengthSquared() < 1.0e-6f) return MAX_REACH;
+                float[] hit = ConstellationGeometry.hit(dir.normalize());
+                float r = hit == null ? MAX_REACH : (float) Math.sqrt(hit[0] * hit[0] + hit[1] * hit[1]);
+                if (r > max) max = r;
+                if (max >= MAX_REACH) return MAX_REACH;
+            }
+        }
+        return max;
     }
 
     private static void carriages(ClientLevel level, Vec3 eye, List<Vector3f> directions, Set<Hidden> out,

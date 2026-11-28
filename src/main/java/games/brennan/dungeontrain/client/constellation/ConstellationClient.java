@@ -28,6 +28,7 @@ public final class ConstellationClient {
     private static float alpha;
     /** For the window block's punch: while the player stands in one, its own cubes are not punched. */
     private static boolean inside;
+    private static long lastFrameNanos;
 
     private ConstellationClient() {}
 
@@ -52,7 +53,12 @@ public final class ConstellationClient {
         }
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         inside = !player.isSpectator() && ConstellationInside.test(mc.level, player, partial);
-        alpha = FADE.advance(inside, System.nanoTime());
+        long now = System.nanoTime();
+        alpha = FADE.advance(inside, now);
+        float dt = lastFrameNanos == 0L ? 0f : Math.min(0.25f, (now - lastFrameNanos) / 1.0e9f);
+        lastFrameNanos = now;
+        if (FADE.visible()) ConstellationSky.easeCore(ConstellationOcclusion.reach(), dt);
+        else ConstellationSky.resetCore();
         // The picture is wanted by an open patch, and by a window block in view (it asks for one).
         if (!FADE.visible() && !ConstellationSky.wanted()) return;
         if (!ConstellationBlocks.active()) {

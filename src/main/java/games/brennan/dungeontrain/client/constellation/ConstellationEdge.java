@@ -49,15 +49,28 @@ public enum ConstellationEdge {
         }
     }
 
-    /**
-     * Opacity at {@code r}, the distance from the patch's centre as a fraction of its radius.
-     * Soft: full to {@link #FEATHER_START}, then a smoothstep down to nothing at the rim. Hard: full
-     * to the rim. Nothing beyond it either way.
-     */
+    /** How wide the soft rim is, in radii, outside the solid core. */
+    public static final float FEATHER_WIDTH = 1f - FEATHER_START;
+
+    /** {@link #alphaAt(float, boolean, float)} with the core at its smallest, {@link #FEATHER_START}. */
     public static float alphaAt(float r, boolean soft) {
-        if (r >= 1f) return 0f;
-        if (!soft || r <= FEATHER_START) return 1f;
-        float t = (1f - r) / (1f - FEATHER_START);
+        return alphaAt(r, soft, FEATHER_START);
+    }
+
+    /**
+     * Opacity at {@code r}, the distance from the patch's centre in radii, with the solid core reaching
+     * out to {@code core}. Soft: full to the core, then a smoothstep down to nothing
+     * {@link #FEATHER_WIDTH} further out. Hard: full to {@link #rim}, nothing past it.
+     */
+    public static float alphaAt(float r, boolean soft, float core) {
+        if (r >= rim(soft, core)) return 0f;
+        if (!soft || r <= core) return 1f;
+        float t = (core + FEATHER_WIDTH - r) / FEATHER_WIDTH;
         return t * t * (3f - 2f * t);
+    }
+
+    /** Where the patch ends: the feather's outer edge (soft), or the core or the unit disc, whichever is wider (hard). */
+    public static float rim(boolean soft, float core) {
+        return soft ? core + FEATHER_WIDTH : Math.max(1f, core);
     }
 }
