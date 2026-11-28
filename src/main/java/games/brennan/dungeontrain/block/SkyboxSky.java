@@ -62,7 +62,14 @@ public enum SkyboxSky implements StringRepresentable {
      * orbiting the horizon, moon opposite, stars turning with them, from
      * {@link games.brennan.dungeontrain.client.SunriseSkyRenderer}.
      */
-    SUNRISE("skybox_sunrise", 7, true);
+    SUNRISE("skybox_sunrise", 7, true),
+
+    /**
+     * The constellation sky: night, with the perks constellation hung 45 degrees up — from
+     * {@link games.brennan.dungeontrain.client.constellation.ConstellationSky}. Shown only by
+     * {@link ConstellationWindowBlock}, which you walk into rather than against.
+     */
+    CONSTELLATION("constellation_window", 8, true);
 
     public static final Codec<SkyboxSky> CODEC = StringRepresentable.fromEnum(SkyboxSky::values);
 

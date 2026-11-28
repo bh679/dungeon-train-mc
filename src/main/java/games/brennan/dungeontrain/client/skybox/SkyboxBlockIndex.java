@@ -276,7 +276,9 @@ public final class SkyboxBlockIndex {
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
                     for (int x = 0; x < 16; x++) {
-                        if (section.getBlockState(x, y, z).getBlock() instanceof SkyboxBlock block) {
+                        if (section.getBlockState(x, y, z).getBlock() instanceof SkyboxBlock block
+                            && (block.sky() != SkyboxSky.CONSTELLATION
+                                || games.brennan.dungeontrain.block.ConstellationBlocks.active())) {
                             out.computeIfAbsent(block.sky(), k -> new ArrayList<>())
                                 .add(BlockPos.asLong(baseX + x, baseY + y, baseZ + z));
                         }

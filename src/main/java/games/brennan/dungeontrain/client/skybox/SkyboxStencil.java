@@ -242,6 +242,7 @@ public final class SkyboxStencil {
             case UPSIDE_DOWN -> UpsideDownSkyRenderer.renderAsSkySource(frustumMatrix, partialTick);
             case NIGHT -> NightSkyRenderer.renderAsSkySource(frustumMatrix, partialTick);
             case SUNRISE -> SunriseSkyRenderer.renderAsSkySource(frustumMatrix, partialTick);
+            case CONSTELLATION -> games.brennan.dungeontrain.client.constellation.ConstellationSky.renderAsSkySource(frustumMatrix);
         }
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

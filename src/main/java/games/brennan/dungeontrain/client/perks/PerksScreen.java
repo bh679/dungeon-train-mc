@@ -112,9 +112,20 @@ public final class PerksScreen extends Screen {
     private boolean titleEyeHover;
     private long spentAt;
     private boolean firstSnapshot = true;
+    /**
+     * The sky alone, for the constellation blocks' patch of sky ({@link #forSky()}): no header, lists,
+     * counters, bar, card or tooltips, and no sounds or HUD lines of its own. The real menu, open at the
+     * same time, makes those.
+     */
+    private final boolean skyOnly;
 
     private PerksScreen(boolean fromApple, DeathPerksPhase death) {
+        this(fromApple, death, false);
+    }
+
+    private PerksScreen(boolean fromApple, DeathPerksPhase death, boolean skyOnly) {
         super(Component.translatable("gui.dungeontrain.perks.title"));
+        this.skyOnly = skyOnly;
         this.death = death;
         Minecraft mc = Minecraft.getInstance();
         this.tree = PerkTreeLoader.get();
@@ -139,9 +150,18 @@ public final class PerksScreen extends Screen {
         card.activeOnly(death == null);
     }
 
-    /** The height the sky gets: the screen, less the details bar when it is on. */
+    /** The height the sky gets: the screen, less the details bar when it is on (never in {@link #skyOnly}). */
     private int skyH() {
-        return DETAILS == DetailsMode.BAR ? height - PerkDetailsBar.HEIGHT : height;
+        return DETAILS == DetailsMode.BAR && !skyOnly ? height - PerkDetailsBar.HEIGHT : height;
+    }
+
+    /**
+     * The constellation as the menu draws it, and nothing else of the menu: for drawing into a texture
+     * ({@code tributeroom.ScreenToTexture}) hung in the sky by the constellation blocks. Never shown as
+     * {@code mc.screen}. Hover it by passing the crosshair's point on the sky as the mouse.
+     */
+    public static PerksScreen forSky() {
+        return new PerksScreen(false, null, true);
     }
 
     private Set<String> allClasses() {
@@ -262,7 +282,7 @@ public final class PerksScreen extends Screen {
         if (!firstSnapshot && death != null && now.ranksBought() < last.ranksBought()) {
             play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.5F, 0.6F + 0.04F * Math.min(now.ranksBought(), 20));
         }
-        if (!firstSnapshot) {
+        if (!firstSnapshot && !skyOnly) {
             for (String id : now.unlocked()) {
                 int before = last.unlockLevel(id), after = now.unlockLevel(id);
                 if (after <= before) continue;
@@ -390,7 +410,7 @@ public final class PerksScreen extends Screen {
     public void render(GuiGraphics g, int rawX, int rawY, float partialTick) {
         // over the Unlock tab or the Next taking its place, nothing behind it is hovered: the sky, titles,
         // names and lists see no mouse
-        boolean onTab = bar.tabContains(rawX, rawY) || (nextCentred(last) && overNext(rawX, rawY));
+        boolean onTab = !skyOnly && (bar.tabContains(rawX, rawY) || (nextCentred(last) && overNext(rawX, rawY)));
         int mouseX = onTab ? -10_000 : rawX, mouseY = onTab ? -10_000 : rawY;
         frameAt = Util.getMillis();
         PerkMenuSnapshot snap = snapshot();
@@ -401,9 +421,9 @@ public final class PerksScreen extends Screen {
         classesList.reveal(snap.unlocks());
         int cardRight = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
-        String listHover = classesList.classAt(mouseX, mouseY);
-        eyeHover = classesList.eyeAt(mouseX, mouseY, off);
-        headEyeHover = classesList.headEyeAt(mouseX, mouseY, off);
+        String listHover = skyOnly ? null : classesList.classAt(mouseX, mouseY);
+        eyeHover = skyOnly ? null : classesList.eyeAt(mouseX, mouseY, off);
+        headEyeHover = !skyOnly && classesList.headEyeAt(mouseX, mouseY, off);
         ClassTitlePainter.Title onTitle = titleAt(mouseX, mouseY);
         titleHover = onTitle == null ? null : onTitle.cls();
         titleEyeHover = onTitle != null && onTitle.eyeHits(mouseX, mouseY) && !off.contains(onTitle.cls());
@@ -415,13 +435,15 @@ public final class PerksScreen extends Screen {
         // held unlock points only open up the sky on death, where they can be spent
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), death != null ? snap.unlockPoints() : 0);
         drawn = tree.withPositions(layout.positions(tree, vis, now));
-        hovered = card.contains(mouseX, mouseY) || bar.tabContains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
-            || titleHover != null ? null : starAt(mouseX, mouseY);
+        boolean overChrome = !skyOnly && (card.contains(mouseX, mouseY) || bar.tabContains(mouseX, mouseY)
+            || classesList.rowHover(mouseX, mouseY) != null || headEyeHover);
+        hovered = overChrome || titleHover != null ? null : starAt(mouseX, mouseY);
         if (hovered != null && !PerkTree.ROOT.equals(hovered)) reveal.onHover(now); // a perk, not the Engine
         // a hovered class (in the list or its title) shows, else a hovered star, else the class clicked to stay
         String classShown = classHover != null ? classHover : hovered == null ? selectedClass : null;
         glow = classShown;
-        if (DETAILS == DetailsMode.BAR) updateBar(snap, deathPage() ? null : classShown);
+        if (skyOnly) { /* no bar or card */ }
+        else if (DETAILS == DetailsMode.BAR) updateBar(snap, deathPage() ? null : classShown);
         else updateCard(snap, now, mouseX, mouseY, cardRight, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
@@ -472,6 +494,10 @@ public final class PerksScreen extends Screen {
             StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), nameFade);
         }
 
+        if (skyOnly) {
+            g.flush();
+            return;
+        }
         if (skyFade > 0.03) renderHeader(g, snap, now, skyFade, layer(MenuReveal.Stage.POINTS, fade), mouseX, mouseY);
         // only a class clicked to stay gets the pill; a hovered title or perk, or the kept perk, outlines its class
         String keptPerkClass = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);

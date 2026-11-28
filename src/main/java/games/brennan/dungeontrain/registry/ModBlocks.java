@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.ConstellationHazeBlock;
+import games.brennan.dungeontrain.block.ConstellationWindowBlock;
 import games.brennan.dungeontrain.block.ForcedAirBlock;
 import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.block.SkyboxBlock;
@@ -121,6 +123,42 @@ public final class ModBlocks {
         SkyboxSky.SUNRISE.blockName(),
         () -> new SkyboxBlock(SkyboxSky.SUNRISE, skyboxProperties(MapColor.COLOR_ORANGE))
     );
+
+    /**
+     * Shared properties for the two constellation blocks: walk-in, never stand-on. {@code noCollission}
+     * also clears occlusion, and the pair are never suffocating or view-blocking, so a camera inside
+     * one sees the world as before. Unmineable in survival and no loot: for now they only reach a
+     * world through {@code /give} or {@code /setblock}, and only do anything where perks are on.
+     */
+    private static BlockBehaviour.Properties constellationProperties() {
+        return BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLUE)
+            .strength(-1.0F, 3600000.8F)
+            .noCollission()
+            .noOcclusion()
+            .noLootTable()
+            .noTerrainParticles()
+            .isValidSpawn((state, level, pos, type) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)
+            .isRedstoneConductor((state, level, pos) -> false)
+            .pushReaction(PushReaction.BLOCK)
+            .sound(SoundType.AMETHYST);
+    }
+
+    /** Constellation block, look 1: a skybox window onto the constellation sky. */
+    public static final DeferredBlock<ConstellationWindowBlock> CONSTELLATION_WINDOW = BLOCKS.register(
+        SkyboxSky.CONSTELLATION.blockName(), () -> new ConstellationWindowBlock(constellationProperties()));
+
+    /** Constellation block, look 2: a translucent starry haze. */
+    public static final DeferredBlock<ConstellationHazeBlock> CONSTELLATION_HAZE = BLOCKS.register(
+        "constellation_haze", () -> new ConstellationHazeBlock(constellationProperties()));
+
+    /** Block items for {@code /give}; deliberately in no creative tab. */
+    public static final DeferredItem<BlockItem> CONSTELLATION_WINDOW_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.CONSTELLATION.blockName(), () -> new BlockItem(CONSTELLATION_WINDOW.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> CONSTELLATION_HAZE_ITEM = BLOCK_ITEMS.register(
+        "constellation_haze", () -> new BlockItem(CONSTELLATION_HAZE.get(), new Item.Properties()));
 
     /** Matching {@link BlockItem}s so the blocks can be placed from the creative tab. */
     public static final DeferredItem<BlockItem> SKYBOX_BLOCK_ITEM = BLOCK_ITEMS.register(
