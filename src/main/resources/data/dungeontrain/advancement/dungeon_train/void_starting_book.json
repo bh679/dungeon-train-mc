@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "parent": "dungeontrain:dungeon_train/the_far_start",
   "display": {
     "icon": { "id": "minecraft:written_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.void_starting_book.title" },
