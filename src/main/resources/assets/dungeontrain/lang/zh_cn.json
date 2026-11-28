@@ -6636,6 +6636,7 @@
   "gui.dungeontrain.perks.bar.full": "已满。再次解锁可多放一个点数。",
   "gui.dungeontrain.perks.bar.hint": "将鼠标悬停在特权上即可在此查看。点击可固定。",
   "gui.dungeontrain.perks.bar.no_active": "你已解锁 %s 个特权，但激活的为 0 个。点击以激活一个。",
+  "gui.dungeontrain.perks.bar.some_active": "你已解锁 %1$s 个特权，已激活 %2$s 个。点击以再激活一个。",
   "gui.dungeontrain.perks.bar.not_ready": "你发现了将来会很重要的东西，但你还没准备好。以后再来吧。",
   "gui.dungeontrain.perks.counter.unlock.click": "点击打开进度。",
   "gui.dungeontrain.perks.death.kicker": "你随身的点数",

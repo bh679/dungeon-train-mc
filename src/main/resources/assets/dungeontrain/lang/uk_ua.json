@@ -6763,6 +6763,7 @@
   "gui.dungeontrain.perks.bar.full": "Заповнено. Розблокуйте знову, щоб звільнити місце для ще одного очка.",
   "gui.dungeontrain.perks.bar.hint": "Наведіть на перк, щоб побачити його тут. Натисніть, щоб закріпити.",
   "gui.dungeontrain.perks.bar.no_active": "Відкрито перків: %s, але активних: 0. Натисніть, щоб активувати один.",
+  "gui.dungeontrain.perks.bar.some_active": "Відкрито перків: %1$s, активних: %2$s. Натисніть, щоб активувати ще один.",
   "gui.dungeontrain.perks.bar.not_ready": "Ти знайшов те, що згодом стане важливим, але ти ще не готовий. Повертайся пізніше.",
   "gui.dungeontrain.perks.counter.unlock.click": "Натисніть, щоб відкрити досягнення.",
   "gui.dungeontrain.perks.death.kicker": "Бали, що були з тобою",
