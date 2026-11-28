@@ -320,8 +320,8 @@ final class PerkDetailsBar {
         List<PerkTree.Perk> perks = tree.perksOf(c.id());
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (c.colour() & 0xFFFFFF));
         int x = PAD + STRIPE, y = top + PAD;
-        g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
-        int column = leftColumn(c.name());
+        g.drawString(font, PerkNames.cls(c), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
+        int column = leftColumn(PerkNames.cls(c));
         renderSegments(g, snap, perks, c.colour(), x, y + LINE + 4, column - 12, a);
         int split = x + column;
         divider(g, split, a);
@@ -480,7 +480,7 @@ final class PerkDetailsBar {
         int contentRight = width - PAD - (BUTTON_W + GAP) * buttonCount() - (callButton != null ? CALL_W + GAP : 0) - 6;
         String name = text.name(p);
         g.drawString(font, name, x, y, (a << 24) | (colour & 0xFFFFFF), true);
-        String cls = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("").toUpperCase(Locale.ROOT)
+        String cls = tree.perkClass(p.cls()).map(PerkNames::cls).orElse("").toUpperCase(Locale.ROOT)
             + " · " + Component.translatable(KEY + "tier", p.tier()).getString().toUpperCase(Locale.ROOT) + (locked ? "  •" : "");
         int clsW = (int) Math.ceil(font.width(cls) * CLASS_SCALE);
         g.pose().pushPose();

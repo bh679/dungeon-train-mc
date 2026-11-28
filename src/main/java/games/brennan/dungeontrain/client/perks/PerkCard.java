@@ -103,7 +103,7 @@ final class PerkCard {
         PerkTree.Perk at = drawn.perk(p.id()).orElse(p);
         double sx = view.toScreenX(at.x(), screenW), sy = view.toScreenY(at.y(), screenH);
         double halo = SkyPalette.haloRadius(p, view.zoom());
-        double gapX = Math.max(halo + 6, font.width(p.name()) / 2.0 + 6), gapY = halo + 14;
+        double gapX = Math.max(halo + 6, font.width(PerkNames.perk(p)) / 2.0 + 6), gapY = halo + 14;
         int cx = (int) Math.round(sx + gapX), cy = (int) Math.round(sy + gapY);
         if (cx + w > right) cx = (int) Math.round(sx - gapX - w);
         if (cx < 4) cx = 4;
@@ -126,7 +126,7 @@ final class PerkCard {
         g.drawString(font, name(p), tx, ty, SkyPalette.classColour(tree, p), true);
         ty += LINE;
         String cls = p.isRoot() ? Component.translatable("gui.dungeontrain.perks.card.start").getString()
-            : tree.perkClass(p.cls()).map(c -> c.name()).orElse("");
+            : tree.perkClass(p.cls()).map(PerkNames::cls).orElse("");
         g.pose().pushPose();
         g.pose().translate(tx, ty, 0);
         g.pose().scale(0.75F, 0.75F, 1F);
@@ -215,7 +215,7 @@ final class PerkCard {
     }
 
     String name(PerkTree.Perk p) {
-        return p.isRoot() ? p.name() : translated("perk.dungeontrain." + p.id() + ".name", p.name());
+        return PerkNames.perk(p);
     }
 
     String descText(PerkTree.Perk p) {
@@ -233,7 +233,7 @@ final class PerkCard {
      * format error).
      */
     private static String translated(String key, String fallback) {
-        return I18n.exists(key) ? net.minecraft.locale.Language.getInstance().getOrDefault(key) : fallback;
+        return PerkNames.translated(key, fallback);
     }
 
     /** The linked perks' names joined with a middle dot, as the web card's hint line. */
