@@ -355,6 +355,10 @@ public final class ConstellationSky {
 
     /** {@link #drawDisc(Matrix4f, float, boolean)} with the solid core out to {@code c} radii. */
     private static void drawDisc(Matrix4f view, float alpha, boolean soft, float c) {
+        if (soft) {
+            drawCrumble(view, alpha, c);
+            return;
+        }
         float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
         float gw = texture.guiWidth(), gh = texture.guiHeight();
         float[] radii = ringRadii(soft, c);
@@ -391,6 +395,66 @@ public final class ConstellationSky {
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+    }
+
+    /**
+     * The soft patch as crumbling blocks ({@link ConstellationCrumble}): every night cell one square,
+     * the picture where the picture reaches, plain night past it. Cells never overlap, so a patch
+     * fading in or out fades evenly, with no ring showing through.
+     */
+    private static void drawCrumble(Matrix4f view, float alpha, float core) {
+        float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
+        float gw = texture.guiWidth(), gh = texture.guiHeight();
+        float cell = ConstellationCrumble.CELL;
+        int n = (int) Math.ceil(ConstellationCrumble.extent(core) / cell);
+        int night = SkyDomeDraw.argb(alpha, PerksScreen.SKY_BG & 0xFFFFFF);
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        // Which cells are night, and which of those lie on the picture. One builder at a time: they
+        // share the Tesselator's buffer.
+        java.util.List<float[]> onPic = new java.util.ArrayList<>(), offPic = new java.util.ArrayList<>();
+        for (int i = -n; i < n; i++) {
+            for (int j = -n; j < n; j++) {
+                if (!ConstellationCrumble.on(i, j, core)) continue;
+                float x0 = i * cell, y0 = j * cell;
+                (onPicture(x0, y0, sq, gw, gh) && onPicture(x0 + cell, y0 + cell, sq, gw, gh) ? onPic : offPic)
+                    .add(new float[] {x0, y0});
+            }
+        }
+        if (!offPic.isEmpty()) {
+            BufferBuilder fill = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            for (float[] c : offPic) {
+                for (float[] p : new float[][] {{c[0], c[1]}, {c[0] + cell, c[1]}, {c[0] + cell, c[1] + cell}, {c[0], c[1] + cell}}) {
+                    Vector3f v = ConstellationGeometry.point(p[0], p[1]);
+                    fill.addVertex(view, v.x, v.y, v.z).setColor(night);
+                }
+            }
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            BufferUploader.drawWithShader(fill.buildOrThrow());
+        }
+        if (!onPic.isEmpty()) {
+            BufferBuilder pic = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+            for (float[] c : onPic) {
+                vertex(pic, view, c[0], c[1], sq, gw, gh, alpha);
+                vertex(pic, view, c[0] + cell, c[1], sq, gw, gh, alpha);
+                vertex(pic, view, c[0] + cell, c[1] + cell, sq, gw, gh, alpha);
+                vertex(pic, view, c[0], c[1] + cell, sq, gw, gh, alpha);
+            }
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShaderTexture(0, texture.location());
+            BufferUploader.drawWithShader(pic.buildOrThrow());
+        }
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+    }
+
+    /** Is the patch point {@code (x, y)} (radii) on the picture's canvas? */
+    private static boolean onPicture(float x, float y, float[] sq, float gw, float gh) {
+        float u = sq[0] + x * sq[2], v = sq[1] - y * sq[2];
+        return u >= 0 && u <= gw && v >= 0 && v <= gh;
     }
 
     private interface Emit {
