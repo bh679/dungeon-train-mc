@@ -6791,5 +6791,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Настроена на твою комнату памяти. Её телевизор показывает твою собственную историю.",
   "chat.dungeontrain.tribute_room.tv_stays": "Телевизор остаётся. Стройте вокруг него.",
   "chat.dungeontrain.tribute_room.view_only": "Чья-то комната памяти. Смотри, но оставь всё как было.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Твоя комната. Ставь блоки, но убрать можно только те, что поставил ты.",
   "chat.dungeontrain.tribute_room.banner": "Эта комната — дань памяти игроку %s и его рук дело"
 }

@@ -6717,5 +6717,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Auf dein Tributzimmer eingestellt. Sein Fernseher zeigt deine eigene Geschichte.",
   "chat.dungeontrain.tribute_room.tv_stays": "Der Fernseher bleibt. Bau drumherum.",
   "chat.dungeontrain.tribute_room.view_only": "Jemandes Tributzimmer. Schau dich um, aber lass alles, wie du es vorgefunden hast.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Dein Zimmer. Setz Blöcke, aber nur die, die du gesetzt hast, kannst du wieder abbauen.",
   "chat.dungeontrain.tribute_room.banner": "Dieser Raum ist ein Tribut an und von %s"
 }

@@ -6717,5 +6717,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "70d8fc024baf5630"},
   "chat.dungeontrain.tribute_room.tv_stays": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "df8ca2b0036d2810"},
   "chat.dungeontrain.tribute_room.view_only": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "47a9cf30afa6fbf1"},
+  "chat.dungeontrain.tribute_room.own_placed_only": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b026b9fdcdcb8eac"},
   "chat.dungeontrain.tribute_room.banner": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "11286999124bea2b"}
 }

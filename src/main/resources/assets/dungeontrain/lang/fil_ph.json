@@ -6643,5 +6643,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Nakatutok sa iyong tribute room. Ipinapalabas ng TV nito ang sarili mong kuwento.",
   "chat.dungeontrain.tribute_room.tv_stays": "Nananatili ang TV. Magtayo sa paligid nito.",
   "chat.dungeontrain.tribute_room.view_only": "Tribute room ng iba. Tumingin, pero iwan mo ito gaya ng dinatnan mo.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Kuwarto mo ito. Magdagdag ng mga bloke, pero ang mga inilagay mo lang ang puwedeng tanggalin.",
   "chat.dungeontrain.tribute_room.banner": "Ang silid na ito ay tribute para kay at mula kay %s"
 }

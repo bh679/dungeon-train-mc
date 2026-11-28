@@ -6643,5 +6643,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Dò theo phòng tưởng niệm của bạn. TV của nó chiếu câu chuyện của chính bạn.",
   "chat.dungeontrain.tribute_room.tv_stays": "TV vẫn ở đây. Hãy xây quanh nó.",
   "chat.dungeontrain.tribute_room.view_only": "Phòng tưởng niệm của ai đó. Cứ xem, nhưng hãy để nguyên như lúc bạn thấy.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Phòng của bạn. Hãy đặt thêm khối, nhưng chỉ những khối bạn đặt mới lấy ra được.",
   "chat.dungeontrain.tribute_room.banner": "Căn phòng này là lời tri ân dành cho và do %s tạo nên"
 }

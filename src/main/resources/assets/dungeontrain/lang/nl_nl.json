@@ -6717,5 +6717,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Afgestemd op je eerbetoonkamer. De tv speelt je eigen verhaal af.",
   "chat.dungeontrain.tribute_room.tv_stays": "De tv blijft staan. Bouw eromheen.",
   "chat.dungeontrain.tribute_room.view_only": "Iemands eerbetoonkamer. Kijk rond, maar laat alles zoals je het aantrof.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Jouw kamer. Plaats blokken, maar alleen de blokken die jij hebt geplaatst kunnen eruit.",
   "chat.dungeontrain.tribute_room.banner": "Deze kamer is een eerbetoon aan en door %s"
 }

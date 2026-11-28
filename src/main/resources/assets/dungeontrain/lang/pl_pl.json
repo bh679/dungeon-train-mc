@@ -6791,5 +6791,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Nastrojona na twój pokój hołdu. Jego telewizor odtwarza twoją własną historię.",
   "chat.dungeontrain.tribute_room.tv_stays": "Telewizor zostaje. Buduj wokół niego.",
   "chat.dungeontrain.tribute_room.view_only": "Czyjś pokój hołdu. Rozejrzyj się, ale zostaw wszystko tak, jak zastałeś.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Twój pokój. Dodawaj bloki, ale usunąć możesz tylko te, które sam postawiłeś.",
   "chat.dungeontrain.tribute_room.banner": "Ten pokój to hołd dla gracza %s i jego dzieło"
 }

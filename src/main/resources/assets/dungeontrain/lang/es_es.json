@@ -6717,5 +6717,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Sintonizado con tu sala de tributo. Su tele reproduce tu propia historia.",
   "chat.dungeontrain.tribute_room.tv_stays": "La tele se queda. Construye alrededor.",
   "chat.dungeontrain.tribute_room.view_only": "La sala de tributo de alguien. Mira, pero déjala como la encontraste.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Tu sala. Añade bloques, pero solo puedes quitar los que hayas colocado tú.",
   "chat.dungeontrain.tribute_room.banner": "Esta sala es un tributo a y de %s"
 }

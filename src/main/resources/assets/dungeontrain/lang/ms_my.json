@@ -6643,5 +6643,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Ditala ke bilik penghormatan anda. TV-nya memainkan kisah anda sendiri.",
   "chat.dungeontrain.tribute_room.tv_stays": "TV kekal di sini. Binalah di sekelilingnya.",
   "chat.dungeontrain.tribute_room.view_only": "Bilik penghormatan milik orang lain. Lihat sahaja, tetapi tinggalkan seperti anda menjumpainya.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Bilik anda. Tambah blok, tetapi hanya blok yang anda letak boleh dikeluarkan.",
   "chat.dungeontrain.tribute_room.banner": "Bilik ini ialah penghormatan untuk dan oleh %s"
 }
