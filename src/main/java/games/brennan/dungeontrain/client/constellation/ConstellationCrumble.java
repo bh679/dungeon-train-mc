@@ -11,11 +11,11 @@ final class ConstellationCrumble {
     /** A cell's side, in patch radii. */
     static final float CELL = 0.05f;
     /** How far past the solid core the cells thin out to nothing, in radii. */
-    static final float WIDTH = 0.34f;
+    static final float WIDTH = 0.22f;
     /** How far an arm reaches out past the core, at most, in radii. */
-    static final float ARM = 0.55f;
+    static final float ARM = 0.95f;
     /** How far the outline pulls in between arms, in radii: the patch is not round. */
-    static final float INDENT = 0.1f;
+    static final float INDENT = 0.24f;
     /** Arms that are always there, and arms that come and go: 3 to 5 in all. */
     static final int STEADY_ARMS = 3, ARMS = 5;
     /** The chance of a loose block in the band just past the edge. Low: a few, not a scatter. */
@@ -92,11 +92,11 @@ final class ConstellationCrumble {
             // each arm drifts round on its own slow course, and its length and width breathe
             float centre = (float) (k * (2 * Math.PI / ARMS) + 0.9 * Math.sin(s / (37.0 + 7 * k) + k * 1.7)
                 + s / (160.0 + 40 * k) * (k % 2 == 0 ? 1 : -1));
-            float width = 0.38f + 0.18f * (float) Math.sin(s / (23.0 + 5 * k) + k * 2.3);
-            float length = ARM * strength * (0.6f + 0.4f * (float) Math.sin(s / (29.0 + 3 * k) + k * 0.8));
+            float width = 0.5f + 0.15f * (float) Math.sin(s / (23.0 + 5 * k) + k * 2.3);
+            float length = ARM * strength * (0.65f + 0.35f * (float) Math.sin(s / (29.0 + 3 * k) + k * 0.8));
             float d = (float) Math.IEEEremainder(angle - centre, 2 * Math.PI);
             float bump = 1f - (d / width) * (d / width);
-            if (bump > 0f) out = Math.max(out, length * bump * bump);
+            if (bump > 0f) out = Math.max(out, (length + INDENT) * bump);
         }
         return out - INDENT;
     }
