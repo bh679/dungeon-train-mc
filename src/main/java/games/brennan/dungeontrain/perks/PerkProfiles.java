@@ -32,6 +32,9 @@ public final class PerkProfiles {
     /** The save partition perks test worlds use, apart from every difficulty's. */
     static final String TEST_KEY = PerksGate.TEST_PROFILE;
 
+    /** Players whose live state already holds their Free Play save. Server thread only. */
+    private static final java.util.Set<UUID> FREE_PLAY_LOADED = new java.util.HashSet<>();
+
     private PerkProfiles() {}
 
     /** The partition this player's unlocks are saved to right now. */
@@ -97,6 +100,31 @@ public final class PerkProfiles {
         }
         Map<String, Integer> levels = known(loginUnlocks(hasSave, saved, state.unlocks(), freePlay));
         Perks.replaceState(player, PerkState.of(levels, state.active()));
+        if (freePlay) FREE_PLAY_LOADED.add(uuid); else FREE_PLAY_LOADED.remove(uuid);
+    }
+
+    /**
+     * Free Play can start mid-run (a command, cheats, an operator joining): once it does, the Free Play
+     * save's unlocks go live on top of this run's. Polled ({@link PerkLifecycle}) because Free Play has
+     * many sources and not all of them announce themselves. Never lowers a level.
+     */
+    static void checkFreePlay(ServerPlayer player) {
+        if (!PerksGate.isOn()) return;
+        UUID uuid = player.getUUID();
+        if (!skipsSave(player)) {
+            FREE_PLAY_LOADED.remove(uuid);
+            return;
+        }
+        if (!FREE_PLAY_LOADED.add(uuid) || !PerkProfileStore.exists(uuid)) return;
+        PerkState state = Perks.state(player);
+        Map<String, Integer> levels = known(higherOf(state.unlocks(), savedUnlocks(uuid, key(player), true)));
+        if (levels.equals(state.unlocks())) return;
+        Perks.replaceState(player, PerkState.of(levels, state.active()));
+        LOGGER.info("[DungeonTrain] perk save: Free Play unlocks loaded for {}", player.getScoreboardName());
+    }
+
+    static void onLogout(ServerPlayer player) {
+        FREE_PLAY_LOADED.remove(player.getUUID());
     }
 
     /** Save an unlock level to the difficulty being played, or to its Free Play partition in Free Play. */
