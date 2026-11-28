@@ -6582,6 +6582,7 @@
   "gui.dungeontrain.follows.looking": "Пошук: %s…",
   "gui.dungeontrain.follows.unreachable": "Зараз не вдалося перевірити ім'я. Спробуйте пізніше.",
   "gui.dungeontrain.follows.empty": "Введіть нижче ім'я гравця, щоб підписатися.",
+  "gui.dungeontrain.follows.full": "Активуй ще одне очко, щоб стежити за більшою кількістю авторів.",
   "perk.dungeontrain.reroll-trades.name": "Перекинути обміни",
   "perk.dungeontrain.reroll-trades.desc": "Перекинути обміни жителя за смарагди. Кожне нове перекидання того самого жителя коштує вдвічі дорожче.",
   "perk.dungeontrain.class.c0": "Архіваріус",

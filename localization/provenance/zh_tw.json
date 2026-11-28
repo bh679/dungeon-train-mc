@@ -6461,6 +6461,7 @@
   "gui.dungeontrain.follows.looking": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3f54708ec97d026c"},
   "gui.dungeontrain.follows.unreachable": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8d7da8a295267bf5"},
   "gui.dungeontrain.follows.empty": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b3991846c66fbd47"},
+  "gui.dungeontrain.follows.full": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "41e0bea8759446e9"},
   "perk.dungeontrain.reroll-trades.name": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f0e0ef2e78900bf0"},
   "perk.dungeontrain.reroll-trades.desc": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a6f1ddffa692eeda"},
   "perk.dungeontrain.class.c0": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "88188255522dd747"},

@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "%sを検索中…",
   "gui.dungeontrain.follows.unreachable": "今は名前を確認できませんでした。しばらくしてからもう一度お試しください。",
   "gui.dungeontrain.follows.empty": "下にプレイヤー名を入力してフォローしましょう。",
+  "gui.dungeontrain.follows.full": "さらに作者をフォローするには、ポイントをもう1つ有効にしてください。",
   "perk.dungeontrain.reroll-trades.name": "取引の再抽選",
   "perk.dungeontrain.reroll-trades.desc": "エメラルドを払って村人の取引を再抽選する。同じ村人を再抽選するたびに値段が2倍になる。",
   "perk.dungeontrain.class.c0": "記録者",

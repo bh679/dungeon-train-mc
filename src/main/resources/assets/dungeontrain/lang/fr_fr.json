@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Recherche de %s…",
   "gui.dungeontrain.follows.unreachable": "Impossible de vérifier ce nom pour le moment. Réessayez plus tard.",
   "gui.dungeontrain.follows.empty": "Saisissez ci-dessous le nom d'un joueur pour le suivre.",
+  "gui.dungeontrain.follows.full": "Active un autre point pour suivre plus d'auteurs.",
   "perk.dungeontrain.reroll-trades.name": "Relancer les échanges",
   "perk.dungeontrain.reroll-trades.desc": "Relance les échanges d'un villageois contre des émeraudes. Chaque relance du même villageois coûte deux fois plus.",
   "perk.dungeontrain.class.c0": "Archiviste",

@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "Mencari %s…",
   "gui.dungeontrain.follows.unreachable": "Tidak bisa memeriksa nama itu sekarang. Coba lagi nanti.",
   "gui.dungeontrain.follows.empty": "Ketik nama pemain di bawah untuk mengikutinya.",
+  "gui.dungeontrain.follows.full": "Aktifkan satu poin lagi untuk mengikuti lebih banyak penulis.",
   "perk.dungeontrain.reroll-trades.name": "Acak Ulang Dagang",
   "perk.dungeontrain.reroll-trades.desc": "Acak ulang dagangan penduduk dengan zamrud. Setiap acak ulang pada penduduk yang sama harganya dua kali lipat.",
   "perk.dungeontrain.class.c0": "Arsiparis",

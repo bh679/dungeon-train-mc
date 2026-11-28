@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * menu's and the Follow buttons' requests, and answers what the book and photo picks need.
  *
  * <p>Follows are kept whatever the perk's rank (Free Play, a death, perks switched off): only the
- * picks read the rank. A player who has not given network consent sends nothing to the relay, so
+ * picks read the rank. A new follow needs a free active point ({@link FavouriteAuthor#canFollowMore}). A player who has not given network consent sends nothing to the relay, so
  * their list stays as it was and lookups answer {@link FollowsSyncPacket.Lookup#UNREACHABLE}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -133,7 +133,17 @@ public final class FollowService {
         return false;
     }
 
+    /** Whether {@code player} has an active point free for one more follow. */
+    public static boolean canFollowMore(ServerPlayer player) {
+        return FavouriteAuthor.canFollowMore(follows(player).follows().size(), rank(player));
+    }
+
     private static void follow(ServerPlayer player, FollowsRelay.By by, String value, String shownName) {
+        // Every follow needs an active point: a stale client button is answered with a fresh sync.
+        if (!canFollowMore(player)) {
+            sync(player);
+            return;
+        }
         if (!NetworkConsentMirror.isGranted(player)) {
             lookup(player, shownName, FollowsSyncPacket.Lookup.UNREACHABLE);
             return;
@@ -151,6 +161,12 @@ public final class FollowService {
                 lookup(p, shownName, FollowsSyncPacket.Lookup.NOT_FOUND);
             } else {
                 AuthorFollows.Follow f = result.follow().get();
+                if (!follows(p).follows(f.token()) && !canFollowMore(p)) {
+                    // Another follow (or a point taken out) filled the slot while this one was asked: undo it.
+                    FollowsRelay.remove(id, f.token(), ok -> { });
+                    lookup(p, "", FollowsSyncPacket.Lookup.NONE);
+                    return;
+                }
                 p.setData(ModDataAttachments.PERK_FOLLOWS.get(), follows(p).with(f));
                 lookup(p, f.name(), FollowsSyncPacket.Lookup.FOUND);
             }
