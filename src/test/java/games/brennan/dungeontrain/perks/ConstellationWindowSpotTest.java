@@ -27,4 +27,12 @@ class ConstellationWindowSpotTest {
     void nothingPlacedNothingRemoved() {
         assertFalse(ConstellationWindowSpot.shouldRemove(ConstellationWindowSpot.NONE.withSpent(), false));
     }
+
+    @Test
+    void searchGoesNearestFirst() {
+        int[][] o = ConstellationWindowPlacement.aroundOffsets(2);
+        assertTrue(o.length == 24);
+        assertTrue(o[0][0] * o[0][0] + o[0][1] * o[0][1] == 1, "a side first");
+        assertTrue(o[23][0] * o[23][0] + o[23][1] * o[23][1] == 8, "a far corner last");
+    }
 }

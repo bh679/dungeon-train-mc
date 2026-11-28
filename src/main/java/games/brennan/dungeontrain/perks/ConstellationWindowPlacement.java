@@ -26,7 +26,8 @@ import org.slf4j.Logger;
 import java.util.UUID;
 
 /**
- * Eating a cosmic apple puts a Constellation Window at the player's feet; it is taken away the first
+ * Eating a cosmic apple puts a Constellation Window (the cosmic carpet) at the player's feet, never the
+ * Perks menu; it is taken away the first
  * time they step out of it after putting a perk point in (from the sky or the menu), and on death or
  * logout. On a carriage it goes into the carriage's plot, so it rides with the train.
  */
@@ -38,7 +39,10 @@ public final class ConstellationWindowPlacement {
     private ConstellationWindowPlacement() {}
 
     /**
-     * Put the window at the player's feet; false when there is no room (the caller opens the menu).
+     * Put the window (the cosmic carpet) at the player's feet. The apple never opens the menu, so this
+     * tries hard: the feet cell when it is free; else, when something small with no body stands there (a
+     * pressure plate, a rail, a flower), that thing is lifted out and put back when the window goes;
+     * else the nearest free floor within {@link #SEARCH} blocks. False only when none of those work.
      * A new apple is new points to spend, so the window it leaves (new, or the one already underfoot)
      * waits for a fresh spend before it goes.
      */
@@ -49,31 +53,78 @@ public final class ConstellationWindowPlacement {
         BlockPos cell = cellOf(frame, player);
         UUID frameId = frame == null ? null : frame.getUniqueId();
         BlockState here = level.getBlockState(cell);
+        ConstellationWindowSpot old = spot(player);
         if (here.is(ModBlocks.CONSTELLATION_WINDOW.get())) {
             // Already standing on a window (this apple's last one, or any other): it is this one now.
-            ConstellationWindowSpot old = spot(player);
-            if (old.placed() && !(old.pos() == cell.asLong() && old.subLevel().equals(java.util.Optional.ofNullable(frameId)))) {
-                remove(player);
-            }
-            remember(player, frameId, cell);
+            boolean same = old.placed() && old.pos() == cell.asLong()
+                && old.subLevel().equals(java.util.Optional.ofNullable(frameId));
+            if (old.placed() && !same) remove(player);
+            remember(player, frameId, cell, same ? old.replaced().orElse(null) : null);
             return true;
         }
-        if (!here.canBeReplaced() || !here.getFluidState().isEmpty()) {
-            LOGGER.info("[DungeonTrain] No room for a constellation window at {}'s feet ({} in {}): {}",
-                player.getGameProfile().getName(), cell, frameId == null ? "the world" : "carriage " + frameId, here);
-            return false;
+        BlockState replaced = null;
+        if (!fits(level, cell)) {
+            if (swappable(level, cell, here)) {
+                replaced = here;
+            } else {
+                BlockPos near = nearestFloor(level, cell);
+                if (near == null) {
+                    LOGGER.info("[DungeonTrain] No room for a constellation window near {}'s feet ({} in {}): {}",
+                        player.getGameProfile().getName(), cell, frameId == null ? "the world" : "carriage " + frameId, here);
+                    return false;
+                }
+                cell = near;
+            }
         }
         remove(player);
         if (!level.setBlock(cell, ModBlocks.CONSTELLATION_WINDOW.get().defaultBlockState(), Block.UPDATE_ALL)) {
             LOGGER.info("[DungeonTrain] Could not set a constellation window at {} for {}", cell, player.getGameProfile().getName());
             return false;
         }
-        remember(player, frameId, cell);
+        remember(player, frameId, cell, replaced);
         return true;
     }
 
-    private static void remember(ServerPlayer player, UUID frameId, BlockPos cell) {
-        player.setData(ModDataAttachments.CONSTELLATION_WINDOW.get(), ConstellationWindowSpot.at(frameId, cell.asLong()));
+    /** How far from the feet the window may go when the feet cell will not take it. */
+    static final int SEARCH = 2;
+
+    /** Room for a window: nothing there but air or something that gives way, and no water. */
+    private static boolean fits(ServerLevel level, BlockPos cell) {
+        BlockState state = level.getBlockState(cell);
+        return state.canBeReplaced() && state.getFluidState().isEmpty();
+    }
+
+    /** Something small the player stands in, with no body and nothing stored: lifted out, put back later. */
+    private static boolean swappable(ServerLevel level, BlockPos cell, BlockState state) {
+        return !state.hasBlockEntity() && state.getFluidState().isEmpty()
+            && state.getCollisionShape(level, cell).isEmpty() && state.getDestroySpeed(level, cell) >= 0;
+    }
+
+    /** The nearest cell within {@link #SEARCH} of {@code feet}, same height, with room and a floor under it. */
+    private static BlockPos nearestFloor(ServerLevel level, BlockPos feet) {
+        for (int[] o : AROUND) {
+            BlockPos at = feet.offset(o[0], 0, o[1]);
+            if (fits(level, at) && level.getBlockState(at.below()).isFaceSturdy(level, at.below(), net.minecraft.core.Direction.UP)) {
+                return at;
+            }
+        }
+        return null;
+    }
+
+    /** Offsets round the feet, nearest first. */
+    private static final int[][] AROUND = aroundOffsets(SEARCH);
+
+    static int[][] aroundOffsets(int reach) {
+        java.util.List<int[]> out = new java.util.ArrayList<>();
+        for (int dx = -reach; dx <= reach; dx++) {
+            for (int dz = -reach; dz <= reach; dz++) if (dx != 0 || dz != 0) out.add(new int[] {dx, dz});
+        }
+        out.sort(java.util.Comparator.comparingInt(o -> o[0] * o[0] + o[1] * o[1]));
+        return out.toArray(new int[0][]);
+    }
+
+    private static void remember(ServerPlayer player, UUID frameId, BlockPos cell, BlockState replaced) {
+        player.setData(ModDataAttachments.CONSTELLATION_WINDOW.get(), ConstellationWindowSpot.at(frameId, cell.asLong(), replaced));
     }
 
     /** A perk point went in: the window goes once the player steps out. */
@@ -90,7 +141,8 @@ public final class ConstellationWindowPlacement {
         BlockPos pos = BlockPos.of(s.pos());
         // A carriage that has gone takes its plot cell with it; only clear a cell that still holds ours.
         if (s.subLevel().isEmpty() || subLevel(level, s.subLevel().get()) != null) {
-            if (isWindow(level, s)) level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            // put back what it stood in for (a pressure plate, say), else air
+            if (isWindow(level, s)) level.setBlock(pos, s.replaced().orElse(Blocks.AIR.defaultBlockState()), Block.UPDATE_ALL);
         }
         player.setData(ModDataAttachments.CONSTELLATION_WINDOW.get(), ConstellationWindowSpot.NONE);
     }

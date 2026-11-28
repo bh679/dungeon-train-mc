@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.item;
 
 import games.brennan.dungeontrain.perks.PerkBalances;
-import games.brennan.dungeontrain.perks.PerkMenu;
 import games.brennan.dungeontrain.perks.PerkPoints;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -17,7 +16,7 @@ import java.util.List;
 
 /**
  * Edible find in three tiers (Cosmic Apple, Celestial Bite, Violet Core): {@link #points} active perk
- * points for this life, then the perks menu opens to spend them.
+ * points for this life, and a constellation window (the cosmic carpet) at your feet to spend them in.
  */
 public class CosmicAppleItem extends Item {
 
@@ -50,11 +49,10 @@ public class CosmicAppleItem extends Item {
             player.sendSystemMessage(Component.translatable(KEY_GAINED, stack.getHoverName(), points,
                     PerkPoints.active(player))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
-            // The constellation window at their feet is where the point gets spent; with no room for
-            // one, the menu as before.
-            boolean window = games.brennan.dungeontrain.perks.PerksGate.isOn()
-                && games.brennan.dungeontrain.perks.ConstellationWindowPlacement.place(player);
-            if (!window) PerkMenu.openPerksMenu(player);
+            // Never the menu: the cosmic carpet at their feet is where the point gets spent.
+            if (games.brennan.dungeontrain.perks.PerksGate.isOn()) {
+                games.brennan.dungeontrain.perks.ConstellationWindowPlacement.place(player);
+            }
         }
         return super.finishUsingItem(stack, level, entity);
     }
