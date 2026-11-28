@@ -21,7 +21,6 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -312,26 +311,7 @@ public final class PlayerMobAdvancementEvents {
         return true;
     }
 
-    // ---------------- That's What Friends Are For ----------------
-
-    /**
-     * Fires when the player kills a hostile mob that is currently targeting a
-     * PlayerMob — coming to a passenger's defence. A mob keeps its target
-     * through death, so checking {@code getTarget()} in the death event
-     * reliably catches the "kill the thing attacking a passenger" case.
-     * Mirrors the kill-credit shape of {@code RunStatsEvents.onMobKilled}.
-     */
-    @SubscribeEvent
-    public static void onMobKilled(LivingDeathEvent event) {
-        LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide) return;
-        if (!(KillCredit.resolveKiller(victim, event.getSource()).orElse(null)
-                instanceof ServerPlayer player)) return;
-        if (!(victim instanceof Mob mob)) return;
-        if (isPlayerMob(mob.getTarget())) {
-            ModAdvancementTriggers.DEFENDED_PLAYERMOB.get().trigger(player);
-        }
-    }
+    // That's What Friends Are For lives in PassengerDefenceEvents.
 
     // ---------------- Echo Encounter ----------------
 
@@ -456,7 +436,7 @@ public final class PlayerMobAdvancementEvents {
 
     // ---------------- Helpers ----------------
 
-    private static boolean isPlayerMob(Entity entity) {
+    static boolean isPlayerMob(Entity entity) {
         return entity != null
             && PLAYERMOB_NAMESPACE.equals(EntityType.getKey(entity.getType()).getNamespace());
     }
