@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
 /**
@@ -43,6 +44,20 @@ public final class PerkLifecycle {
         Perks.playerReady(player);
         LOGGER.debug("[DungeonTrain] perks on login for {}: {}", player.getScoreboardName(),
             Perks.describe(Perks.state(player)));
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) PerkProfiles.onLogout(player);
+    }
+
+    /** Once a second: a player who has just gone Free Play gets their Free Play save's unlocks. */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (event.getServer().getTickCount() % 20 != 0 || !PerksGate.isOn()) return;
+        for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+            PerkProfiles.checkFreePlay(player);
+        }
     }
 
     @SubscribeEvent

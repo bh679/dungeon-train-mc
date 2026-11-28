@@ -3,6 +3,23 @@
     "1": { "label": "an editor Settings row's name, as the X menu shows it", "examples": ["Redstone", "Fluid flow"] },
     "2": { "label": "that row's new value, as its cell shows it", "examples": ["On", "Live"] }
   },
+  "commands.dungeontrain.perks.unknown_perk": {
+    "1": { "label": "what the player typed as a perk id", "examples": ["share-hearts", "speedy"] }
+  },
+  "commands.dungeontrain.perks.unknown_class": {
+    "1": { "label": "what the player typed as a class id", "examples": ["lover", "wizard"] }
+  },
+  "commands.dungeontrain.perks.granted": {
+    "1": { "label": "a player name, or how many players", "examples": ["Steve", "3 players"] },
+    "2": { "label": "how many perks changed", "examples": ["4", "37"] }
+  },
+  "commands.dungeontrain.perks.revoked": {
+    "1": { "label": "a player name, or how many players", "examples": ["Steve", "3 players"] },
+    "2": { "label": "how many perks changed", "examples": ["4", "37"] }
+  },
+  "commands.dungeontrain.perks.players": {
+    "1": { "label": "how many players", "examples": ["2", "5"] }
+  },
   "gui.dungeontrain.editor_menu.dates.title": {
     "1": { "label": "the build's name", "examples": ["taschristmascarriage", "Spooky fall carriage"] }
   },
