@@ -32,6 +32,17 @@ final class FavouriteAuthorTest {
     }
 
     @Test
+    @DisplayName("canFollowMore: every follow needs an active point of its own")
+    void canFollowMore() {
+        assertFalse(FavouriteAuthor.canFollowMore(0, 0), "no points active: no follows");
+        assertFalse(FavouriteAuthor.canFollowMore(1, 0));
+        assertTrue(FavouriteAuthor.canFollowMore(0, 1));
+        assertFalse(FavouriteAuthor.canFollowMore(1, 1), "full: as many follows as points");
+        assertTrue(FavouriteAuthor.canFollowMore(2, 3));
+        assertFalse(FavouriteAuthor.canFollowMore(4, 3), "over the limit after points were taken out");
+    }
+
+    @Test
     @DisplayName("share: 15% + 2% per active followed author; nothing with none")
     void share() {
         assertEquals(0, FavouriteAuthor.share(0));

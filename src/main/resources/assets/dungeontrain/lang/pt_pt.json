@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "A procurar %s…",
   "gui.dungeontrain.follows.unreachable": "Não foi possível verificar esse nome agora. Tenta novamente mais tarde.",
   "gui.dungeontrain.follows.empty": "Escreve abaixo o nome de um jogador para o seguires.",
+  "gui.dungeontrain.follows.full": "Ativa mais um ponto para seguir mais autores.",
   "perk.dungeontrain.reroll-trades.name": "Resortear Trocas",
   "perk.dungeontrain.reroll-trades.desc": "Resorteia as trocas de um aldeão por esmeraldas. Cada novo sorteio do mesmo aldeão custa o dobro.",
   "perk.dungeontrain.class.c0": "Arquivista",

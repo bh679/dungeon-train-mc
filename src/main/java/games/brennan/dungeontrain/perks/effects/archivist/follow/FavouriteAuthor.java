@@ -24,6 +24,11 @@ public final class FavouriteAuthor {
         return Math.max(0, Math.min(follows, rank));
     }
 
+    /** Whether one more author can be followed: every follow needs an active point of its own. */
+    public static boolean canFollowMore(int follows, int rank) {
+        return rank > 0 && follows < rank;
+    }
+
     /** The share at {@code active} active follows; 0 with none (nothing to find). */
     public static double share(int active) {
         return active <= 0 ? 0 : BASE_SHARE + PER_AUTHOR_SHARE * active;
