@@ -44,7 +44,8 @@
     2922,
     2925,
     2926,
-    2932
+    2932,
+    2934
   ],
   "entries": [
     "alchemist-perks",
@@ -68,6 +69,7 @@
     "perk-tester-after-link",
     "perks-archivist",
     "perks-button-advancements",
+    "perks-button-after-first-unlock",
     "perks-effect-rework",
     "perks-grant-command",
     "perks-lover-pet-health-good-gifter",
