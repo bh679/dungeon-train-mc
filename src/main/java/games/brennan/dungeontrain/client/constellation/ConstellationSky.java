@@ -228,12 +228,6 @@ public final class ConstellationSky {
                     fillScreen(a);
                 }
             }
-            // 4. The block under the crosshair, if the patch hid it, keeps its outline over the patch.
-            GL11.glDepthRange(0.0, 1.0);
-            GL11.glDisable(GL11.GL_STENCIL_TEST);
-            RenderSystem.stencilMask(0xFF);
-            RenderSystem.depthFunc(GL11.GL_LEQUAL);
-            ConstellationOutline.draw(view, cam, partialTick, alpha);
         } finally {
             RenderSystem.stencilMask(0xFF);
             RenderSystem.stencilFunc(GL11.GL_ALWAYS, 0, 0xFF);
@@ -416,7 +410,7 @@ public final class ConstellationSky {
         float gw = texture.guiWidth(), gh = texture.guiHeight();
         float cell = ConstellationCrumble.CELL;
         int n = (int) Math.ceil(ConstellationCrumble.extent(core) / cell);
-        float[] outline = ConstellationCrumble.outlineTable(net.minecraft.Util.getMillis() / 1000.0);
+        ConstellationCrumble.Arm[] arms = ConstellationCrumble.arms(net.minecraft.Util.getMillis() / 1000.0);
         int night = SkyDomeDraw.argb(alpha, PerksScreen.SKY_BG & 0xFFFFFF);
 
         RenderSystem.enableBlend();
@@ -428,7 +422,7 @@ public final class ConstellationSky {
         java.util.List<float[]> onPic = new java.util.ArrayList<>(), offPic = new java.util.ArrayList<>();
         for (int i = -n; i < n; i++) {
             for (int j = -n; j < n; j++) {
-                if (!ConstellationCrumble.on(i, j, core, outline)) continue;
+                if (!ConstellationCrumble.on(i, j, core, arms)) continue;
                 float x0 = i * cell, y0 = j * cell;
                 (onPicture(x0, y0, sq, gw, gh) && onPicture(x0 + cell, y0 + cell, sq, gw, gh) ? onPic : offPic)
                     .add(new float[] {x0, y0});

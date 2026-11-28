@@ -44,7 +44,9 @@ public final class ConstellationWindowGlow {
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+        // The last stage: carriages (Sable sub-levels) are drawn after the translucent stage, and would
+        // cover a glow drawn there, since it writes no depth.
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
         if (!ConstellationBlocks.active()) return; // half a block tall: under the eye even standing in it
         SkyboxBlockIndex.Snapshot snapshot = SkyboxBlockIndex.snapshot();
         if (snapshot.isEmpty()) return;

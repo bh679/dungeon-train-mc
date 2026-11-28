@@ -2,103 +2,108 @@ package games.brennan.dungeontrain.client.constellation;
 
 /**
  * The patch's soft edge as crumbling blocks: square cells on a grid fixed to the patch, each fully
- * night or fully sky, thinning out past an outline that reaches out in 3 to 5 arms, with a few loose
- * blocks beyond. The arms drift slowly round, grow, shrink, and two of them come and go, so the shape
- * keeps changing; a cell's own roll is fixed, so nothing flickers. Pure maths, unit-tested.
+ * night or fully sky. Round the solid core a thin crumbling rim, and out of it 3 to 5 arms that bend
+ * as they reach out and taper to a crumbling tip. Each arm drifts slowly round, grows and shrinks,
+ * bends one way then the other, and slowly thickens and thins (slender to about two and a half times
+ * that, a thicker arm reaching less far); two of them come and go. A cell's own roll is fixed, so
+ * nothing flickers. Pure maths, unit-tested.
  */
 final class ConstellationCrumble {
 
     /** A cell's side, in patch radii. */
-    static final float CELL = 0.05f;
-    /** How far past the solid core the cells thin out to nothing, in radii. */
-    static final float WIDTH = 0.22f;
-    /** How far an arm reaches out past the core, at most, in radii. */
-    static final float ARM = 0.95f;
-    /** How far the outline pulls in between arms, in radii: the patch is not round. */
-    static final float INDENT = 0.24f;
+    static final float CELL = 0.06f;
+    /** The crumbling rim round the core: from this far inside it to this far outside, in radii. */
+    static final float RIM_IN = 0.06f, RIM_OUT = 0.12f;
+    /** How far the longest arm reaches past the core, in radii. */
+    static final float ARM = 1.0f;
+    /** An arm's half-width, as an angle times radius: at its root, and the least it tapers to. */
+    static final float ROOT_WIDTH = 0.11f, TIP_WIDTH = 0.045f;
+    /** How thick an arm gets, at most, against its slenderest. */
+    static final float MAX_THICKNESS = 2.5f;
+    /** How far an arm bends by its tip, at most, in radians. */
+    static final float BEND = 1.8f;
     /** Arms that are always there, and arms that come and go: 3 to 5 in all. */
     static final int STEADY_ARMS = 3, ARMS = 5;
-    /** The chance of a loose block in the band just past the edge. Low: a few, not a scatter. */
-    static final float STRAY = 0.012f;
-    /** How far past the edge loose blocks may sit, in radii. */
-    static final float STRAY_REACH = 0.22f;
+    /** The chance of a loose block in the band just past the core. Low: a few, not a scatter. */
+    static final float STRAY = 0.01f;
+
+    /** One arm, for one moment: where it leaves the core, how it bends, how long and thick it is. */
+    record Arm(float base, float bend, float length, float thickness) {}
 
     private ConstellationCrumble() {}
 
     /** The farthest any cell can reach from the centre, in radii, for a core of {@code core}. */
     static float extent(float core) {
-        return core + ARM + WIDTH + STRAY_REACH + CELL;
+        return core + ARM + RIM_OUT + CELL;
+    }
+
+    static boolean on(int i, int j, float core, double seconds) {
+        return on(i, j, core, arms(seconds));
     }
 
     /**
      * Is cell {@code (i, j)} (its lower-left corner at {@code (i, j) * CELL}) night? Solid inside the
-     * core; past it, kept by chance as the edge thins; a kept cell with no kept neighbour beside it
-     * is dropped, so the edge breaks into clumps rather than lone dots.
+     * core; past it, kept by chance as the rim and the arms thin; a kept cell with no kept neighbour
+     * beside it is dropped, so the edge breaks into clumps rather than lone dots.
      */
-    static boolean on(int i, int j, float core, double seconds) {
-        return on(i, j, core, outlineTable(seconds));
-    }
-
-    /** {@link #on(int, int, float, double)} with this frame's outline already worked out. */
-    static boolean on(int i, int j, float core, float[] outline) {
-        float t = raw(i, j, core, outline);
+    static boolean on(int i, int j, float core, Arm[] arms) {
+        float t = raw(i, j, core, arms);
         if (t >= 1f) return true;
         if (t <= 0f) return false;
-        return raw(i + 1, j, core, outline) > 0f || raw(i - 1, j, core, outline) > 0f
-            || raw(i, j + 1, core, outline) > 0f || raw(i, j - 1, core, outline) > 0f;
+        return raw(i + 1, j, core, arms) > 0f || raw(i - 1, j, core, arms) > 0f
+            || raw(i, j + 1, core, arms) > 0f || raw(i, j - 1, core, arms) > 0f;
     }
 
     static float raw(int i, int j, float core, double seconds) {
-        return raw(i, j, core, outlineTable(seconds));
+        return raw(i, j, core, arms(seconds));
     }
 
     /** 1 for a solid cell, 0.5 for a cell kept by chance, 0 for sky. */
-    static float raw(int i, int j, float core, float[] outline) {
+    static float raw(int i, int j, float core, Arm[] arms) {
         float x = (i + 0.5f) * CELL, y = (j + 0.5f) * CELL;
-        float r = (float) Math.sqrt(x * x + y * y) - lookup(outline, (float) Math.atan2(y, x));
-        if (r <= core) return 1f;
-        float t = 1f - (r - core) / WIDTH;
-        if (t > 0f && hash(i, j, 0) < t) return 0.5f;
-        if (r <= core + WIDTH + STRAY_REACH && hash(i, j, 1) < STRAY) return 0.5f;
+        float r = (float) Math.sqrt(x * x + y * y);
+        if (r < core - RIM_IN) return 1f;
+        if (r < core + RIM_OUT) {
+            float keep = 1f - (r - core + RIM_IN) / (RIM_IN + RIM_OUT);
+            if (hash(i, j, 0) < keep) return 0.5f;
+        }
+        float arm = armAt(r, (float) Math.atan2(y, x), core, arms);
+        if (arm > 0f && hash(i, j, 1) < 0.55f + 0.45f * arm) return 0.5f;
+        if (r < core + RIM_OUT + 0.15f && hash(i, j, 2) < STRAY) return 0.5f;
         return 0f;
     }
 
-    /** How many angles the per-frame outline table holds. */
-    static final int TABLE = 720;
-
-    /** {@link #outline} at {@link #TABLE} angles round the patch, for one moment. */
-    static float[] outlineTable(double seconds) {
-        float[] t = new float[TABLE];
-        for (int k = 0; k < TABLE; k++) t[k] = outline((float) (2 * Math.PI * k / TABLE - Math.PI), seconds);
-        return t;
+    /** How solid the arms are at {@code (r, angle)}: 1 at a root, less toward a tip, 0 off them. */
+    static float armAt(float r, float angle, float core, Arm[] arms) {
+        float best = 0f;
+        for (Arm a : arms) {
+            float u = (r - core) / a.length();
+            if (u < 0f || u > 1f) continue;
+            float centre = a.base() + a.bend() * u;
+            float halfWidth = (ROOT_WIDTH * (1f - u) + TIP_WIDTH) * a.thickness();
+            float d = Math.abs((float) Math.IEEEremainder(angle - centre, 2 * Math.PI)) * r;
+            if (d < halfWidth) best = Math.max(best, 1f - 0.6f * u);
+        }
+        return best;
     }
 
-    private static float lookup(float[] table, float angle) {
-        int k = Math.round((angle + (float) Math.PI) / (float) (2 * Math.PI) * TABLE);
-        return table[Math.floorMod(k, TABLE)];
-    }
-
-    /**
-     * How far the outline sits past the core at {@code angle}, at time {@code seconds}: pulled in by
-     * {@link #INDENT} between arms, out to {@link #ARM} along one. Smooth in time: it changes over tens
-     * of seconds.
-     */
-    static float outline(float angle, double seconds) {
-        float out = 0f;
+    /** The arms at time {@code seconds}: slow, smooth, 3 to 5 of them. */
+    static Arm[] arms(double seconds) {
+        java.util.List<Arm> out = new java.util.ArrayList<>(ARMS);
         for (int k = 0; k < ARMS; k++) {
             float strength = armStrength(k, seconds);
-            if (strength <= 0f) continue;
+            if (strength <= 0.02f) continue;
             double s = seconds;
-            // each arm drifts round on its own slow course, and its length and width breathe
-            float centre = (float) (k * (2 * Math.PI / ARMS) + 0.9 * Math.sin(s / (37.0 + 7 * k) + k * 1.7)
+            float base = (float) (k * (2 * Math.PI / ARMS) + 0.9 * Math.sin(s / (37.0 + 7 * k) + k * 1.7)
                 + s / (160.0 + 40 * k) * (k % 2 == 0 ? 1 : -1));
-            float width = 0.5f + 0.15f * (float) Math.sin(s / (23.0 + 5 * k) + k * 2.3);
-            float length = ARM * strength * (0.65f + 0.35f * (float) Math.sin(s / (29.0 + 3 * k) + k * 0.8));
-            float d = (float) Math.IEEEremainder(angle - centre, 2 * Math.PI);
-            float bump = 1f - (d / width) * (d / width);
-            if (bump > 0f) out = Math.max(out, (length + INDENT) * bump);
+            float bend = BEND * (float) Math.sin(s / (19.0 + 4 * k) + k * 1.3);
+            float thickness = 1f + (MAX_THICKNESS - 1f) * (0.5f + 0.5f * (float) Math.sin(s / (53.0 + 9 * k) + k * 2.1));
+            // a thicker arm reaches less far, so a thick arm never trails a long thin tail
+            float reach = 1f - 0.2f * (thickness - 1f);
+            float length = ARM * strength * reach * (0.7f + 0.3f * (float) Math.sin(s / (29.0 + 3 * k) + k * 0.8));
+            out.add(new Arm(base, bend, Math.max(0.1f, length), thickness));
         }
-        return out - INDENT;
+        return out.toArray(new Arm[0]);
     }
 
     /**

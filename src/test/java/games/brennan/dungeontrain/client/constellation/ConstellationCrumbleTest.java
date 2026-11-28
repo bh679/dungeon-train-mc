@@ -14,7 +14,7 @@ class ConstellationCrumbleTest {
     @Test
     void solidInsideTheCoreAndEmptyFarOut() {
         assertTrue(ConstellationCrumble.on(0, 0, CORE, T));
-        assertTrue(ConstellationCrumble.on(3, -4, CORE, T));
+        assertTrue(ConstellationCrumble.on(2, -3, CORE, T));
         int far = (int) Math.ceil(ConstellationCrumble.extent(CORE) / ConstellationCrumble.CELL) + 2;
         assertFalse(ConstellationCrumble.on(far, 0, CORE, T));
         assertFalse(ConstellationCrumble.on(0, -far, CORE, T));
@@ -49,15 +49,32 @@ class ConstellationCrumbleTest {
     }
 
     @Test
-    void outlineReachesOutInArmsAndChangesSlowly() {
-        float min = Float.MAX_VALUE, max = -Float.MAX_VALUE;
-        for (float a = -3.14f; a < 3.14f; a += 0.02f) {
-            float o = ConstellationCrumble.outline(a, T);
-            min = Math.min(min, o);
-            max = Math.max(max, o);
-            assertTrue(Math.abs(o - ConstellationCrumble.outline(a, T + 0.1)) < 0.01f, "jumps at " + a);
+    void armsBendThickenAndThickerOnesReachLess() {
+        for (double t = 0; t < 4000; t += 23) {
+            for (ConstellationCrumble.Arm a : ConstellationCrumble.arms(t)) {
+                assertTrue(a.thickness() >= 1f && a.thickness() <= ConstellationCrumble.MAX_THICKNESS);
+                assertTrue(Math.abs(a.bend()) <= ConstellationCrumble.BEND);
+                assertTrue(a.length() <= ConstellationCrumble.ARM * (1f - 0.2f * (a.thickness() - 1f)) + 1e-4f);
+            }
         }
-        assertEquals(-ConstellationCrumble.INDENT, min, 1e-4f);
-        assertTrue(max > 0.2f, "an arm reaches out: " + max);
+    }
+
+    @Test
+    void armsChangeSlowly() {
+        ConstellationCrumble.Arm[] now = ConstellationCrumble.arms(T), soon = ConstellationCrumble.arms(T + 0.1);
+        assertEquals(now.length, soon.length);
+        for (int k = 0; k < now.length; k++) {
+            assertTrue(Math.abs(now[k].base() - soon[k].base()) < 0.01f);
+            assertTrue(Math.abs(now[k].length() - soon[k].length()) < 0.01f);
+        }
+    }
+
+    @Test
+    void anArmReachesWellPastTheCore() {
+        ConstellationCrumble.Arm a = ConstellationCrumble.arms(T)[0];
+        float r = CORE + a.length() * 0.3f;
+        float angle = a.base() + a.bend() * 0.3f;
+        assertTrue(ConstellationCrumble.armAt(r, angle, CORE, new ConstellationCrumble.Arm[] {a}) > 0f);
+        assertEquals(0f, ConstellationCrumble.armAt(CORE + a.length() * 1.1f, angle, CORE, new ConstellationCrumble.Arm[] {a}));
     }
 }
