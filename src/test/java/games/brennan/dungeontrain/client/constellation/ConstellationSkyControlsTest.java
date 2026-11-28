@@ -19,4 +19,11 @@ class ConstellationSkyControlsTest {
         assertEquals(0, ConstellationWindowGlow.colour(0f) >>> 24);
         assertEquals(255, ConstellationWindowGlow.colour(1f) >>> 24);
     }
+
+    @Test
+    void carpetSinksOntoShortBlocksOnly() {
+        assertEquals(0.5, ConstellationCarpetSink.sinkFor(0.5), 1e-9);
+        assertEquals(0.0, ConstellationCarpetSink.sinkFor(1.0), 1e-9);
+        assertEquals(0.0, ConstellationCarpetSink.sinkFor(0.0), 1e-9);
+    }
 }

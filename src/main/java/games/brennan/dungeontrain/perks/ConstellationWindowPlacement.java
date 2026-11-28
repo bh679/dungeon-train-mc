@@ -40,8 +40,9 @@ public final class ConstellationWindowPlacement {
 
     /**
      * Put the window (the cosmic carpet) at the player's feet. The apple never opens the menu, so this
-     * tries hard: the feet cell when it is free; else, when something small with no body stands there (a
-     * pressure plate, a rail, a flower), that thing is lifted out and put back when the window goes;
+     * tries hard: the feet cell when it is free; else on top of a block there less than a block tall (a
+     * slab, a pressure plate); else, when something with no body stands there (a flower, a torch), that
+     * thing is lifted out and put back when the window goes;
      * else the nearest free floor within {@link #SEARCH} blocks. False only when none of those work.
      * A new apple is new points to spend, so the window it leaves (new, or the one already underfoot)
      * waits for a fresh spend before it goes.
@@ -63,7 +64,10 @@ public final class ConstellationWindowPlacement {
             return true;
         }
         BlockState replaced = null;
-        if (!fits(level, cell)) {
+        if (!fits(level, cell) && sitsOnTop(level, cell, here) && fits(level, cell.above())) {
+            // a slab, a pressure plate: the carpet goes on top of it, and draws down onto its top
+            cell = cell.above();
+        } else if (!fits(level, cell)) {
             if (swappable(level, cell, here)) {
                 replaced = here;
             } else {
@@ -93,6 +97,24 @@ public final class ConstellationWindowPlacement {
         BlockState state = level.getBlockState(cell);
         return state.canBeReplaced() && state.getFluidState().isEmpty();
     }
+
+    /**
+     * A block less than a block tall the carpet can sit on: one you stand on (a slab, a snow layer),
+     * or one flat on the floor you stand in (a pressure plate, a carpet), up to {@link #FLAT} tall.
+     */
+    private static boolean sitsOnTop(ServerLevel level, BlockPos cell, BlockState state) {
+        net.minecraft.world.phys.shapes.VoxelShape shape = state.getShape(level, cell);
+        if (shape.isEmpty()) return false;
+        return sitsOnTop(shape.max(net.minecraft.core.Direction.Axis.Y), !state.getCollisionShape(level, cell).isEmpty());
+    }
+
+    /** {@code top}: the block's height; {@code solid}: whether it can be stood on. */
+    static boolean sitsOnTop(double top, boolean solid) {
+        return top > 0 && top < 1 && (solid || top <= FLAT);
+    }
+
+    /** How tall a block you walk through may be and still take a carpet on top: flat things only. */
+    static final double FLAT = 0.25;
 
     /** Something small the player stands in, with no body and nothing stored: lifted out, put back later. */
     private static boolean swappable(ServerLevel level, BlockPos cell, BlockState state) {

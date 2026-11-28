@@ -219,6 +219,12 @@ public final class ConstellationSky {
                     drawDisc(view, alpha * step.getKey(), false, HIDDEN_REACH);
                 }
             }
+            // 4. The block under the crosshair, if the patch hid it, keeps its outline over the patch.
+            GL11.glDepthRange(0.0, 1.0);
+            GL11.glDisable(GL11.GL_STENCIL_TEST);
+            RenderSystem.stencilMask(0xFF);
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            ConstellationOutline.draw(view, cam, partialTick, alpha);
         } finally {
             RenderSystem.stencilMask(0xFF);
             RenderSystem.stencilFunc(GL11.GL_ALWAYS, 0, 0xFF);

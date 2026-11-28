@@ -487,7 +487,8 @@ public final class SkyboxPunchRenderer {
             .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
 
         double height = heightOf(sky);
-        int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot.main().get(sky), height);
+        int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot.main().get(sky), height,
+            sky == SkyboxSky.CONSTELLATION);
         quads += emitSubLevels(builder, frustumMatrix, frustum, cam, snapshot, subLevels, sky, partialTick, height);
         // The sunk zone's lid reveals the live sky over the attic; it gates itself per frame.
         if (sky == SkyboxSky.LIVE) quads += SunkLidSkyPlane.emit(builder, frustumMatrix, frustum, cam);
@@ -520,7 +521,7 @@ public final class SkyboxPunchRenderer {
     }
 
     private static int emitMainWorld(BufferBuilder builder, Matrix4f frustumMatrix, Frustum frustum,
-                                     Vec3 cam, SkyboxBlockIndex.CubeSet cubes, double height) {
+                                     Vec3 cam, SkyboxBlockIndex.CubeSet cubes, double height, boolean carpet) {
         if (cubes == null) return 0;
         long[] positions = cubes.positions();
         byte[] masks = cubes.faceMasks();
@@ -537,9 +538,11 @@ public final class SkyboxPunchRenderer {
             int bz = BlockPos.getZ(positions[i]);
             if (!frustum.isVisible(new AABB(bx, by, bz, bx + 1.0, by + 1.0, bz + 1.0))) continue;
 
+            // a cosmic carpet drops onto a short block under it (a slab, a pressure plate)
+            double sink = carpet ? games.brennan.dungeontrain.client.constellation.ConstellationCarpetSink.sink(positions[i], null) : 0;
             for (int corner = 0; corner < 8; corner++) {
                 cx[corner] = bx + SkyboxGeometry.cornerDx(corner);
-                cy[corner] = by + SkyboxGeometry.cornerDy(corner) * height;
+                cy[corner] = by - sink + SkyboxGeometry.cornerDy(corner) * height;
                 cz[corner] = bz + SkyboxGeometry.cornerDz(corner);
             }
             quads += SkyboxGeometry.emitCube(builder, frustumMatrix, cx, cy, cz, cam.x, cam.y, cam.z, mask);
@@ -583,12 +586,14 @@ public final class SkyboxPunchRenderer {
                 int bx = BlockPos.getX(positions[i]);
                 int by = BlockPos.getY(positions[i]);
                 int bz = BlockPos.getZ(positions[i]);
+                double sink = sky == SkyboxSky.CONSTELLATION
+                    ? games.brennan.dungeontrain.client.constellation.ConstellationCarpetSink.sink(positions[i], sub) : 0;
 
                 double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, minZ = Double.MAX_VALUE;
                 double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
                 for (int corner = 0; corner < 8; corner++) {
                     local.set(bx + SkyboxGeometry.cornerDx(corner),
-                              by + SkyboxGeometry.cornerDy(corner) * height,
+                              by - sink + SkyboxGeometry.cornerDy(corner) * height,
                               bz + SkyboxGeometry.cornerDz(corner));
                     // Two-arg form: the single-arg overload mutates its input.
                     pose.transformPosition(local, world);

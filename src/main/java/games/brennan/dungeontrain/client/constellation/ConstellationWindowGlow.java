@@ -57,7 +57,7 @@ public final class ConstellationWindowGlow {
         BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         int quads = 0;
         SkyboxBlockIndex.CubeSet main = snapshot.main().get(SkyboxSky.CONSTELLATION);
-        if (main != null) for (long pos : main.positions()) quads += column(bb, view, cam, pos, null);
+        if (main != null) for (long pos : main.positions()) quads += column(bb, view, cam, pos, null, null);
         if (!snapshot.subLevels().isEmpty()) {
             Map<UUID, ClientSubLevel> subs = subLevels(mc);
             for (SkyboxBlockIndex.SubLevelCubes entry : snapshot.subLevels()) {
@@ -65,7 +65,7 @@ public final class ConstellationWindowGlow {
                 ClientSubLevel sub = cubes == null ? null : subs.get(entry.subLevelId());
                 Pose3dc pose = sub == null ? null : sub.renderPose(partial);
                 if (pose == null) continue;
-                for (long pos : cubes.positions()) quads += column(bb, view, cam, pos, pose);
+                for (long pos : cubes.positions()) quads += column(bb, view, cam, pos, pose, sub);
             }
         }
         MeshData mesh = bb.build();
@@ -113,9 +113,10 @@ public final class ConstellationWindowGlow {
      * From any side the two far edges stand against the floor behind, the near two over the hole.
      * {@code pose} places a carriage's carpet.
      */
-    private static int column(BufferBuilder bb, Matrix4f view, Vec3 cam, long packed, Pose3dc pose) {
+    private static int column(BufferBuilder bb, Matrix4f view, Vec3 cam, long packed, Pose3dc pose, ClientSubLevel sub) {
         int bx = BlockPos.getX(packed), by = BlockPos.getY(packed), bz = BlockPos.getZ(packed);
-        float y0 = (float) ConstellationBlocks.WINDOW_HEIGHT, y1 = y0 + HEIGHT;
+        float sink = (float) ConstellationCarpetSink.sink(packed, sub);
+        float y0 = (float) ConstellationBlocks.WINDOW_HEIGHT - sink, y1 = y0 + HEIGHT;
         float[][] base = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
         float[][] top = {{LEAN, LEAN}, {1 - LEAN, LEAN}, {1 - LEAN, 1 - LEAN}, {LEAN, 1 - LEAN}};
         Vector3d local = new Vector3d(), world = new Vector3d();

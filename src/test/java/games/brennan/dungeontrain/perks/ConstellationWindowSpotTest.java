@@ -35,4 +35,12 @@ class ConstellationWindowSpotTest {
         assertTrue(o[0][0] * o[0][0] + o[0][1] * o[0][1] == 1, "a side first");
         assertTrue(o[23][0] * o[23][0] + o[23][1] * o[23][1] == 8, "a far corner last");
     }
+
+    @Test
+    void carpetSitsOnSlabsAndPlatesButNotFlowersOrFullBlocks() {
+        assertTrue(ConstellationWindowPlacement.sitsOnTop(0.5, true), "bottom slab");
+        assertTrue(ConstellationWindowPlacement.sitsOnTop(1.0 / 16, false), "pressure plate");
+        assertFalse(ConstellationWindowPlacement.sitsOnTop(0.6, false), "a flower is swapped out instead");
+        assertFalse(ConstellationWindowPlacement.sitsOnTop(1.0, true), "a full block");
+    }
 }
