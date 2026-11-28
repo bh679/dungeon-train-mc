@@ -68,12 +68,28 @@ public final class ConstellationClient {
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
         if (alpha <= ConstellationFade.OFF_EPSILON) return;
-        ConstellationSky.drawPatch(event.getModelViewMatrix(), event.getProjectionMatrix(), alpha, ConstellationEdge.current());
+        Minecraft mc = Minecraft.getInstance();
+        float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        net.minecraft.world.phys.Vec3 cam = event.getCamera().getPosition();
+        // Hidden blocks are painted as the sky round them: vanilla's sky colour here, now.
+        int sky = 0x78A7FF;
+        if (mc.level != null) {
+            net.minecraft.world.phys.Vec3 c = mc.level.getSkyColor(cam, partial);
+            sky = ((int) (c.x * 255) << 16) | ((int) (c.y * 255) << 8) | (int) (c.z * 255);
+        }
+        ConstellationSky.drawPatch(event.getModelViewMatrix(), event.getProjectionMatrix(), alpha,
+            ConstellationEdge.current(), cam, partial, sky);
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         ConstellationSky.tick();
+        Minecraft mc = Minecraft.getInstance();
+        if (patchOpen() && mc.level != null && mc.player != null) {
+            ConstellationOcclusion.update(mc.level, mc.player.getEyePosition(), ConstellationSky.starDirections());
+        } else {
+            ConstellationOcclusion.clear();
+        }
     }
 
     @SubscribeEvent

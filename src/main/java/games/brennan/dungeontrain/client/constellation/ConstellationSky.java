@@ -25,11 +25,10 @@ import org.lwjgl.opengl.GL11;
  * mouse: {@link #aim} turns the look direction into a point on the menu's canvas.</p>
  *
  * <p>The disc is the menu's square sky region (the map's 800 x 800 fit), mapped round onto
- * {@link ConstellationGeometry}. It is drawn in up to three passes so it meets the real sky and blocks
- * differently ({@link ConstellationEdge}): the sky (depth still at the far plane) and the clouds
- * ({@link ConstellationClouds}) get the rim; blocks are either fully covered or untouched. Every pass
- * forces the fragment depth to the far plane with {@code glDepthRange(1, 1)} so the depth test does
- * the sorting; depth is never written.</p>
+ * {@link ConstellationGeometry}. See {@link #drawPatch} for how it meets the sky, clouds and blocks:
+ * a block is either in front of a star and hidden whole, or drawn as normal, never partway. The
+ * patch's passes force the fragment depth to the far plane with {@code glDepthRange(1, 1)} so the
+ * depth test does the sorting; depth is never written.</p>
  *
  * <p>Render thread only.</p>
  */
@@ -104,17 +103,55 @@ public final class ConstellationSky {
         return texture;
     }
 
+    /** Stencil bit the blocks in front of a star are stamped into, just for the draw. */
+    static final int HIDE_BIT = 0x20;
+    /** How far past the disc the hidden-block pass reaches, in radii: a hidden block is hidden whole. */
+    private static final float HIDDEN_REACH = 3f;
+
     /**
-     * The patch, over the finished level, at {@code alpha}: pass A over the real sky, pass B over blocks.
+     * Directions from the eye to every drawn star of the picture: its centre and four points round its
+     * rim, so a block that covers any part of a star counts as in its way. Empty with no picture.
+     */
+    static java.util.List<Vector3f> starDirections() {
+        if (texture == null || !(texture.screen() instanceof PerksScreen screen)) return java.util.List.of();
+        float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
+        java.util.List<Vector3f> out = new java.util.ArrayList<>();
+        for (float[] star : screen.drawnStars()) {
+            float r = star[2] * 0.8f;
+            float[][] offsets = {{0, 0}, {r, 0}, {-r, 0}, {0, r}, {0, -r}};
+            for (float[] o : offsets) {
+                float x = (star[0] + o[0] - sq[0]) / sq[2];
+                float y = -(star[1] + o[1] - sq[1]) / sq[2];
+                if (x * x + y * y >= 1f) continue;
+                out.add(ConstellationGeometry.point(x, y).normalize());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The patch, over the finished level, at {@code alpha}.
+     *
+     * <ol>
+     *   <li>The real sky (depth still at the far plane) gets the rim ({@link ConstellationEdge}).</li>
+     *   <li>Clouds ({@link ConstellationClouds}) count as sky and get the same rim.</li>
+     *   <li>Blocks in front of a star ({@link ConstellationOcclusion}) are hidden whole: every pixel of
+     *       them is painted as sky ({@code skyRgb}) and then gets the patch with the same rim, so they
+     *       look exactly like the sky around them. Every other block draws as normal.</li>
+     * </ol>
      *
      * @param view the level's camera-rotation matrix ({@code RenderLevelStageEvent#getModelViewMatrix})
      */
-    static void drawPatch(Matrix4f view, Matrix4f projection, float alpha, ConstellationEdge edge) {
+    static void drawPatch(Matrix4f view, Matrix4f projection, float alpha, ConstellationEdge edge,
+                          net.minecraft.world.phys.Vec3 cam, float partialTick, int skyRgb) {
         if (!hasPicture() || alpha <= 0f) {
             ConstellationClouds.frameDone();
             return;
         }
         boolean clouds = ConstellationClouds.markedThisFrame();
+        java.util.List<ConstellationOcclusion.Hidden> hidden = ConstellationOcclusion.hidden();
+        boolean blocks = !hidden.isEmpty() && games.brennan.dungeontrain.client.skybox.SkyboxStencil.isAvailable()
+            && !games.brennan.dungeontrain.client.ShaderCompat.active();
         // By the last level stage the model-view stack may already hold the camera rotation, and other
         // passes may have left their own projection: draw in exactly the level's frame, once.
         org.joml.Matrix4fStack modelView = RenderSystem.getModelViewStack();
@@ -124,11 +161,14 @@ public final class ConstellationSky {
         RenderSystem.backupProjectionMatrix();
         RenderSystem.setProjectionMatrix(projection, com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
         try {
-            GL11.glDepthRange(1.0, 1.0);
             RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
+            if (blocks) markHidden(view, hidden, cam, partialTick);
+
+            GL11.glDepthRange(1.0, 1.0);
 
             // 1. The real sky: depth still at the far plane.
+            GL11.glDisable(GL11.GL_STENCIL_TEST);
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
             drawDisc(view, alpha, edge.soft(), 1f);
 
@@ -139,26 +179,121 @@ public final class ConstellationSky {
                 RenderSystem.stencilFunc(GL11.GL_EQUAL, ConstellationClouds.BIT, ConstellationClouds.BIT);
                 RenderSystem.depthFunc(GL11.GL_ALWAYS);
                 drawDisc(view, alpha, edge.soft(), 1f);
-                RenderSystem.stencilFunc(GL11.GL_NOTEQUAL, ConstellationClouds.BIT, ConstellationClouds.BIT);
             }
 
-            // 3. Blocks: never partway. Covered inside the cut, drawn as normal outside it.
-            RenderSystem.depthFunc(GL11.GL_GREATER);
-            drawDisc(view, alpha, false, edge.blockCutRadius());
-        } finally {
-            if (clouds) {
-                RenderSystem.stencilMask(0xFF);
-                RenderSystem.stencilFunc(GL11.GL_ALWAYS, 0, 0xFF);
-                GL11.glDisable(GL11.GL_STENCIL_TEST);
+            // 3. Blocks in a star's way: hidden whole, as sky, with the patch over them.
+            if (blocks) {
+                GL11.glEnable(GL11.GL_STENCIL_TEST);
+                RenderSystem.stencilMask(0x00);
+                RenderSystem.stencilFunc(GL11.GL_EQUAL, HIDE_BIT, HIDE_BIT);
+                RenderSystem.depthFunc(GL11.GL_GREATER);
+                fillDisc(view, alpha, skyRgb, HIDDEN_REACH);
+                drawDisc(view, alpha, edge.soft(), 1f);
             }
+        } finally {
+            RenderSystem.stencilMask(0xFF);
+            RenderSystem.stencilFunc(GL11.GL_ALWAYS, 0, 0xFF);
+            RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
+            GL11.glDisable(GL11.GL_STENCIL_TEST);
+            RenderSystem.colorMask(true, true, true, true);
             ConstellationClouds.frameDone();
             GL11.glDepthRange(0.0, 1.0);
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
             RenderSystem.depthMask(true);
+            RenderSystem.enableCull();
             RenderSystem.restoreProjectionMatrix();
             modelView.popMatrix();
             RenderSystem.applyModelViewMatrix();
         }
+    }
+
+    /**
+     * Stamp {@link #HIDE_BIT} wherever a hidden block's cell is the nearest thing drawn: its cube,
+     * a hair larger than the block so its faces win the depth test against the block's own, colour
+     * writes off. Carriage blocks are placed with their carriage's render pose.
+     */
+    private static void markHidden(Matrix4f view, java.util.List<ConstellationOcclusion.Hidden> hidden,
+                                   net.minecraft.world.phys.Vec3 cam, float partialTick) {
+        games.brennan.dungeontrain.client.skybox.SkyboxStencil.beginMarkPass(HIDE_BIT);
+        RenderSystem.colorMask(false, false, false, false);
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        RenderSystem.disableCull();
+        RenderSystem.setShader(GameRenderer::getPositionShader);
+        java.util.Map<java.util.UUID, dev.ryanhcode.sable.sublevel.ClientSubLevel> subs = subLevels();
+        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+        org.joml.Vector3d local = new org.joml.Vector3d();
+        org.joml.Vector3d world = new org.joml.Vector3d();
+        float[] cx = new float[8], cy = new float[8], cz = new float[8];
+        final double grow = 0.003;
+        int quads = 0;
+        for (ConstellationOcclusion.Hidden h : hidden) {
+            dev.ryanhcode.sable.companion.math.Pose3dc pose = null;
+            if (h.subLevel() != null) {
+                dev.ryanhcode.sable.sublevel.ClientSubLevel sub = subs.get(h.subLevel());
+                if (sub == null || (pose = sub.renderPose(partialTick)) == null) continue;
+            }
+            int bx = net.minecraft.core.BlockPos.getX(h.pos());
+            int by = net.minecraft.core.BlockPos.getY(h.pos());
+            int bz = net.minecraft.core.BlockPos.getZ(h.pos());
+            for (int c = 0; c < 8; c++) {
+                local.set(bx + ((c & 1) == 0 ? -grow : 1 + grow), by + ((c & 2) == 0 ? -grow : 1 + grow),
+                    bz + ((c & 4) == 0 ? -grow : 1 + grow));
+                if (pose != null) pose.transformPosition(local, world);
+                else world.set(local);
+                cx[c] = (float) (world.x - cam.x);
+                cy[c] = (float) (world.y - cam.y);
+                cz[c] = (float) (world.z - cam.z);
+            }
+            for (int[] face : CUBE_FACES) {
+                for (int c : face) bb.addVertex(view, cx[c], cy[c], cz[c]);
+                quads++;
+            }
+        }
+        com.mojang.blaze3d.vertex.MeshData mesh = bb.build();
+        if (mesh != null) {
+            if (quads > 0) BufferUploader.drawWithShader(mesh);
+            else mesh.close();
+        }
+        RenderSystem.colorMask(true, true, true, true);
+    }
+
+    /** Corner indices ({@code bit 0 = x, bit 1 = y, bit 2 = z}) of the cube's six faces. */
+    private static final int[][] CUBE_FACES = {
+        {0, 1, 3, 2}, {4, 6, 7, 5}, // -z, +z
+        {0, 2, 6, 4}, {1, 5, 7, 3}, // -x, +x
+        {0, 4, 5, 1}, {2, 3, 7, 6}, // -y, +y
+    };
+
+    private static java.util.Map<java.util.UUID, dev.ryanhcode.sable.sublevel.ClientSubLevel> subLevels() {
+        net.minecraft.client.multiplayer.ClientLevel level = net.minecraft.client.Minecraft.getInstance().level;
+        if (level == null) return java.util.Map.of();
+        dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer container =
+            dev.ryanhcode.sable.api.sublevel.SubLevelContainer.getContainer(level);
+        if (container == null) return java.util.Map.of();
+        java.util.Map<java.util.UUID, dev.ryanhcode.sable.sublevel.ClientSubLevel> out = new java.util.HashMap<>();
+        for (dev.ryanhcode.sable.sublevel.ClientSubLevel sub : container.getAllSubLevels()) out.put(sub.getUniqueId(), sub);
+        return out;
+    }
+
+    /** A flat disc of one colour out to {@code outer} radii, full strength to its edge. */
+    private static void fillDisc(Matrix4f view, float alpha, int rgb, float outer) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        int color = SkyDomeDraw.argb(alpha, rgb);
+        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        for (int s = 0; s < SEGMENTS; s++) {
+            double t0 = 2 * Math.PI * s / SEGMENTS, t1 = 2 * Math.PI * (s + 1) / SEGMENTS;
+            Vector3f c = ConstellationGeometry.point(0f, 0f);
+            Vector3f a = ConstellationGeometry.point(outer * (float) Math.cos(t0), outer * (float) Math.sin(t0));
+            Vector3f b = ConstellationGeometry.point(outer * (float) Math.cos(t1), outer * (float) Math.sin(t1));
+            bb.addVertex(view, c.x, c.y, c.z).setColor(color);
+            bb.addVertex(view, a.x, a.y, a.z).setColor(color);
+            bb.addVertex(view, b.x, b.y, b.z).setColor(color);
+        }
+        BufferUploader.drawWithShader(bb.buildOrThrow());
+        RenderSystem.disableBlend();
     }
 
     /**

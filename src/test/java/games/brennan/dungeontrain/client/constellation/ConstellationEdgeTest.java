@@ -10,11 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConstellationEdgeTest {
 
     @Test
-    void blocksAreCutWhereTheSkyIsHalfFaded() {
-        float cut = ConstellationEdge.SOFT.blockCutRadius();
-        assertEquals(0.5f, ConstellationEdge.alphaAt(cut, true), 1e-4f);
-        assertTrue(cut > ConstellationEdge.FEATHER_START && cut < 1f);
-        assertEquals(1f, ConstellationEdge.HARD.blockCutRadius());
+    void softAndHardAreTheSkyRim() {
         assertTrue(ConstellationEdge.SOFT.soft());
         assertFalse(ConstellationEdge.HARD.soft());
     }

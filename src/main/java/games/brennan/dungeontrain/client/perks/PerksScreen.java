@@ -160,6 +160,24 @@ public final class PerksScreen extends Screen {
      * ({@code tributeroom.ScreenToTexture}) hung in the sky by the constellation blocks. Never shown as
      * {@code mc.screen}. Hover it by passing the crosshair's point on the sky as the mouse.
      */
+    /**
+     * Every star drawn last frame, as {@code {x, y, radius}} in GUI units on this screen: what the
+     * constellation patch clears blocks in front of. Empty before the first frame.
+     */
+    public java.util.List<float[]> drawnStars() {
+        PerkTree d = drawn;
+        ClassVisibility v = vis;
+        SkyView sv = view;
+        if (d == null || v == null || sv == null) return List.of();
+        java.util.List<float[]> out = new java.util.ArrayList<>();
+        for (PerkTree.Perk p : d.perks()) {
+            if (v.hidden(p)) continue;
+            out.add(new float[] {(float) sv.toScreenX(p.x(), width), (float) sv.toScreenY(p.y(), skyH()),
+                (float) SkyPalette.hitRadius(p, sv.zoom())});
+        }
+        return java.util.List.copyOf(out);
+    }
+
     public static PerksScreen forSky() {
         return new PerksScreen(false, null, true);
     }

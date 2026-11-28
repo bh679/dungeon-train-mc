@@ -44,7 +44,7 @@ public final class ConstellationEdgeCommand {
     private static int report(CommandSourceStack source) {
         ConstellationEdge edge = ConstellationEdge.current();
         source.sendSystemMessage(Component.literal("Constellation edge: " + edge.name().toLowerCase(java.util.Locale.ROOT)
-            + " (blocks cut at " + Math.round(edge.blockCutRadius() * 100) + "% of the radius)")
+            + " (the rim against the sky)")
             .withStyle(ChatFormatting.AQUA));
         return 1;
     }
