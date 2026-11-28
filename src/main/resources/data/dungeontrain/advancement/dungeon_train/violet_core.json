@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/celestial_bite",
+  "display": {
+    "icon": { "id": "dungeontrain:violet_core" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.violet_core.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.violet_core.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "ate": {
+      "trigger": "minecraft:consume_item",
+      "conditions": { "item": { "items": "dungeontrain:violet_core" } }
+    }
+  },
+  "requirements": [["ate"]]
+}

@@ -81,6 +81,7 @@ public final class ProgressCreditingGrants {
         "dungeontrain:photo_tribute",
         "dungeontrain:photo_count",
         "minecraft:impossible",
+        "minecraft:consume_item", // eating a cosmic apple: done standing still
         "minecraft:inventory_changed",
         // Dungeon Totems: a totem saving you, its curse lifting, a morph form — all follow a near-death
         // or a timer, not the player getting anywhere.

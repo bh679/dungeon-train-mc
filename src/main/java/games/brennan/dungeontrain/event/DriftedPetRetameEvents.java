@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +44,9 @@ import java.util.UUID;
 public final class DriftedPetRetameEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Advancement action id ({@code dungeon_train/come_along_with_me}). */
+    static final String RETAMED_ACTION_ID = "retamed_drifted_pet";
 
     private DriftedPetRetameEvents() {}
 
@@ -89,6 +93,7 @@ public final class DriftedPetRetameEvents {
         if (pet.isOwnedBy(player)) {
             LOGGER.info("[DungeonTrain] Drifted pet {} retamed by {} (its owner {} has never played here)",
                     pet.getType().toShortString(), player.getGameProfile().getName(), owner);
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, RETAMED_ACTION_ID);
             return result;
         }
         pet.setTame(true, false);
