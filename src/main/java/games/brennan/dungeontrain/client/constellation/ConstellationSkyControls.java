@@ -26,6 +26,16 @@ public final class ConstellationSkyControls {
     /** How long the bar takes to fade in or out. */
     static final long FADE_MS = 180;
 
+    /** Has each button been let go since the last click that counted? */
+    private static boolean attackReleased = true, useReleased = true;
+
+    @SubscribeEvent
+    public static void onTick(net.neoforged.neoforge.client.event.ClientTickEvent.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (!mc.options.keyAttack.isDown()) attackReleased = true;
+        if (!mc.options.keyUse.isDown()) useReleased = true;
+    }
+
     private static double barFade;
     private static long lastMs = -1;
 
@@ -38,7 +48,17 @@ public final class ConstellationSkyControls {
         PerksScreen sky = ConstellationSky.screen();
         if (sky == null) return;
         if (!event.isUseItem() && !event.isAttack()) return;
+        // Holding a button repeats the click every few ticks: only a fresh press counts, the repeats
+        // are swallowed so a held button never selects and then activates.
+        boolean fresh = event.isAttack() ? attackReleased : useReleased;
         String star = sky.hoveredPerk();
+        if (star != null && !fresh) {
+            event.setSwingHand(false);
+            event.setCanceled(true);
+            return;
+        }
+        if (event.isAttack()) attackReleased = false;
+        else useReleased = false;
         if (star == null) {
             // empty sky (nothing in the world under the crosshair) lets the kept star go
             if (event.isAttack() && (mc.hitResult == null || mc.hitResult.getType() == HitResult.Type.MISS)) sky.skySelect();
