@@ -1625,7 +1625,9 @@ public final class CarriageContentsPlacer {
         EntityType<?> type = typeOpt.get();
         Entity entity;
         try {
-            CompoundTag mobNbt = withEndSlimeType(picked, level);
+            // An unpatterned tropical fish takes a common pattern from the seed (finalizeSpawn is skipped).
+            CompoundTag mobNbt = games.brennan.dungeontrain.editor.VariantFish.withPattern(
+                picked.entityId(), withEndSlimeType(picked, level), seed ^ worldPos.asLong());
             if (mobNbt != null) {
                 CompoundTag spawnNbt = games.brennan.dungeontrain.editor.FrozenMobs.thaw(mobNbt.copy());
                 spawnNbt.putString("id", picked.entityId().toString());
