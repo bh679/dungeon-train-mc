@@ -266,6 +266,13 @@ public final class NapWake {
         try {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             run.applyNapExtras(plan.nap().runExtras(), player.registryAccess());
+            // Photos were carried into this world before login; a frame whose photo did not come
+            // (a nap from before photos were carried) would only show as "photo lost".
+            int dropped = run.retainCameraFrames(f -> NapExposures.isStored(player.getServer(), f));
+            if (dropped > 0) {
+                LOGGER.info("[DungeonTrain] Nap {}: {} camera frame(s) left behind, their photo did not come",
+                    plan.nap().napId(), dropped);
+            }
             run.forgetChestPositionsKeepingCount();
             // Behind the nap point this world's carriages are re-rolled copies of cleared ones, so
             // count-based run counters step down there for the rest of the life.
@@ -360,13 +367,14 @@ public final class NapWake {
     }
 
     /**
-     * The previous life's advancements, stats and narrative progress, written into this fresh world
+     * The previous life's advancements, stats, photos and narrative progress, written into this fresh world
      * before anyone logs in, so vanilla loads them at login as already earned (no toasts) and the
      * stories carry on where they were.
      */
     private static void carryPreviousLife(MinecraftServer server, UUID owner, NapSnapshot nap) {
         writePlayerFile(server, LevelResource.PLAYER_ADVANCEMENTS_DIR, owner, nap.advancementsJson());
         writePlayerFile(server, LevelResource.PLAYER_STATS_DIR, owner, nap.statsJson());
+        NapExposures.restore(server, nap.runExtras().getCompound(NapExposures.EXTRAS_KEY));
         if (nap.narrative().isEmpty()) return;
         try {
             NarrativeProgressData.get(server.overworld()).importFor(owner, nap.narrative());

@@ -226,6 +226,12 @@ public final class NapService {
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Nap: run-state extras not carried", e);
         }
+        // The pixels of this life's photos: the napped world, which holds them, is deleted.
+        CompoundTag photos = NapExposures.capture(server, playerTag, runExtras);
+        if (!photos.isEmpty()) {
+            runExtras = runExtras.copy();
+            runExtras.put(NapExposures.EXTRAS_KEY, photos);
+        }
         // Per-player streak counters hold offset-inclusive values, so the woken world takes this offset.
         int difficultyOffset = DungeonTrainWorldData.get(server.overworld()).getDifficultyTravelledOffset();
         return new NapSnapshot(UUID.randomUUID(), System.currentTimeMillis(), modVersion(),
