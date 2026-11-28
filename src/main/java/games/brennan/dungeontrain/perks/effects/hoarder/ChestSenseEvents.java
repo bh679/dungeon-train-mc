@@ -24,7 +24,7 @@ import java.util.List;
  * Chest Sense, server side. Once a second, for players with the perk: when the pulse is due, scan
  * ({@link ChestSense#scan}), send what was found and the range ({@link ChestSensePacket}, which also
  * starts the client's particle ring) with a soft chime, and set the next pulse
- * {@link ChestSense#everyMinutes} on. The first pulse comes as soon as the perk is active. The
+ * {@link ChestSense#everySeconds} on. The first pulse comes as soon as the perk is active. The
  * next-pulse time is a top-level persistent-data key, so it resets each life and survives logout.
  *
  * <p>It also stamps {@link ChestSense#OPENED_KEY} on any container a player right-clicks, for anyone,

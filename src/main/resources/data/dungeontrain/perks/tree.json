@@ -106,7 +106,7 @@
    "id": "chest-sense",
    "cls": "c5",
    "name": "Chest Sense",
-   "desc": "Once per 5 min you can do a chest sense, to detect chest within 4+X blocks for 5+x seconds",
+   "desc": "Every 3 min (down to 10 s), sense unopened chests within 4+X blocks for 15 s",
    "x": 231.4,
    "y": 335.0,
    "tier": 2
