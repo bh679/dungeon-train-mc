@@ -116,7 +116,7 @@ final class StarPainter {
         g.pose().pushPose();
         g.pose().translate(at[0], at[1], 0);
         g.pose().scale(SkyPalette.NAME_SCALE, SkyPalette.NAME_SCALE, 1F);
-        GlowText.draw(g, font, p.name(), 0, 0, SkyDraw.withAlpha(text, opacity));
+        GlowText.draw(g, font, PerkNames.perk(p), 0, 0, SkyDraw.withAlpha(text, opacity));
         g.pose().popPose();
     }
 
