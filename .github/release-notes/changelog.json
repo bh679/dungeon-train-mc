@@ -40315,6 +40315,93 @@
       "released": true,
       "released_in": "v0.2075.0",
       "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "colourful-tropical-fish",
+      "version": "0.2077.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "mobs",
+        "loot"
+      ],
+      "title": "Colourful tropical fish",
+      "summary": "Tropical fish on the train now come in all their colours, and one of the libraries has more on its shelves.",
+      "highlights": [
+        "Tropical fish swim in many patterns instead of plain white.",
+        "Builders can add a fish straight from its bucket in the block variant menu."
+      ],
+      "pr": 2947,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "debuff-aura-aggressive-only",
+      "version": "0.2078.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "hidden-advancements-nov-2026",
+      "version": "0.2078.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New hidden advancements",
+      "summary": "A handful of new hidden advancements are out there to find.",
+      "highlights": [],
+      "pr": 2950,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "rest-stop-respawn-mostly-full",
+      "version": "0.2076.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Rest stops are usually ready for you",
+      "summary": "The respawn point at some rest stops now almost always comes fully charged.",
+      "highlights": [],
+      "pr": 2946,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "tribute-tv-single-click",
+      "version": "0.2078.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Something secret",
+      "summary": "The developer fixed something secret.",
+      "highlights": [],
+      "pr": 2949,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
     }
   ]
 }
