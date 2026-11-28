@@ -4,6 +4,7 @@ import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.MobBucketItem;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -43,8 +44,8 @@ public final class VariantLiquids {
     /**
      * Source {@link BlockState} for the fluid in {@code held}, or {@code null} when the stack is
      * not a filled bucket. Callers rely on the {@code null} to fall through to their existing
-     * branches unchanged — an empty bucket, a milk bucket (not a {@link BucketItem}) and every
-     * non-bucket item all return {@code null}.
+     * branches unchanged — an empty bucket, a milk bucket (not a {@link BucketItem}), a bucket of
+     * fish (a mob, see {@link BucketMob}) and every non-bucket item all return {@code null}.
      */
     public static @Nullable BlockState sourceStateFrom(ItemStack held) {
         if (held == null || held.isEmpty()) return null;
@@ -53,6 +54,8 @@ public final class VariantLiquids {
         // stored; vanilla's updateShape turns it into soul fire on soul soil at spawn.
         if (held.is(Items.FLINT_AND_STEEL)) return Blocks.FIRE.defaultBlockState();
         if (!(held.getItem() instanceof BucketItem bucket)) return null;
+        // A bucket of fish is its mob, not its water (BucketMob).
+        if (held.getItem() instanceof MobBucketItem) return null;
         if (bucket.content == Fluids.EMPTY) return null;
         return bucket.content.defaultFluidState().createLegacyBlock();
     }
