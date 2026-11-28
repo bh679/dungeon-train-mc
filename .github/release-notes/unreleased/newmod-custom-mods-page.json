@@ -1,0 +1,15 @@
+{
+  "id": "newmod-custom-mods-page",
+  "version": "0.2082.0",
+  "type": "docs",
+  "tags": [
+    "internal"
+  ],
+  "title": "Developer guide update",
+  "summary": "The guide for publishing new mods now covers adding each one to the website.",
+  "highlights": [],
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
