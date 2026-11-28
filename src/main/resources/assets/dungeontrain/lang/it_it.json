@@ -2109,7 +2109,7 @@
   "gui.dungeontrain.editor_help.key_x": "X - Menu dell'editor",
   "gui.dungeontrain.editor_help.key_c": "C - Menu dei contenitori",
   "gui.dungeontrain.editor_help.key_z": "Z - Menu delle varianti di blocco",
-  "gui.dungeontrain.editor_help.wiki_button": "Leggi la wiki per saperne di più",
+  "gui.dungeontrain.editor_help.wiki_button": "Leggi la guida dell'editor",
   "gui.dungeontrain.editor_screen.tab.carriages": "Vagoni",
   "gui.dungeontrain.editor_screen.tab.whole": "Intero",
   "gui.dungeontrain.editor_screen.tab.contents": "Contenuto",

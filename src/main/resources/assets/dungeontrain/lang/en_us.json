@@ -2648,7 +2648,7 @@
   "gui.dungeontrain.editor_help.key_x": "X - Editor Menu",
   "gui.dungeontrain.editor_help.key_c": "C - Container Menu",
   "gui.dungeontrain.editor_help.key_z": "Z - Block Variant Menu",
-  "gui.dungeontrain.editor_help.wiki_button": "Read the Wiki to learn more",
+  "gui.dungeontrain.editor_help.wiki_button": "Read the Editor Guide",
   "gui.dungeontrain.editor_screen.tab.carriages": "Carriages",
   "gui.dungeontrain.editor_screen.tab.whole": "Whole",
   "gui.dungeontrain.editor_screen.tab.contents": "Contents",

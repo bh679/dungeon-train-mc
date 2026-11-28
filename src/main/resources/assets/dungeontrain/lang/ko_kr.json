@@ -2059,7 +2059,7 @@
   "gui.dungeontrain.editor_help.key_x": "X - 편집기 메뉴",
   "gui.dungeontrain.editor_help.key_c": "C - 상자 메뉴",
   "gui.dungeontrain.editor_help.key_z": "Z - 블록 변형 메뉴",
-  "gui.dungeontrain.editor_help.wiki_button": "위키를 읽고 더 알아보기",
+  "gui.dungeontrain.editor_help.wiki_button": "에디터 가이드 읽기",
   "gui.dungeontrain.editor_screen.tab.carriages": "객차",
   "gui.dungeontrain.editor_screen.tab.whole": "통째",
   "gui.dungeontrain.editor_screen.tab.contents": "내용물",

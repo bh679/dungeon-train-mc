@@ -2109,7 +2109,7 @@
   "gui.dungeontrain.editor_help.key_x": "X - Editormenu",
   "gui.dungeontrain.editor_help.key_c": "C - Containermenu",
   "gui.dungeontrain.editor_help.key_z": "Z - Blokvariantmenu",
-  "gui.dungeontrain.editor_help.wiki_button": "Lees de wiki voor meer info",
+  "gui.dungeontrain.editor_help.wiki_button": "Lees de editorgids",
   "gui.dungeontrain.editor_screen.tab.carriages": "Wagons",
   "gui.dungeontrain.editor_screen.tab.whole": "Geheel",
   "gui.dungeontrain.editor_screen.tab.contents": "Inhoud",

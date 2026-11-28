@@ -40,7 +40,7 @@ public final class EditorHelpPanelInputHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final String WIKI_URL = "https://github.com/bh679/dungeon-train-mc/wiki/Editor";
+    static final String WIKI_URL = "https://dungeon.training/editor/";
 
     /**
      * Closing goes through the server, not a client flag: the dismissal is persisted per player in

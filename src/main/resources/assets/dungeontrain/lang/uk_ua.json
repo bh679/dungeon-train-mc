@@ -2704,7 +2704,7 @@
   "gui.dungeontrain.editor_help.key_x": "X: меню редактора",
   "gui.dungeontrain.editor_help.key_c": "C: меню контейнера",
   "gui.dungeontrain.editor_help.key_z": "Z: меню варіантів блоків",
-  "gui.dungeontrain.editor_help.wiki_button": "Читай вікі, щоб дізнатися більше",
+  "gui.dungeontrain.editor_help.wiki_button": "Читай посібник із редактора",
   "gui.dungeontrain.editor_screen.tab.carriages": "Вагони",
   "gui.dungeontrain.editor_screen.tab.whole": "Цілком",
   "gui.dungeontrain.editor_screen.tab.contents": "Вміст",

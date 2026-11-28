@@ -2164,7 +2164,7 @@
   "gui.dungeontrain.editor_help.key_x": "X: Меню редактора",
   "gui.dungeontrain.editor_help.key_c": "C — Меню ящиков",
   "gui.dungeontrain.editor_help.key_z": "Z: Меню вариантов блоков",
-  "gui.dungeontrain.editor_help.wiki_button": "Читайте вики, чтобы узнать больше",
+  "gui.dungeontrain.editor_help.wiki_button": "Читайте руководство по редактору",
   "gui.dungeontrain.editor_screen.tab.carriages": "Вагоны",
   "gui.dungeontrain.editor_screen.tab.whole": "Целиком",
   "gui.dungeontrain.editor_screen.tab.contents": "Комнаты",
