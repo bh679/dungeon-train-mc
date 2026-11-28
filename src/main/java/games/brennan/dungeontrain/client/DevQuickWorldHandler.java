@@ -281,11 +281,11 @@ public final class DevQuickWorldHandler {
         int survivalRight = showSettings
                 ? settings.getX() - GAP
                 : settings.getX() + settings.getWidth();
-        // The perks test square sits in front of New World for an approved tester holding Shift,
+        // The perks test square sits in front of New World for an approved tester (anyone, on a dev
+        // build) holding Shift,
         // and New World gives up one square for it.
         Button perksTest = perksTestRef.get();
-        boolean showPerksTest = perksTest != null && showRow && shift
-                && games.brennan.dungeontrain.client.perks.PerkTesterStatus.isTester();
+        boolean showPerksTest = perksTest != null && showRow && shift && perksTestAllowed();
         if (perksTest != null) perksTest.visible = showPerksTest;
         survival.setX(showPerksTest ? survivalBaseX + perksTest.getWidth() + GAP : survivalBaseX);
         survival.setWidth(survivalRight - survival.getX());
@@ -536,12 +536,21 @@ public final class DevQuickWorldHandler {
     }
 
     /**
+     * Who may make a perks test world: an approved perks tester, or anyone on a dev build (every
+     * branch but main), so a dev client can always test perks without the relay saying yes.
+     */
+    private static boolean perksTestAllowed() {
+        return games.brennan.dungeontrain.DungeonTrain.isDevBuild()
+            || games.brennan.dungeontrain.client.perks.PerkTesterStatus.isTester();
+    }
+
+    /**
      * A perks test world: a survival New World in Test mode (perks on, off the record)
      * ({@link games.brennan.dungeontrain.perks.PerksGate}). Asks the custom-content question first,
      * like every New World, and publishes the perks flag only once the world is really being made.
      */
     private static void launchPerksTestWorld(Screen lastScreen) {
-        if (!games.brennan.dungeontrain.client.perks.PerkTesterStatus.isTester()) return;
+        if (!perksTestAllowed()) return;
         // Timestamped like the other run worlds, so a nap may save it (and delete it): RunWorldNames.
         String name = "Perks Test " + System.currentTimeMillis();
         LevelSettings settings = new LevelSettings(
