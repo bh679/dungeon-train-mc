@@ -1,0 +1,17 @@
+{
+  "id": "perks-grant-command",
+  "version": "0.2062.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Unlock perks with a command in Free Play",
+  "summary": "In Free Play, /dungeontrain perks grant and revoke unlock or lock perks for any player: all of them, one perk, or a whole class, like /advancement grant. Perks unlocked in Free Play now carry over to your next Free Play run, and never count toward your real progress. P also opens the perks menu in a world opened to LAN.",
+  "highlights": [],
+  "pr": 2932,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

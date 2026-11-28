@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -88,5 +89,16 @@ class PerkProfilesTest {
             new PerkProfileStore.Parked(Map.of("health", 2), 4));
         CompoundTag taken = PerkProfileStore.withParked(root, "normal", PerkProfileStore.Parked.NONE);
         assertEquals(PerkProfileStore.Parked.NONE, PerkProfileStore.parkedIn(taken, "normal"));
+    }
+
+    @Test
+    @DisplayName("Free Play unlocks save beside the profile and never into it")
+    void freePlayPartitionApart() {
+        String fp = PerkProfiles.freePlayKey("normal");
+        assertNotEquals("normal", fp);
+        assertNotEquals(PerkProfiles.freePlayKey(PerkProfiles.TEST_KEY), PerkProfiles.TEST_KEY);
+        CompoundTag root = PerkProfileStore.withUnlockLevel(new CompoundTag(), fp, "health", 3);
+        assertEquals(Map.of(), PerkProfileStore.unlocksIn(root, "normal"));
+        assertEquals(Map.of("health", 3), PerkProfileStore.unlocksIn(root, fp));
     }
 }

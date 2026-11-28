@@ -217,6 +217,7 @@
     "JigsawStructureAccessor",
     "RuinedPortalStructureAccessor",
     "EntityArgumentSelfSelectorMixin",
+    "CommandsSendTreeMixin",
     "EntitySelectorSelfPermissionMixin",
     "PlayerEnderChestAccessor",
     "PlayerEnderChestContainerAccessor",
