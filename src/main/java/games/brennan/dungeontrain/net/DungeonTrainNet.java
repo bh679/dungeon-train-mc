@@ -33,7 +33,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "226";
+    public static final String PROTOCOL_VERSION = "227";
 
     private DungeonTrainNet() {}
 
@@ -98,6 +98,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(ReplayRecordingStatePacket.TYPE, ReplayRecordingStatePacket.STREAM_CODEC, ReplayRecordingStatePacket::handle);
         registrar.playToClient(DebugFlagsPacket.TYPE, DebugFlagsPacket.STREAM_CODEC, DebugFlagsPacket::handle);
         registrar.playToClient(BoardingProgressPacket.TYPE, BoardingProgressPacket.STREAM_CODEC, BoardingProgressPacket::handle);
+        // Craft Level Stats: the level tier a craft would be stamped at, for the result-slot range tooltip.
+        registrar.playToClient(CraftLevelTierPacket.TYPE, CraftLevelTierPacket.STREAM_CODEC, CraftLevelTierPacket::handle);
         // Dev-HUD read-out: is this player's movement being booked as travel on the train, and if
         // not, what is withholding it (an elytra glide outside the train, or simply being off it).
         registrar.playToClient(TravelCreditPacket.TYPE, TravelCreditPacket.STREAM_CODEC, TravelCreditPacket::handle);
