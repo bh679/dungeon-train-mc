@@ -99,3 +99,4 @@ https://authors.curseforge.com:
 | Changing dependencies on a page | Those come from releases and `release.yml`, not from the page |
 | Mentioning hidden DT content | Don't. The changelog spoiler rules apply to store pages too |
 | Editing many pages at once | Show one finished example first, then get a yes on the list of pages |
+| Renaming a mod or changing its summary | Also update its entry in dp-relay's `public/dungeontrain/custom-mods/mods.json` and rebuild the site pages, as in [newmod.md step 10](newmod.md#10-add-it-to-the-website) |
