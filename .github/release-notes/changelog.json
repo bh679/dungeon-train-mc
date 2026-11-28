@@ -40402,6 +40402,23 @@
       "released": true,
       "released_in": "v0.2079.0",
       "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "advancement-credit-fix",
+      "version": "0.2080.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A hidden advancement was not unlocking in some fights. It does now.",
+      "highlights": [],
+      "pr": 2951,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2080.0",
+      "released_at": "2026-11-28T15:01:03Z"
     }
   ]
 }
