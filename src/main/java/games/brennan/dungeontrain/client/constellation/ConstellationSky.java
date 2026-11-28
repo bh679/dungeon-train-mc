@@ -166,14 +166,15 @@ public final class ConstellationSky {
      * @param view the level's camera-rotation matrix ({@code RenderLevelStageEvent#getModelViewMatrix})
      */
     static void drawPatch(Matrix4f view, Matrix4f projection, float alpha, ConstellationEdge edge,
-                          net.minecraft.world.phys.Vec3 cam, float partialTick, int skyRgb) {
+                          net.minecraft.world.phys.Vec3 cam, float partialTick) {
         if (!hasPicture() || alpha <= 0f) {
             ConstellationClouds.frameDone();
             return;
         }
         boolean clouds = ConstellationClouds.markedThisFrame();
-        java.util.List<ConstellationOcclusion.Hidden> hidden = ConstellationOcclusion.hidden();
-        boolean blocks = !hidden.isEmpty() && games.brennan.dungeontrain.client.skybox.SkyboxStencil.isAvailable()
+        java.util.Map<Float, java.util.List<ConstellationOcclusion.Hidden>> fading =
+            fadeSteps(ConstellationBlockFade.levels());
+        boolean blocks = !fading.isEmpty() && games.brennan.dungeontrain.client.skybox.SkyboxStencil.isAvailable()
             && !games.brennan.dungeontrain.client.ShaderCompat.active();
         // By the last level stage the model-view stack may already hold the camera rotation, and other
         // passes may have left their own projection: draw in exactly the level's frame, once.
@@ -186,8 +187,6 @@ public final class ConstellationSky {
         try {
             RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
-            if (blocks) markHidden(view, hidden, cam, partialTick);
-
             GL11.glDepthRange(1.0, 1.0);
 
             // 1. The real sky: depth still at the far plane.
@@ -204,15 +203,21 @@ public final class ConstellationSky {
                 drawDisc(view, alpha, edge.soft());
             }
 
-            // 3. Blocks in a star's way: hidden whole, as sky, with the patch over them.
+            // 3. Blocks in a star's way: hidden whole, the patch solid over them (the rim's fade belongs
+            //    to open sky only). A block crossing over fades by time ({@link ConstellationBlockFade}):
+            //    each fade step is stamped and drawn on its own, at its own strength.
             if (blocks) {
-                GL11.glEnable(GL11.GL_STENCIL_TEST);
-                RenderSystem.stencilMask(0x00);
-                RenderSystem.stencilFunc(GL11.GL_EQUAL, HIDE_BIT, HIDE_BIT);
-                RenderSystem.depthFunc(GL11.GL_GREATER);
-                // Solid over every hidden block: the rim's fade belongs to open sky only.
-                fillDisc(view, alpha, skyRgb, HIDDEN_REACH);
-                drawDisc(view, alpha, false, HIDDEN_REACH);
+                for (java.util.Map.Entry<Float, java.util.List<ConstellationOcclusion.Hidden>> step : fading.entrySet()) {
+                    GL11.glDepthRange(0.0, 1.0);
+                    RenderSystem.depthMask(false);
+                    markHidden(view, step.getValue(), cam, partialTick);
+                    GL11.glDepthRange(1.0, 1.0);
+                    GL11.glEnable(GL11.GL_STENCIL_TEST);
+                    RenderSystem.stencilMask(0x00);
+                    RenderSystem.stencilFunc(GL11.GL_EQUAL, HIDE_BIT, HIDE_BIT);
+                    RenderSystem.depthFunc(GL11.GL_GREATER);
+                    drawDisc(view, alpha * step.getKey(), false, HIDDEN_REACH);
+                }
             }
         } finally {
             RenderSystem.stencilMask(0xFF);
@@ -229,6 +234,24 @@ public final class ConstellationSky {
             modelView.popMatrix();
             RenderSystem.applyModelViewMatrix();
         }
+    }
+
+    /** How finely a crossing block's fade is drawn: this many strengths, each its own stamp and draw. */
+    static final int FADE_STEPS = 12;
+
+    /**
+     * The fading blocks grouped by strength, rounded to one of {@link #FADE_STEPS}: each group is one
+     * stamp-and-draw. Whole ones together under 1.
+     */
+    static java.util.Map<Float, java.util.List<ConstellationOcclusion.Hidden>> fadeSteps(
+            java.util.Map<ConstellationOcclusion.Hidden, Float> levels) {
+        java.util.Map<Float, java.util.List<ConstellationOcclusion.Hidden>> out = new java.util.TreeMap<>();
+        for (java.util.Map.Entry<ConstellationOcclusion.Hidden, Float> e : levels.entrySet()) {
+            float v = Math.round(Math.min(1f, e.getValue()) * FADE_STEPS) / (float) FADE_STEPS;
+            if (v <= 0f) continue;
+            out.computeIfAbsent(v, k -> new java.util.ArrayList<>()).add(e.getKey());
+        }
+        return out;
     }
 
     /**
@@ -297,27 +320,6 @@ public final class ConstellationSky {
         java.util.Map<java.util.UUID, dev.ryanhcode.sable.sublevel.ClientSubLevel> out = new java.util.HashMap<>();
         for (dev.ryanhcode.sable.sublevel.ClientSubLevel sub : container.getAllSubLevels()) out.put(sub.getUniqueId(), sub);
         return out;
-    }
-
-    /** A flat disc of one colour out to {@code outer} radii, full strength to its edge. */
-    private static void fillDisc(Matrix4f view, float alpha, int rgb, float outer) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableCull();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        int color = SkyDomeDraw.argb(alpha, rgb);
-        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
-        for (int s = 0; s < SEGMENTS; s++) {
-            double t0 = 2 * Math.PI * s / SEGMENTS, t1 = 2 * Math.PI * (s + 1) / SEGMENTS;
-            Vector3f c = ConstellationGeometry.point(0f, 0f);
-            Vector3f a = ConstellationGeometry.point(outer * (float) Math.cos(t0), outer * (float) Math.sin(t0));
-            Vector3f b = ConstellationGeometry.point(outer * (float) Math.cos(t1), outer * (float) Math.sin(t1));
-            bb.addVertex(view, c.x, c.y, c.z).setColor(color);
-            bb.addVertex(view, a.x, a.y, a.z).setColor(color);
-            bb.addVertex(view, b.x, b.y, b.z).setColor(color);
-        }
-        BufferUploader.drawWithShader(bb.buildOrThrow());
-        RenderSystem.disableBlend();
     }
 
     /**

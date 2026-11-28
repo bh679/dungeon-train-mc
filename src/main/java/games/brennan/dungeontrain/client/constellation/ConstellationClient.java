@@ -57,8 +57,13 @@ public final class ConstellationClient {
         alpha = FADE.advance(inside, now);
         float dt = lastFrameNanos == 0L ? 0f : Math.min(0.25f, (now - lastFrameNanos) / 1.0e9f);
         lastFrameNanos = now;
-        if (FADE.visible()) ConstellationSky.easeCore(ConstellationOcclusion.reach(), dt);
-        else ConstellationSky.resetCore();
+        if (FADE.visible()) {
+            ConstellationSky.easeCore(ConstellationOcclusion.reach(), dt);
+            ConstellationBlockFade.advance(ConstellationOcclusion.hidden(), dt);
+        } else {
+            ConstellationSky.resetCore();
+            ConstellationBlockFade.clear();
+        }
         // The picture is wanted by an open patch, and by a window block in view (it asks for one).
         if (!FADE.visible() && !ConstellationSky.wanted()) return;
         if (!ConstellationBlocks.active()) {
@@ -77,14 +82,8 @@ public final class ConstellationClient {
         Minecraft mc = Minecraft.getInstance();
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         net.minecraft.world.phys.Vec3 cam = event.getCamera().getPosition();
-        // Hidden blocks are painted as the sky round them: vanilla's sky colour here, now.
-        int sky = 0x78A7FF;
-        if (mc.level != null) {
-            net.minecraft.world.phys.Vec3 c = mc.level.getSkyColor(cam, partial);
-            sky = ((int) (c.x * 255) << 16) | ((int) (c.y * 255) << 8) | (int) (c.z * 255);
-        }
         ConstellationSky.drawPatch(event.getModelViewMatrix(), event.getProjectionMatrix(), alpha,
-            ConstellationEdge.current(), cam, partial, sky);
+            ConstellationEdge.current(), cam, partial);
     }
 
     @SubscribeEvent
@@ -95,6 +94,7 @@ public final class ConstellationClient {
             ConstellationOcclusion.update(mc.level, mc.player.getEyePosition(), ConstellationSky.starDirections());
         } else {
             ConstellationOcclusion.clear();
+            ConstellationBlockFade.clear();
         }
     }
 
