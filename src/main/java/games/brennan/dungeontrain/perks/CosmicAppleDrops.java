@@ -214,7 +214,7 @@ public final class CosmicAppleDrops {
         return false;
     }
 
-    private static List<Container> containersIn(ServerLevel level, BoundingBox box) {
+    static List<Container> containersIn(ServerLevel level, BoundingBox box) {
         List<BlockEntity> found = new ArrayList<>();
         for (int cx = box.minX() >> 4; cx <= box.maxX() >> 4; cx++) {
             for (int cz = box.minZ() >> 4; cz <= box.maxZ() >> 4; cz++) {
