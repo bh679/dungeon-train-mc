@@ -2,8 +2,8 @@
   "locale": "ro_ro",
   "name": "IA fără verificare umană",
   "human_reviewed": false,
-  "total_keys": 6744,
-  "ai_authored": 6744,
-  "ai_unreviewed": 6744,
-  "counted_keys": 4681
+  "total_keys": 6793,
+  "ai_authored": 6793,
+  "ai_unreviewed": 6793,
+  "counted_keys": 4730
 }

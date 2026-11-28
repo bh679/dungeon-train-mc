@@ -398,6 +398,7 @@ public final class PerksScreen extends Screen {
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
         java.util.function.ToDoubleFunction<PerkTree.Perk> perkFade = p -> layer(stageOf(p, snap), fade);
 
+        classesList.reveal(snap.unlocks());
         int cardRight = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
         String listHover = classesList.classAt(mouseX, mouseY);

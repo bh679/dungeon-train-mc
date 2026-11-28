@@ -728,6 +728,12 @@ public class DungeonTrain {
                 LOGGER.warn("Zombified backpack lock unavailable ({}); the backpack stays usable while "
                         + "Zombified.", t.toString());
             }
+            try {
+                ZombifiedBackpackLockBridge.installWeaknessException();
+            } catch (Throwable t) {
+                LOGGER.warn("Zombified Weakness exception unavailable ({}); Weakness items stay locked in the "
+                        + "backpack.", t.toString());
+            }
         }
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob

@@ -33,6 +33,7 @@ public final class RestockVillager {
     public static void declare() {
         BuiltPerks.markBuilt(ID);
         PerkStats.register(ID, "restocks", r -> PerkStats.num(charges(r), Unit.PLAIN));
+        RerollTrades.declare();
     }
 
     /** Restocks a player of this rank gets on each villager this life. */

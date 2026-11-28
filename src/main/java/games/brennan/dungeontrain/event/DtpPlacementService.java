@@ -211,6 +211,20 @@ public final class DtpPlacementService {
         });
     }
 
+    /**
+     * The landing line, with the depth the player now reads at: the carriage number under them, their
+     * travelled count and the carriage's position tier. Bug logs and the relocation check read it.
+     */
+    private static void logLanded(ServerPlayer player, int relands) {
+        int pIdx = games.brennan.playermob.compat.TrainConfinement.carriageIndex(player);
+        int travelled = player.getData(games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get())
+            .travelledCarriageIndex();
+        boolean onCarriage = pIdx != games.brennan.playermob.compat.TrainConfinement.NO_CARRIAGE;
+        LOGGER.info("[DungeonTrain] /dtp landing confirmed for {} after {} re-landing(s): carriage pIdx={} travelled={} positionTier={}",
+            player.getName().getString(), relands, onCarriage ? pIdx : "none", travelled,
+            onCarriage ? games.brennan.dungeontrain.difficulty.DifficultyProgression.positionTier(pIdx) : "-");
+    }
+
     // ---- LANDING ----------------------------------------------------------------------------
 
     /** @return the next state, or {@code null} once the request is finished. */
@@ -222,8 +236,7 @@ public final class DtpPlacementService {
             case KEEP_WATCHING:
                 return pending.withTicks(ticks);
             case LANDED:
-                LOGGER.info("[DungeonTrain] /dtp landing confirmed for {} after {} re-landing(s)",
-                    player.getName().getString(), pending.relands());
+                logLanded(player, pending.relands());
                 return null;
             case RELAND:
                 return reland(player, pending, data);

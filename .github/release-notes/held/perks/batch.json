@@ -38,15 +38,23 @@
     2849,
     2910,
     2913,
-    2917
+    2917,
+    2919,
+    2920,
+    2922,
+    2925,
+    2926
   ],
   "entries": [
     "alchemist-perks",
+    "chest-sense-debuff-aura-reroll-trades",
     "cosmic-apple-every-level",
     "cosmic-apples",
     "crafter-enchanting-perks",
     "death-kit-arrives-equipped",
     "death-perks-next-after-last-point",
+    "favourite-author-perk",
+    "hidden-perk-classes",
     "knight-combat-perks",
     "lover-perks",
     "nap-sky-past-life-perks",
@@ -70,12 +78,14 @@
     "perks-tier-one",
     "perks-tree-v18",
     "perks-unlock-after-death",
+    "re-enchant-perk",
     "tank-hoarder-speedster-builder-perks",
     "trader-perks-reduced-reduction-restock",
     "tribute-room-bigger-tv",
     "tribute-room-pause-reboard",
     "tribute-rooms",
     "tribute-tv-button",
-    "unlock-tab-before-perk-full"
+    "unlock-tab-before-perk-full",
+    "warlock-perks"
   ]
 }

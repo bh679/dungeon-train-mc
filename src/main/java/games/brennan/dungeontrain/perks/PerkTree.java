@@ -22,6 +22,10 @@ import java.util.function.Predicate;
  * active point goes in along a path of solid or dashed lines through perks holding active points this
  * life ({@link #activeReachable}). Perks not built yet ("Coming soon") count as holding points on
  * both. Lines count either way round.</p>
+ *
+ * <p>A class whose tier 1 perk hangs off the Engine by a <b>dashed</b> line only ({@link #gatedT1}) is
+ * hidden until it is revealed ({@link #classRevealed}): until a tier 1 perk joined to that one by a line
+ * is unlocked. Once revealed, its dashed Engine line carries unlock points like a solid one.</p>
  */
 public final class PerkTree {
 
@@ -134,6 +138,45 @@ public final class PerkTree {
     }
 
     /**
+     * A tier 1 perk joined to the Engine by a dashed line and no solid one: its class stays hidden until
+     * revealed ({@link #classRevealed}). The editor's dashed Engine line is the whole marker.
+     */
+    public boolean gatedT1(Perk p) {
+        if (p == null || p.isRoot() || p.tier() != 1) return false;
+        boolean dashed = false;
+        for (Link l : linksOf(p.id())) {
+            if (!ROOT.equals(l.other(p.id()))) continue;
+            if (l.kind() == LinkKind.REQ) return false;
+            dashed = true;
+        }
+        return dashed;
+    }
+
+    /**
+     * Whether the class shows and can be unlocked into: it has no {@linkplain #gatedT1 gated} tier 1 perk,
+     * or that perk is unlocked, or a tier 1 perk joined to it by any line is. Unknown classes are revealed.
+     */
+    public boolean classRevealed(String classId, Predicate<String> unlocked) {
+        for (Perk p : perksOf(classId)) {
+            if (!gatedT1(p)) continue;
+            if (unlocked.test(p.id())) return true;
+            for (Link l : linksOf(p.id())) {
+                Perk o = byId.get(l.other(p.id()));
+                if (o != null && !o.isRoot() && o.tier() == 1 && unlocked.test(o.id())) return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /** A dashed Engine line to a gated tier 1 perk whose class is revealed: it carries like a solid line. */
+    private boolean openGate(Link l, Predicate<String> unlocked) {
+        if (l.kind() != LinkKind.CROSS || !l.touches(ROOT)) return false;
+        Perk p = byId.get(l.other(ROOT));
+        return gatedT1(p) && classRevealed(p.cls(), unlocked);
+    }
+
+    /**
      * Whether {@code id} may be unlocked now, given which perks are unlocked. The Engine itself is
      * never unlockable; an unknown id is not reachable.
      */
@@ -157,7 +200,7 @@ public final class PerkTree {
         while (!queue.isEmpty()) {
             String cur = queue.poll();
             for (Link l : linksOf(cur)) {
-                if (l.kind() != LinkKind.REQ) continue;
+                if (l.kind() != LinkKind.REQ && !openGate(l, unlocked)) continue;
                 String other = l.other(cur);
                 if (ROOT.equals(other) || unlocked.test(other)) return true;
                 if (passThrough.test(other) && seen.add(other)) queue.add(other);
@@ -202,7 +245,7 @@ public final class PerkTree {
         while (!queue.isEmpty()) {
             String cur = queue.poll();
             for (Link l : linksOf(cur)) {
-                if (!carries(l, dashesCount)) continue;
+                if (!carries(l, dashesCount) && !(ROOT.equals(cur) && openGate(l, hold))) continue;
                 String other = l.other(cur);
                 if (other.equals(id)) return true;
                 if (!byId.containsKey(other) || carried.contains(other)) continue;

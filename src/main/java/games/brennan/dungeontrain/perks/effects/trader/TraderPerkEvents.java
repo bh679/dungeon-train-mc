@@ -69,7 +69,8 @@ public final class TraderPerkEvents {
         }
     }
 
-    private static Optional<Villager> tradingVillager(ServerPlayer player) {
+    /** The villager {@code player} is trading with, if any. Shared with {@link RerollTradesEvents}. */
+    static Optional<Villager> tradingVillager(ServerPlayer player) {
         List<Villager> nearby = player.serverLevel().getEntitiesOfClass(Villager.class,
             player.getBoundingBox().inflate(TRADER_SEARCH_RADIUS),
             v -> v.isAlive() && v.getTradingPlayer() == player);

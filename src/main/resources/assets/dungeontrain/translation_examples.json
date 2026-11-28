@@ -18525,6 +18525,20 @@
       ]
     }
   },
+  "gui.dungeontrain.follows.active": {
+    "1": { "label": "how many followed players are active (one per perk point)", "examples": ["2", "3"] },
+    "2": { "label": "how many players are followed in all", "examples": ["3", "5"] }
+  },
+  "gui.dungeontrain.follows.button": {
+    "1": { "label": "how many players are followed in all", "examples": ["3", "5"] },
+    "2": { "label": "how many of them are active", "examples": ["2", "3"] }
+  },
+  "gui.dungeontrain.follows.found": {
+    "1": { "label": "how many of that player's books and photos were found this life", "examples": ["0", "4"] }
+  },
+  "gui.dungeontrain.follows.looking": {
+    "1": { "label": "the player name being looked up", "examples": ["Wren", "Steve_Writes"] }
+  },
   "gui.dungeontrain.perks.per_point": {
     "1": {
       "label": "what one point in the perk does",
@@ -18615,6 +18629,31 @@
       "examples": [
         "3",
         "10"
+      ]
+    }
+  },
+  "perk.dungeontrain.reroll_trades.tooltip_paid": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "emeralds the next reroll costs (doubles with each reroll of the same villager)",
+      "examples": [
+        "1",
+        "16"
+      ]
+    }
+  },
+  "perk.dungeontrain.reroll_trades.tooltip_free": {
+    "1": {
+      "label": "rerolls the player still has left with this villager this life",
+      "examples": [
+        "1",
+        "9"
       ]
     }
   },
@@ -19026,6 +19065,22 @@
       ]
     }
   },
+  "item.dungeontrain.reenchanted": {
+    "1": {
+      "label": "times this item has been re-enchanted",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "re-enchants allowed per item at the viewer's rank",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.perks.stat.works_on.groups": {
     "1": {
       "label": "how many enchantment groups (3 to 9)",
@@ -19052,6 +19107,15 @@
     }
   },
   "gui.dungeontrain.perks.aura.buff.level": {
+    "1": {
+      "label": "an effect level as a Roman numeral",
+      "examples": [
+        "II",
+        "III"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.aura.debuff.level": {
     "1": {
       "label": "an effect level as a Roman numeral",
       "examples": [
@@ -19605,5 +19669,30 @@
     "3": { "label": "yes or no (English word)", "examples": ["yes", "no"] },
     "4": { "label": "a visit count, 0 for off", "examples": ["3", "0"] },
     "5": { "label": "a spawn weight number", "examples": ["4", "0"] }
+  },
+  "gui.dungeontrain.warlock.ready_in": {
+    "1": { "label": "a time left, in seconds", "examples": ["12s", "3s"] }
+  },
+  "gui.dungeontrain.warlock.convert.done": {
+    "1": { "label": "a mob's name", "examples": ["Zombie", "Skeleton"] }
+  },
+  "gui.dungeontrain.warlock.convert.immune": {
+    "1": { "label": "a mob's name", "examples": ["Wither", "Steve"] }
+  },
+  "gui.dungeontrain.warlock.call.playermob": {
+    "1": { "label": "a PlayerMob's name", "examples": ["Alex", "Notch"] }
+  },
+  "gui.dungeontrain.warlock.call.request": {
+    "1": { "label": "the calling player's name", "examples": ["Brennan", "Alex"] },
+    "2": { "label": "the clickable [Accept] button", "examples": ["[Accept]"] }
+  },
+  "gui.dungeontrain.warlock.call.sent": {
+    "1": { "label": "a player's name", "examples": ["Brennan", "Alex"] }
+  },
+  "gui.dungeontrain.warlock.call.arrived": {
+    "1": { "label": "a player's or PlayerMob's name", "examples": ["Brennan", "Alex"] }
+  },
+  "gui.dungeontrain.warlock.call.refused": {
+    "1": { "label": "a PlayerMob's name", "examples": ["Alex", "Notch"] }
   }
 }

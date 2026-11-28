@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.perks.effects.archivist;
 import games.brennan.dungeontrain.perks.BuiltPerks;
 import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkStats.Unit;
+import games.brennan.dungeontrain.perks.effects.archivist.follow.FavouriteAuthor;
+import games.brennan.dungeontrain.perks.effects.archivist.follow.FollowsClientState;
 
 /**
  * The Archivist class's tier 2/3 perk ids (kebab-case slugs of the tree's perk names). Rank is read
@@ -11,6 +13,8 @@ import games.brennan.dungeontrain.perks.PerkStats.Unit;
  */
 public final class ArchivistPerks {
 
+    /** Tier 2: follow players to find more of their books and photos ({@code follow/FavouriteAuthor}). */
+    public static final String FAV_AUTHOR = "fav-author";
     /** Tier 2: the Live Eye cannot be forcibly taken for longer ({@link LiveEyeSafeDuration}). */
     public static final String LIVE_EYE_SAFE_DURATION = "live-eye-safe-duration";
     /** Tier 3: takeover and book votes count for more ({@link VoteWeight}). */
@@ -28,7 +32,12 @@ public final class ArchivistPerks {
 
     /** Marks the built Archivist perks and registers their menu stats. */
     public static void declare() {
-        BuiltPerks.markBuilt(LIVE_EYE_SAFE_DURATION, VOTE_WEIGHT, EXTRA_CAM_SHOTS);
+        BuiltPerks.markBuilt(LIVE_EYE_SAFE_DURATION, VOTE_WEIGHT, EXTRA_CAM_SHOTS, FAV_AUTHOR);
+        // Favourite Author: r follow slots, and the share at the follows r makes active. The share reads the
+        // client's follow count (the card is client-only); the +2% per author is never written on the card.
+        PerkStats.register(FAV_AUTHOR, "authors", r -> PerkStats.num(r, Unit.PLAIN));
+        PerkStats.register(FAV_AUTHOR, "their_share", r -> PerkStats.num(Math.round(FavouriteAuthor.cardShare(
+            FavouriteAuthor.activeCount(FollowsClientState.followCount(), r)) * 100), Unit.PERCENT));
         PerkStats.register(LIVE_EYE_SAFE_DURATION, "protected",
             r -> PerkStats.num(protectedMinutes(r), Unit.MINUTES));
         PerkStats.register(LIVE_EYE_SAFE_DURATION, "community_vote",

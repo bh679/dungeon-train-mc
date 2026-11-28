@@ -189,7 +189,8 @@ public final class EditorPlotPanelInputHandler {
             case BUTTON_ENTER_INSIDE -> dispatchAction(entry, EditorPlotActionPacket.Action.ENTER_INSIDE);
             case FRAME_GROUND_HELD -> runFrame(entry, "ground", "held");
             case FRAME_GROUND_EDIT -> runFrame(entry, "ground", "edit");
-            case FRAME_DIM_BEDROCK, FRAME_DIM_VOID, FRAME_DIM_WORLD_BORDER, FRAME_DIM_ENDLESS_OPEN -> runFrame(entry,
+            case FRAME_DIM_BEDROCK, FRAME_DIM_VOID, FRAME_DIM_WORLD_BORDER, FRAME_DIM_ENDLESS_OPEN,
+                 FRAME_DIM_PLANK_BRIDGE -> runFrame(entry,
                 "dimension", EditorPlotLabelsRenderer.frameDimensionToken(hit.cell()));
             case FRAME_PHASES -> openDrillIn(new games.brennan.dungeontrain.client.menu.PhaseSelectScreen(
                 PlotCategory.CHUNK_FRAMES, entry.modelId(), entry.modelName()));

@@ -197,6 +197,7 @@ public final class BookVoteClientEvents {
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
         BookBoostControl.open(stack);
+        BookFollowControl.open(stack);
         boolean hasVotes = BookVoteCountsTag.has(stack);
         votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
         votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
@@ -288,6 +289,7 @@ public final class BookVoteClientEvents {
             renderVoteCounts(gfx, font);
         }
         renderStar(gfx, font, mouseX, mouseY);
+        renderFollow(gfx, font, mouseX, mouseY);
 
         renderAction(gfx, font, centerX, mouseX, mouseY);
         BookBoostConfirm.render(gfx, font, screen.width, screen.height, event.getMouseX(), event.getMouseY());
@@ -302,6 +304,13 @@ public final class BookVoteClientEvents {
         if (!starShown()) return;
         BookBoostControl.render(gfx, font, moderation.isOwn(), starX(), buttonsY(), labelsY(), mouseX, mouseY);
         BookBoostControl.renderWallet(gfx, font, moderation.isOwn(), bookLeft() + WALLET_X, bookTop() + WALLET_Y, mouseX, mouseY);
+    }
+
+    /** Favourite Author's Follow, on the report row left of the report icon (under the star, when it shows). */
+    private static void renderFollow(GuiGraphics gfx, Font font, int mouseX, int mouseY) {
+        if (!BookFollowControl.shown(bookType, bookId, moderation.isOwn())) return;
+        BookFollowControl.render(gfx, font, bookId, starX() + BUTTON_SIZE / 2,
+            reportY() + (BUTTON_SIZE - font.lineHeight) / 2, mouseX, mouseY);
     }
 
     private static boolean starShown() {
@@ -507,6 +516,12 @@ public final class BookVoteClientEvents {
             event.setCanceled(true);
             clickSound();
             reportArmed = false;
+            return;
+        }
+        if (BookFollowControl.shown(bookType, bookId, moderation.isOwn())
+                && BookFollowControl.click(mx, my, bookId)) {
+            event.setCanceled(true);
+            clickSound();
             return;
         }
         // The thumbs are not drawn on your own book, so they must not be clickable either — an
@@ -809,6 +824,7 @@ public final class BookVoteClientEvents {
         isPrivate = false;
         protested = false;
         BookBoostControl.reset();
+        BookFollowControl.reset();
         votesUp = -1;
         votesDown = -1;
     }

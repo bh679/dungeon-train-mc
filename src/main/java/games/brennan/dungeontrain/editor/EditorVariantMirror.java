@@ -175,7 +175,7 @@ public final class EditorVariantMirror {
      */
     private static void stampMirrorBase(ServerLevel level, BlockPos tgtWorld,
                                         net.minecraft.world.level.block.state.BlockState state) {
-        if (VariantLiquids.isLiquid(state)) return;
+        if (VariantLiquids.writesSectionLocal(state)) return;
         // This write cascades (plain setBlockSilent); the guard keeps an observer facing the
         // reflected cell from pulsing on what is DT's own stamp (ObserverBlockStampMixin).
         CarriageStampGuard.run(() -> SilentBlockOps.setBlockSilent(level, tgtWorld, state));

@@ -503,8 +503,8 @@
    "cls": "cwarlock",
    "name": "Teleport Player",
    "desc": "Teleport a player to you",
-   "x": 603.2,
-   "y": 374.0,
+   "x": 581.1,
+   "y": 365.0,
    "tier": 2
   },
   {
@@ -521,8 +521,8 @@
    "cls": "calchemist",
    "name": "Standless Brewing",
    "desc": "Your own brewing stand, opened from your inventory",
-   "x": 581.4,
-   "y": 328.6,
+   "x": 559.2,
+   "y": 318.1,
    "tier": 2
   },
   {
@@ -555,8 +555,8 @@
   {
    "id": "fav-author",
    "cls": "c0",
-   "name": "Fav Author",
-   "desc": "Subscribe to an author to get more of their books / photos. More points, more authors",
+   "name": "Favourite Author",
+   "desc": "Follow players to find more of their books and photos.",
    "x": 431.3,
    "y": 194.2,
    "tier": 2
@@ -608,7 +608,7 @@
   {
    "a": "root",
    "b": "craft-level-stats",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": false
   },
   {
@@ -884,7 +884,7 @@
   {
    "a": "drift-chance",
    "b": "root",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": true
   },
   {
@@ -1052,7 +1052,7 @@
   {
    "a": "root",
    "b": "throwables",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": false
   },
   {
@@ -1160,7 +1160,7 @@
   {
    "a": "root",
    "b": "stack-potions",
-   "kind": "req",
+   "kind": "cross",
    "oneWay": false
   },
   {

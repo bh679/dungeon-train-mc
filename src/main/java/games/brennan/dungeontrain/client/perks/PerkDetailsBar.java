@@ -60,6 +60,10 @@ final class PerkDetailsBar {
     /** Where the mouse was last, for the Unlock tab's stat preview. */
     private double mouseX = -1, mouseY = -1;
     private Button activateButton;
+    /** Teleport Player's Call a player button, or null. */
+    private Button callButton;
+    private static final int CALL_W = 78;
+    private static final String CALL_KEY = "gui.dungeontrain.warlock.call.";
     /** The death screen's menu: Unlock only, no Activate and no Active Points. */
     private boolean unlockOnly;
     private boolean noUnlock;
@@ -120,8 +124,46 @@ final class PerkDetailsBar {
 
     /** The buttons, rebuilt when the perk or its state changes; empty while nothing is shown. */
     List<Button> buttons() {
-        if (unlockButton == null) return activateButton == null ? List.of() : List.of(activateButton);
-        return activateButton == null ? List.of(unlockButton) : List.of(unlockButton, activateButton);
+        List<Button> out = new java.util.ArrayList<>(3);
+        if (unlockButton != null) out.add(unlockButton);
+        if (activateButton != null) out.add(activateButton);
+        if (callButton != null) out.add(callButton);
+        return out;
+    }
+
+    /**
+     * Teleport Player's Call a player button: shown with points in the perk, outside the death menu.
+     * Greyed, saying why, while there is no one to call or the perk is cooling down.
+     */
+    private Button callButton(PerkTree.Perk shown, PerkMenuSnapshot snap) {
+        if (!showsCall(shown, snap)) return null;
+        int bx = width - PAD - (BUTTON_W + GAP) * buttonCount() - CALL_W, by = top + (HEIGHT - BUTTON_H) / 2;
+        Button button = Button.builder(Component.translatable(CALL_KEY + "button"),
+            b -> games.brennan.dungeontrain.client.warlock.TeleportCallClient.open())
+            .bounds(bx, by, CALL_W, BUTTON_H).build();
+        int wait = games.brennan.dungeontrain.client.warlock.TeleportCallClient.cooldownSeconds();
+        boolean noOne = games.brennan.dungeontrain.client.warlock.TeleportCallClient.listed()
+            && games.brennan.dungeontrain.client.warlock.TeleportCallClient.entries().isEmpty();
+        if (noOne || wait > 0) {
+            button.active = false;
+            button.setTooltip(Tooltip.create(noOne ? Component.translatable(CALL_KEY + "no_one")
+                : Component.translatable("gui.dungeontrain.warlock.ready_in", Component.translatable("gui.dungeontrain.perks.stat.unit.seconds", wait))));
+        }
+        return button;
+    }
+
+    private boolean showsCall(PerkTree.Perk shown, PerkMenuSnapshot snap) {
+        return shown != null && !unlockOnly && !noUnlock
+            && games.brennan.dungeontrain.perks.effects.warlock.WarlockPerks.TELEPORT_PLAYER.equals(shown.id())
+            && PerkRegistry.isBuilt(shown.id()) && snap.points(shown.id()) > 0;
+    }
+
+    /** What the call button shows, so the bar rebuilds it when that changes; keeps its list fresh meanwhile. */
+    private String callKey(PerkTree.Perk shown, PerkMenuSnapshot snap) {
+        if (!showsCall(shown, snap)) return "";
+        games.brennan.dungeontrain.client.warlock.TeleportCallClient.keepFresh();
+        return games.brennan.dungeontrain.client.warlock.TeleportCallClient.version() + ":"
+            + games.brennan.dungeontrain.client.warlock.TeleportCallClient.cooldownSeconds();
     }
 
     /** How many buttons sit at the right of the bar: Activate, unless unlocking only (Unlock is the tab above). */
@@ -147,8 +189,10 @@ final class PerkDetailsBar {
         classShown = shown == null ? hoveredClass : null;
         String key = shown == null ? "" : shown.id() + "|" + isLocked + "|" + snap.unlockLevel(shown.id()) + "|" + snap.points(shown.id())
             + "|" + snap.unlockPoints() + "|" + snap.activePoints() + "|" + screenW + "x" + screenH;
+        key += "|" + callKey(shown, snap);
         if (key.equals(builtFor)) return false;
         builtFor = key;
+        callButton = callButton(shown, snap);
         if (shown == null || shown.isRoot() || noUnlock) {
             unlockButton = null;
             activateButton = null;
@@ -383,6 +427,9 @@ final class PerkDetailsBar {
         g.drawString(font, Component.translatable(KEY + "engine.apples"), tx, y3, ((int) (a * 0.85) << 24) | (SkyPalette.FG & 0xFFFFFF), false);
     }
 
+    /** Favourite Author's "Following N (M active)" button, where it was last drawn; null when not shown. */
+    private FollowingChip.Hit followingHit;
+
     void render(GuiGraphics g, PerkMenuSnapshot snap, double fade) {
         int a = (int) (fade * 255);
         for (Button b : buttons()) b.setAlpha((float) fade);
@@ -423,7 +470,7 @@ final class PerkDetailsBar {
 
         // top row: the name, the points graph across the row, then the class and tier
         int x = PAD + STRIPE, y = top + 5;
-        int contentRight = width - PAD - (BUTTON_W + GAP) * buttonCount() - 6;
+        int contentRight = width - PAD - (BUTTON_W + GAP) * buttonCount() - (callButton != null ? CALL_W + GAP : 0) - 6;
         String name = text.name(p);
         g.drawString(font, name, x, y, (a << 24) | (colour & 0xFFFFFF), true);
         String cls = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("").toUpperCase(Locale.ROOT)
@@ -480,7 +527,16 @@ final class PerkDetailsBar {
         // the chips stop short of the centred "why not" line at the foot of the bar, shrinking to fit
         int chipRight = unlockReason == null ? contentRight
             : Math.min(contentRight, (width - font.width(unlockReason)) / 2 - CHIP_GAP);
-        if (!stats.isEmpty()) renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
+        int chipsEnd = stats.isEmpty() ? x
+            : renderStats(g, stats, statPoints, unlockPreview(p, snap), x, chipY, chipRight, a);
+        followingHit = null;
+        if (FollowingChip.shows(p.id(), snap.unlockLevel(p.id()))) {
+            // on the free line under the description when there is one, else after the chips
+            boolean lineFree = shown < room;
+            int fy = lineFree ? dy + shown * LINE - 1 : chipY;
+            followingHit = FollowingChip.render(g, font, lineFree ? x : chipsEnd, fy, lineFree ? contentRight : chipRight,
+                CHIP_H, CHIP_PAD, a, mouseX, mouseY);
+        }
         if (aura != null) {
             AuraChips.render(g, font, aura, statPoints, previewPoints(unlockPreview(p, snap)), x, chipY, chipRight,
                 CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG, SkyPalette.GOLD, a, !unlockOnly);
@@ -500,10 +556,10 @@ final class PerkDetailsBar {
      * The stat chips at the perk's points now; with a graph block or the Unlock tab hovered, each previews
      * that value in gold ({@link StatChips}).
      */
-    private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int unlockPreview, int x, int y, int right,
-                             int a) {
+    private int renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int unlockPreview, int x, int y, int right,
+                            int a) {
         int preview = previewPoints(unlockPreview);
-        StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
+        return StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
             SkyPalette.FG, SkyPalette.GOLD, a);
     }
 
@@ -539,6 +595,10 @@ final class PerkDetailsBar {
      */
     boolean click(double mx, double my) {
         if (perk != null && AuraChips.click(perk.id(), mx, my)) return true;
+        if (followingHit != null && followingHit.contains(mx, my)) {
+            FollowingChip.open();
+            return true;
+        }
         if (unlockOnly || !overGraph(mx, my)) return false;
         PointsGraph.Kind k = graph.at(graphW, mx - graphX);
         if (k == PointsGraph.Kind.LOCKED || k == null && (!graph.layout(graphW).bar() || graph.open == 0)) return false;

@@ -57,8 +57,9 @@ public final class PlayerMobBehindSpawner {
         ServerPlayer player = pickRidingPlayer(level, groups, rng);
         if (player == null) return;
         int pIdx = TrainConfinement.carriageIndex(player);
-        if (pIdx == TrainConfinement.NO_CARRIAGE || pIdx == 0) return;   // not riding, or origin (no travel sign)
-        int travelDir = Integer.signum(pIdx);              // the player's direction of travel
+        if (pIdx == TrainConfinement.NO_CARRIAGE) return;  // not riding
+        int travelDir = travelDirection(player);           // the player's direction of travel
+        if (travelDir == 0) return;                        // no travel yet: no sign
 
         Trains.Carriage playerGroup = groupContaining(groups, player.getX(), player.getY(), player.getZ());
         if (playerGroup == null) return;
@@ -93,12 +94,22 @@ public final class PlayerMobBehindSpawner {
             percent, player.getGameProfile().getName(), pIdx, travelDir, targetPIdx, floorPos, ok ? "spawned" : "FAILED");
     }
 
-    /** A random player riding this train (valid, non-origin carriage index), or null if none. */
+    /**
+     * The way {@code player} has travelled this life: the sign of their own signed carriage count,
+     * 0 before they have moved. Not the carriage number's sign: after a nap wake the numbering continues
+     * from the bed's carriage, so the number no longer says which way they came.
+     */
+    private static int travelDirection(ServerPlayer player) {
+        return Integer.signum(player.getData(
+            games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex());
+    }
+
+    /** A random player riding this train who has travelled this life, or null if none. */
     private static ServerPlayer pickRidingPlayer(ServerLevel level, List<Trains.Carriage> groups, RandomSource rng) {
         List<ServerPlayer> riders = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             int idx = TrainConfinement.carriageIndex(p);
-            if (idx == TrainConfinement.NO_CARRIAGE || idx == 0) continue;
+            if (idx == TrainConfinement.NO_CARRIAGE || travelDirection(p) == 0) continue;
             if (groupContaining(groups, p.getX(), p.getY(), p.getZ()) != null) {
                 riders.add(p);
             }

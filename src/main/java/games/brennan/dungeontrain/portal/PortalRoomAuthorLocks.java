@@ -370,7 +370,10 @@ public final class PortalRoomAuthorLocks {
         List<BookAuthorsClient.Author> candidates = eligible(cached.page(), books, applyRange);
         Set<String> rejected = REJECTED.getOrDefault(key, Set.of());
         synchronized (PortalRoomAuthorLocks.class) {
-            return choose(candidates, rejected, RECENT, player.getRandom()::nextInt);
+            // Favourite Author: the holder's active followed authors come first when the page has them.
+            Set<String> preferred = Set.copyOf(
+                games.brennan.dungeontrain.perks.effects.archivist.follow.FollowService.activeTokens(player));
+            return choose(candidates, rejected, RECENT, preferred, player.getRandom()::nextInt);
         }
     }
 
@@ -440,11 +443,28 @@ public final class PortalRoomAuthorLocks {
                                                      Set<String> rejected,
                                                      java.util.Collection<String> recent,
                                                      java.util.function.IntUnaryOperator randomIndex) {
+        return choose(candidates, rejected, recent, Set.of(), randomIndex);
+    }
+
+    /**
+     * {@link #choose} with {@code preferred} author tokens (Favourite Author's active follows): when any
+     * untried candidate is preferred, the pick is made among those alone, with the same soft recency rule.
+     */
+    static Optional<BookAuthorsClient.Author> choose(List<BookAuthorsClient.Author> candidates,
+                                                     Set<String> rejected,
+                                                     java.util.Collection<String> recent,
+                                                     Set<String> preferred,
+                                                     java.util.function.IntUnaryOperator randomIndex) {
         List<BookAuthorsClient.Author> eligible = new ArrayList<>();
         for (BookAuthorsClient.Author a : candidates) {
             if (!rejected.contains(a.token())) eligible.add(a);
         }
         if (eligible.isEmpty()) return Optional.empty();
+        List<BookAuthorsClient.Author> followed = new ArrayList<>();
+        for (BookAuthorsClient.Author a : eligible) {
+            if (preferred.contains(a.token())) followed.add(a);
+        }
+        if (!followed.isEmpty()) eligible = followed;
         List<BookAuthorsClient.Author> fresh = new ArrayList<>();
         for (BookAuthorsClient.Author a : eligible) {
             if (!recent.contains(a.token())) fresh.add(a);

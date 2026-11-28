@@ -25,6 +25,11 @@
     {
       "id": "market",
       "weight": 5
+    },
+    {
+      "id": "market_dead",
+      "weight": 1,
+      "minLevel": 2
     }
   ]
 }

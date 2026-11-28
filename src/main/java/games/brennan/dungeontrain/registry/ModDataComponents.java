@@ -45,6 +45,15 @@ public final class ModDataComponents {
         COMPONENTS.registerComponentType("drift_gift_paid",
             b -> b.persistent(DriftGiftTag.CODEC));
 
+    /**
+     * Re-enchant (Crafter): how many times this item has been re-enchanted on a table, checked against
+     * the holder's {@code 1 + rank / 5} and shown in its tooltip. Persistent, synced so the client's
+     * table and tooltip agree with the server. See {@code perks/effects/crafter/Reenchant}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> REENCHANTS =
+        COMPONENTS.registerComponentType("reenchants",
+            b -> b.persistent(Codec.intRange(0, Integer.MAX_VALUE)).networkSynchronized(ByteBufCodecs.VAR_INT));
+
     private ModDataComponents() {}
 
     public static void register(IEventBus modBus) {

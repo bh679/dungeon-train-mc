@@ -240,6 +240,23 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /** Favourite Author: the relay's list of followed authors, mirrored; {@code copyOnDeath}, it outlives lives. */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.effects.archivist.follow.AuthorFollows>> PERK_FOLLOWS =
+        TYPES.register("perk_follows",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.effects.archivist.follow.AuthorFollows>builder(games.brennan.dungeontrain.perks.effects.archivist.follow.AuthorFollows::empty)
+                .serialize(games.brennan.dungeontrain.perks.effects.archivist.follow.AuthorFollows.CODEC, f -> !f.isEmpty())
+                .copyOnDeath()
+                .build()
+        );
+
+    /** Favourite Author: books and photos found this life per author (per life, not copied). */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.effects.archivist.follow.FollowFinds>> PERK_FOLLOW_FINDS =
+        TYPES.register("perk_follow_finds",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.effects.archivist.follow.FollowFinds>builder(games.brennan.dungeontrain.perks.effects.archivist.follow.FollowFinds::empty)
+                .serialize(games.brennan.dungeontrain.perks.effects.archivist.follow.FollowFinds.CODEC, f -> !f.isEmpty())
+                .build()
+        );
+
     /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it

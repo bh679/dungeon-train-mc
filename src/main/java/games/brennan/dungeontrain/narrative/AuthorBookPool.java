@@ -59,8 +59,11 @@ public final class AuthorBookPool {
      * How many authors' catalogues are kept at once. A player meets one room at a time and rooms
      * retire behind them, so this only has to cover the handful in flight; past it the
      * least-recently-fetched is dropped and would be re-fetched if that room came back.
+     *
+     * <p>Favourite Author also reads followed authors' catalogues from here, one per active follow, so
+     * the bound leaves room for a few players' follows beside the rooms in flight.</p>
      */
-    static final int MAX_CATALOGUES = 8;
+    static final int MAX_CATALOGUES = 32;
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1) // see BookAuthorsClient — h2c would break local testing

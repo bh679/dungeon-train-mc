@@ -23,6 +23,7 @@ from pathlib import Path
 
 OVERRIDES = {
     "Stackable BookQill": "stackable-book-quill",
+    "Stackable Book and Quill": "stackable-book-quill",  # the game's name, when the local editor re-saves tree.json
     "Gift liveEye": "gift-live-eye",
     "Shared Arua": "aura",
     "Shared Aura": "aura",
@@ -35,6 +36,7 @@ NAMES = {
     "stackable-book-quill": "Stackable Book and Quill",
     "aura": "Aura",
     "share-hearts": "Share Hearts",
+    "fav-author": "Favourite Author",
 }
 ROOT = "root"
 CENTRE = 400.0

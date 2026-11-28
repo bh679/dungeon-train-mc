@@ -29,6 +29,10 @@
     {
       "id": "largerlibrary",
       "weight": 1
+    },
+    {
+      "id": "librarypark",
+      "weight": 1
     }
   ]
 }

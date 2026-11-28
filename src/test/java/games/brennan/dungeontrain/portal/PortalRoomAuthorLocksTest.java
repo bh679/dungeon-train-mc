@@ -264,4 +264,20 @@ class PortalRoomAuthorLocksTest {
             assertEquals(THREE.get(i).token(), pick.orElseThrow().token());
         }
     }
+
+    @Test
+    @DisplayName("Favourite Author: an untried followed author is chosen over the rest")
+    void followedAuthorsComeFirst() {
+        Optional<BookAuthorsClient.Author> pick =
+            PortalRoomAuthorLocks.choose(THREE, Set.of(), List.of(), Set.of("c"), FIRST);
+        assertEquals("c", pick.orElseThrow().token());
+    }
+
+    @Test
+    @DisplayName("Favourite Author: a followed author the room already tried falls back to the others")
+    void triedFollowedAuthorFallsBack() {
+        Optional<BookAuthorsClient.Author> pick =
+            PortalRoomAuthorLocks.choose(THREE, Set.of("c"), List.of(), Set.of("c"), FIRST);
+        assertEquals("a", pick.orElseThrow().token());
+    }
 }

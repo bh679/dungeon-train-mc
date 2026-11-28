@@ -714,8 +714,11 @@ public final class NarrativeBookEvents {
             FallbackBookPool.refreshAsync(fallbackFamily,
                     WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
         }
-        Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(
-            pool, fallbackFamily, fallback, ctx, seedFor(ow, uuid, stack));
+        long seed = seedFor(ow, uuid, stack);
+        // Favourite Author: a share of books come from the authors this player follows, while any are unread.
+        Optional<SharedBookPool.PoolBook> chosen =
+            games.brennan.dungeontrain.perks.effects.archivist.follow.FavouriteAuthorBooks.pick(player, ctx, seed);
+        if (chosen.isEmpty()) chosen = SharedBookSelector.select(pool, fallbackFamily, fallback, ctx, seed);
         // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
         // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay is
         // unreachable / has no approved books, never merely because this player has already seen everything.
@@ -757,6 +760,9 @@ public final class NarrativeBookEvents {
             SharedBookFoundTag.markHeld(stack);
         }
         run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
+        // Favourite Author: counted for this life's finds, and the writer offered to the Follow box.
+        games.brennan.dungeontrain.perks.effects.archivist.follow.FollowService.recordFound(
+            player, book.authorToken(), book.author());
         LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (for {})",
             book.id(), player.getName().getString());
     }

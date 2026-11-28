@@ -128,7 +128,7 @@ public final class TrainBootstrapEvents {
         int originX = NapWake.bootstrapOriginX(target);
 
         BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.spawning_seed");
-        ManagedShip seedShip = ensureTrainSpawned(target, data, originX);
+        ManagedShip seedShip = ensureTrainSpawned(target, data, originX, NapWake.pIdxBase(target));
 
         BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.anchoring_spawn");
         anchorWorldSpawnNearCorridor(target, dims, trainY, originX);
@@ -312,6 +312,15 @@ public final class TrainBootstrapEvents {
 
     /** {@link #ensureTrainSpawned(ServerLevel, DungeonTrainWorldData)} with the seed at world-X {@code originX}. */
     public static ManagedShip ensureTrainSpawned(ServerLevel target, DungeonTrainWorldData data, int originX) {
+        return ensureTrainSpawned(target, data, originX, 0);
+    }
+
+    /**
+     * {@link #ensureTrainSpawned(ServerLevel, DungeonTrainWorldData, int)} with the carriage numbering
+     * starting at {@code pIdxBase} ({@link TrainAssembler#spawnTrain(ServerLevel, BlockPos, Vector3dc,
+     * int, Vector3dc, CarriageDims, int)}): a nap wake continues from the bed's carriage number.
+     */
+    public static ManagedShip ensureTrainSpawned(ServerLevel target, DungeonTrainWorldData data, int originX, int pIdxBase) {
         ManagedShip existing = findTrain(target);
         if (existing != null) return existing;
         List<UUID> held = heldTrainIdsIn(target);
@@ -356,7 +365,7 @@ public final class TrainBootstrapEvents {
         LOGGER.info("[DungeonTrain] Spawning seed of {} carriages at {} in {} dims={}x{}x{} (configCount={})",
             seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
         try {
-            return TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
+            return TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims, pIdxBase);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Train spawn failed in {}", target.dimension().location(), t);
             return null;

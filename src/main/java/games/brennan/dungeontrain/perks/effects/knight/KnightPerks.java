@@ -47,6 +47,7 @@ public final class KnightPerks {
             r -> new PerkStats.Text(Component.translatable("enchantment.level." + (strengthAmplifier(r) + 1))));
         PerkStats.register(KILL_BUFF, "duration", r -> PerkStats.num(strengthDurationTicks(r) / 20.0, Unit.SECONDS));
         PerkStats.register(VAMPIRISM, "heal_chance", r -> PerkStats.num(vampirismPercent(r), Unit.PERCENT));
+        DebuffAura.declare();
     }
 
     /** One overflow roll ({@link PerkOverflow#rollSteps}); kept for the Knight tests. */

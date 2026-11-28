@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.editor;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
@@ -26,6 +29,10 @@ import javax.annotation.Nullable;
  * its source state — both on the way in from a bucket ({@link #sourceStateFrom}) and when captured
  * from a block already in the world ({@link #toSource}).</p>
  *
+ * <p><b>Fire</b> has the same gap (no item form, untargetable), so flint and steel stands for
+ * it here too, and the editor's in-world writes treat it like a liquid
+ * ({@link #writesSectionLocal}).</p>
+ *
  * <p>Powder-snow buckets need no case here: {@code SolidBucketItem extends BlockItem}, so they
  * already travel the ordinary block path.</p>
  */
@@ -41,6 +48,10 @@ public final class VariantLiquids {
      */
     public static @Nullable BlockState sourceStateFrom(ItemStack held) {
         if (held == null || held.isEmpty()) return null;
+        // Flint and steel stands for fire, the same way a bucket stands for its liquid: it is
+        // not a BlockItem, and fire cannot be targeted to capture it either. Plain fire is
+        // stored; vanilla's updateShape turns it into soul fire on soul soil at spawn.
+        if (held.is(Items.FLINT_AND_STEEL)) return Blocks.FIRE.defaultBlockState();
         if (!(held.getItem() instanceof BucketItem bucket)) return null;
         if (bucket.content == Fluids.EMPTY) return null;
         return bucket.content.defaultFluidState().createLegacyBlock();
@@ -69,12 +80,27 @@ public final class VariantLiquids {
         return state != null && state.getBlock() instanceof LiquidBlock;
     }
 
+    /** True when {@code state} is fire or soul fire. */
+    public static boolean isFire(@Nullable BlockState state) {
+        return state != null && state.getBlock() instanceof BaseFireBlock;
+    }
+
     /**
-     * The bucket item for a liquid state, for menu icons — {@code Block.asItem()} is AIR for
-     * water / lava, which would otherwise render as the BARRIER fallback. {@code null} for
-     * non-liquids.
+     * True when the editor must write {@code state} into a plot section-local, scheduling no
+     * tick: a liquid would flow across the author's build, and fire would spread over it, burn
+     * it and age out. Either way the spread would be saved as part of the template.
+     */
+    public static boolean writesSectionLocal(@Nullable BlockState state) {
+        return isLiquid(state) || isFire(state);
+    }
+
+    /**
+     * The item a liquid or fire state shows as in menus: the fluid's bucket, or flint and steel
+     * for fire. {@code Block.asItem()} is AIR for all of them, which would otherwise render as
+     * the BARRIER fallback. {@code null} for anything else.
      */
     public static @Nullable Item bucketIcon(@Nullable BlockState state) {
+        if (isFire(state)) return Items.FLINT_AND_STEEL;
         if (state == null || !(state.getBlock() instanceof LiquidBlock liquid)) return null;
         return liquid.fluid.getBucket();
     }
