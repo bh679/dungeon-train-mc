@@ -49,6 +49,8 @@ public final class FirstAppleState extends SavedData {
     private Pending pending;
     private final Set<Spot> marked = new LinkedHashSet<>();
     private final Set<UUID> found = new HashSet<>();
+    /** Profile flags read this session (not saved): keeps the perk file off the generation path. */
+    private final java.util.Map<UUID, Boolean> profileFound = new java.util.HashMap<>();
 
     private FirstAppleState() {}
 
@@ -83,7 +85,13 @@ public final class FirstAppleState extends SavedData {
     }
 
     public void addFound(UUID player) {
+        profileFound.put(player, true);
         if (found.add(player)) setDirty();
+    }
+
+    /** The profile's flag for {@code player}, read once per session through {@code read}. */
+    boolean profileFound(UUID player, java.util.function.Predicate<UUID> read) {
+        return profileFound.computeIfAbsent(player, read::test);
     }
 
     static FirstAppleState load(CompoundTag tag) {

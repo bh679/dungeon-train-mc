@@ -58,8 +58,18 @@ public final class FirstAppleBoost {
     /** A container's extra apple: which slot, and the carriage and group size it was placed in. */
     record Marker(int slot, int pIdx, int groupSize) {}
 
-    /** A box of a group that ran a contents pass and is not shared: where extras may go. */
-    public record Box(BoundingBox box, int pIdx) {}
+    /**
+     * A box of a group that ran a contents pass and is not shared: where extras may go. {@code pIdx} is its
+     * first carriage; a chest's own carriage is read from its x ({@code carriageLength} blocks each).
+     */
+    public record Box(BoundingBox box, int pIdx, int carriageLength) {
+        int pIdxAt(BlockPos pos) {
+            return pIdx + Math.max(0, (pos.getX() - box.minX()) / Math.max(1, carriageLength));
+        }
+    }
+
+    /** What a new group gets: extras, empty markers (a chest is open and waiting), or nothing. */
+    public enum Owed { EXTRAS, MARKERS, NONE }
 
     // ---- pure rules ----
 
@@ -80,34 +90,51 @@ public final class FirstAppleBoost {
 
     // ---- seeking ----
 
-    /** True while no chest is waiting and someone online has never taken a Cosmic Apple. */
-    public static boolean seeking(MinecraftServer server) {
-        if (server == null || !CosmicAppleDrops.open(server)) return false;
+    /**
+     * Extras while no chest is waiting and someone online has never taken a Cosmic Apple; while one is
+     * waiting, empty markers, so the group can be given its extras if that apple is left behind.
+     */
+    public static Owed owed(MinecraftServer server) {
+        if (server == null || !CosmicAppleDrops.open(server)) return Owed.NONE;
         FirstAppleState state = FirstAppleState.get(server);
-        return state.pending() == null && anyUnfound(server, state);
+        if (!anyUnfound(server, state)) return Owed.NONE;
+        return state.pending() == null ? Owed.EXTRAS : Owed.MARKERS;
     }
 
     private static boolean anyUnfound(MinecraftServer server, FirstAppleState state) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (!state.foundHere(player.getUUID()) && !PerkProfiles.firstAppleFound(player)) return true;
+            if (state.foundHere(player.getUUID())) continue;
+            if (!state.profileFound(player.getUUID(), id -> PerkProfiles.firstAppleFound(player))) return true;
         }
         return false;
     }
 
+    /** {@code player} ate a Cosmic Apple: whatever chest it came from, the server has found its first. */
+    public static void onEaten(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || !PerksGate.isOn()) return;
+        FirstAppleState state = FirstAppleState.get(server);
+        if (!anyUnfound(server, state)) return;
+        markFound(server, state, player.getUUID());
+        LOGGER.info("[DT-FirstApple] {} ate a Cosmic Apple; first find recorded", player.getScoreboardName());
+    }
+
     /**
      * Top the group up to {@link #APPLES_PER_GROUP} apples, one extra per container where it can, preferring
-     * containers that don't already hold the natural one. Call only while {@link #seeking}.
+     * containers that don't already hold the natural one. With {@code markersOnly} the containers are
+     * marked but left empty: {@link #onOpen} fills them if seeking resumes.
      *
-     * @return how many extras went in
+     * @return how many extras (or markers) went in
      */
-    public static int placeExtras(ServerLevel level, List<Box> boxes, boolean naturalPlaced, int groupSize) {
+    public static int placeExtras(ServerLevel level, List<Box> boxes, boolean naturalPlaced, int groupSize,
+                                  boolean markersOnly) {
         int owed = extrasFor(naturalPlaced);
         if (owed <= 0 || boxes.isEmpty()) return 0;
         List<Candidate> fresh = new ArrayList<>();
         List<Candidate> holding = new ArrayList<>();
         for (Box box : boxes) {
             for (Container c : CosmicAppleDrops.containersIn(level, box.box())) {
-                Candidate candidate = new Candidate(c, box.pIdx());
+                Candidate candidate = new Candidate(c, box.pIdxAt(((BlockEntity) c).getBlockPos()));
                 (countApples(c) > 0 ? holding : fresh).add(candidate);
             }
         }
@@ -122,12 +149,13 @@ public final class FirstAppleBoost {
             if (marker(be) != null) continue; // one extra per container: a single-chest group gets one
             int slot = firstEmpty(candidate.container());
             if (slot < 0) continue;
-            candidate.container().setItem(slot, new ItemStack(ModItems.COSMIC_APPLE.get()));
+            if (!markersOnly) candidate.container().setItem(slot, new ItemStack(ModItems.COSMIC_APPLE.get()));
             writeMarker(be, new Marker(slot, candidate.pIdx(), groupSize));
             state.addMarked(new FirstAppleState.Spot(level.dimension(), be.getBlockPos()));
             placed++;
-            LOGGER.info("[DT-FirstApple] extra apple in carriage {} at {}", candidate.pIdx(), be.getBlockPos());
         }
+        LOGGER.info("[DT-FirstApple] group of {} at carriage {}: {} of {} {} placed", groupSize,
+            boxes.get(0).pIdx(), placed, owed, markersOnly ? "empty markers" : "extras");
         return placed;
     }
 
@@ -236,7 +264,7 @@ public final class FirstAppleBoost {
         int apples = 0;
         for (BlockEntity be : halves) apples += countApples((Container) be);
         if (taken(apples, pending.applesAtOpen())) {
-            markEveryoneFound(server, state);
+            markFound(server, state, pending.opener());
             for (BlockEntity be : halves) forget(level, be, state);
             state.setPending(null);
             LOGGER.info("[DT-FirstApple] apple taken from {}; first find recorded", pending.spot().pos());
@@ -259,10 +287,14 @@ public final class FirstAppleBoost {
         LOGGER.info("[DT-FirstApple] apple at {} left behind; seeking again", pending.spot().pos());
     }
 
-    private static void markEveryoneFound(MinecraftServer server, FirstAppleState state) {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            state.addFound(player.getUUID());
-            PerkProfiles.markFirstAppleFound(player);
+    /** The whole server has found its first: {@code finder} (online or not) and everyone online. */
+    private static void markFound(MinecraftServer server, FirstAppleState state, java.util.UUID finder) {
+        java.util.Set<java.util.UUID> ids = new java.util.LinkedHashSet<>();
+        ids.add(finder);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) ids.add(player.getUUID());
+        for (java.util.UUID id : ids) {
+            state.addFound(id);
+            PerkProfiles.markFirstAppleFound(id);
         }
     }
 

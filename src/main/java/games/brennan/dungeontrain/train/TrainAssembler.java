@@ -547,7 +547,8 @@ public final class TrainAssembler {
                                                                                int carriages, int pIdx) {
         return new games.brennan.dungeontrain.perks.FirstAppleBoost.Box(
             net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(
-                origin, origin.offset(dims.length() * carriages - 1, dims.height(), dims.width())), pIdx);
+                origin, origin.offset(dims.length() * carriages - 1, dims.height(), dims.width())), pIdx,
+            dims.length());
     }
 
     /** One cosmic apple into a container of the {@code carriages}-long box at {@code origin}. */
@@ -932,7 +933,9 @@ public final class TrainAssembler {
         boolean appleOwed = appleSlot >= 0;
         // First apple (FirstAppleBoost): while nobody on the server has taken one, the group is topped up to
         // two apples, in the unshared boxes that ran a contents pass, after the loop.
-        boolean firstAppleSeeking = games.brennan.dungeontrain.perks.FirstAppleBoost.seeking(level.getServer());
+        games.brennan.dungeontrain.perks.FirstAppleBoost.Owed firstAppleOwed =
+            games.brennan.dungeontrain.perks.FirstAppleBoost.owed(level.getServer());
+        boolean firstAppleSeeking = firstAppleOwed != games.brennan.dungeontrain.perks.FirstAppleBoost.Owed.NONE;
         java.util.List<games.brennan.dungeontrain.perks.FirstAppleBoost.Box> firstAppleBoxes = new java.util.ArrayList<>();
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
@@ -1108,7 +1111,8 @@ public final class TrainAssembler {
         }
         if (firstAppleSeeking && !firstAppleBoxes.isEmpty()) {
             games.brennan.dungeontrain.perks.FirstAppleBoost.placeExtras(level, firstAppleBoxes,
-                appleSlot >= 0 && !appleOwed, groupSize);
+                appleSlot >= 0 && !appleOwed, groupSize,
+                firstAppleOwed == games.brennan.dungeontrain.perks.FirstAppleBoost.Owed.MARKERS);
         }
         long tAfterContents = System.nanoTime();
 

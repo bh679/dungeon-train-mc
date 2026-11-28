@@ -169,10 +169,13 @@ public final class PerkProfiles {
         return PerkProfileStore.firstAppleFound(player.getUUID());
     }
 
-    /** Remember for good that {@code player} has taken a Cosmic Apple. Not saved for test worlds or Free Play. */
-    static void markFirstAppleFound(ServerPlayer player) {
-        if (!PerksGate.isOn() || PerksGate.isTestWorld() || skipsSave(player)) return;
-        PerkProfileStore.markFirstAppleFound(player.getUUID());
+    /**
+     * Remember for good that the player {@code uuid} has taken a Cosmic Apple. Free Play saves it too: the
+     * find was real. A test world keeps its finds in the world instead.
+     */
+    static void markFirstAppleFound(java.util.UUID uuid) {
+        if (!PerksGate.isOn() || PerksGate.isTestWorld()) return;
+        PerkProfileStore.markFirstAppleFound(uuid);
     }
 
     /** Dev reset: forget the current difficulty's save too, or the next login would bring it all back. */
