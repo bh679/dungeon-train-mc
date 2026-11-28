@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Suche nach %s…",
   "gui.dungeontrain.follows.unreachable": "Name konnte gerade nicht geprüft werden. Versuch es später erneut.",
   "gui.dungeontrain.follows.empty": "Gib unten den Namen eines Spielers ein, um ihm zu folgen.",
+  "gui.dungeontrain.follows.full": "Aktiviere einen weiteren Punkt, um mehr Autoren zu folgen.",
   "perk.dungeontrain.reroll-trades.name": "Angebote neu würfeln",
   "perk.dungeontrain.reroll-trades.desc": "Würfle die Angebote eines Dorfbewohners für Smaragde neu. Jeder weitere Neuwurf beim selben Dorfbewohner kostet doppelt so viel.",
   "perk.dungeontrain.class.c0": "Archivar",

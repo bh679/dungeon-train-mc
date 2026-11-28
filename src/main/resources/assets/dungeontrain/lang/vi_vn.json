@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "Đang tìm %s…",
   "gui.dungeontrain.follows.unreachable": "Hiện không thể kiểm tra tên này. Hãy thử lại sau.",
   "gui.dungeontrain.follows.empty": "Nhập tên người chơi bên dưới để theo dõi.",
+  "gui.dungeontrain.follows.full": "Kích hoạt thêm một điểm để theo dõi thêm tác giả.",
   "perk.dungeontrain.reroll-trades.name": "Tung lại giao dịch",
   "perk.dungeontrain.reroll-trades.desc": "Tung lại giao dịch của dân làng bằng ngọc lục bảo. Mỗi lần tung lại cùng một dân làng tốn gấp đôi.",
   "perk.dungeontrain.class.c0": "Người lưu trữ",

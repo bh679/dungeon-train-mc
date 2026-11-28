@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "%s 찾는 중…",
   "gui.dungeontrain.follows.unreachable": "지금은 이름을 확인할 수 없습니다. 나중에 다시 시도하세요.",
   "gui.dungeontrain.follows.empty": "아래에 플레이어 이름을 입력해 팔로우하세요.",
+  "gui.dungeontrain.follows.full": "작가를 더 팔로우하려면 포인트를 하나 더 활성화하세요.",
   "perk.dungeontrain.reroll-trades.name": "거래 다시 굴리기",
   "perk.dungeontrain.reroll-trades.desc": "에메랄드를 내고 주민의 거래를 다시 굴립니다. 같은 주민을 다시 굴릴 때마다 비용이 두 배가 됩니다.",
   "perk.dungeontrain.class.c0": "기록관",

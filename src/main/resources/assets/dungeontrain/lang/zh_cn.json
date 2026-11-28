@@ -6461,6 +6461,7 @@
   "gui.dungeontrain.follows.looking": "正在查找 %s…",
   "gui.dungeontrain.follows.unreachable": "暂时无法检查该名称。请稍后再试。",
   "gui.dungeontrain.follows.empty": "在下方输入玩家名称以关注他们。",
+  "gui.dungeontrain.follows.full": "再激活一个点数即可关注更多作者。",
   "perk.dungeontrain.reroll-trades.name": "重新刷新交易",
   "perk.dungeontrain.reroll-trades.desc": "花绿宝石重新刷新村民的交易。同一村民每次刷新价格翻倍。",
   "perk.dungeontrain.class.c0": "档案员",

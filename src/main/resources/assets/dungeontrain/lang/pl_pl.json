@@ -6585,6 +6585,7 @@
   "gui.dungeontrain.follows.looking": "Szukanie gracza %s…",
   "gui.dungeontrain.follows.unreachable": "Nie można teraz sprawdzić tej nazwy. Spróbuj ponownie później.",
   "gui.dungeontrain.follows.empty": "Wpisz poniżej nazwę gracza, aby go obserwować.",
+  "gui.dungeontrain.follows.full": "Aktywuj kolejny punkt, aby obserwować więcej autorów.",
   "perk.dungeontrain.reroll-trades.name": "Przelosuj wymiany",
   "perk.dungeontrain.reroll-trades.desc": "Przelosuj wymiany osadnika za szmaragdy. Każde kolejne przelosowanie tego samego osadnika kosztuje dwa razy więcej.",
   "perk.dungeontrain.class.c0": "Archiwista",
