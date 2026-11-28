@@ -3,37 +3,41 @@ package games.brennan.dungeontrain.client.constellation;
 import java.util.Locale;
 
 /**
- * How the constellation patch's rim meets what is behind it, chosen with the dev command
- * {@code /dungeontrain debug constellation-edge}. The patch is drawn in two passes, one over the
- * real sky and one over blocks, and each setting picks which rim each pass gets.
+ * How the constellation patch's rim meets the real sky (and clouds, which count as sky), chosen with
+ * the dev command {@code /dungeontrain-debug-constellation-edge}.
+ *
+ * <p>Blocks never fade partway, whichever setting: a block pixel is either fully covered by the patch
+ * or drawn as normal. The cut sits where the sky's rim is half faded ({@link #blockCutRadius}), so
+ * near the rim blocks stay in front of the constellation and further in they are hidden behind it.</p>
  */
 public enum ConstellationEdge {
-    /** Feathered against the real sky, crisp against blocks. The default. */
-    MIXED(true, false),
-    /** Feathered everywhere. */
-    SOFT(true, true),
-    /** Crisp everywhere. */
-    HARD(false, false);
+    /** Feathered against the sky. The default. */
+    SOFT(true),
+    /** Crisp against the sky. */
+    HARD(false);
 
     /** Where the feather starts, as a fraction of the radius: the rim's outer {@code 1 - this} fades. */
     public static final float FEATHER_START = 0.72f;
 
-    private static volatile ConstellationEdge current = MIXED;
+    private static volatile ConstellationEdge current = SOFT;
 
-    private final boolean softOverSky;
-    private final boolean softOverBlocks;
+    private final boolean soft;
 
-    ConstellationEdge(boolean softOverSky, boolean softOverBlocks) {
-        this.softOverSky = softOverSky;
-        this.softOverBlocks = softOverBlocks;
+    ConstellationEdge(boolean soft) {
+        this.soft = soft;
     }
 
-    public boolean softOverSky() {
-        return softOverSky;
+    /** Does the rim feather against the sky? */
+    public boolean soft() {
+        return soft;
     }
 
-    public boolean softOverBlocks() {
-        return softOverBlocks;
+    /**
+     * How far out, as a fraction of the radius, the patch covers blocks: where the sky's rim is half
+     * faded for a soft edge, the rim itself for a hard one.
+     */
+    public float blockCutRadius() {
+        return soft ? FEATHER_START + (1f - FEATHER_START) / 2f : 1f;
     }
 
     public static ConstellationEdge current() {
@@ -41,7 +45,7 @@ public enum ConstellationEdge {
     }
 
     public static void set(ConstellationEdge edge) {
-        current = edge == null ? MIXED : edge;
+        current = edge == null ? SOFT : edge;
     }
 
     /** By name, any case; null when there is no such setting. */

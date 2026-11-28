@@ -25,11 +25,11 @@ import org.lwjgl.opengl.GL11;
  * mouse: {@link #aim} turns the look direction into a point on the menu's canvas.</p>
  *
  * <p>The disc is the menu's square sky region (the map's 800 x 800 fit), mapped round onto
- * {@link ConstellationGeometry}. Its rim is drawn twice against the depth buffer so it can meet the
- * real sky and blocks differently ({@link ConstellationEdge}): pass A only where depth is still at the
- * far plane (sky), pass B only where something nearer was drawn (blocks). Both force the fragment
- * depth to the far plane with {@code glDepthRange(1, 1)} so the depth test does the sorting; depth is
- * never written.</p>
+ * {@link ConstellationGeometry}. It is drawn in up to three passes so it meets the real sky and blocks
+ * differently ({@link ConstellationEdge}): the sky (depth still at the far plane) and the clouds
+ * ({@link ConstellationClouds}) get the rim; blocks are either fully covered or untouched. Every pass
+ * forces the fragment depth to the far plane with {@code glDepthRange(1, 1)} so the depth test does
+ * the sorting; depth is never written.</p>
  *
  * <p>Render thread only.</p>
  */
@@ -110,7 +110,11 @@ public final class ConstellationSky {
      * @param view the level's camera-rotation matrix ({@code RenderLevelStageEvent#getModelViewMatrix})
      */
     static void drawPatch(Matrix4f view, Matrix4f projection, float alpha, ConstellationEdge edge) {
-        if (!hasPicture() || alpha <= 0f) return;
+        if (!hasPicture() || alpha <= 0f) {
+            ConstellationClouds.frameDone();
+            return;
+        }
+        boolean clouds = ConstellationClouds.markedThisFrame();
         // By the last level stage the model-view stack may already hold the camera rotation, and other
         // passes may have left their own projection: draw in exactly the level's frame, once.
         org.joml.Matrix4fStack modelView = RenderSystem.getModelViewStack();
@@ -123,11 +127,31 @@ public final class ConstellationSky {
             GL11.glDepthRange(1.0, 1.0);
             RenderSystem.enableDepthTest();
             RenderSystem.depthMask(false);
-            RenderSystem.depthFunc(GL11.GL_LEQUAL); // stored depth 1.0: the real sky
-            drawDisc(view, alpha, edge.softOverSky());
-            RenderSystem.depthFunc(GL11.GL_GREATER); // stored depth nearer: blocks
-            drawDisc(view, alpha, edge.softOverBlocks());
+
+            // 1. The real sky: depth still at the far plane.
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            drawDisc(view, alpha, edge.soft(), 1f);
+
+            // 2. Clouds are sky to the patch: wherever they stamped their bit, the same rim.
+            if (clouds) {
+                GL11.glEnable(GL11.GL_STENCIL_TEST);
+                RenderSystem.stencilMask(0x00);
+                RenderSystem.stencilFunc(GL11.GL_EQUAL, ConstellationClouds.BIT, ConstellationClouds.BIT);
+                RenderSystem.depthFunc(GL11.GL_ALWAYS);
+                drawDisc(view, alpha, edge.soft(), 1f);
+                RenderSystem.stencilFunc(GL11.GL_NOTEQUAL, ConstellationClouds.BIT, ConstellationClouds.BIT);
+            }
+
+            // 3. Blocks: never partway. Covered inside the cut, drawn as normal outside it.
+            RenderSystem.depthFunc(GL11.GL_GREATER);
+            drawDisc(view, alpha, false, edge.blockCutRadius());
         } finally {
+            if (clouds) {
+                RenderSystem.stencilMask(0xFF);
+                RenderSystem.stencilFunc(GL11.GL_ALWAYS, 0, 0xFF);
+                GL11.glDisable(GL11.GL_STENCIL_TEST);
+            }
+            ConstellationClouds.frameDone();
             GL11.glDepthRange(0.0, 1.0);
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
             RenderSystem.depthMask(true);
@@ -149,11 +173,14 @@ public final class ConstellationSky {
             return;
         }
         RenderSystem.disableDepthTest();
-        drawDisc(view, 1f, true);
+        drawDisc(view, 1f, true, 1f);
     }
 
-    /** One disc: a fan of rings, the texture's sky square on it, alpha falling off at the rim. */
-    private static void drawDisc(Matrix4f view, float alpha, boolean soft) {
+    /**
+     * One disc out to {@code outer} radii: a fan of rings, the texture's sky square on it. Soft: alpha
+     * falls off at the rim ({@link ConstellationEdge#alphaAt}). Hard: full strength to {@code outer}.
+     */
+    private static void drawDisc(Matrix4f view, float alpha, boolean soft, float outer) {
         float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
         float gw = texture.guiWidth(), gh = texture.guiHeight();
 
@@ -164,12 +191,12 @@ public final class ConstellationSky {
         RenderSystem.setShaderTexture(0, texture.location());
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        float[] radii = ringRadii(soft);
+        float[] radii = soft ? ringRadii(true) : new float[] {0f, outer};
         BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_TEX_COLOR);
         for (int ring = 0; ring < radii.length - 1; ring++) {
             float r0 = radii[ring], r1 = radii[ring + 1];
-            float a0 = alpha * ConstellationEdge.alphaAt(Math.min(r0, 0.9999f), soft);
-            float a1 = alpha * ConstellationEdge.alphaAt(r1 >= 1f ? (soft ? 1f : 0.9999f) : r1, soft);
+            float a0 = soft ? alpha * ConstellationEdge.alphaAt(r0, true) : alpha;
+            float a1 = soft ? alpha * ConstellationEdge.alphaAt(r1, true) : alpha;
             for (int s = 0; s < SEGMENTS; s++) {
                 double t0 = 2 * Math.PI * s / SEGMENTS, t1 = 2 * Math.PI * (s + 1) / SEGMENTS;
                 float c0 = (float) Math.cos(t0), s0 = (float) Math.sin(t0);

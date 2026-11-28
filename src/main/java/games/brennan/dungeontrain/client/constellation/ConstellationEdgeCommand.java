@@ -12,10 +12,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 
 /**
- * Dev builds only: {@code /dungeontrain-debug-constellation-edge <mixed|soft|hard>} picks how the
- * constellation patch's rim meets the sky and blocks ({@link ConstellationEdge}), to try them in-game.
+ * Dev builds only: {@code /dungeontrain-debug-constellation-edge <soft|hard>} picks how the
+ * constellation patch's rim meets the sky ({@link ConstellationEdge}), to try them in-game.
  * Client-side, because the patch is: it works on any server, and changes nothing but this client's
- * drawing. Not persisted; a restart is back on {@link ConstellationEdge#MIXED}.
+ * drawing. Not persisted; a restart is back on {@link ConstellationEdge#SOFT}.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ConstellationEdgeCommand {
@@ -44,7 +44,7 @@ public final class ConstellationEdgeCommand {
     private static int report(CommandSourceStack source) {
         ConstellationEdge edge = ConstellationEdge.current();
         source.sendSystemMessage(Component.literal("Constellation edge: " + edge.name().toLowerCase(java.util.Locale.ROOT)
-            + " (sky " + (edge.softOverSky() ? "soft" : "hard") + ", blocks " + (edge.softOverBlocks() ? "soft" : "hard") + ")")
+            + " (blocks cut at " + Math.round(edge.blockCutRadius() * 100) + "% of the radius)")
             .withStyle(ChatFormatting.AQUA));
         return 1;
     }

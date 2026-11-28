@@ -31,6 +31,11 @@ public final class ConstellationClient {
 
     private ConstellationClient() {}
 
+    /** Is the patch showing this frame? */
+    public static boolean patchOpen() {
+        return alpha > ConstellationFade.OFF_EPSILON;
+    }
+
     /** Is the player standing in a constellation block right now? */
     public static boolean inside() {
         return inside;

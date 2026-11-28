@@ -319,6 +319,7 @@
     "client.GameRendererSnapshotMixin",
     "client.ToastInstanceRectMixin",
     "client.LevelRendererVoidSkyMixin",
+    "client.LevelRendererConstellationCloudMixin",
     "client.FogRendererRoomSkyMixin",
     "client.GameRendererCrossfadeMixin",
     "client.LevelRendererSkyboxDepthMixin",
