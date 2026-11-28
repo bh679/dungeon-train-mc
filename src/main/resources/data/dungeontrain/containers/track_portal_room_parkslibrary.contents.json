@@ -22,10 +22,14 @@
     "10,1,10": {
       "fillMax": 6,
       "entries": [
-        { "id": "minecraft:writable_book", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "dungeontrain:random_book", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "minecraft:writable_book", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:book", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 25, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
     "9,5,10": {
@@ -568,10 +572,14 @@
     "9,1,7": {
       "fillMax": 6,
       "entries": [
-        { "id": "minecraft:writable_book", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "dungeontrain:random_book", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "minecraft:writable_book", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:book", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 25, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
     "9,0,7": {
@@ -742,10 +750,14 @@
     "6,1,10": {
       "fillMax": 6,
       "entries": [
-        { "id": "minecraft:writable_book", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "minecraft:book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "dungeontrain:random_book", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "minecraft:writable_book", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:book", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 25, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
     "6,2,10": {
@@ -1713,17 +1725,41 @@
         { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
+    },
+    "8,1,7": {
+      "fillMax": 6,
+      "entries": [
+        { "id": "minecraft:writable_book", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:book", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 25, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "7,1,11": {
+      "fillMax": 6,
+      "entries": [
+        { "id": "minecraft:writable_book", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:book", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 500, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 25, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
     }
   },
   "links": {
     "9,1,10": "bookshelf",
     "8,1,11": "bookshelf",
-    "7,1,11": "bookshelf",
     "7,2,11": "bookshelf",
     "8,2,11": "bookshelf",
     "10,2,10": "bookshelf",
     "10,1,7": "bookshelf",
-    "8,1,7": "bookshelf",
     "6,1,7": "bookshelf",
     "8,2,7": "bookshelf",
     "10,2,7": "bookshelf",
