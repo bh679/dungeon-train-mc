@@ -2,8 +2,8 @@
   "locale": "de_de",
   "name": "KI ohne menschliche Überprüfung",
   "human_reviewed": false,
-  "total_keys": 6723,
-  "ai_authored": 6723,
-  "ai_unreviewed": 6723,
-  "counted_keys": 4665
+  "total_keys": 6729,
+  "ai_authored": 6729,
+  "ai_unreviewed": 6729,
+  "counted_keys": 4671
 }

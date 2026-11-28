@@ -209,7 +209,9 @@
     "dungeontrain:dungeon_train/the_challenge": true,
     "dungeontrain:enchiridion/family_photo": true,
     "dungeontrain:enchiridion/skeleton_crew": true,
-    "dungeontrain:enchiridion/photobomb": true
+    "dungeontrain:enchiridion/photobomb": true,
+    "dungeontrain:dungeon_train/void_starting_book": true,
+    "dungeontrain:dungeon_train/come_along_with_me": true
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",

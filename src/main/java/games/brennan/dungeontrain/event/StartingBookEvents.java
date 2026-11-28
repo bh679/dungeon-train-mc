@@ -619,6 +619,8 @@ public final class StartingBookEvents {
             dropped.setDeltaMovement(dir.scale(0.3));
             player.serverLevel().addFreshEntity(dropped);
         }
+        // This drop carries no thrower, so name it for "Void Where Prohibited".
+        games.brennan.dungeontrain.narrative.StartingBookVoidToss.markThrower(dropped, player);
         return dropped;
     }
 

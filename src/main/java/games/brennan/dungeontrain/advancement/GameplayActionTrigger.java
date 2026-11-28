@@ -47,6 +47,10 @@ import java.util.Optional;
  *       ender chest (fired from the death hook, not a live scan)</li>
  *   <li>{@code changed_engine_volume} — changed the train engine volume setting; the only
  *       id fired from a client report ({@code ClientActionPacket}) rather than server detection</li>
+ *   <li>{@code void_starting_book} — threw a starting book off the train into the void
+ *       ({@code StartingBookVoidToss})</li>
+ *   <li>{@code retamed_drifted_pet} — tamed a stranger's pet that drifted in sitting in a carriage
+ *       ({@code DriftedPetRetameEvents})</li>
  * </ul>
  *
  * <p>Dark Room tab ({@code enchiridion/}), the Live Feed and Vista TVs:
