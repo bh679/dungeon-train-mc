@@ -410,7 +410,8 @@ public final class ConstellationSky {
         float gw = texture.guiWidth(), gh = texture.guiHeight();
         float cell = ConstellationCrumble.CELL;
         int n = (int) Math.ceil(ConstellationCrumble.extent(core) / cell);
-        ConstellationCrumble.Arm[] arms = ConstellationCrumble.arms(net.minecraft.Util.getMillis() / 1000.0);
+        double seconds = ConstellationCrumble.clock();
+        ConstellationCrumble.Arm[] arms = ConstellationCrumble.arms(core, seconds);
         int night = SkyDomeDraw.argb(alpha, PerksScreen.SKY_BG & 0xFFFFFF);
 
         RenderSystem.enableBlend();
@@ -422,7 +423,7 @@ public final class ConstellationSky {
         java.util.List<float[]> onPic = new java.util.ArrayList<>(), offPic = new java.util.ArrayList<>();
         for (int i = -n; i < n; i++) {
             for (int j = -n; j < n; j++) {
-                if (!ConstellationCrumble.on(i, j, core, arms)) continue;
+                if (!ConstellationCrumble.on(i, j, core, arms, seconds)) continue;
                 float x0 = i * cell, y0 = j * cell;
                 (onPicture(x0, y0, sq, gw, gh) && onPicture(x0 + cell, y0 + cell, sq, gw, gh) ? onPic : offPic)
                     .add(new float[] {x0, y0});
