@@ -63,7 +63,7 @@ public final class ConstellationClient {
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
         if (alpha <= ConstellationFade.OFF_EPSILON) return;
-        ConstellationSky.drawPatch(event.getModelViewMatrix(), alpha, ConstellationEdge.current());
+        ConstellationSky.drawPatch(event.getModelViewMatrix(), event.getProjectionMatrix(), alpha, ConstellationEdge.current());
     }
 
     @SubscribeEvent

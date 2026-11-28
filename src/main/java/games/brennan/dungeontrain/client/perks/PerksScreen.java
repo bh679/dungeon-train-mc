@@ -306,9 +306,30 @@ public final class PerksScreen extends Screen {
                 }
             }
         }
+        if (skyOnly) followMenuChoice(now, ms);
         firstSnapshot = false;
         last = now;
         return now;
+    }
+
+    private long choiceReadAt = Long.MIN_VALUE;
+
+    /**
+     * The sky-only copy shows the classes the real menu shows. The menu keeps the player's shown and
+     * hidden classes in {@link ClassChoiceStore} (and reveals a class there when its first tier 1 perk is
+     * unlocked); read it about once a second. With nothing saved yet (the menu never opened), show the
+     * classes that have an unlocked tier 1 perk, as the menu would on first opening.
+     */
+    private void followMenuChoice(PerkMenuSnapshot now, long ms) {
+        if (ms - choiceReadAt < 1000) return;
+        choiceReadAt = ms;
+        off = ClassChoiceStore.load(player).orElseGet(() -> {
+            Set<String> hidden = new HashSet<>(allClasses());
+            for (PerkTree.Perk p : tree.perks()) {
+                if (p.tier() == 1 && p.cls() != null && now.isUnlocked(p.id())) hidden.remove(p.cls());
+            }
+            return Set.copyOf(hidden);
+        });
     }
 
     private static Set<String> without(Set<String> set, String id) {

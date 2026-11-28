@@ -98,7 +98,7 @@ public final class ConstellationSky {
 
     private static ScreenToTexture texture() {
         if (texture == null) {
-            texture = new ScreenToTexture(PerksScreen.SKY_BG & 0xFFFFFF);
+            texture = new ScreenToTexture(PerksScreen.SKY_BG & 0xFFFFFF).opaque();
             texture.attach(PerksScreen.forSky());
         }
         return texture;
@@ -109,8 +109,16 @@ public final class ConstellationSky {
      *
      * @param view the level's camera-rotation matrix ({@code RenderLevelStageEvent#getModelViewMatrix})
      */
-    static void drawPatch(Matrix4f view, float alpha, ConstellationEdge edge) {
+    static void drawPatch(Matrix4f view, Matrix4f projection, float alpha, ConstellationEdge edge) {
         if (!hasPicture() || alpha <= 0f) return;
+        // By the last level stage the model-view stack may already hold the camera rotation, and other
+        // passes may have left their own projection: draw in exactly the level's frame, once.
+        org.joml.Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        modelView.identity();
+        RenderSystem.applyModelViewMatrix();
+        RenderSystem.backupProjectionMatrix();
+        RenderSystem.setProjectionMatrix(projection, com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
         try {
             GL11.glDepthRange(1.0, 1.0);
             RenderSystem.enableDepthTest();
@@ -123,6 +131,9 @@ public final class ConstellationSky {
             GL11.glDepthRange(0.0, 1.0);
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
             RenderSystem.depthMask(true);
+            RenderSystem.restoreProjectionMatrix();
+            modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
         }
     }
 

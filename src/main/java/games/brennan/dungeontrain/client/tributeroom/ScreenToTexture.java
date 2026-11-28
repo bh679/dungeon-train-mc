@@ -70,6 +70,12 @@ public final class ScreenToTexture {
     private long lastSeenMs = Long.MIN_VALUE;
     private long lastDrawnMs = Long.MIN_VALUE;
     private boolean dirty = true;
+    /**
+     * Force the picture's alpha to 1 after each draw. GUI blending also blends the alpha channel, so a
+     * translucent draw (a glow) leaves the target less than opaque there; a TV ignores that, but a
+     * picture drawn with blending over something else (the constellation patch) would show through.
+     */
+    private boolean opaque;
 
     private final Matrix4f savedProjection = new Matrix4f();
     private final Matrix4f projection = new Matrix4f();
@@ -103,6 +109,12 @@ public final class ScreenToTexture {
         Minecraft.getInstance().getTextureManager().register(location, new RenderTargetTexture());
         registered = true;
         instances++;
+    }
+
+    /** See {@link #opaque}. Returns this. */
+    public ScreenToTexture opaque() {
+        this.opaque = true;
+        return this;
     }
 
     public ResourceLocation location() {
@@ -215,6 +227,13 @@ public final class ScreenToTexture {
         int filter = to.width == drawWidth && to.height == drawHeight ? GL11C.GL_NEAREST : GL11C.GL_LINEAR;
         GL30C.glBlitFramebuffer(0, 0, drawWidth, drawHeight, 0, to.height, to.width, 0,
             GL11C.GL_COLOR_BUFFER_BIT, filter);
+        if (opaque) {
+            GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, to.frameBufferId);
+            RenderSystem.colorMask(false, false, false, true);
+            RenderSystem.clearColor(0f, 0f, 0f, 1f);
+            RenderSystem.clear(GL11C.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
+            RenderSystem.colorMask(true, true, true, true);
+        }
         GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, 0);
     }
 
