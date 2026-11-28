@@ -6672,6 +6672,7 @@
   "gui.dungeontrain.perks.zoom.closest": "Closest",
   "gui.dungeontrain.perks.bar.full": "Full. Unlock it again for room for one more point.",
   "gui.dungeontrain.perks.bar.hint": "Hover a perk to see it here. Click one to keep it.",
+  "gui.dungeontrain.perks.bar.no_active": "You have %s unlocked perks, but 0 are active. Click to activate one.",
   "gui.dungeontrain.perks.bar.not_ready": "You've found something that will be important later, but you're not ready yet. Come back later.",
   "gui.dungeontrain.perks.counter.unlock.click": "Click to open advancements.",
   "gui.dungeontrain.perks.death.kicker": "The points you carried",

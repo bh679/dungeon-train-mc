@@ -442,8 +442,12 @@ final class PerkDetailsBar {
         if (perk == null) {
             // Opened with P before anything is unlocked: nothing here can be used yet, so say so
             // instead of inviting a click. The death screen's menu (where unlocking happens) keeps the hint.
+            // First apple of a life: perks unlocked, a point to spend, none active yet. Say so plainly.
             boolean notReady = activeOnly && snap.unlocked().isEmpty();
-            Component hint = Component.translatable(KEY + (notReady ? "not_ready" : "hint"));
+            boolean noneActive = activeOnly && !notReady && snap.active().isEmpty() && snap.activePoints() > 0;
+            Component hint = notReady ? Component.translatable(KEY + "not_ready")
+                : noneActive ? Component.translatable(KEY + "no_active", snap.unlocked().size())
+                : Component.translatable(KEY + "hint");
             int colour = ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF);
             java.util.List<net.minecraft.util.FormattedCharSequence> lines = font.split(hint, Math.max(40, width - 2 * STRIPE - 24));
             int lineH = font.lineHeight + 2;

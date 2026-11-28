@@ -6635,6 +6635,7 @@
   "gui.dungeontrain.perks.zoom.closest": "最近",
   "gui.dungeontrain.perks.bar.full": "已滿。再次解鎖可多放一個點數。",
   "gui.dungeontrain.perks.bar.hint": "將滑鼠停在特權上即可在此查看。點擊可固定。",
+  "gui.dungeontrain.perks.bar.no_active": "你已解鎖 %s 個特權，但啟用的為 0 個。點擊以啟用一個。",
   "gui.dungeontrain.perks.bar.not_ready": "你發現了將來會很重要的東西，但你還沒準備好。之後再來吧。",
   "gui.dungeontrain.perks.counter.unlock.click": "點擊開啟進度。",
   "gui.dungeontrain.perks.death.kicker": "你隨身的點數",

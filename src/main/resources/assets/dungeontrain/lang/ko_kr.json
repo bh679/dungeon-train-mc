@@ -6621,6 +6621,7 @@
   "gui.dungeontrain.perks.zoom.closest": "가장 가까이",
   "gui.dungeontrain.perks.bar.full": "가득 참. 다시 해금하면 포인트를 하나 더 넣을 수 있습니다.",
   "gui.dungeontrain.perks.bar.hint": "특성에 마우스를 올리면 여기에 표시됩니다. 클릭하면 고정됩니다.",
+  "gui.dungeontrain.perks.bar.no_active": "해금한 특성이 %s개 있지만 활성화된 특성은 0개입니다. 클릭해서 하나를 활성화하세요.",
   "gui.dungeontrain.perks.bar.not_ready": "나중에 중요해질 무언가를 찾았지만, 아직 준비가 되지 않았습니다. 나중에 다시 오세요.",
   "gui.dungeontrain.perks.counter.unlock.click": "클릭하면 발전 과제를 엽니다.",
   "gui.dungeontrain.perks.death.kicker": "지니고 있던 포인트",
