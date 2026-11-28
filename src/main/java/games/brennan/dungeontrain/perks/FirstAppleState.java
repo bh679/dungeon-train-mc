@@ -36,6 +36,7 @@ public final class FirstAppleState extends SavedData {
     private static final String TAG_COUNT = "Count";
     private static final String TAG_MARKED = "Marked";
     private static final String TAG_FOUND = "Found";
+    private static final String TAG_CARRIED = "Carried";
 
     /** A container somewhere in a dimension. */
     public record Spot(ResourceKey<Level> dim, BlockPos pos) {}
@@ -51,6 +52,12 @@ public final class FirstAppleState extends SavedData {
     private final Set<UUID> found = new HashSet<>();
     /** Profile flags read this session (not saved): keeps the perk file off the generation path. */
     private final java.util.Map<UUID, Boolean> profileFound = new java.util.HashMap<>();
+    /** Extras owed by groups that had nowhere to put them, for the next group made. */
+    private int carried;
+    /** What {@link FirstAppleBoost#owed} said last check (not saved: a restart counts as a fresh start). */
+    private FirstAppleBoost.Owed lastOwed;
+    /** Groups the fill has been through this session (not saved). */
+    private final Set<String> backfilled = new HashSet<>();
 
     private FirstAppleState() {}
 
@@ -78,6 +85,29 @@ public final class FirstAppleState extends SavedData {
 
     public void removeMarked(Spot spot) {
         if (marked.remove(spot)) setDirty();
+    }
+
+    public int carried() {
+        return carried;
+    }
+
+    public void setCarried(int next) {
+        if (next == carried) return;
+        carried = Math.max(0, next);
+        setDirty();
+    }
+
+    FirstAppleBoost.Owed lastOwed() {
+        return lastOwed;
+    }
+
+    void setLastOwed(FirstAppleBoost.Owed owed) {
+        lastOwed = owed;
+    }
+
+    /** True the first time {@code group} is asked about this session. */
+    boolean markBackfilled(String group) {
+        return backfilled.add(group);
     }
 
     public boolean foundHere(UUID player) {
@@ -111,6 +141,7 @@ public final class FirstAppleState extends SavedData {
         }
         ListTag foundList = tag.getList(TAG_FOUND, Tag.TAG_INT_ARRAY);
         for (Tag t : foundList) data.found.add(NbtUtils.loadUUID(t));
+        data.carried = Math.max(0, tag.getInt(TAG_CARRIED));
         return data;
     }
 
@@ -130,6 +161,7 @@ public final class FirstAppleState extends SavedData {
         ListTag foundList = new ListTag();
         for (UUID id : found) foundList.add(NbtUtils.createUUID(id));
         tag.put(TAG_FOUND, foundList);
+        tag.putInt(TAG_CARRIED, carried);
         return tag;
     }
 

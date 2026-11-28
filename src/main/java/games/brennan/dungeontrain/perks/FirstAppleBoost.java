@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -47,16 +48,24 @@ public final class FirstAppleBoost {
 
     /** While seeking, a group holds this many apples, its natural one included. */
     static final int APPLES_PER_GROUP = 2;
+    /** Most extras one group takes, counting what earlier groups with nowhere to put theirs carried on. */
+    static final int MAX_EXTRAS = 4;
     /** Container persistent-data key: {@code {Slot, PIdx, Group}} of the extra apple it was given. */
     static final String NBT_KEY = "dt_first_apple";
     private static final String TAG_SLOT = "Slot";
     private static final String TAG_PIDX = "PIdx";
     private static final String TAG_GROUP = "Group";
+    /** A pot's loot the extra stood in for, put back when the extra is taken away. */
+    private static final String TAG_WAS = "Was";
 
     private FirstAppleBoost() {}
 
     /** A container's extra apple: which slot, and the carriage and group size it was placed in. */
-    record Marker(int slot, int pIdx, int groupSize) {}
+    record Marker(int slot, int pIdx, int groupSize, ItemStack was) {
+        Marker(int slot, int pIdx, int groupSize) {
+            this(slot, pIdx, groupSize, ItemStack.EMPTY);
+        }
+    }
 
     /**
      * A box of a group that ran a contents pass and is not shared: where extras may go. {@code pIdx} is its
@@ -76,6 +85,16 @@ public final class FirstAppleBoost {
     /** Extras a group gets while seeking. */
     static int extrasFor(boolean naturalPlaced) {
         return Math.max(0, APPLES_PER_GROUP - (naturalPlaced ? 1 : 0));
+    }
+
+    /** Extras a group is owed: its own, plus what earlier groups carried on, up to {@link #MAX_EXTRAS}. */
+    static int owedWith(boolean naturalPlaced, int carried) {
+        return Math.min(MAX_EXTRAS, extrasFor(naturalPlaced) + Math.max(0, carried));
+    }
+
+    /** What carries on to the next group: whatever of {@code owed} did not fit. */
+    static int carryAfter(int owed, int placed) {
+        return Math.max(0, owed - placed);
     }
 
     /** True once the opener is a whole group's length of carriages away from the chest, either way. */
@@ -120,42 +139,67 @@ public final class FirstAppleBoost {
     }
 
     /**
-     * Top the group up to {@link #APPLES_PER_GROUP} apples, one extra per container where it can, preferring
-     * containers that don't already hold the natural one. With {@code markersOnly} the containers are
-     * marked but left empty: {@link #onOpen} fills them if seeking resumes.
+     * Top the group up to {@link #APPLES_PER_GROUP} apples (plus anything carried on), one extra per container:
+     * chests that don't hold the natural one first, then those that do, then empty decorated pots. What
+     * doesn't fit carries on to the next group. With {@code markersOnly} the containers are marked but left
+     * empty, for {@link #onOpen} to fill if seeking resumes, and nothing carries.
      *
      * @return how many extras (or markers) went in
      */
     public static int placeExtras(ServerLevel level, List<Box> boxes, boolean naturalPlaced, int groupSize,
                                   boolean markersOnly) {
-        int owed = extrasFor(naturalPlaced);
-        if (owed <= 0 || boxes.isEmpty()) return 0;
+        return placeExtras(level, boxes, naturalPlaced, groupSize, markersOnly, pos -> false);
+    }
+
+    private static int placeExtras(ServerLevel level, List<Box> boxes, boolean naturalPlaced, int groupSize,
+                                   boolean markersOnly, java.util.function.Predicate<BlockPos> skip) {
+        FirstAppleState state = FirstAppleState.get(level.getServer());
+        int owed = markersOnly ? extrasFor(naturalPlaced) : owedWith(naturalPlaced, state.carried());
+        if (owed <= 0) return 0;
         List<Candidate> fresh = new ArrayList<>();
         List<Candidate> holding = new ArrayList<>();
+        List<Candidate> potsEmpty = new ArrayList<>();
+        List<Candidate> pots = new ArrayList<>();
         for (Box box : boxes) {
             for (Container c : CosmicAppleDrops.containersIn(level, box.box())) {
-                Candidate candidate = new Candidate(c, box.pIdxAt(((BlockEntity) c).getBlockPos()));
-                (countApples(c) > 0 ? holding : fresh).add(candidate);
+                BlockPos pos = ((BlockEntity) c).getBlockPos();
+                if (skip.test(pos)) continue;
+                (countApples(c) > 0 ? holding : fresh).add(new Candidate(c, box.pIdxAt(pos)));
+            }
+            for (DecoratedPotBlockEntity pot : CosmicAppleDrops.potsIn(level, box.box())) {
+                if (skip.test(pot.getBlockPos()) || CosmicAppleItem.isCosmicApple(pot.getTheItem())) continue;
+                (pot.getTheItem().isEmpty() ? potsEmpty : pots).add(new Candidate(pot, box.pIdxAt(pot.getBlockPos())));
             }
         }
-        Collections.shuffle(fresh, new java.util.Random(level.getRandom().nextLong()));
+        java.util.Random random = new java.util.Random(level.getRandom().nextLong());
+        Collections.shuffle(fresh, random);
+        Collections.shuffle(potsEmpty, random);
+        Collections.shuffle(pots, random);
         List<Candidate> order = new ArrayList<>(fresh);
         order.addAll(holding);
-        FirstAppleState state = FirstAppleState.get(level.getServer());
+        order.addAll(potsEmpty);
+        order.addAll(pots); // pots holding loot last: the apple stands in for it
         int placed = 0;
         for (Candidate candidate : order) {
             if (placed >= owed) break;
             BlockEntity be = (BlockEntity) candidate.container();
-            if (marker(be) != null) continue; // one extra per container: a single-chest group gets one
-            int slot = firstEmpty(candidate.container());
+            if (marker(be) != null) continue; // one extra per container
+            boolean pot = be instanceof DecoratedPotBlockEntity;
+            int slot = pot ? 0 : firstEmpty(candidate.container());
             if (slot < 0) continue;
-            if (!markersOnly) candidate.container().setItem(slot, new ItemStack(ModItems.COSMIC_APPLE.get()));
-            writeMarker(be, new Marker(slot, candidate.pIdx(), groupSize));
+            ItemStack was = pot ? candidate.container().getItem(0).copy() : ItemStack.EMPTY;
+            if (!markersOnly) {
+                candidate.container().setItem(slot, new ItemStack(ModItems.COSMIC_APPLE.get()));
+                candidate.container().setChanged();
+            }
+            writeMarker(be, new Marker(slot, candidate.pIdx(), groupSize, was));
             state.addMarked(new FirstAppleState.Spot(level.dimension(), be.getBlockPos()));
             placed++;
         }
-        LOGGER.info("[DT-FirstApple] group of {} at carriage {}: {} of {} {} placed", groupSize,
-            boxes.get(0).pIdx(), placed, owed, markersOnly ? "empty markers" : "extras");
+        if (!markersOnly) state.setCarried(carryAfter(owed, placed));
+        LOGGER.info("[DT-FirstApple] group of {} at carriage {}: {} of {} {} placed (carried on: {})", groupSize,
+            boxes.isEmpty() ? "?" : boxes.get(0).pIdx(), placed, owed, markersOnly ? "empty markers" : "extras",
+            state.carried());
         return placed;
     }
 
@@ -167,7 +211,7 @@ public final class FirstAppleBoost {
     public static void onOpen(ServerLevel level, ServerPlayer player, BlockPos pos) {
         MinecraftServer server = level.getServer();
         List<BlockEntity> halves = halvesAt(level, pos);
-        if (halves.isEmpty()) return;
+        if (halves.isEmpty() || halves.get(0) instanceof DecoratedPotBlockEntity) return; // a pot is broken, not opened
         FirstAppleState state = FirstAppleState.get(server);
         FirstAppleState.Pending pending = state.pending();
         if (pending != null) {
@@ -236,11 +280,34 @@ public final class FirstAppleBoost {
     // ---- break ----
 
     /** A marked container is about to break: an extra that is not up for grabs must not drop. */
-    public static void onBreak(ServerLevel level, BlockPos pos) {
+    public static void onBreak(ServerLevel level, ServerPlayer breaker, BlockPos pos) {
         BlockEntity be = level.getBlockEntity(pos);
-        if (be == null || marker(be) == null) return;
-        FirstAppleState state = FirstAppleState.get(level.getServer());
+        if (be == null) return;
+        MinecraftServer server = level.getServer();
+        if (marker(be) == null) {
+            // A pot holding the natural apple: breaking it is a find too.
+            if (be instanceof DecoratedPotBlockEntity pot && CosmicAppleItem.isCosmicApple(pot.getTheItem())) {
+                FirstAppleState state = FirstAppleState.get(server);
+                if (state.pending() == null && CosmicAppleDrops.open(server) && anyUnfound(server, state)) {
+                    markFound(server, state, breaker == null ? null : breaker.getUUID());
+                    LOGGER.info("[DT-FirstApple] apple pot at {} broken; first find recorded", pos);
+                }
+            }
+            return;
+        }
+        FirstAppleState state = FirstAppleState.get(server);
         FirstAppleState.Pending pending = state.pending();
+        if (be instanceof DecoratedPotBlockEntity && pending == null
+                && CosmicAppleDrops.open(server) && anyUnfound(server, state)) {
+            // A pot is found by breaking it: its apple drops, and that is the find.
+            restoreExtra(be, marker(be));
+            forget(level, be, state);
+            if (countApples((Container) be) > 0) {
+                markFound(server, state, breaker == null ? null : breaker.getUUID());
+                LOGGER.info("[DT-FirstApple] apple pot at {} broken; first find recorded", pos);
+            }
+            return;
+        }
         boolean pendingHere = pending != null && isPendingChest(level, pending, List.of(be));
         if (!pendingHere) removeExtra(be);
         forget(level, be, state);
@@ -290,12 +357,59 @@ public final class FirstAppleBoost {
     /** The whole server has found its first: {@code finder} (online or not) and everyone online. */
     private static void markFound(MinecraftServer server, FirstAppleState state, java.util.UUID finder) {
         java.util.Set<java.util.UUID> ids = new java.util.LinkedHashSet<>();
-        ids.add(finder);
+        if (finder != null) ids.add(finder);
+        state.setCarried(0);
         for (ServerPlayer player : server.getPlayerList().getPlayers()) ids.add(player.getUUID());
         for (java.util.UUID id : ids) {
             state.addFound(id);
             PerkProfiles.markFirstAppleFound(id);
         }
+    }
+
+    // ---- fill ----
+
+    /**
+     * About once a second: when the boost has just come on (a player joined or unlocked their first perk, or
+     * the server started), give the groups already built their extras, as if they had been made now.
+     */
+    public static void backfillIfArmed(MinecraftServer server) {
+        FirstAppleState state = FirstAppleState.get(server);
+        Owed now = owed(server);
+        Owed last = state.lastOwed();
+        state.setLastOwed(now);
+        if (now != Owed.EXTRAS || last == Owed.EXTRAS || last == Owed.MARKERS) return;
+        int groups = 0;
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Trains.Carriage group : Trains.allCarriages(level)) {
+                if (backfillGroup(level, state, group)) groups++;
+            }
+        }
+        LOGGER.info("[DT-FirstApple] boost on: filled {} groups already built", groups);
+    }
+
+    private static boolean backfillGroup(ServerLevel level, FirstAppleState state, Trains.Carriage group) {
+        java.util.UUID subLevel = group.ship().subLevelId();
+        int anchor = group.provider().getPIdx();
+        if (!state.markBackfilled(subLevel + "@" + anchor)) return false;
+        int size = Math.max(1, group.provider().getGroupSize());
+        games.brennan.dungeontrain.train.CarriageDims dims = group.provider().dims();
+        BlockPos origin = group.provider().getShipyardOrigin();
+        // The plot starts at the back pad; the carriages start half a pad in (see TrainAssembler.spawnGroup).
+        BlockPos start = origin.offset(size > 1 ? games.brennan.dungeontrain.train.CarriagePlacer.halfPadLen(dims) : 0, 0, 0);
+        BoundingBox bounds = BoundingBox.fromCorners(start, start.offset(dims.length() * size - 1, dims.height(), dims.width()));
+        java.util.function.Predicate<BlockPos> shared = pos ->
+            games.brennan.dungeontrain.train.SharedCarriageRegistry.resolve(subLevel, pos.getX(), pos.getY(), pos.getZ()) != null;
+        boolean natural = false;
+        for (Container c : CosmicAppleDrops.containersIn(level, bounds)) {
+            if (marker((BlockEntity) c) != null) return false; // made while the boost was on: already has its extras
+            natural |= countApples(c) > 0;
+        }
+        for (DecoratedPotBlockEntity pot : CosmicAppleDrops.potsIn(level, bounds)) {
+            if (marker(pot) != null) return false;
+            natural |= CosmicAppleItem.isCosmicApple(pot.getTheItem());
+        }
+        placeExtras(level, List.of(new Box(bounds, anchor, dims.length())), natural, size, false, shared);
+        return true;
     }
 
     // ---- containers ----
@@ -345,13 +459,22 @@ public final class FirstAppleBoost {
         if (marker.slot() < 0 || marker.slot() >= c.getContainerSize()) return;
         ItemStack stack = c.getItem(marker.slot());
         if (!stack.is(ModItems.COSMIC_APPLE.get())) return;
-        c.setItem(marker.slot(), stack.getCount() > 1 ? stack.copyWithCount(stack.getCount() - 1) : ItemStack.EMPTY);
+        ItemStack left = stack.getCount() > 1 ? stack.copyWithCount(stack.getCount() - 1) : marker.was().copy();
+        c.setItem(marker.slot(), left);
         c.setChanged();
     }
 
     /** Put the extra back (seeking again), moving it to another free slot if its own is taken. */
     private static void restoreExtra(BlockEntity be, Marker marker) {
         if (!(be instanceof Container c)) return;
+        if (be instanceof DecoratedPotBlockEntity) {
+            ItemStack now = c.getItem(0);
+            if (now.is(ModItems.COSMIC_APPLE.get())) return;
+            writeMarker(be, new Marker(0, marker.pIdx(), marker.groupSize(), now.copy()));
+            c.setItem(0, new ItemStack(ModItems.COSMIC_APPLE.get()));
+            c.setChanged();
+            return;
+        }
         if (marker.slot() >= 0 && marker.slot() < c.getContainerSize()) {
             ItemStack stack = c.getItem(marker.slot());
             if (stack.is(ModItems.COSMIC_APPLE.get())) return;
@@ -380,7 +503,11 @@ public final class FirstAppleBoost {
         CompoundTag data = be.getPersistentData();
         if (!data.contains(NBT_KEY, Tag.TAG_COMPOUND)) return null;
         CompoundTag tag = data.getCompound(NBT_KEY);
-        return new Marker(tag.getInt(TAG_SLOT), tag.getInt(TAG_PIDX), tag.getInt(TAG_GROUP));
+        ItemStack was = ItemStack.EMPTY;
+        if (tag.contains(TAG_WAS, Tag.TAG_COMPOUND) && be.getLevel() != null) {
+            was = ItemStack.parseOptional(be.getLevel().registryAccess(), tag.getCompound(TAG_WAS));
+        }
+        return new Marker(tag.getInt(TAG_SLOT), tag.getInt(TAG_PIDX), tag.getInt(TAG_GROUP), was);
     }
 
     private static void writeMarker(BlockEntity be, Marker marker) {
@@ -388,6 +515,9 @@ public final class FirstAppleBoost {
         tag.putInt(TAG_SLOT, marker.slot());
         tag.putInt(TAG_PIDX, marker.pIdx());
         tag.putInt(TAG_GROUP, marker.groupSize());
+        if (!marker.was().isEmpty() && be.getLevel() != null) {
+            tag.put(TAG_WAS, marker.was().save(be.getLevel().registryAccess()));
+        }
         be.getPersistentData().put(NBT_KEY, tag);
         be.setChanged();
     }

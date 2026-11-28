@@ -48,4 +48,29 @@ class FirstAppleBoostTest {
         assertFalse(PerkProfileStore.firstAppleFoundIn(root), "the old root is unchanged");
         assertEquals(7, next.getInt("Other"));
     }
+
+    @Test
+    void owedAddsWhatEarlierGroupsCarriedUpToTheCap() {
+        assertEquals(2, FirstAppleBoost.owedWith(false, 0));
+        assertEquals(3, FirstAppleBoost.owedWith(true, 2));
+        assertEquals(FirstAppleBoost.MAX_EXTRAS, FirstAppleBoost.owedWith(false, 9));
+        assertEquals(2, FirstAppleBoost.owedWith(false, -3), "a bad saved carry counts as none");
+    }
+
+    @Test
+    void whatDoesNotFitCarriesOn() {
+        assertEquals(2, FirstAppleBoost.carryAfter(2, 0), "a group with nowhere to put them passes both on");
+        assertEquals(1, FirstAppleBoost.carryAfter(2, 1));
+        assertEquals(0, FirstAppleBoost.carryAfter(2, 2));
+        assertEquals(0, FirstAppleBoost.carryAfter(1, 3));
+    }
+
+    @Test
+    void naturalPotPickIsSeededAndInRange() {
+        for (int pIdx = -20; pIdx < 20; pIdx++) {
+            int pick = CosmicAppleDrops.potIndex(12345L, pIdx, 3);
+            assertTrue(pick >= 0 && pick < 3);
+            assertEquals(pick, CosmicAppleDrops.potIndex(12345L, pIdx, 3));
+        }
+    }
 }

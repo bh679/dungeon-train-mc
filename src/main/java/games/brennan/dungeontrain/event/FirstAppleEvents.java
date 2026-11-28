@@ -15,8 +15,8 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * Drives {@link FirstAppleBoost}: a container opened (before its menu shows, so a cleared or restored extra
- * is what the player sees), a marked container broken, and a once-a-second check of the chest waiting to be
- * emptied or left behind. Clicks arrive in plot space for carriage blocks, as {@link LuckyLootEvents} relies on.
+ * is what the player sees), a marked container or pot broken, and a once-a-second check that fills the groups
+ * already built when the boost comes on and settles the chest waiting to be emptied or left behind. Clicks arrive in plot space for carriage blocks, as {@link LuckyLootEvents} relies on.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class FirstAppleEvents {
@@ -41,13 +41,14 @@ public final class FirstAppleEvents {
     public static void onBreak(BlockEvent.BreakEvent event) {
         if (!PerksGate.isOn()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        FirstAppleBoost.onBreak(level, event.getPos());
+        FirstAppleBoost.onBreak(level, event.getPlayer() instanceof ServerPlayer p ? p : null, event.getPos());
     }
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         if (!PerksGate.isOn()) return;
         if (event.getServer().getTickCount() % CHECK_EVERY_TICKS != 0) return;
+        FirstAppleBoost.backfillIfArmed(event.getServer());
         FirstAppleBoost.tick(event.getServer());
     }
 }
