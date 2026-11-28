@@ -366,6 +366,14 @@ public final class FirstAppleBoost {
         }
     }
 
+    /**
+     * Another drop is taking this container over: drop the first-apple marker (and forget the spot), so the
+     * boost never takes that drop's apple back out. Only for a container not holding the boost's apple.
+     */
+    static void release(ServerLevel level, BlockEntity be) {
+        forget(level, be, FirstAppleState.get(level.getServer()));
+    }
+
     // ---- fill ----
 
     /**

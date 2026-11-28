@@ -25,7 +25,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * A cosmic apple turns up in about one carriage group in {@link #EVERY}: one stack of one, in one chest,
+ * A cosmic apple turns up in about one carriage group in {@link #EVERY} (plus {@link TimedPotApple}'s pot
+ * apple every ten minutes on the train): one stack of one, in one chest,
  * barrel or shulker box of that group. Every Diff-Level, Level 0 included, gets at least {@link #MIN_PER_LEVEL}:
  * a level whose groups win fewer draws tops up with groups picked by seed ({@link #isFloorGroup}); each side
  * of the origin counts on its own, as Diff-Level uses distance. Which apple depends on depth
@@ -41,7 +42,7 @@ public final class CosmicAppleDrops {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** One group in this many gets an apple. */
-    static final int EVERY = 5;
+    static final int EVERY = 10;
     /** Every Diff-Level (each side of the origin) gets at least this many apple groups. */
     static final int MIN_PER_LEVEL = 1;
     /** The tier roll is out of this many: basis points, so the curves keep two decimals of a per cent. */
@@ -177,6 +178,11 @@ public final class CosmicAppleDrops {
     /** Chance of a Violet Core at {@code diffLevel}, in basis points of {@link #ROLL_RANGE}. */
     static int coreChance(int diffLevel) {
         return AppleTierCurve.CORE.basisPointsAt(diffLevel);
+    }
+
+    /** One apple of the tier {@link #tierFor} draws for {@code index} at {@code diffLevel}. */
+    static ItemStack rollApple(long seed, long index, int diffLevel) {
+        return new ItemStack(appleFor(tierFor(seed, index, diffLevel)));
     }
 
     private static Item appleFor(int tier) {

@@ -20,12 +20,12 @@ final class CosmicAppleDropsTest {
     }
 
     @Test
-    @DisplayName("about one carriage group in five draws an apple")
+    @DisplayName("about one carriage group in ten draws an apple")
     void rate() {
         int hits = 0;
         for (int g = -GROUPS / 2; g < GROUPS / 2; g++) if (CosmicAppleDrops.groupGetsApple(12345L, g)) hits++;
         double rate = hits / (double) GROUPS;
-        assertTrue(Math.abs(rate - 0.2) < 0.015, "rate " + rate);
+        assertTrue(Math.abs(rate - 0.1) < 0.01, "rate " + rate);
     }
 
     @Test

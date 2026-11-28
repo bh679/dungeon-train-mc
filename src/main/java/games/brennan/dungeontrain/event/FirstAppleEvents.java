@@ -49,6 +49,7 @@ public final class FirstAppleEvents {
         if (!PerksGate.isOn()) return;
         if (event.getServer().getTickCount() % CHECK_EVERY_TICKS != 0) return;
         FirstAppleBoost.backfillIfArmed(event.getServer());
+        games.brennan.dungeontrain.perks.TimedPotApple.tick(event.getServer());
         FirstAppleBoost.tick(event.getServer());
     }
 }
