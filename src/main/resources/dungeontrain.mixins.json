@@ -239,6 +239,7 @@
     "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.LevelRendererEntityTargetAccessor",
     "client.MinecraftEmergencyCrashMixin",
     "client.ExposureClientInitOnceMixin",
     "client.ExposurePolaroidClientInitOnceMixin",

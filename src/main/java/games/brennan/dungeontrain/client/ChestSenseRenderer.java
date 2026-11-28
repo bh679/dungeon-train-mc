@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
@@ -14,7 +15,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -32,6 +32,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.joml.Vector3d;
 
 import java.util.HashMap;
@@ -41,15 +42,15 @@ import java.util.UUID;
 
 /**
  * Chest Sense's outlines and ring. Every container in the last pulse ({@link ChestSenseClientState})
- * glows with the spectral-arrow outline (vanilla's {@code entity_outline} post pass), in the colour of
+ * glows with the spectral-arrow outline (vanilla's glow post pass, with a thicker edge), in the colour of
  * its rarest item ({@link ChestSenseRarity}); a vault's colour follows the item it is showing.
  *
- * <p>The container is drawn again into the outline buffer only, never the main one: its block entity
- * renderer (chests, shulker boxes, pots, the vault's spinning item) and its block model (barrels, the
- * vault's cage) both go through {@link #OutlineOnly}, which keeps a render type's outline twin and drops
- * the rest. Drawn at {@code AFTER_ENTITIES}, before the outline batch ends and the post pass runs;
- * {@code requestOutlineEffect} makes that pass run with no glowing entity in view. The outline type has
- * no depth test, so the glow shows through walls.</p>
+ * <p>The container is drawn again as a silhouette only, never into the world: its block entity renderer
+ * (chests, shulker boxes, pots, the vault's spinning item) and its block model (barrels, the vault's cage)
+ * both go through {@link ChestSenseGlow#source}, which keeps a render type's outline twin and drops the
+ * rest. {@link ChestSenseGlow} runs the edge pass on a target of its own, wider than vanilla's, so the
+ * line is bold; the outline type has no depth test, so the glow shows through walls. Drawn at
+ * {@code AFTER_LEVEL}, under the hand, as vanilla's glow is.</p>
  *
  * <p>Containers on a carriage are plot-local and placed through their sub-level's
  * {@link ClientSubLevel#renderPose(float)}, the pose Sable draws the carriage with, so the glow rides a
@@ -83,26 +84,36 @@ public final class ChestSenseRenderer {
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         List<ChestSense.Sensed> sensed = ChestSenseClientState.active();
         if (sensed.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
-        if (level == null) return;
+        if (level == null || !ChestSenseGlow.begin(mc)) return;
 
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        // AFTER_LEVEL runs with the camera's rotation popped off; put it back for the silhouettes.
+        Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        modelView.mul(event.getModelViewMatrix());
+        RenderSystem.applyModelViewMatrix();
+        try {
+            drawAll(mc, level, sensed, event.getCamera().getPosition(), partialTick);
+        } finally {
+            ChestSenseGlow.endDraw(mc);
+            modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
+        }
+        ChestSenseGlow.present(mc, partialTick);
+    }
+
+    private static void drawAll(Minecraft mc, ClientLevel level, List<ChestSense.Sensed> sensed, Vec3 cam, float partialTick) {
         Map<UUID, ClientSubLevel> subs = new HashMap<>();
         ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container != null) {
             for (ClientSubLevel sl : container.getAllSubLevels()) subs.put(sl.getUniqueId(), sl);
         }
-
-        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        Vec3 cam = event.getCamera().getPosition();
-        PoseStack ps = event.getPoseStack();
-        OutlineBufferSource outline = mc.renderBuffers().outlineBufferSource();
-        OutlineOnly buffers = new OutlineOnly(outline);
-        boolean drew = false;
-
+        PoseStack ps = new PoseStack();
         for (ChestSense.Sensed s : sensed) {
             Pose3dc pose = null;
             if (s.subLevel() != null) {
@@ -114,15 +125,12 @@ public final class ChestSenseRenderer {
             BlockState state = level.getBlockState(s.pos());
             if (state.isAir()) continue;
             BlockEntity be = level.getBlockEntity(s.pos());
-            ChestSenseRarity.Tier tier = tierNow(s, be);
-            outline.setColor(tier.red(), tier.green(), tier.blue(), 255);
-
+            MultiBufferSource buffers = ChestSenseGlow.source(tierNow(s, be).rgb());
             ps.pushPose();
             ps.last().pose().mul(placement(s.pos(), pose, cam));
-            drew |= drawContainer(mc, ps, buffers, state, be, partialTick);
+            drawContainer(mc, ps, buffers, state, be, partialTick);
             ps.popPose();
         }
-        if (drew) mc.levelRenderer.requestOutlineEffect();
     }
 
     /** A vault's colour is the band of the item it shows now; anything else keeps its pulse colour. */
@@ -179,52 +187,5 @@ public final class ChestSenseRenderer {
             (float) y.x, (float) y.y, (float) y.z, 0F,
             (float) z.x, (float) z.y, (float) z.z, 0F,
             (float) (o.x - cam.x), (float) (o.y - cam.y), (float) (o.z - cam.z), 1F);
-    }
-
-    /**
-     * Passes only outline render types to the outline buffer (a type's outline twin, or an outline type
-     * itself); everything else goes nowhere, so the container is not drawn a second time.
-     */
-    private record OutlineOnly(OutlineBufferSource outline) implements MultiBufferSource {
-        @Override
-        public VertexConsumer getBuffer(RenderType type) {
-            if (type.isOutline()) return outline.getBuffer(type);
-            return type.outline().map(outline::getBuffer).orElse(NoOpConsumer.INSTANCE);
-        }
-    }
-
-    /** Swallows every vertex. */
-    private enum NoOpConsumer implements VertexConsumer {
-        INSTANCE;
-
-        @Override
-        public VertexConsumer addVertex(float x, float y, float z) {
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setColor(int red, int green, int blue, int alpha) {
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv(float u, float v) {
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv1(int u, int v) {
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv2(int u, int v) {
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setNormal(float x, float y, float z) {
-            return this;
-        }
     }
 }
