@@ -31,14 +31,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A soft starlight glow rising off each cosmic carpet, a vertical gradient: strongest at the
+ * A soft glow of the carpet's own night rising off each cosmic carpet, a vertical gradient: strongest at the
  * carpet, gone {@link #HEIGHT} blocks up.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ConstellationWindowGlow {
 
     static final float HEIGHT = 0.5f;
-    static final float BASE_ALPHA = 0.5f;
+    static final float BASE_ALPHA = 0.75f;
 
     private ConstellationWindowGlow() {}
 
@@ -103,14 +103,14 @@ public final class ConstellationWindowGlow {
     }
 
     /** The four sides of one window's column; {@code pose} places a carriage's window. */
-    /** How far each side leans in by the top, in blocks: the glow stays over the carpet. */
-    static final float LEAN = 0.3f;
-    /** The glow's colour: a soft starlight violet, so it shows over the dark hole as well as the floor. */
-    static final int GLOW_RGB = 0x9A8CFF;
+    /** How far each side leans in by the top, in blocks: 0, the sides stand straight up off its edges. */
+    static final float LEAN = 0f;
+    /** The glow's colour: the carpet's own night (the Perks menu's sky). */
+    static final int GLOW_RGB = games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG & 0xFFFFFF;
 
     /**
-     * One carpet's glow: its four edges rise half a block, leaning in, strongest at the carpet and gone
-     * at the top. Leaning in, every side faces up, so from above all four show, over the carpet only.
+     * One carpet's glow: its four edges rise half a block, strongest at the carpet and gone at the top.
+     * From any side the two far edges stand against the floor behind, the near two over the hole.
      * {@code pose} places a carriage's carpet.
      */
     private static int column(BufferBuilder bb, Matrix4f view, Vec3 cam, long packed, Pose3dc pose) {
