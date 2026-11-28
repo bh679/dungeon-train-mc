@@ -358,17 +358,21 @@ public final class ConstellationSky {
         RenderSystem.disableCull();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        // night under everything
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        BufferBuilder fill = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
-        rings(radii, soft, c, alpha, (x, y, a) -> {
-            Vector3f p = ConstellationGeometry.point(x, y);
-            fill.addVertex(view, p.x, p.y, p.z).setColor(SkyDomeDraw.argb(a, PerksScreen.SKY_BG & 0xFFFFFF));
-        });
-        BufferUploader.drawWithShader(fill.buildOrThrow());
+        // Night past the picture's edge only: under the picture too, a part-faded disc would lay its
+        // alpha down twice there and show the picture's circle darker than the rest.
+        float limit = Math.min(Math.min(sq[0], gw - sq[0]), Math.min(sq[1], gh - sq[1])) / sq[2];
+        float[] fillRadii = beyondRadii(radii, limit);
+        if (fillRadii.length >= 2) {
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            BufferBuilder fill = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+            rings(fillRadii, soft, c, alpha, (x, y, a) -> {
+                Vector3f p = ConstellationGeometry.point(x, y);
+                fill.addVertex(view, p.x, p.y, p.z).setColor(SkyDomeDraw.argb(a, PerksScreen.SKY_BG & 0xFFFFFF));
+            });
+            BufferUploader.drawWithShader(fill.buildOrThrow());
+        }
 
         // the picture, as far as it goes
-        float limit = Math.min(Math.min(sq[0], gw - sq[0]), Math.min(sq[1], gh - sq[1])) / sq[2];
         float[] texRadii = clipRadii(radii, limit);
         if (texRadii.length >= 2) {
             RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
@@ -420,6 +424,17 @@ public final class ConstellationSky {
         r[0] = 0f;
         for (int i = 0; i <= FEATHER_RINGS; i++) r[i + 1] = core + ConstellationEdge.FEATHER_WIDTH * i / FEATHER_RINGS;
         return r;
+    }
+
+    /** The part of {@code radii} past {@code limit}, starting at the limit itself; empty when none is. */
+    static float[] beyondRadii(float[] radii, float limit) {
+        java.util.List<Float> out = new java.util.ArrayList<>();
+        out.add(limit);
+        for (float r : radii) if (r > limit) out.add(r);
+        if (out.size() < 2) return new float[0];
+        float[] a = new float[out.size()];
+        for (int i = 0; i < a.length; i++) a[i] = out.get(i);
+        return a;
     }
 
     /** {@code radii} cut off at {@code limit}, with the limit itself as the last ring. */

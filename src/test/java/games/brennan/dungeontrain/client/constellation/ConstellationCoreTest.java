@@ -33,5 +33,8 @@ class ConstellationCoreTest {
     void ringsAreClippedAtThePicturesEdge() {
         assertArrayEquals(new float[] {0f, 0.5f, 0.9f}, ConstellationSky.clipRadii(new float[] {0f, 0.5f, 1f, 1.2f}, 0.9f));
         assertArrayEquals(new float[] {0f, 0.5f}, ConstellationSky.clipRadii(new float[] {0f, 0.5f}, 2f));
+        // the night fill takes over exactly where the picture stops, never under it
+        assertArrayEquals(new float[] {0.9f, 1f, 1.2f}, ConstellationSky.beyondRadii(new float[] {0f, 0.5f, 1f, 1.2f}, 0.9f));
+        assertArrayEquals(new float[0], ConstellationSky.beyondRadii(new float[] {0f, 0.5f}, 2f));
     }
 }
