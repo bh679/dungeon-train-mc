@@ -26,6 +26,10 @@ public final class TributeTvClientEvents {
     /** The {@code [tributetv]} line's cadence, the {@code [frame]} line's. */
     private static final long PERF_WINDOW_MS = 10_000L;
     private static long perfWindowStartMs;
+    /** Client ticks, for telling a held left-click from a new one. */
+    private static long clientTicks;
+    /** The tick of the last left-click event on a showing TV. */
+    private static long lastTvLeftClickTick = Long.MIN_VALUE / 2;
 
     private TributeTvClientEvents() {}
 
@@ -49,6 +53,7 @@ public final class TributeTvClientEvents {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        clientTicks++;
         TributeTvVisit.onClientTick();
         TributeTvShowcase.onClientTick();
         logPerf();
@@ -99,9 +104,30 @@ public final class TributeTvClientEvents {
         if (!TributeTvVisit.ownsClick(pos) && !TributeTvShowcase.ownsClick(pos)) return;
         boolean sneak = event.getEntity().isShiftKeyDown();
         if (event instanceof net.neoforged.bus.api.ICancellableEvent c) c.setCanceled(true);
+        PlayerInteractEvent.LeftClickBlock.Action action = null;
+        long ticksSinceLeft = Long.MAX_VALUE;
+        if (event instanceof PlayerInteractEvent.LeftClickBlock left) {
+            action = left.getAction();
+            ticksSinceLeft = clientTicks - lastTvLeftClickTick;
+            lastTvLeftClickTick = clientTicks;
+        }
+        if (!deliversClick(event instanceof PlayerInteractEvent.RightClickBlock, event.getHand(), action, ticksSinceLeft)) return;
         Minecraft.getInstance().tell(() -> {
             if (!TributeTvVisit.onTvClicked(pos, sneak)) TributeTvShowcase.onTvClicked(pos, sneak);
         });
+    }
+
+    /**
+     * Whether a (cancelled) interaction event on a showing TV is a fresh press the page should get. One
+     * press fires several: a right-click cancelled with the default PASS goes on to the off hand, and a
+     * cancelled left-click starts over (another {@code START}) every tick the button stays down. Each one
+     * queued a page click, so the photo viewer's Next stepped two or more photos at a time. A left-click
+     * is new only when none came the tick before ({@code ticksSinceLastLeft} &gt; 1).
+     */
+    static boolean deliversClick(boolean rightClick, net.minecraft.world.InteractionHand hand,
+                                 PlayerInteractEvent.LeftClickBlock.Action leftAction, long ticksSinceLastLeft) {
+        if (rightClick) return hand == net.minecraft.world.InteractionHand.MAIN_HAND;
+        return leftAction == PlayerInteractEvent.LeftClickBlock.Action.START && ticksSinceLastLeft > 1;
     }
 
     /**

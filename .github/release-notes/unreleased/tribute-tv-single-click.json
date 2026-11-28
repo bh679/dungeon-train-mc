@@ -1,0 +1,16 @@
+{
+  "id": "tribute-tv-single-click",
+  "version": "0.2078.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Something secret",
+  "summary": "The developer fixed something secret.",
+  "highlights": [],
+  "pr": 2949,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
