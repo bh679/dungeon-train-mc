@@ -320,8 +320,8 @@ final class PerkDetailsBar {
         List<PerkTree.Perk> perks = tree.perksOf(c.id());
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (c.colour() & 0xFFFFFF));
         int x = PAD + STRIPE, y = top + PAD;
-        g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
-        int column = leftColumn(c.name());
+        g.drawString(font, PerkNames.cls(c), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
+        int column = leftColumn(PerkNames.cls(c));
         renderSegments(g, snap, perks, c.colour(), x, y + LINE + 4, column - 12, a);
         int split = x + column;
         divider(g, split, a);
@@ -442,8 +442,15 @@ final class PerkDetailsBar {
         if (perk == null) {
             // Opened with P before anything is unlocked: nothing here can be used yet, so say so
             // instead of inviting a click. The death screen's menu (where unlocking happens) keeps the hint.
+            // In game with perks unlocked and an apple point to spend: count what's unlocked and active.
             boolean notReady = activeOnly && snap.unlocked().isEmpty();
-            Component hint = Component.translatable(KEY + (notReady ? "not_ready" : "hint"));
+            boolean canActivate = activeOnly && !notReady && snap.activePoints() > 0;
+            int unlocked = snap.unlocked().size();
+            int active = snap.active().size();
+            Component hint = notReady ? Component.translatable(KEY + "not_ready")
+                : canActivate && active == 0 ? Component.translatable(KEY + "no_active", unlocked)
+                : canActivate ? Component.translatable(KEY + "some_active", unlocked, active)
+                : Component.translatable(KEY + "hint");
             int colour = ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF);
             java.util.List<net.minecraft.util.FormattedCharSequence> lines = font.split(hint, Math.max(40, width - 2 * STRIPE - 24));
             int lineH = font.lineHeight + 2;
@@ -473,7 +480,7 @@ final class PerkDetailsBar {
         int contentRight = width - PAD - (BUTTON_W + GAP) * buttonCount() - (callButton != null ? CALL_W + GAP : 0) - 6;
         String name = text.name(p);
         g.drawString(font, name, x, y, (a << 24) | (colour & 0xFFFFFF), true);
-        String cls = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("").toUpperCase(Locale.ROOT)
+        String cls = tree.perkClass(p.cls()).map(PerkNames::cls).orElse("").toUpperCase(Locale.ROOT)
             + " · " + Component.translatable(KEY + "tier", p.tier()).getString().toUpperCase(Locale.ROOT) + (locked ? "  •" : "");
         int clsW = (int) Math.ceil(font.width(cls) * CLASS_SCALE);
         g.pose().pushPose();

@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.vault.VaultBlockEntity;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.ChestType;
@@ -62,7 +63,8 @@ public final class ChestSenseEvents {
         if (event.getLevel().isClientSide()) return;
         if (event.getEntity().isSecondaryUseActive() && !event.getEntity().getMainHandItem().isEmpty()) return;
         BlockEntity be = event.getLevel().getBlockEntity(event.getPos());
-        if (be == null || ChestSense.isVase(be) || !ChestSense.isSensedKind(be)) return;
+        // A vault stops glowing for a player once it has rewarded them, not when it is clicked.
+        if (be == null || ChestSense.isVase(be) || be instanceof VaultBlockEntity || !ChestSense.isSensedKind(be)) return;
         markOpened(be);
         // A double chest is two block entities: the half not clicked was opened too.
         BlockState state = be.getBlockState();
@@ -82,7 +84,7 @@ public final class ChestSenseEvents {
     static void pulse(ServerPlayer player, int rank, long now) {
         player.getPersistentData().putLong(NEXT_KEY, now + ChestSense.intervalTicks(rank));
         double range = ChestSense.range(rank);
-        List<ChestSense.Sensed> found = ChestSense.scan(player.serverLevel(), player.getEyePosition(), range);
+        List<ChestSense.Sensed> found = ChestSense.scan(player.serverLevel(), player, player.getEyePosition(), range);
         PacketDistributor.sendToPlayer(player, new ChestSensePacket(ChestSense.glowTicks(), (float) range, found));
         player.playNotifySound(SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6F, 1.4F);
     }

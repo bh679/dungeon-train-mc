@@ -5602,6 +5602,7 @@
       "gui.dungeontrain.follows.looking",
       "gui.dungeontrain.follows.unreachable",
       "gui.dungeontrain.follows.empty",
+      "gui.dungeontrain.follows.full",
       "perk.dungeontrain.reroll-trades.name",
       "perk.dungeontrain.reroll-trades.desc",
       "perk.dungeontrain.class.c0",
@@ -5782,6 +5783,8 @@
       "gui.dungeontrain.perks.zoom.closest",
       "gui.dungeontrain.perks.bar.full",
       "gui.dungeontrain.perks.bar.hint",
+      "gui.dungeontrain.perks.bar.no_active",
+      "gui.dungeontrain.perks.bar.some_active",
       "gui.dungeontrain.perks.bar.not_ready",
       "gui.dungeontrain.perks.counter.unlock.click",
       "gui.dungeontrain.perks.death.kicker",
@@ -5808,6 +5811,7 @@
       "item.dungeontrain.tribute_cassette.tooltip",
       "chat.dungeontrain.tribute_room.tv_stays",
       "chat.dungeontrain.tribute_room.view_only",
+      "chat.dungeontrain.tribute_room.own_placed_only",
       "chat.dungeontrain.tribute_room.banner"
     ],
     "adventureitemnames": [

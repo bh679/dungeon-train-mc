@@ -18482,6 +18482,13 @@
       ]
     }
   },
+  "gui.dungeontrain.perks.bar.no_active": {
+    "1": { "label": "how many perks the player has unlocked", "examples": ["3", "12"] }
+  },
+  "gui.dungeontrain.perks.bar.some_active": {
+    "1": { "label": "how many perks the player has unlocked", "examples": ["3", "12"] },
+    "2": { "label": "how many of those are active this life", "examples": ["1", "4"] }
+  },
   "gui.dungeontrain.perks.unlock_points": {
     "1": {
       "label": "how many unlock points are unspent",

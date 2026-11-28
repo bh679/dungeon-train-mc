@@ -41,7 +41,7 @@ final class SkyNames {
             double cx = view.toScreenX(p.x(), width), cy = view.toScreenY(p.y(), sky.skyH());
             int[] at = e.getValue();
             double x0 = at[0], y0 = at[1];
-            double x1 = x0 + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), y1 = y0 + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE);
+            double x1 = x0 + Math.ceil(font.width(PerkNames.perk(p)) * SkyPalette.NAME_SCALE), y1 = y0 + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE);
             // nearest point of the label to the dot's middle, stepped just off the label toward the dot
             double nx = Math.max(x0, Math.min(cx, x1)), ny = Math.max(y0, Math.min(cy, y1));
             double dx = cx - nx, dy = cy - ny, d = Math.hypot(dx, dy);
@@ -72,11 +72,11 @@ final class SkyNames {
                 .sorted(Comparator.comparingDouble((PerkTree.Perk p) -> -stars.get(p.id())[0]))
                 .map(p -> {
                     double[] st = stars.get(p.id());
-                    return new NameLayout.Want(p.id(), st[0], st[1], st[2], (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), h, true);
+                    return new NameLayout.Want(p.id(), st[0], st[1], st[2], (int) Math.ceil(font.width(PerkNames.perk(p)) * SkyPalette.NAME_SCALE), h, true);
                 })
                 .toList();
             NameLayout.place(wants, List.of(), stars).forEach((id, at) -> tree.perk(id).ifPresent(p -> out.add(
-                new NameLayout.Box(at[0], at[1], at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + h))));
+                new NameLayout.Box(at[0], at[1], at[0] + Math.ceil(font.width(PerkNames.perk(p)) * SkyPalette.NAME_SCALE), at[1] + h))));
         }
         return out;
     }
@@ -111,7 +111,7 @@ final class SkyNames {
             .forEach(p -> {
                 double[] s = stars.get(p.id());
                 wants.add(new NameLayout.Want(p.id(), s[0], s[1], s[2],
-                    (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE),
+                    (int) Math.ceil(font.width(PerkNames.perk(p)) * SkyPalette.NAME_SCALE), (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE),
                     rank.applyAsInt(p) <= 2));
             });
         return NameLayout.place(wants, titles, stars);

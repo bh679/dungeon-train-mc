@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "Mencari %s…",
   "gui.dungeontrain.follows.unreachable": "Tidak bisa memeriksa nama itu sekarang. Coba lagi nanti.",
   "gui.dungeontrain.follows.empty": "Ketik nama pemain di bawah untuk mengikutinya.",
+  "gui.dungeontrain.follows.full": "Aktifkan satu poin lagi untuk mengikuti lebih banyak penulis.",
   "perk.dungeontrain.reroll-trades.name": "Acak Ulang Dagang",
   "perk.dungeontrain.reroll-trades.desc": "Acak ulang dagangan penduduk dengan zamrud. Setiap acak ulang pada penduduk yang sama harganya dua kali lipat.",
   "perk.dungeontrain.class.c0": "Arsiparis",
@@ -6621,6 +6622,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Paling dekat",
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka lagi untuk ruang satu poin lagi.",
   "gui.dungeontrain.perks.bar.hint": "Arahkan ke perk untuk melihatnya di sini. Klik untuk menyematkannya.",
+  "gui.dungeontrain.perks.bar.no_active": "Kamu punya %s perk yang terbuka, tetapi 0 yang aktif. Klik untuk mengaktifkan satu.",
+  "gui.dungeontrain.perks.bar.some_active": "Kamu punya %1$s perk yang terbuka dan %2$s yang aktif. Klik untuk mengaktifkan satu lagi.",
   "gui.dungeontrain.perks.bar.not_ready": "Kamu menemukan sesuatu yang akan penting nanti, tapi kamu belum siap. Kembalilah nanti.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan.",
   "gui.dungeontrain.perks.death.kicker": "Poin yang kamu bawa",
@@ -6643,5 +6646,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Disetel ke ruang tributmu. TV-nya memutar kisahmu sendiri.",
   "chat.dungeontrain.tribute_room.tv_stays": "TV-nya tetap di sini. Bangunlah di sekitarnya.",
   "chat.dungeontrain.tribute_room.view_only": "Ruang tribut milik orang lain. Lihat saja, tapi tinggalkan seperti saat kamu menemukannya.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Ruanganmu. Tambahkan balok, tapi hanya balok yang kamu pasang yang bisa diambil lagi.",
   "chat.dungeontrain.tribute_room.banner": "Ruangan ini adalah tribut untuk dan oleh %s"
 }

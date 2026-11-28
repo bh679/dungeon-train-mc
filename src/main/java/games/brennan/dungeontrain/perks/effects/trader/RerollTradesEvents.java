@@ -65,6 +65,7 @@ public final class RerollTradesEvents {
             if (rolled.isEmpty() || rolled.get().isEmpty()) return;
             if (price > 0) takeEmeralds(player, price);
             villager.setOffers(rolled.get());
+            restoreSessionRows(villager, player);
             // The old selection may be past the end of the new list: start again from the first trade.
             menu.setSelectionHint(0);
             menu.slotsChanged(menu.getSlot(0).container);
@@ -78,6 +79,17 @@ public final class RerollTradesEvents {
             // Never let a perk break the trade screen; vanilla trading carries on.
             LOGGER.warn("[DungeonTrain] Reroll Trades failed for {}", player.getName().getString(), e);
         }
+    }
+
+    /**
+     * Puts back the rows other mods add to the offer list for the length of a trading session. Trade
+     * Everything prepends its "Trade Anything" row when {@code setTradingPlayer(player)} runs, into the
+     * villager's real offers; a freshly rolled list has no such row and the session is already open, so it
+     * would be gone until the menu is reopened. Setting the same player again re-runs that hook (vanilla
+     * only stops trading on a change to null), and the mod builds its row exactly as it does on open.
+     */
+    private static void restoreSessionRows(Villager villager, ServerPlayer player) {
+        villager.setTradingPlayer(player);
     }
 
     private static void sendStatus(ServerPlayer player, int containerId, int rank, Villager villager) {

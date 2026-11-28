@@ -1,0 +1,16 @@
+{
+  "id": "reroll-keeps-trade-anything-row",
+  "version": "0.2071.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Back-end changes",
+  "summary": "Back-end changes.",
+  "highlights": [],
+  "pr": 2941,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

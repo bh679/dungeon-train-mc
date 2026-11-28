@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Suche nach %s…",
   "gui.dungeontrain.follows.unreachable": "Name konnte gerade nicht geprüft werden. Versuch es später erneut.",
   "gui.dungeontrain.follows.empty": "Gib unten den Namen eines Spielers ein, um ihm zu folgen.",
+  "gui.dungeontrain.follows.full": "Aktiviere einen weiteren Punkt, um mehr Autoren zu folgen.",
   "perk.dungeontrain.reroll-trades.name": "Angebote neu würfeln",
   "perk.dungeontrain.reroll-trades.desc": "Würfle die Angebote eines Dorfbewohners für Smaragde neu. Jeder weitere Neuwurf beim selben Dorfbewohner kostet doppelt so viel.",
   "perk.dungeontrain.class.c0": "Archivar",
@@ -6693,6 +6694,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Ganz nah",
   "gui.dungeontrain.perks.bar.full": "Voll. Schalte ihn erneut frei für Platz für einen weiteren Punkt.",
   "gui.dungeontrain.perks.bar.hint": "Fahre über einen Perk, um ihn hier zu sehen. Klicke, um ihn festzuhalten.",
+  "gui.dungeontrain.perks.bar.no_active": "Du hast %s freigeschaltete Perks, aber 0 sind aktiv. Klicke, um einen zu aktivieren.",
+  "gui.dungeontrain.perks.bar.some_active": "Du hast %1$s freigeschaltete Perks und %2$s sind aktiv. Klicke, um einen weiteren zu aktivieren.",
   "gui.dungeontrain.perks.bar.not_ready": "Du hast etwas gefunden, das später wichtig wird, aber du bist noch nicht bereit. Komm später wieder.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klicken, um die Fortschritte zu öffnen.",
   "gui.dungeontrain.perks.death.kicker": "Die Punkte, die du trugst",
@@ -6717,5 +6720,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Auf dein Tributzimmer eingestellt. Sein Fernseher zeigt deine eigene Geschichte.",
   "chat.dungeontrain.tribute_room.tv_stays": "Der Fernseher bleibt. Bau drumherum.",
   "chat.dungeontrain.tribute_room.view_only": "Jemandes Tributzimmer. Schau dich um, aber lass alles, wie du es vorgefunden hast.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Dein Zimmer. Setz Blöcke, aber nur die, die du gesetzt hast, kannst du wieder abbauen.",
   "chat.dungeontrain.tribute_room.banner": "Dieser Raum ist ein Tribut an und von %s"
 }

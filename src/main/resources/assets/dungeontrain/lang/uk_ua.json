@@ -6582,6 +6582,7 @@
   "gui.dungeontrain.follows.looking": "Пошук: %s…",
   "gui.dungeontrain.follows.unreachable": "Зараз не вдалося перевірити ім'я. Спробуйте пізніше.",
   "gui.dungeontrain.follows.empty": "Введіть нижче ім'я гравця, щоб підписатися.",
+  "gui.dungeontrain.follows.full": "Активуй ще одне очко, щоб стежити за більшою кількістю авторів.",
   "perk.dungeontrain.reroll-trades.name": "Перекинути обміни",
   "perk.dungeontrain.reroll-trades.desc": "Перекинути обміни жителя за смарагди. Кожне нове перекидання того самого жителя коштує вдвічі дорожче.",
   "perk.dungeontrain.class.c0": "Архіваріус",
@@ -6762,6 +6763,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Найближче",
   "gui.dungeontrain.perks.bar.full": "Заповнено. Розблокуйте знову, щоб звільнити місце для ще одного очка.",
   "gui.dungeontrain.perks.bar.hint": "Наведіть на перк, щоб побачити його тут. Натисніть, щоб закріпити.",
+  "gui.dungeontrain.perks.bar.no_active": "Відкрито перків: %s, але активних: 0. Натисніть, щоб активувати один.",
+  "gui.dungeontrain.perks.bar.some_active": "Відкрито перків: %1$s, активних: %2$s. Натисніть, щоб активувати ще один.",
   "gui.dungeontrain.perks.bar.not_ready": "Ти знайшов те, що згодом стане важливим, але ти ще не готовий. Повертайся пізніше.",
   "gui.dungeontrain.perks.counter.unlock.click": "Натисніть, щоб відкрити досягнення.",
   "gui.dungeontrain.perks.death.kicker": "Бали, що були з тобою",
@@ -6788,5 +6791,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Налаштована на твою кімнату пам'яті. Її телевізор показує твою власну історію.",
   "chat.dungeontrain.tribute_room.tv_stays": "Телевізор залишається. Будуйте навколо нього.",
   "chat.dungeontrain.tribute_room.view_only": "Чиясь кімната пам'яті. Дивись, але залиш усе, як було.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Твоя кімната. Став блоки, але прибрати можна лише ті, що поставив ти.",
   "chat.dungeontrain.tribute_room.banner": "Ця кімната — данина пам'яті гравцю %s і його рук справа"
 }

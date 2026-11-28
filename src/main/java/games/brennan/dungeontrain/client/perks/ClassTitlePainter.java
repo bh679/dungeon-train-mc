@@ -69,7 +69,7 @@ final class ClassTitlePainter {
             if (!vis.titleShown(c.id())) continue;
             List<PerkTree.Perk> ps = tree.perksOf(c.id()).stream().filter(p -> !vis.hidden(p)).toList();
             if (ps.isEmpty()) continue;
-            String title = c.name().toUpperCase(Locale.ROOT);
+            String title = PerkNames.cls(c).toUpperCase(Locale.ROOT);
             double hwPx = font.width(title) * scale / 2.0 + 4, hhPx = font.lineHeight * scale / 2.0 + 1;
             double hw = hwPx / z, hh = hhPx / z;
             PerkTree.Perk first = tree.firstPerkOf(c.id()).filter(p -> !vis.hidden(p)).orElse(null);
@@ -140,7 +140,7 @@ final class ClassTitlePainter {
 
     private static boolean clearOfStars(PerkTree tree, Spot s) {
         for (PerkTree.Perk p : tree.perks()) {
-            double pw = p.name().length() * 3 + 8;
+            double pw = PerkNames.perk(p).length() * 3 + 8;
             if (Math.abs(p.x() - s.x()) < s.hw() + pw - 8 && Math.abs(p.y() - s.y()) < s.hh() + 18) return false;
         }
         return true;

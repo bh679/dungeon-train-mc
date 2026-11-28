@@ -6461,6 +6461,7 @@
   "gui.dungeontrain.follows.looking": "正在尋找 %s…",
   "gui.dungeontrain.follows.unreachable": "暫時無法檢查該名稱。請稍後再試。",
   "gui.dungeontrain.follows.empty": "在下方輸入玩家名稱以追蹤他們。",
+  "gui.dungeontrain.follows.full": "再啟用一個點數即可追蹤更多作者。",
   "perk.dungeontrain.reroll-trades.name": "重擲交易",
   "perk.dungeontrain.reroll-trades.desc": "花綠寶石重擲村民的交易。同一村民每次重擲價格加倍。",
   "perk.dungeontrain.class.c0": "檔案管理員",
@@ -6635,6 +6636,8 @@
   "gui.dungeontrain.perks.zoom.closest": "最近",
   "gui.dungeontrain.perks.bar.full": "已滿。再次解鎖可多放一個點數。",
   "gui.dungeontrain.perks.bar.hint": "將滑鼠停在特權上即可在此查看。點擊可固定。",
+  "gui.dungeontrain.perks.bar.no_active": "你已解鎖 %s 個特權，但啟用的為 0 個。點擊以啟用一個。",
+  "gui.dungeontrain.perks.bar.some_active": "你已解鎖 %1$s 個特權，已啟用 %2$s 個。點擊以再啟用一個。",
   "gui.dungeontrain.perks.bar.not_ready": "你發現了將來會很重要的東西，但你還沒準備好。之後再來吧。",
   "gui.dungeontrain.perks.counter.unlock.click": "點擊開啟進度。",
   "gui.dungeontrain.perks.death.kicker": "你隨身的點數",
@@ -6657,5 +6660,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "調到你的致敬房間。它的電視播放你自己的故事。",
   "chat.dungeontrain.tribute_room.tv_stays": "電視留在原地。圍著它來建造吧。",
   "chat.dungeontrain.tribute_room.view_only": "這是別人的致敬房間。看看可以，但請保持原樣。",
+  "chat.dungeontrain.tribute_room.own_placed_only": "你的房間。可以放置方塊,但只能拆除你自己放置的方塊。",
   "chat.dungeontrain.tribute_room.banner": "這個房間是獻給 %s 的致敬，也出自其手"
 }

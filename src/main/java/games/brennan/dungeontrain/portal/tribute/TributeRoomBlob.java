@@ -92,7 +92,7 @@ public record TributeRoomBlob(String owner, String ownerName, CompoundTag snapsh
         return new TributeRoomBlob(owner, newOwnerName, newSnapshot, revision + 1, nowMs, newDifficulty, report, reportMessage, reportAtMs);
     }
 
-    /** What the portal stamp lays: no lease, no relay id — a tribute room is never written back from the train. */
+    /** What the portal stamp lays: no lease, no relay id. Its owner's build on the train is saved by {@link TributeRoomLiveEdits}. */
     public PortalRoomBlob toPortalRoomBlob() {
         return new PortalRoomBlob(snapshot, null, null, owner, Credits.EMPTY, Deaths.EMPTY, 0, false);
     }

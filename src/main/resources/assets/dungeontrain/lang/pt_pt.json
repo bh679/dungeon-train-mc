@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "A procurar %s…",
   "gui.dungeontrain.follows.unreachable": "Não foi possível verificar esse nome agora. Tenta novamente mais tarde.",
   "gui.dungeontrain.follows.empty": "Escreve abaixo o nome de um jogador para o seguires.",
+  "gui.dungeontrain.follows.full": "Ativa mais um ponto para seguir mais autores.",
   "perk.dungeontrain.reroll-trades.name": "Resortear Trocas",
   "perk.dungeontrain.reroll-trades.desc": "Resorteia as trocas de um aldeão por esmeraldas. Cada novo sorteio do mesmo aldeão custa o dobro.",
   "perk.dungeontrain.class.c0": "Arquivista",
@@ -6693,6 +6694,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Muito perto",
   "gui.dungeontrain.perks.bar.full": "Cheio. Desbloqueia de novo para teres espaço para mais um ponto.",
   "gui.dungeontrain.perks.bar.hint": "Passa o rato por uma vantagem para a veres aqui. Clica para a fixar.",
+  "gui.dungeontrain.perks.bar.no_active": "Tens %s vantagens desbloqueadas, mas 0 estão ativas. Clica para ativar uma.",
+  "gui.dungeontrain.perks.bar.some_active": "Tens %1$s vantagens desbloqueadas e %2$s estão ativas. Clica para ativar outra.",
   "gui.dungeontrain.perks.bar.not_ready": "Encontraste algo que ser\u00e1 importante mais tarde, mas ainda n\u00e3o est\u00e1s preparado. Volta mais tarde.",
   "gui.dungeontrain.perks.counter.unlock.click": "Clica para abrir os progressos.",
   "gui.dungeontrain.perks.death.kicker": "Os pontos que levavas",
@@ -6717,5 +6720,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Sintonizada na tua sala de tributo. A sua TV mostra a tua própria história.",
   "chat.dungeontrain.tribute_room.tv_stays": "A televisão fica. Constrói à volta dela.",
   "chat.dungeontrain.tribute_room.view_only": "A sala de tributo de alguém. Vê, mas deixa tudo como encontraste.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "A tua sala. Coloca blocos, mas só os que colocaste podem ser retirados.",
   "chat.dungeontrain.tribute_room.banner": "Esta sala é um tributo a e por %s"
 }

@@ -74,6 +74,16 @@ public final class TributeRoomEvents {
         });
     }
 
+    /**
+     * What they built in their own room on the train is saved before anything reads their room for the
+     * visit: the store's one IO thread then has the save queued ahead of the visit's load.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingDeathSaveBuild(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.getServer() == null) return;
+        games.brennan.dungeontrain.portal.tribute.TributeRoomLiveEdits.flushOwner(player.getServer(), player.getUUID());
+    }
+
     /** After every other handler has had its say on the drops, so the kit is what really fell. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDrops(LivingDropsEvent event) {
@@ -85,6 +95,9 @@ public final class TributeRoomEvents {
     @SubscribeEvent
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.getServer() != null) {
+            games.brennan.dungeontrain.portal.tribute.TributeRoomLiveEdits.flushOwner(player.getServer(), player.getUUID());
+        }
         TributeRoomDeathKit.forget(player.getUUID());
         games.brennan.dungeontrain.portal.tribute.LastDeathReports.forget(player.getUUID());
         if (TributeRoomVisitSessions.isVisiting(player.getUUID())) TributeRoomVisitService.end(player, true);
@@ -103,6 +116,7 @@ public final class TributeRoomEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         TributeRoomVisitService.tick(event.getServer());
+        games.brennan.dungeontrain.portal.tribute.TributeRoomLiveEdits.tick(event.getServer());
         games.brennan.dungeontrain.portal.tribute.TributeSiteCache.tick(event.getServer());
     }
 
@@ -118,6 +132,8 @@ public final class TributeRoomEvents {
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
+        // Queued first: saveAll waits on the room files, so these land before the world goes.
+        games.brennan.dungeontrain.portal.tribute.TributeRoomLiveEdits.flushAll(event.getServer());
         TributeRoomVisitService.saveAll(event.getServer());
     }
 
@@ -128,6 +144,7 @@ public final class TributeRoomEvents {
         games.brennan.dungeontrain.portal.tribute.TributeSiteCache.clear();
         TributeRoomDeathKit.clear();
         games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.clear();
+        games.brennan.dungeontrain.portal.tribute.TributeRoomLiveEdits.clear();
         games.brennan.dungeontrain.portal.tribute.LastDeathReports.clear();
     }
 }

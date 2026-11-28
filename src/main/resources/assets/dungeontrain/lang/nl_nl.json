@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Zoeken naar %s…",
   "gui.dungeontrain.follows.unreachable": "Kan die naam nu niet controleren. Probeer het later opnieuw.",
   "gui.dungeontrain.follows.empty": "Typ hieronder de naam van een speler om diegene te volgen.",
+  "gui.dungeontrain.follows.full": "Activeer nog een punt om meer auteurs te volgen.",
   "perk.dungeontrain.reroll-trades.name": "Ruilen opnieuw gooien",
   "perk.dungeontrain.reroll-trades.desc": "Gooi de ruilen van een dorpeling opnieuw voor smaragden. Elke keer bij dezelfde dorpeling kost het twee keer zoveel.",
   "perk.dungeontrain.class.c0": "Archivaris",
@@ -6693,6 +6694,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Dichtstbij",
   "gui.dungeontrain.perks.bar.full": "Vol. Ontgrendel hem opnieuw voor ruimte voor nog een punt.",
   "gui.dungeontrain.perks.bar.hint": "Beweeg over een perk om hem hier te zien. Klik om hem vast te houden.",
+  "gui.dungeontrain.perks.bar.no_active": "Je hebt %s ontgrendelde perks, maar 0 zijn actief. Klik om er een te activeren.",
+  "gui.dungeontrain.perks.bar.some_active": "Je hebt %1$s ontgrendelde perks en %2$s zijn actief. Klik om er nog een te activeren.",
   "gui.dungeontrain.perks.bar.not_ready": "Je hebt iets gevonden dat later belangrijk wordt, maar je bent er nog niet klaar voor. Kom later terug.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klik om de vooruitgang te openen.",
   "gui.dungeontrain.perks.death.kicker": "De punten die je droeg",
@@ -6717,5 +6720,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Afgestemd op je eerbetoonkamer. De tv speelt je eigen verhaal af.",
   "chat.dungeontrain.tribute_room.tv_stays": "De tv blijft staan. Bouw eromheen.",
   "chat.dungeontrain.tribute_room.view_only": "Iemands eerbetoonkamer. Kijk rond, maar laat alles zoals je het aantrof.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Jouw kamer. Plaats blokken, maar alleen de blokken die jij hebt geplaatst kunnen eruit.",
   "chat.dungeontrain.tribute_room.banner": "Deze kamer is een eerbetoon aan en door %s"
 }

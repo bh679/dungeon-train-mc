@@ -6585,6 +6585,7 @@
   "gui.dungeontrain.follows.looking": "Szukanie gracza %s…",
   "gui.dungeontrain.follows.unreachable": "Nie można teraz sprawdzić tej nazwy. Spróbuj ponownie później.",
   "gui.dungeontrain.follows.empty": "Wpisz poniżej nazwę gracza, aby go obserwować.",
+  "gui.dungeontrain.follows.full": "Aktywuj kolejny punkt, aby obserwować więcej autorów.",
   "perk.dungeontrain.reroll-trades.name": "Przelosuj wymiany",
   "perk.dungeontrain.reroll-trades.desc": "Przelosuj wymiany osadnika za szmaragdy. Każde kolejne przelosowanie tego samego osadnika kosztuje dwa razy więcej.",
   "perk.dungeontrain.class.c0": "Archiwista",
@@ -6765,6 +6766,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Najbliżej",
   "gui.dungeontrain.perks.bar.full": "Pełny. Odblokuj ponownie, aby zrobić miejsce na kolejny punkt.",
   "gui.dungeontrain.perks.bar.hint": "Najedź na atut, aby zobaczyć go tutaj. Kliknij, aby go zatrzymać.",
+  "gui.dungeontrain.perks.bar.no_active": "Masz odblokowane atuty: %s, ale aktywnych: 0. Kliknij, aby aktywować jeden.",
+  "gui.dungeontrain.perks.bar.some_active": "Masz odblokowane atuty: %1$s, aktywnych: %2$s. Kliknij, aby aktywować kolejny.",
   "gui.dungeontrain.perks.bar.not_ready": "Znalazłeś coś, co później będzie ważne, ale nie jesteś jeszcze gotowy. Wróć później.",
   "gui.dungeontrain.perks.counter.unlock.click": "Kliknij, aby otworzyć postępy.",
   "gui.dungeontrain.perks.death.kicker": "Punkty, które niosłeś",
@@ -6791,5 +6794,6 @@
   "item.dungeontrain.tribute_cassette.tooltip": "Nastrojona na twój pokój hołdu. Jego telewizor odtwarza twoją własną historię.",
   "chat.dungeontrain.tribute_room.tv_stays": "Telewizor zostaje. Buduj wokół niego.",
   "chat.dungeontrain.tribute_room.view_only": "Czyjś pokój hołdu. Rozejrzyj się, ale zostaw wszystko tak, jak zastałeś.",
+  "chat.dungeontrain.tribute_room.own_placed_only": "Twój pokój. Dodawaj bloki, ale usunąć możesz tylko te, które sam postawiłeś.",
   "chat.dungeontrain.tribute_room.banner": "Ten pokój to hołd dla gracza %s i jego dzieło"
 }

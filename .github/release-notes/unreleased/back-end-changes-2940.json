@@ -1,0 +1,16 @@
+{
+  "id": "back-end-changes-2940",
+  "version": "0.2070.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Back-end changes",
+  "summary": "Back-end changes.",
+  "highlights": [],
+  "pr": 2940,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

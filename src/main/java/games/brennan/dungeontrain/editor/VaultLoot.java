@@ -318,6 +318,29 @@ public final class VaultLoot {
         return Optional.of(ItemStack.EMPTY);
     }
 
+    /**
+     * Each item's chance in percent of being the one this vault shows (and rolls per slot), as
+     * {@link #displayItem} weights it: an id in several entries sums their weights. Empty for a vanilla
+     * vault, whose rewards are a loot table the server alone can roll.
+     */
+    public static Map<ResourceLocation, Double> chanceByItem(BlockEntity be) {
+        CompoundTag vault = vaultTag(be);
+        ContainerContentsPool pool = vault == null ? null : poolOf(vault);
+        if (pool == null) return Map.of();
+        int total = pool.totalWeight();
+        if (total <= 0) return Map.of();
+        Map<ResourceLocation, Integer> weights = new LinkedHashMap<>();
+        for (ContainerContentsEntry e : pool.entries()) {
+            if (e.isAir() || e.weight() <= 0) continue;
+            Item item = ContainerContentsRoller.resolveItem(e.itemId());
+            if (item == null || item == Items.AIR) continue;
+            weights.merge(BuiltInRegistries.ITEM.getKey(item), e.weight(), Integer::sum);
+        }
+        Map<ResourceLocation, Double> out = new LinkedHashMap<>();
+        weights.forEach((id, w) -> out.put(id, 100.0 * w / total));
+        return out;
+    }
+
     @Nullable
     private static CompoundTag vaultTag(BlockEntity be) {
         if (be == null) return null;
