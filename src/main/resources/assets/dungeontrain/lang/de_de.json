@@ -6694,6 +6694,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Ganz nah",
   "gui.dungeontrain.perks.bar.full": "Voll. Schalte ihn erneut frei für Platz für einen weiteren Punkt.",
   "gui.dungeontrain.perks.bar.hint": "Fahre über einen Perk, um ihn hier zu sehen. Klicke, um ihn festzuhalten.",
+  "gui.dungeontrain.perks.bar.no_active": "Du hast %s freigeschaltete Perks, aber 0 sind aktiv. Klicke, um einen zu aktivieren.",
+  "gui.dungeontrain.perks.bar.some_active": "Du hast %1$s freigeschaltete Perks und %2$s sind aktiv. Klicke, um einen weiteren zu aktivieren.",
   "gui.dungeontrain.perks.bar.not_ready": "Du hast etwas gefunden, das später wichtig wird, aber du bist noch nicht bereit. Komm später wieder.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klicken, um die Fortschritte zu öffnen.",
   "gui.dungeontrain.perks.death.kicker": "Die Punkte, die du trugst",

@@ -6694,6 +6694,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Muito perto",
   "gui.dungeontrain.perks.bar.full": "Cheio. Desbloqueia de novo para teres espaço para mais um ponto.",
   "gui.dungeontrain.perks.bar.hint": "Passa o rato por uma vantagem para a veres aqui. Clica para a fixar.",
+  "gui.dungeontrain.perks.bar.no_active": "Tens %s vantagens desbloqueadas, mas 0 estão ativas. Clica para ativar uma.",
+  "gui.dungeontrain.perks.bar.some_active": "Tens %1$s vantagens desbloqueadas e %2$s estão ativas. Clica para ativar outra.",
   "gui.dungeontrain.perks.bar.not_ready": "Encontraste algo que ser\u00e1 importante mais tarde, mas ainda n\u00e3o est\u00e1s preparado. Volta mais tarde.",
   "gui.dungeontrain.perks.counter.unlock.click": "Clica para abrir os progressos.",
   "gui.dungeontrain.perks.death.kicker": "Os pontos que levavas",

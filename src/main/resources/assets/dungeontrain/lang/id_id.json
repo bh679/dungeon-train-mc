@@ -6622,6 +6622,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Paling dekat",
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka lagi untuk ruang satu poin lagi.",
   "gui.dungeontrain.perks.bar.hint": "Arahkan ke perk untuk melihatnya di sini. Klik untuk menyematkannya.",
+  "gui.dungeontrain.perks.bar.no_active": "Kamu punya %s perk yang terbuka, tetapi 0 yang aktif. Klik untuk mengaktifkan satu.",
+  "gui.dungeontrain.perks.bar.some_active": "Kamu punya %1$s perk yang terbuka dan %2$s yang aktif. Klik untuk mengaktifkan satu lagi.",
   "gui.dungeontrain.perks.bar.not_ready": "Kamu menemukan sesuatu yang akan penting nanti, tapi kamu belum siap. Kembalilah nanti.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan.",
   "gui.dungeontrain.perks.death.kicker": "Poin yang kamu bawa",

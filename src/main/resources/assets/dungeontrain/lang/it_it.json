@@ -6694,6 +6694,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Vicinissimo",
   "gui.dungeontrain.perks.bar.full": "Pieno. Sbloccalo di nuovo per avere spazio per un punto in più.",
   "gui.dungeontrain.perks.bar.hint": "Passa sopra un vantaggio per vederlo qui. Clicca per tenerlo.",
+  "gui.dungeontrain.perks.bar.no_active": "Hai %s vantaggi sbloccati, ma 0 sono attivi. Clicca per attivarne uno.",
+  "gui.dungeontrain.perks.bar.some_active": "Hai %1$s vantaggi sbloccati e %2$s sono attivi. Clicca per attivarne un altro.",
   "gui.dungeontrain.perks.bar.not_ready": "Hai trovato qualcosa che sar\u00e0 importante pi\u00f9 avanti, ma non sei ancora pronto. Torna pi\u00f9 tardi.",
   "gui.dungeontrain.perks.counter.unlock.click": "Clicca per aprire i progressi.",
   "gui.dungeontrain.perks.death.kicker": "I punti che portavi",

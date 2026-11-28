@@ -6622,6 +6622,8 @@
   "gui.dungeontrain.perks.zoom.closest": "最も近く",
   "gui.dungeontrain.perks.bar.full": "満タン。もう一度解放するとポイントをもう1つ入れられます。",
   "gui.dungeontrain.perks.bar.hint": "パークにカーソルを合わせるとここに表示。クリックで固定。",
+  "gui.dungeontrain.perks.bar.no_active": "解放済みのパークが%s個ありますが、有効なものは0個です。クリックして1つ有効にしよう。",
+  "gui.dungeontrain.perks.bar.some_active": "解放済みのパークが%1$s個、有効なものが%2$s個あります。クリックしてもう1つ有効にしよう。",
   "gui.dungeontrain.perks.bar.not_ready": "後で大切になるものを見つけた。でも、まだその時ではない。また後で来よう。",
   "gui.dungeontrain.perks.counter.unlock.click": "クリックで進捗を開く。",
   "gui.dungeontrain.perks.death.kicker": "持っていたポイント",

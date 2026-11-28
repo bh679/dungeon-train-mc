@@ -6766,6 +6766,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Najbliżej",
   "gui.dungeontrain.perks.bar.full": "Pełny. Odblokuj ponownie, aby zrobić miejsce na kolejny punkt.",
   "gui.dungeontrain.perks.bar.hint": "Najedź na atut, aby zobaczyć go tutaj. Kliknij, aby go zatrzymać.",
+  "gui.dungeontrain.perks.bar.no_active": "Masz odblokowane atuty: %s, ale aktywnych: 0. Kliknij, aby aktywować jeden.",
+  "gui.dungeontrain.perks.bar.some_active": "Masz odblokowane atuty: %1$s, aktywnych: %2$s. Kliknij, aby aktywować kolejny.",
   "gui.dungeontrain.perks.bar.not_ready": "Znalazłeś coś, co później będzie ważne, ale nie jesteś jeszcze gotowy. Wróć później.",
   "gui.dungeontrain.perks.counter.unlock.click": "Kliknij, aby otworzyć postępy.",
   "gui.dungeontrain.perks.death.kicker": "Punkty, które niosłeś",
