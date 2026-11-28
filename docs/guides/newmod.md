@@ -8,7 +8,7 @@ Private drafts are fine without asking.
 
 ## Page rules
 
-`scripts/listing/listing.py check` enforces all of these except the last.
+`scripts/listing/listing.py check` enforces all of these except the last two.
 
 | Rule | Detail |
 |---|---|
@@ -17,6 +17,7 @@ Private drafts are fine without asking.
 | Dungeon Train in the first section | The exact sentence below, with links to both the DT mod and the modpack |
 | Icon | The Dungeon Train logo with a small, very simple icon for the mod in the middle. See "The icon" below |
 | Screenshots | At least one, exactly one featured, each with a title. Icon up to 256 KiB, screenshots up to 5 MiB |
+| Website link | The mod's page on our site, `https://dungeon.training/custom-mods/<slug>/`, on both stores: `wiki_url` on Modrinth (step 2), Website on CurseForge (step 9) |
 | Appropriate screenshots | Your judgement: see step 4 |
 
 The first section, above the first heading:
@@ -79,6 +80,7 @@ listing/
   "source_url": "https://github.com/bh679/example-mc",
   "issues_url": "https://dungeon.training/issues#example",
   "discord_url": "https://discord.gg/hnj5G7duHU",
+  "wiki_url": "https://dungeon.training/custom-mods/example-mod/",
   "icon": "icon.png",
   "screenshots": [
     {"file": "screenshots/01-what-it-shows.png", "title": "Short caption", "description": "One line", "featured": true}
@@ -88,6 +90,10 @@ listing/
 
 Use the Discord invite exactly as above, on both stores: `discord.gg/dungeontrain` is not a real
 invite.
+
+`wiki_url` is the mod's own page on our site, the one step 10 adds. Modrinth has no "website" link,
+so the site page goes in its Wiki slot; on CurseForge it is the Website link. Use the same slug as
+the site page will: lowercase, words joined by hyphens.
 
 Our mods default to PolyForm Shield 1.0.0: put it in the repo's `LICENSE` too. Modrinth has no
 SPDX id for it, so it needs both `license_id` and `license_url` as above. `live_url` entries appear on screenshots after
@@ -220,7 +226,8 @@ python3 scripts/listing/listing.py submit <slug> --confirmed
 ```
 
 If Modrinth says "link could not be verified", its page has hit GitHub's rate limit in the browser.
-Reload once the limit resets.
+Reload once the limit resets. If it is the Wiki link it can't verify, the site page isn't live yet:
+do step 10 first, then submit again.
 
 **CurseForge has no API for pages,** so this happens on Brennan's signed-in session with Claude in
 Chrome at https://authors.curseforge.com:
@@ -233,18 +240,49 @@ Chrome at https://authors.curseforge.com:
 2. Set the description to `LISTING.md`, using the CurseForge links in the first section.
 3. Set the issues link: the new portal's Issues tab opens the legacy settings page. Choose
    External and enter the same `https://dungeon.training/issues#<anchor>` as `listing.json`.
-4. Upload the icon and screenshots.
-5. Check the form against what Brennan approved, then submit.
+4. Set the project's **Website** link to the mod's site page, the `wiki_url` from `listing.json`
+   (`https://dungeon.training/custom-mods/<slug>/`).
+5. Upload the icon and screenshots.
+6. Check the form against what Brennan approved, then submit.
 
 If Chrome hits a sign-in page, ask Brennan to sign in. Never type a password.
 
-## 10. Follow up on review
+Do step 10 the same day: both stores now link to the site page, and a reviewer who follows the link
+should not land on a missing page.
+
+## 10. Add it to the website
+
+Every mod of ours has a card on https://dungeon.training/custom-mods/ and a page of its own there. The
+page is named for the count ("17 Custom Mods"), so a new mod also renames it. It all lives in
+`bh679/dp-relay`; make the change in a dp-relay worktree.
+
+1. Add an entry to `public/dungeontrain/custom-mods/mods.json`: `slug` (the one in `wiki_url`),
+   `name`, `group` (one of the groups at the top of the file), `summary` (one line), `description`
+   (two or three short paragraphs), `loaders`, `standalone` (false if it does nothing without DT),
+   `curseforge`, `modrinth` (once listed) and `github`. GitHub links are hidden on the site for now,
+   but fill it in.
+2. Add the icon as `public/dungeontrain/custom-mods/icons/<slug>.png`: `listing/icon.png` scaled to
+   160 x 160 (`sips -Z 160`). New images need `git add -f`: a global ignore rule matches them.
+3. Add the mod to `MODS` in `custom-mod-downloads.js`: its CurseForge project id, and its Modrinth
+   slug once listed. This is what keeps its download count fresh. Add its current counts to
+   `public/dungeontrain/custom-mods/downloads.json` so the card shows a number from the start.
+4. Run `node scripts/build-custom-mods.js`. It writes the new page and card, renames the page to the
+   new count on every page, and updates the home page footer link and the sitemap. Never edit the
+   generated pages by hand.
+5. The site's text follows the page rules above and three more: no recipes (hint instead), nothing
+   about hidden DT content, and nothing a store page doesn't already say about it.
+6. Show Brennan the new card and page in a localhost preview and wait for a yes.
+7. Open the dp-relay PR (`npm test` must pass), merge after his yes, then deploy the relay
+   (`scripts/deploy-relay.sh`, for the download counts) and the pages
+   (`scripts/deploy-public-pages.sh`). Check the live card, page and footer link.
+
+## 11. Follow up on review
 
 - Modrinth and CurseForge both review by hand. Tell Brennan what is waiting and where.
 - Answer any moderator message only after showing Brennan your reply.
 - Check that both public pages show what was approved.
 
-## 11. If DT will use it
+## 12. If DT will use it
 
 Follow "Hybrid siblings" and "Sibling-mod floors" in CLAUDE.md and the wiring checklist in
 [modpack/newmod.md](../../modpack/newmod.md#wiring-checklist). Add the mod's ids to the approved list
