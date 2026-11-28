@@ -463,7 +463,10 @@ public final class PerksScreen extends Screen {
         String listHover = skyOnly ? null : classesList.classAt(mouseX, mouseY);
         eyeHover = skyOnly ? null : classesList.eyeAt(mouseX, mouseY, off);
         headEyeHover = !skyOnly && classesList.headEyeAt(mouseX, mouseY, off);
-        ClassTitlePainter.Title onTitle = titleAt(mouseX, mouseY);
+        // The sky copy's titles take no hover: hovering a hidden class previews it, which swings the
+        // stars to a new layout, hides the labels mid-swing and so drops the hover, over and over (the
+        // crosshair cannot follow a title the way a mouse does). Only stars hover there.
+        ClassTitlePainter.Title onTitle = skyOnly ? null : titleAt(mouseX, mouseY);
         titleHover = onTitle == null ? null : onTitle.cls();
         titleEyeHover = onTitle != null && onTitle.eyeHits(mouseX, mouseY) && !off.contains(onTitle.cls());
         if (selectedClass != null && off.contains(selectedClass)) selectedClass = null;
