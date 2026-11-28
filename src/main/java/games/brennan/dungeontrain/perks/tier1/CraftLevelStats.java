@@ -237,8 +237,19 @@ public final class CraftLevelStats {
 
     @SubscribeEvent
     public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemStack stack = event.getCrafting();
+        if (event.getEntity() instanceof ServerPlayer player) stampCraft(player, event.getCrafting());
+    }
+
+    /**
+     * Shift-click crafting: vanilla moves the result into the inventory first and fires
+     * {@code ItemCraftedEvent} with the emptied leftover, so the event can't reach the item.
+     * {@code mixin.CraftingResultQuickMoveMixin} calls this on the result just before the move.
+     */
+    public static void onQuickCraft(ServerPlayer player, ItemStack result) {
+        stampCraft(player, result);
+    }
+
+    private static void stampCraft(ServerPlayer player, ItemStack stack) {
         if (!isGear(stack)) return;
         int rank = Perks.rank(player, TierOnePerks.CRAFT_LEVEL_STATS);
         if (rank <= 0) return;
