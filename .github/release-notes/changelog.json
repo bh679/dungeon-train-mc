@@ -40153,6 +40153,23 @@
       "released": true,
       "released_in": "v0.2065.0",
       "released_at": "2026-11-28T08:31:18Z"
+    },
+    {
+      "id": "tribute-tv-leave-crash",
+      "version": "0.2066.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Crash fix",
+      "summary": "Fixed a crash when leaving the game after a run ended.",
+      "highlights": [],
+      "pr": 2936,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2066.0",
+      "released_at": "2026-11-28T09:39:52Z"
     }
   ]
 }
