@@ -463,16 +463,16 @@ public final class PerksScreen extends Screen {
         String listHover = skyOnly ? null : classesList.classAt(mouseX, mouseY);
         eyeHover = skyOnly ? null : classesList.eyeAt(mouseX, mouseY, off);
         headEyeHover = !skyOnly && classesList.headEyeAt(mouseX, mouseY, off);
-        // The sky copy's titles take no hover: hovering a hidden class previews it, which swings the
-        // stars to a new layout, hides the labels mid-swing and so drops the hover, over and over (the
-        // crosshair cannot follow a title the way a mouse does). Only stars hover there.
-        ClassTitlePainter.Title onTitle = skyOnly ? null : titleAt(mouseX, mouseY);
+        ClassTitlePainter.Title onTitle = titleAt(mouseX, mouseY);
         titleHover = onTitle == null ? null : onTitle.cls();
         titleEyeHover = onTitle != null && onTitle.eyeHits(mouseX, mouseY) && !off.contains(onTitle.cls());
         if (selectedClass != null && off.contains(selectedClass)) selectedClass = null;
         zoomHover = zoomControl.at(mouseX, mouseY);
         String classHover = listHover != null ? listHover : titleHover;
-        preview = classHover != null && off.contains(classHover) ? classHover : null;
+        // The sky copy hovers but never previews: a preview swings the stars and labels to a new
+        // layout, which slides the title out from under a crosshair that cannot follow it, ends the
+        // hover, swings back, and so on. Labels there stay put whatever is hovered.
+        preview = !skyOnly && classHover != null && off.contains(classHover) ? classHover : null;
 
         // held unlock points only open up the sky on death, where they can be spent
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), death != null ? snap.unlockPoints() : 0);
