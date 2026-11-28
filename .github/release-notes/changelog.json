@@ -40419,6 +40419,24 @@
       "released": true,
       "released_in": "v0.2080.0",
       "released_at": "2026-11-28T15:01:03Z"
+    },
+    {
+      "id": "carriage-behind-spawn-level-gate",
+      "version": "0.2081.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "balance"
+      ],
+      "title": "Gentler start behind the train",
+      "summary": "The carriage just behind where you start could hold a room meant for much later in the run, with its hostiles skipping the calm opening carriages. It now follows the same level rules as every other carriage.",
+      "highlights": [],
+      "pr": 2952,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2081.0",
+      "released_at": "2026-11-28T16:07:31Z"
     }
   ]
 }
