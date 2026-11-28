@@ -16,8 +16,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
  * Spending from the sky. Standing in a constellation block with the patch open, the perk star under
- * the crosshair is the menu's hovered star: right-click puts a point into it, left-click keeps it in
- * the details bar (and a second left-click on the kept star puts a point in), which sits over the hotbar while a star is hovered or kept.
+ * the crosshair is the menu's hovered star: a click (either button) selects it, keeping it in the
+ * details bar, and a second click on the selected star puts a point into it, which sits over the hotbar while a star is hovered or kept.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ConstellationSkyControls {
@@ -37,19 +37,16 @@ public final class ConstellationSkyControls {
         if (mc.screen != null || !ConstellationClient.patchOpen()) return;
         PerksScreen sky = ConstellationSky.screen();
         if (sky == null) return;
-        if (event.isUseItem()) {
-            if (!sky.skySpend()) return;
-        } else if (event.isAttack()) {
-            boolean onStar = sky.hoveredPerk() != null;
+        if (!event.isUseItem() && !event.isAttack()) return;
+        String star = sky.hoveredPerk();
+        if (star == null) {
             // empty sky (nothing in the world under the crosshair) lets the kept star go
-            if (!onStar && (mc.hitResult == null || mc.hitResult.getType() == HitResult.Type.MISS)) sky.skySelect();
-            if (!onStar) return;
-            // a second click on the kept star puts a point in, as right-click does
-            if (sky.hoveredPerk().equals(sky.selectedPerk())) sky.skySpend();
-            else sky.skySelect();
-        } else {
+            if (event.isAttack() && (mc.hitResult == null || mc.hitResult.getType() == HitResult.Type.MISS)) sky.skySelect();
             return;
         }
+        // Either button: the first click on a star selects it, a second click on it activates it.
+        if (star.equals(sky.selectedPerk())) sky.skySpend();
+        else sky.skySelect();
         event.setSwingHand(false);
         event.setCanceled(true);
     }
