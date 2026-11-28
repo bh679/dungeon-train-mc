@@ -88,10 +88,15 @@ public final class PhotoTributeButtons {
     /** Photos whose photographer was followed from here this session, so the button stays "Following". */
     private static final java.util.Set<Integer> FOLLOWED_PHOTOS = new java.util.HashSet<>();
 
-    /** Favourite Author's Follow: with the perk unlocked, on somebody else's photo. */
-    private static boolean showsFollow(LocalPlayer player, String photographer) {
-        return Perks.isUnlocked(player, ArchivistPerks.FAV_AUTHOR)
-            && !photographer.isBlank() && !photographer.equalsIgnoreCase(player.getGameProfile().getName());
+    /**
+     * Favourite Author's Follow, on somebody else's photo: with a point free for one more follow, or the
+     * photographer already followed (it reads "Following").
+     */
+    private static boolean showsFollow(LocalPlayer player, String photographer, int photoId) {
+        if (photographer.isBlank() || photographer.equalsIgnoreCase(player.getGameProfile().getName())) return false;
+        if (!Perks.isUnlocked(player, ArchivistPerks.FAV_AUTHOR)) return false;
+        return FOLLOWED_PHOTOS.contains(photoId) || FollowsClientState.followsName(photographer)
+            || FollowsClientState.canFollowMore(Perks.rank(player, ArchivistPerks.FAV_AUTHOR));
     }
 
     /** The found photo the player is holding, or an empty stack. */
@@ -126,10 +131,10 @@ public final class PhotoTributeButtons {
         ViewCounter views = new ViewCounter(font, seen + 1, seen + viewsLeft);
         int viewsWidth = views.getWidth();
         int tributeWidth = TributeButton.widthFor(font, cost);
-        // Favourite Author: Follow the photographer, beside Tribute (once the perk is unlocked).
+        // Favourite Author: Follow the photographer, beside Tribute (with a point free, see showsFollow).
         int photoId = SharedPhotos.sharedId(photo);
         String photographer = SharedPhotos.authorOf(photo);
-        boolean followShown = showsFollow(player, photographer);
+        boolean followShown = showsFollow(player, photographer, photoId);
         boolean following = followShown && (FOLLOWED_PHOTOS.contains(photoId) || FollowsClientState.followsName(photographer));
         Component followLabel = Component.translatable(following
             ? "gui.dungeontrain.follows.following" : "gui.dungeontrain.follows.follow");
