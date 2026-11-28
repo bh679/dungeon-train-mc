@@ -52,6 +52,15 @@ public final class ConstellationSkyControls {
         event.setCanceled(true);
     }
 
+    /** Eating a cosmic apple turns the patch to hang over the horizon the player is facing. */
+    @SubscribeEvent
+    public static void onAteApple(net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent.Finish event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (event.getEntity() != mc.player || !event.getEntity().level().isClientSide()) return;
+        if (!games.brennan.dungeontrain.item.CosmicAppleItem.isCosmicApple(event.getItem())) return;
+        ConstellationGeometry.setHeading(mc.player.getYRot());
+    }
+
     @SubscribeEvent
     public static void onRegisterLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_LEVEL, LAYER, ConstellationSkyControls::render);

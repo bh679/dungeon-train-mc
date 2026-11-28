@@ -104,5 +104,6 @@ public final class ConstellationClient {
         alpha = 0f;
         inside = false;
         ConstellationSky.release();
+        ConstellationGeometry.setHeading(0f);
     }
 }

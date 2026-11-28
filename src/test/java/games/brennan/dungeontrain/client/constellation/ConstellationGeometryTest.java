@@ -34,7 +34,26 @@ class ConstellationGeometryTest {
     @Test
     void rightIsWestWhenFacingSouth() {
         // facing +Z, east (+X) is to the left: the disc's right points -X
-        assertEquals(-1f, ConstellationGeometry.RIGHT.x);
-        assertEquals(0f, ConstellationGeometry.UP.dot(ConstellationGeometry.FORWARD), 1e-5f);
+        ConstellationGeometry.setHeading(0f);
+        assertEquals(-1f, ConstellationGeometry.right().x, 1e-6f);
+        assertEquals(0f, ConstellationGeometry.up().dot(ConstellationGeometry.forward()), 1e-5f);
+    }
+
+    @Test
+    void headingTurnsThePatch() {
+        try {
+            ConstellationGeometry.setHeading(90f); // facing west (-X)
+            org.joml.Vector3f f = ConstellationGeometry.forward();
+            assertEquals(-0.7071f, f.x, 1e-3f);
+            assertEquals(0.7071f, f.y, 1e-3f);
+            assertEquals(0f, f.z, 1e-4f);
+            assertEquals(-1f, ConstellationGeometry.right().z, 1e-5f); // facing west, north is on the right
+            float[] hit = ConstellationGeometry.hit(f.normalize());
+            assertEquals(0f, hit[0], 1e-4f);
+            assertEquals(0f, hit[1], 1e-4f);
+            assertNotNull(ConstellationGeometry.hit(ConstellationGeometry.point(0.5f, 0.5f).normalize()));
+        } finally {
+            ConstellationGeometry.setHeading(0f);
+        }
     }
 }

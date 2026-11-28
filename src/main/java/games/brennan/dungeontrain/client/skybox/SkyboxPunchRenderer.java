@@ -481,10 +481,8 @@ public final class SkyboxPunchRenderer {
     private static MeshData buildMesh(SkyboxSky sky, SkyboxBlockIndex.Snapshot snapshot,
                                       Map<UUID, ClientSubLevel> subLevels, Matrix4f frustumMatrix,
                                       Frustum frustum, Vec3 cam, float partialTick) {
-        // Standing in a constellation window, its cubes round the camera would punch the whole view
-        // through to the sky; the patch takes over instead, and the world stays.
-        if (sky == SkyboxSky.CONSTELLATION
-            && games.brennan.dungeontrain.client.constellation.ConstellationClient.inside()) return null;
+        // The constellation window stays drawn while you stand on it: it is carpet-thin, under the
+        // camera, so it never punches through the view or covers the patch.
         BufferBuilder builder = Tesselator.getInstance()
             .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
 
