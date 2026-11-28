@@ -42,10 +42,11 @@ class LifeChallengeAdvancementsTest {
     }
 
     @Test
-    @DisplayName("apples: vanilla's three and BetterNether's black apples, plus both edible backpacks; not the seed")
+    @DisplayName("apples: vanilla's three and BetterNether's black apples, DT's cosmic tiers, plus both edible backpacks; not the seed")
     void apples() {
         for (String id : new String[] {"minecraft:apple", "minecraft:golden_apple", "minecraft:enchanted_golden_apple",
                 "betternether:black_apple", "betternether:stalagnate_bowl_apple",
+                "dungeontrain:cosmic_apple", "dungeontrain:celestial_bite", "dungeontrain:violet_core",
                 "ediblebackpacks:edible_backpack", "ediblebackpacks:golden_edible_backpack"}) {
             assertTrue(LifeChallengeAdvancements.isAppleOrBackpack(id), id);
         }
