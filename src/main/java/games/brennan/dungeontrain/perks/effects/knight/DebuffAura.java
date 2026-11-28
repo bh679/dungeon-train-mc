@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.perks.effects.knight;
 
-import games.brennan.dungeontrain.event.RunStatsEvents;
 import games.brennan.dungeontrain.perks.BuiltPerks;
 import games.brennan.dungeontrain.perks.aura.AuraDef;
 import games.brennan.dungeontrain.perks.aura.AuraLadder;
@@ -10,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.monster.Enemy;
@@ -24,9 +24,9 @@ import java.util.Set;
  * Knight tier 2 perk "Debuff Aura" (Brennan, 2026-10-29): the Lover's Aura turned on enemies, run by
  * the shared {@code perks/aura} machinery with its own pool, ladder and targets.
  *
- * <p>Hostile mobs and PlayerMobs within a debuff's range get it, topped up every second with a 6 s
- * tail. Neutral mobs only while angry at the Knight; bosses never. Pool: Weakness, Slowness, Poison,
- * Wither, Glowing, drawn per life. Poison and Wither stop at half a heart ({@link DebuffAuraEvents}).</p>
+ * <p>Hostile mobs within a debuff's range get it, topped up every second with a 6 s tail. PlayerMobs
+ * and neutral mobs only while aggressive toward the Knight; bosses never. Pool: Weakness, Slowness,
+ * Poison, Wither, Glowing, drawn per life. Poison and Wither stop at half a heart ({@link DebuffAuraEvents}).</p>
  *
  * <p>Ladder ({@link #shape}): the first debuff enters at 1 block and grows to 4. After that each new
  * debuff enters at 1 and gains a block a point until it matches the others, then one point adds a
@@ -94,16 +94,27 @@ public final class DebuffAura {
     }
 
     /**
-     * Who the Knight's debuffs land on: hostile mobs, and PlayerMobs that don't like the Knight; a neutral
-     * mob only while it is angry at them. Never a player, a pet, or a boss.
+     * Who the Knight's debuffs land on: hostile mobs; PlayerMobs and neutral mobs (spiders and piglins
+     * included) only while they are aggressive toward the Knight. Never a player, a pet, or a boss.
      */
     static boolean isTarget(ServerPlayer owner, LivingEntity e) {
         if (e == owner || !e.isAlive() || e.isSpectator() || e instanceof Player) return false;
         if (isBoss(e.getType())) return false;
         if (e instanceof OwnableEntity pet && pet.getOwnerUUID() != null) return false;
-        if (e instanceof PlayerMobEntity mob) return mob.feelingToward(owner) <= RunStatsEvents.FRIEND_FEELING_MIN;
-        if (e instanceof NeutralMob neutral) return neutral.isAngryAt(owner);
+        if (e instanceof PlayerMobEntity || e instanceof NeutralMob || NATURALLY_NEUTRAL.contains(e.getType())) {
+            return isAggressiveToward(e, owner);
+        }
         return e instanceof Enemy;
+    }
+
+    /** Hostile by class but calm until provoked (spiders in daylight, piglins when you wear gold). */
+    private static final Set<EntityType<?>> NATURALLY_NEUTRAL =
+        Set.of(EntityType.SPIDER, EntityType.CAVE_SPIDER, EntityType.PIGLIN);
+
+    /** Targeting the Knight, or a neutral mob angry at them. */
+    static boolean isAggressiveToward(LivingEntity e, ServerPlayer owner) {
+        if (e instanceof Mob mob && mob.getTarget() == owner) return true;
+        return e instanceof NeutralMob neutral && neutral.isAngryAt(owner);
     }
 
     static boolean isBoss(EntityType<?> type) {
