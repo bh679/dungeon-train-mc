@@ -37,6 +37,18 @@ public final class ConstellationClient {
         return alpha > ConstellationFade.OFF_EPSILON;
     }
 
+    /**
+     * Is the block at {@code pos} (a world position, or a carriage plot position) hidden by the open
+     * patch, at least half way? Mods that name the looked-at block (Jade) stand aside for it.
+     */
+    public static boolean isHiddenBlock(long pos) {
+        if (!patchOpen()) return false;
+        for (java.util.Map.Entry<ConstellationOcclusion.Hidden, Float> e : ConstellationBlockFade.levels().entrySet()) {
+            if (e.getKey().pos() == pos && e.getValue() >= 0.5f) return true;
+        }
+        return false;
+    }
+
     /** Is the player standing in a constellation block right now? */
     public static boolean inside() {
         return inside;

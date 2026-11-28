@@ -216,7 +216,16 @@ public final class ConstellationSky {
                     RenderSystem.stencilMask(0x00);
                     RenderSystem.stencilFunc(GL11.GL_EQUAL, HIDE_BIT, HIDE_BIT);
                     RenderSystem.depthFunc(GL11.GL_GREATER);
-                    drawDisc(view, alpha * step.getKey(), false, HIDDEN_REACH);
+                    float a = alpha * step.getKey();
+                    // The picture first, clearing the bit where it lands; then night over every hidden
+                    // pixel left, the whole screen over, so a block at any angle (underfoot too) is
+                    // covered whole, with nothing laid down twice.
+                    RenderSystem.stencilMask(HIDE_BIT);
+                    RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_ZERO);
+                    drawPicture(view, a);
+                    RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
+                    RenderSystem.stencilMask(0x00);
+                    fillScreen(a);
                 }
             }
             // 4. The block under the crosshair, if the patch hid it, keeps its outline over the patch.
@@ -407,6 +416,7 @@ public final class ConstellationSky {
         float gw = texture.guiWidth(), gh = texture.guiHeight();
         float cell = ConstellationCrumble.CELL;
         int n = (int) Math.ceil(ConstellationCrumble.extent(core) / cell);
+        float[] outline = ConstellationCrumble.outlineTable(net.minecraft.Util.getMillis() / 1000.0);
         int night = SkyDomeDraw.argb(alpha, PerksScreen.SKY_BG & 0xFFFFFF);
 
         RenderSystem.enableBlend();
@@ -418,7 +428,7 @@ public final class ConstellationSky {
         java.util.List<float[]> onPic = new java.util.ArrayList<>(), offPic = new java.util.ArrayList<>();
         for (int i = -n; i < n; i++) {
             for (int j = -n; j < n; j++) {
-                if (!ConstellationCrumble.on(i, j, core)) continue;
+                if (!ConstellationCrumble.on(i, j, core, outline)) continue;
                 float x0 = i * cell, y0 = j * cell;
                 (onPicture(x0, y0, sq, gw, gh) && onPicture(x0 + cell, y0 + cell, sq, gw, gh) ? onPic : offPic)
                     .add(new float[] {x0, y0});
@@ -449,6 +459,43 @@ public final class ConstellationSky {
         }
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
+    }
+
+    /** The menu's picture alone, solid, as far as it reaches; no night past it. */
+    private static void drawPicture(Matrix4f view, float alpha) {
+        float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
+        float gw = texture.guiWidth(), gh = texture.guiHeight();
+        float limit = Math.min(Math.min(sq[0], gw - sq[0]), Math.min(sq[1], gh - sq[1])) / sq[2];
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+        RenderSystem.setShaderTexture(0, texture.location());
+        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_TEX_COLOR);
+        rings(new float[] {0f, limit}, false, limit + 1f, alpha, (x, y, a) -> vertex(bb, view, x, y, sq, gw, gh, a));
+        BufferUploader.drawWithShader(bb.buildOrThrow());
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+    }
+
+    /** Night over the whole screen, at the far plane (the caller's stencil and depth tests pick where). */
+    private static void fillScreen(float alpha) {
+        Matrix4f keepProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        RenderSystem.setProjectionMatrix(new Matrix4f(), com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        int c = SkyDomeDraw.argb(alpha, PerksScreen.SKY_BG & 0xFFFFFF);
+        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        bb.addVertex(-1f, -1f, 0f).setColor(c);
+        bb.addVertex(1f, -1f, 0f).setColor(c);
+        bb.addVertex(1f, 1f, 0f).setColor(c);
+        bb.addVertex(-1f, 1f, 0f).setColor(c);
+        BufferUploader.drawWithShader(bb.buildOrThrow());
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+        RenderSystem.setProjectionMatrix(keepProjection, com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
     }
 
     /** Is the patch point {@code (x, y)} (radii) on the picture's canvas? */

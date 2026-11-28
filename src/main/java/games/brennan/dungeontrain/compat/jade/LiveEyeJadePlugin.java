@@ -24,7 +24,8 @@ import snownee.jade.api.WailaPlugin;
  *
  * <p>On the client it also moves Jade's tooltip down under the Live stream's name pill while this
  * player is live ({@link LiveEyeJadeClient}), and hides infested blocks behind their host block for
- * survival players ({@link InfestedBlockJadeClient}), and names who took the photo in a photo frame
+ * survival players ({@link InfestedBlockJadeClient}), shows nothing for blocks the constellation
+ * patch hides ({@link ConstellationHiddenJadeClient}), and names who took the photo in a photo frame
  * ({@link PhotoFrameJadeProvider}).</p>
  *
  * <p>Optional: Jade finds this class by its {@link WailaPlugin} annotation, so nothing loads it — or
@@ -44,6 +45,7 @@ public final class LiveEyeJadePlugin implements IWailaPlugin {
         registration.addBeforeRenderCallback(LiveEyeJadeClient.INSTANCE);
         registration.addAfterRenderCallback(LiveEyeJadeClient.INSTANCE);
         InfestedBlockJadeClient.register(registration);
+        ConstellationHiddenJadeClient.register(registration);
         registration.registerBlockComponent(PhotoFrameJadeProvider.INSTANCE, PhotographFrameBlock.class);
     }
 
