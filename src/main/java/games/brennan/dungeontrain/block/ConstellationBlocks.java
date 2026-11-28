@@ -45,8 +45,16 @@ public final class ConstellationBlocks {
      * outline drawn round a hole in the sky would break the illusion.
      */
     public static VoxelShape outline(CollisionContext context) {
+        return outline(context, Shapes.block());
+    }
+
+    /** {@link #outline(CollisionContext)} with the block's own {@code shape} in place of the full cube. */
+    public static VoxelShape outline(CollisionContext context, VoxelShape shape) {
         boolean creative = context instanceof EntityCollisionContext entity
             && entity.getEntity() instanceof Player player && player.isCreative();
-        return creative && active() ? Shapes.block() : Shapes.empty();
+        return creative && active() ? shape : Shapes.empty();
     }
+
+    /** The window's height in blocks: carpet-thin, a hole in the floor. */
+    public static final double WINDOW_HEIGHT = 1.0 / 16.0;
 }

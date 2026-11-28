@@ -164,6 +164,18 @@ public final class ModDataAttachments {
         );
 
     /**
+     * The constellation window a cosmic apple put at this player's feet, until it is removed
+     * ({@code perks/ConstellationWindowPlacement}). Saved so a restart can still clear it; not
+     * {@code copyOnDeath}: death removes the window.
+     */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.ConstellationWindowSpot>> CONSTELLATION_WINDOW =
+        TYPES.register("constellation_window",
+            () -> AttachmentType.builder(() -> games.brennan.dungeontrain.perks.ConstellationWindowSpot.NONE)
+                .serialize(games.brennan.dungeontrain.perks.ConstellationWindowSpot.CODEC)
+                .build()
+        );
+
+    /**
      * Disposable cameras this player has shot with this life, for Extra Cam-Shots' "every second camera"
      * ({@code perks/effects/archivist/ArchivistCamera}). Per life: not {@code copyOnDeath}.
      */

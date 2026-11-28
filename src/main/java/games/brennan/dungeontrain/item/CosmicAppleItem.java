@@ -50,7 +50,11 @@ public class CosmicAppleItem extends Item {
             player.sendSystemMessage(Component.translatable(KEY_GAINED, stack.getHoverName(), points,
                     PerkPoints.active(player))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
-            PerkMenu.openPerksMenu(player);
+            // The constellation window at their feet is where the point gets spent; with no room for
+            // one, the menu as before.
+            boolean window = games.brennan.dungeontrain.perks.PerksGate.isOn()
+                && games.brennan.dungeontrain.perks.ConstellationWindowPlacement.place(player);
+            if (!window) PerkMenu.openPerksMenu(player);
         }
         return super.finishUsingItem(stack, level, entity);
     }

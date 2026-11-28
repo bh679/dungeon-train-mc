@@ -22,6 +22,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class ConstellationWindowBlock extends SkyboxBlock {
 
+    /** Carpet-thin: {@link ConstellationBlocks#WINDOW_HEIGHT}. */
+    private static final VoxelShape CARPET = Block.box(0, 0, 0, 16, 16 * ConstellationBlocks.WINDOW_HEIGHT, 16);
+
     public static final MapCodec<ConstellationWindowBlock> CODEC = simpleCodec(ConstellationWindowBlock::new);
 
     public ConstellationWindowBlock(BlockBehaviour.Properties properties) {
@@ -35,7 +38,7 @@ public class ConstellationWindowBlock extends SkyboxBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return ConstellationBlocks.outline(context);
+        return ConstellationBlocks.outline(context, CARPET);
     }
 
     @Override

@@ -86,6 +86,17 @@ public final class ConstellationSky {
         mouseX = mouseY = OFF;
     }
 
+    /** The sky copy of the Perks menu behind the picture, or null before there is one. */
+    static PerksScreen screen() {
+        return texture != null && texture.screen() instanceof PerksScreen s ? s : null;
+    }
+
+    /** The server refused a point put in from the sky: the bar over the hotbar says why. */
+    public static void onRefused(String perkId, String reasonKey) {
+        PerksScreen s = screen();
+        if (s != null) s.skyRefused(perkId, reasonKey);
+    }
+
     /** Something wants the picture: the patch has been open, or a window block asked for it. */
     static boolean wanted() {
         return texture != null;

@@ -220,6 +220,7 @@ public final class PerksScreen extends Screen {
     /** A refusal from the server for the open menu, if any. */
     public static void onRefused(String perkId, String reasonKey) {
         if (Minecraft.getInstance().screen instanceof PerksScreen s) s.refused(perkId, reasonKey);
+        else games.brennan.dungeontrain.client.constellation.ConstellationSky.onRefused(perkId, reasonKey);
     }
 
     @Override
@@ -293,6 +294,83 @@ public final class PerksScreen extends Screen {
 
     // ---- state -----------------------------------------------------------------------------------------
 
+    /**
+     * The sky copy's share of a point landing: the star's flash and the menu's chime, only while no
+     * screen is open over the world (an open menu chimes for itself).
+     */
+    private void spentInSky(PerkMenuSnapshot now, long ms) {
+        if (Minecraft.getInstance().screen != null) return;
+        for (Map.Entry<String, Integer> e : now.active().entrySet()) {
+            int before = last.points(e.getKey());
+            if (e.getValue() <= before) continue;
+            pointAt.put(e.getKey(), ms);
+            play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 1.2F + 0.05F * before);
+        }
+    }
+
+    // ---- the sky copy, driven from the world (crosshair, clicks, the bar over the hotbar) ----------------
+
+    /** Sky copy: the perk star under the crosshair, or null. Never the Engine. */
+    public String hoveredPerk() {
+        return skyOnly && hovered != null && !PerkTree.ROOT.equals(hovered) ? hovered : null;
+    }
+
+    /** Sky copy: keep the hovered star in the bar, or let go when the crosshair is on empty sky. */
+    public void skySelect() {
+        if (skyOnly) selected = hoveredPerk();
+    }
+
+    /** Sky copy: let the kept star go (stepping out of the patch). */
+    public void skyDeselect() {
+        if (skyOnly) selected = null;
+    }
+
+    /**
+     * Sky copy: put a point into the hovered star, as the menu's Activate does. Saying why not when it
+     * can't take one. False when no star is under the crosshair (the click is the world's).
+     */
+    public boolean skySpend() {
+        String id = hoveredPerk();
+        PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
+        if (p == null) return false;
+        selected = id;
+        PerkMenuSnapshot s = last;
+        int level = s.unlockLevel(id);
+        if (level <= 0) refused(id, "gui.dungeontrain.perks.refused.locked");
+        else if (s.points(id) >= level) refused(id, "gui.dungeontrain.perks.refused.full");
+        else activateAction(p);
+        return true;
+    }
+
+    /** Sky copy: the server's refusal, in the bar. */
+    public void skyRefused(String perkId, String reasonKey) {
+        if (skyOnly) refused(perkId, reasonKey);
+    }
+
+    /** Sky copy: is there a star for the bar (hovered or kept)? */
+    public boolean skyBarHasPerk() {
+        return skyBarPerk() != null;
+    }
+
+    private PerkTree.Perk skyBarPerk() {
+        if (!skyOnly) return null;
+        String id = hoveredPerk() != null ? hoveredPerk() : selected;
+        PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
+        return p != null && vis != null && vis.hidden(p) ? null : p;
+    }
+
+    /**
+     * Sky copy: the details bar along the foot of the real screen ({@code w} by {@code h} GUI units),
+     * over the hotbar. Its buttons are drawn but cannot be pressed: there is no pointer in the world.
+     */
+    public void renderSkyBar(GuiGraphics g, int w, int h, double fade, float partialTick) {
+        if (!skyOnly || fade <= 0.03) return;
+        PerkTree.Perk p = skyBarPerk();
+        bar.update(w, h, p, p != null && p.id().equals(selected), null, last);
+        bar.render(g, last, fade);
+        for (net.minecraft.client.gui.components.Button b : bar.buttons()) b.render(g, -10_000, -10_000, partialTick);
+    }
+
     private PerkMenuSnapshot snapshot() {
         long ms = Util.getMillis();
         PerkMenuSnapshot now = death == null ? PerkMenuSnapshot.current() : death.view(PerkMenuSnapshot.current(), ms);
@@ -300,6 +378,7 @@ public final class PerksScreen extends Screen {
         if (!firstSnapshot && death != null && now.ranksBought() < last.ranksBought()) {
             play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.5F, 0.6F + 0.04F * Math.min(now.ranksBought(), 20));
         }
+        if (!firstSnapshot && skyOnly) spentInSky(now, ms);
         if (!firstSnapshot && !skyOnly) {
             for (String id : now.unlocked()) {
                 int before = last.unlockLevel(id), after = now.unlockLevel(id);

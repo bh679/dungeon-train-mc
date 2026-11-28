@@ -52,6 +52,7 @@ public record PerkSpendPacket(String perkId) implements CustomPacketPayload {
             }
             if (!PerkPoints.spendActive(player, PerkRankCost.nextCost(Perks.state(player)))) return;
             Perks.addActive(player, id, 1);
+            games.brennan.dungeontrain.perks.ConstellationWindowPlacement.markSpent(player);
             PerkBalances.sync(player);
         });
     }

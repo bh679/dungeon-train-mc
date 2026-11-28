@@ -488,8 +488,9 @@ public final class SkyboxPunchRenderer {
         BufferBuilder builder = Tesselator.getInstance()
             .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
 
-        int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot.main().get(sky));
-        quads += emitSubLevels(builder, frustumMatrix, frustum, cam, snapshot, subLevels, sky, partialTick);
+        double height = heightOf(sky);
+        int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot.main().get(sky), height);
+        quads += emitSubLevels(builder, frustumMatrix, frustum, cam, snapshot, subLevels, sky, partialTick, height);
         // The sunk zone's lid reveals the live sky over the attic; it gates itself per frame.
         if (sky == SkyboxSky.LIVE) quads += SunkLidSkyPlane.emit(builder, frustumMatrix, frustum, cam);
 
@@ -504,6 +505,11 @@ public final class SkyboxPunchRenderer {
         return mesh;
     }
 
+    /** How tall a variant's hole is, in blocks: the constellation window is carpet-thin. */
+    static double heightOf(SkyboxSky sky) {
+        return sky == SkyboxSky.CONSTELLATION ? games.brennan.dungeontrain.block.ConstellationBlocks.WINDOW_HEIGHT : 1.0;
+    }
+
     private static Map<UUID, ClientSubLevel> indexSubLevels(ClientLevel level, SkyboxBlockIndex.Snapshot snapshot) {
         if (snapshot.subLevels().isEmpty()) return Map.of();
         ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
@@ -516,7 +522,7 @@ public final class SkyboxPunchRenderer {
     }
 
     private static int emitMainWorld(BufferBuilder builder, Matrix4f frustumMatrix, Frustum frustum,
-                                     Vec3 cam, SkyboxBlockIndex.CubeSet cubes) {
+                                     Vec3 cam, SkyboxBlockIndex.CubeSet cubes, double height) {
         if (cubes == null) return 0;
         long[] positions = cubes.positions();
         byte[] masks = cubes.faceMasks();
@@ -535,7 +541,7 @@ public final class SkyboxPunchRenderer {
 
             for (int corner = 0; corner < 8; corner++) {
                 cx[corner] = bx + SkyboxGeometry.cornerDx(corner);
-                cy[corner] = by + SkyboxGeometry.cornerDy(corner);
+                cy[corner] = by + SkyboxGeometry.cornerDy(corner) * height;
                 cz[corner] = bz + SkyboxGeometry.cornerDz(corner);
             }
             quads += SkyboxGeometry.emitCube(builder, frustumMatrix, cx, cy, cz, cam.x, cam.y, cam.z, mask);
@@ -552,7 +558,8 @@ public final class SkyboxPunchRenderer {
      */
     private static int emitSubLevels(BufferBuilder builder, Matrix4f frustumMatrix, Frustum frustum,
                                      Vec3 cam, SkyboxBlockIndex.Snapshot snapshot,
-                                     Map<UUID, ClientSubLevel> subLevels, SkyboxSky sky, float partialTick) {
+                                     Map<UUID, ClientSubLevel> subLevels, SkyboxSky sky, float partialTick,
+                                     double height) {
         if (subLevels.isEmpty()) return 0;
 
         Vector3d local = new Vector3d();
@@ -583,7 +590,7 @@ public final class SkyboxPunchRenderer {
                 double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
                 for (int corner = 0; corner < 8; corner++) {
                     local.set(bx + SkyboxGeometry.cornerDx(corner),
-                              by + SkyboxGeometry.cornerDy(corner),
+                              by + SkyboxGeometry.cornerDy(corner) * height,
                               bz + SkyboxGeometry.cornerDz(corner));
                     // Two-arg form: the single-arg overload mutates its input.
                     pose.transformPosition(local, world);
