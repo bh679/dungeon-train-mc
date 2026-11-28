@@ -555,20 +555,29 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 // AIR at spawn (mob entries are auto-stamped with the
                 // empty-placeholder sentinel) and a deferred entity pass
                 // creates the mob, gated by the existing 48-block player-
-                // distance check.
-                if (held.getItem() instanceof net.minecraft.world.item.SpawnEggItem egg) {
-                    net.minecraft.world.entity.EntityType<?> type = egg.getType(held);
-                    if (type == null) {
-                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_type"), ChatFormatting.YELLOW);
-                        return;
+                // distance check. A bucket of fish is its mob here too, not
+                // water (BucketMob), carrying the bucket's pattern.
+                VariantState bucketMob = BucketMob.from(held);
+                if (bucketMob != null || held.getItem() instanceof net.minecraft.world.item.SpawnEggItem) {
+                    net.minecraft.resources.ResourceLocation eid;
+                    CompoundTag mobNbt;
+                    if (bucketMob != null) {
+                        eid = bucketMob.entityId();
+                        mobNbt = bucketMob.blockEntityNbt();
+                    } else {
+                        net.minecraft.world.entity.EntityType<?> type =
+                            ((net.minecraft.world.item.SpawnEggItem) held.getItem()).getType(held);
+                        if (type == null) {
+                            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_type"), ChatFormatting.YELLOW);
+                            return;
+                        }
+                        eid = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type);
+                        if (eid == null) {
+                            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_id"), ChatFormatting.YELLOW);
+                            return;
+                        }
+                        mobNbt = SpawnEggMobNbt.read(held);
                     }
-                    net.minecraft.resources.ResourceLocation eid =
-                        net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type);
-                    if (eid == null) {
-                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_id"), ChatFormatting.YELLOW);
-                        return;
-                    }
-                    CompoundTag mobNbt = SpawnEggMobNbt.read(held);
                     if (wasEmpty) {
                         // Mob added to an empty cell — seed with the empty-
                         // placeholder sentinel so the picker can still roll

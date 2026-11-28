@@ -79,6 +79,7 @@
     "ChunkMapSpawnRangeInvoker",
     "ServerGamePacketListenerFloatAccessor",
     "ProjectileOwnerAccessor",
+    "MobBucketItemAccessor",
     "ChunkMapMixin",
     "ChunkMapTwinSpaceSkipMixin",
     "ChunkMapUntouchedSaveSkipMixin",

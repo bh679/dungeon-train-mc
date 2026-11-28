@@ -1,0 +1,17 @@
+{
+  "id": "rest-stop-respawn-mostly-full",
+  "version": "0.2076.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "balance"
+  ],
+  "title": "Rest stops are usually ready for you",
+  "summary": "The respawn point at some rest stops now almost always comes fully charged.",
+  "highlights": [],
+  "pr": 2946,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
