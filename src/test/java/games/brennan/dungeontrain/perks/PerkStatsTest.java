@@ -59,7 +59,8 @@ class PerkStatsTest {
     @DisplayName("Tank, Speedster and Builder chips read their effects' numbers")
     void lastFourClassChips() {
         assertEquals(2.0, at("armour", "armour", 1), 1e-9);
-        assertEquals(-5.0, at("hunger", "hunger_drain", 1), 1e-9);
+        assertEquals(3.0, at("hunger", "stack", 1), 1e-9);
+        assertEquals(5.0, at("hunger", "stack", 2), 1e-9);
         assertEquals(120.0, at("healing", "heals_every", 1), 1e-9);
         assertEquals(102.0, at("healing", "heals_every", 2), 1e-9);
         assertEquals(27.9, at("totem", "cooldown", 1), 1e-9);

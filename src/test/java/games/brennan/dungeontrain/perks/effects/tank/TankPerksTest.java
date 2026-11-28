@@ -14,7 +14,7 @@ class TankPerksTest {
     @DisplayName("rank 0 does nothing")
     void rankZeroIsInert() {
         assertEquals(0.0, TankPerks.armourBonus(0), EPS);
-        assertEquals(0.0, TankPerks.hungerRefundFraction(0), EPS);
+        assertEquals(1, TankPerks.soupStackSize(0));
         assertEquals(0, TankPerks.healIntervalTicks(0));
         assertEquals(0L, TankPerks.totemCooldownTicks(0));
     }
@@ -27,12 +27,25 @@ class TankPerksTest {
     }
 
     @Test
-    @DisplayName("Hunger: drain x0.95 per point (-5%, -10%, ... -40% at 10), never zero")
-    void hunger() {
-        assertEquals(0.05, TankPerks.hungerRefundFraction(1), EPS);
-        assertEquals(0.0975, TankPerks.hungerRefundFraction(2), EPS);
-        assertEquals(0.40, TankPerks.hungerRefundFraction(10), 0.005);
-        assertTrue(TankPerks.hungerRefundFraction(200) < 1.0);
+    @DisplayName("Stack Soups: +2 per point (3, 5, 7 ...), capped at the game's 99")
+    void stackSoups() {
+        assertEquals(3, TankPerks.soupStackSize(1));
+        assertEquals(5, TankPerks.soupStackSize(2));
+        assertEquals(21, TankPerks.soupStackSize(10));
+        assertEquals(99, TankPerks.soupStackSize(49));
+        assertEquals(99, TankPerks.soupStackSize(Integer.MAX_VALUE));
+        assertEquals(1, TankPerks.soupStackSize(-3));
+    }
+
+    @Test
+    @DisplayName("Stack Soups stamp: never below the stack's count or the item's own default")
+    void soupStamp() {
+        assertEquals(1, TankPerks.soupStamp(0, 1, 1));
+        assertEquals(3, TankPerks.soupStamp(1, 1, 1));
+        assertEquals(5, TankPerks.soupStamp(0, 5, 1));
+        assertEquals(16, TankPerks.soupStamp(2, 1, 16));
+        assertEquals(21, TankPerks.soupStamp(10, 1, 16));
+        assertEquals(99, TankPerks.soupStamp(200, 1, 1));
     }
 
     @Test
@@ -52,14 +65,5 @@ class TankPerksTest {
         assertEquals(27.9, TankPerks.totemCooldownMinutes(1), EPS);
         assertEquals(14.5, TankPerks.totemCooldownMinutes(10), 0.05);
         assertEquals(Math.round(27.9 * 60 * 20), TankPerks.totemCooldownTicks(1));
-    }
-
-    @Test
-    @DisplayName("exhaustion spent reads vanilla's wrap at 4.0 and ignores outside resets")
-    void exhaustionSpent() {
-        assertEquals(0.5F, TankPerks.exhaustionSpent(1.0F, 1.5F), EPS);
-        assertEquals(0.5F, TankPerks.exhaustionSpent(3.8F, 0.3F), EPS);
-        assertEquals(0.0F, TankPerks.exhaustionSpent(3.8F, -1.0F), EPS);
-        assertEquals(0.0F, TankPerks.exhaustionSpent(Float.NaN, 1.0F), EPS);
     }
 }
