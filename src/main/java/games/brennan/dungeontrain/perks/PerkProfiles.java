@@ -17,8 +17,9 @@ import java.util.UUID;
  * carried across would spend points that difficulty never earned.
  *
  * <p>The save follows the player across worlds, so a new world brings back that difficulty's unlocks.
- * Free Play purchases are not saved, the same rule as Free Play advancements: they last in that world's
- * {@code PERK_STATE} only.</p>
+ * Free Play unlocks never reach that save, the same rule as Free Play advancements. They go to the
+ * profile's own Free Play partition instead ({@link #freePlayKey}), so they last from one Free Play run
+ * to the next. A Free Play run starts from the higher of the two.</p>
  *
  * <p>Nothing here runs while perks are off ({@link PerksGate}). A perks test world is Test mode, its
  * own profile like a difficulty: its unlocks save to their own partition ({@link #TEST_KEY}), so a
@@ -31,6 +32,9 @@ public final class PerkProfiles {
     /** The save partition perks test worlds use, apart from every difficulty's. */
     static final String TEST_KEY = PerksGate.TEST_PROFILE;
 
+    /** Players whose live state already holds their Free Play save. Server thread only. */
+    private static final java.util.Set<UUID> FREE_PLAY_LOADED = new java.util.HashSet<>();
+
     private PerkProfiles() {}
 
     /** The partition this player's unlocks are saved to right now. */
@@ -38,9 +42,20 @@ public final class PerkProfiles {
         return PerksGate.isTestWorld() ? TEST_KEY : AdvancementProfiles.currentKey(player);
     }
 
-    /** Free Play saves no unlocks. Test mode is not Free Play: it saves to its own partition ({@link #TEST_KEY}). */
+    /** Free Play keeps its unlocks apart from the profile's. Test mode is not Free Play: it saves to {@link #TEST_KEY}. */
     private static boolean skipsSave(ServerPlayer player) {
         return RunIntegrity.isCheated(player);
+    }
+
+    /** Where Free Play keeps {@code key}'s unlocks: next to that profile, never in it. */
+    static String freePlayKey(String key) {
+        return key + "_freeplay";
+    }
+
+    /** The unlocks a run starts from on {@code key}: in Free Play, the higher of the profile's and its Free Play partition's. */
+    private static Map<String, Integer> savedUnlocks(UUID uuid, String key, boolean freePlay) {
+        Map<String, Integer> saved = PerkProfileStore.unlocks(uuid, key);
+        return freePlay ? higherOf(saved, PerkProfileStore.unlocks(uuid, freePlayKey(key))) : saved;
     }
 
     /**
@@ -77,7 +92,7 @@ public final class PerkProfiles {
         boolean freePlay = skipsSave(player);
         boolean hasSave = PerkProfileStore.exists(uuid);
         PerkState state = Perks.state(player);
-        Map<String, Integer> saved = hasSave ? PerkProfileStore.unlocks(uuid, key) : Map.of();
+        Map<String, Integer> saved = hasSave ? savedUnlocks(uuid, key, freePlay) : Map.of();
         if (adoptsWorldCopy(hasSave, state.unlocks(), freePlay)) {
             PerkProfileStore.setUnlocks(uuid, key, state.unlocks());
             LOGGER.info("[DungeonTrain] perk save: adopted {} unlock(s) from this world for {} ({})",
@@ -85,12 +100,38 @@ public final class PerkProfiles {
         }
         Map<String, Integer> levels = known(loginUnlocks(hasSave, saved, state.unlocks(), freePlay));
         Perks.replaceState(player, PerkState.of(levels, state.active()));
+        if (freePlay) FREE_PLAY_LOADED.add(uuid); else FREE_PLAY_LOADED.remove(uuid);
     }
 
-    /** Save an unlock level to the difficulty being played, unless this run is Free Play. */
+    /**
+     * Free Play can start mid-run (a command, cheats, an operator joining): once it does, the Free Play
+     * save's unlocks go live on top of this run's. Polled ({@link PerkLifecycle}) because Free Play has
+     * many sources and not all of them announce themselves. Never lowers a level.
+     */
+    static void checkFreePlay(ServerPlayer player) {
+        if (!PerksGate.isOn()) return;
+        UUID uuid = player.getUUID();
+        if (!skipsSave(player)) {
+            FREE_PLAY_LOADED.remove(uuid);
+            return;
+        }
+        if (!FREE_PLAY_LOADED.add(uuid) || !PerkProfileStore.exists(uuid)) return;
+        PerkState state = Perks.state(player);
+        Map<String, Integer> levels = known(higherOf(state.unlocks(), savedUnlocks(uuid, key(player), true)));
+        if (levels.equals(state.unlocks())) return;
+        Perks.replaceState(player, PerkState.of(levels, state.active()));
+        LOGGER.info("[DungeonTrain] perk save: Free Play unlocks loaded for {}", player.getScoreboardName());
+    }
+
+    static void onLogout(ServerPlayer player) {
+        FREE_PLAY_LOADED.remove(player.getUUID());
+    }
+
+    /** Save an unlock level to the difficulty being played, or to its Free Play partition in Free Play. */
     static void onUnlockLevelChanged(ServerPlayer player, String perkId, int level) {
-        if (!PerksGate.isOn() || skipsSave(player)) return;
-        PerkProfileStore.setUnlockLevel(player.getUUID(), key(player), perkId, level);
+        if (!PerksGate.isOn()) return;
+        String key = skipsSave(player) ? freePlayKey(key(player)) : key(player);
+        PerkProfileStore.setUnlockLevel(player.getUUID(), key, perkId, level);
     }
 
     /** Where a player's past lives are kept: one global list for real play, the test partition's own in a test world. */
@@ -123,6 +164,7 @@ public final class PerkProfiles {
     static void onCleared(ServerPlayer player) {
         if (!PerksGate.isOn()) return;
         PerkProfileStore.setUnlocks(player.getUUID(), key(player), Map.of());
+        PerkProfileStore.setUnlocks(player.getUUID(), freePlayKey(key(player)), Map.of());
     }
 
     /**
@@ -142,7 +184,7 @@ public final class PerkProfiles {
         PerkProfileStore.Parked outgoing = new PerkProfileStore.Parked(
             Perks.state(player).active(), PerkPoints.active(player));
         PerkProfileStore.Parked waiting = PerkProfileStore.swapParked(uuid, from, outgoing, to);
-        Perks.replaceState(player, PerkState.of(known(PerkProfileStore.unlocks(uuid, to)), waiting.active()));
+        Perks.replaceState(player, PerkState.of(known(savedUnlocks(uuid, to, skipsSave(player))), waiting.active()));
         PerkPoints.setActive(player, waiting.points());
         PerkPointEvents.markDirtySilently(player);
         PerkBalances.sync(player);

@@ -43,7 +43,8 @@
     2920,
     2922,
     2925,
-    2926
+    2926,
+    2932
   ],
   "entries": [
     "alchemist-perks",
@@ -68,6 +69,7 @@
     "perks-archivist",
     "perks-button-advancements",
     "perks-effect-rework",
+    "perks-grant-command",
     "perks-lover-pet-health-good-gifter",
     "perks-menu-constellation",
     "perks-menu-on-death",
