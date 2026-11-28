@@ -6461,6 +6461,7 @@
   "gui.dungeontrain.follows.looking": "正在尋找 %s…",
   "gui.dungeontrain.follows.unreachable": "暫時無法檢查該名稱。請稍後再試。",
   "gui.dungeontrain.follows.empty": "在下方輸入玩家名稱以追蹤他們。",
+  "gui.dungeontrain.follows.full": "再啟用一個點數即可追蹤更多作者。",
   "perk.dungeontrain.reroll-trades.name": "重擲交易",
   "perk.dungeontrain.reroll-trades.desc": "花綠寶石重擲村民的交易。同一村民每次重擲價格加倍。",
   "perk.dungeontrain.class.c0": "檔案管理員",

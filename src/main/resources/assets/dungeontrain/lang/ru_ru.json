@@ -6585,6 +6585,7 @@
   "gui.dungeontrain.follows.looking": "Поиск: %s…",
   "gui.dungeontrain.follows.unreachable": "Сейчас не удалось проверить имя. Повторите попытку позже.",
   "gui.dungeontrain.follows.empty": "Введите ниже имя игрока, чтобы подписаться.",
+  "gui.dungeontrain.follows.full": "Активируй ещё одно очко, чтобы подписаться на больше авторов.",
   "perk.dungeontrain.reroll-trades.name": "Перебросить обмен",
   "perk.dungeontrain.reroll-trades.desc": "Перебросить обмен жителя за изумруды. Каждый новый переброс того же жителя стоит вдвое дороже.",
   "perk.dungeontrain.class.c0": "Архивариус",

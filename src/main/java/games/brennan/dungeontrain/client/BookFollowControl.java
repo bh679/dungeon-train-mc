@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  * Favourite Author's Follow button on a community book's vote page, by the boost star: follows the
  * account that wrote the book (the relay resolves it from the book id, so a pen name still reaches
- * the right player). Shown once the perk is unlocked; reads "Following" for a followed author.
+ * the right player). Shown with a perk point free for one more follow; reads "Following" for a followed author.
  */
 public final class BookFollowControl {
 
@@ -39,11 +39,15 @@ public final class BookFollowControl {
         drawn = false;
     }
 
-    /** On somebody else's community book, with Favourite Author unlocked. */
+    /**
+     * On somebody else's community book, with a Favourite Author point free for one more follow (or the
+     * author already followed, so it reads "Following").
+     */
     static boolean shown(String bookType, String bookId, boolean own) {
         Minecraft mc = Minecraft.getInstance();
         return "shared".equals(bookType) && !own && bookId != null && bookId.matches("\\d{1,9}")
-            && mc.player != null && Perks.isUnlocked(mc.player, ArchivistPerks.FAV_AUTHOR);
+            && mc.player != null && Perks.isUnlocked(mc.player, ArchivistPerks.FAV_AUTHOR)
+            && (following(bookId) || FollowsClientState.canFollowMore(Perks.rank(mc.player, ArchivistPerks.FAV_AUTHOR)));
     }
 
     private static boolean following(String bookId) {

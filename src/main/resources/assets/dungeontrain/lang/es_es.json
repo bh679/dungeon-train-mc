@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Buscando a %s…",
   "gui.dungeontrain.follows.unreachable": "No se pudo comprobar ese nombre ahora. Inténtalo más tarde.",
   "gui.dungeontrain.follows.empty": "Escribe abajo el nombre de un jugador para seguirlo.",
+  "gui.dungeontrain.follows.full": "Activa otro punto para seguir a más autores.",
   "perk.dungeontrain.reroll-trades.name": "Resortear Ofertas",
   "perk.dungeontrain.reroll-trades.desc": "Resortea las ofertas de un aldeano a cambio de esmeraldas. Cada nuevo resorteo del mismo aldeano cuesta el doble.",
   "perk.dungeontrain.class.c0": "Archivista",

@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "Hinahanap si %s…",
   "gui.dungeontrain.follows.unreachable": "Hindi ma-check ang pangalang iyon ngayon. Subukan ulit mamaya.",
   "gui.dungeontrain.follows.empty": "Mag-type ng pangalan ng manlalaro sa ibaba para i-follow siya.",
+  "gui.dungeontrain.follows.full": "Mag-activate ng isa pang point para sumunod sa mas maraming author.",
   "perk.dungeontrain.reroll-trades.name": "I-reroll ang Kalakal",
   "perk.dungeontrain.reroll-trades.desc": "I-reroll ang kalakal ng taganayon kapalit ng emerald. Doble ang presyo ng bawat reroll sa parehong taganayon.",
   "perk.dungeontrain.class.c0": "Archivist",

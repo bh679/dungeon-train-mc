@@ -6447,6 +6447,7 @@
   "gui.dungeontrain.follows.looking": "Mencari %s…",
   "gui.dungeontrain.follows.unreachable": "Tidak dapat menyemak nama itu sekarang. Cuba lagi nanti.",
   "gui.dungeontrain.follows.empty": "Taip nama pemain di bawah untuk mengikutinya.",
+  "gui.dungeontrain.follows.full": "Aktifkan satu lagi mata untuk mengikuti lebih ramai pengarang.",
   "perk.dungeontrain.reroll-trades.name": "Rawak Semula Dagangan",
   "perk.dungeontrain.reroll-trades.desc": "Rawak semula dagangan penduduk dengan zamrud. Setiap rawak semula penduduk yang sama berharga dua kali ganda.",
   "perk.dungeontrain.class.c0": "Ahli Arkib",

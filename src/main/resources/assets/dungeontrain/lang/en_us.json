@@ -6495,6 +6495,7 @@
   "gui.dungeontrain.follows.looking": "Looking for %s…",
   "gui.dungeontrain.follows.unreachable": "Couldn't check that name right now. Try again later.",
   "gui.dungeontrain.follows.empty": "Type a player's name below to follow them.",
+  "gui.dungeontrain.follows.full": "Activate another point to follow more authors.",
   "perk.dungeontrain.reroll-trades.name": "Reroll Trades",
   "perk.dungeontrain.reroll-trades.desc": "Reroll a villager's trades for emeralds. Each reroll of the same villager costs twice as much.",
   "perk.dungeontrain.class.c0": "Archivist",

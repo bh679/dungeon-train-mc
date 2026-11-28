@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Zoeken naar %s…",
   "gui.dungeontrain.follows.unreachable": "Kan die naam nu niet controleren. Probeer het later opnieuw.",
   "gui.dungeontrain.follows.empty": "Typ hieronder de naam van een speler om diegene te volgen.",
+  "gui.dungeontrain.follows.full": "Activeer nog een punt om meer auteurs te volgen.",
   "perk.dungeontrain.reroll-trades.name": "Ruilen opnieuw gooien",
   "perk.dungeontrain.reroll-trades.desc": "Gooi de ruilen van een dorpeling opnieuw voor smaragden. Elke keer bij dezelfde dorpeling kost het twee keer zoveel.",
   "perk.dungeontrain.class.c0": "Archivaris",

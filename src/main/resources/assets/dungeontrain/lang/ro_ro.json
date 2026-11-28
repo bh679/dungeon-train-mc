@@ -6585,6 +6585,7 @@
   "gui.dungeontrain.follows.looking": "Se caută %s…",
   "gui.dungeontrain.follows.unreachable": "Numele nu poate fi verificat acum. Încearcă din nou mai târziu.",
   "gui.dungeontrain.follows.empty": "Scrie mai jos numele unui jucător ca să îl urmărești.",
+  "gui.dungeontrain.follows.full": "Activează încă un punct ca să urmărești mai mulți autori.",
   "perk.dungeontrain.reroll-trades.name": "Reia Schimburile",
   "perk.dungeontrain.reroll-trades.desc": "Reia schimburile unui sătean pe smaralde. Fiecare reluare la același sătean costă de două ori mai mult.",
   "perk.dungeontrain.class.c0": "Arhivist",

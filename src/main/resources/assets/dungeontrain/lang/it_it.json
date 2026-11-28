@@ -6516,6 +6516,7 @@
   "gui.dungeontrain.follows.looking": "Cerco %s…",
   "gui.dungeontrain.follows.unreachable": "Impossibile controllare il nome ora. Riprova più tardi.",
   "gui.dungeontrain.follows.empty": "Scrivi qui sotto il nome di un giocatore per seguirlo.",
+  "gui.dungeontrain.follows.full": "Attiva un altro punto per seguire più autori.",
   "perk.dungeontrain.reroll-trades.name": "Rilancia Scambi",
   "perk.dungeontrain.reroll-trades.desc": "Rilancia gli scambi di un villico in cambio di smeraldi. Ogni rilancio dello stesso villico costa il doppio.",
   "perk.dungeontrain.class.c0": "Archivista",
