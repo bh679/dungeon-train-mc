@@ -15,7 +15,7 @@ final class ConstellationCrumble {
     /** The crumbling rim round the core: from this far inside it to this far outside, in radii. */
     static final float RIM_IN = 0.06f, RIM_OUT = 0.12f;
     /** How far the longest arm reaches past the core, in radii. */
-    static final float ARM = 1.0f;
+    static final float ARM = 0.42f;
     /** An arm's half-width, as an angle times radius: at its root, and the least it tapers to. */
     static final float ROOT_WIDTH = 0.11f, TIP_WIDTH = 0.045f;
     /** How thick an arm gets, at most, against its slenderest. */
