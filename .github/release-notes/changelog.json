@@ -40120,6 +40120,39 @@
       "released": true,
       "released_in": "v0.2060.0",
       "released_at": "2026-11-27T16:23:19Z"
+    },
+    {
+      "id": "relocation-keeps-depth",
+      "version": "0.2061.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Returned runs keep their depth",
+      "summary": "When a lost run is returned to you, the carriages you land among now match how far you had come. Rooms, loot and the echoes you meet no longer act as if the run had just started.",
+      "highlights": [],
+      "pr": 2931,
+      "date": "2026-11-27",
+      "released": true,
+      "released_in": "v0.2065.0",
+      "released_at": "2026-11-28T08:31:18Z"
+    },
+    {
+      "id": "craft-level-stats-vanilla-floor",
+      "version": "0.2063.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2933,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2065.0",
+      "released_at": "2026-11-28T08:31:18Z"
     }
   ]
 }
