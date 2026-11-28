@@ -38,6 +38,8 @@ final class PerkProfileStore {
     static final String TAG_PARKED_POINTS = "ParkedPoints";
     /** The perks each past life activated ({@link PerkLifeHistory}): at the root for real play, inside a partition for tests. */
     static final String TAG_PAST_LIVES = "PastLives";
+    /** Set once the player has taken a Cosmic Apple from a chest, in any life ({@link FirstAppleBoost}). */
+    static final String TAG_FIRST_APPLE_FOUND = "FirstAppleFound";
 
     private PerkProfileStore() {}
 
@@ -91,7 +93,29 @@ final class PerkProfileStore {
         return next;
     }
 
+    /** True once this player has taken a Cosmic Apple from a chest, in any life. */
+    static boolean firstAppleFound(UUID uuid) {
+        return firstAppleFoundIn(read(uuid));
+    }
+
+    /** Record that this player has taken their first Cosmic Apple. Never cleared. */
+    static void markFirstAppleFound(UUID uuid) {
+        CompoundTag root = read(uuid);
+        if (firstAppleFoundIn(root)) return;
+        write(uuid, withFirstAppleFound(root));
+    }
+
     // ---- tag logic (pure: each write returns a new root) ----
+
+    static boolean firstAppleFoundIn(CompoundTag root) {
+        return root.getBoolean(TAG_FIRST_APPLE_FOUND);
+    }
+
+    static CompoundTag withFirstAppleFound(CompoundTag root) {
+        CompoundTag next = root.copy();
+        next.putBoolean(TAG_FIRST_APPLE_FOUND, true);
+        return next;
+    }
 
     static PerkLifeHistory pastLivesIn(CompoundTag root, String partition) {
         CompoundTag holder = partition == null ? root : root.getCompound(partition);

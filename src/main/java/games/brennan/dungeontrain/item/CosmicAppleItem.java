@@ -54,6 +54,7 @@ public class CosmicAppleItem extends Item {
                     PerkPoints.active(player))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
             PerkMenu.openPerksMenu(player);
+            games.brennan.dungeontrain.perks.FirstAppleBoost.onEaten(player);
         }
         if (!level.isClientSide && eaten > 1) {
             stack.consume(eaten - 1, entity); // a creative player keeps the stack, as vanilla eating does

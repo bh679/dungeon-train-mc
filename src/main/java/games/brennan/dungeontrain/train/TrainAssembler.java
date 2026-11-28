@@ -542,6 +542,15 @@ public final class TrainAssembler {
      * The group's {@link CarriageLayout}: the session's forced Group cadence when one is set (a
      * testing aid — {@link FullCarriageSettings#force}), else the seeded draw on the layout weights.
      */
+    /** The {@code carriages}-long box at {@code origin} where first-find extras may go. */
+    private static games.brennan.dungeontrain.perks.FirstAppleBoost.Box appleBox(BlockPos origin, CarriageDims dims,
+                                                                               int carriages, int pIdx) {
+        return new games.brennan.dungeontrain.perks.FirstAppleBoost.Box(
+            net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(
+                origin, origin.offset(dims.length() * carriages - 1, dims.height(), dims.width())), pIdx,
+            dims.length());
+    }
+
     /** One cosmic apple into a container of the {@code carriages}-long box at {@code origin}. */
     private static boolean placeApple(ServerLevel level, BlockPos origin, CarriageDims dims, int carriages,
                                     CarriageGenerationConfig genCfg, int pIdx) {
@@ -922,6 +931,13 @@ public final class TrainAssembler {
         int appleSlot = games.brennan.dungeontrain.perks.CosmicAppleDrops.open(level.getServer())
             ? games.brennan.dungeontrain.perks.CosmicAppleDrops.slotFor(genCfg.seed(), anchorPIdx, groupSize) : -1;
         boolean appleOwed = appleSlot >= 0;
+        // First apple (FirstAppleBoost): while nobody on the server has taken one, the group is topped up to
+        // two apples, in the unshared boxes that ran a contents pass, after the loop.
+        games.brennan.dungeontrain.perks.FirstAppleBoost.Owed firstAppleOwed =
+            games.brennan.dungeontrain.perks.FirstAppleBoost.owed(level.getServer());
+        boolean firstAppleSeeking = firstAppleOwed != games.brennan.dungeontrain.perks.FirstAppleBoost.Owed.NONE;
+        // The unshared boxes that ran a contents pass: where a pot apple or a first-find extra may go after the loop.
+        java.util.List<games.brennan.dungeontrain.perks.FirstAppleBoost.Box> appleBoxes = new java.util.ArrayList<>();
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
@@ -970,6 +986,9 @@ public final class TrainAssembler {
                     CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, fullPick.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
                     if (appleOwed) appleOwed = !placeApple(level, carriageShipyardOrigin, dims, groupSize, genCfg, anchorPIdx);
+                    if (!groupDrifts) {
+                        appleBoxes.add(appleBox(carriageShipyardOrigin, dims, groupSize, anchorPIdx));
+                    }
                     pendingEntities[slot] = new PendingContentsEntitySpawn(
                         carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
@@ -1002,8 +1021,12 @@ public final class TrainAssembler {
                         genCfg, carriagePIdx, groupAnchorWorldX);
                     // The drawn half first; a first half with no free container hands it to the second.
                     boolean firstHalf = appleSlot < (groupSize + 1) / 2;
+                    int halfLength = slot == 0 ? halfPick.secondOffset() : groupSize * length - halfPick.secondOffset();
+                    {
+                        appleBoxes.add(appleBox(halfShipyardOrigin,
+                            new CarriageDims(halfLength, dims.width(), dims.height()), 1, carriagePIdx));
+                    }
                     if (appleOwed && (slot != 0 || firstHalf)) {
-                        int halfLength = slot == 0 ? halfPick.secondOffset() : groupSize * length - halfPick.secondOffset();
                         appleOwed = !placeApple(level, halfShipyardOrigin, new CarriageDims(halfLength, dims.width(), dims.height()),
                             1, genCfg, anchorPIdx);
                     }
@@ -1056,6 +1079,7 @@ public final class TrainAssembler {
             // An ordinary carriage whose template carries a Drifting Engine Block drifts too: the engine is what
             // makes a carriage drift. Every fresh drifting carriage gets one, empty (FRESH_COAL), set down
             // before registering so it is not mistaken for somebody's edit.
+            boolean registeredShared = false;
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
@@ -1072,6 +1096,7 @@ public final class TrainAssembler {
                         SharedCarriageClient.Deaths.EMPTY);
                 fresh.setFuel(coal);
                 fresh.setNameId(games.brennan.dungeontrain.train.id.BuildNameIds.forCarriage(level, carriagePIdx));
+                registeredShared = true;
             } else if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
@@ -1080,6 +1105,21 @@ public final class TrainAssembler {
                 games.brennan.dungeontrain.train.engine.EngineConversion.remember(
                         carriagePIdx, stageBySlot[slot], variant.id());
             }
+            if (!registeredShared) {
+                // Not shared: a pot apple or a first-find extra may go here (and come out again) without uploading anything.
+                appleBoxes.add(appleBox(carriageShipyardOrigin, dims, 1, carriagePIdx));
+            }
+        }
+        if (appleOwed && !appleBoxes.isEmpty()) {
+            // No chest took it by the group's last carriage: an empty decorated pot may.
+            appleOwed = !games.brennan.dungeontrain.perks.CosmicAppleDrops.placeInPot(level,
+                appleBoxes.stream().map(games.brennan.dungeontrain.perks.FirstAppleBoost.Box::box).toList(),
+                genCfg.seed(), anchorPIdx);
+        }
+        if (firstAppleSeeking) {
+            games.brennan.dungeontrain.perks.FirstAppleBoost.placeExtras(level, appleBoxes,
+                appleSlot >= 0 && !appleOwed, groupSize,
+                firstAppleOwed == games.brennan.dungeontrain.perks.FirstAppleBoost.Owed.MARKERS);
         }
         long tAfterContents = System.nanoTime();
 

@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
@@ -24,7 +25,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * A cosmic apple turns up in about one carriage group in {@link #EVERY}: one stack of one, in one chest,
+ * A cosmic apple turns up in about one carriage group in {@link #EVERY} (plus {@link TimedPotApple}'s pot
+ * apple every ten minutes on the train): one stack of one, in one chest,
  * barrel or shulker box of that group. Every Diff-Level, Level 0 included, gets at least {@link #MIN_PER_LEVEL}:
  * a level whose groups win fewer draws tops up with groups picked by seed ({@link #isFloorGroup}); each side
  * of the origin counts on its own, as Diff-Level uses distance. Which apple depends on depth
@@ -40,7 +42,7 @@ public final class CosmicAppleDrops {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** One group in this many gets an apple. */
-    static final int EVERY = 5;
+    static final int EVERY = 10;
     /** Every Diff-Level (each side of the origin) gets at least this many apple groups. */
     static final int MIN_PER_LEVEL = 1;
     /** The tier roll is out of this many: basis points, so the curves keep two decimals of a per cent. */
@@ -178,6 +180,11 @@ public final class CosmicAppleDrops {
         return AppleTierCurve.CORE.basisPointsAt(diffLevel);
     }
 
+    /** One apple of the tier {@link #tierFor} draws for {@code index} at {@code diffLevel}. */
+    static ItemStack rollApple(long seed, long index, int diffLevel) {
+        return new ItemStack(appleFor(tierFor(seed, index, diffLevel)));
+    }
+
     private static Item appleFor(int tier) {
         return switch (tier) {
             case 3 -> ModItems.VIOLET_CORE.get();
@@ -214,21 +221,66 @@ public final class CosmicAppleDrops {
         return false;
     }
 
-    private static List<Container> containersIn(ServerLevel level, BoundingBox box) {
+    /**
+     * The group's chests had no room for its apple by the last carriage: put it in a decorated pot in one of
+     * {@code boxes} instead (in place of whatever loot it held), picked from the seed like {@link #place}'s
+     * container, an empty pot first. Breaking the pot drops it.
+     *
+     * @return true when an apple went in
+     */
+    public static boolean placeInPot(ServerLevel level, List<BoundingBox> boxes, long seed, int anchorPIdx) {
+        List<DecoratedPotBlockEntity> empty = new ArrayList<>();
+        List<DecoratedPotBlockEntity> filled = new ArrayList<>();
+        for (BoundingBox box : boxes) {
+            for (DecoratedPotBlockEntity pot : potsIn(level, box)) (pot.getTheItem().isEmpty() ? empty : filled).add(pot);
+        }
+        List<DecoratedPotBlockEntity> pots = empty.isEmpty() ? filled : empty;
+        if (pots.isEmpty()) {
+            LOGGER.debug("[DT-CosmicApple] group at {} drew an apple but has no container or pot", anchorPIdx);
+            return false;
+        }
+        Item apple = appleFor(tierFor(seed, anchorPIdx, DifficultyProgression.positionTier(anchorPIdx)));
+        DecoratedPotBlockEntity pot = pots.get(potIndex(seed, anchorPIdx, pots.size()));
+        pot.setTheItem(new ItemStack(apple));
+        pot.setChanged();
+        LOGGER.info("[DT-CosmicApple] carriage {} -> {} in a pot at {}", anchorPIdx, apple, pot.getBlockPos());
+        return true;
+    }
+
+    /** Which of {@code count} pots takes the apple: seeded, so a group's pick never changes. */
+    static int potIndex(long seed, int anchorPIdx, int count) {
+        return (int) Math.floorMod(hash(seed + 4, anchorPIdx), (long) count);
+    }
+
+    /** The decorated pots inside {@code box}, in block order, empty or holding loot. */
+    static List<DecoratedPotBlockEntity> potsIn(ServerLevel level, BoundingBox box) {
+        List<DecoratedPotBlockEntity> found = new ArrayList<>();
+        for (BlockEntity be : blockEntitiesIn(level, box)) {
+            if (be instanceof DecoratedPotBlockEntity pot) found.add(pot);
+        }
+        return found;
+    }
+
+    private static List<BlockEntity> blockEntitiesIn(ServerLevel level, BoundingBox box) {
         List<BlockEntity> found = new ArrayList<>();
         for (int cx = box.minX() >> 4; cx <= box.maxX() >> 4; cx++) {
             for (int cz = box.minZ() >> 4; cz <= box.maxZ() >> 4; cz++) {
                 if (!level.hasChunk(cx, cz)) continue;
                 for (BlockEntity be : level.getChunk(cx, cz).getBlockEntities().values()) {
-                    if (!box.isInside(be.getBlockPos())) continue;
-                    if (be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity
-                            || be instanceof ShulkerBoxBlockEntity) found.add(be);
+                    if (box.isInside(be.getBlockPos())) found.add(be);
                 }
             }
         }
         found.sort(Comparator.comparingLong(be -> be.getBlockPos().asLong()));
-        List<Container> out = new ArrayList<>(found.size());
-        for (BlockEntity be : found) out.add((Container) be);
+        return found;
+    }
+
+    static List<Container> containersIn(ServerLevel level, BoundingBox box) {
+        List<Container> out = new ArrayList<>();
+        for (BlockEntity be : blockEntitiesIn(level, box)) {
+            if (be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity
+                    || be instanceof ShulkerBoxBlockEntity) out.add((Container) be);
+        }
         return out;
     }
 

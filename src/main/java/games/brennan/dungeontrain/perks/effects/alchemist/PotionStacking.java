@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.perks.PerkEffect;
 import games.brennan.dungeontrain.perks.Perks;
 import games.brennan.dungeontrain.perks.PerksGate;
+import games.brennan.dungeontrain.perks.StackStamp;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -29,7 +30,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 public final class PotionStacking implements PerkEffect {
 
     /** The game's own ceiling: the max-stack-size component only encodes 1..99. Not a design cap. */
-    public static final int MAX_STACK = 99;
+    public static final int MAX_STACK = StackStamp.MAX_STACK;
     private static final int SWEEP_PERIOD_TICKS = 20;
 
     /** Stack size a potion gets at {@code rank}: vanilla 1 at rank 0, 2 at 1 point, up to the game's 99. */
@@ -49,9 +50,7 @@ public final class PotionStacking implements PerkEffect {
 
     /** Two potions of the same item whose components differ at most by the stack-size stamp. */
     public static boolean sameIgnoringStamp(ItemStack a, ItemStack b) {
-        if (!isPotion(a) || !a.is(b.getItem())) return false;
-        return a.getComponentsPatch().forget(t -> t == DataComponents.MAX_STACK_SIZE)
-            .equals(b.getComponentsPatch().forget(t -> t == DataComponents.MAX_STACK_SIZE));
+        return isPotion(a) && StackStamp.sameIgnoringStamp(a, b);
     }
 
     /** Stamp or strip one stack to match {@code rank}. Returns true when it changed. */
