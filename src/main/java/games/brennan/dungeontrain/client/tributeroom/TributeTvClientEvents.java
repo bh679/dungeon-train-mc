@@ -99,9 +99,24 @@ public final class TributeTvClientEvents {
         if (!TributeTvVisit.ownsClick(pos) && !TributeTvShowcase.ownsClick(pos)) return;
         boolean sneak = event.getEntity().isShiftKeyDown();
         if (event instanceof net.neoforged.bus.api.ICancellableEvent c) c.setCanceled(true);
+        PlayerInteractEvent.LeftClickBlock.Action action =
+            event instanceof PlayerInteractEvent.LeftClickBlock left ? left.getAction() : null;
+        if (!deliversClick(event instanceof PlayerInteractEvent.RightClickBlock, event.getHand(), action)) return;
         Minecraft.getInstance().tell(() -> {
             if (!TributeTvVisit.onTvClicked(pos, sneak)) TributeTvShowcase.onTvClicked(pos, sneak);
         });
+    }
+
+    /**
+     * Whether a (cancelled) interaction event on a showing TV is a fresh press the page should get. One
+     * press fires several: a right-click cancelled with the default PASS goes on to the off hand, and a
+     * cancelled left-click fires {@code CLIENT_HOLD} every tick the button stays down. Each one queued a
+     * page click, so the photo viewer's Next stepped two or more photos at a time.
+     */
+    static boolean deliversClick(boolean rightClick, net.minecraft.world.InteractionHand hand,
+                                 PlayerInteractEvent.LeftClickBlock.Action leftAction) {
+        if (rightClick) return hand == net.minecraft.world.InteractionHand.MAIN_HAND;
+        return leftAction == PlayerInteractEvent.LeftClickBlock.Action.START;
     }
 
     /**
