@@ -3,13 +3,10 @@
   "version": "0.2063.0",
   "type": "fix",
   "tags": [
-    "fix",
-    "loot",
-    "ui",
-    "balance"
+    "fix"
   ],
-  "title": "Crafted gear is never worse than vanilla",
-  "summary": "With Craft Level Stats, a crafted tool, weapon or armour piece can no longer roll below its normal stats, and shift-click crafting now gets the perk too. Hover the item in the crafting result slot to see the range it can roll, from its normal value up to the best this level allows.",
+  "title": "Back-end changes",
+  "summary": "Back-end changes.",
   "highlights": [],
   "pr": 2933,
   "date": "2026-11-28",
