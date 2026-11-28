@@ -123,22 +123,31 @@ public final class ConstellationSky {
     private static final float HIDDEN_REACH = 10f;
 
     /**
-     * Directions from the eye to every drawn star of the picture: its centre and four points round its
-     * rim, so a block that covers any part of a star counts as in its way. Empty with no picture.
+     * Directions from the eye across everything blocks must clear for: each star and a padding round it
+     * twice its size, and round the Engine a disc twice as wide as the tier 1 ring, so the middle of the
+     * constellation is clear too. A block any of these rays meets is hidden whole. Empty with no picture.
      */
     static java.util.List<Vector3f> starDirections() {
         if (texture == null || !(texture.screen() instanceof PerksScreen screen)) return java.util.List.of();
         float[] sq = SkyViewAccess.skySquare(texture.guiWidth(), texture.guiHeight());
-        java.util.List<Vector3f> out = new java.util.ArrayList<>();
-        for (float[] star : screen.drawnStars()) {
-            float r = star[2] * 0.8f;
-            float[][] offsets = {{0, 0}, {r, 0}, {-r, 0}, {0, r}, {0, -r}};
-            for (float[] o : offsets) {
-                float x = (star[0] + o[0] - sq[0]) / sq[2];
-                float y = -(star[1] + o[1] - sq[1]) / sq[2];
-                if (x * x + y * y >= 1f) continue;
-                out.add(ConstellationGeometry.point(x, y).normalize());
+        java.util.List<float[]> stars = screen.drawnStars();
+        java.util.List<float[]> samples = new java.util.ArrayList<>();
+        for (float[] star : stars) StarPadding.around(star[0], star[1], star[2], samples);
+        float[] engine = null;
+        float tierOne = 0f;
+        for (float[] star : stars) if (star.length > 3 && star[3] == 0) engine = star;
+        if (engine != null) {
+            for (float[] star : stars) {
+                if (star.length > 3 && star[3] == 1) tierOne = Math.max(tierOne, (float) Math.hypot(star[0] - engine[0], star[1] - engine[1]));
             }
+            if (tierOne > 0) StarPadding.disc(engine[0], engine[1], 2f * tierOne, engine[2], samples);
+        }
+        java.util.List<Vector3f> out = new java.util.ArrayList<>();
+        for (float[] at : samples) {
+            float x = (at[0] - sq[0]) / sq[2];
+            float y = -(at[1] - sq[1]) / sq[2];
+            if (x * x + y * y >= 1f) continue;
+            out.add(ConstellationGeometry.point(x, y).normalize());
         }
         return out;
     }

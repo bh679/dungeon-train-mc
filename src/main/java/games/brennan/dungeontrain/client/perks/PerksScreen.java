@@ -164,6 +164,7 @@ public final class PerksScreen extends Screen {
      * Every star drawn last frame, as {@code {x, y, radius}} in GUI units on this screen: what the
      * constellation patch clears blocks in front of. Empty before the first frame.
      */
+    /** Sky copy: every visible star as {@code {x, y, hitRadius, tier}} in GUI units (the Engine is tier 0). */
     public java.util.List<float[]> drawnStars() {
         PerkTree d = drawn;
         ClassVisibility v = vis;
@@ -173,7 +174,7 @@ public final class PerksScreen extends Screen {
         for (PerkTree.Perk p : d.perks()) {
             if (v.hidden(p)) continue;
             out.add(new float[] {(float) sv.toScreenX(p.x(), width), (float) sv.toScreenY(p.y(), skyH()),
-                (float) SkyPalette.hitRadius(p, sv.zoom())});
+                (float) SkyPalette.hitRadius(p, sv.zoom()), p.isRoot() ? 0 : p.tier()});
         }
         return java.util.List.copyOf(out);
     }
@@ -320,6 +321,11 @@ public final class PerksScreen extends Screen {
         if (skyOnly) selected = hoveredPerk();
     }
 
+    /** Sky copy: the star kept in the bar, or null. */
+    public String selectedPerk() {
+        return skyOnly ? selected : null;
+    }
+
     /** Sky copy: let the kept star go (stepping out of the patch). */
     public void skyDeselect() {
         if (skyOnly) selected = null;
@@ -369,6 +375,34 @@ public final class PerksScreen extends Screen {
         bar.update(w, h, p, p != null && p.id().equals(selected), null, last);
         bar.render(g, last, fade);
         for (net.minecraft.client.gui.components.Button b : bar.buttons()) b.render(g, -10_000, -10_000, partialTick);
+        renderActivePointsChip(g, w, h - PerkDetailsBar.HEIGHT, last.activePoints(), fade);
+    }
+
+    private static final int CHIP_H = 18, CHIP_PAD = 6, CHIP_ICON = 12, CHIP_GAP = 4, CHIP_MARGIN = 8;
+    private static final int CHIP_BG = 0x1B1F36, CHIP_EDGE = 0xE4B95A;
+
+    /**
+     * The cosmic active points to spend, in a tab at the bar's right end (the apple and the count),
+     * since the sky has no counters of its own.
+     */
+    private void renderActivePointsChip(GuiGraphics g, int screenW, int barTop, int points, double fade) {
+        int a = (int) Math.round(Math.max(0, Math.min(1, fade)) * 255);
+        if (a <= 8) return;
+        String n = Integer.toString(points);
+        int w = CHIP_PAD + CHIP_ICON + CHIP_GAP + font.width(n) + CHIP_PAD;
+        int x = screenW - CHIP_MARGIN - w, y = barTop - CHIP_H;
+        int edge = (a << 24) | CHIP_EDGE, body = (Math.min(a, 0xF2) << 24) | CHIP_BG;
+        // a tab like the Activate one: rounded top corners, open at the bottom where it meets the bar
+        g.fill(x + 1, y, x + w - 1, y + 1, edge);
+        g.fill(x, y + 1, x + 1, barTop, edge);
+        g.fill(x + w - 1, y + 1, x + w, barTop, edge);
+        g.fill(x + 1, y + 1, x + w - 1, barTop, body);
+        g.pose().pushPose();
+        g.pose().translate(x + CHIP_PAD, y + 1 + (CHIP_H - 1 - CHIP_ICON) / 2f, 0);
+        g.pose().scale(CHIP_ICON / 16F, CHIP_ICON / 16F, 1F);
+        g.renderItem(new net.minecraft.world.item.ItemStack(games.brennan.dungeontrain.registry.ModItems.COSMIC_APPLE.get()), 0, 0);
+        g.pose().popPose();
+        g.drawString(font, n, x + CHIP_PAD + CHIP_ICON + CHIP_GAP, y + (CHIP_H - 8) / 2 + 1, (a << 24) | 0xFFFFFF, false);
     }
 
     private PerkMenuSnapshot snapshot() {

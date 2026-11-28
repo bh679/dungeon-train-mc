@@ -40,8 +40,8 @@ import java.util.UUID;
 final class ConstellationOcclusion {
 
     /** How far along each ray blocks count. The patch is at sky distance; past this, nothing. */
-    static final double REACH = 96.0;
-    static final int INTERVAL_TICKS = 2;
+    static final double REACH = 64.0;
+    static final int INTERVAL_TICKS = 3;
 
     /** One hidden block: {@code subLevel} null for the main world, else that carriage's plot. */
     record Hidden(UUID subLevel, long pos) {}

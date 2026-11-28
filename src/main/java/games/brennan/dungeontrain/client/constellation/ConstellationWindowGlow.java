@@ -32,21 +32,21 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A soft column of night sky rising off each constellation window: strongest at the carpet, gone
- * {@link #HEIGHT} blocks up. Hidden while you stand in one, where the sky patch takes over.
+ * A soft column of night sky rising off each constellation window, a vertical gradient: strongest
+ * at the carpet, gone {@link #HEIGHT} blocks up.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ConstellationWindowGlow {
 
-    static final float HEIGHT = 1.5f;
-    static final float BASE_ALPHA = 0.55f;
+    static final float HEIGHT = 0.5f;
+    static final float BASE_ALPHA = 0.7f;
 
     private ConstellationWindowGlow() {}
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (!ConstellationBlocks.active() || ConstellationClient.inside()) return;
+        if (!ConstellationBlocks.active()) return; // half a block tall: under the eye even standing in it
         SkyboxBlockIndex.Snapshot snapshot = SkyboxBlockIndex.snapshot();
         if (snapshot.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
@@ -75,16 +75,32 @@ public final class ConstellationWindowGlow {
             mesh.close();
             return;
         }
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        BufferUploader.drawWithShader(mesh);
-        RenderSystem.depthMask(true);
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
+        // The vertices already carry the camera rotation: draw in exactly the level's frame, with an
+        // identity model-view (the stack may hold the rotation by now) and the level's projection.
+        org.joml.Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        modelView.identity();
+        RenderSystem.applyModelViewMatrix();
+        RenderSystem.backupProjectionMatrix();
+        RenderSystem.setProjectionMatrix(event.getProjectionMatrix(), com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
+        try {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableCull();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthFunc(org.lwjgl.opengl.GL11.GL_LEQUAL);
+            RenderSystem.depthMask(false);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            BufferUploader.drawWithShader(mesh);
+        } finally {
+            RenderSystem.depthMask(true);
+            RenderSystem.enableCull();
+            RenderSystem.disableBlend();
+            RenderSystem.restoreProjectionMatrix();
+            modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
+        }
     }
 
     /** The four sides of one window's column; {@code pose} places a carriage's window. */

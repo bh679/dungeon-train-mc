@@ -17,7 +17,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 /**
  * Spending from the sky. Standing in a constellation block with the patch open, the perk star under
  * the crosshair is the menu's hovered star: right-click puts a point into it, left-click keeps it in
- * the details bar, which sits over the hotbar while a star is hovered or kept.
+ * the details bar (and a second left-click on the kept star puts a point in), which sits over the hotbar while a star is hovered or kept.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ConstellationSkyControls {
@@ -44,7 +44,9 @@ public final class ConstellationSkyControls {
             // empty sky (nothing in the world under the crosshair) lets the kept star go
             if (!onStar && (mc.hitResult == null || mc.hitResult.getType() == HitResult.Type.MISS)) sky.skySelect();
             if (!onStar) return;
-            sky.skySelect();
+            // a second click on the kept star puts a point in, as right-click does
+            if (sky.hoveredPerk().equals(sky.selectedPerk())) sky.skySpend();
+            else sky.skySelect();
         } else {
             return;
         }
