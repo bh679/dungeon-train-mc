@@ -2466,6 +2466,12 @@ public final class NarrativeDeathScreen extends Screen {
             updateRect = drawBevel(g, bx + baW + gap, y, upW, baH, updateLabel,
                     BTN_UPD_BG, BTN_UPD_LIGHT, BTN_DARK, 0xFFFFFFFF);
         }
+        // Another player's recap on a tribute TV: none of the ways out are the viewer's. Leave the
+        // line would take them out of their own world, so the page ends at the epitaph.
+        if (foreign) {
+            platformLeaveRect = null;
+            return y;
+        }
         y += baH + 8;
         // Leave the line — smaller, secondary, beneath it. Hold Shift to convert it
         // into a "Quit Game" button (darker, lighter text + bevel) that quits to desktop.
