@@ -6765,6 +6765,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Ближе всего",
   "gui.dungeontrain.perks.bar.full": "Заполнено. Разблокируйте снова, чтобы освободить место для ещё одного очка.",
   "gui.dungeontrain.perks.bar.hint": "Наведите на перк, чтобы увидеть его здесь. Нажмите, чтобы закрепить.",
+  "gui.dungeontrain.perks.bar.no_active": "Открыто перков: %s, но активно: 0. Нажмите, чтобы активировать один.",
+  "gui.dungeontrain.perks.bar.some_active": "Открыто перков: %1$s, активно: %2$s. Нажмите, чтобы активировать ещё один.",
   "gui.dungeontrain.perks.bar.not_ready": "Ты нашёл то, что станет важным позже, но ты ещё не готов. Возвращайся позже.",
   "gui.dungeontrain.perks.counter.unlock.click": "Нажмите, чтобы открыть достижения.",
   "gui.dungeontrain.perks.death.kicker": "Очки, что были с тобой",

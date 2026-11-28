@@ -6621,6 +6621,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Gần nhất",
   "gui.dungeontrain.perks.bar.full": "Đầy. Mở khóa lại để có chỗ cho thêm một điểm.",
   "gui.dungeontrain.perks.bar.hint": "Di chuột lên một đặc quyền để xem ở đây. Nhấp để ghim.",
+  "gui.dungeontrain.perks.bar.no_active": "Bạn có %s đặc quyền đã mở khóa, nhưng 0 đang kích hoạt. Nhấp để kích hoạt một cái.",
+  "gui.dungeontrain.perks.bar.some_active": "Bạn có %1$s đặc quyền đã mở khóa và %2$s đang kích hoạt. Nhấp để kích hoạt thêm một cái.",
   "gui.dungeontrain.perks.bar.not_ready": "Bạn đã tìm thấy thứ sẽ quan trọng về sau, nhưng bạn chưa sẵn sàng. Hãy quay lại sau.",
   "gui.dungeontrain.perks.counter.unlock.click": "Nhấp để mở tiến trình.",
   "gui.dungeontrain.perks.death.kicker": "Số điểm bạn mang theo",

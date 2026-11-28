@@ -6621,6 +6621,8 @@
   "gui.dungeontrain.perks.zoom.closest": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "63eaa6b03cfe075b"},
   "gui.dungeontrain.perks.bar.full": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7279d95a12417bfc"},
   "gui.dungeontrain.perks.bar.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0dc26fad5284ead3"},
+  "gui.dungeontrain.perks.bar.no_active": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b7f7c5c22425a977"},
+  "gui.dungeontrain.perks.bar.some_active": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4cc43af7d0d46604"},
   "gui.dungeontrain.perks.bar.not_ready": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c9a4e154680be162"},
   "gui.dungeontrain.perks.counter.unlock.click": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "aa2572658db1e7d0"},
   "gui.dungeontrain.perks.death.kicker": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "716b6a2d0a4c5181"},

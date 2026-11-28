@@ -5782,6 +5782,8 @@
       "gui.dungeontrain.perks.zoom.closest",
       "gui.dungeontrain.perks.bar.full",
       "gui.dungeontrain.perks.bar.hint",
+      "gui.dungeontrain.perks.bar.no_active",
+      "gui.dungeontrain.perks.bar.some_active",
       "gui.dungeontrain.perks.bar.not_ready",
       "gui.dungeontrain.perks.counter.unlock.click",
       "gui.dungeontrain.perks.death.kicker",

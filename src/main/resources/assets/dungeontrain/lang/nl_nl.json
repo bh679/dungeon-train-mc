@@ -6693,6 +6693,8 @@
   "gui.dungeontrain.perks.zoom.closest": "Dichtstbij",
   "gui.dungeontrain.perks.bar.full": "Vol. Ontgrendel hem opnieuw voor ruimte voor nog een punt.",
   "gui.dungeontrain.perks.bar.hint": "Beweeg over een perk om hem hier te zien. Klik om hem vast te houden.",
+  "gui.dungeontrain.perks.bar.no_active": "Je hebt %s ontgrendelde perks, maar 0 zijn actief. Klik om er een te activeren.",
+  "gui.dungeontrain.perks.bar.some_active": "Je hebt %1$s ontgrendelde perks en %2$s zijn actief. Klik om er nog een te activeren.",
   "gui.dungeontrain.perks.bar.not_ready": "Je hebt iets gevonden dat later belangrijk wordt, maar je bent er nog niet klaar voor. Kom later terug.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klik om de vooruitgang te openen.",
   "gui.dungeontrain.perks.death.kicker": "De punten die je droeg",

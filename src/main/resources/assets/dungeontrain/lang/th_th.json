@@ -6621,6 +6621,8 @@
   "gui.dungeontrain.perks.zoom.closest": "ใกล้ที่สุด",
   "gui.dungeontrain.perks.bar.full": "เต็มแล้ว ปลดล็อกอีกครั้งเพื่อเพิ่มที่ว่างอีกหนึ่งแต้ม",
   "gui.dungeontrain.perks.bar.hint": "วางเมาส์บนพลังพิเศษเพื่อดูที่นี่ คลิกเพื่อปักไว้",
+  "gui.dungeontrain.perks.bar.no_active": "คุณปลดล็อกพลังพิเศษแล้ว %s อย่าง แต่ยังไม่มีอันไหนทำงานเลย (0) คลิกเพื่อเปิดใช้หนึ่งอย่าง",
+  "gui.dungeontrain.perks.bar.some_active": "คุณปลดล็อกพลังพิเศษแล้ว %1$s อย่าง และทำงานอยู่ %2$s อย่าง คลิกเพื่อเปิดใช้อีกหนึ่งอย่าง",
   "gui.dungeontrain.perks.bar.not_ready": "คุณพบบางสิ่งที่จะสำคัญในภายหลัง แต่คุณยังไม่พร้อม กลับมาใหม่ทีหลังนะ",
   "gui.dungeontrain.perks.counter.unlock.click": "คลิกเพื่อเปิดความก้าวหน้า",
   "gui.dungeontrain.perks.death.kicker": "แต้มที่คุณพกไว้",
