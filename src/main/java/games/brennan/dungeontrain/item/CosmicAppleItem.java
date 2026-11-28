@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Edible find in three tiers (Cosmic Apple, Celestial Bite, Violet Core): {@link #points} active perk
- * points for this life, then the perks menu opens to spend them.
+ * points for this life, then the perks menu opens to spend them. Eating a stack eats all of it.
  */
 public class CosmicAppleItem extends Item {
 
@@ -44,13 +44,19 @@ public class CosmicAppleItem extends Item {
 
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
+        // The whole stack goes in one bite: every apple's points, then vanilla eats the last one.
+        int eaten = Math.max(1, stack.getCount());
         if (entity instanceof ServerPlayer player) {
-            PerkPoints.addActive(player, points);
+            int gained = points * eaten;
+            PerkPoints.addActive(player, gained);
             PerkBalances.sync(player);
-            player.sendSystemMessage(Component.translatable(KEY_GAINED, stack.getHoverName(), points,
+            player.sendSystemMessage(Component.translatable(KEY_GAINED, stack.getHoverName(), gained,
                     PerkPoints.active(player))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
             PerkMenu.openPerksMenu(player);
+        }
+        if (!level.isClientSide && eaten > 1) {
+            stack.consume(eaten - 1, entity); // a creative player keeps the stack, as vanilla eating does
         }
         return super.finishUsingItem(stack, level, entity);
     }

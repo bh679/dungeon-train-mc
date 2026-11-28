@@ -163,7 +163,7 @@ public final class PauseMenuLayoutHandler {
         returnToMenu.active = false;
 
         // Perks: the constellation, first of the things you can do from here (also on P).
-        if (games.brennan.dungeontrain.perks.PerksGate.isOnClient()) {
+        if (showPerksRow()) {
             addPerksRow(event, slotX, slotY, slotW, slotH);
             slotY += slotH + GAP;
         }
@@ -254,13 +254,22 @@ public final class PauseMenuLayoutHandler {
             return;
         }
         // Perks takes the Disconnect slot and pushes Disconnect (and the Shift pair) down a row.
-        if (games.brennan.dungeontrain.perks.PerksGate.isOnClient()) {
+        if (showPerksRow()) {
             addPerksRow(event, disconnect.getX(), disconnect.getY(), disconnect.getWidth(), disconnect.getHeight());
             disconnect.setY(disconnect.getY() + disconnect.getHeight() + GAP);
         }
         addShiftExitPair(event, disconnect.getX(), disconnect.getY(),
                 disconnect.getWidth(), disconnect.getHeight());
         disconnect.visible = !Screen.hasShiftDown();
+    }
+
+    /**
+     * The Perks row waits for the player's first unlock: until then the constellation is empty, and
+     * their first look at it is the guided one on death. The P key still opens it.
+     */
+    private static boolean showPerksRow() {
+        return games.brennan.dungeontrain.perks.PerksGate.isOnClient()
+            && !games.brennan.dungeontrain.client.perks.PerkMenuSnapshot.current().unlocks().isEmpty();
     }
 
     /** The perks constellation ({@link games.brennan.dungeontrain.client.perks.PerksScreen}), a full-slot row. */
