@@ -1,7 +1,7 @@
 {
   "schemaVersion": 10,
   "variants": {
-    "3,0,2": [{"state": "betterend:respawn_obelisk[shape=bottom]", "charges": "0-6"}, {"state": "betterend:respawn_obelisk[shape=bottom]", "charges": "0-6"}],
+    "3,0,2": [{"state": "betterend:respawn_obelisk[shape=bottom]", "weight": 9, "charges": "6-6"}, {"state": "betterend:respawn_obelisk[shape=bottom]", "weight": 1, "charges": "0-5"}],
     "0,0,4": { "lockId": 1, "states": [{"state": "minecraft:end_stone_bricks", "weight": 10}, {"state": "dungeontrain:variant_placeholder", "weight": 3}, "dungeontrain:stage_stone", "dungeontrain:stage_stone_bricks", "dungeontrain:stage_stone_polished"] },
     "0,0,0": { "lockId": 1, "states": [{"state": "minecraft:end_stone_bricks", "weight": 10}, {"state": "dungeontrain:variant_placeholder", "weight": 3}, "dungeontrain:stage_stone", "dungeontrain:stage_stone_bricks", "dungeontrain:stage_stone_polished"] },
     "6,0,0": { "lockId": 1, "states": [{"state": "minecraft:end_stone_bricks", "weight": 10}, {"state": "dungeontrain:variant_placeholder", "weight": 3}, "dungeontrain:stage_stone", "dungeontrain:stage_stone_bricks", "dungeontrain:stage_stone_polished"] },

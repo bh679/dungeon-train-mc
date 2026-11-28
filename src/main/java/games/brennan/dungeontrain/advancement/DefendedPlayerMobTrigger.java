@@ -16,8 +16,8 @@ import java.util.Optional;
  *
  * <p>Marker trigger: carries only the standard optional {@code player}
  * predicate. Fired from
- * {@link games.brennan.dungeontrain.event.PlayerMobAdvancementEvents} on a
- * {@code LivingDeathEvent} whose victim was targeting a PlayerMob; vanilla
+ * {@link games.brennan.dungeontrain.event.PassengerDefenceEvents} on a
+ * {@code LivingDeathEvent} whose victim had recently gone for a PlayerMob; vanilla
  * advancement dedupe keeps it to a single grant per player.</p>
  *
  * <p>JSON shape:

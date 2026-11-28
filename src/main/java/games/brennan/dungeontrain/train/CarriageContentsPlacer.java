@@ -366,8 +366,17 @@ public final class CarriageContentsPlacer {
      * tagged with this pIdx are still tagged so the diagnostics subscriber
      * can see them, but the value signals "not a train entity, ignore
      * placement-tracker correlation logic."
+     *
+     * <p><b>It must never be an index a real carriage can have.</b> It used to be {@code -1}, which
+     * is the carriage directly behind spawn on every starting train, so that one real carriage was
+     * handled as an editor plot: its contents and parts rolled with no Diff-Level gate (an
+     * {@code evoker2} room, gated to Level 30, at Level 0), its eggs skipped the difficulty filter
+     * and its baked hostiles skipped the onboarding stages. {@link Integer#MIN_VALUE} is far outside
+     * {@link games.brennan.dungeontrain.difficulty.DifficultyProgression}'s plausible range, so it can
+     * only be compared against, never used as a position: callers that want "tier 0, nowhere in
+     * particular" pass {@code 0}.</p>
      */
-    public static final int EDITOR_SENTINEL_PIDX = -1;
+    public static final int EDITOR_SENTINEL_PIDX = Integer.MIN_VALUE;
 
     /** How many carriage groups ahead {@link #applyHeadSkins} warms the death-skin pool for. */
     private static final int PREFETCH_GROUPS_AHEAD = 1;
@@ -1625,7 +1634,9 @@ public final class CarriageContentsPlacer {
         EntityType<?> type = typeOpt.get();
         Entity entity;
         try {
-            CompoundTag mobNbt = withEndSlimeType(picked, level);
+            // An unpatterned tropical fish takes a common pattern from the seed (finalizeSpawn is skipped).
+            CompoundTag mobNbt = games.brennan.dungeontrain.editor.VariantFish.withPattern(
+                picked.entityId(), withEndSlimeType(picked, level), seed ^ worldPos.asLong());
             if (mobNbt != null) {
                 CompoundTag spawnNbt = games.brennan.dungeontrain.editor.FrozenMobs.thaw(mobNbt.copy());
                 spawnNbt.putString("id", picked.entityId().toString());

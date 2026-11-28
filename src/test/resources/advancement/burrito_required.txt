@@ -16,6 +16,7 @@ dungeontrain:dungeon_train/challenge_complete
 dungeontrain:dungeon_train/changed_engine_volume
 dungeontrain:dungeon_train/chests_100_unique
 dungeontrain:dungeon_train/collecting_stories
+dungeontrain:dungeon_train/come_along_with_me
 dungeontrain:dungeon_train/contained_loop
 dungeontrain:dungeon_train/cross_country
 dungeontrain:dungeon_train/deathnote_self_target
@@ -128,6 +129,7 @@ dungeontrain:dungeon_train/train_inside_a_train
 dungeontrain:dungeon_train/upgraded_backpack
 dungeontrain:dungeon_train/used_pillar_stairs
 dungeontrain:dungeon_train/used_tunnel_stairs
+dungeontrain:dungeon_train/void_starting_book
 dungeontrain:enchiridion/appreciating_photos
 dungeontrain:enchiridion/best_friends_forever
 dungeontrain:enchiridion/big_spender

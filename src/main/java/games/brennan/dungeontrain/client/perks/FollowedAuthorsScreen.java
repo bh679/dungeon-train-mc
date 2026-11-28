@@ -24,7 +24,7 @@ import java.util.List;
  * Favourite Author's Followed Authors menu, a small screen over the perks menu: one row per follow
  * (face, name, this life's finds or "No more books", Unfollow; the ones past the player's points greyed
  * as inactive), and a Follow box that autocompletes from the players whose books and photos this life
- * found. Enter asks the relay; a name it knows becomes a row, an unknown one shows in red with Remove.
+ * found, shown only while a point is free for one more follow (else a line saying so). Enter asks the relay; a name it knows becomes a row, an unknown one shows in red with Remove.
  * It never shows how many books anyone has written.
  */
 public final class FollowedAuthorsScreen extends Screen {
@@ -39,6 +39,8 @@ public final class FollowedAuthorsScreen extends Screen {
     private int scroll;
     private final List<Button> rowButtons = new ArrayList<>();
     private Button removeButton;
+    /** Whether the Follow box is up: a point is free for one more follow. */
+    private boolean followOpen;
     private int left, top, rowsTop, boxY;
 
     public FollowedAuthorsScreen(Screen parent) {
@@ -54,21 +56,31 @@ public final class FollowedAuthorsScreen extends Screen {
         rowsTop = top + PAD + 14;
         boxY = rowsTop + MAX_ROWS * ROW_H + 18;
         String typed = box == null ? "" : box.getValue();
-        box = new EditBox(font, left + PAD, boxY, W - 2 * PAD - BTN_W - 4, 18, Component.translatable(KEY + "follow"));
-        box.setMaxLength(16);
-        box.setFilter(s -> s.matches("[A-Za-z0-9_]*"));
-        box.setValue(typed);
-        box.setResponder(s -> updateSuggestion());
-        addRenderableWidget(box);
-        addRenderableWidget(Button.builder(Component.translatable(KEY + "follow"), b -> submit())
-            .bounds(left + W - PAD - BTN_W, boxY - 1, BTN_W, 20).build());
-        setInitialFocus(box);
+        followOpen = canFollowMore();
+        box = null;
+        if (followOpen) {
+            box = new EditBox(font, left + PAD, boxY, W - 2 * PAD - BTN_W - 4, 18, Component.translatable(KEY + "follow"));
+            box.setMaxLength(16);
+            box.setFilter(s -> s.matches("[A-Za-z0-9_]*"));
+            box.setValue(typed);
+            box.setResponder(s -> updateSuggestion());
+            addRenderableWidget(box);
+            addRenderableWidget(Button.builder(Component.translatable(KEY + "follow"), b -> submit())
+                .bounds(left + W - PAD - BTN_W, boxY - 1, BTN_W, 20).build());
+            setInitialFocus(box);
+        }
         seenVersion = -1;
         rebuildRows();
         DungeonTrainNet.sendToServer(new FollowRequestPacket(FollowRequestPacket.Op.REFRESH, ""));
     }
 
+    /** A point free for one more follow (the server checks the same before asking the relay). */
+    private boolean canFollowMore() {
+        return FollowsClientState.canFollowMore(rank());
+    }
+
     private void submit() {
+        if (box == null) return;
         String name = box.getValue().trim();
         if (name.isEmpty()) return;
         DungeonTrainNet.sendToServer(new FollowRequestPacket(FollowRequestPacket.Op.FOLLOW_NAME, name));
@@ -120,6 +132,10 @@ public final class FollowedAuthorsScreen extends Screen {
 
     @Override
     public void tick() {
+        if (followOpen != canFollowMore()) {
+            rebuildWidgets();
+            return;
+        }
         if (seenVersion != FollowsClientState.version()) {
             seenVersion = FollowsClientState.version();
             rebuildRows();
@@ -139,7 +155,7 @@ public final class FollowedAuthorsScreen extends Screen {
         g.drawString(font, count, left + W - PAD - font.width(count), top + PAD, SkyPalette.MUTED, false);
 
         FollowsSyncPacket sync = FollowsClientState.get();
-        if (rows.isEmpty()) {
+        if (rows.isEmpty() && followOpen) {
             g.drawString(font, Component.translatable(KEY + "empty"), left + PAD, rowsTop + 4, SkyPalette.MUTED, false);
         }
         for (int i = 0; i < visibleRows() && scroll + i < rows.size(); i++) {
@@ -150,7 +166,12 @@ public final class FollowedAuthorsScreen extends Screen {
             boolean justFound = sync.lookup() == FollowsSyncPacket.Lookup.FOUND && r.name().equalsIgnoreCase(sync.lookupName());
             renderRow(g, r, on, justFound, y);
         }
-        g.drawString(font, Component.translatable(KEY + "follow"), left + PAD, boxY - 11, SkyPalette.MUTED, false);
+        if (followOpen) {
+            g.drawString(font, Component.translatable(KEY + "follow"), left + PAD, boxY - 11, SkyPalette.MUTED, false);
+        } else {
+            g.drawString(font, font.plainSubstrByWidth(Component.translatable(KEY + "full").getString(), W - 2 * PAD),
+                left + PAD, boxY + (18 - font.lineHeight) / 2 + 1, SkyPalette.MUTED, false);
+        }
         renderLookup(g, sync);
     }
 
@@ -202,11 +223,11 @@ public final class FollowedAuthorsScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
-        if (box.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+        if (box != null && box.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
             submit();
             return true;
         }
-        if (box.isFocused() && key == GLFW.GLFW_KEY_TAB) {
+        if (box != null && box.isFocused() && key == GLFW.GLFW_KEY_TAB) {
             List<String> s = FollowsClientState.suggestions(box.getValue());
             if (!s.isEmpty()) {
                 box.setValue(s.get(0));

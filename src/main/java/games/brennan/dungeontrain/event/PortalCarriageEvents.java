@@ -2954,6 +2954,8 @@ public final class PortalCarriageEvents {
                     PortalRoomMemory.remember(level, pairKey, existing.roomName(), carried.snapshot());
                 }
             }
+            // A tribute room carried as a bare live copy is still its owner's.
+            carried = games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.withOwner(pairKey, planned, carried);
             if (carried != null) planned = planned.withBlob(carried);
             // The room's OWN mobs go with the room, before anything is carried: the stamp below rolls
             // and spawns a fresh set for the new site, and clearIntruders spares anything carrying
@@ -2992,7 +2994,8 @@ public final class PortalCarriageEvents {
         // a restart — comes back as they left it, ahead of any lease: the room is already this
         // world's own.
         if (existing == null) {
-            games.brennan.dungeontrain.portal.PortalRoomBlob remembered = recallRemembered(level, pairKey, planned);
+            games.brennan.dungeontrain.portal.PortalRoomBlob remembered = games.brennan.dungeontrain.portal.tribute
+                .TributeRoomRegistry.withOwner(pairKey, planned, recallRemembered(level, pairKey, planned));
             if (remembered != null) {
                 planned = planned.withBlob(remembered);
                 PortalRoomMemory.markTouched(level, pairKey, dims);

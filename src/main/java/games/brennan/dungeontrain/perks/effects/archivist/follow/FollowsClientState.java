@@ -33,6 +33,11 @@ public final class FollowsClientState {
         return last.rows().size();
     }
 
+    /** Whether a Follow would be taken at {@code rank} active points (the server checks the same). */
+    public static boolean canFollowMore(int rank) {
+        return FavouriteAuthor.canFollowMore(followCount(), rank);
+    }
+
     /** Whether the author behind {@code name} is followed (case-insensitive). */
     public static boolean followsName(String name) {
         if (name == null || name.isBlank()) return false;

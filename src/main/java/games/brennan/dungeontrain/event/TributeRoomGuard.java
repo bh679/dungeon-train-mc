@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvBlocks;
+import games.brennan.dungeontrain.portal.tribute.TributeRoomLiveEdits;
 import games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry;
 import games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions;
 import net.minecraft.ChatFormatting;
@@ -32,8 +33,9 @@ import net.neoforged.neoforge.event.level.ExplosionEvent;
  *
  * <ul>
  *   <li><b>On the live train</b> (a pair that rolled somebody's room, {@link TributeRoomRegistry}): look
- *       only. Nobody breaks, places, pours, takes from a chest or knocks a frame down — the owner
- *       included; it is their save, and only a death visit writes to it.</li>
+ *       only. Nobody breaks, places, pours, takes from a chest or knocks a frame down — except that its
+ *       owner may place blocks into its empty space and take out again the ones they placed, never what
+ *       was already there. What they build is saved to their room ({@link TributeRoomLiveEdits}).</li>
  *   <li><b>In a death visit</b> ({@link TributeRoomVisitSessions}): build freely, but the TV stays — it is
  *       the room's anchor, and a room without one cannot be saved.</li>
  *   <li><b>In the editor</b>: nothing here applies; the Portals plot is in neither set.</li>
@@ -48,9 +50,26 @@ public final class TributeRoomGuard {
      * The rule, with the facts that decide it. Pure. A live room is look-only for everyone. A room on a
      * visit is the visitor's own to change, TV aside; anyone else in it (before the visitor arrives,
      * or wandering in) changes nothing, so only what its owner did after their death is ever saved.
+     * {@code ownLiveBuild} is the one way into a live room: its owner placing into empty space, or
+     * taking out a block they placed there.
      */
-    static boolean denies(boolean inLiveTributeRoom, boolean inVisit, boolean isTv, boolean ownVisit) {
-        return inLiveTributeRoom || (inVisit && (isTv || !ownVisit));
+    static boolean denies(boolean inLiveTributeRoom, boolean inVisit, boolean isTv, boolean ownVisit, boolean ownLiveBuild) {
+        return (inLiveTributeRoom && !ownLiveBuild) || (inVisit && (isTv || !ownVisit));
+    }
+
+    /** Whether the owner of a live room may make this change: placing needs empty space, breaking a block of their own. */
+    static boolean ownLiveBuild(boolean isOwner, boolean placing, boolean intoAir, boolean placedByOwner) {
+        return isOwner && (placing ? intoAir : placedByOwner);
+    }
+
+    /**
+     * Blocks that change what was already there without breaking it — fire burns it, a hopper drains its
+     * chests, a piston shoves it — and so are never the owner's to place in a live room.
+     */
+    static boolean reachesOriginals(BlockState placed) {
+        return placed.getBlock() instanceof net.minecraft.world.level.block.BaseFireBlock
+            || placed.getBlock() instanceof net.minecraft.world.level.block.HopperBlock
+            || placed.getBlock() instanceof net.minecraft.world.level.block.piston.PistonBaseBlock;
     }
 
     private static boolean quiet() {
@@ -82,8 +101,26 @@ public final class TributeRoomGuard {
     }
 
     private static void refuse(Player player, BlockPos pos, boolean isTv) {
-        String key = isTv && !live((ServerLevel) player.level(), pos) ? "chat.dungeontrain.tribute_room.tv_stays" : "chat.dungeontrain.tribute_room.view_only";
+        ServerLevel level = (ServerLevel) player.level();
+        TributeRoomRegistry.Standing standing = TributeRoomRegistry.at(level.dimension(), pos);
+        String key = isTv && standing == null ? "chat.dungeontrain.tribute_room.tv_stays"
+            : standing != null && player instanceof ServerPlayer sp && TributeRoomLiveEdits.isOwner(level, sp, standing)
+                ? "chat.dungeontrain.tribute_room.own_placed_only"
+                : "chat.dungeontrain.tribute_room.view_only";
         player.displayClientMessage(Component.translatable(key).withStyle(ChatFormatting.GRAY), true);
+    }
+
+    /** Whether {@code player} owns the live room at {@code pos} and may build in it. */
+    private static boolean owns(ServerLevel level, ServerPlayer player, TributeRoomRegistry.Standing standing) {
+        return standing != null && TributeRoomLiveEdits.isOwner(level, player, standing);
+    }
+
+    /** A live room or another player's visit, for {@code placed} going into {@code replaced}: refused? */
+    private static boolean placeDenied(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState replaced, BlockState placed) {
+        TributeRoomRegistry.Standing standing = TributeRoomRegistry.at(level.dimension(), pos);
+        boolean own = ownLiveBuild(owns(level, player, standing), true, replaced.isAir() && !reachesOriginals(placed), false);
+        // Placing has no "own visit" case to spare: a visit room is only ever someone else's to refuse here.
+        return denies(standing != null, othersVisit(player, pos), false, false, own);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
@@ -91,25 +128,56 @@ public final class TributeRoomGuard {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getPlayer() instanceof ServerPlayer player)) return;
         BlockPos pos = event.getPos();
         boolean tv = TvBlocks.isTelevision(event.getState());
-        if (!denies(live(level, pos), visit(pos), tv, ownVisit(player, pos))) return;
+        TributeRoomRegistry.Standing standing = TributeRoomRegistry.at(level.dimension(), pos);
+        boolean own = standing != null && ownLiveBuild(owns(level, player, standing), false, false,
+            TributeRoomLiveEdits.placedByOwner(standing, pos));
+        if (!denies(standing != null, visit(pos), tv, ownVisit(player, pos), own)) return;
         event.setCanceled(true);
         refuse(player, pos, tv);
     }
 
+    /** The owner's own block came out of their live room: saved, and no longer theirs to take. */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onBroken(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || TributeRoomRegistry.isEmpty() || !(event.getLevel() instanceof ServerLevel level)
+                || !(event.getPlayer() instanceof ServerPlayer player)) return;
+        TributeRoomRegistry.Standing standing = TributeRoomRegistry.at(level.dimension(), event.getPos());
+        if (!owns(level, player, standing)) return;
+        TributeRoomLiveEdits.recordBroken(player, standing, event.getPos());
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPlace(BlockEvent.EntityPlaceEvent event) {
+        if (event instanceof BlockEvent.EntityMultiPlaceEvent) return; // judged whole, below
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!lookOnly(level, player, event.getPos())) return;
+        if (!placeDenied(level, player, event.getPos(), event.getBlockSnapshot().getState(), event.getPlacedBlock())) return;
         event.setCanceled(true);
         refuse(player, event.getPos(), false);
     }
 
+    /** A door or bed: every cell it fills must be one the player may place into. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onMultiPlace(BlockEvent.EntityMultiPlaceEvent event) {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!lookOnly(level, player, event.getPos())) return;
-        event.setCanceled(true);
-        refuse(player, event.getPos(), false);
+        for (net.neoforged.neoforge.common.util.BlockSnapshot cell : event.getReplacedBlockSnapshots()) {
+            if (!placeDenied(level, player, cell.getPos(), cell.getState(), level.getBlockState(cell.getPos()))) continue;
+            event.setCanceled(true);
+            refuse(player, cell.getPos(), false);
+            return;
+        }
+    }
+
+    /** What the owner placed in their live room, once nothing has refused it: theirs to take out, and saved. */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onPlaced(BlockEvent.EntityPlaceEvent event) {
+        if (event.isCanceled() || TributeRoomRegistry.isEmpty() || !(event.getLevel() instanceof ServerLevel level)
+                || !(event.getEntity() instanceof ServerPlayer player)) return;
+        java.util.List<net.neoforged.neoforge.common.util.BlockSnapshot> cells = event instanceof BlockEvent.EntityMultiPlaceEvent multi
+            ? multi.getReplacedBlockSnapshots() : java.util.List.of(event.getBlockSnapshot());
+        for (net.neoforged.neoforge.common.util.BlockSnapshot cell : cells) {
+            TributeRoomRegistry.Standing standing = TributeRoomRegistry.at(level.dimension(), cell.getPos());
+            if (owns(level, player, standing)) TributeRoomLiveEdits.recordPlaced(player, standing, cell.getPos());
+        }
     }
 
     /** Opening a chest, barrel, furnace, hopper — any block that holds items — is taking from it. */

@@ -65,9 +65,10 @@ public final class ContainerContentsLinkPropagator {
         // difficulty frame separately.
         int rollSalt = (int) (System.nanoTime() & 0x7FFFFFFFL);
         // These containers stand in EDITOR PLOTS (BlockVariantPlot.resolveByKey), not on the train,
-        // so there is no position to scale against — the editor-preview sentinel is the established
-        // "nowhere in particular" answer and yields tier 0, exactly as a preview stamp does.
-        int diffIndex = games.brennan.dungeontrain.train.CarriageContentsPlacer.EDITOR_SENTINEL_PIDX;
+        // so there is no position to scale against: carriage 0 is the "nowhere in particular" answer
+        // and yields tier 0, exactly as a preview stamp does. (Not the editor sentinel: that is
+        // Integer.MIN_VALUE, a compare-only marker that is never a plausible position.)
+        int diffIndex = 0;
 
         int touched = 0;
         for (String plotKey : ContainerContentsStore.allKnownPlotKeys()) {

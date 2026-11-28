@@ -11,6 +11,7 @@
     "EnderChestSlotCosmicAppleMixin",
     "DiskFeatureTestMemoMixin",
     "NotPredicateAccessor",
+    "VaultServerDataInvoker",
     "PlacedFeatureDiskMemoMixin",
     "StateTestingPredicateAccessor",
     "WorldGenRegionDiskMemoMixin",
@@ -78,6 +79,7 @@
     "ChunkMapSpawnRangeInvoker",
     "ServerGamePacketListenerFloatAccessor",
     "ProjectileOwnerAccessor",
+    "MobBucketItemAccessor",
     "ChunkMapMixin",
     "ChunkMapTwinSpaceSkipMixin",
     "ChunkMapUntouchedSaveSkipMixin",
@@ -238,6 +240,7 @@
     "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.LevelRendererEntityTargetAccessor",
     "client.MinecraftEmergencyCrashMixin",
     "client.ExposureClientInitOnceMixin",
     "client.ExposurePolaroidClientInitOnceMixin",

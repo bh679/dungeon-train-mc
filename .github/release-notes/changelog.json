@@ -40170,6 +40170,273 @@
       "released": true,
       "released_in": "v0.2066.0",
       "released_at": "2026-11-28T09:39:52Z"
+    },
+    {
+      "id": "back-end-changes-2940",
+      "version": "0.2070.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2940,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "back-end-changes-2944",
+      "version": "0.2073.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2944,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "back-end-chest-timing",
+      "version": "0.2074.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2945,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "back-end-item-list-fix",
+      "version": "0.2067.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2937,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "class-perk-name-translations",
+      "version": "0.2071.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2942,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "perks-bar-active-count",
+      "version": "0.2069.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2939,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "reroll-keeps-trade-anything-row",
+      "version": "0.2071.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "pr": 2941,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "tribute-room-live-building",
+      "version": "0.2072.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z",
+      "pr": 2943
+    },
+    {
+      "id": "tribute-tv-hide-leave-line",
+      "version": "0.2068.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Screen fix",
+      "summary": "Removed a button that could take you out of your world by mistake.",
+      "highlights": [],
+      "pr": 2938,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2075.0",
+      "released_at": "2026-11-28T12:47:10Z"
+    },
+    {
+      "id": "colourful-tropical-fish",
+      "version": "0.2077.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "mobs",
+        "loot"
+      ],
+      "title": "Colourful tropical fish",
+      "summary": "Tropical fish on the train now come in all their colours, and one of the libraries has more on its shelves.",
+      "highlights": [
+        "Tropical fish swim in many patterns instead of plain white.",
+        "Builders can add a fish straight from its bucket in the block variant menu."
+      ],
+      "pr": 2947,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "debuff-aura-aggressive-only",
+      "version": "0.2078.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Back-end changes",
+      "summary": "Back-end changes.",
+      "highlights": [],
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "hidden-advancements-nov-2026",
+      "version": "0.2078.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New hidden advancements",
+      "summary": "A handful of new hidden advancements are out there to find.",
+      "highlights": [],
+      "pr": 2950,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "rest-stop-respawn-mostly-full",
+      "version": "0.2076.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Rest stops are usually ready for you",
+      "summary": "The respawn point at some rest stops now almost always comes fully charged.",
+      "highlights": [],
+      "pr": 2946,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "tribute-tv-single-click",
+      "version": "0.2078.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Something secret",
+      "summary": "The developer fixed something secret.",
+      "highlights": [],
+      "pr": 2949,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2079.0",
+      "released_at": "2026-11-28T14:33:04Z"
+    },
+    {
+      "id": "advancement-credit-fix",
+      "version": "0.2080.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A hidden advancement was not unlocking in some fights. It does now.",
+      "highlights": [],
+      "pr": 2951,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2080.0",
+      "released_at": "2026-11-28T15:01:03Z"
+    },
+    {
+      "id": "carriage-behind-spawn-level-gate",
+      "version": "0.2081.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "balance"
+      ],
+      "title": "Gentler start behind the train",
+      "summary": "The carriage just behind where you start could hold a room meant for much later in the run, with its hostiles skipping the calm opening carriages. It now follows the same level rules as every other carriage.",
+      "highlights": [],
+      "pr": 2952,
+      "date": "2026-11-28",
+      "released": true,
+      "released_in": "v0.2081.0",
+      "released_at": "2026-11-28T16:07:31Z"
     }
   ]
 }

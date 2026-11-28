@@ -73,7 +73,7 @@ final class ClassesList {
 
     private int rowWidth(PerkTree.PerkClass c) {
         int dots = dotsWidth(c);
-        return font.width(c.name()) + (dots > 0 ? DOT_GAP + dots : 0);
+        return font.width(PerkNames.cls(c)) + (dots > 0 ? DOT_GAP + dots : 0);
     }
 
     private int dotsWidth(PerkTree.PerkClass c) {
@@ -168,7 +168,7 @@ final class ClassesList {
     private void renderRow(GuiGraphics g, PerkMenuSnapshot snap, PerkTree.PerkClass c, int y, boolean shown, boolean hov,
                            boolean pill, boolean outline, boolean eye, boolean eyeHot, double fade) {
         int x0 = nameRight() - rowWidth(c) - PILL_PAD, x1 = eyeX() + EYE_W + PILL_PAD, y0 = y - 1, y1 = y + ROW - 2;
-        int nameX = nameRight() - font.width(c.name());
+        int nameX = nameRight() - font.width(PerkNames.cls(c));
         int dark = SkyDraw.mix(c.colour(), 0xFF000000, DARK_TEXT);
         if (pill) {
             int fill = SkyDraw.withAlpha(c.colour(), fade);
@@ -184,7 +184,7 @@ final class ClassesList {
         }
         int colour = pill ? dark : shown ? c.colour() : SkyPalette.MUTED;
         double alpha = pill || shown ? 1.0 : hov ? 0.9 : 0.55;
-        g.drawString(font, c.name(), nameX, y + 1, SkyDraw.withAlpha(colour, alpha * fade), !pill);
+        g.drawString(font, PerkNames.cls(c), nameX, y + 1, SkyDraw.withAlpha(colour, alpha * fade), !pill);
         if (shown && eye) renderEye(g, eyeX(), y + 1 + (font.lineHeight - EYE_H) / 2 - 1, eyeHot, pill ? dark : SkyPalette.MUTED, fade);
         renderDots(g, snap, c, nameX - DOT_GAP, y + 1 + font.lineHeight / 2.0 - 1,
             pill ? dark : c.colour(), pill, pill || outline, shown ? 1.0 : 0.55, fade);

@@ -9,6 +9,11 @@ import games.brennan.dungeontrain.perks.BuiltPerks;
 import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkStats.Unit;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
+import games.brennan.dungeontrain.editor.VaultLoot;
+import games.brennan.dungeontrain.mixin.VaultServerDataInvoker;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.entity.vault.VaultBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.server.level.ServerLevel;
@@ -23,6 +28,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,13 +37,13 @@ import java.util.UUID;
  * Hoarder tier 2 perk "Chest Sense" (Brennan, 2026-10-29): on a timer, the player senses every
  * <b>unopened, non-empty</b> container within range through walls for {@value #GLOW_SECONDS} s, with a
  * sound and a ring of particles out to the range. Containers: chests, trapped chests, barrels, shulker
- * boxes and vases, on the ground and on carriages. Containers anyone has opened ({@link #OPENED_KEY},
+ * boxes, vases and vaults, on the ground and on carriages. Containers anyone has opened ({@link #OPENED_KEY},
  * stamped by {@link ChestSenseEvents}) and empty ones do not glow. The pulse timing lives in
  * {@link ChestSenseEvents}; the outline and ring are client side ({@code client/ChestSenseRenderer}).
  *
- * <p>Ladder: range 5 blocks at 1 point, +1 a point, uncapped. Interval 6, 5, 4.8, 4.6, 4.5, 4.3, 4.2,
- * 4.1, 4 minutes over points 1 to 9, then 0.1 minute less a point down to a floor of 1 minute (point
- * 39).</p>
+ * <p>Ladder: range 5 blocks at 1 point, +1 a point, uncapped. Interval (2026-11-28) 180 s at 1 point,
+ * 40 s at 10, 10 s at 40, linear between and rounded to whole seconds, 10 s from then on. From 35 points
+ * the pulse comes as often as the glow lasts, so the glow never goes out.</p>
  *
  * <p>Carriage containers live in a Sable plot, not at their world position, so {@link #scan} also
  * walks each sub-level near the player and reports those positions plot-local with the sub-level's
@@ -47,15 +54,30 @@ public final class ChestSense {
     public static final String ID = "chest-sense";
 
     static final int GLOW_SECONDS = 15;
-    private static final double[] EVERY_MINUTES = {6, 5, 4.8, 4.6, 4.5, 4.3, 4.2, 4.1, 4};
-    private static final double MINUTES_OFF_PER_POINT = 0.1;
-    private static final double FLOOR_MINUTES = 1.0;
+    /** Interval anchors (Brennan, 2026-11-28): points → seconds, linear between, floor past the last. */
+    private static final int[] ANCHOR_POINTS = {1, 10, 40};
+    private static final double[] ANCHOR_SECONDS = {180, 40, 10};
+    private static final double FLOOR_SECONDS = 10;
 
     /** Stamped on a container block entity's persistent data the first time a player opens it. */
     public static final String OPENED_KEY = "dungeontrain:opened";
 
-    /** A sensed container: {@code subLevel} null for one in the world, else {@code pos} is plot-local. */
-    public record Sensed(UUID subLevel, BlockPos pos) {}
+    /**
+     * A sensed container: {@code subLevel} null for one in the world, else {@code pos} is plot-local.
+     * {@code tier} is its rarest rolled item's band ({@link ChestSenseRarity}); a vault's colour follows
+     * the item it is showing, so it carries {@code vaultTiers} (item id to band) instead.
+     */
+    public record Sensed(UUID subLevel, BlockPos pos, ChestSenseRarity.Tier tier,
+                         Map<ResourceLocation, ChestSenseRarity.Tier> vaultTiers) {
+
+        public Sensed {
+            vaultTiers = Map.copyOf(vaultTiers);
+        }
+
+        public boolean isVault() {
+            return !vaultTiers.isEmpty();
+        }
+    }
 
     private ChestSense() {}
 
@@ -63,7 +85,7 @@ public final class ChestSense {
     static void declare() {
         BuiltPerks.markBuilt(ID);
         PerkStats.register(ID, "range", r -> PerkStats.num(range(Math.max(1, r)), Unit.BLOCKS));
-        PerkStats.register(ID, "every", r -> PerkStats.num(everyMinutes(Math.max(1, r)), Unit.MINUTES));
+        PerkStats.register(ID, "every", r -> PerkStats.num(everySeconds(Math.max(1, r)), Unit.SECONDS));
     }
 
     /** Sense radius in blocks: 5 at 1 point, +1 a point; 0 when inactive. */
@@ -72,18 +94,25 @@ public final class ChestSense {
         return 4.0 + rank;
     }
 
-    /** Minutes between pulses; 0 when inactive. */
-    public static double everyMinutes(int rank) {
+    /**
+     * Whole seconds between pulses: 180 at 1 point, 40 at 10, 10 at 40, linear between the anchors
+     * and rounded, then 10 from there on; 0 when inactive.
+     */
+    public static double everySeconds(int rank) {
         if (rank <= 0) return 0.0;
-        if (rank <= EVERY_MINUTES.length) return EVERY_MINUTES[rank - 1];
-        double last = EVERY_MINUTES[EVERY_MINUTES.length - 1];
-        // Tenths kept as whole numbers so 4 - 0.1 * n lands exactly on one decimal.
-        double tenths = Math.round(last * 10) - (rank - EVERY_MINUTES.length) * Math.round(MINUTES_OFF_PER_POINT * 10);
-        return Math.max(FLOOR_MINUTES, tenths / 10.0);
+        for (int i = 1; i < ANCHOR_POINTS.length; i++) {
+            if (rank <= ANCHOR_POINTS[i]) {
+                int from = ANCHOR_POINTS[i - 1];
+                double t = (double) (rank - from) / (ANCHOR_POINTS[i] - from);
+                double seconds = ANCHOR_SECONDS[i - 1] + t * (ANCHOR_SECONDS[i] - ANCHOR_SECONDS[i - 1]);
+                return Math.max(FLOOR_SECONDS, Math.round(seconds));
+            }
+        }
+        return FLOOR_SECONDS;
     }
 
     static long intervalTicks(int rank) {
-        return Math.round(everyMinutes(rank) * 60.0 * 20.0);
+        return Math.round(everySeconds(rank) * 20.0);
     }
 
     static int glowTicks() {
@@ -96,15 +125,21 @@ public final class ChestSense {
      */
     static boolean isSensedKind(BlockEntity be) {
         return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity
-            || be instanceof ShulkerBoxBlockEntity || isVase(be);
+            || be instanceof ShulkerBoxBlockEntity || isVase(be) || be instanceof VaultBlockEntity;
     }
 
     static boolean isVase(BlockEntity be) {
         return be instanceof DecoratedPotBlockEntity || ContainerContentsRoller.isGloomslatePot(be.getBlockState());
     }
 
-    /** True for a container kind Chest Sense counts that no one has opened and that holds something. */
-    static boolean isSensed(BlockEntity be) {
+    /**
+     * True for a container kind Chest Sense counts that no one has opened and that holds something.
+     * A vault counts until it has rewarded {@code player}, since each player unlocks it once.
+     */
+    static boolean isSensed(BlockEntity be, Player player) {
+        if (be instanceof VaultBlockEntity vault) {
+            return !((VaultServerDataInvoker) vault.getServerData()).dungeontrain$hasRewardedPlayer(player);
+        }
         if (!isSensedKind(be) || be.getPersistentData().getBoolean(OPENED_KEY)) return false;
         if (be instanceof DecoratedPotBlockEntity pot) return pot.getLootTable() != null || !pot.getTheItem().isEmpty();
         if (isVase(be)) return be instanceof Container c && !c.isEmpty();
@@ -113,7 +148,7 @@ public final class ChestSense {
     }
 
     /** Every sensed container within {@code range} of {@code centre}, in the world and on carriages. */
-    static List<Sensed> scan(ServerLevel level, Vec3 centre, double range) {
+    static List<Sensed> scan(ServerLevel level, Player player, Vec3 centre, double range) {
         List<Sensed> found = new ArrayList<>();
         double rangeSq = range * range;
         int minCx = (int) Math.floor(centre.x - range) >> 4;
@@ -125,8 +160,8 @@ public final class ChestSense {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
                 if (chunk == null) continue;
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
-                    if (isSensed(be) && be.getBlockPos().getCenter().distanceToSqr(centre) <= rangeSq) {
-                        found.add(new Sensed(null, be.getBlockPos()));
+                    if (isSensed(be, player) && be.getBlockPos().getCenter().distanceToSqr(centre) <= rangeSq) {
+                        found.add(sensed(null, be));
                     }
                 }
             }
@@ -142,15 +177,24 @@ public final class ChestSense {
                 LevelChunk chunk = holder.getChunk();
                 if (chunk == null) continue;
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
-                    if (!isSensed(be)) continue;
+                    if (!isSensed(be, player)) continue;
                     Vec3 local = be.getBlockPos().getCenter();
                     sub.logicalPose().transformPosition(new Vector3d(local.x, local.y, local.z), world);
                     if (centre.distanceToSqr(world.x, world.y, world.z) <= rangeSq) {
-                        found.add(new Sensed(sub.getUniqueId(), be.getBlockPos()));
+                        found.add(sensed(sub.getUniqueId(), be));
                     }
                 }
             }
         }
         return found;
+    }
+
+    private static Sensed sensed(UUID subLevel, BlockEntity be) {
+        if (be instanceof VaultBlockEntity) {
+            Map<ResourceLocation, ChestSenseRarity.Tier> tiers = new LinkedHashMap<>();
+            VaultLoot.chanceByItem(be).forEach((id, pct) -> tiers.put(id, ChestSenseRarity.tierFor(pct)));
+            return new Sensed(subLevel, be.getBlockPos(), ChestSenseRarity.Tier.UNKNOWN, tiers);
+        }
+        return new Sensed(subLevel, be.getBlockPos(), ChestSenseRarity.tierOf(be), Map.of());
     }
 }
