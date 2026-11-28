@@ -11,6 +11,7 @@
     "EnderChestSlotCosmicAppleMixin",
     "DiskFeatureTestMemoMixin",
     "NotPredicateAccessor",
+    "VaultServerDataInvoker",
     "PlacedFeatureDiskMemoMixin",
     "StateTestingPredicateAccessor",
     "WorldGenRegionDiskMemoMixin",
@@ -238,6 +239,7 @@
     "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.LevelRendererEntityTargetAccessor",
     "client.MinecraftEmergencyCrashMixin",
     "client.ExposureClientInitOnceMixin",
     "client.ExposurePolaroidClientInitOnceMixin",

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.perks.effects.hoarder.ChestSenseRarity;
 import games.brennan.dungeontrain.provenance.ItemProvenance;
 import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import net.minecraft.core.BlockPos;
@@ -470,6 +471,7 @@ public final class ContainerContentsRoller {
         int[] slotsToFill = resolveSlotSubset(slots, k, localPos, worldSeed, carriageIndex);
 
         ListTag items = new ListTag();
+        int rarestWeight = Integer.MAX_VALUE;
         for (int slot : slotsToFill) {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
@@ -481,11 +483,16 @@ public final class ContainerContentsRoller {
             CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
             stackTag.putByte("Slot", (byte) slot);
             items.add(stackTag);
+            rarestWeight = Math.min(rarestWeight, picked.weight());
         }
 
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         // Drop any pre-existing Items list — the rolled pool is authoritative.
         out.put("Items", items);
+        // Chest Sense colours the container by its rarest rolled item's chance.
+        if (rarestWeight != Integer.MAX_VALUE) {
+            out = ChestSenseRarity.withRarestPct(out, ChestSenseRarity.pctOf(rarestWeight, totalWeight));
+        }
         // Chests and barrels also bake their Luck-potion bonus candidates now, from the
         // same pool, so the open-time hook never has to recover the pool from a position.
         if (LuckyBonusRoller.isBonusContainer(state)) {
@@ -828,7 +835,7 @@ public final class ContainerContentsRoller {
         if (stack.isEmpty()) return out;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         out.put(NBT_POT_ITEM, stackTag);
-        return out;
+        return ChestSenseRarity.withRarestPct(out, ChestSenseRarity.pctOf(picked.weight(), totalWeight));
     }
 
     // ------------------------------------------------------------------
