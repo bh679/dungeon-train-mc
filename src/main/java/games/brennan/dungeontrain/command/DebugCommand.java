@@ -18,7 +18,6 @@ import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.ColliderBatch;
@@ -1124,8 +1123,9 @@ public final class DebugCommand {
                         if (!state.is(sourceBlock)) continue;
                         matched++;
                         CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
-                        int diffIndex = pIdxByShip.getOrDefault(
-                            ship, CarriageContentsPlacer.EDITOR_SENTINEL_PIDX);
+                        // Unknown ship → carriage 0 (tier 0). Never the editor sentinel, which is
+                        // a compare-only marker and not a plausible position.
+                        int diffIndex = pIdxByShip.getOrDefault(ship, 0);
                         CompoundTag rolled = ContainerContentsRoller.roll(
                             pool, state, pos, worldSeed, salt, diffIndex, baseNbt,
                             level.registryAccess(), level);
