@@ -1,10 +1,31 @@
 package games.brennan.dungeontrain.event;
 
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Blocks;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class TributeRoomGuardTest {
+
+    @BeforeAll
+    static void boot() {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
+
+    @Test
+    void fireHoppersAndPistonsNeverGoIntoALiveRoom() {
+        assertTrue(TributeRoomGuard.reachesOriginals(Blocks.FIRE.defaultBlockState()));
+        assertTrue(TributeRoomGuard.reachesOriginals(Blocks.SOUL_FIRE.defaultBlockState()));
+        assertTrue(TributeRoomGuard.reachesOriginals(Blocks.HOPPER.defaultBlockState()));
+        assertTrue(TributeRoomGuard.reachesOriginals(Blocks.PISTON.defaultBlockState()));
+        assertTrue(TributeRoomGuard.reachesOriginals(Blocks.STICKY_PISTON.defaultBlockState()));
+        assertFalse(TributeRoomGuard.reachesOriginals(Blocks.GLOWSTONE.defaultBlockState()));
+        assertFalse(TributeRoomGuard.reachesOriginals(Blocks.OAK_DOOR.defaultBlockState()));
+    }
 
     @Test
     void liveRoomIsLookOnlyForEverything() {

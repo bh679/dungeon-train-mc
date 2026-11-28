@@ -62,6 +62,16 @@ public final class TributeRoomGuard {
         return isOwner && (placing ? intoAir : placedByOwner);
     }
 
+    /**
+     * Blocks that change what was already there without breaking it — fire burns it, a hopper drains its
+     * chests, a piston shoves it — and so are never the owner's to place in a live room.
+     */
+    static boolean reachesOriginals(BlockState placed) {
+        return placed.getBlock() instanceof net.minecraft.world.level.block.BaseFireBlock
+            || placed.getBlock() instanceof net.minecraft.world.level.block.HopperBlock
+            || placed.getBlock() instanceof net.minecraft.world.level.block.piston.PistonBaseBlock;
+    }
+
     private static boolean quiet() {
         return TributeRoomRegistry.isEmpty() && TributeRoomVisitSessions.isEmpty();
     }
@@ -105,10 +115,10 @@ public final class TributeRoomGuard {
         return standing != null && TributeRoomLiveEdits.isOwner(level, player, standing);
     }
 
-    /** A live room or another player's visit, for a placement into {@code replaced}: may it go ahead? */
-    private static boolean placeDenied(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState replaced) {
+    /** A live room or another player's visit, for {@code placed} going into {@code replaced}: refused? */
+    private static boolean placeDenied(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState replaced, BlockState placed) {
         TributeRoomRegistry.Standing standing = TributeRoomRegistry.at(level.dimension(), pos);
-        boolean own = ownLiveBuild(owns(level, player, standing), true, replaced.isAir(), false);
+        boolean own = ownLiveBuild(owns(level, player, standing), true, replaced.isAir() && !reachesOriginals(placed), false);
         // Placing has no "own visit" case to spare: a visit room is only ever someone else's to refuse here.
         return denies(standing != null, othersVisit(player, pos), false, false, own);
     }
@@ -140,7 +150,7 @@ public final class TributeRoomGuard {
     public static void onPlace(BlockEvent.EntityPlaceEvent event) {
         if (event instanceof BlockEvent.EntityMultiPlaceEvent) return; // judged whole, below
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!placeDenied(level, player, event.getPos(), event.getBlockSnapshot().getState())) return;
+        if (!placeDenied(level, player, event.getPos(), event.getBlockSnapshot().getState(), event.getPlacedBlock())) return;
         event.setCanceled(true);
         refuse(player, event.getPos(), false);
     }
@@ -150,7 +160,7 @@ public final class TributeRoomGuard {
     public static void onMultiPlace(BlockEvent.EntityMultiPlaceEvent event) {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
         for (net.neoforged.neoforge.common.util.BlockSnapshot cell : event.getReplacedBlockSnapshots()) {
-            if (!placeDenied(level, player, cell.getPos(), cell.getState())) continue;
+            if (!placeDenied(level, player, cell.getPos(), cell.getState(), level.getBlockState(cell.getPos()))) continue;
             event.setCanceled(true);
             refuse(player, cell.getPos(), false);
             return;

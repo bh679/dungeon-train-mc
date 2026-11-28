@@ -81,13 +81,16 @@ public final class TributeRoomLiveEdits {
         edits.pending.add(offset);
     }
 
-    /** The owner took out a block they placed: no longer theirs to take, and its removal is saved. */
+    /**
+     * The owner took out a block they placed: its removal is saved. So is every other cell they placed,
+     * read again at the save: one break can take more than its own cell with it (a door's other half, a
+     * torch that stood on the block), and those go without an event of their own.
+     */
     public static void recordBroken(ServerPlayer player, TributeRoomRegistry.Standing standing, BlockPos pos) {
         Edits edits = editsFor(standing, player);
         if (edits == null) return;
-        BlockPos offset = offsetOf(standing, pos);
-        edits.placed.remove(offset);
-        edits.pending.add(offset);
+        edits.pending.add(offsetOf(standing, pos));
+        edits.pending.addAll(edits.placed);
     }
 
     private static Edits editsFor(TributeRoomRegistry.Standing standing, ServerPlayer player) {
@@ -132,7 +135,11 @@ public final class TributeRoomLiveEdits {
         }
     }
 
-    /** Save every room {@code owner} has unsaved edits in now: they died or left. */
+    /**
+     * The owner died or left: save every room they have unsaved edits in now, and forget what they
+     * placed. A death visit may rebuild the room, so a block placed before it is no longer theirs to take
+     * from a copy still standing on the train; that copy is as it was, and the save is the visit's.
+     */
     public static void flushOwner(MinecraftServer server, UUID owner) {
         if (EDITS.isEmpty()) return;
         String id = TributeRoomStore.dashless(owner);
@@ -140,6 +147,7 @@ public final class TributeRoomLiveEdits {
             if (!entry.getValue().owner.equals(id)) continue;
             TributeRoomRegistry.Standing standing = TributeRoomRegistry.byPair(entry.getKey());
             if (standing != null) flush(server, standing);
+            entry.getValue().placed.clear();
         }
     }
 
@@ -166,6 +174,9 @@ public final class TributeRoomLiveEdits {
         if (level == null) return;
         Set<BlockPos> cells = Set.copyOf(edits.pending);
         edits.pending.removeAll(cells);
+        // A placed cell that is air again (its block broken, or taken with another) is theirs no longer.
+        BlockPos origin = standing.origin();
+        edits.placed.removeIf(off -> level.getBlockState(origin.offset(off)).isAir());
         CompoundTag delta;
         try {
             delta = CarriageBlockSnapshot.captureLevelCells(level, standing.origin(), standing.size(), cells, 0).tag();
