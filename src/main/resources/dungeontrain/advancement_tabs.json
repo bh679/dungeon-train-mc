@@ -211,7 +211,10 @@
     "dungeontrain:enchiridion/skeleton_crew": true,
     "dungeontrain:enchiridion/photobomb": true,
     "dungeontrain:dungeon_train/void_starting_book": true,
-    "dungeontrain:dungeon_train/come_along_with_me": true
+    "dungeontrain:dungeon_train/come_along_with_me": true,
+    "dungeontrain:dungeon_train/cosmic_apple": false,
+    "dungeontrain:dungeon_train/celestial_bite": false,
+    "dungeontrain:dungeon_train/violet_core": false
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",
