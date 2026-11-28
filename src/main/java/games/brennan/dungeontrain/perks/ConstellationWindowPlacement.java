@@ -37,23 +37,43 @@ public final class ConstellationWindowPlacement {
 
     private ConstellationWindowPlacement() {}
 
-    /** Put the window at the player's feet; false when there is no room (the caller opens the menu). */
+    /**
+     * Put the window at the player's feet; false when there is no room (the caller opens the menu).
+     * A new apple is new points to spend, so the window it leaves (new, or the one already underfoot)
+     * waits for a fresh spend before it goes.
+     */
     public static boolean place(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        ConstellationWindowSpot old = spot(player);
-        if (old.placed() && isWindow(level, old) && inCell(player, old)) return true; // already in one
         SubLevel frame = Sable.HELPER.getTrackingSubLevel(player);
         if (frame != null && frame.isRemoved()) frame = null;
         BlockPos cell = cellOf(frame, player);
+        UUID frameId = frame == null ? null : frame.getUniqueId();
         BlockState here = level.getBlockState(cell);
-        if (!here.canBeReplaced() || !here.getFluidState().isEmpty()) return false;
-        remove(player);
-        if (!level.setBlock(cell, ModBlocks.CONSTELLATION_WINDOW.get().defaultBlockState(), Block.UPDATE_ALL)) {
+        if (here.is(ModBlocks.CONSTELLATION_WINDOW.get())) {
+            // Already standing on a window (this apple's last one, or any other): it is this one now.
+            ConstellationWindowSpot old = spot(player);
+            if (old.placed() && !(old.pos() == cell.asLong() && old.subLevel().equals(java.util.Optional.ofNullable(frameId)))) {
+                remove(player);
+            }
+            remember(player, frameId, cell);
+            return true;
+        }
+        if (!here.canBeReplaced() || !here.getFluidState().isEmpty()) {
+            LOGGER.info("[DungeonTrain] No room for a constellation window at {}'s feet ({} in {}): {}",
+                player.getGameProfile().getName(), cell, frameId == null ? "the world" : "carriage " + frameId, here);
             return false;
         }
-        player.setData(ModDataAttachments.CONSTELLATION_WINDOW.get(),
-            ConstellationWindowSpot.at(frame == null ? null : frame.getUniqueId(), cell.asLong()));
+        remove(player);
+        if (!level.setBlock(cell, ModBlocks.CONSTELLATION_WINDOW.get().defaultBlockState(), Block.UPDATE_ALL)) {
+            LOGGER.info("[DungeonTrain] Could not set a constellation window at {} for {}", cell, player.getGameProfile().getName());
+            return false;
+        }
+        remember(player, frameId, cell);
         return true;
+    }
+
+    private static void remember(ServerPlayer player, UUID frameId, BlockPos cell) {
+        player.setData(ModDataAttachments.CONSTELLATION_WINDOW.get(), ConstellationWindowSpot.at(frameId, cell.asLong()));
     }
 
     /** A perk point went in: the window goes once the player steps out. */
