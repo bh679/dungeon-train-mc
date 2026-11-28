@@ -104,20 +104,44 @@ public final class ConstellationWindowGlow {
     }
 
     /** The four sides of one window's column; {@code pose} places a carriage's window. */
+    /** Horizontal slices filling the column, so it reads the same from every side and from above. */
+    static final int SLICES = 8;
+    /** How strong the sides are at the carpet: light, so a side seen from above stays a haze. */
+    static final float WALL_ALPHA = 0.3f;
+
+    /**
+     * One window's column of haze, the carpet's own footprint: four sides fading upward, and slices
+     * through it that thin out with height. {@code pose} places a carriage's window.
+     */
     private static int column(BufferBuilder bb, Matrix4f view, Vec3 cam, long packed, Pose3dc pose) {
         int bx = BlockPos.getX(packed), by = BlockPos.getY(packed), bz = BlockPos.getZ(packed);
         float y0 = (float) ConstellationBlocks.WINDOW_HEIGHT, y1 = y0 + HEIGHT;
         float[][] corners = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
-        int bottom = colour(BASE_ALPHA), top = colour(0f);
         Vector3d local = new Vector3d(), world = new Vector3d();
+        int quads = 0;
+        int bottom = colour(WALL_ALPHA), top = colour(0f);
         for (int i = 0; i < 4; i++) {
             float[] a = corners[i], b = corners[(i + 1) % 4];
             put(bb, view, cam, pose, local, world, bx + a[0], by + y0, bz + a[1], bottom);
             put(bb, view, cam, pose, local, world, bx + b[0], by + y0, bz + b[1], bottom);
             put(bb, view, cam, pose, local, world, bx + b[0], by + y1, bz + b[1], top);
             put(bb, view, cam, pose, local, world, bx + a[0], by + y1, bz + a[1], top);
+            quads++;
         }
-        return 4;
+        for (int k = 0; k < SLICES; k++) {
+            float t = (k + 0.5f) / SLICES;
+            int c = colour(sliceAlpha(t));
+            float y = y0 + HEIGHT * t;
+            for (float[] p : corners) put(bb, view, cam, pose, local, world, bx + p[0], by + y, bz + p[1], c);
+            quads++;
+        }
+        return quads;
+    }
+
+    /** A slice's strength at height {@code t} (0 at the carpet, 1 at the top): thinning to nothing. */
+    static float sliceAlpha(float t) {
+        float left = 1f - Math.max(0f, Math.min(1f, t));
+        return BASE_ALPHA / SLICES * 2f * left;
     }
 
     private static void put(BufferBuilder bb, Matrix4f view, Vec3 cam, Pose3dc pose, Vector3d local, Vector3d world,

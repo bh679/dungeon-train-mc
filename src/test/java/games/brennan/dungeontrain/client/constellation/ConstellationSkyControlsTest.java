@@ -19,4 +19,11 @@ class ConstellationSkyControlsTest {
         assertEquals(0, ConstellationWindowGlow.colour(0f) >>> 24);
         assertEquals(255, ConstellationWindowGlow.colour(1f) >>> 24);
     }
+
+    @Test
+    void glowSlicesThinOutUpward() {
+        float low = ConstellationWindowGlow.sliceAlpha(0.05f), high = ConstellationWindowGlow.sliceAlpha(0.95f);
+        org.junit.jupiter.api.Assertions.assertTrue(low > high);
+        assertEquals(0f, ConstellationWindowGlow.sliceAlpha(1f), 1e-6f);
+    }
 }
