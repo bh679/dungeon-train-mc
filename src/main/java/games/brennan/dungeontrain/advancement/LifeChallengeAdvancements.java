@@ -57,10 +57,14 @@ public final class LifeChallengeAdvancements {
     public static final List<ResourceLocation> MELON_TIERS = List.of(LAST_MELON, THREE_MELONS);
     public static final List<ResourceLocation> NAKED_TIERS = List.of(NAKED_AND_AFRAID, NAKED_AND_UNAFRAID);
 
-    /** Apples: vanilla's three and BetterNether's black apples. The black apple seed is not an apple. */
+    /**
+     * Apples: vanilla's three, BetterNether's black apples and DT's three cosmic tiers. The black apple
+     * seed is not an apple.
+     */
     public static final Set<String> APPLES = Set.of(
         "minecraft:apple", "minecraft:golden_apple", "minecraft:enchanted_golden_apple",
-        "betternether:black_apple", "betternether:stalagnate_bowl_apple");
+        "betternether:black_apple", "betternether:stalagnate_bowl_apple",
+        "dungeontrain:cosmic_apple", "dungeontrain:celestial_bite", "dungeontrain:violet_core");
     public static final Set<String> BACKPACKS = Set.of(
         "ediblebackpacks:edible_backpack", "ediblebackpacks:golden_edible_backpack");
     public static final Set<String> MELONS = Set.of("minecraft:melon_slice", "minecraft:glistering_melon_slice");
