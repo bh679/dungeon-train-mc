@@ -1,0 +1,18 @@
+{
+  "id": "perks-button-after-first-unlock",
+  "version": "0.2063.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui",
+    "balance"
+  ],
+  "title": "Perks menu and Cosmic Apple tweaks",
+  "summary": "The Perks button in the pause menu now appears once you have unlocked your first perk. Eating a stack of Cosmic Apples eats the whole stack at once. Cosmic Apples are for this life only, so they can't be stored in an Ender Chest.",
+  "highlights": [],
+  "pr": 2934,
+  "date": "2026-11-28",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
